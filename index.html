@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Portal - OpenATS</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="top-accent"></div>
+
+    <div id="dashboard" class="container">
+        <div class="header-main">
+            <h1>Careers from OpenATS</h1>
+            <p>Join us to get into your dream job.</p>
+        </div>
+
+        <div class="filter-controls">
+            <input type="text" id="searchJob" placeholder="Search job titles...">
+            <select id="filterType">
+                <option value="">All Work Types</option>
+                <option value="Full-time">Full-time</option>
+                <option value="Remote">Remote</option>
+                <option value="Hybrid">Hybrid</option>
+            </select>
+            <select id="filterLocation">
+                <option value="">All Locations</option>
+                <option value="Colombo, Sri Lanka">Colombo</option>
+                <option value="Remote">Remote</option>
+                <option value="Kandy, Sri Lanka">Kandy</option>
+            </select>
+        </div>
+
+        <div id="jobList"></div>
+    </div>
+
+    <div id="applicationPage" class="container hidden">
+        <button class="back-nav" onclick="showDashboard()"> &lt; <u>Back to jobs</u></button>
+        
+        <div class="job-intro">
+            <div class="job-title-row">
+                <h1 id="displayTitle"></h1>
+                <button class="apply-btn-top" onclick="document.getElementById('applicationForm').scrollIntoView({behavior: 'smooth'});">Apply</button>
+            </div>
+            <div class="job-icons">
+                <span>💼 <span id="displayType"></span></span>
+                <span>📍 <span id="displayLoc"></span></span>
+                <span>💵 <span id="displaySalary"></span></span>
+            </div>
+        </div>
+
+        <div class="job-content">
+            <h3>About the Company</h3>
+            <p id="displayAbout"></p>
+            <h3>Job Summary</h3>
+            <p id="displaySummary"></p>
+            <h3>Responsibilities & Duties</h3>
+            <ul id="displayResp"></ul>
+            <h3>Qualifications & Skills</h3>
+            <ul id="displayQual"></ul>
+        </div>
+
+        <hr class="section-divider">
+
+        <section id="apply-section">
+            <h2>Apply for this job</h2>
+            <form id="applicationForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>First Name</label>
+                        <input type="text" id="fname" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Last Name</label>
+                        <input type="text" id="lname" required>
+                    </div>
+                </div>
+                <label>Email</label>
+                <input type="email" id="email" required>
+                <label>Phone</label>
+                <div class="phone-box">
+                    <select><option>+94</option></select>
+                    <input type="text" id="phone" required>
+                </div>
+                <label>Resume / CV</label>
+                <div class="upload-container">
+                    <input type="file" id="resume" required>
+                    <div class="upload-text">📤 Click Or Drag File To This Area To Upload</div>
+                </div>
+                <button type="submit" class="submit-action-btn">Submit Application</button>
+            </form>
+        </section>
+    </div>
+
+    <div class="footer-brand">Powered by <span class="green-dot">●</span> <b>OpenATS</b></div>
+    <script src="script.js"></script>
+</body>
+</html>

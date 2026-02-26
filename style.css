@@ -1,0 +1,76 @@
+body {
+    font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+    background-color: #fcfcfc;
+    margin: 0;
+    color: #555;
+    line-height: 1.6;
+}
+
+.top-accent { height: 8px; background-color: #7ba6da; width: 100%; }
+
+.container {
+    max-width: 850px;
+    margin: 40px auto;
+    background: white;
+    padding: 50px;
+}
+
+.hidden { display: none; }
+
+/* Dashboard UI */
+.header-main h1 { font-size: 32px; color: #333; margin-bottom: 5px; }
+.filter-controls { display: flex; gap: 10px; margin: 30px 0; }
+.filter-controls input, .filter-controls select {
+    padding: 12px; border: 1px solid #ddd; border-radius: 4px; flex: 1;
+}
+
+.job-entry {
+    border-bottom: 1px solid #eee;
+    padding: 20px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* Application Page UI (Matching Screenshot) */
+.back-nav { background: none; border: none; color: #888; cursor: pointer; font-size: 14px; margin-bottom: 30px; }
+.job-title-row { display: flex; justify-content: space-between; align-items: center; }
+.job-title-row h1 { font-size: 32px; color: #444; margin: 0; }
+
+.apply-btn-top, .submit-action-btn {
+    background-color: #e67e22; color: white; border: none;
+    padding: 12px 45px; border-radius: 6px; font-weight: bold; cursor: pointer;
+}
+
+.job-icons { margin: 20px 0; color: #999; font-size: 15px; display: flex; gap: 20px; }
+.job-content h3 { color: #333; margin-top: 30px; font-size: 18px; }
+.job-content p, .job-content li { color: #666; font-size: 15px; }
+
+.section-divider { border: 0; border-top: 1px solid #eee; margin: 50px 0; }
+
+/* Form UI */
+h2 { font-size: 28px; color: #444; margin-bottom: 30px; }
+.form-row { display: flex; gap: 20px; }
+.form-group { flex: 1; }
+label { display: block; margin-top: 20px; font-weight: bold; font-size: 14px; color: #444; }
+
+input[type="text"], input[type="email"] {
+    width: 100%; padding: 12px; margin-top: 8px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box;
+}
+
+.phone-box { display: flex; margin-top: 8px; border: 1px solid #ccc; border-radius: 4px; overflow: hidden; }
+.phone-box select { border: none; background: #f9f9f9; padding: 0 10px; border-right: 1px solid #ccc; }
+.phone-box input { border: none; flex: 1; padding: 12px; }
+
+.upload-container {
+    border: 1px solid #ccc; border-radius: 4px; padding: 25px; 
+    text-align: center; margin-top: 10px; position: relative; color: #999;
+}
+.upload-container input { position: absolute; width: 100%; height: 100%; top:0; left:0; opacity:0; cursor:pointer; }
+
+.submit-action-btn { width: auto; margin-top: 40px; }
+
+.footer-brand { text-align: center; padding: 40px; color: #999; font-size: 14px; }
+.green-dot { color: #44b75a; }
+
+@media (max-width: 600px) { .form-row { flex-direction: column; } .job-title-row { flex-direction: column; align-items: flex-start; gap: 20px; } }

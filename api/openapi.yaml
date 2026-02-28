@@ -1,0 +1,789 @@
+openapi: 3.1.0
+info:
+  title: OpenATS API
+  description: API documentation for OpenATS Applicant Tracking System.
+  version: 1.0.0
+  contact:
+    name: OpenATS Repo
+    url: https://github.com/chamals3n4/OpenATS
+servers:
+  - url: http://localhost:8080/api
+    description: Local Development Server
+
+tags:
+  - name: Jobs
+    description: Core Job postings and detail management
+  - name: Pipelines
+    description: Custom hiring stages per job
+  - name: Hiring Team
+    description: Managing recruiters assigned to jobs
+  - name: Custom Questions
+    description: Job-specific application form questions
+  - name: Candidates
+    description: Candidate profiles, applications, and stage movement
+  - name: Assessments
+    description: Creating and managing internal tests
+  - name: Assessment Engagement
+    description: Public candidate-facing test execution
+  - name: Offers
+    description: Salary calculation and offer letter generation
+  - name: Templates
+    description: Reusable email and document designs
+  - name: Company
+    description: Global company profile and departments
+  - name: Users
+    description: User profiles and role management
+
+paths:
+  # ── JOBS ──────────────────────────────────────────────────────────────────
+  /jobs:
+    get:
+      tags: [Jobs]
+      summary: List all jobs
+      responses:
+        '200':
+          description: A list of jobs
+    post:
+      tags: [Jobs]
+      summary: Create a new job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateJob'
+      responses:
+        '201':
+          description: Job created
+  /jobs/{id}:
+    get:
+      tags: [Jobs]
+      summary: Get job by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Job details
+    put:
+      tags: [Jobs]
+      summary: Update a job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Job updated
+    delete:
+      tags: [Jobs]
+      summary: Delete a job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Job deleted
+  /jobs/slug/{slug}:
+    get:
+      tags: [Jobs]
+      summary: Get job details for public preview
+      parameters:
+        - name: slug
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Public job details
+
+  # ── PIPELINES ─────────────────────────────────────────────────────────────
+  /jobs/{jobId}/pipeline:
+    get:
+      tags: [Pipelines]
+      summary: Get job pipeline stages
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: List of stages
+    post:
+      tags: [Pipelines]
+      summary: Add a custom stage
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '201':
+          description: Stage added
+  /jobs/{jobId}/pipeline/{stageId}:
+    put:
+      tags: [Pipelines]
+      summary: Update a stage
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: stageId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Stage updated
+    delete:
+      tags: [Pipelines]
+      summary: Remove a stage
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: stageId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Stage deleted
+
+  # ── HIRING TEAM ───────────────────────────────────────────────────────────
+  /jobs/{jobId}/team:
+    get:
+      tags: [Hiring Team]
+      summary: Get hiring team members
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: List of team members
+    post:
+      tags: [Hiring Team]
+      summary: Add a team member
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '201':
+          description: Member added
+  /jobs/{jobId}/team/{userId}:
+    delete:
+      tags: [Hiring Team]
+      summary: Remove a team member
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: userId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Member removed
+
+  # ── CUSTOM QUESTIONS ──────────────────────────────────────────────────────
+  /jobs/{jobId}/questions:
+    get:
+      tags: [Custom Questions]
+      summary: List all custom questions for a job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: List of questions
+    post:
+      tags: [Custom Questions]
+      summary: Create a custom question
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '201':
+          description: Question created
+  /jobs/{jobId}/questions/{questionId}:
+    put:
+      tags: [Custom Questions]
+      summary: Update a question
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Question updated
+    delete:
+      tags: [Custom Questions]
+      summary: Delete a question
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Question deleted
+
+  /jobs/{jobId}/assessment-attachment:
+    get:
+      tags: [Custom Questions]
+      summary: Get assessment attached to a job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Attachment details
+    post:
+      tags: [Custom Questions]
+      summary: Attach an assessment to a stage
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '201':
+          description: Assessment attached
+  /jobs/{jobId}/assessment-attachment/{stageId}:
+    delete:
+      tags: [Custom Questions]
+      summary: Detach assessment from a stage
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: stageId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Assessment detached
+
+  # ── CANDIDATES ────────────────────────────────────────────────────────────
+  /candidates/jobs/{jobId}/apply:
+    post:
+      tags: [Candidates]
+      summary: Public application submission
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CandidateApplication'
+      responses:
+        '201':
+          description: Application submitted
+  /candidates/jobs/{jobId}:
+    get:
+      tags: [Candidates]
+      summary: List candidates for a job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: stageId
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: List of candidates
+  /candidates/{id}:
+    get:
+      tags: [Candidates]
+      summary: Get candidate profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detailed profile
+    delete:
+      tags: [Candidates]
+      summary: Delete a candidate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Candidate deleted
+  /candidates/{id}/stage:
+    put:
+      tags: [Candidates]
+      summary: Move candidate in pipeline
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                stageId: { type: integer }
+      responses:
+        '200':
+          description: Stage updated
+
+  # ── ASSESSMENTS ───────────────────────────────────────────────────────────
+  /assessments:
+    get:
+      tags: [Assessments]
+      summary: List all assessments
+      responses:
+        '200':
+          description: List of assessments
+    post:
+      tags: [Assessments]
+      summary: Create an assessment
+      responses:
+        '201':
+          description: Assessment created
+  /assessments/{id}:
+    get:
+      tags: [Assessments]
+      summary: Get assessment by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Assessment details
+    put:
+      tags: [Assessments]
+      summary: Update assessment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Assessment updated
+    delete:
+      tags: [Assessments]
+      summary: Delete assessment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Assessment deleted
+  /assessments/{id}/questions:
+    post:
+      tags: [Assessments]
+      summary: Add a question to an assessment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '201':
+          description: Question added
+  /assessments/{id}/questions/{questionId}:
+    put:
+      tags: [Assessments]
+      summary: Update a question
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Question updated
+    delete:
+      tags: [Assessments]
+      summary: Delete a question
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: questionId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Question deleted
+
+  # ── ASSESSMENT EXECUTION (PUBLIC) ─────────────────────────────────────────
+  /assessment-execution/public/{token}:
+    get:
+      tags: [Assessment Engagement]
+      summary: Get test details for candidate
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Questions returned
+  /assessment-execution/public/{token}/start:
+    post:
+      tags: [Assessment Engagement]
+      summary: Start test timer
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Started
+  /assessment-execution/public/{token}/answer:
+    post:
+      tags: [Assessment Engagement]
+      summary: Save answer
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Answered
+  /assessment-execution/public/{token}/complete:
+    post:
+      tags: [Assessment Engagement]
+      summary: Complete and grade test
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Completed
+
+  # ── OFFERS ────────────────────────────────────────────────────────────────
+  /offers:
+    post:
+      tags: [Offers]
+      summary: Create an offer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateOffer'
+      responses:
+        '201':
+          description: Offer created
+  /offers/job/{jobId}:
+    get:
+      tags: [Offers]
+      summary: List offers for a job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: List of offers
+  /offers/{id}:
+    get:
+      tags: [Offers]
+      summary: Get offer details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Offer details
+    put:
+      tags: [Offers]
+      summary: Update offer details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Offer updated
+    delete:
+      tags: [Offers]
+      summary: Delete an offer
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Offer deleted
+  /offers/{id}/status:
+    patch:
+      tags: [Offers]
+      summary: Transition offer status
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                status: { type: string, enum: [draft, sent, accepted, declined, withdrawn] }
+      responses:
+        '200':
+          description: Status updated
+
+  # ── TEMPLATES ─────────────────────────────────────────────────────────────
+  /templates:
+    get:
+      tags: [Templates]
+      summary: List all templates
+      responses:
+        '200':
+          description: List of templates
+    post:
+      tags: [Templates]
+      summary: Create a template
+      responses:
+        '201':
+          description: Template created
+  /templates/{id}:
+    get:
+      tags: [Templates]
+      summary: Get template by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Template details
+    put:
+      tags: [Templates]
+      summary: Update template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Template updated
+    delete:
+      tags: [Templates]
+      summary: Delete template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Template deleted
+  /templates/{id}/preview:
+    post:
+      tags: [Templates]
+      summary: Preview template
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Rendered template
+
+  # ── COMPANY ───────────────────────────────────────────────────────────────
+  /company:
+    get:
+      tags: [Company]
+      summary: Get company profile
+      responses:
+        '200':
+          description: Company details
+    put:
+      tags: [Company]
+      summary: Upsert company profile
+      responses:
+        '200':
+          description: Company updated
+  /company/departments:
+    get:
+      tags: [Company]
+      summary: List all departments
+      responses:
+        '200':
+          description: List of departments
+    post:
+      tags: [Company]
+      summary: Create a department
+      responses:
+        '201':
+          description: Department created
+  /company/departments/{id}:
+    put:
+      tags: [Company]
+      summary: Update department
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Department updated
+    delete:
+      tags: [Company]
+      summary: Delete department
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Department deleted
+
+  # ── USERS ─────────────────────────────────────────────────────────────────
+  /users:
+    get:
+      tags: [Users]
+      summary: List all users
+      responses:
+        '200':
+          description: List of users
+  /users/{id}:
+    get:
+      tags: [Users]
+      summary: Get user profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: User details
+    put:
+      tags: [Users]
+      summary: Update user profile
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: User updated
+
+components:
+  schemas:
+    CreateJob:
+      type: object
+      required: [title, departmentId, employmentType]
+      properties:
+        title: { type: string }
+        departmentId: { type: integer }
+        employmentType: { type: string, enum: [full_time, part_time, contract, internship, freelance] }
+        location: { type: string }
+        description: { type: string }
+        salaryType: { type: string, enum: [range, fixed] }
+        salaryMin: { type: number }
+        salaryMax: { type: number }
+        salaryFixed: { type: number }
+        currency: { type: string, maxLength: 3 }
+
+    CandidateApplication:
+      type: object
+      required: [firstName, lastName, email]
+      properties:
+        firstName: { type: string }
+        lastName: { type: string }
+        email: { type: string, format: email }
+        phone: { type: string }
+        resumeUrl: { type: string }
+        customAnswers:
+          type: array
+          items:
+            type: object
+            properties:
+              questionId: { type: integer }
+              answerText: { type: string }
+              optionIds: { type: array, items: { type: integer } }
+
+    CreateOffer:
+      type: object
+      required: [candidateId, jobId]
+      properties:
+        candidateId: { type: integer }
+        jobId: { type: integer }
+        templateId: { type: integer }
+        salary: { type: number }
+        currency: { type: string, maxLength: 3 }
+        startDate: { type: string, format: date }
+        expiryDate: { type: string, format: date }
+        status: { type: string, default: draft }

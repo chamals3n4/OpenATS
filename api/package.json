@@ -17,13 +17,18 @@
     "dotenv": "^17.2.4",
     "drizzle-orm": "^0.45.1",
     "express": "^5.2.1",
-    "pg": "^8.19.0"
+    "pg": "^8.19.0",
+    "swagger-ui-express": "^5.0.1",
+    "yamljs": "^0.3.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
     "@types/node": "^25.2.2",
     "@types/pg": "^8.16.0",
+    "@types/swagger-ui-express": "^4.1.8",
+    "@types/yamljs": "^0.2.34",
     "drizzle-kit": "^0.31.9",
     "nodemon": "^3.1.11",
     "tsx": "^4.21.0",

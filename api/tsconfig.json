@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "rootDir": "./src",
+    "rootDir": "./",
     "outDir": "./dist",
 
     "module": "commonjs",
@@ -25,6 +25,6 @@
     "types": ["node"],
     "isolatedModules": true
   },
-  "include": ["src/**/*"],
+  "include": ["src/**/*", "drizzle.config.ts"],
   "exclude": ["node_modules", "dist", "tests"]
 }

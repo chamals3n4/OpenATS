@@ -1,4 +1,4 @@
-## OpenATS - Setup Guide
+## Contributing to OpenATS
 
 - [Prerequisites](#prerequisites)
 - [Tech Stack](#tech-stack)
@@ -8,6 +8,10 @@
   - [Add Upstream Remote](#2-add-upstream-remote)
   - [Install pnpm](#3-install-pnpm)
   - [Install Dependencies](#4-install-dependencies)
+- [Database Setup](#database-setup)
+  - [Setup environment variables](#1-setup-environment-variables)
+  - [Run database migrations](#2-run-database-migrations)
+  - [Seed the database](#3-seed-the-database)
 - [Running the Project](#running-the-project)
   - [Frontend](#frontend)
   - [Backend](#backend)
@@ -25,7 +29,7 @@ Before you start, make sure you have these installed:
 
 - Node.js (version 18 or higher) - [Download here](https://nodejs.org/)
 - Git - [Download here](https://git-scm.com/)
-- PostgreSQL - [Download here](https://www.postgresql.org/download/)
+- A PostgreSQL database (we recommend [Neon](https://neon.tech) — free tier, no local install needed)
 - A code editor (VS Code recommended)
 
 Check if you have them:
@@ -33,7 +37,6 @@ Check if you have them:
 ```bash
 node --version
 git --version
-psql --version
 ```
 
 ## Tech Stack
@@ -51,40 +54,10 @@ psql --version
 - TypeScript
 - Node.js
 - PostgreSQL (Database)
+- Drizzle ORM (Database ORM)
 - WSO2 Asgardeo (Authentication)
 
 **Package Manager:** pnpm
-
-## Learning Resources
-
-If you're new to any of these technologies, watch these videos or follow the official documentations ( google it you can find them)
-
-**Git & GitHub:**
-**Git & GitHub:**
-
-- [Workshop on Navigating Version Control - UOM CSE Department](https://www.youtube.com/watch?v=RGOj5yH7evk)
-
-**React & Next.js:**
-
-- [React Tutorial for Beginners](https://youtu.be/SqcY0GlETPk?si=_XC8zvGJUjVEVV0h)
-- [React Tutorial for Beginners](https://youtu.be/ZVnjOPwW4ZA?si=wd4Cib8OAEqOXpk-)
-
-**TypeScript:**
-
-- [TypeScript Crash Course](https://www.youtube.com/watch?v=BCg4U1FzODs)
-
-**Express.js:**
-
-- [Express.js & Node.js Course](https://www.youtube.com/watch?v=Oe421EPjeBE)
-- [Building REST APIs with Express](https://www.youtube.com/watch?v=pKd0Rpw7O48)
-
-**PostgreSQL:**
-
-- [PostgreSQL Tutorial for Beginners](https://www.youtube.com/watch?v=qw--VYLpxG4)
-
-**WSO2 Asgardeo:**
-
-- [Asgardeo Documentation](https://wso2.com/asgardeo/docs/)
 
 ## Initial Setup
 
@@ -115,23 +88,70 @@ npm install -g pnpm
 Frontend:
 
 ```bash
-cd apps/web
+cd web
 pnpm install
 ```
 
 Backend:
 
 ```bash
-cd apps/api
+cd api
 pnpm install
 ```
+
+## Database Setup
+
+### 1. Setup environment variables
+
+Inside `web`, copy the example env file:
+
+```bash
+cd web
+cp .env.example .env
+```
+
+Then open `.env` and fill in the required values.
+
+Inside `api`, copy the example env file:
+
+```bash
+cd api
+cp .env.example .env
+```
+
+Then open `.env` and fill in your database URL:
+
+```bash
+DATABASE_URL=your_postgresql_connection_string_here
+```
+
+### 2. Run database migrations
+
+This creates all the tables in your database:
+
+```bash
+pnpm drizzle-kit generate
+pnpm drizzle-kit migrate
+```
+
+### 3. Seed the database
+
+This inserts the default hiring pipeline stages required for the app to work:
+
+```bash
+pnpm tsx src/db/seed.ts
+```
+
+You only need to do steps 2 and 3 **once** when setting up for the first time.
+
+> ⚠️ If you ever pull changes that include schema changes, run `pnpm drizzle-kit generate` and `pnpm drizzle-kit migrate` again to keep your database in sync.
 
 ## Running the Project
 
 ### Frontend
 
 ```bash
-cd apps/web
+cd web
 pnpm dev
 ```
 
@@ -144,7 +164,7 @@ cd apps/api
 pnpm dev
 ```
 
-Open `http://localhost:8080`
+Open `http://localhost:5000`
 
 Run both in separate terminals.
 
@@ -190,3 +210,8 @@ Go to GitHub and create a PR from your branch to the main repository.
 - Create a NEW branch for each task
 - Keep commits small and focused
 - Test your code before pushing
+- If you modify the database schema, always run `pnpm drizzle-kit generate` and commit the generated migration files along with your schema changes
+
+---
+
+Happy coding!

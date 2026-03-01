@@ -9,6 +9,7 @@ import {
   jobCustomQuestions,
   jobAssessmentAttachments,
   jobs,
+  offers,
 } from "../db/schema";
 import { assessmentExecutionService } from "./assessment-execution.service";
 import { offerService } from "./offer.service";
@@ -152,11 +153,17 @@ export const candidateService = {
       .where(eq(candidateStageHistory.candidateId, id))
       .orderBy(asc(candidateStageHistory.movedAt));
 
+    const [offer] = await db
+      .select()
+      .from(offers)
+      .where(eq(offers.candidateId, id));
+
     return {
       ...candidate,
       answers,
       selections,
       history,
+      offer: offer ?? null,
     };
   },
 

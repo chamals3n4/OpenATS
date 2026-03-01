@@ -1,18 +1,17 @@
-import { Router,type Router as ExpressRouter } from "express";
-import { db } from "../db";
-import { usersTable } from "../db/schema";
+import { Router } from "express";
+import {
+  getAllUsers,
+  getUserById,
+  updateUser,
+} from "../controllers/user.controller";
 
-const router: ExpressRouter = Router();
-router.get("/", async (req, res) => {
-    const users = await db.select().from(usersTable);
-    res.json(users);
-});
+const router:Router = Router();
 
-router.post("/", async (req, res) => {
-    const { name, age, email } = req.body;
-    const user = await db.insert(usersTable).values({ name, age, email });
-    res.json(user);
-});
-
+// GET  /api/users       → list all active users
+// GET  /api/users/:id   → get user by ID
+// PUT  /api/users/:id   → update name, role, avatar
+router.get("/", getAllUsers);
+router.get("/:id", getUserById);
+router.put("/:id", updateUser);
 
 export default router;

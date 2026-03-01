@@ -28,7 +28,11 @@ import {
   candidateCvAnalysis,
 } from "./candidates";
 import { offers } from "./offers";
-import { emailMessages, jobChatMessages } from "./communications";
+import {
+  emailMessages,
+  jobChatMessages,
+  candidateChatMessages,
+} from "./communications";
 
 // company
 export const companyRelations = relations(company, ({ many }) => ({
@@ -51,7 +55,8 @@ export const usersRelations = relations(users, ({ many }) => ({
   hiringTeamEntries: many(jobHiringTeam),
   createdOffers: many(offers),
   sentEmails: many(emailMessages),
-  chatMessages: many(jobChatMessages),
+  jobChatMessages: many(jobChatMessages),
+  candidateChatMessages: many(candidateChatMessages),
   stageMoves: many(candidateStageHistory),
 }));
 
@@ -236,6 +241,7 @@ export const candidatesRelations = relations(candidates, ({ one, many }) => ({
   cvAnalysis: many(candidateCvAnalysis),
   offers: many(offers),
   emailMessages: many(emailMessages),
+  chatMessages: many(candidateChatMessages),
 }));
 
 export const candidateStageHistoryRelations = relations(
@@ -396,6 +402,25 @@ export const jobChatMessagesRelations = relations(
     replyTo: one(jobChatMessages, {
       fields: [jobChatMessages.replyToId],
       references: [jobChatMessages.id],
+      relationName: "replies",
+    }),
+  }),
+);
+
+export const candidateChatMessagesRelations = relations(
+  candidateChatMessages,
+  ({ one }) => ({
+    candidate: one(candidates, {
+      fields: [candidateChatMessages.candidateId],
+      references: [candidates.id],
+    }),
+    sender: one(users, {
+      fields: [candidateChatMessages.senderId],
+      references: [users.id],
+    }),
+    replyTo: one(candidateChatMessages, {
+      fields: [candidateChatMessages.replyToId],
+      references: [candidateChatMessages.id],
       relationName: "replies",
     }),
   }),

@@ -32,7 +32,14 @@ export const jobStatus = pgEnum("job_status", [
   "archived",
 ]);
 
-export const stageType = pgEnum("stage_type", ["none", "offer", "rejection"]);
+export const stageType = pgEnum("stage_type", [
+  "none",
+  "source",
+  "assessment",
+  "interview",
+  "offer",
+  "rejection",
+]);
 
 export const offerMode = pgEnum("offer_mode", ["auto_draft", "auto_send"]);
 

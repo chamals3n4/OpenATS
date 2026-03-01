@@ -152,6 +152,7 @@ export const candidateAssessmentAnswers = pgTable(
       scale: 2,
     }).$type<number>(),
     createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [unique().on(t.attemptId, t.questionId)],
 );

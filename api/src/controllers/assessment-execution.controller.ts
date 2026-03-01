@@ -129,8 +129,11 @@ export const submitAssessmentAnswer = async (req: Request, res: Response) => {
 
     const result = await assessmentExecutionService.saveAnswer(attempt.id, parsed.data);
     res.status(200).json({ data: result });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to save answer" });
+  } catch (error: any) {
+    res.status(500).json({ 
+      error: "Failed to save answer",
+      message: error.message || "Unknown error"
+    });
   }
 };
 

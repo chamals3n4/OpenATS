@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { offerService } from "../services/offer.service";
 
-// ── Zod Schemas ───────────────────────────────────────────────────────────────
 
 const createOfferSchema = z.object({
   candidateId: z.number().int().positive(),
@@ -31,8 +30,6 @@ const updateOfferSchema = z.object({
 const statusUpdateSchema = z.object({
   status: z.enum(["draft", "sent", "pending", "accepted", "declined", "withdrawn"]),
 });
-
-// ── Offer Controllers ─────────────────────────────────────────────────────────
 
 export const getAllOffersByJob = async (req: Request, res: Response) => {
   try {

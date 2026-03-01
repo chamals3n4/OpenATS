@@ -2,8 +2,6 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { assessmentExecutionService } from "../services/assessment-execution.service";
 
-// ── Zod Schemas ───────────────────────────────────────────────────────────────
-
 const inviteCandidateSchema = z.object({
   candidateId: z.number().int().positive(),
   assessmentId: z.number().int().positive(),
@@ -16,7 +14,7 @@ const submitAnswerSchema = z.object({
   optionIds: z.array(z.number().int().positive()).optional(),
 });
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 async function getAttemptByTokenOrFail(res: Response, token: string) {
   const attempt = await assessmentExecutionService.getAttemptByToken(token);
@@ -34,11 +32,9 @@ async function getAttemptByTokenOrFail(res: Response, token: string) {
   return attempt;
 }
 
-// ── Assessment Execution Controllers ─────────────────────────────────────────
 
-/**
- * Recruiter endpoint to invite a candidate to an assessment.
- */
+
+
 export const inviteCandidateToAssessment = async (req: Request, res: Response) => {
   try {
     const parsed = inviteCandidateSchema.safeParse(req.body);
@@ -59,9 +55,23 @@ export const inviteCandidateToAssessment = async (req: Request, res: Response) =
   }
 };
 
-/**
- * Candidate endpoint to fetch the assessment details (Preview Page).
- */
+
+export const getCandidateAttempts = async (req: Request, res: Response) => {
+  try {
+    const candidateId = parseInt((req.params.candidateId ?? "").toString());
+    if (isNaN(candidateId)) {
+      res.status(400).json({ error: "Invalid candidate ID" });
+      return;
+    }
+
+    const result = await assessmentExecutionService.getAttemptsByCandidate(candidateId);
+    res.status(200).json({ data: result });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch candidate assessment attempts" });
+  }
+};
+
+
 export const getAssessmentForCandidate = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
@@ -75,9 +85,7 @@ export const getAssessmentForCandidate = async (req: Request, res: Response) => 
   }
 };
 
-/**
- * Candidate endpoint to start the assessment (Ticking the timer).
- */
+
 export const startAssessment = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
@@ -97,9 +105,7 @@ export const startAssessment = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Candidate endpoint to save an answer.
- */
+
 export const submitAssessmentAnswer = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
@@ -128,9 +134,7 @@ export const submitAssessmentAnswer = async (req: Request, res: Response) => {
   }
 };
 
-/**
- * Candidate endpoint to finish and grade the assessment.
- */
+
 export const completeAssessment = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;

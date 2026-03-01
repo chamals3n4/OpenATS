@@ -56,6 +56,33 @@ export const jobChatMessages = pgTable("job_chat_messages", {
 
   sentAt: timestamp("sent_at").notNull().defaultNow(),
 
+  isSystemMessage: boolean("is_system_message").notNull().default(false),
+  isDeleted: boolean("is_deleted").notNull().default(false),
+});
+
+export const candidateChatMessages = pgTable("candidate_chat_messages", {
+  id: serial("id").primaryKey(),
+
+  candidateId: integer("candidate_id")
+    .notNull()
+    .references(() => candidates.id, { onDelete: "cascade" }),
+
+  senderId: integer("sender_id")
+    .notNull()
+    .references(() => users.id, { onDelete: "cascade" }),
+
+  message: text("message"),
+
+  replyToId: integer("reply_to_id").references(
+    (): any => candidateChatMessages.id,
+    {
+      onDelete: "set null",
+    }
+  ),
+
+  sentAt: timestamp("sent_at").notNull().defaultNow(),
+
+  isSystemMessage: boolean("is_system_message").notNull().default(false),
   isDeleted: boolean("is_deleted").notNull().default(false),
 });
 
@@ -64,3 +91,6 @@ export type NewEmailMessage = typeof emailMessages.$inferInsert;
 
 export type JobChatMessage = typeof jobChatMessages.$inferSelect;
 export type NewJobChatMessage = typeof jobChatMessages.$inferInsert;
+
+export type CandidateChatMessage = typeof candidateChatMessages.$inferSelect;
+export type NewCandidateChatMessage = typeof candidateChatMessages.$inferInsert;

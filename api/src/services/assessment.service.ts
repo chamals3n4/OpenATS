@@ -5,6 +5,7 @@ import {
   assessmentQuestions,
   assessmentQuestionOptions,
 } from "../db/schema";
+import { cleanObject as clean } from "../utils/object.utils";
 
 export interface QuestionOptionInput {
   label: string;
@@ -18,7 +19,7 @@ export interface QuestionInput {
   questionType: "short_answer" | "multiple_choice";
   points?: number | undefined;
   position: number;
-  options?: QuestionOptionInput[] | undefined; // only for multiple_choice
+  options?: QuestionOptionInput[] | undefined;
 }
 
 export interface CreateAssessmentInput {
@@ -55,11 +56,7 @@ export interface UpdateQuestionInput {
   options?: QuestionOptionInput[] | undefined;
 }
 
-const clean = <T extends object>(obj: T): any => {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => v !== undefined)
-  );
-};
+
 
 export const assessmentService = {
   async getAll() {
@@ -124,7 +121,6 @@ export const assessmentService = {
             throw new Error("Failed to create assessment question");
           }
 
-          // 3. Insert options if it's a multiple_choice question
           if (options && options.length > 0) {
             await tx.insert(assessmentQuestionOptions).values(
               options.map((o) => ({

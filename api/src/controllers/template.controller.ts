@@ -3,9 +3,7 @@ import { z } from "zod";
 import { templateService } from "../services/template.service";
 import { templateEngineService } from "../services/template-engine.service";
 
-// ── Zod Schemas ───────────────────────────────────────────────────────────────
 
-// Each content block in the body
 const contentBlockSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("heading"), content: z.string() }),
   z.object({ type: z.literal("text"), content: z.string() }),
@@ -42,11 +40,9 @@ const updateTemplateSchema = z.object({
   bodyJson: z.array(contentBlockSchema).optional(),
 });
 
-// ── Controllers ───────────────────────────────────────────────────────────────
 
 export const getAllTemplates = async (req: Request, res: Response) => {
   try {
-    // Optional ?type= query filter e.g. /api/templates?type=offer
     const { type } = req.query;
 
     const result = type
@@ -93,7 +89,6 @@ export const createTemplate = async (req: Request, res: Response) => {
     const result = await templateService.create(parsed.data);
     res.status(201).json({ data: result });
   } catch (error: any) {
-    // FK violation — createdBy user doesn't exist
     if (error?.code === "23503") {
       res.status(400).json({ error: "User not found" });
       return;
@@ -165,7 +160,7 @@ export const previewTemplate = async (req: Request, res: Response) => {
       return;
     }
 
-    const context = req.body; // Context like candidate_name, etc.
+    const context = req.body;
     const result = templateEngineService.compileTemplate(
       template.subject,
       template.bodyJson,

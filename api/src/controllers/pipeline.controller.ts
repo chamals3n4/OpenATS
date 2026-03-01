@@ -2,16 +2,29 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { pipelineService } from "../services/pipeline.service";
 import { jobService } from "../services/job.service";
+import { cleanObject as clean } from "../utils/object.utils";
+
+const stageTypeEnum = z.enum([
+  "none",
+  "source",
+  "assessment",
+  "interview",
+  "offer",
+  "rejection",
+]);
 
 const createStageSchema = z.object({
   name: z.string().min(1, "Stage name is required").max(100),
   position: z.number().int().positive("Position must be a positive number"),
+  stageType: stageTypeEnum.optional().default("none"),
+  offerTemplateId: z.number().int().positive().optional().nullable(),
+  offerMode: z.enum(["auto_draft", "auto_send"]).optional().nullable(),
 });
 
 const updateStageSchema = z.object({
   name: z.string().min(1).max(100).optional(),
   position: z.number().int().positive().optional(),
-  stageType: z.enum(["none", "offer", "rejection"]).optional(),
+  stageType: stageTypeEnum.optional(),
   offerTemplateId: z.number().int().positive().optional().nullable(),
   offerMode: z.enum(["auto_draft", "auto_send"]).optional().nullable(),
   offerExpiryDays: z.number().int().positive().optional().nullable(),
@@ -68,13 +81,17 @@ export const createStage = async (req: Request, res: Response) => {
     const result = await pipelineService.create(jobId, parsed.data);
     res.status(201).json({ data: result });
   } catch (error: any) {
+    console.error("Create stage error:", error);
     if (error?.code === "23505") {
       res
         .status(409)
         .json({ error: "A stage already exists at that position" });
       return;
     }
-    res.status(500).json({ error: "Failed to create stage" });
+    res.status(500).json({ 
+      error: "Failed to create stage",
+      message: error.message || "Unknown server error" 
+    });
   }
 };
 
@@ -99,9 +116,7 @@ export const updateStage = async (req: Request, res: Response) => {
       return;
     }
 
-    const cleanedData = Object.fromEntries(
-      Object.entries(parsed.data).filter(([_, v]) => v !== undefined),
-    );
+    const cleanedData = clean(parsed.data);
     const result = await pipelineService.update(jobId, stageId, cleanedData);
     if (!result) {
       res.status(404).json({ error: "Stage not found" });

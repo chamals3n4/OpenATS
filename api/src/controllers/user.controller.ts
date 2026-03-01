@@ -2,8 +2,6 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { userService } from "../services/user.service";
 
-// ── Zod Schemas ───────────────────────────────────────────────────────────────
-
 const updateUserSchema = z.object({
   firstName: z.string().min(1).max(100).optional(),
   lastName: z.string().min(1).max(100).optional(),
@@ -16,7 +14,6 @@ const updateUserSchema = z.object({
   role: z.enum(["super_admin", "hiring_manager", "interviewer"]).optional(),
 });
 
-// ── Controllers ───────────────────────────────────────────────────────────────
 
 export const getAllUsers = async (req: Request, res: Response) => {
   try {

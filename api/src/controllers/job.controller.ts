@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { jobService } from "../services/job.service";
+import { cleanObject as clean } from "../utils/object.utils";
 
 const employmentTypeEnum = z.enum([
   "full_time",
@@ -189,9 +190,7 @@ export const updateJob = async (req: Request, res: Response) => {
       return;
     }
 
-    const filteredData = Object.fromEntries(
-      Object.entries(parsed.data).filter(([_, v]) => v !== undefined),
-    );
+    const filteredData = clean(parsed.data);
     const result = await jobService.update(id, filteredData);
     if (!result) {
       res.status(404).json({ error: "Job not found" });

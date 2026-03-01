@@ -3,8 +3,6 @@ import { z } from "zod";
 import { candidateService } from "../services/candidate.service";
 import { jobService } from "../services/job.service";
 
-// ── Zod Schemas ───────────────────────────────────────────────────────────────
-
 const customAnswerSchema = z.object({
   questionId: z.number().int().positive(),
   answerText: z.string().optional().nullable(),
@@ -21,12 +19,11 @@ const candidateApplySchema = z.object({
 });
 
 const moveStageSchema = z.object({
-  stageId: z.number().int().positive("Target stage ID is required"),
-  // TODO: remove default when auth is ready
+  newStageId: z.number().int().positive("Target stage ID is required"),
+
   movedBy: z.number().int().positive().default(1),
 });
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function getJobOrFail(res: Response, jobId: number) {
   const job = await jobService.getById(jobId);
@@ -37,7 +34,6 @@ async function getJobOrFail(res: Response, jobId: number) {
   return job;
 }
 
-// ── Candidate Controllers ────────────────────────────────────────────────────
 
 export const applyForJob = async (req: Request, res: Response) => {
   try {
@@ -125,7 +121,7 @@ export const moveCandidateStage = async (req: Request, res: Response) => {
 
     const result = await candidateService.moveStage(
       id,
-      parsed.data.stageId,
+      parsed.data.newStageId,
       parsed.data.movedBy,
     );
     res.status(200).json({ data: result });

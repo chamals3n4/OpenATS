@@ -3,13 +3,11 @@ import { z } from "zod";
 import { hiringTeamService } from "../services/hiring-team.service";
 import { jobService } from "../services/job.service";
 
-// ── Zod Schemas ───────────────────────────────────────────────────────────────
 
 const addMemberSchema = z.object({
   userId: z.number().int().positive("User ID is required"),
 });
 
-// ── Controllers ───────────────────────────────────────────────────────────────
 
 export const getHiringTeam = async (req: Request, res: Response) => {
   try {
@@ -55,7 +53,7 @@ export const addTeamMember = async (req: Request, res: Response) => {
       return;
     }
 
-    // Check if already a member before inserting
+    // check if already a member before inserting
     const alreadyMember = await hiringTeamService.isMember(
       jobId,
       parsed.data.userId,
@@ -68,7 +66,6 @@ export const addTeamMember = async (req: Request, res: Response) => {
     const result = await hiringTeamService.add(jobId, parsed.data.userId);
     res.status(201).json({ data: result });
   } catch (error: any) {
-    // FK violation — userId doesn't exist in users table
     if (error?.code === "23503") {
       res.status(400).json({ error: "User not found" });
       return;
@@ -92,7 +89,6 @@ export const removeTeamMember = async (req: Request, res: Response) => {
       return;
     }
 
-    // Prevent removing the job creator from the team
     if (job.createdBy === userId) {
       res.status(403).json({
         error: "Cannot remove the job creator from the hiring team",

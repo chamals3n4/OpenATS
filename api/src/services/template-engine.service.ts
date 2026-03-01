@@ -8,14 +8,11 @@ export interface TemplateContext {
   start_date?: string;
   expiry_date?: string;
   company_name?: string;
-  [key: string]: any; // Allow for extra custom variables if needed
+  [key: string]: any;
 }
 
 export const templateEngineService = {
-  /**
-   * Replaces variables in a string using the provided context.
-   * Format: {{variable_name}}
-   */
+
   replaceVariables(text: string, context: TemplateContext): string {
     if (!text) return "";
     
@@ -25,10 +22,6 @@ export const templateEngineService = {
     });
   },
 
-  /**
-   * Processes the JSON blocks of a template and replaces all variables.
-   * This is useful for previewing the template in the frontend.
-   */
   renderJSON(blocks: ContentBlock[], context: TemplateContext): ContentBlock[] {
     return blocks.map((block) => {
       switch (block.type) {
@@ -55,10 +48,6 @@ export const templateEngineService = {
     });
   },
 
-  /**
-   * Generates a simple HTML structure from processed blocks.
-   * Useful for internal previews or as a base for email sending later.
-   */
   renderHTML(blocks: ContentBlock[], context: TemplateContext): string {
     const processedBlocks = this.renderJSON(blocks, context);
     
@@ -67,7 +56,6 @@ export const templateEngineService = {
         case "heading":
           return `<h1 style="margin-bottom: 16px;">${block.content}</h1>`;
         case "text":
-          // Convert newlines to <br> for simple HTML view
           return `<p style="margin-bottom: 16px; line-height: 1.5;">${block.content.replace(/\n/g, "<br>")}</p>`;
         case "button":
           return `
@@ -88,9 +76,6 @@ export const templateEngineService = {
     }).join("");
   },
 
-  /**
-   * High-level method to "compile" a template completely.
-   */
   compileTemplate(subject: string, bodyJson: ContentBlock[], context: TemplateContext) {
     return {
       subject: this.replaceVariables(subject, context),

@@ -3,6 +3,7 @@ import { db } from "../db";
 import { offers, candidates, jobs, templates, users } from "../db/schema";
 import { variableService } from "./variable.service";
 import { templateEngineService } from "./template-engine.service";
+import { cleanObject as clean } from "../utils/object.utils";
 
 export interface CreateOfferInput {
   candidateId: number;
@@ -28,11 +29,7 @@ export interface UpdateOfferInput {
   renderedHtml?: string | null | undefined;
 }
 
-const clean = <T extends object>(obj: T): any => {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => v !== undefined)
-  );
-};
+
 
 export const offerService = {
   async getAllByJob(jobId: number) {
@@ -90,7 +87,6 @@ export const offerService = {
 
     const updatedData = { ...clean(input), updatedAt: new Date() };
 
-    // Re-render if template or key variables change
     if (input.templateId !== undefined || input.salary !== undefined) {
       const renderInput = { ...existing, ...input };
       updatedData.renderedHtml = await this._renderOfferHtml(renderInput);
@@ -113,9 +109,6 @@ export const offerService = {
     return deleted ?? null;
   },
 
-  /**
-   * Transition offer status (e.g., from draft to sent)
-   */
   async updateStatus(id: number, status: "draft" | "sent" | "pending" | "accepted" | "declined" | "withdrawn") {
     const updateData: any = { 
       status, 

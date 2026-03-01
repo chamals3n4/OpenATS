@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { templates } from "../db/schema";
 import type { ContentBlock } from "../db/schema";
+import { cleanObject as clean } from "../utils/object.utils";
 
 export interface CreateTemplateInput {
   name: string;
@@ -18,11 +19,7 @@ export interface UpdateTemplateInput {
   bodyJson?: ContentBlock[] | undefined;
 }
 
-const clean = <T extends object>(obj: T): any => {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => v !== undefined)
-  );
-};
+
 
 export const templateService = {
   async getAll() {

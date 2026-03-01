@@ -1,4 +1,4 @@
-import { eq, ilike, and, desc } from "drizzle-orm";
+import { eq, desc } from "drizzle-orm";
 import { db, NewJob } from "../db";
 import {
   jobs,
@@ -93,9 +93,22 @@ export const jobService = {
       .from(jobSkills)
       .where(eq(jobSkills.jobId, id));
 
+    const team = await db
+      .select()
+      .from(jobHiringTeam)
+      .where(eq(jobHiringTeam.jobId, id));
+
+    const stages = await db
+      .select()
+      .from(jobPipelineStages)
+      .where(eq(jobPipelineStages.jobId, id))
+      .orderBy(jobPipelineStages.position);
+
     return {
       ...job,
       skills: skills.map((s) => s.skill),
+      hiringTeam: team,
+      pipelineStages: stages,
     };
   },
 

@@ -3,7 +3,6 @@ import { z } from "zod";
 import { customQuestionService } from "../services/custom-question.service";
 import { jobService } from "../services/job.service";
 
-// ── Zod Schemas ───────────────────────────────────────────────────────────────
 
 const optionSchema = z.object({
   label: z.string().min(1, "Option label is required").max(500),
@@ -37,7 +36,6 @@ const attachAssessmentSchema = z.object({
   triggerStageId: z.number().int().positive("Trigger stage ID is required"),
 });
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function getJobOrFail(res: Response, jobId: number) {
   const job = await jobService.getById(jobId);
@@ -48,7 +46,6 @@ async function getJobOrFail(res: Response, jobId: number) {
   return job;
 }
 
-// ── Custom Question Controllers ───────────────────────────────────────────────
 
 export const getCustomQuestions = async (req: Request, res: Response) => {
   try {
@@ -156,8 +153,7 @@ export const deleteCustomQuestion = async (req: Request, res: Response) => {
   }
 };
 
-// ── Assessment Attachment Controllers ─────────────────────────────────────────
-
+// attach assessment as a custom question
 export const getAssessmentAttachment = async (req: Request, res: Response) => {
   try {
     const jobId = parseInt((req.params.jobId ?? "").toString());
@@ -170,7 +166,6 @@ export const getAssessmentAttachment = async (req: Request, res: Response) => {
     if (!job) return;
 
     const result = await customQuestionService.getAttachment(jobId);
-    // null is fine — means no assessment attached yet
     res.status(200).json({ data: result });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch assessment attachment" });
@@ -207,7 +202,7 @@ export const attachAssessment = async (req: Request, res: Response) => {
       res.status(400).json({ error: error.message });
       return;
     }
-    // FK violation — assessmentId doesn't exist
+    // assessmentId doesn't exist
     if (error?.code === "23503") {
       res.status(400).json({ error: "Assessment not found" });
       return;

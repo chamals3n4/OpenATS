@@ -6,6 +6,7 @@ import {
   jobAssessmentAttachments,
   jobPipelineStages,
 } from "../db/schema";
+import { cleanObject as clean } from "../utils/object.utils";
 
 export interface OptionInput {
   label: string;
@@ -34,11 +35,7 @@ export interface AttachAssessmentInput {
   triggerStageId: number;
 }
 
-const clean = <T extends object>(obj: T): any => {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => v !== undefined)
-  );
-};
+
 
 export const customQuestionService = {
   async getByJobId(jobId: number) {

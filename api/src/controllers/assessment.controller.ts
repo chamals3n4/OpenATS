@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { assessmentService } from "../services/assessment.service";
 
-// ── Zod Schemas ───────────────────────────────────────────────────────────────
 
 const optionSchema = z.object({
   label: z.string().min(1, "Option label is required").max(500),
@@ -54,7 +53,7 @@ const updateAssessmentSchema = z.object({
 const createQuestionSchema = questionSchema;
 const updateQuestionSchema = baseQuestionSchema.partial();
 
-// ── Helpers ───────────────────────────────────────────────────────────────────
+
 
 async function getAssessmentOrFail(res: Response, id: number) {
   const assessment = await assessmentService.getById(id);
@@ -65,7 +64,7 @@ async function getAssessmentOrFail(res: Response, id: number) {
   return assessment;
 }
 
-// ── Assessment Controllers ────────────────────────────────────────────────────
+
 
 export const getAllAssessments = async (req: Request, res: Response) => {
   try {
@@ -168,7 +167,7 @@ export const deleteAssessment = async (req: Request, res: Response) => {
   }
 };
 
-// ── Question Controllers ──────────────────────────────────────────────────────
+
 
 export const createQuestion = async (req: Request, res: Response) => {
   try {

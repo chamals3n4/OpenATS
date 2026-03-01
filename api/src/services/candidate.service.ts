@@ -13,11 +13,13 @@ import {
 import { assessmentExecutionService } from "./assessment-execution.service";
 import { offerService } from "./offer.service";
 import { jobService } from "./job.service";
+import { socketService } from "./socket.service";
+import { cleanObject as clean } from "../utils/object.utils";
 
 export interface CustomAnswerInput {
   questionId: number;
   answerText?: string | null | undefined;
-  optionIds?: number[] | undefined; // for multi-select/radio
+  optionIds?: number[] | undefined; 
 }
 
 export interface CandidateApplyInput {
@@ -34,18 +36,13 @@ export interface CandidateFilters {
   search?: string | undefined;
 }
 
-const clean = <T extends object>(obj: T): any => {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => v !== undefined)
-  );
-};
+
 
 export const candidateService = {
   async apply(jobId: number, input: CandidateApplyInput) {
     const { customAnswers, ...candidateData } = input;
 
     return await db.transaction(async (tx) => {
-      // 1. Get the first stage for this job
       const [firstStage] = await tx
         .select()
         .from(jobPipelineStages)
@@ -57,7 +54,6 @@ export const candidateService = {
         throw new Error("No pipeline stages defined for this job");
       }
 
-      // 2. Create Candidate
       const [candidate] = await tx
         .insert(candidates)
         .values(
@@ -73,16 +69,13 @@ export const candidateService = {
         throw new Error("Failed to create candidate");
       }
 
-      // 3. Record Stage History
       await tx.insert(candidateStageHistory).values({
         candidateId: candidate.id,
         stageId: firstStage.id,
       });
 
-      // 4. Save Custom Answers
       if (customAnswers && customAnswers.length > 0) {
         for (const answer of customAnswers) {
-          // Verify question belongs to job
           const [question] = await tx
             .select()
             .from(jobCustomQuestions)
@@ -95,7 +88,6 @@ export const candidateService = {
 
           if (!question) continue;
 
-          // If text answer
           if (answer.answerText !== undefined) {
             await tx.insert(candidateCustomAnswers).values({
               candidateId: candidate.id,
@@ -104,7 +96,6 @@ export const candidateService = {
             });
           }
 
-          // If option selections (radio/checkbox)
           if (answer.optionIds && answer.optionIds.length > 0) {
             await tx.insert(candidateCustomAnswerSelections).values(
               answer.optionIds.map((optionId) => ({
@@ -128,13 +119,7 @@ export const candidateService = {
       conditions.push(eq(candidates.currentStageId, filters.stageId));
     }
 
-    // if (filters.search) {
-    //   conditions.push(or(
-    //     ilike(candidates.firstName, `%${filters.search}%`),
-    //     ilike(candidates.lastName, `%${filters.search}%`),
-    //     ilike(candidates.email, `%${filters.search}%`)
-    //   ));
-    // }
+
 
     return db
       .select()
@@ -188,7 +173,6 @@ export const candidateService = {
 
       if (!candidate) throw new Error("Candidate not found");
 
-      // Verify stage belongs to the same job
       const [stage] = await tx
         .select()
         .from(jobPipelineStages)
@@ -216,9 +200,9 @@ export const candidateService = {
         movedBy,
       });
 
-      // ── Automation Triggers ────────────────────────────────────────────────
 
-      // 1. Assessment Trigger
+
+
       const [attachment] = await tx
         .select()
         .from(jobAssessmentAttachments)
@@ -230,14 +214,13 @@ export const candidateService = {
         );
 
       if (attachment) {
-        // Invite candidate to assessment (default 7 days expiry)
         await assessmentExecutionService.inviteCandidate(
           candidateId,
           attachment.assessmentId,
         );
       }
 
-      // 2. Offer Trigger
+
       if (stage.stageType === "offer") {
         const job = await jobService.getById(candidate.jobId);
         if (job) {
@@ -246,11 +229,11 @@ export const candidateService = {
 
           if (job.salaryType === "range" && job.salaryMin && job.salaryMax) {
             salary = (Number(job.salaryMin) + Number(job.salaryMax)) / 2;
-            blockAutoSend = true; // Blocked for ranges per requirements
+            blockAutoSend = true; 
           } else if (job.salaryType === "fixed" && job.salaryFixed) {
             salary = Number(job.salaryFixed);
           } else if (!job.salaryType) {
-            blockAutoSend = true; // Blocked if no salary info
+            blockAutoSend = true; 
           }
 
           const mode =
@@ -268,13 +251,11 @@ export const candidateService = {
             status: mode,
             createdBy: movedBy ?? 1,
           });
-
-          // If it's auto_send and not blocked, update status to sent
-          if (mode === "sent") {
-            // Note: In a real system, this would also trigger the email sender
-            // We'll assume the service handles the timestamping
-          }
         }
+      }
+
+
+      if (stage.stageType === "rejection") {
       }
 
       return updated;

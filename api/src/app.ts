@@ -12,7 +12,6 @@ app.get("/health", (req, res) => {
 
 app.use("/api", router);
 
-// Interactive Swagger Documentation
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 app.use(errorMiddleware);

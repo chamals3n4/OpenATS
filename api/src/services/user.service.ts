@@ -1,6 +1,7 @@
 import { eq } from "drizzle-orm";
 import { db } from "../db";
 import { users } from "../db/schema";
+import { cleanObject as clean } from "../utils/object.utils";
 
 export interface UpdateUserInput {
   firstName?: string | undefined;
@@ -9,11 +10,7 @@ export interface UpdateUserInput {
   role?: ("super_admin" | "hiring_manager" | "interviewer") | undefined;
 }
 
-const clean = <T extends object>(obj: T): any => {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([_, v]) => v !== undefined)
-  );
-};
+
 
 export const userService = {
   async getAll() {

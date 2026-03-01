@@ -1,5 +1,5 @@
-import { eq, and, sql } from "drizzle-orm";
-import { crypto } from "node:crypto";
+import { eq, and, sql, desc } from "drizzle-orm";
+import crypto from "node:crypto";
 import { db } from "../db";
 import {
   candidateAssessmentAttempts,
@@ -18,9 +18,7 @@ export interface SubmitAnswerInput {
 }
 
 export const assessmentExecutionService = {
-  /**
-   * Generates an invitation for a candidate to take an assessment.
-   */
+
   async inviteCandidate(candidateId: number, assessmentId: number, expiryDays: number = 7) {
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date();
@@ -40,10 +38,28 @@ export const assessmentExecutionService = {
     return attempt;
   },
 
-  /**
-   * Public: Fetches the attempt details using the secure token.
-   * Important: Does NOT return correct answer flags!
-   */
+
+  async getAttemptsByCandidate(candidateId: number) {
+    return db
+      .select({
+        id: candidateAssessmentAttempts.id,
+        assessmentId: candidateAssessmentAttempts.assessmentId,
+        token: candidateAssessmentAttempts.token,
+        status: candidateAssessmentAttempts.status,
+        expiresAt: candidateAssessmentAttempts.expiresAt,
+        startedAt: candidateAssessmentAttempts.startedAt,
+        completedAt: candidateAssessmentAttempts.completedAt,
+        scorePercentage: candidateAssessmentAttempts.scorePercentage,
+        passed: candidateAssessmentAttempts.passed,
+        assessmentTitle: assessments.title,
+      })
+      .from(candidateAssessmentAttempts)
+      .innerJoin(assessments, eq(candidateAssessmentAttempts.assessmentId, assessments.id))
+      .where(eq(candidateAssessmentAttempts.candidateId, candidateId))
+      .orderBy(desc(candidateAssessmentAttempts.createdAt));
+  },
+
+
   async getAttemptByToken(token: string) {
     const [attempt] = await db
       .select({
@@ -72,7 +88,7 @@ export const assessmentExecutionService = {
 
     if (!attempt) return null;
 
-    // Fetch questions (without isCorrect flags)
+    // fetch questions (without isCorrect flags)
     const questions = await db
       .select({
         id: assessmentQuestions.id,
@@ -105,9 +121,7 @@ export const assessmentExecutionService = {
     return { ...attempt, assessment: { ...attempt.assessment, questions: questionsWithOptions } };
   },
 
-  /**
-   * Candidate starts the attempt.
-   */
+
   async startAttempt(id: number) {
     const [attempt] = await db
       .update(candidateAssessmentAttempts)
@@ -122,12 +136,11 @@ export const assessmentExecutionService = {
     return attempt;
   },
 
-  /**
-   * Saves a single answer submission.
-   */
+
   async saveAnswer(attemptId: number, input: SubmitAnswerInput) {
+
     return await db.transaction(async (tx) => {
-      // 1. Save or Update answer
+      // 1. save or update answer
       const [answer] = await tx
         .insert(candidateAssessmentAnswers)
         .values({
@@ -137,14 +150,19 @@ export const assessmentExecutionService = {
         })
         .onConflictDoUpdate({
           target: [candidateAssessmentAnswers.attemptId, candidateAssessmentAnswers.questionId],
-          set: { answerText: input.answerText ?? null },
+          set: { answerText: input.answerText ?? null, updatedAt: new Date() },
         })
         .returning();
 
-      // 2. Clear old selections and save new ones (for multiple choice)
-      await tx.delete(candidateAssessmentAnswerSelections).where(eq(candidateAssessmentAnswerSelections.answerId, answer.id));
+      if (!answer) throw new Error("Database failed to return the saved answer record.");
+
+      // clear old selections and save new ones (for multiple choice)
+      await tx
+        .delete(candidateAssessmentAnswerSelections)
+        .where(eq(candidateAssessmentAnswerSelections.answerId, answer.id));
 
       if (input.optionIds && input.optionIds.length > 0) {
+
         await tx.insert(candidateAssessmentAnswerSelections).values(
           input.optionIds.map((optionId) => ({
             answerId: answer.id,
@@ -153,13 +171,12 @@ export const assessmentExecutionService = {
         );
       }
 
+
       return answer;
     });
   },
 
-  /**
-   * Finalizes the assessment and calculates the score.
-   */
+
   async completeAttempt(id: number) {
     return await db.transaction(async (tx) => {
       const [attempt] = await tx
@@ -172,6 +189,10 @@ export const assessmentExecutionService = {
       }
 
       const [assessment] = await tx.select().from(assessments).where(eq(assessments.id, attempt.assessmentId));
+
+      if (!assessment) {
+        throw new Error("Assessment not found");
+      }
 
       const questions = await tx.select().from(assessmentQuestions).where(eq(assessmentQuestions.assessmentId, attempt.assessmentId));
 
@@ -204,24 +225,21 @@ export const assessmentExecutionService = {
           const correctOptionIds = correctOptions.map((o) => o.id).sort();
           const candidateOptionIds = candidateSelections.map((s) => s.optionId).sort();
 
-          // Simple "all or nothing" scoring for now
           const isCorrect = JSON.stringify(correctOptionIds) === JSON.stringify(candidateOptionIds);
           if (isCorrect) pointsEarned = question.points;
         } else {
-          // Short answer: Manual grading usually needed, but for now we mark as 0 or 
-          // optionally implement basic string matching logic if needed later.
           pointsEarned = 0;
         }
 
         await tx
           .update(candidateAssessmentAnswers)
-          .set({ pointsEarned })
+          .set({ pointsEarned, updatedAt: new Date() })
           .where(eq(candidateAssessmentAnswers.id, candidateAnswer.id));
 
         totalScoreRaw += pointsEarned;
       }
 
-      const scorePercentage = (totalScoreRaw / totalPossiblePoints) * 100;
+      const scorePercentage = totalPossiblePoints > 0 ? (totalScoreRaw / totalPossiblePoints) * 100 : 0;
       const passed = scorePercentage >= (assessment.passScore ?? 0);
 
       const [completed] = await tx

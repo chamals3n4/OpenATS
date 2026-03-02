@@ -4,6 +4,7 @@ import { offers, candidates, jobs, templates, users } from "../db/schema";
 import { variableService } from "./variable.service";
 import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
+import { mailService } from "./mail.service";
 
 export interface CreateOfferInput {
   candidateId: number;
@@ -12,8 +13,8 @@ export interface CreateOfferInput {
   salary?: number | null | undefined;
   currency?: string | null | undefined;
   payFrequency?: "hourly" | "daily" | "weekly" | "monthly" | "yearly" | null | undefined;
-  startDate?: string | null | undefined; // ISO Date string
-  expiryDate?: string | null | undefined; // ISO Date string
+  startDate?: string | null | undefined; 
+  expiryDate?: string | null | undefined;
   status?: "draft" | "sent" | "pending" | "accepted" | "declined" | "withdrawn" | undefined;
   createdBy: number;
 }
@@ -110,6 +111,9 @@ export const offerService = {
   },
 
   async updateStatus(id: number, status: "draft" | "sent" | "pending" | "accepted" | "declined" | "withdrawn") {
+    const [offer] = await db.select().from(offers).where(eq(offers.id, id));
+    if (!offer) return null;
+
     const updateData: any = { 
       status, 
       updatedAt: new Date() 
@@ -124,6 +128,24 @@ export const offerService = {
       .set(updateData)
       .where(eq(offers.id, id))
       .returning();
+
+    if (!updated) return null;
+
+    if (status === "sent" && updated.renderedHtml) {
+      const [candidate] = await db.select().from(candidates).where(eq(candidates.id, updated.candidateId));
+      if (candidate) {
+        let subject = "Offer Letter";
+        if (updated.templateId) {
+          const [template] = await db.select().from(templates).where(eq(templates.id, updated.templateId));
+          if (template) {
+            const context = await variableService.getContextForOffer(candidate.id, updated);
+            subject = templateEngineService.replaceVariables(template.subject, context);
+          }
+        }
+
+        await mailService.sendOfferEmail(candidate.email, subject, updated.renderedHtml);
+      }
+    }
     
     return updated ?? null;
   },

@@ -11,6 +11,8 @@ import {
   candidates,
 } from "../db/schema";
 
+import { mailService } from "./mail.service";
+
 export interface SubmitAnswerInput {
   questionId: number;
   answerText?: string | null | undefined;
@@ -34,6 +36,37 @@ export const assessmentExecutionService = {
         status: "pending",
       })
       .returning();
+
+    if (attempt) {
+      const [candidate] = await db.select().from(candidates).where(eq(candidates.id, candidateId));
+      const [assessment] = await db.select().from(assessments).where(eq(assessments.id, assessmentId));
+      
+      if (candidate && assessment) {
+        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+        const inviteUrl = `${frontendUrl}/assessments/${token}`;
+        
+        const subject = `Assessment Invitation: ${assessment.title}`;
+        const html = `
+          <div style="font-family: sans-serif; line-height: 1.5; color: #333;">
+            <h2>Hello ${candidate.firstName},</h2>
+            <p>You have been invited to complete an assessment for your application.</p>
+            <p><strong>Assessment:</strong> ${assessment.title}</p>
+            <p>Please click the button below to start the assessment. This link will expire on ${expiresAt.toLocaleDateString()}.</p>
+            <div style="margin: 24px 0;">
+              <a href="${inviteUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
+                Start Assessment
+              </a>
+            </div>
+            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
+            <p><a href="${inviteUrl}">${inviteUrl}</a></p>
+            <hr style="border: 0; border-top: 1px solid #eee; margin: 24px 0;">
+            <p style="font-size: 14px; color: #666;">This is an automated message from OpenATS.</p>
+          </div>
+        `;
+
+        await mailService.sendAssessmentInviteEmail(candidate.email, subject, html);
+      }
+    }
 
     return attempt;
   },

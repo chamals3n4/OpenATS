@@ -50,8 +50,12 @@ export const inviteCandidateToAssessment = async (req: Request, res: Response) =
     const result = await assessmentExecutionService.inviteCandidate(candidateId, assessmentId, expiryDays);
 
     res.status(201).json({ data: result });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to generate assessment invite" });
+  } catch (error: any) {
+    console.error("Invite Error:", error);
+    res.status(500).json({ 
+      error: "Failed to generate assessment invite",
+      message: error.message || "Unknown error" 
+    });
   }
 };
 

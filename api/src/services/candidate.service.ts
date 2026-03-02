@@ -10,11 +10,15 @@ import {
   jobAssessmentAttachments,
   jobs,
   offers,
+  templates,
 } from "../db/schema";
 import { assessmentExecutionService } from "./assessment-execution.service";
 import { offerService } from "./offer.service";
 import { jobService } from "./job.service";
 import { socketService } from "./socket.service";
+import { mailService } from "./mail.service";
+import { variableService } from "./variable.service";
+import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
 
 export interface CustomAnswerInput {
@@ -263,6 +267,23 @@ export const candidateService = {
 
 
       if (stage.stageType === "rejection") {
+        if (stage.rejectionTemplateId) {
+          const [template] = await tx
+            .select()
+            .from(templates)
+            .where(eq(templates.id, stage.rejectionTemplateId));
+
+          if (template) {
+            const context = await variableService.getContextForCandidate(candidate.id);
+            const { subject, html } = templateEngineService.compileTemplate(
+              template.subject,
+              template.bodyJson,
+              context
+            );
+
+            await mailService.sendRejectionEmail(candidate.email, subject, html);
+          }
+        }
       }
 
       return updated;

@@ -167,7 +167,10 @@ export default function ManageCandidatesPage() {
         <h1 className="text-[28px] font-medium text-slate-900 leading-none">
           Manage Candidates
         </h1>
-        <Button className="bg-[#355872] hover:bg-[#355872]/90 text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors">
+        <Button
+          className="text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
+          style={{ backgroundColor: "var(--theme-color)" }}
+        >
           <HugeiconsIcon
             icon={PlusSignIcon}
             className="size-4"
@@ -185,7 +188,7 @@ export default function ManageCandidatesPage() {
           />
           <Input
             placeholder="Search Candidate"
-            className="pl-11 h-10! bg-white border-slate-200 shadow-none rounded-lg text-sm placeholder:text-slate-300 focus-visible:border-slate-300 transition-colors"
+            className="pl-11 h-10! bg-white border-slate-200 shadow-none rounded-lg text-sm placeholder:text-slate-300 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
         <Select>
@@ -215,7 +218,7 @@ export default function ManageCandidatesPage() {
       </div>
 
       <div className="px-8 py-6">
-        <div className="border border-slate-200 rounded-xl bg-white shadow-none overflow-hidden text-[#355872]">
+        <div className="border border-slate-200 rounded-xl bg-white shadow-none overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-200 bg-white hover:bg-transparent">
@@ -254,7 +257,7 @@ export default function ManageCandidatesPage() {
                     className="border-b border-slate-200 last:border-0 font-medium cursor-pointer hover:bg-slate-50 transition-colors"
                     onClick={() => handleRowClick(candidate)}
                   >
-                    <TableCell className="h-13 px-8 py-0 font-medium text-[#355872]">
+                    <TableCell className="h-13 px-8 py-0 font-medium text-slate-700">
                       {candidate.name}
                     </TableCell>
                     <TableCell className="h-13 px-8 py-0">
@@ -264,7 +267,7 @@ export default function ManageCandidatesPage() {
                         {candidate.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="h-13 px-8 py-0 text-[#355872]/80 font-normal">
+                    <TableCell className="h-13 px-8 py-0 text-slate-500 font-normal">
                       {candidate.role}
                     </TableCell>
                     <TableCell className="h-13 px-8 py-0 text-slate-400 font-normal">
@@ -291,11 +294,14 @@ export default function ManageCandidatesPage() {
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                className="h-10 px-6 rounded-lg bg-white border-slate-200 text-[#355872] font-semibold text-sm hover:bg-slate-50 hover:text-slate-900 shadow-none gap-2 transition-all active:scale-95"
+                className="h-10 px-6 rounded-lg bg-white border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 hover:text-slate-900 shadow-none gap-2 transition-all active:scale-95"
               >
                 Previous
               </Button>
-              <Button className="h-10 px-8 rounded-lg bg-[#355872] hover:bg-[#355872]/90 text-white font-semibold text-sm shadow-none transition-all active:scale-[0.98] border-none">
+              <Button
+                className="h-10 px-8 rounded-lg text-white font-semibold text-sm shadow-none transition-all active:scale-[0.98] border-none"
+                style={{ backgroundColor: "var(--theme-color)" }}
+              >
                 Next
               </Button>
             </div>
@@ -348,7 +354,7 @@ export default function ManageCandidatesPage() {
                         ].map(([icon, value], i) => (
                           <div
                             key={i}
-                            className="flex items-center gap-2 text-slate-500 text-[12px] lg:text-[13px] font-medium hover:text-[#355872] cursor-pointer whitespace-nowrap"
+                            className="flex items-center gap-2 text-slate-500 text-[12px] lg:text-[13px] font-medium hover:text-[var(--theme-color)] cursor-pointer whitespace-nowrap"
                           >
                             <HugeiconsIcon
                               icon={icon as any}
@@ -371,7 +377,7 @@ export default function ManageCandidatesPage() {
               </div>
               <div className="w-[500px] border-l border-slate-100 flex flex-col bg-white overflow-hidden">
                 <div className="h-20 shrink-0 flex items-center justify-start px-6">
-                  <Button className="bg-[#355872] hover:bg-[#355872]/90 text-white font-medium text-[12px] gap-2 px-5 h-10 rounded-[10px] shadow-none border-none">
+                  <Button className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium text-[12px] gap-2 px-5 h-10 rounded-[10px] shadow-none border-none">
                     <span>View CV in New Tab</span>
                     <HugeiconsIcon
                       icon={ArrowUpRight01Icon}
@@ -390,7 +396,7 @@ export default function ManageCandidatesPage() {
                         <TabsTrigger
                           key={tab}
                           value={tab}
-                          className="data-[state=active]:bg-white data-[state=active]:border-[#355872] data-[state=active]:text-[#355872] border border-slate-200 rounded-[10px] px-5 py-2 text-[14px] font-medium text-slate-600 shadow-none h-[40px] bg-white cursor-pointer"
+                          className="data-[state=active]:bg-white data-[state=active]:border-[var(--theme-color)] data-[state=active]:text-[var(--theme-color)] border border-slate-200 rounded-[10px] px-5 py-2 text-[14px] font-medium text-slate-600 shadow-none h-[40px] bg-white cursor-pointer"
                         >
                           {tab === "notes"
                             ? "Internal Notes"
@@ -430,11 +436,11 @@ export default function ManageCandidatesPage() {
                       <div className="relative">
                         <Input
                           placeholder="Write your note here..."
-                          className="h-12 pr-14 bg-white border-slate-200 rounded-xl text-sm focus-visible:ring-1 focus-visible:ring-[#355872] shadow-none placeholder:text-slate-400"
+                          className="h-12 pr-14 bg-white border-slate-200 rounded-xl text-sm focus-visible:ring-1 focus-visible:ring-[var(--theme-color)] shadow-none placeholder:text-slate-400"
                         />
                         <Button
                           size="icon"
-                          className="absolute right-1 top-1 size-10 rounded-lg bg-[#355872] hover:bg-[#355872]/90 shadow-none border-none"
+                          className="absolute right-1 top-1 size-10 rounded-lg bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] shadow-none border-none"
                         >
                           <HugeiconsIcon
                             icon={SentIcon}
@@ -489,7 +495,7 @@ export default function ManageCandidatesPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmArchive}
-              className="h-9 px-5 rounded-lg bg-[#355872] hover:bg-[#355872]/90 text-white text-[13px] font-medium shadow-none border-none"
+              className="h-9 px-5 rounded-lg bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white text-[13px] font-medium shadow-none border-none"
             >
               Archive
             </AlertDialogAction>

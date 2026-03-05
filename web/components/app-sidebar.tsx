@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import {
   Home01Icon,
   Briefcase01Icon,
@@ -56,6 +57,10 @@ const navMainData = [
         url: "/settings/general",
       },
       {
+        title: "Theme",
+        url: "/settings/theme",
+      },
+      {
         title: "Page Setup",
         url: "/settings/setup",
       },
@@ -97,9 +102,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     >
       <SidebarHeader className="h-16 justify-center px-6">
         <div className="flex items-center justify-start w-full">
-          <span className="text-3xl font-bold tracking-tighter text-[#355872]">
-            OpenATS
-          </span>
+          <Image
+            src="/logo.png"
+            alt="OpenATS"
+            width={200}
+            height={56}
+            priority
+            className="object-contain"
+          />
         </div>
       </SidebarHeader>
       <SidebarContent>

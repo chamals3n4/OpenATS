@@ -341,7 +341,7 @@ export default function ManageOffersPage() {
             placeholder="Search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-11 h-10! bg-white border-slate-200 shadow-none rounded-lg text-sm placeholder:text-slate-300 focus-visible:border-slate-300 focus-visible:ring-0"
+            className="pl-11 h-10! bg-white border-slate-200 shadow-none rounded-lg text-sm placeholder:text-slate-300 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
         <Select
@@ -391,7 +391,7 @@ export default function ManageOffersPage() {
       </div>
 
       <div className="px-8 py-6">
-        <div className="border border-slate-200 rounded-xl bg-white shadow-none overflow-hidden text-[#355872]">
+        <div className="border border-slate-200 rounded-xl bg-white shadow-none overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-200 bg-white hover:bg-transparent">
@@ -433,10 +433,10 @@ export default function ManageOffersPage() {
                     className="border-b border-slate-200 last:border-0 font-medium hover:bg-slate-50/50 cursor-pointer"
                     onClick={() => openOffer(o)}
                   >
-                    <TableCell className="h-14 px-8 py-0 text-[#355872] font-medium">
+                    <TableCell className="h-14 px-8 py-0 text-slate-700 font-medium">
                       {o.candidateName}
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-[#355872] font-normal">
+                    <TableCell className="h-14 px-8 py-0 text-slate-600 font-normal">
                       {o.jobTitle}
                     </TableCell>
                     <TableCell className="h-14 px-8 py-0">
@@ -446,13 +446,13 @@ export default function ManageOffersPage() {
                         {o.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-[#355872] font-normal">
+                    <TableCell className="h-14 px-8 py-0 text-slate-600 font-normal">
                       {o.salary ? `${o.currency} ${o.salary}` : "—"}
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-[#355872] font-normal">
+                    <TableCell className="h-14 px-8 py-0 text-slate-600 font-normal">
                       {o.createdAt}
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-[#355872] font-normal">
+                    <TableCell className="h-14 px-8 py-0 text-slate-600 font-normal">
                       {o.expiredDate}
                     </TableCell>
                     <TableCell
@@ -474,12 +474,15 @@ export default function ManageOffersPage() {
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                className="h-10 px-6 rounded-lg bg-white border-slate-200 text-[#355872] font-semibold text-sm hover:bg-slate-50 shadow-none gap-2"
+                className="h-10 px-6 rounded-lg bg-white border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 shadow-none gap-2"
               >
                 <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />{" "}
                 Previous
               </Button>
-              <Button className="h-10 px-8 rounded-lg bg-[#355872] hover:bg-[#355872]/90 text-white font-semibold text-sm shadow-none border-none gap-2">
+              <Button
+                className="h-10 px-8 rounded-lg text-white font-semibold text-sm shadow-none border-none gap-2"
+                style={{ backgroundColor: "var(--theme-color)" }}
+              >
                 Next{" "}
                 <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
               </Button>
@@ -533,7 +536,7 @@ export default function ManageOffersPage() {
                         ].map(([icon, value], i) => (
                           <div
                             key={i}
-                            className="flex items-center gap-2 text-slate-500 text-[12px] lg:text-[13px] font-medium hover:text-[#355872] cursor-pointer whitespace-nowrap"
+                            className="flex items-center gap-2 text-slate-500 text-[12px] lg:text-[13px] font-medium hover:text-[var(--theme-color)] cursor-pointer whitespace-nowrap"
                           >
                             <HugeiconsIcon
                               icon={icon as any}
@@ -559,7 +562,10 @@ export default function ManageOffersPage() {
 
               <div className="w-[500px] border-l border-slate-100 flex flex-col bg-white overflow-hidden">
                 <div className="h-20 shrink-0 flex items-center justify-start px-6">
-                  <Button className="bg-[#355872] hover:bg-[#355872]/90 text-white font-medium text-[12px] gap-2 px-5 h-10 rounded-[10px] shadow-none border-none">
+                  <Button
+                    className="text-white font-medium text-[12px] gap-2 px-5 h-10 rounded-[10px] shadow-none border-none"
+                    style={{ backgroundColor: "var(--theme-color)" }}
+                  >
                     <span>View CV in New Tab</span>
                     <HugeiconsIcon
                       icon={ArrowUpRight01Icon}
@@ -579,7 +585,7 @@ export default function ManageOffersPage() {
                         <TabsTrigger
                           key={tab}
                           value={tab}
-                          className="data-[state=active]:bg-white data-[state=active]:border-[#355872] data-[state=active]:text-[#355872] border border-slate-200 rounded-[10px] px-4 py-2 text-[13px] font-medium text-slate-600 shadow-none h-[38px] bg-white cursor-pointer capitalize"
+                          className="data-[state=active]:bg-white data-[state=active]:border-[var(--theme-color)] data-[state=active]:text-[var(--theme-color)] border border-slate-200 rounded-[10px] px-4 py-2 text-[13px] font-medium text-slate-600 shadow-none h-[38px] bg-white cursor-pointer capitalize"
                         >
                           {tab === "scores"
                             ? "Assessments"
@@ -643,11 +649,12 @@ export default function ManageOffersPage() {
                       <div className="relative">
                         <Input
                           placeholder="Write your note here..."
-                          className="h-12 pr-14 bg-white border-slate-200 rounded-xl text-sm focus-visible:ring-1 focus-visible:ring-[#355872] shadow-none placeholder:text-slate-400"
+                          className="h-12 pr-14 bg-white border-slate-200 rounded-xl text-sm focus-visible:ring-1 focus-visible:ring-[var(--theme-color)] shadow-none placeholder:text-slate-400"
                         />
                         <Button
                           size="icon"
-                          className="absolute right-1 top-1 size-10 rounded-lg bg-[#355872] hover:bg-[#355872]/90 shadow-none border-none"
+                          className="absolute right-1 top-1 size-10 rounded-lg shadow-none border-none"
+                          style={{ backgroundColor: "var(--theme-color)" }}
                         >
                           <HugeiconsIcon
                             icon={SentIcon}
@@ -712,7 +719,7 @@ export default function ManageOffersPage() {
                               type="number"
                               value={offerSalary}
                               onChange={(e) => setOfferSalary(e.target.value)}
-                              className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[#355872]/50 text-sm"
+                              className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm"
                             />
                           </div>
                           <div>
@@ -722,7 +729,7 @@ export default function ManageOffersPage() {
                             <Input
                               value={offerCurrency}
                               onChange={(e) => setOfferCurrency(e.target.value)}
-                              className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[#355872]/50 text-sm"
+                              className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm"
                             />
                           </div>
                         </div>
@@ -743,7 +750,7 @@ export default function ManageOffersPage() {
                               onChange={(e) =>
                                 setOfferStartDate(e.target.value)
                               }
-                              className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[#355872]/50 text-sm"
+                              className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm"
                             />
                           </div>
                           <div>
@@ -756,7 +763,7 @@ export default function ManageOffersPage() {
                               onChange={(e) =>
                                 setOfferExpiryDate(e.target.value)
                               }
-                              className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[#355872]/50 text-sm"
+                              className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm"
                             />
                           </div>
                         </div>
@@ -775,7 +782,8 @@ export default function ManageOffersPage() {
                               offerStatus === "Declined" ||
                               offerStatus === "Withdrawn"
                             }
-                            className="w-full h-11 rounded-lg bg-[#355872] hover:bg-[#355872]/90 text-white font-semibold text-[14px] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="w-full h-11 rounded-lg text-white font-semibold text-[14px] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            style={{ backgroundColor: "var(--theme-color)" }}
                           >
                             <HugeiconsIcon icon={SentIcon} className="size-4" />
                             {offerStatus === "Sent"
@@ -822,7 +830,8 @@ export default function ManageOffersPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmArchive}
-              className="h-9 px-5 rounded-lg bg-[#355872] hover:bg-[#355872]/90 text-white text-[13px] font-medium shadow-none border-none"
+              className="h-9 px-5 rounded-lg text-white text-[13px] font-medium shadow-none border-none"
+              style={{ backgroundColor: "var(--theme-color)" }}
             >
               Archive
             </AlertDialogAction>

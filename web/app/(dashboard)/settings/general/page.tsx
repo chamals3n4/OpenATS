@@ -120,7 +120,8 @@ export default function SettingsGeneralPage() {
               />
               <Button
                 onClick={() => fileRef.current?.click()}
-                className="h-9 px-5 rounded-lg bg-[#355872] hover:bg-[#355872]/90 text-white shadow-none border-none text-[13px] font-medium"
+                className="h-9 px-5 rounded-lg text-white shadow-none border-none text-[13px] font-medium"
+                style={{ backgroundColor: "var(--theme-color)" }}
               >
                 Upload Logo
               </Button>
@@ -192,7 +193,8 @@ export default function SettingsGeneralPage() {
           </div>
 
           <Button
-            className="w-full h-11 bg-[#355872] hover:bg-[#355872]/90 text-white rounded-lg shadow-none border-none text-[14px] font-semibold transition-all active:scale-[0.99]"
+            className="w-full h-11 text-white rounded-lg shadow-none border-none text-[14px] font-semibold transition-all active:scale-[0.99]"
+            style={{ backgroundColor: "var(--theme-color)" }}
             onClick={() => alert("Changes saved (mock)!")}
           >
             Save Changes
@@ -214,7 +216,8 @@ export default function SettingsGeneralPage() {
             />
             <Button
               onClick={addDept}
-              className="h-10 px-5 bg-[#355872] hover:bg-[#355872]/90 text-white rounded-lg shadow-none border-none text-[13px] font-semibold whitespace-nowrap"
+              className="h-10 px-5 text-white rounded-lg shadow-none border-none text-[13px] font-semibold whitespace-nowrap"
+              style={{ backgroundColor: "var(--theme-color)" }}
             >
               Add Department
             </Button>
@@ -248,7 +251,7 @@ export default function SettingsGeneralPage() {
                       setEditingIdx(idx);
                       setEditingVal(dept);
                     }}
-                    className="p-2 rounded-lg text-slate-400 hover:text-[#355872] hover:bg-[#355872]/5 transition-colors"
+                    className="p-2 rounded-lg text-slate-400 hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 transition-colors"
                     title="Edit"
                   >
                     <HugeiconsIcon

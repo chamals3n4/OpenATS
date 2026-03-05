@@ -197,7 +197,7 @@ export default function OfferDetailPage() {
           <p className="text-slate-500 text-[15px]">Offer not found.</p>
           <Link
             href="offers"
-            className="text-[#355872] font-medium hover:underline text-sm"
+            className="text-[var(--theme-color)] font-medium hover:underline text-sm"
           >
             ← Back to Manage Offers
           </Link>
@@ -234,7 +234,7 @@ export default function OfferDetailPage() {
         <div className="w-[340px] shrink-0 border-r border-slate-200 flex flex-col overflow-y-auto bg-white">
           <div className="px-6 pt-6 pb-4 border-b border-slate-100">
             <div className="flex items-start gap-3 mb-3">
-              <div className="size-10 rounded-full bg-[#355872]/10 flex items-center justify-center text-[14px] font-bold text-[#355872] shrink-0">
+              <div className="size-10 rounded-full bg-[var(--theme-color)]/10 flex items-center justify-center text-[14px] font-bold text-[var(--theme-color)] shrink-0">
                 {offer.candidateName
                   .split(" ")
                   .map((w) => w[0])
@@ -349,7 +349,7 @@ export default function OfferDetailPage() {
                           placeholder=""
                           value={salary}
                           onChange={(e) => setSalary(e.target.value)}
-                          className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[#355872]/50 text-sm"
+                          className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm"
                         />
                       </div>
                       <div>
@@ -360,7 +360,7 @@ export default function OfferDetailPage() {
                           placeholder=""
                           value={currency}
                           onChange={(e) => setCurrency(e.target.value)}
-                          className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[#355872]/50 text-sm"
+                          className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm"
                         />
                       </div>
                     </div>
@@ -379,7 +379,7 @@ export default function OfferDetailPage() {
                           type="date"
                           value={startDate}
                           onChange={(e) => setStartDate(e.target.value)}
-                          className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[#355872]/50 text-sm"
+                          className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm"
                         />
                       </div>
                       <div>
@@ -390,7 +390,7 @@ export default function OfferDetailPage() {
                           type="date"
                           value={expiryDate}
                           onChange={(e) => setExpiryDate(e.target.value)}
-                          className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[#355872]/50 text-sm"
+                          className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm"
                         />
                       </div>
                     </div>
@@ -408,7 +408,7 @@ export default function OfferDetailPage() {
                           offerStatus === "Accepted" ||
                           offerStatus === "Declined"
                         }
-                        className="w-full h-11 rounded-lg bg-[#355872] hover:bg-[#355872]/90 text-white font-semibold text-[14px] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full h-11 rounded-lg bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-semibold text-[14px] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <HugeiconsIcon icon={SentIcon} className="size-4" />
                         {offerStatus === "Sent"

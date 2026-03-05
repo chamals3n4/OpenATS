@@ -206,7 +206,7 @@ export default function CreateAssessmentPage() {
             <Switch
               checked={isActive}
               onCheckedChange={setIsActive}
-              className="data-[state=checked]:bg-[#355872]"
+              className="data-[state=checked]:bg-[var(--theme-color)]"
             />
             <span className="text-sm text-slate-600 font-medium whitespace-nowrap">
               Make this Active
@@ -216,7 +216,7 @@ export default function CreateAssessmentPage() {
 
         <div className="flex items-center gap-3 shrink-0">
           <Button
-            className="bg-[#355872] hover:bg-[#355872]/90 text-white h-10 px-6 rounded-lg shadow-none border-none font-medium text-sm transition-all active:scale-[0.98]"
+            className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white h-10 px-6 rounded-lg shadow-none border-none font-medium text-sm transition-all active:scale-[0.98]"
             onClick={() => {
               console.log({
                 assessmentTitle,
@@ -319,7 +319,7 @@ export default function CreateAssessmentPage() {
           <div className="p-4">
             <Button
               onClick={addQuestion}
-              className="w-full bg-[#355872] hover:bg-[#355872]/90 text-white h-10 rounded-lg shadow-none border-none font-medium text-sm gap-2 transition-all active:scale-[0.98]"
+              className="w-full bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white h-10 rounded-lg shadow-none border-none font-medium text-sm gap-2 transition-all active:scale-[0.98]"
             >
               <HugeiconsIcon
                 icon={PlusSignIcon}
@@ -352,9 +352,9 @@ export default function CreateAssessmentPage() {
                       isDragging
                         ? "opacity-40 border-transparent bg-slate-100"
                         : isOver
-                          ? "border-[#355872]/30 bg-[#355872]/5"
+                          ? "border-[var(--theme-color)]/30 bg-[var(--theme-color)]/5"
                           : selectedQ === idx
-                            ? "bg-[#355872]/5 border-[#355872]/20"
+                            ? "bg-[var(--theme-color)]/5 border-[var(--theme-color)]/20"
                             : "bg-slate-50 border-transparent text-slate-600 hover:bg-slate-100"
                     }`}
                     onClick={() => setSelectedQ(idx)}
@@ -365,7 +365,7 @@ export default function CreateAssessmentPage() {
                     />
                     <div className="min-w-0 flex-1">
                       <p
-                        className={`text-[13px] font-semibold truncate ${selectedQ === idx ? "text-[#355872]" : ""}`}
+                        className={`text-[13px] font-semibold truncate ${selectedQ === idx ? "text-[var(--theme-color)]" : ""}`}
                       >
                         Q{idx + 1}: {q.title || "Question Title"}
                       </p>
@@ -585,7 +585,7 @@ export default function CreateAssessmentPage() {
                   <Button
                     onClick={() => addOption(selectedQ)}
                     variant="outline"
-                    className="h-9 px-4 border-[#355872] text-[#355872] hover:bg-[#355872]/5 rounded-lg shadow-none text-[13px] font-medium transition-all"
+                    className="h-9 px-4 border-[var(--theme-color)] text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 rounded-lg shadow-none text-[13px] font-medium transition-all"
                   >
                     <HugeiconsIcon
                       icon={PlusSignIcon}

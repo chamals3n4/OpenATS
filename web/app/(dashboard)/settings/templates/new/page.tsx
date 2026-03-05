@@ -140,7 +140,7 @@ function BlockPreview({ block, vars }: { block: Block; vars: string[] }) {
           <span
             style={{
               display: "inline-block",
-              background: "#355872",
+              background: "var(--theme-color)",
               color: "#fff",
               padding: "10px 28px",
               borderRadius: 8,
@@ -237,7 +237,7 @@ function BlockEditor({
           <button
             key={v}
             onClick={() => onChange(block.id, block.content + `{{${v}}}`)}
-            className="text-[11px] font-mono px-2 py-0.5 rounded bg-[#355872]/8 border border-[#355872]/20 text-[#355872] hover:bg-[#355872]/15 transition-colors"
+            className="text-[11px] font-mono px-2 py-0.5 rounded bg-[var(--theme-color)]/8 border border-[var(--theme-color)]/20 text-[var(--theme-color)] hover:bg-[var(--theme-color)]/15 transition-colors"
           >
             {`{{${v}}}`}
           </button>
@@ -322,7 +322,7 @@ export default function NewTemplatePage() {
         <Button
           onClick={handleSave}
           disabled={!canSave}
-          className="h-9 px-6 bg-[#355872] hover:bg-[#355872]/90 text-white font-medium shadow-none rounded-lg text-sm border-none disabled:opacity-50 gap-2"
+          className="h-9 px-6 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium shadow-none rounded-lg text-sm border-none disabled:opacity-50 gap-2"
         >
           Save Template
         </Button>
@@ -339,7 +339,7 @@ export default function NewTemplatePage() {
                 placeholder="e.g. Standard Offer Letter"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[#355872]/50 text-[15px]"
+                className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-[15px]"
               />
             </div>
 
@@ -351,7 +351,7 @@ export default function NewTemplatePage() {
                 placeholder={`e.g. Offer of Employment — {{job_title}}`}
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[#355872]/50 text-sm"
+                className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm"
               />
             </div>
 
@@ -367,7 +367,7 @@ export default function NewTemplatePage() {
                   <button
                     key={v}
                     onClick={() => navigator.clipboard.writeText(`{{${v}}}`)}
-                    className="text-[12px] font-mono px-2.5 py-1 rounded-md bg-[#355872]/8 border border-[#355872]/20 text-[#355872] hover:bg-[#355872]/15 transition-colors"
+                    className="text-[12px] font-mono px-2.5 py-1 rounded-md bg-[var(--theme-color)]/8 border border-[var(--theme-color)]/20 text-[var(--theme-color)] hover:bg-[var(--theme-color)]/15 transition-colors"
                   >
                     {`{{${v}}}`}
                   </button>
@@ -384,7 +384,7 @@ export default function NewTemplatePage() {
                   <button
                     key={kind}
                     onClick={() => addBlock(kind)}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 text-[13px] font-medium hover:border-[#355872]/40 hover:text-[#355872] hover:bg-[#355872]/5 transition-all"
+                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-200 bg-white text-slate-600 text-[13px] font-medium hover:border-[var(--theme-color)]/40 hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 transition-all"
                   >
                     <HugeiconsIcon
                       icon={BLOCK_ICONS[kind]}
@@ -466,7 +466,7 @@ export default function NewTemplatePage() {
               </div>
               <div className="px-8 py-7">
                 <div className="flex items-center gap-2 mb-6 pb-5 border-b border-slate-100">
-                  <div className="size-8 rounded-full bg-[#355872] flex items-center justify-center">
+                  <div className="size-8 rounded-full bg-[var(--theme-color)] flex items-center justify-center">
                     <div className="size-3.5 rounded-full border-2 border-white" />
                   </div>
                   <span className="text-[13px] font-bold text-slate-800 tracking-tight">

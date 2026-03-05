@@ -79,7 +79,7 @@ export default function CreateNewJobPage() {
 
         <div className="space-y-8">
           <div className="space-y-3">
-            <Label className="text-sm font-semibold text-[#355872]">
+            <Label className="text-sm font-semibold text-[var(--theme-color)]">
               Job Title
             </Label>
             <Input
@@ -273,7 +273,7 @@ export default function CreateNewJobPage() {
                     <RadioGroupItem
                       value="range"
                       id="range"
-                      className="text-[#355872] border-slate-300 data-checked:bg-[#355872] data-checked:border-[#355872] size-4.5"
+                      className="text-[var(--theme-color)] border-slate-300 data-checked:bg-[var(--theme-color)] data-checked:border-[var(--theme-color)] size-4.5"
                     />
                     <Label
                       htmlFor="range"
@@ -286,7 +286,7 @@ export default function CreateNewJobPage() {
                     <RadioGroupItem
                       value="fixed"
                       id="fixed"
-                      className="text-[#355872] border-slate-300 data-checked:bg-[#355872] data-checked:border-[#355872] size-4.5"
+                      className="text-[var(--theme-color)] border-slate-300 data-checked:bg-[var(--theme-color)] data-checked:border-[var(--theme-color)] size-4.5"
                     />
                     <Label
                       htmlFor="fixed"
@@ -371,7 +371,10 @@ export default function CreateNewJobPage() {
           </div>
 
           <div className="pt-10 flex items-center gap-4">
-            <Button className="bg-[#355872] hover:bg-[#355872]/90 text-white cursor-pointer rounded-lg h-10 px-6 font-medium shadow-none border-none">
+            <Button
+              className="text-white cursor-pointer rounded-lg h-10 px-6 font-medium shadow-none border-none"
+              style={{ backgroundColor: "var(--theme-color)" }}
+            >
               Save Job
             </Button>
             <Link

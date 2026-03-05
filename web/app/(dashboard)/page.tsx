@@ -45,8 +45,8 @@ const pipelineData = [
   { stage: "Rejected", current: 200, previous: 145 },
 ];
 const pipelineConfig: ChartConfig = {
-  current: { label: "This Period", color: "#22c55e" },
-  previous: { label: "Previous Period", color: "#e2e8f0" },
+  current: { label: "This Period", color: "#D97757" },
+  previous: { label: "Previous Period", color: "#E8CFC7" },
 };
 
 const volumeData = [
@@ -58,16 +58,16 @@ const volumeData = [
   { date: "Feb 25", applications: 50, hires: 2 },
 ];
 const volumeConfig: ChartConfig = {
-  applications: { label: "Applications", color: "#22c55e" },
-  hires: { label: "Hires", color: "#60a5fa" },
+  applications: { label: "Applications", color: "#D97757" },
+  hires: { label: "Hires", color: "#94A38B" },
 };
 
 const sourceData = [
-  { name: "LinkedIn", value: 38, color: "#0077b5" },
-  { name: "Referral", value: 25, color: "#22c55e" },
-  { name: "Job Boards", value: 20, color: "#f59e0b" },
-  { name: "Website", value: 10, color: "#8b5cf6" },
-  { name: "Other", value: 7, color: "#e2e8f0" },
+  { name: "LinkedIn", value: 38, color: "#D97757" },
+  { name: "Referral", value: 25, color: "#E8916F" },
+  { name: "Job Boards", value: 20, color: "#C4A381" },
+  { name: "Website", value: 10, color: "#94A38B" },
+  { name: "Other", value: 7, color: "#E8CFC7" },
 ];
 const sourceConfig: ChartConfig = Object.fromEntries(
   sourceData.map((s) => [s.name, { label: s.name, color: s.color }]),
@@ -81,7 +81,7 @@ const deptData = [
   { dept: "HR", days: 10 },
 ];
 const deptConfig: ChartConfig = {
-  days: { label: "Avg. Days", color: "#355872" },
+  days: { label: "Avg. Days", color: "#D97757" },
 };
 
 const offerData = [
@@ -92,8 +92,8 @@ const offerData = [
   { month: "Feb", sent: 24, accepted: 20 },
 ];
 const offerConfig: ChartConfig = {
-  sent: { label: "Offers Sent", color: "#94a3b8" },
-  accepted: { label: "Offers Accepted", color: "#22c55e" },
+  sent: { label: "Offers Sent", color: "#C4A381" },
+  accepted: { label: "Offers Accepted", color: "#D97757" },
 };
 
 function exportCSV() {
@@ -154,7 +154,7 @@ export default function OverviewPage() {
         </h1>
         <button
           onClick={exportCSV}
-          className="bg-[#355872] hover:bg-[#355872]/90 text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors cursor-pointer"
+          className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors cursor-pointer"
         >
           <svg
             width="14"

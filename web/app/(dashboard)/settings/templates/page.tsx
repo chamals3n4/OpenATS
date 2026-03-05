@@ -102,7 +102,7 @@ function RowMenu({
     <div ref={ref} className="relative flex justify-end">
       <button
         onClick={() => setOpen((o) => !o)}
-        className="p-1.5 rounded-md text-[#355872]/50 hover:text-[#355872] hover:bg-slate-100 transition-colors"
+        className="p-1.5 rounded-md text-[var(--theme-color)]/50 hover:text-[var(--theme-color)] hover:bg-slate-100 transition-colors"
       >
         <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" />
       </button>
@@ -200,7 +200,7 @@ export default function TemplatesPage() {
             setPickedType(null);
             setTypePickerOpen(true);
           }}
-          className="bg-[#355872] hover:bg-[#355872]/90 text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
+          className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
         >
           <HugeiconsIcon
             icon={PlusSignIcon}
@@ -256,7 +256,7 @@ export default function TemplatesPage() {
       </div>
 
       <div className="px-8 py-6">
-        <div className="border border-slate-200 rounded-xl bg-white shadow-none overflow-hidden text-[#355872]">
+        <div className="border border-slate-200 rounded-xl bg-white shadow-none overflow-hidden text-[var(--theme-color)]">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-200 bg-white hover:bg-transparent">
@@ -294,7 +294,7 @@ export default function TemplatesPage() {
                     <TableCell className="h-14 px-8 py-0">
                       <Link
                         href={`/settings/templates/${t.id}/edit`}
-                        className="text-[#355872] font-medium hover:underline decoration-1 underline-offset-4"
+                        className="text-[var(--theme-color)] font-medium hover:underline decoration-1 underline-offset-4"
                       >
                         {t.name}
                       </Link>
@@ -306,10 +306,10 @@ export default function TemplatesPage() {
                         {TYPE_META[t.type].label}
                       </span>
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-[#355872] font-normal">
+                    <TableCell className="h-14 px-8 py-0 text-[var(--theme-color)] font-normal">
                       {t.createdBy}
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-[#355872] font-normal">
+                    <TableCell className="h-14 px-8 py-0 text-[var(--theme-color)] font-normal">
                       {t.editedAt}
                     </TableCell>
                     <TableCell className="h-14 px-4 py-0">
@@ -334,12 +334,12 @@ export default function TemplatesPage() {
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                className="h-10 px-6 rounded-lg bg-white border-slate-200 text-[#355872] font-semibold text-sm hover:bg-slate-50 shadow-none gap-2"
+                className="h-10 px-6 rounded-lg bg-white border-slate-200 text-[var(--theme-color)] font-semibold text-sm hover:bg-slate-50 shadow-none gap-2"
               >
                 <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />{" "}
                 Previous
               </Button>
-              <Button className="h-10 px-8 rounded-lg bg-[#355872] hover:bg-[#355872]/90 text-white font-semibold text-sm shadow-none border-none gap-2">
+              <Button className="h-10 px-8 rounded-lg bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-semibold text-sm shadow-none border-none gap-2">
                 Next{" "}
                 <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
               </Button>
@@ -368,7 +368,7 @@ export default function TemplatesPage() {
                 onClick={() => setPickedType(t)}
                 className={`flex flex-col items-start gap-2.5 p-4 rounded-xl border-2 text-left transition-all ${
                   pickedType === t
-                    ? "border-[#355872] bg-[#355872]/5"
+                    ? "border-[var(--theme-color)] bg-[var(--theme-color)]/5"
                     : "border-slate-200 hover:border-slate-300 bg-white"
                 }`}
               >
@@ -404,7 +404,7 @@ export default function TemplatesPage() {
                   router.push(`/settings/templates/new?type=${pickedType}`);
                 }
               }}
-              className="h-10 px-6 bg-[#355872] hover:bg-[#355872]/90 text-white font-medium shadow-none rounded-lg text-sm border-none disabled:opacity-40"
+              className="h-10 px-6 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium shadow-none rounded-lg text-sm border-none disabled:opacity-40"
             >
               Continue →
             </Button>

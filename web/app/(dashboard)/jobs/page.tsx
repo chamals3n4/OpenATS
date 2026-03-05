@@ -13,6 +13,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
+import { ThemeButton } from "@/components/theme-button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -161,9 +162,10 @@ export default function ManageJobsPage() {
         <h1 className="text-[28px] font-medium text-slate-900 leading-none">
           Manage Jobs
         </h1>
-        <Link
+        <ThemeButton
+          asChild
           href="jobs/new"
-          className="bg-[#355872] hover:bg-[#355872]/90 text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
+          className="h-10 px-4 gap-2 text-sm shadow-none border-none"
         >
           <HugeiconsIcon
             icon={PlusSignIcon}
@@ -171,7 +173,7 @@ export default function ManageJobsPage() {
             strokeWidth={2.5}
           />
           <span>Create New Job</span>
-        </Link>
+        </ThemeButton>
       </div>
 
       <div className="border-y border-slate-200 px-8 py-3.5 flex items-center gap-4">
@@ -182,7 +184,7 @@ export default function ManageJobsPage() {
           />
           <Input
             placeholder="Search"
-            className="pl-11 h-10! bg-white border-slate-200 shadow-none rounded-lg text-sm placeholder:text-slate-300 focus-visible:border-slate-300 transition-colors"
+            className="pl-11 h-10! bg-white border-slate-200 shadow-none rounded-lg text-sm placeholder:text-slate-300 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
         <Select>
@@ -212,7 +214,7 @@ export default function ManageJobsPage() {
       </div>
 
       <div className="px-8 py-6">
-        <div className="border border-slate-200 rounded-xl bg-white shadow-none overflow-hidden text-[#355872]">
+        <div className="border border-slate-200 rounded-xl bg-white shadow-none overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-200 bg-white hover:bg-transparent">
@@ -253,21 +255,21 @@ export default function ManageJobsPage() {
                     <TableCell className="h-13 px-8 py-0">
                       <Link
                         href={`jobs/${job.id}`}
-                        className="text-[#355872] font-medium hover:underline decoration-1 underline-offset-4 cursor-pointer"
+                        className="text-slate-700 font-medium hover:underline decoration-1 underline-offset-4 cursor-pointer"
                       >
                         {job.name}
                       </Link>
                     </TableCell>
-                    <TableCell className="h-13 px-8 py-0 text-[#355872] font-normal">
+                    <TableCell className="h-13 px-8 py-0 text-slate-600 font-normal">
                       {job.type}
                     </TableCell>
-                    <TableCell className="h-13 px-8 py-0 text-[#355872] font-normal">
+                    <TableCell className="h-13 px-8 py-0 text-slate-600 font-normal">
                       {job.department}
                     </TableCell>
-                    <TableCell className="h-13 px-8 py-0 text-[#355872] font-normal">
+                    <TableCell className="h-13 px-8 py-0 text-slate-600 font-normal">
                       {job.location}
                     </TableCell>
-                    <TableCell className="h-13 px-8 py-0 text-[#355872] font-normal">
+                    <TableCell className="h-13 px-8 py-0 text-slate-600 font-normal">
                       {job.createdAt}
                     </TableCell>
                     <TableCell className="h-13 px-4 py-0">
@@ -286,11 +288,16 @@ export default function ManageJobsPage() {
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                className="h-10 px-6 rounded-lg bg-white border-slate-200 text-[#355872] font-semibold text-sm hover:bg-slate-50 hover:text-slate-900 shadow-none gap-2"
+                className="h-10 px-6 rounded-lg bg-white border-slate-200 text-slate-700 font-semibold text-sm hover:bg-slate-50 hover:text-slate-900 shadow-none gap-2"
               >
                 Previous
               </Button>
-              <Button className="h-10 px-8 rounded-lg bg-[#355872] hover:bg-[#355872]/90 text-white font-semibold text-sm shadow-none transition-all active:scale-[0.98] border-none">
+              <Button
+                className="h-10 px-8 rounded-lg text-white font-semibold text-sm shadow-none transition-all active:scale-[0.98] border-none"
+                style={{ backgroundColor: "var(--theme-color)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
+              >
                 Next
               </Button>
             </div>
@@ -319,7 +326,8 @@ export default function ManageJobsPage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmArchive}
-              className="h-9 px-5 rounded-lg bg-[#355872] hover:bg-[#355872]/90 text-white text-[13px] font-medium shadow-none border-none"
+              className="h-9 px-5 rounded-lg text-white text-[13px] font-medium shadow-none border-none"
+              style={{ backgroundColor: "var(--theme-color)" }}
             >
               Archive
             </AlertDialogAction>

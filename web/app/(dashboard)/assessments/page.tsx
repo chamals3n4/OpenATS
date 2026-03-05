@@ -150,16 +150,15 @@ export default function AssessmentsPage() {
         </h1>
         <Link
           href="assessment/new"
-          className="bg-[#355872] hover:bg-[#355872]/90 text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
+          className="inline-flex items-center gap-2 text-white rounded-lg h-10 px-4 border-none shadow-none text-sm font-medium transition-colors"
+          style={{ backgroundColor: "var(--theme-color)" }}
         >
-          <Button className="bg-[#355872] hover:bg-[#355872]/90 text-white rounded-lg h-10 px-5 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors">
-            <HugeiconsIcon
-              icon={PlusSignIcon}
-              className="size-4"
-              strokeWidth={2.5}
-            />
-            <span>Add New Assessment</span>
-          </Button>
+          <HugeiconsIcon
+            icon={PlusSignIcon}
+            className="size-4"
+            strokeWidth={2.5}
+          />
+          <span>Add New Assessment</span>
         </Link>
       </div>
 
@@ -171,7 +170,7 @@ export default function AssessmentsPage() {
           />
           <Input
             placeholder="Search"
-            className="pl-10 h-10! bg-white border-slate-200 shadow-none rounded-lg text-sm placeholder:text-slate-400 focus-visible:border-slate-300 focus-visible:ring-0"
+            className="pl-10 h-10! bg-white border-slate-200 shadow-none rounded-lg text-sm placeholder:text-slate-400 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
         <div className="ml-auto flex items-center gap-3">
@@ -225,7 +224,12 @@ export default function AssessmentsPage() {
                 <div className="flex items-center gap-2 pt-1">
                   <Button
                     onClick={() => copyPreviewLink(assessment.id)}
-                    className={`text-[13px] font-medium h-9 px-5 rounded-lg shadow-none border-none gap-2 transition-all active:scale-[0.98] ${copiedId === assessment.id ? "bg-emerald-500 hover:bg-emerald-500 text-white" : "bg-[#355872] hover:bg-[#355872]/90 text-white"}`}
+                    className={`text-[13px] font-medium h-9 px-5 rounded-lg shadow-none border-none gap-2 transition-all active:scale-[0.98] ${copiedId === assessment.id ? "bg-emerald-500 text-white" : "text-white"}`}
+                    style={
+                      copiedId === assessment.id
+                        ? {}
+                        : { backgroundColor: "var(--theme-color)" }
+                    }
                   >
                     {copiedId === assessment.id ? "Link Copied!" : "Preview"}
                   </Button>

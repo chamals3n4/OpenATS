@@ -19,9 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import {
-  useCreateTemplate,
-} from "@/hooks/use-api";
+import { useCreateTemplate } from "@/hooks/use-api";
 import type { TemplateBodyBlock } from "@/types";
 
 type TemplateType = "offer" | "rejection" | "assessment" | "general";
@@ -257,7 +255,7 @@ function BlockEditor({
 export default function NewTemplatePage() {
   const router = useRouter();
   const createMutation = useCreateTemplate();
-  
+
   const searchParams = useSearchParams();
   const rawType = searchParams.get("type") as TemplateType | null;
   const templateType: TemplateType =
@@ -282,8 +280,8 @@ export default function NewTemplatePage() {
 
   const handleSave = () => {
     if (!name.trim()) return;
-    
-    // Convert editor blocks to API TemplateBodyBlocks, filtering out UI-only blocks 
+
+    // Convert editor blocks to API TemplateBodyBlocks, filtering out UI-only blocks
     // The API schema only supports [heading, text, button, image]
     const bodyJson: TemplateBodyBlock[] = blocks
       .filter((b) => ["heading", "text", "button", "image"].includes(b.kind))
@@ -292,16 +290,26 @@ export default function NewTemplatePage() {
         content: b.content,
       }));
 
-    createMutation.mutate({
-      name: name.trim(),
-      type: templateType === "offer" ? "offer_letter" : "email", // The API only accepts offer_letter or email 
-      subject,
-      bodyJson,
-    }, {
-      onSuccess: () => {
-        router.push("/settings/templates");
-      }
-    });
+    createMutation.mutate(
+      {
+        name: name.trim(),
+        type:
+          templateType === "offer"
+            ? "offer"
+            : templateType === "rejection"
+              ? "rejection"
+              : templateType === "assessment"
+                ? "assessment_invite"
+                : "general",
+        subject,
+        bodyJson,
+      },
+      {
+        onSuccess: () => {
+          router.push("/settings/templates");
+        },
+      },
+    );
   };
 
   const BLOCK_BTNS: { kind: BlockKind; label: string }[] = [

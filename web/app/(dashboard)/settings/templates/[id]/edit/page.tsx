@@ -19,10 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import {
-  useTemplate,
-  useUpdateTemplate,
-} from "@/hooks/use-api";
+import { useTemplate, useUpdateTemplate } from "@/hooks/use-api";
 import type { TemplateBodyBlock } from "@/types";
 
 type TemplateType = "offer" | "rejection" | "assessment" | "general";
@@ -278,8 +275,16 @@ export default function EditTemplatePage() {
     if (t) {
       setName(t.name);
       setSubject(t.subject);
-      setTemplateType(t.type === "offer_letter" ? "offer" : "general"); // Mapping back to UI type roughly, ideally they should match
-      
+      setTemplateType(
+        t.type === "offer"
+          ? "offer"
+          : t.type === "rejection"
+            ? "rejection"
+            : t.type === "assessment_invite"
+              ? "assessment"
+              : "general",
+      );
+
       // Map API blocks to UI Blocks
       const mappedBlocks: Block[] = t.bodyJson.map((b, i) => ({
         id: `blk-${i}-${Date.now()}`,
@@ -311,7 +316,7 @@ export default function EditTemplatePage() {
   const handleSave = () => {
     if (!name.trim()) return;
 
-    // Convert editor blocks to API TemplateBodyBlocks, filtering out UI-only blocks 
+    // Convert editor blocks to API TemplateBodyBlocks, filtering out UI-only blocks
     const bodyJson: TemplateBodyBlock[] = blocks
       .filter((b) => ["heading", "text", "button", "image"].includes(b.kind))
       .map((b) => ({
@@ -319,19 +324,29 @@ export default function EditTemplatePage() {
         content: b.content,
       }));
 
-    updateMutation.mutate({
-      id,
-      data: {
-        name: name.trim(),
-        type: templateType === "offer" ? "offer_letter" : "email",
-        subject,
-        bodyJson,
-      }
-    }, {
-      onSuccess: () => {
-        router.push("/settings/templates");
-      }
-    });
+    updateMutation.mutate(
+      {
+        id,
+        data: {
+          name: name.trim(),
+          type:
+            templateType === "offer"
+              ? "offer"
+              : templateType === "rejection"
+                ? "rejection"
+                : templateType === "assessment"
+                  ? "assessment_invite"
+                  : "general",
+          subject,
+          bodyJson,
+        },
+      },
+      {
+        onSuccess: () => {
+          router.push("/settings/templates");
+        },
+      },
+    );
   };
 
   const BLOCK_BTNS: { kind: BlockKind; label: string }[] = [
@@ -347,7 +362,9 @@ export default function EditTemplatePage() {
     return (
       <div className="flex flex-1 items-center justify-center bg-white dark:bg-neutral-950">
         <div className="text-center space-y-3">
-          <p className="text-slate-500 dark:text-neutral-400 text-[15px]">Template not found.</p>
+          <p className="text-slate-500 dark:text-neutral-400 text-[15px]">
+            Template not found.
+          </p>
           <Link
             href="/settings/templates"
             className="text-[var(--theme-color)] font-medium hover:underline text-sm"
@@ -362,7 +379,9 @@ export default function EditTemplatePage() {
   if (isLoading) {
     return (
       <div className="flex flex-1 items-center justify-center bg-white dark:bg-neutral-950">
-        <p className="text-slate-400 animate-pulse text-sm">Loading template...</p>
+        <p className="text-slate-400 animate-pulse text-sm">
+          Loading template...
+        </p>
       </div>
     );
   }

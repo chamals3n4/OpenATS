@@ -138,8 +138,12 @@ function ChartCard({
   return (
     <div className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 overflow-hidden">
       <div className="px-5 pt-5 pb-1">
-        <p className="text-sm font-semibold text-slate-700 dark:text-neutral-200">{title}</p>
-        <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">{subtitle}</p>
+        <p className="text-sm font-semibold text-slate-700 dark:text-neutral-200">
+          {title}
+        </p>
+        <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">
+          {subtitle}
+        </p>
       </div>
       <div className="px-4 pb-4">{children}</div>
     </div>
@@ -193,7 +197,10 @@ export default function OverviewPage() {
       </div>
 
       <div className="border-y border-slate-200 dark:border-neutral-800 px-8 py-3.5 flex items-center gap-3">
-        <Select value={period} onValueChange={setPeriod}>
+        <Select
+          value={period}
+          onValueChange={(value) => setPeriod(value ?? "7d")}
+        >
           <SelectTrigger className="w-52 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue>{PERIOD_LABELS[period]}</SelectValue>
           </SelectTrigger>
@@ -204,7 +211,7 @@ export default function OverviewPage() {
           </SelectContent>
         </Select>
 
-        <Select value={dept} onValueChange={setDept}>
+        <Select value={dept} onValueChange={(value) => setDept(value ?? "all")}>
           <SelectTrigger className="w-52 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue>{DEPT_LABELS[dept]}</SelectValue>
           </SelectTrigger>
@@ -225,7 +232,9 @@ export default function OverviewPage() {
               key={s.label}
               className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 p-6 flex flex-col gap-3 min-h-[110px]"
             >
-              <p className="text-sm text-slate-500 dark:text-neutral-400 font-medium">{s.label}</p>
+              <p className="text-sm text-slate-500 dark:text-neutral-400 font-medium">
+                {s.label}
+              </p>
               <div className="flex items-end justify-between gap-2">
                 <p className="text-3xl font-medium text-slate-800 dark:text-neutral-100 leading-none">
                   {s.value}
@@ -247,7 +256,11 @@ export default function OverviewPage() {
           >
             <ChartContainer config={pipelineConfig} className="h-52 w-full">
               <BarChart data={pipelineData} barGap={2} barCategoryGap="32%">
-                <CartesianGrid vertical={false} stroke="currentColor" className="text-slate-100 dark:text-neutral-800" />
+                <CartesianGrid
+                  vertical={false}
+                  stroke="currentColor"
+                  className="text-slate-100 dark:text-neutral-800"
+                />
                 <XAxis
                   dataKey="stage"
                   tick={{ fontSize: 10, fill: "#94a3b8" }}
@@ -282,7 +295,11 @@ export default function OverviewPage() {
           >
             <ChartContainer config={volumeConfig} className="h-52 w-full">
               <LineChart data={volumeData}>
-                <CartesianGrid vertical={false} stroke="currentColor" className="text-slate-100 dark:text-neutral-800" />
+                <CartesianGrid
+                  vertical={false}
+                  stroke="currentColor"
+                  className="text-slate-100 dark:text-neutral-800"
+                />
                 <XAxis
                   dataKey="date"
                   tick={{ fontSize: 10, fill: "#94a3b8" }}
@@ -356,7 +373,9 @@ export default function OverviewPage() {
                     className="w-2 h-2 rounded-full shrink-0"
                     style={{ background: s.color }}
                   />
-                  <span className="text-xs text-slate-500 dark:text-neutral-400">{s.name}</span>
+                  <span className="text-xs text-slate-500 dark:text-neutral-400">
+                    {s.name}
+                  </span>
                   <span className="text-xs font-semibold text-slate-700 dark:text-neutral-200 ml-auto">
                     {s.value}%
                   </span>
@@ -368,7 +387,11 @@ export default function OverviewPage() {
           <ChartCard title="Time To Hire" subtitle="Average days by department">
             <ChartContainer config={deptConfig} className="h-52 w-full">
               <BarChart data={deptData} layout="vertical" barCategoryGap="28%">
-                <CartesianGrid horizontal={false} stroke="currentColor" className="text-slate-100 dark:text-neutral-800" />
+                <CartesianGrid
+                  horizontal={false}
+                  stroke="currentColor"
+                  className="text-slate-100 dark:text-neutral-800"
+                />
                 <XAxis
                   type="number"
                   tick={{ fontSize: 10, fill: "#94a3b8" }}
@@ -399,7 +422,11 @@ export default function OverviewPage() {
           >
             <ChartContainer config={offerConfig} className="h-52 w-full">
               <BarChart data={offerData} barGap={3} barCategoryGap="35%">
-                <CartesianGrid vertical={false} stroke="currentColor" className="text-slate-100 dark:text-neutral-800" />
+                <CartesianGrid
+                  vertical={false}
+                  stroke="currentColor"
+                  className="text-slate-100 dark:text-neutral-800"
+                />
                 <XAxis
                   dataKey="month"
                   tick={{ fontSize: 10, fill: "#94a3b8" }}

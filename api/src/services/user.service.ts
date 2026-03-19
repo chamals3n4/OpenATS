@@ -4,11 +4,11 @@ import { users, NewUser } from "../db/schema";
 import { cleanObject as clean } from "../utils/object.utils";
 
 export interface UpdateUserInput {
-  firstName?: string;
-  lastName?: string;
-  avatarUrl?: string | null;
-  role?: "super_admin" | "hiring_manager" | "interviewer";
-  isActive?: boolean;
+  firstName?: string | undefined;
+  lastName?: string | undefined;
+  avatarUrl?: string | null | undefined;
+  role?: "super_admin" | "hiring_manager" | "interviewer" | undefined;
+  isActive?: boolean | undefined;
 }
 
 export interface CreateUserInput {
@@ -34,14 +34,17 @@ export const userService = {
   },
 
   async getByAsgardeoId(asgardeoUserId: string) {
-    const [user] = await db.select().from(users).where(eq(users.asgardeoUserId, asgardeoUserId));
+    const [user] = await db
+      .select()
+      .from(users)
+      .where(eq(users.asgardeoUserId, asgardeoUserId));
     return user ?? null;
   },
 
   async create(input: CreateUserInput) {
     const [created] = await db
       .insert(users)
-      .values({ ...input, role: input.role ?? 'interviewer' })
+      .values({ ...input, role: input.role ?? "interviewer" })
       .returning();
     return created;
   },

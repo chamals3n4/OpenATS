@@ -54,7 +54,6 @@ const createJobSchema = z
     salaryFixed: z.number().positive().optional().nullable(),
     salaryMin: z.number().positive().optional().nullable(),
     salaryMax: z.number().positive().optional().nullable(),
-    createdBy: z.number().int().positive().default(1),
   })
   .refine(
     (data) => {
@@ -152,6 +151,7 @@ export const createJob = async (req: Request, res: Response) => {
 
     const data = {
       ...parsed.data,
+      createdBy: req.user.id,
       location: parsed.data.location ?? null,
       description: parsed.data.description ?? null,
       skills: parsed.data.skills ?? [],
@@ -258,7 +258,9 @@ export const attachAssessment = async (req: Request, res: Response) => {
 
     const { assessmentId, triggerStageId } = req.body;
     if (!assessmentId || !triggerStageId) {
-      res.status(400).json({ error: "assessmentId and triggerStageId are required" });
+      res
+        .status(400)
+        .json({ error: "assessmentId and triggerStageId are required" });
       return;
     }
 
@@ -270,8 +272,11 @@ export const attachAssessment = async (req: Request, res: Response) => {
 
     res.status(201).json({ data: result });
   } catch (error: any) {
-    if (error?.code === "23505") { // Unique constraint violation
-      res.status(409).json({ error: "An assessment is already attached to this stage for this job" });
+    if (error?.code === "23505") {
+      // Unique constraint violation
+      res.status(409).json({
+        error: "An assessment is already attached to this stage for this job",
+      });
       return;
     }
     res.status(500).json({ error: "Failed to attach assessment" });

@@ -10,7 +10,9 @@ info:
     url: https://github.com/chamals3n4/OpenATS
 servers:
   - url: http://localhost:8080/api
-    description: Local Development Server
+    description: Local Development Server (protected routes)
+  - url: http://localhost:8080/public
+    description: Local Development Server (public routes)
 
 tags:
   - name: Company
@@ -39,6 +41,8 @@ tags:
     description: Real-time collaboration messages for jobs and specific candidates
   - name: R2 Storage
     description: Cloud storage utilities for resumes, logos, and attachments
+  - name: Public
+    description: Unauthenticated public endpoints exposed under /public
 
 paths:
   # ── COMPANY ───────────────────────────────────────────────────────────────
@@ -48,7 +52,7 @@ paths:
       summary: Retrieve company profile
       description: Get the global company details including name, logo, and website.
       responses:
-        '200':
+        "200":
           description: Company profile object
           content:
             application/json:
@@ -68,12 +72,23 @@ paths:
           application/json:
             schema:
               type: object
+              required: [name, email]
               properties:
                 name: { type: string, example: "Acme Corp" }
+                email:
+                  { type: string, format: email, example: "hello@acme.com" }
                 website: { type: string, example: "https://acme.com" }
-                logoUrl: { type: string, example: "https://r2.openats.com/logos/acme.png" }
+                phone: { type: string, example: "+1 555 123 4567" }
+                address:
+                  { type: string, example: "123 Market St, San Francisco, CA" }
+                description: { type: string, example: "We build hiring tools." }
+                logoUrl:
+                  {
+                    type: string,
+                    example: "https://r2.openats.com/logos/acme.png",
+                  }
       responses:
-        '200':
+        "200":
           description: Company updated
   /company/departments:
     get:
@@ -81,7 +96,7 @@ paths:
       summary: List all departments
       description: Returns a list of all company departments (e.g. Engineering, Sales).
       responses:
-        '200':
+        "200":
           description: Array of departments
     post:
       tags: [Company]
@@ -96,7 +111,7 @@ paths:
               properties:
                 name: { type: string, example: "Engineering" }
       responses:
-        '201':
+        "201":
           description: Department created
   /company/departments/{id}:
     put:
@@ -116,7 +131,7 @@ paths:
               properties:
                 name: { type: string, example: "Software Engineering" }
       responses:
-        '200':
+        "200":
           description: Department updated
     delete:
       tags: [Company]
@@ -127,7 +142,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Department deleted
 
   # ── USERS ─────────────────────────────────────────────────────────────────
@@ -137,8 +152,39 @@ paths:
       summary: List all users
       description: Retrieve a list of all active recruitment team members.
       responses:
-        '200':
+        "200":
           description: Success
+    post:
+      tags: [Users]
+      summary: Create a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [asgardeoUserId, firstName, lastName, email]
+              properties:
+                asgardeoUserId: { type: string }
+                firstName: { type: string }
+                lastName: { type: string }
+                email: { type: string, format: email }
+                role:
+                  {
+                    type: string,
+                    enum: [super_admin, hiring_manager, interviewer],
+                    default: interviewer,
+                  }
+      responses:
+        "201":
+          description: User created
+  /users/me:
+    get:
+      tags: [Users]
+      summary: Get current authenticated user
+      responses:
+        "200":
+          description: Current user object
   /users/{id}:
     get:
       tags: [Users]
@@ -149,7 +195,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: User object
     put:
       tags: [Users]
@@ -168,10 +214,15 @@ paths:
               properties:
                 firstName: { type: string }
                 lastName: { type: string }
-                role: { type: string, enum: [admin, recruiter, hiring_manager] }
+                role:
+                  {
+                    type: string,
+                    enum: [super_admin, hiring_manager, interviewer],
+                  }
                 avatarUrl: { type: string }
+                isActive: { type: boolean }
       responses:
-        '200':
+        "200":
           description: User updated
 
   # ── TEMPLATES ─────────────────────────────────────────────────────────────
@@ -179,8 +230,14 @@ paths:
     get:
       tags: [Templates]
       summary: List all templates
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [offer, rejection, assessment_invite, general]
       responses:
-        '200':
+        "200":
           description: List of offer/email templates
     post:
       tags: [Templates]
@@ -190,9 +247,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTemplate'
+              $ref: "#/components/schemas/CreateTemplate"
       responses:
-        '201':
+        "201":
           description: Template created
   /templates/{id}:
     get:
@@ -204,7 +261,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Template object
     put:
       tags: [Templates]
@@ -219,9 +276,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateTemplate'
+              $ref: "#/components/schemas/CreateTemplate"
       responses:
-        '200':
+        "200":
           description: Template updated
     delete:
       tags: [Templates]
@@ -232,7 +289,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Template deleted
   /templates/{id}/preview:
     post:
@@ -249,10 +306,10 @@ paths:
           application/json:
             schema:
               type: object
-              properties:
-                context: { type: object, description: "Key-value pairs for variables like {{candidate_name}}" }
+              additionalProperties: true
+              description: Key-value pairs for variables like {{candidate_name}}.
       responses:
-        '200':
+        "200":
           description: Rendered HTML string
 
   # ── ASSESSMENTS ───────────────────────────────────────────────────────────
@@ -261,7 +318,7 @@ paths:
       tags: [Assessments]
       summary: List all assessments
       responses:
-        '200':
+        "200":
           description: Success
     post:
       tags: [Assessments]
@@ -271,9 +328,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateAssessment'
+              $ref: "#/components/schemas/CreateAssessment"
       responses:
-        '201':
+        "201":
           description: Assessment created
   /assessments/{id}:
     get:
@@ -285,7 +342,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Assessment details
     put:
       tags: [Assessments]
@@ -296,7 +353,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Updated
     delete:
       tags: [Assessments]
@@ -307,7 +364,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Deleted
   /assessments/{id}/questions:
     post:
@@ -323,9 +380,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AssessmentQuestionInput'
+              $ref: "#/components/schemas/AssessmentQuestionInput"
       responses:
-        '201':
+        "201":
           description: Question created
   /assessments/{id}/questions/{questionId}:
     put:
@@ -345,9 +402,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/AssessmentQuestionInput'
+              $ref: "#/components/schemas/AssessmentQuestionInput"
       responses:
-        '200':
+        "200":
           description: Updated
     delete:
       tags: [Assessments]
@@ -362,7 +419,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Deleted
 
   # ── JOBS ──────────────────────────────────────────────────────────────────
@@ -372,7 +429,7 @@ paths:
       summary: List all job openings
       description: Returns all jobs with basic details.
       responses:
-        '200':
+        "200":
           description: Array of jobs
     post:
       tags: [Jobs]
@@ -382,9 +439,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateJob'
+              $ref: "#/components/schemas/CreateJob"
       responses:
-        '201':
+        "201":
           description: Job created
   /jobs/{id}:
     get:
@@ -396,7 +453,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Job object
     put:
       tags: [Jobs]
@@ -411,9 +468,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateJob'
+              $ref: "#/components/schemas/UpdateJob"
       responses:
-        '200':
+        "200":
           description: Job updated
     delete:
       tags: [Jobs]
@@ -424,7 +481,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Job deleted
   /jobs/slug/{slug}:
     get:
@@ -437,8 +494,57 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Public job details
+  /jobs/{id}/assessments:
+    get:
+      tags: [Jobs]
+      summary: List assessments attached to a job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: List of job assessment attachments
+    post:
+      tags: [Jobs]
+      summary: Attach assessment to a job stage
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [assessmentId, triggerStageId]
+              properties:
+                assessmentId: { type: integer }
+                triggerStageId: { type: integer }
+      responses:
+        "201":
+          description: Assessment attached
+  /jobs/{id}/assessments/{attachmentId}:
+    delete:
+      tags: [Jobs]
+      summary: Detach assessment from a job
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: attachmentId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Assessment detached
 
   # ── PIPELINES ─────────────────────────────────────────────────────────────
   /jobs/{jobId}/pipeline:
@@ -451,7 +557,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: List of stages for the job
     post:
       tags: [Pipelines]
@@ -467,13 +573,25 @@ paths:
           application/json:
             schema:
               type: object
-              required: [name, position, stageType]
+              required: [name, position]
               properties:
                 name: { type: string, example: "Initial Screening" }
                 position: { type: integer, example: 2 }
-                stageType: { type: string, enum: [none, source, assessment, interview, offer, rejection] }
+                stageType:
+                  {
+                    type: string,
+                    enum:
+                      [none, source, assessment, interview, offer, rejection],
+                  }
+                offerTemplateId: { type: integer, nullable: true }
+                offerMode:
+                  {
+                    type: string,
+                    enum: [auto_draft, auto_send],
+                    nullable: true,
+                  }
       responses:
-        '201':
+        "201":
           description: Stage created
   /jobs/{jobId}/pipeline/{stageId}:
     put:
@@ -497,9 +615,23 @@ paths:
               properties:
                 name: { type: string }
                 position: { type: integer }
-                stageType: { type: string, enum: [none, source, assessment, interview, offer, rejection] }
+                stageType:
+                  {
+                    type: string,
+                    enum:
+                      [none, source, assessment, interview, offer, rejection],
+                  }
+                offerTemplateId: { type: integer, nullable: true }
+                offerMode:
+                  {
+                    type: string,
+                    enum: [auto_draft, auto_send],
+                    nullable: true,
+                  }
+                offerExpiryDays: { type: integer, nullable: true }
+                rejectionTemplateId: { type: integer, nullable: true }
       responses:
-        '200':
+        "200":
           description: Stage updated
     delete:
       tags: [Pipelines]
@@ -514,7 +646,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Stage removed
 
   # ── HIRING TEAM ───────────────────────────────────────────────────────────
@@ -528,7 +660,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Array of users assigned to the job
     post:
       tags: [Hiring Team]
@@ -547,9 +679,8 @@ paths:
               required: [userId]
               properties:
                 userId: { type: integer }
-                role: { type: string, enum: [recruiter, hiring_manager] }
       responses:
-        '201':
+        "201":
           description: Member added
   /jobs/{jobId}/team/{userId}:
     delete:
@@ -565,7 +696,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Member removed
 
   # ── CUSTOM QUESTIONS & ATTACHMENTS ────────────────────────────────────────
@@ -579,7 +710,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: List of custom questions
     post:
       tags: [Custom Questions]
@@ -594,9 +725,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/JobCustomQuestionInput'
+              $ref: "#/components/schemas/JobCustomQuestionInput"
       responses:
-        '201':
+        "201":
           description: Question added
   /jobs/{jobId}/questions/{questionId}:
     put:
@@ -616,9 +747,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/JobCustomQuestionInput'
+              $ref: "#/components/schemas/JobCustomQuestionInput"
       responses:
-        '200':
+        "200":
           description: Updated
     delete:
       tags: [Custom Questions]
@@ -633,10 +764,10 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Deleted
 
-  /jobs/{jobId}/assessment-attachment:
+  /jobs/{jobId}/questions/assessment-attachment:
     get:
       tags: [Custom Questions]
       summary: Get assessment automation trigger
@@ -647,7 +778,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Attachment details
     post:
       tags: [Custom Questions]
@@ -668,9 +799,9 @@ paths:
                 assessmentId: { type: integer }
                 triggerStageId: { type: integer }
       responses:
-        '201':
+        "201":
           description: Automation rule saved
-  /jobs/{jobId}/assessment-attachment/{stageId}:
+  /jobs/{jobId}/questions/assessment-attachment/{stageId}:
     delete:
       tags: [Custom Questions]
       summary: Remove assessment automation
@@ -684,10 +815,26 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Rule deleted
 
   # ── CANDIDATES ────────────────────────────────────────────────────────────
+  /candidates:
+    get:
+      tags: [Candidates]
+      summary: List candidates across all jobs
+      parameters:
+        - name: stageId
+          in: query
+          schema: { type: integer }
+          description: Filter by specific pipeline stage
+        - name: search
+          in: query
+          schema: { type: string }
+          description: Search by name or email
+      responses:
+        "200":
+          description: List of candidates
   /candidates/jobs/{jobId}/apply:
     post:
       tags: [Candidates]
@@ -703,9 +850,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CandidateApplication'
+              $ref: "#/components/schemas/CandidateApplication"
       responses:
-        '201':
+        "201":
           description: Application submitted successfully
   /candidates/jobs/{jobId}:
     get:
@@ -725,7 +872,7 @@ paths:
           schema: { type: string }
           description: Search by name or email
       responses:
-        '200':
+        "200":
           description: List of candidates
   /candidates/{id}:
     get:
@@ -737,7 +884,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Full profile object
     delete:
       tags: [Candidates]
@@ -748,7 +895,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Candidate deleted
   /candidates/{id}/stage:
     put:
@@ -772,9 +919,14 @@ paths:
               required: [newStageId]
               properties:
                 newStageId: { type: integer, example: 5 }
-                movedBy: { type: integer, description: "System User ID of the recruiter performing the move", default: 1 }
+                movedBy:
+                  {
+                    type: integer,
+                    description: "System User ID of the recruiter performing the move",
+                    default: 1,
+                  }
       responses:
-        '200':
+        "200":
           description: Stage updated
 
   # ── ASSESSMENT EXECUTION ──────────────────────────────────────────────────
@@ -794,7 +946,7 @@ paths:
                 assessmentId: { type: integer }
                 expiryDays: { type: integer, default: 7 }
       responses:
-        '201':
+        "201":
           description: Invite generated
   /assessment-execution/candidate/{candidateId}:
     get:
@@ -806,7 +958,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: List of attempts
 
   /assessment-execution/public/{token}:
@@ -821,7 +973,7 @@ paths:
           description: Secret token from the email invite
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Assessment and question data
   /assessment-execution/public/{token}/start:
     post:
@@ -834,7 +986,7 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Successfully started
   /assessment-execution/public/{token}/answer:
     post:
@@ -851,9 +1003,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/SubmitAssessmentAnswer'
+              $ref: "#/components/schemas/SubmitAssessmentAnswer"
       responses:
-        '200':
+        "200":
           description: Answer saved
   /assessment-execution/public/{token}/complete:
     post:
@@ -866,11 +1018,17 @@ paths:
           required: true
           schema: { type: string }
       responses:
-        '200':
+        "200":
           description: Assessment completed and graded
 
   # ── OFFERS ────────────────────────────────────────────────────────────────
   /offers:
+    get:
+      tags: [Offers]
+      summary: List all offers
+      responses:
+        "200":
+          description: List of offers
     post:
       tags: [Offers]
       summary: Create a candidate offer
@@ -879,9 +1037,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/CreateOffer'
+              $ref: "#/components/schemas/CreateOffer"
       responses:
-        '201':
+        "201":
           description: Offer created successfully
   /offers/job/{jobId}:
     get:
@@ -893,7 +1051,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: List of offers
   /offers/{id}:
     get:
@@ -905,7 +1063,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Offer object
     put:
       tags: [Offers]
@@ -920,9 +1078,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UpdateOffer'
+              $ref: "#/components/schemas/UpdateOffer"
       responses:
-        '200':
+        "200":
           description: Updated
     delete:
       tags: [Offers]
@@ -933,7 +1091,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Deleted
   /offers/{id}/status:
     patch:
@@ -953,9 +1111,13 @@ paths:
               type: object
               required: [status]
               properties:
-                status: { type: string, enum: [draft, sent, pending, accepted, declined, withdrawn] }
+                status:
+                  {
+                    type: string,
+                    enum: [draft, sent, pending, accepted, declined, withdrawn],
+                  }
       responses:
-        '200':
+        "200":
           description: Status changed
 
   # ── CHAT ──────────────────────────────────────────────────────────────────
@@ -969,7 +1131,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Array of messages
   /chat/candidate/{candidateId}:
     get:
@@ -981,7 +1143,7 @@ paths:
           required: true
           schema: { type: integer }
       responses:
-        '200':
+        "200":
           description: Array of messages
 
   # ── R2 STORAGE ────────────────────────────────────────────────────────────
@@ -999,15 +1161,22 @@ paths:
               properties:
                 file: { type: string, format: binary }
       responses:
-        '200':
+        "200":
           description: Successful upload
           content:
             application/json:
-              example: { "data": { "url": "https://r2.openats.com/resumes/uuid.pdf" } }
+              example:
+                { "data": { "url": "https://r2.openats.com/resumes/uuid.pdf" } }
   /upload/logo:
     post:
       tags: [R2 Storage]
       summary: Upload a company logo
+      parameters:
+        - name: companyId
+          in: query
+          required: false
+          schema: { type: integer }
+          description: Optional company ID to update logo for. If omitted, first company is updated.
       requestBody:
         content:
           multipart/form-data:
@@ -1017,8 +1186,137 @@ paths:
               properties:
                 file: { type: string, format: binary }
       responses:
-        '200':
+        "200":
           description: Logo uploaded
+
+  # ── PUBLIC (NO AUTH) ─────────────────────────────────────────────────────
+  /public/jobs/{id}:
+    servers:
+      - url: http://localhost:8080
+    get:
+      tags: [Public]
+      summary: Get public job details by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: Public job details
+  /public/jobs/{jobId}/questions:
+    servers:
+      - url: http://localhost:8080
+    get:
+      tags: [Public]
+      summary: List public application questions for a job
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        "200":
+          description: List of custom questions
+  /public/jobs/{jobId}/apply:
+    servers:
+      - url: http://localhost:8080
+    post:
+      tags: [Public]
+      summary: Public candidate application submission
+      parameters:
+        - name: jobId
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateApplication"
+      responses:
+        "201":
+          description: Application submitted
+  /public/upload/resume:
+    servers:
+      - url: http://localhost:8080
+    post:
+      tags: [Public]
+      summary: Public resume upload
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: { type: string, format: binary }
+      responses:
+        "200":
+          description: Resume uploaded
+  /public/assessment/{token}:
+    servers:
+      - url: http://localhost:8080
+    get:
+      tags: [Public]
+      summary: Get assessment details via public token
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Assessment attempt details
+  /public/assessment/{token}/start:
+    servers:
+      - url: http://localhost:8080
+    post:
+      tags: [Public]
+      summary: Start public assessment attempt
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Attempt started
+  /public/assessment/{token}/answer:
+    servers:
+      - url: http://localhost:8080
+    post:
+      tags: [Public]
+      summary: Submit an answer to public assessment attempt
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitAssessmentAnswer"
+      responses:
+        "200":
+          description: Answer saved
+  /public/assessment/{token}/complete:
+    servers:
+      - url: http://localhost:8080
+    post:
+      tags: [Public]
+      summary: Complete public assessment attempt
+      parameters:
+        - name: token
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: Assessment completed
 
 components:
   schemas:
@@ -1029,13 +1327,28 @@ components:
       properties:
         title: { type: string, example: "Senior Backend Engineer" }
         departmentId: { type: integer, example: 1 }
-        employmentType: { type: string, enum: [full_time, part_time, contract, internship, freelance], example: "full_time" }
+        employmentType:
+          {
+            type: string,
+            enum: [full_time, part_time, contract, internship, freelance],
+            example: "full_time",
+          }
         location: { type: string, example: "San Francisco, CA (Remote)" }
         description: { type: string, example: "We are looking for..." }
-        skills: { type: array, items: { type: string }, example: ["Node.js", "PostgreSQL", "Drizzle"] }
+        skills:
+          {
+            type: array,
+            items: { type: string },
+            example: ["Node.js", "PostgreSQL", "Drizzle"],
+          }
         salaryType: { type: string, enum: [range, fixed], example: "range" }
         currency: { type: string, maxLength: 3, example: "USD" }
-        payFrequency: { type: string, enum: [hourly, daily, weekly, monthly, yearly], example: "yearly" }
+        payFrequency:
+          {
+            type: string,
+            enum: [hourly, daily, weekly, monthly, yearly],
+            example: "yearly",
+          }
         salaryMin: { type: number, example: 120000 }
         salaryMax: { type: number, example: 180000 }
         salaryFixed: { type: number }
@@ -1045,14 +1358,20 @@ components:
       properties:
         title: { type: string }
         departmentId: { type: integer }
-        status: { type: string, enum: [draft, inactive, published, closed, archived] }
-        employmentType: { type: string, enum: [full_time, part_time, contract, internship, freelance] }
+        status:
+          { type: string, enum: [draft, inactive, published, closed, archived] }
+        employmentType:
+          {
+            type: string,
+            enum: [full_time, part_time, contract, internship, freelance],
+          }
         location: { type: string }
         description: { type: string }
         skills: { type: array, items: { type: string } }
         salaryType: { type: string, enum: [range, fixed] }
         currency: { type: string }
-        payFrequency: { type: string, enum: [hourly, daily, weekly, monthly, yearly] }
+        payFrequency:
+          { type: string, enum: [hourly, daily, weekly, monthly, yearly] }
         salaryMin: { type: number }
         salaryMax: { type: number }
         salaryFixed: { type: number }
@@ -1066,7 +1385,11 @@ components:
         lastName: { type: string, example: "Doe" }
         email: { type: string, format: email, example: "john.doe@example.com" }
         phone: { type: string, example: "+1 555 123 4567" }
-        resumeUrl: { type: string, example: "https://r2.openats.com/resumes/john_doe.pdf" }
+        resumeUrl:
+          {
+            type: string,
+            example: "https://r2.openats.com/resumes/john_doe.pdf",
+          }
         customAnswers:
           type: array
           items:
@@ -1075,7 +1398,12 @@ components:
             properties:
               questionId: { type: integer }
               answerText: { type: string, description: "For open questions" }
-              optionIds: { type: array, items: { type: integer }, description: "For multiple choice selections" }
+              optionIds:
+                {
+                  type: array,
+                  items: { type: integer },
+                  description: "For multiple choice selections",
+                }
 
     # ── Assessment Schemas ────────────────────────────────────────────────────
     CreateAssessment:
@@ -1085,13 +1413,22 @@ components:
         title: { type: string, example: "Backend Node.js Assessment" }
         description: { type: string }
         timeLimit: { type: integer, description: "Minutes", example: 60 }
-        passScore: { type: number, description: "Percentage required to pass", example: 70 }
+        passScore:
+          {
+            type: number,
+            description: "Percentage required to pass",
+            example: 70,
+          }
 
     AssessmentQuestionInput:
       type: object
       required: [title, questionType, position]
       properties:
-        title: { type: string, example: "Which of the following are Node.js core modules?" }
+        title:
+          {
+            type: string,
+            example: "Which of the following are Node.js core modules?",
+          }
         description: { type: string }
         questionType: { type: string, enum: [short_answer, multiple_choice] }
         points: { type: number, default: 1 }
@@ -1120,7 +1457,8 @@ components:
       required: [title, questionType, position]
       properties:
         title: { type: string, example: "Which frameworks do you know?" }
-        questionType: { type: string, enum: [short_answer, long_answer, checkbox, radio] }
+        questionType:
+          { type: string, enum: [short_answer, long_answer, checkbox, radio] }
         isRequired: { type: boolean, default: false }
         position: { type: integer }
         options:
@@ -1139,15 +1477,29 @@ components:
       required: [name, type, subject, bodyJson]
       properties:
         name: { type: string, example: "Standard Engineering Offer" }
-        type: { type: string, enum: [email, offer_letter], example: "offer_letter" }
-        subject: { type: string, example: "Offer of Employment - {{company_name}}" }
+        type:
+          {
+            type: string,
+            enum: [offer, rejection, assessment_invite, general],
+            example: "offer",
+          }
+        subject:
+          { type: string, example: "Offer of Employment - {{company_name}}" }
         bodyJson:
           type: array
           items:
             type: object
             properties:
-              type: { type: string, enum: [heading, text, button, image] }
-              content: { type: string }
+              type:
+                {
+                  type: string,
+                  enum: [heading, text, button, image, divider, spacer],
+                }
+              content: { type: string, nullable: true }
+              label: { type: string, nullable: true }
+              url: { type: string, nullable: true }
+              alt: { type: string, nullable: true }
+              height: { type: number, nullable: true }
 
     CreateOffer:
       type: object
@@ -1158,7 +1510,12 @@ components:
         templateId: { type: integer, nullable: true }
         salary: { type: number, nullable: true }
         currency: { type: string, maxLength: 3, nullable: true }
-        payFrequency: { type: string, enum: [hourly, daily, weekly, monthly, yearly], nullable: true }
+        payFrequency:
+          {
+            type: string,
+            enum: [hourly, daily, weekly, monthly, yearly],
+            nullable: true,
+          }
         startDate: { type: string, format: date, nullable: true }
         expiryDate: { type: string, format: date, nullable: true }
 
@@ -1168,8 +1525,17 @@ components:
         templateId: { type: integer, nullable: true }
         salary: { type: number, nullable: true }
         currency: { type: string, maxLength: 3, nullable: true }
-        payFrequency: { type: string, enum: [hourly, daily, weekly, monthly, yearly], nullable: true }
+        payFrequency:
+          {
+            type: string,
+            enum: [hourly, daily, weekly, monthly, yearly],
+            nullable: true,
+          }
         startDate: { type: string, format: date, nullable: true }
         expiryDate: { type: string, format: date, nullable: true }
-        status: { type: string, enum: [draft, sent, pending, accepted, declined, withdrawn] }
+        status:
+          {
+            type: string,
+            enum: [draft, sent, pending, accepted, declined, withdrawn],
+          }
         renderedHtml: { type: string, nullable: true }

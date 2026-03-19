@@ -10,7 +10,7 @@
 
     "strict": true,
     "noUncheckedIndexedAccess": true,
-    "exactOptionalPropertyTypes": true,
+    "exactOptionalPropertyTypes": false,
 
     "esModuleInterop": true,
     "allowSyntheticDefaultImports": true,

@@ -1,3 +1,5 @@
+//details of specific job opening
+
 "use client";
 
 import { useRef, useState, useEffect, FormEvent } from "react";

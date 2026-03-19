@@ -80,3 +80,5 @@ For Asgardeo setup and full configuration, see the documentation.
 ## Contributing
 
 See `CONTRIBUTING.md` for setup instructions, branching rules, and how to submit a pull request.
+## Contribution
+Added analytics reporting and resume parsing enhancements.

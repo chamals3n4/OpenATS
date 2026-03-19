@@ -27,6 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+
+//jobdetails and the questions to evaluate the candidate
 import type { JobDetail, CustomQuestion } from "@/types";
 
 

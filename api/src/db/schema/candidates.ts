@@ -1,6 +1,7 @@
 import {
   boolean,
   integer,
+  jsonb,
   numeric,
   pgTable,
   serial,
@@ -190,6 +191,13 @@ export const candidateCvAnalysis = pgTable(
 
     matchedSkills: text("matched_skills").array(),
     missingSkills: text("missing_skills").array(),
+
+    scoreBreakdown: jsonb("score_breakdown").$type<{
+      skills: number;
+      experience: number;
+      level: number;
+      certs: number;
+    }>(),
 
     extractedText: text("extracted_text"),
 

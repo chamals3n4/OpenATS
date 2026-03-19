@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { candidateService } from "../services/candidate.service";
 import { jobService } from "../services/job.service";
+import { cvAnalysisService } from "../services/cv-analysis.service";
 
 const customAnswerSchema = z.object({
   questionId: z.number().int().positive(),
@@ -14,7 +15,12 @@ const candidateApplySchema = z.object({
   lastName: z.string().min(1, "Last name is required").max(100),
   email: z.string().email("Invalid email address").max(255),
   phone: z.string().max(50).optional().nullable(),
-  resumeUrl: z.string().url("Invalid resume URL").max(1000).optional().nullable(),
+  resumeUrl: z
+    .string()
+    .url("Invalid resume URL")
+    .max(1000)
+    .optional()
+    .nullable(),
   customAnswers: z.array(customAnswerSchema).optional(),
 });
 
@@ -24,7 +30,6 @@ const moveStageSchema = z.object({
   movedBy: z.number().int().positive().default(1),
 });
 
-
 async function getJobOrFail(res: Response, jobId: number) {
   const job = await jobService.getById(jobId);
   if (!job) {
@@ -33,7 +38,6 @@ async function getJobOrFail(res: Response, jobId: number) {
   }
   return job;
 }
-
 
 export const applyForJob = async (req: Request, res: Response) => {
   try {
@@ -56,9 +60,18 @@ export const applyForJob = async (req: Request, res: Response) => {
     }
 
     const result = await candidateService.apply(jobId, parsed.data);
+
+    if (result.resumeUrl) {
+      cvAnalysisService
+        .analyze(result.id, result.jobId, result.resumeUrl)
+        .catch((err) => console.error("CV analysis error:", err));
+    }
+
     res.status(201).json({ data: result });
   } catch (error: any) {
-    res.status(500).json({ error: error.message || "Failed to submit application" });
+    res
+      .status(500)
+      .json({ error: error.message || "Failed to submit application" });
   }
 };
 
@@ -73,7 +86,9 @@ export const getCandidates = async (req: Request, res: Response) => {
     }
 
     const filters = {
-      stageId: req.query.stageId ? parseInt(req.query.stageId.toString()) : undefined,
+      stageId: req.query.stageId
+        ? parseInt(req.query.stageId.toString())
+        : undefined,
       search: req.query.search?.toString(),
     };
 
@@ -128,7 +143,9 @@ export const moveCandidateStage = async (req: Request, res: Response) => {
     );
     res.status(200).json({ data: result });
   } catch (error: any) {
-    res.status(400).json({ error: error.message || "Failed to move candidate" });
+    res
+      .status(400)
+      .json({ error: error.message || "Failed to move candidate" });
   }
 };
 

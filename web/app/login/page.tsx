@@ -12,7 +12,7 @@ export default function LoginPage() {
             src="/login.svg"
             alt="Login visual"
             fill
-            className="object-cover dark:brightness-[0.2] dark:grayscale"
+            className="object-cover "
             priority
           />
         </div>

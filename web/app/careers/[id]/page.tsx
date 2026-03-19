@@ -1,3 +1,5 @@
+//details of specific job opening
+
 "use client";
 
 import { useRef, useState, useEffect, FormEvent } from "react";
@@ -25,6 +27,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+
+//jobdetails and the questions to evaluate the candidate
 import type { JobDetail, CustomQuestion } from "@/types";
 
 

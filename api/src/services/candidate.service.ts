@@ -344,3 +344,5 @@ export const candidateService = {
     return deleted ?? null;
   },
 };
+
+//TODO: implement kafka

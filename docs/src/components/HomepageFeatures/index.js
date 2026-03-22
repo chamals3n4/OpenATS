@@ -1,51 +1,64 @@
-import clsx from 'clsx';
-import Heading from '@theme/Heading';
-import styles from './styles.module.css';
+import Heading from "@theme/Heading";
+import styles from "./styles.module.css";
 
 const FeatureList = [
   {
-    title: 'Easy to Use',
-    Svg: require('@site/static/img/undraw_docusaurus_mountain.svg').default,
+    title: "Job & Requisition Management",
     description: (
       <>
-        Docusaurus was designed from the ground up to be easily installed and
-        used to get your website up and running quickly.
+        Create, manage, and publish job openings with structured details and
+        requirements in one place.
       </>
     ),
   },
   {
-    title: 'Focus on What Matters',
-    Svg: require('@site/static/img/undraw_docusaurus_tree.svg').default,
+    title: "Hiring Pipeline",
     description: (
       <>
-        Docusaurus lets you focus on your docs, and we&apos;ll do the chores. Go
-        ahead and move your docs into the <code>docs</code> directory.
+        Organize your hiring process with customizable stages and track
+        candidates through each step.
       </>
     ),
   },
   {
-    title: 'Powered by React',
-    Svg: require('@site/static/img/undraw_docusaurus_react.svg').default,
+    title: "Built-in Assessments",
     description: (
       <>
-        Extend or customize your website layout by reusing React. Docusaurus can
-        be extended while reusing the same header and footer.
+        Create & Assign assessments to candidates at each stage and evaluate
+        them consistently
       </>
+    ),
+  },
+  {
+    title: "Collaboration & Offers",
+    description: (
+      <>Share feedback, track decisions, and manage offers with your team</>
+    ),
+  },
+  {
+    title: "AI CV Parsing",
+    description: (
+      <>
+        Automatically extract and organize candidate data from resumes using AI
+      </>
+    ),
+  },
+  {
+    title: "Career Page Builder",
+    description: (
+      <>Build your own custom career page to match your brand and website</>
     ),
   },
 ];
 
-function Feature({Svg, title, description}) {
+function Feature({ title, description }) {
   return (
-    <div className={clsx('col col--4')}>
-      <div className="text--center">
-        <Svg className={styles.featureSvg} role="img" />
-      </div>
-      <div className="text--center padding-horiz--md">
+    <article className={styles.featureCard}>
+      <div>
         <Heading as="h3">{title}</Heading>
         <p>{description}</p>
       </div>
-    </div>
+    </article>
   );
 }
 
@@ -53,7 +66,23 @@ export default function HomepageFeatures() {
   return (
     <section className={styles.features}>
       <div className="container">
-        <div className="row">
+        <div className={styles.sectionIntro}>
+          <Heading as="h2">What is OpenATS?</Heading>
+          <p>
+            OpenATS is a modern open source applicant tracking system built to
+            make hiring transparent, customizable, and accessible for teams
+            everywhere.
+          </p>
+          <div className={styles.sectionImageWrap}>
+            <img
+              src="/img/whatis.png"
+              alt="OpenATS pipeline preview"
+              className={styles.sectionImage}
+              loading="lazy"
+            />
+          </div>
+        </div>
+        <div className={styles.featuresGrid}>
           {FeatureList.map((props, idx) => (
             <Feature key={idx} {...props} />
           ))}

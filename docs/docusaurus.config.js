@@ -10,9 +10,8 @@ import { themes as prismThemes } from "prism-react-renderer";
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: "The future of hiring should be open",
-  tagline:
-    "OpenATS is a modern open source applicant tracking system built to make hiring transparent, customizable, and accessible for teams everywhere.",
+  title: "OpenATS",
+  tagline: "The future of hiring should be open. See it in action.",
   favicon: "img/favicon.ico",
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
@@ -85,22 +84,12 @@ const config = {
       },
       navbar: {
         title: "OpenATS",
-        logo: {
-          alt: "My Site Logo",
-          src: "img/logo.svg",
-        },
         items: [
           {
             type: "docSidebar",
             sidebarId: "tutorialSidebar",
             position: "left",
             label: "Documentation",
-          },
-          {
-            type: "docSidebar",
-            sidebarId: "tutorialSidebar",
-            position: "left",
-            label: "User Guide",
           },
           { to: "/blog", label: "Blog", position: "left" },
           {
@@ -148,12 +137,12 @@ const config = {
               },
               {
                 label: "GitHub",
-                href: "https://github.com/facebook/docusaurus",
+                href: "https://github.com/chamals3n4/OpenATS",
               },
             ],
           },
         ],
-        copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+        copyright: `Copyright © ${new Date().getFullYear()} OpenATS. Built with Docusaurus.`,
       },
       prism: {
         theme: prismThemes.github,

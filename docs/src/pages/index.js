@@ -23,6 +23,15 @@ function HomepageHeader() {
           >
             Try the Demo
           </Link>
+          <Link
+            className={clsx(
+              "button button--outline button--lg",
+              styles.docsButton,
+            )}
+            to="/docs/intro"
+          >
+            Read the Docs
+          </Link>
         </div>
       </div>
     </header>

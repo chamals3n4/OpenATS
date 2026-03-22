@@ -8,7 +8,8 @@
   text-align: center;
   position: relative;
   overflow: hidden;
-  background-color: var(--ifm-background-color);
+  background-color: #7fb77e;
+  color: #06141b;
 }
 
 @media screen and (max-width: 996px) {
@@ -21,4 +22,15 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.docsButton {
+  border: 2px solid #ffffff;
+  color: #ffffff;
+}
+
+.docsButton:hover {
+  border-color: #ffffff;
 }

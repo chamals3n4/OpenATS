@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Changa+One:ital@0;1&display=swap");
+
 /**
  * Any CSS included here will be global. The classic template
  * bundles Infima by default. Infima is a CSS framework designed to
@@ -27,4 +29,31 @@
   --ifm-color-primary-lighter: #32d8b4;
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+}
+
+/* Apply Changa One only to the navbar site title (OpenATS). */
+.navbar__title {
+  font-family: "Changa One", sans-serif;
+  font-size: 1.7rem;
+}
+
+.hero__title {
+  font-family: "Changa One", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  font-size: 4rem;
+}
+
+.hero__subtitle {
+  font-size: 1.5rem;
+}
+
+/* Hero section background like the reference (green block). */
+.hero.hero--primary {
+  background-color: #2fc8ad;
+  color: #06141b;
+}
+
+.footer {
+  background-color: var(--ifm-navbar-background-color);
 }

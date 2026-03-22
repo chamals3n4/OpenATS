@@ -5,10 +5,17 @@ import publicRouter from "./routes/public.routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import { swaggerUi, swaggerDocument } from "./config/swagger";
 import { authMiddleware } from "./middlewares/auth.middleware";
+import { activeLogMiddleware } from "./middlewares/active-log.middleware";
 
 const app: Express = express();
-app.use(cors({ origin: process.env.FRONTEND_URL ?? "http://localhost:3000", credentials: true }));
+app.use(
+  cors({
+    origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
+    credentials: true,
+  }),
+);
 app.use(express.json());
+app.use(activeLogMiddleware);
 
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "working" });

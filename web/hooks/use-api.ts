@@ -3,15 +3,33 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
 import type {
-  Job, JobDetail, PipelineStage, CurrentUser, ChatMessage,
-  CustomQuestion, Company, Department, Assessment, AssessmentQuestion,
-  Candidate, CandidateDetail, User, Template, Offer,
+  Job,
+  JobDetail,
+  PipelineStage,
+  CurrentUser,
+  ChatMessage,
+  CustomQuestion,
+  Company,
+  Department,
+  Assessment,
+  AssessmentQuestion,
+  Candidate,
+  CandidateDetail,
+  User,
+  Template,
+  Offer,
+  AnalyticsReport,
+  AnalyticsExportPayload,
+  ActiveLog,
+  ActiveLogFilters,
+  ActiveLogExportPayload,
 } from "@/types";
 
 export function useJobs() {
   return useQuery({
     queryKey: ["jobs"],
     queryFn: () => serverFetch<{ data: Job[] }>("/jobs"),
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -26,7 +44,8 @@ export function useJob(id: number) {
 export function usePipeline(jobId: number) {
   return useQuery({
     queryKey: ["jobs", jobId, "pipeline"],
-    queryFn: () => serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
+    queryFn: () =>
+      serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
     enabled: !!jobId,
   });
 }
@@ -34,7 +53,11 @@ export function usePipeline(jobId: number) {
 export function useCreateStage(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { name: string; position: number; stageType?: string }) =>
+    mutationFn: (data: {
+      name: string;
+      position: number;
+      stageType?: string;
+    }) =>
       serverFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline`, {
         method: "POST",
         body: JSON.stringify(data),
@@ -63,10 +86,13 @@ export function useUpdateStage(jobId: number) {
         rejectionTemplateId?: number | null;
       };
     }) =>
-      serverFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline/${stageId}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+      serverFetch<{ data: PipelineStage }>(
+        `/jobs/${jobId}/pipeline/${stageId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(data),
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -77,9 +103,12 @@ export function useDeleteStage(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (stageId: number) =>
-      serverFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline/${stageId}`, {
-        method: "DELETE",
-      }),
+      serverFetch<{ data: PipelineStage }>(
+        `/jobs/${jobId}/pipeline/${stageId}`,
+        {
+          method: "DELETE",
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -89,7 +118,8 @@ export function useDeleteStage(jobId: number) {
 export function useCustomQuestions(jobId: number) {
   return useQuery({
     queryKey: ["jobs", jobId, "questions"],
-    queryFn: () => serverFetch<{ data: CustomQuestion[] }>(`/jobs/${jobId}/questions`),
+    queryFn: () =>
+      serverFetch<{ data: CustomQuestion[] }>(`/jobs/${jobId}/questions`),
     enabled: !!jobId,
   });
 }
@@ -128,10 +158,13 @@ export function useUpdateQuestion(jobId: number) {
         isRequired?: boolean;
       };
     }) =>
-      serverFetch<{ data: CustomQuestion }>(`/jobs/${jobId}/questions/${questionId}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+      serverFetch<{ data: CustomQuestion }>(
+        `/jobs/${jobId}/questions/${questionId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(data),
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "questions"] });
     },
@@ -142,9 +175,12 @@ export function useDeleteQuestion(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (questionId: number) =>
-      serverFetch<{ data: CustomQuestion }>(`/jobs/${jobId}/questions/${questionId}`, {
-        method: "DELETE",
-      }),
+      serverFetch<{ data: CustomQuestion }>(
+        `/jobs/${jobId}/questions/${questionId}`,
+        {
+          method: "DELETE",
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "questions"] });
     },
@@ -234,7 +270,8 @@ export function useChatHistory(jobId: number, enabled: boolean) {
 export function useCandidateChatHistory(candidateId: number, enabled: boolean) {
   return useQuery({
     queryKey: ["chat", "candidate", candidateId],
-    queryFn: () => serverFetch<{ data: ChatMessage[] }>(`/chat/candidate/${candidateId}`),
+    queryFn: () =>
+      serverFetch<{ data: ChatMessage[] }>(`/chat/candidate/${candidateId}`),
     enabled: enabled && !!candidateId,
   });
 }
@@ -264,6 +301,7 @@ export function useDepartments() {
   return useQuery({
     queryKey: ["departments"],
     queryFn: () => serverFetch<{ data: Department[] }>("/company/departments"),
+    staleTime: 1000 * 60 * 10,
   });
 }
 
@@ -338,7 +376,21 @@ export function useCreateJob() {
 export function useUpdateJob(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: Partial<Job>) =>
+    mutationFn: (data: {
+      title?: string;
+      departmentId?: number;
+      employmentType?: Job["employmentType"];
+      location?: string | null;
+      description?: string | null;
+      skills?: string[];
+      salaryType?: "fixed" | "range" | null;
+      currency?: string | null;
+      payFrequency?: string | null;
+      salaryFixed?: number | null;
+      salaryMin?: number | null;
+      salaryMax?: number | null;
+      status?: Job["status"];
+    }) =>
       serverFetch<{ data: Job }>(`/jobs/${jobId}`, {
         method: "PUT",
         body: JSON.stringify(data),
@@ -375,7 +427,12 @@ export function useJobAssessments(jobId: number) {
     queryKey: ["jobs", jobId, "assessments"],
     queryFn: () =>
       serverFetch<{
-        data: { id: number; assessmentId: number; triggerStageId: number; createdAt: string }[];
+        data: {
+          id: number;
+          assessmentId: number;
+          triggerStageId: number;
+          createdAt: string;
+        }[];
       }>(`/jobs/${jobId}/assessments`),
     enabled: !!jobId,
   });
@@ -390,7 +447,9 @@ export function useAttachAssessment(jobId: number) {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "assessments"] });
+      queryClient.invalidateQueries({
+        queryKey: ["jobs", jobId, "assessments"],
+      });
     },
   });
 }
@@ -403,7 +462,9 @@ export function useDetachAssessment(jobId: number) {
         method: "DELETE",
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "assessments"] });
+      queryClient.invalidateQueries({
+        queryKey: ["jobs", jobId, "assessments"],
+      });
     },
   });
 }
@@ -411,7 +472,19 @@ export function useDetachAssessment(jobId: number) {
 export function useAssessment(id: number) {
   return useQuery({
     queryKey: ["assessments", id],
-    queryFn: () => serverFetch<{ data: Assessment & { questions: (AssessmentQuestion & { options: { id: number; label: string; isCorrect: boolean; position: number }[] })[] } }>(`/assessments/${id}`),
+    queryFn: () =>
+      serverFetch<{
+        data: Assessment & {
+          questions: (AssessmentQuestion & {
+            options: {
+              id: number;
+              label: string;
+              isCorrect: boolean;
+              position: number;
+            }[];
+          })[];
+        };
+      }>(`/assessments/${id}`),
     enabled: !!id,
   });
 }
@@ -447,7 +520,9 @@ export function useUpdateAssessment(assessmentId: number) {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["assessments"] });
-      queryClient.invalidateQueries({ queryKey: ["assessments", assessmentId] });
+      queryClient.invalidateQueries({
+        queryKey: ["assessments", assessmentId],
+      });
     },
   });
 }
@@ -475,12 +550,17 @@ export function useCreateAssessmentQuestion(assessmentId: number) {
       position: number;
       options?: { label: string; isCorrect?: boolean; position: number }[];
     }) =>
-      serverFetch<{ data: AssessmentQuestion }>(`/assessments/${assessmentId}/questions`, {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+      serverFetch<{ data: AssessmentQuestion }>(
+        `/assessments/${assessmentId}/questions`,
+        {
+          method: "POST",
+          body: JSON.stringify(data),
+        },
+      ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assessments", assessmentId] });
+      queryClient.invalidateQueries({
+        queryKey: ["assessments", assessmentId],
+      });
     },
   });
 }
@@ -501,12 +581,17 @@ export function useUpdateAssessmentQuestion(assessmentId: number) {
         options?: { label: string; isCorrect?: boolean; position: number }[];
       };
     }) =>
-      serverFetch<{ data: AssessmentQuestion }>(`/assessments/${assessmentId}/questions/${questionId}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+      serverFetch<{ data: AssessmentQuestion }>(
+        `/assessments/${assessmentId}/questions/${questionId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(data),
+        },
+      ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assessments", assessmentId] });
+      queryClient.invalidateQueries({
+        queryKey: ["assessments", assessmentId],
+      });
     },
   });
 }
@@ -514,11 +599,16 @@ export function useDeleteAssessmentQuestion(assessmentId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (questionId: number) =>
-      serverFetch<{ data: AssessmentQuestion }>(`/assessments/${assessmentId}/questions/${questionId}`, {
-        method: "DELETE",
-      }),
+      serverFetch<{ data: AssessmentQuestion }>(
+        `/assessments/${assessmentId}/questions/${questionId}`,
+        {
+          method: "DELETE",
+        },
+      ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["assessments", assessmentId] });
+      queryClient.invalidateQueries({
+        queryKey: ["assessments", assessmentId],
+      });
     },
   });
 }
@@ -526,7 +616,8 @@ export function useDeleteAssessmentQuestion(assessmentId: number) {
 export function useOffers(jobId?: number) {
   return useQuery({
     queryKey: jobId ? ["offers", "job", jobId] : ["offers", "all"],
-    queryFn: () => serverFetch<{ data: any[] }>(jobId ? `/offers/job/${jobId}` : `/offers`),
+    queryFn: () =>
+      serverFetch<{ data: any[] }>(jobId ? `/offers/job/${jobId}` : `/offers`),
     enabled: jobId === undefined || !!jobId,
   });
 }
@@ -549,7 +640,9 @@ export function useCreateOffer() {
       }),
     onSuccess: (_, variables) => {
       if (variables.jobId) {
-        queryClient.invalidateQueries({ queryKey: ["offers", "job", variables.jobId] });
+        queryClient.invalidateQueries({
+          queryKey: ["offers", "job", variables.jobId],
+        });
       }
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
@@ -571,7 +664,9 @@ export function useUpdateOffer() {
         body: JSON.stringify(data),
       }),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["offers", variables.offerId] });
+      queryClient.invalidateQueries({
+        queryKey: ["offers", variables.offerId],
+      });
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });
@@ -607,13 +702,18 @@ export function useUpdateOfferStatus() {
   });
 }
 
-export function useCandidates(jobId?: number, filters?: { stageId?: number; search?: string }) {
+export function useCandidates(
+  jobId?: number,
+  filters?: { stageId?: number; search?: string },
+) {
   const params = new URLSearchParams();
   if (filters?.stageId) params.set("stageId", String(filters.stageId));
   if (filters?.search) params.set("search", filters.search);
   const query = params.toString() ? `?${params.toString()}` : "";
 
-  const path = jobId ? `/candidates/jobs/${jobId}${query}` : `/candidates${query}`;
+  const path = jobId
+    ? `/candidates/jobs/${jobId}${query}`
+    : `/candidates${query}`;
 
   return useQuery({
     queryKey: ["candidates", jobId ?? "all", filters],
@@ -621,11 +721,16 @@ export function useCandidates(jobId?: number, filters?: { stageId?: number; sear
   });
 }
 
-export function useCandidate(id: number) {
+export function useCandidate(id: number, options?: { enabled?: boolean }) {
+  const enabled = (options?.enabled ?? true) && !!id;
   return useQuery({
     queryKey: ["candidates", id],
     queryFn: () => serverFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
-    enabled: !!id,
+    enabled,
+    refetchInterval: (query) =>
+      enabled && query.state.data?.data?.cvAnalysis?.status === "pending"
+        ? 2500
+        : false,
   });
 }
 
@@ -696,6 +801,42 @@ export function useDeleteCandidate() {
   });
 }
 
+export function useUpdateCandidateBasicDetails() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      formData,
+    }: {
+      id: number;
+      formData: FormData;
+    }) => {
+      const res = await fetch(`/api/candidates/${id}`, {
+        method: "PATCH",
+        body: formData,
+      });
+
+      const json = (await res.json().catch(() => null)) as
+        | { data: Candidate }
+        | { error?: string }
+        | null;
+
+      if (!res.ok) {
+        throw new Error(
+          (json as { error?: string } | null)?.error ??
+            "Failed to update candidate",
+        );
+      }
+
+      return json as { data: Candidate };
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates", variables.id] });
+    },
+  });
+}
+
 // templates
 
 export function useTemplates() {
@@ -758,9 +899,129 @@ export function useDeleteTemplate() {
 export function usePreviewTemplate() {
   return useMutation({
     mutationFn: ({ id, context }: { id: number; context: any }) =>
-      serverFetch<any>(`/templates/${id}/preview`, { 
+      serverFetch<any>(`/templates/${id}/preview`, {
         method: "POST",
         body: JSON.stringify({ context }),
       }),
+  });
+}
+
+export function useAnalyticsReport(
+  period: "7d" | "30d" | "90d",
+  departmentId?: number,
+) {
+  return useQuery({
+    queryKey: ["reports", "analytics", period, departmentId ?? "all"],
+    queryFn: () => {
+      const params = new URLSearchParams({ period });
+      if (departmentId) params.set("departmentId", String(departmentId));
+      return serverFetch<{ data: AnalyticsReport }>(
+        `/reports/analytics?${params.toString()}`,
+      );
+    },
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useExportAnalyticsReport() {
+  return useMutation({
+    mutationFn: async ({
+      period,
+      departmentId,
+      format,
+    }: {
+      period: "7d" | "30d" | "90d";
+      departmentId?: number;
+      format: "csv" | "json";
+    }) => {
+      const params = new URLSearchParams({ period, format });
+      if (departmentId) params.set("departmentId", String(departmentId));
+
+      return serverFetch<{ data: AnalyticsExportPayload }>(
+        `/reports/analytics/export?${params.toString()}`,
+      );
+    },
+  });
+}
+
+export function useActiveLogs(
+  filters: ActiveLogFilters,
+  options?: {
+    enabled?: boolean;
+    live?: boolean;
+  },
+) {
+  return useQuery({
+    queryKey: ["logs", "active", filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+
+      if (filters.search?.trim()) params.set("search", filters.search.trim());
+      if (filters.level) params.set("level", filters.level);
+      if (filters.service) params.set("service", filters.service);
+      if (filters.statusGroup) params.set("statusGroup", filters.statusGroup);
+      if (filters.windowSize) params.set("windowSize", filters.windowSize);
+      if (filters.limit) params.set("limit", String(filters.limit));
+      if (filters.offset) params.set("offset", String(filters.offset));
+
+      const res = await fetch(`/api/logs?${params.toString()}`, {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      const json = (await res.json().catch(() => null)) as
+        | ActiveLog[]
+        | { error?: string }
+        | null;
+
+      if (!res.ok) {
+        throw new Error(
+          (json as { error?: string } | null)?.error ?? "Failed to load logs",
+        );
+      }
+
+      return (json ?? []) as ActiveLog[];
+    },
+    enabled: options?.enabled ?? true,
+    refetchInterval: options?.live ? 4500 : false,
+    staleTime: 2000,
+  });
+}
+
+export function useExportActiveLogs() {
+  return useMutation({
+    mutationFn: async ({
+      format,
+      filters,
+    }: {
+      format: "csv" | "json";
+      filters?: Omit<ActiveLogFilters, "limit" | "offset">;
+    }) => {
+      const params = new URLSearchParams({ format });
+
+      if (filters?.search?.trim()) params.set("search", filters.search.trim());
+      if (filters?.level) params.set("level", filters.level);
+      if (filters?.service) params.set("service", filters.service);
+      if (filters?.statusGroup) params.set("statusGroup", filters.statusGroup);
+      if (filters?.windowSize) params.set("windowSize", filters.windowSize);
+
+      const res = await fetch(`/api/logs/export?${params.toString()}`, {
+        method: "GET",
+        cache: "no-store",
+      });
+
+      const json = (await res.json().catch(() => null)) as
+        | ActiveLogExportPayload
+        | { error?: string }
+        | null;
+
+      if (!res.ok) {
+        throw new Error(
+          (json as { error?: string } | null)?.error ?? "Failed to export logs",
+        );
+      }
+
+      return json as ActiveLogExportPayload;
+    },
   });
 }

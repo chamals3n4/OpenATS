@@ -1,11 +1,11 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
+import { useState, useEffect } from "react";
 import {
   Search01Icon,
   PlusSignIcon,
   CallIcon,
   Mail01Icon,
-  MoreVerticalIcon,
+  PencilEdit01Icon,
   Delete02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -39,12 +39,22 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
 import {
   useCandidates,
   useDeleteCandidate,
   useJobs,
+  useUpdateCandidateBasicDetails,
 } from "@/hooks/use-api";
+import { ResumeScrollView } from "@/components/resume-scroll-view";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
 import type { Candidate } from "@/types";
 
@@ -58,47 +68,6 @@ function timeAgo(dateStr: string) {
   return `${Math.floor(hours / 24)}d ago`;
 }
 
-function RowMenu({ onDelete }: { onDelete(): void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const fn = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", fn);
-    return () => document.removeEventListener("mousedown", fn);
-  }, [open]);
-  return (
-    <div ref={ref} className="relative flex justify-end">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((o) => !o);
-        }}
-        className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
-      >
-        <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-8 z-50 w-44 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-lg shadow-lg py-1 text-sm">
-          <button
-            onClick={() => {
-              setOpen(false);
-              onDelete();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20"
-          >
-            <HugeiconsIcon icon={Delete02Icon} className="size-4 text-red-400" />
-            Delete
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-
 export default function ManageCandidatesPage() {
   const [selectedJobId, setSelectedJobId] = useState<number | undefined>();
   const [search, setSearch] = useState("");
@@ -106,6 +75,12 @@ export default function ManageCandidatesPage() {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null);
+  const [editTarget, setEditTarget] = useState<Candidate | null>(null);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editResumeFile, setEditResumeFile] = useState<File | null>(null);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -117,6 +92,7 @@ export default function ManageCandidatesPage() {
   });
   const { data: jobsData } = useJobs();
   const deleteMutation = useDeleteCandidate();
+  const updateMutation = useUpdateCandidateBasicDetails();
 
   const candidates = candidatesData?.data ?? [];
   const jobs = jobsData?.data ?? [];
@@ -128,6 +104,15 @@ export default function ManageCandidatesPage() {
     setIsDetailOpen(true);
   };
 
+  const openEditDialog = (candidate: Candidate) => {
+    setEditTarget(candidate);
+    setEditFirstName(candidate.firstName);
+    setEditLastName(candidate.lastName);
+    setEditEmail(candidate.email);
+    setEditPhone(candidate.phone ?? "");
+    setEditResumeFile(null);
+  };
+
   const confirmDelete = () => {
     if (!deleteTarget) return;
     deleteMutation.mutate(deleteTarget.id, {
@@ -136,6 +121,33 @@ export default function ManageCandidatesPage() {
         if (selectedId === deleteTarget.id) setIsDetailOpen(false);
       },
     });
+  };
+
+  const confirmUpdate = () => {
+    if (!editTarget) return;
+
+    const formData = new FormData();
+    formData.append("firstName", editFirstName.trim());
+    formData.append("lastName", editLastName.trim());
+    formData.append("email", editEmail.trim());
+    formData.append("phone", editPhone.trim());
+
+    if (editResumeFile) {
+      formData.append("resume", editResumeFile);
+    }
+
+    updateMutation.mutate(
+      {
+        id: editTarget.id,
+        formData,
+      },
+      {
+        onSuccess: () => {
+          setEditTarget(null);
+          setEditResumeFile(null);
+        },
+      },
+    );
   };
 
   return (
@@ -149,13 +161,17 @@ export default function ManageCandidatesPage() {
           className="text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
           style={{ backgroundColor: "var(--theme-color)" }}
         >
-          <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2.5} />
+          <HugeiconsIcon
+            icon={PlusSignIcon}
+            className="size-4"
+            strokeWidth={2.5}
+          />
           <span>Add Candidate</span>
         </Button>
       </div>
 
       {/* Filters */}
-      <div className="border-y border-slate-200 dark:border-neutral-800 px-8 py-3.5 flex items-center gap-4">
+      <div className="border-y border-slate-300 dark:border-neutral-700 px-8 py-3.5 flex items-center gap-4">
         <div className="relative w-80">
           <HugeiconsIcon
             icon={Search01Icon}
@@ -165,7 +181,7 @@ export default function ManageCandidatesPage() {
             placeholder="Search Candidate"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
+            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
 
@@ -175,14 +191,14 @@ export default function ManageCandidatesPage() {
             setSelectedJobId(v === "all" ? undefined : Number(v))
           }
         >
-          <SelectTrigger className="w-52 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-52 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Job Position">
               {selectedJobId
                 ? (jobs.find((j) => j.id === selectedJobId)?.title ?? null)
                 : "All Positions"}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Positions</SelectItem>
             {jobs.map((j) => (
               <SelectItem key={j.id} value={String(j.id)}>
@@ -206,10 +222,10 @@ export default function ManageCandidatesPage() {
 
       {/* Table */}
       <div className="px-8 py-6">
-        <div className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
+        <div className="border border-slate-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-transparent">
+              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Candidate Name
                 </TableHead>
@@ -222,7 +238,9 @@ export default function ManageCandidatesPage() {
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Applied on
                 </TableHead>
-                <TableHead className="h-13 px-4 w-12" />
+                <TableHead className="h-13 px-4 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -248,7 +266,7 @@ export default function ManageCandidatesPage() {
                 candidates.map((c) => (
                   <TableRow
                     key={c.id}
-                    className="border-b border-slate-200 dark:border-neutral-800 last:border-0 font-medium cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
+                    className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
                     onClick={() => handleRowClick(c)}
                   >
                     <TableCell className="h-13 px-8 py-0 font-medium text-slate-700 dark:text-neutral-200">
@@ -273,7 +291,32 @@ export default function ManageCandidatesPage() {
                       className="h-13 px-4 py-0"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <RowMenu onDelete={() => setDeleteTarget(c)} />
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-3 rounded-md border-slate-300 dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
+                          onClick={() => openEditDialog(c)}
+                        >
+                          <HugeiconsIcon
+                            icon={PencilEdit01Icon}
+                            className="size-3.5 mr-1"
+                          />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-3 rounded-md border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400"
+                          onClick={() => setDeleteTarget(c)}
+                        >
+                          <HugeiconsIcon
+                            icon={Delete02Icon}
+                            className="size-3.5 mr-1"
+                          />
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -281,7 +324,7 @@ export default function ManageCandidatesPage() {
             </TableBody>
           </Table>
 
-          <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <span className="text-sm font-medium text-slate-400 dark:text-neutral-500">
               {isLoading
                 ? "Loading..."
@@ -324,39 +367,145 @@ export default function ManageCandidatesPage() {
                     ].map(([icon, value], i) => (
                       <div
                         key={i}
-                        className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-[var(--theme-color)] cursor-pointer whitespace-nowrap"
+                        className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap"
                       >
-                        <HugeiconsIcon icon={icon as any} className="size-3.5 text-slate-400" />
+                        <HugeiconsIcon
+                          icon={icon as any}
+                          className="size-3.5 text-slate-400"
+                        />
                         <span>{value as string}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                   {selectedCandidate.resumeUrl ? (
-                    <iframe
-                      src={`${selectedCandidate.resumeUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-                      title="Resume"
-                      className="w-full h-full border-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                    />
+                    <ResumeScrollView resumeUrl={selectedCandidate.resumeUrl} />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
-                      <svg className="size-10 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      <svg
+                        className="size-10 opacity-30"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
                       </svg>
-                      <p className="text-[13px] font-medium">No resume uploaded</p>
+                      <p className="text-[13px] font-medium">
+                        No resume uploaded
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Right — answers + history */}
-              <CandidateSidePanel candidateId={selectedCandidate.id} />
+              <CandidateSidePanel
+                candidateId={selectedCandidate.id}
+                open={isDetailOpen}
+              />
             </>
           )}
         </SheetContent>
       </Sheet>
+
+      <Dialog
+        open={!!editTarget}
+        onOpenChange={(o) => !o && setEditTarget(null)}
+      >
+        <DialogContent className="max-w-lg rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+              Edit Candidate
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5">
+                First name
+              </p>
+              <Input
+                value={editFirstName}
+                onChange={(e) => setEditFirstName(e.target.value)}
+                className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+              />
+            </div>
+            <div>
+              <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5">
+                Last name
+              </p>
+              <Input
+                value={editLastName}
+                onChange={(e) => setEditLastName(e.target.value)}
+                className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5">
+                Email
+              </p>
+              <Input
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+                className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5">
+                Phone
+              </p>
+              <Input
+                value={editPhone}
+                onChange={(e) => setEditPhone(e.target.value)}
+                className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+                placeholder="Optional"
+              />
+            </div>
+
+            <div className="col-span-2">
+              <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5">
+                Upload new CV (PDF)
+              </p>
+              <Input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setEditResumeFile(e.target.files?.[0] ?? null)}
+                className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+              />
+              <p className="text-[12px] text-slate-400 mt-1">
+                If uploaded, the existing CV will be replaced.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <DialogClose
+              disabled={updateMutation.isPending}
+              className="h-9 px-5 rounded-lg border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium hover:bg-slate-50 dark:hover:bg-neutral-800"
+            >
+              Cancel
+            </DialogClose>
+            <Button
+              onClick={confirmUpdate}
+              disabled={updateMutation.isPending}
+              className="h-9 px-5 rounded-lg text-white text-[13px] font-semibold shadow-none border-none"
+              style={{ backgroundColor: "var(--theme-color)" }}
+            >
+              {updateMutation.isPending ? "Saving…" : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Delete dialog */}
       <AlertDialog

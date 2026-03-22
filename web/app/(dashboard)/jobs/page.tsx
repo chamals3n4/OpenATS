@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search01Icon,
   PlusSignIcon,
-  MoreVerticalIcon,
-  Archive01Icon,
+  PencilEdit01Icon,
+  Delete02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -38,8 +38,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { archiveItem } from "@/lib/archive-store";
-import { useJobs } from "@/hooks/use-api";
+import { useDeleteJob, useDepartments, useJobs } from "@/hooks/use-api";
 import type { Job } from "@/types";
 
 const EMPLOYMENT_TYPE_LABELS: Record<Job["employmentType"], string> = {
@@ -54,71 +53,57 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB");
 }
 
-function RowMenu({ onArchive }: { onArchive(): void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const fn = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", fn);
-    return () => document.removeEventListener("mousedown", fn);
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative flex justify-end">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((o) => !o);
-        }}
-        className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
-      >
-        <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-8 z-50 w-44 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-lg shadow-lg py-1 text-sm">
-          <button
-            onClick={() => {
-              setOpen(false);
-              onArchive();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800"
-          >
-            <HugeiconsIcon
-              icon={Archive01Icon}
-              className="size-4 text-slate-400"
-            />
-            Archive
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function ManageJobsPage() {
   const router = useRouter();
   const { data, isLoading } = useJobs();
+  const { data: deptData } = useDepartments();
+  const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
+  const deleteMutation = useDeleteJob();
+
   const jobs = data?.data ?? [];
-  const [archiveTarget, setArchiveTarget] = useState<Job | null>(null);
+  const departments = deptData?.data ?? [];
+  const [searchTerm, setSearchTerm] = useState("");
   const [filterDept, setFilterDept] = useState("all");
   const [filterType, setFilterType] = useState("all");
 
-  const DEPT_LABELS: Record<string, string> = { all: "All Departments", api: "API Management", eng: "Engineering" };
-  const TYPE_LABELS: Record<string, string> = { all: "All Types", fulltime: "Full Time", internship: "Internship" };
+  const departmentNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    departments.forEach((d) => map.set(d.id, d.name));
+    return map;
+  }, [departments]);
 
-  const confirmArchive = () => {
-    if (!archiveTarget) return;
-    archiveItem({
-      id: String(archiveTarget.id),
-      type: "job",
-      name: archiveTarget.title,
-      detail: String(archiveTarget.departmentId),
+  const filteredJobs = useMemo(() => {
+    const q = searchTerm.trim().toLowerCase();
+
+    return jobs.filter((job) => {
+      const matchesDepartment =
+        filterDept === "all" || String(job.departmentId) === filterDept;
+
+      const matchesType =
+        filterType === "all" || job.employmentType === filterType;
+
+      if (!q) return matchesDepartment && matchesType;
+
+      const departmentName =
+        departmentNameById.get(job.departmentId)?.toLowerCase() ?? "";
+
+      const matchesSearch =
+        job.title.toLowerCase().includes(q) ||
+        (job.location ?? "").toLowerCase().includes(q) ||
+        departmentName.includes(q);
+
+      return matchesDepartment && matchesType && matchesSearch;
     });
-    setArchiveTarget(null);
+  }, [jobs, searchTerm, filterDept, filterType, departmentNameById]);
+
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+
+    deleteMutation.mutate(deleteTarget.id, {
+      onSuccess: () => {
+        setDeleteTarget(null);
+      },
+    });
   };
 
   return (
@@ -141,7 +126,7 @@ export default function ManageJobsPage() {
         </ThemeButton>
       </div>
 
-      <div className="border-y border-slate-200 dark:border-neutral-800 px-8 py-3.5 flex items-center gap-4">
+      <div className="border-y border-slate-300 dark:border-neutral-700 px-8 py-3.5 flex items-center gap-4">
         <div className="relative w-80">
           <HugeiconsIcon
             icon={Search01Icon}
@@ -149,36 +134,62 @@ export default function ManageJobsPage() {
           />
           <Input
             placeholder="Search"
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
-        <Select value={filterDept} onValueChange={(v) => setFilterDept(v ?? "all")}>
-          <SelectTrigger className="w-52 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+        <Select
+          value={filterDept}
+          onValueChange={(v) => setFilterDept(v ?? "all")}
+        >
+          <SelectTrigger className="w-52 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Departments">
-              {DEPT_LABELS[filterDept] ?? filterDept}
+              {filterDept === "all"
+                ? "All Departments"
+                : (departmentNameById.get(Number(filterDept)) ?? "Department")}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Departments</SelectItem>
-            <SelectItem value="api">API Management</SelectItem>
-            <SelectItem value="eng">Engineering</SelectItem>
+            {departments.map((dept) => (
+              <SelectItem key={dept.id} value={String(dept.id)}>
+                {dept.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
-        <Select value={filterType} onValueChange={(v) => setFilterType(v ?? "all")}>
-          <SelectTrigger className="w-44 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+        <Select
+          value={filterType}
+          onValueChange={(v) => setFilterType(v ?? "all")}
+        >
+          <SelectTrigger className="w-44 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Job Types">
-              {TYPE_LABELS[filterType] ?? filterType}
+              {filterType === "all"
+                ? "All Types"
+                : (EMPLOYMENT_TYPE_LABELS[
+                    filterType as Job["employmentType"]
+                  ] ?? filterType)}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="fulltime">Full Time</SelectItem>
-            <SelectItem value="internship">Internship</SelectItem>
+            {(
+              Object.keys(EMPLOYMENT_TYPE_LABELS) as Job["employmentType"][]
+            ).map((type) => (
+              <SelectItem key={type} value={type}>
+                {EMPLOYMENT_TYPE_LABELS[type]}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
         <Button
           variant="ghost"
-          onClick={() => { setFilterDept("all"); setFilterType("all"); }}
+          onClick={() => {
+            setSearchTerm("");
+            setFilterDept("all");
+            setFilterType("all");
+          }}
           className="text-slate-600 dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-4"
         >
           Clear All
@@ -186,10 +197,10 @@ export default function ManageJobsPage() {
       </div>
 
       <div className="px-8 py-6">
-        <div className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
+        <div className="border border-slate-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-transparent">
+              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Job Name
                 </TableHead>
@@ -205,25 +216,37 @@ export default function ManageJobsPage() {
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Created At
                 </TableHead>
-                <TableHead className="h-13 px-4 w-12" />
+                <TableHead className="h-13 px-4 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-slate-400 text-sm">
+                  <TableCell
+                    colSpan={6}
+                    className="h-32 text-center text-slate-400 text-sm"
+                  >
                     Loading jobs...
                   </TableCell>
                 </TableRow>
-              ) : jobs.length === 0 ? (
+              ) : filteredJobs.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="h-32 text-center text-slate-400 text-sm">
+                  <TableCell
+                    colSpan={6}
+                    className="h-32 text-center text-slate-400 text-sm"
+                  >
                     No jobs found.
                   </TableCell>
                 </TableRow>
               ) : (
-                jobs.map((job) => (
-                  <TableRow key={job.id} onClick={() => router.push(`jobs/${job.id}`)} className="border-b border-slate-200 dark:border-neutral-800 last:border-0 font-medium cursor-pointer">
+                filteredJobs.map((job) => (
+                  <TableRow
+                    key={job.id}
+                    onClick={() => router.push(`jobs/${job.id}`)}
+                    className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer"
+                  >
                     <TableCell className="h-13 px-8 py-0">
                       <span className="text-slate-700 dark:text-neutral-300 font-medium">
                         {job.title}
@@ -233,7 +256,8 @@ export default function ManageJobsPage() {
                       {EMPLOYMENT_TYPE_LABELS[job.employmentType]}
                     </TableCell>
                     <TableCell className="h-13 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
-                      {job.departmentId}
+                      {departmentNameById.get(job.departmentId) ??
+                        `Department #${job.departmentId}`}
                     </TableCell>
                     <TableCell className="h-13 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
                       {job.location ?? "—"}
@@ -241,8 +265,36 @@ export default function ManageJobsPage() {
                     <TableCell className="h-13 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
                       {formatDate(job.createdAt)}
                     </TableCell>
-                    <TableCell className="h-13 px-4 py-0">
-                      <RowMenu onArchive={() => setArchiveTarget(job)} />
+                    <TableCell
+                      className="h-13 px-4 py-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-3 rounded-md border-slate-300 dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
+                          onClick={() => router.push(`/jobs/${job.id}/edit`)}
+                        >
+                          <HugeiconsIcon
+                            icon={PencilEdit01Icon}
+                            className="size-3.5 mr-1"
+                          />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-3 rounded-md border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400"
+                          onClick={() => setDeleteTarget(job)}
+                        >
+                          <HugeiconsIcon
+                            icon={Delete02Icon}
+                            className="size-3.5 mr-1"
+                          />
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -250,9 +302,13 @@ export default function ManageJobsPage() {
             </TableBody>
           </Table>
 
-          <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <span className="text-sm font-medium text-slate-400">
-              {isLoading ? "Loading..." : `Showing 1-${jobs.length} of ${jobs.length} results`}
+              {isLoading
+                ? "Loading..."
+                : filteredJobs.length === 0
+                  ? "Showing 0 of 0 results"
+                  : `Showing 1-${filteredJobs.length} of ${filteredJobs.length} results`}
             </span>
             <div className="flex items-center gap-3">
               <Button
@@ -275,18 +331,19 @@ export default function ManageJobsPage() {
       </div>
 
       <AlertDialog
-        open={!!archiveTarget}
-        onOpenChange={(o) => !o && setArchiveTarget(null)}
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
       >
         <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
-              Archive this job?
+              Delete this job?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
-              <strong className="text-slate-700 dark:text-neutral-200">{archiveTarget?.title}</strong>{" "}
-              will be moved to the Archive. You can permanently delete it from
-              Settings → Archive.
+              <strong className="text-slate-700 dark:text-neutral-200">
+                {deleteTarget?.title}
+              </strong>{" "}
+              will be permanently deleted. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
@@ -294,11 +351,11 @@ export default function ManageJobsPage() {
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmArchive}
-              className="h-9 px-5 rounded-lg text-white text-[13px] font-medium shadow-none border-none"
-              style={{ backgroundColor: "var(--theme-color)" }}
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+              className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none"
             >
-              Archive
+              {deleteMutation.isPending ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

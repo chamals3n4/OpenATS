@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Public_Sans, Bebas_Neue } from "next/font/google";
-import { AsgardeoProvider } from '@asgardeo/nextjs/server';
+import { Changa_One, Geist, Geist_Mono, Public_Sans } from "next/font/google";
+import { AsgardeoProvider } from "@asgardeo/nextjs/server";
 import "./globals.css";
 
-const publicSans = Public_Sans({ subsets: ['latin'], variable: '--font-sans' });
-const bebasNeue = Bebas_Neue({ weight: '400', subsets: ['latin'], variable: '--font-bebas' });
+const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-sans" });
+const changaOne = Changa_One({
+  subsets: ["latin"],
+  weight: "400",
+  variable: "--font-changa-one",
+});
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,7 +35,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`${publicSans.variable} ${bebasNeue.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${publicSans.variable} ${changaOne.variable}`}
+      suppressHydrationWarning
+    >
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}
       >

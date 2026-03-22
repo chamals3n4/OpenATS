@@ -1,6 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import {
+  ArrowDown01Icon,
+  ListViewIcon,
+  TextIcon,
+} from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Bar,
   BarChart,
@@ -29,102 +35,32 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  useAnalyticsReport,
+  useDepartments,
+  useExportAnalyticsReport,
+} from "@/hooks/use-api";
 
-const STATS = [
-  { label: "Total Candidates", value: "458", delta: "+12%", up: true },
-  { label: "Open Positions", value: "23", delta: "+3", up: true },
-  { label: "Avg. Time To Hire", value: "18", delta: "-2 days", up: true },
-  { label: "Offer Acceptance Rate", value: "82%", delta: "+4%", up: true },
-];
-
-const pipelineData = [
-  { stage: "Applied", current: 110, previous: 75 },
-  { stage: "Screening", current: 75, previous: 60 },
-  { stage: "Interview", current: 45, previous: 38 },
-  { stage: "Offer", current: 20, previous: 15 },
-  { stage: "Hired", current: 12, previous: 10 },
-  { stage: "Rejected", current: 200, previous: 145 },
-];
 const pipelineConfig: ChartConfig = {
   current: { label: "This Period", color: "#D97757" },
   previous: { label: "Previous Period", color: "#E8CFC7" },
 };
 
-const volumeData = [
-  { date: "Feb 1", applications: 28, hires: 1 },
-  { date: "Feb 5", applications: 33, hires: 2 },
-  { date: "Feb 10", applications: 38, hires: 1 },
-  { date: "Feb 15", applications: 48, hires: 2 },
-  { date: "Feb 20", applications: 55, hires: 3 },
-  { date: "Feb 25", applications: 50, hires: 2 },
-];
 const volumeConfig: ChartConfig = {
   applications: { label: "Applications", color: "#D97757" },
   hires: { label: "Hires", color: "#94A38B" },
 };
 
-const sourceData = [
-  { name: "LinkedIn", value: 38, color: "#D97757" },
-  { name: "Referral", value: 25, color: "#E8916F" },
-  { name: "Job Boards", value: 20, color: "#C4A381" },
-  { name: "Website", value: 10, color: "#94A38B" },
-  { name: "Other", value: 7, color: "#E8CFC7" },
-];
-const sourceConfig: ChartConfig = Object.fromEntries(
-  sourceData.map((s) => [s.name, { label: s.name, color: s.color }]),
-);
-
-const deptData = [
-  { dept: "Engineering", days: 22 },
-  { dept: "Design", days: 16 },
-  { dept: "Marketing", days: 14 },
-  { dept: "Sales", days: 18 },
-  { dept: "HR", days: 10 },
-];
 const deptConfig: ChartConfig = {
   days: { label: "Avg. Days", color: "#D97757" },
 };
 
-const offerData = [
-  { month: "Oct", sent: 18, accepted: 14 },
-  { month: "Nov", sent: 22, accepted: 19 },
-  { month: "Dec", sent: 15, accepted: 11 },
-  { month: "Jan", sent: 28, accepted: 24 },
-  { month: "Feb", sent: 24, accepted: 20 },
-];
 const offerConfig: ChartConfig = {
   sent: { label: "Offers Sent", color: "#C4A381" },
   accepted: { label: "Offers Accepted", color: "#D97757" },
 };
 
-function exportCSV() {
-  const rows = [
-    ["=== Pipeline Report ==="],
-    ["Stage", "This Period", "Previous Period"],
-    ...pipelineData.map((d) => [d.stage, d.current, d.previous]),
-    [],
-    ["=== Candidate Volume ==="],
-    ["Date", "Applications", "Hires"],
-    ...volumeData.map((d) => [d.date, d.applications, d.hires]),
-    [],
-    ["=== Source of Candidates ==="],
-    ["Source", "Percentage"],
-    ...sourceData.map((d) => [d.name, `${d.value}%`]),
-    [],
-    ["=== Time to Hire by Dept ==="],
-    ["Department", "Avg Days"],
-    ...deptData.map((d) => [d.dept, d.days]),
-  ];
-  const csv = rows.map((r) => r.join(",")).join("\n");
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = Object.assign(document.createElement("a"), {
-    href: url,
-    download: "openats-report.csv",
-  });
-  a.click();
-  URL.revokeObjectURL(url);
-}
+const SOURCE_COLORS = ["#D97757", "#E8916F", "#C4A381", "#94A38B", "#E8CFC7"];
 
 function ChartCard({
   title,
@@ -156,17 +92,100 @@ const PERIOD_LABELS: Record<string, string> = {
   "90d": "Last 90 Days",
 };
 
-const DEPT_LABELS: Record<string, string> = {
-  all: "All Departments",
-  engineering: "Engineering",
-  design: "Design",
-  marketing: "Marketing",
-  sales: "Sales",
-};
-
 export default function OverviewPage() {
-  const [period, setPeriod] = useState("7d");
+  const [period, setPeriod] = useState<"7d" | "30d" | "90d">("7d");
   const [dept, setDept] = useState("all");
+  const [exportFormat, setExportFormat] = useState<"csv" | "json">("csv");
+
+  const selectedDepartmentId = dept === "all" ? undefined : Number(dept);
+
+  const { data: deptRes } = useDepartments();
+  const departments = deptRes?.data ?? [];
+
+  const { data: analyticsRes } = useAnalyticsReport(
+    period,
+    selectedDepartmentId,
+  );
+  const exportReport = useExportAnalyticsReport();
+  const report = analyticsRes?.data;
+
+  const pipelineData = report?.pipelineReport ?? [];
+  const volumeData = report?.candidateVolume ?? [];
+  const deptData = report?.timeToHireByDepartment ?? [];
+  const offerData = report?.offerTrends ?? [];
+
+  const sourceData = useMemo(
+    () =>
+      (report?.sourceOfCandidates ?? []).map((s, i) => ({
+        ...s,
+        color: SOURCE_COLORS[i % SOURCE_COLORS.length] ?? SOURCE_COLORS[0],
+      })),
+    [report?.sourceOfCandidates],
+  );
+
+  const sourceConfig: ChartConfig = useMemo(
+    () =>
+      Object.fromEntries(
+        sourceData.map((s) => [s.name, { label: s.name, color: s.color }]),
+      ),
+    [sourceData],
+  );
+
+  const DEPT_LABELS: Record<string, string> = useMemo(() => {
+    const labels: Record<string, string> = { all: "All Departments" };
+    departments.forEach((d) => {
+      labels[String(d.id)] = d.name;
+    });
+    return labels;
+  }, [departments]);
+
+  const STATS = useMemo(
+    () => [
+      {
+        label: "Total Candidates",
+        value: String(report?.summary.totalCandidates ?? 0),
+        delta: `${(report?.summary.totalCandidatesDeltaPct ?? 0) >= 0 ? "+" : ""}${(report?.summary.totalCandidatesDeltaPct ?? 0).toFixed(1)}%`,
+        up: (report?.summary.totalCandidatesDeltaPct ?? 0) >= 0,
+      },
+      {
+        label: "Open Positions",
+        value: String(report?.summary.openPositions ?? 0),
+        delta: `${(report?.summary.openPositionsDelta ?? 0) >= 0 ? "+" : ""}${report?.summary.openPositionsDelta ?? 0}`,
+        up: (report?.summary.openPositionsDelta ?? 0) >= 0,
+      },
+      {
+        label: "Avg. Time To Hire",
+        value: String(report?.summary.avgTimeToHireDays ?? 0),
+        delta: `${(report?.summary.avgTimeToHireDeltaDays ?? 0) >= 0 ? "-" : "+"}${Math.abs(report?.summary.avgTimeToHireDeltaDays ?? 0).toFixed(1)} days`,
+        up: (report?.summary.avgTimeToHireDeltaDays ?? 0) >= 0,
+      },
+      {
+        label: "Offer Acceptance Rate",
+        value: `${(report?.summary.offerAcceptanceRate ?? 0).toFixed(1)}%`,
+        delta: `${(report?.summary.offerAcceptanceRateDeltaPct ?? 0) >= 0 ? "+" : ""}${(report?.summary.offerAcceptanceRateDeltaPct ?? 0).toFixed(1)}%`,
+        up: (report?.summary.offerAcceptanceRateDeltaPct ?? 0) >= 0,
+      },
+    ],
+    [report],
+  );
+
+  const handleExport = async () => {
+    const result = await exportReport.mutateAsync({
+      period,
+      departmentId: selectedDepartmentId,
+      format: exportFormat,
+    });
+
+    const payload = result.data;
+    const blob = new Blob([payload.content], { type: payload.mimeType });
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement("a"), {
+      href: url,
+      download: payload.fileName,
+    });
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
@@ -174,26 +193,46 @@ export default function OverviewPage() {
         <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Reports And Analytics
         </h1>
-        <button
-          onClick={exportCSV}
-          className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors cursor-pointer"
-        >
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
+        <div className="flex items-center gap-2">
+          <Select
+            value={exportFormat}
+            onValueChange={(value) =>
+              setExportFormat((value as "csv" | "json") ?? "csv")
+            }
           >
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="7 10 12 15 17 10" />
-            <line x1="12" y1="15" x2="12" y2="3" />
-          </svg>
-          Export Report
-        </button>
+            <SelectTrigger className="w-32 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-3">
+              <SelectValue>
+                <span className="flex items-center gap-2">
+                  <HugeiconsIcon
+                    icon={exportFormat === "json" ? TextIcon : ListViewIcon}
+                    className="size-4"
+                  />
+                  {exportFormat.toUpperCase()}
+                </span>
+              </SelectValue>
+            </SelectTrigger>
+            <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+              <SelectItem value="csv">
+                <span className="flex items-center gap-2">
+                  <HugeiconsIcon icon={ListViewIcon} className="size-4" /> CSV
+                </span>
+              </SelectItem>
+              <SelectItem value="json">
+                <span className="flex items-center gap-2">
+                  <HugeiconsIcon icon={TextIcon} className="size-4" /> JSON
+                </span>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+
+          <button
+            onClick={handleExport}
+            className="bg-theme hover:bg-theme-hover text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors cursor-pointer"
+          >
+            <HugeiconsIcon icon={ArrowDown01Icon} className="size-4" />
+            Export Report
+          </button>
+        </div>
       </div>
 
       <div className="border-y border-slate-200 dark:border-neutral-800 px-8 py-3.5 flex items-center gap-3">
@@ -217,10 +256,11 @@ export default function OverviewPage() {
           </SelectTrigger>
           <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Departments</SelectItem>
-            <SelectItem value="engineering">Engineering</SelectItem>
-            <SelectItem value="design">Design</SelectItem>
-            <SelectItem value="marketing">Marketing</SelectItem>
-            <SelectItem value="sales">Sales</SelectItem>
+            {departments.map((d) => (
+              <SelectItem key={d.id} value={String(d.id)}>
+                {d.name}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>
@@ -230,7 +270,7 @@ export default function OverviewPage() {
           {STATS.map((s) => (
             <div
               key={s.label}
-              className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 p-6 flex flex-col gap-3 min-h-[110px]"
+              className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 p-6 flex flex-col gap-3 min-h-27.5"
             >
               <p className="text-sm text-slate-500 dark:text-neutral-400 font-medium">
                 {s.label}

@@ -9,3 +9,4 @@ export * from "./candidates";
 export * from "./offers";
 export * from "./communications";
 export * from "./relations";
+export * from "./active-logs";

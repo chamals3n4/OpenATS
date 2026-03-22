@@ -2,6 +2,7 @@ import { eq, and, desc, asc } from "drizzle-orm";
 import { db } from "../db";
 import {
   candidates,
+  candidateCvAnalysis,
   candidateStageHistory,
   candidateCustomAnswers,
   candidateCustomAnswerSelections,
@@ -42,7 +43,13 @@ export interface CandidateFilters {
   search?: string | undefined;
 }
 
-
+export interface CandidateBasicUpdateInput {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string | null;
+  resumeUrl?: string | null;
+}
 
 export const candidateService = {
   async apply(jobId: number, input: CandidateApplyInput) {
@@ -129,8 +136,6 @@ export const candidateService = {
       conditions.push(eq(candidates.currentStageId, filters.stageId));
     }
 
-
-
     return db
       .select({
         id: candidates.id,
@@ -147,7 +152,10 @@ export const candidateService = {
         jobTitle: jobs.title,
       })
       .from(candidates)
-      .leftJoin(jobPipelineStages, eq(candidates.currentStageId, jobPipelineStages.id))
+      .leftJoin(
+        jobPipelineStages,
+        eq(candidates.currentStageId, jobPipelineStages.id),
+      )
       .leftJoin(jobs, eq(candidates.jobId, jobs.id))
       .where(conditions.length > 0 ? and(...conditions) : undefined)
       .orderBy(desc(candidates.appliedAt));
@@ -171,7 +179,10 @@ export const candidateService = {
         questionTitle: jobCustomQuestions.title,
       })
       .from(candidateCustomAnswers)
-      .leftJoin(jobCustomQuestions, eq(candidateCustomAnswers.questionId, jobCustomQuestions.id))
+      .leftJoin(
+        jobCustomQuestions,
+        eq(candidateCustomAnswers.questionId, jobCustomQuestions.id),
+      )
       .where(eq(candidateCustomAnswers.candidateId, id));
 
     const selections = await db
@@ -185,8 +196,17 @@ export const candidateService = {
         optionLabel: jobCustomQuestionOptions.label,
       })
       .from(candidateCustomAnswerSelections)
-      .leftJoin(jobCustomQuestions, eq(candidateCustomAnswerSelections.questionId, jobCustomQuestions.id))
-      .leftJoin(jobCustomQuestionOptions, eq(candidateCustomAnswerSelections.optionId, jobCustomQuestionOptions.id))
+      .leftJoin(
+        jobCustomQuestions,
+        eq(candidateCustomAnswerSelections.questionId, jobCustomQuestions.id),
+      )
+      .leftJoin(
+        jobCustomQuestionOptions,
+        eq(
+          candidateCustomAnswerSelections.optionId,
+          jobCustomQuestionOptions.id,
+        ),
+      )
       .where(eq(candidateCustomAnswerSelections.candidateId, id));
 
     const history = await db
@@ -200,12 +220,31 @@ export const candidateService = {
       .from(offers)
       .where(eq(offers.candidateId, id));
 
+    const [cvRow] = await db
+      .select()
+      .from(candidateCvAnalysis)
+      .where(eq(candidateCvAnalysis.candidateId, id));
+
+    const cvAnalysis = cvRow
+      ? {
+          status: cvRow.status,
+          matchScore:
+            cvRow.matchScore != null ? Number(cvRow.matchScore) : null,
+          matchedSkills: cvRow.matchedSkills,
+          missingSkills: cvRow.missingSkills,
+          scoreBreakdown: cvRow.scoreBreakdown,
+          errorMessage: cvRow.errorMessage,
+          updatedAt: cvRow.updatedAt,
+        }
+      : null;
+
     return {
       ...candidate,
       answers,
       selections,
       history,
       offer: offer ?? null,
+      cvAnalysis,
     };
   },
 
@@ -249,9 +288,6 @@ export const candidateService = {
         movedBy,
       });
 
-
-
-
       const [attachment] = await tx
         .select()
         .from(jobAssessmentAttachments)
@@ -268,7 +304,6 @@ export const candidateService = {
           attachment.assessmentId,
         );
       }
-
 
       if (stage.stageType === "offer") {
         const job = await jobService.getById(candidate.jobId);
@@ -311,7 +346,6 @@ export const candidateService = {
         }
       }
 
-
       if (stage.stageType === "rejection") {
         if (stage.rejectionTemplateId) {
           const [template] = await tx
@@ -320,20 +354,53 @@ export const candidateService = {
             .where(eq(templates.id, stage.rejectionTemplateId));
 
           if (template) {
-            const context = await variableService.getContextForCandidate(candidate.id);
+            const context = await variableService.getContextForCandidate(
+              candidate.id,
+            );
             const { subject, html } = templateEngineService.compileTemplate(
               template.subject,
               template.bodyJson,
-              context
+              context,
             );
 
-            await mailService.sendRejectionEmail(candidate.email, subject, html);
+            await mailService.sendRejectionEmail(
+              candidate.email,
+              subject,
+              html,
+            );
           }
         }
       }
 
       return updated;
     });
+  },
+
+  async updateBasicDetails(id: number, data: CandidateBasicUpdateInput) {
+    const [existing] = await db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.id, id))
+      .limit(1);
+
+    if (!existing) return null;
+
+    const [updated] = await db
+      .update(candidates)
+      .set(
+        clean({
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          resumeUrl: data.resumeUrl,
+          updatedAt: new Date(),
+        }),
+      )
+      .where(eq(candidates.id, id))
+      .returning();
+
+    return updated ?? null;
   },
 
   async delete(id: number) {

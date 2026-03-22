@@ -9,6 +9,7 @@ import { GripVertical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { ResumeScrollView } from "@/components/resume-scroll-view";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
 import {
   useJob,
@@ -507,13 +508,9 @@ export default function HiringPipelinePage() {
                     </div>
                   </div>
 
-                  <div className="flex-1 overflow-hidden">
+                  <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                     {c.resumeUrl ? (
-                      <iframe
-                        src={`${c.resumeUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-                        title="Resume"
-                        className="w-full h-full border-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                      />
+                      <ResumeScrollView resumeUrl={c.resumeUrl} />
                     ) : (
                       <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
                         <svg className="size-10 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -526,7 +523,10 @@ export default function HiringPipelinePage() {
                 </div>
 
                 {/* Right — tabbed detail panel */}
-                <CandidateSidePanel candidateId={selectedCandidateId} />
+                <CandidateSidePanel
+                  candidateId={selectedCandidateId}
+                  open={isDetailOpen}
+                />
               </>
             );
           })()}

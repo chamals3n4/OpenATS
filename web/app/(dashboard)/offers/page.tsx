@@ -43,6 +43,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { CandidateCvPreviewPanel } from "@/components/candidate-cv-preview-panel";
+import { ResumeScrollView } from "@/components/resume-scroll-view";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
 
 type OfferStatus =
@@ -71,16 +73,17 @@ interface Offer {
 }
 
 const OFFER_STATUS_STYLES: Record<OfferStatus, string> = {
-  Draft: "bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400",
+  Draft:
+    "bg-purple-50 dark:bg-purple-950/30 text-purple-600 dark:text-purple-400",
   Sent: "bg-blue-50 dark:bg-blue-950/30 text-blue-600 dark:text-blue-400",
-  Pending: "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400",
-  Accepted: "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400",
+  Pending:
+    "bg-amber-50 dark:bg-amber-950/30 text-amber-600 dark:text-amber-400",
+  Accepted:
+    "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400",
   Declined: "bg-red-50 dark:bg-red-950/30 text-red-600 dark:text-red-400",
-  Withdrawn: "bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400",
+  Withdrawn:
+    "bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400",
 };
-
-
-
 
 function RowMenu({ onArchive }: { onArchive(): void }) {
   const [open, setOpen] = useState(false);
@@ -145,13 +148,17 @@ export default function ManageOffersPage() {
     return {
       id: o.id,
       candidateId: o.candidate?.id ?? 0,
-      candidateName: `${o.candidate?.firstName ?? ""} ${o.candidate?.lastName ?? ""}`.trim() || "Unknown Candidate",
+      candidateName:
+        `${o.candidate?.firstName ?? ""} ${o.candidate?.lastName ?? ""}`.trim() ||
+        "Unknown Candidate",
       jobTitle: o.job?.title ?? "Unknown Job",
       status: statusMap[o.status] ?? "Draft",
       salary: String(o.salary ?? ""),
       currency: o.currency ?? "USD",
       createdAt: o.createdAt ? new Date(o.createdAt).toLocaleDateString() : "",
-      expiredDate: o.expiryDate ? new Date(o.expiryDate).toLocaleDateString() : "",
+      expiredDate: o.expiryDate
+        ? new Date(o.expiryDate).toLocaleDateString()
+        : "",
       department: o.job?.department?.name ?? "Other",
       stage: o.candidate?.currentStage?.name ?? "Unknown Stage",
       phone: o.candidate?.phone ?? "—",
@@ -183,7 +190,7 @@ export default function ManageOffersPage() {
       detail: archiveTarget.jobTitle,
     });
     deleteOfferMutation.mutate(archiveTarget.id, {
-      onSuccess: () => setArchiveTarget(null)
+      onSuccess: () => setArchiveTarget(null),
     });
   };
 
@@ -207,7 +214,7 @@ export default function ManageOffersPage() {
         </h1>
       </div>
 
-      <div className="border-y border-slate-200 dark:border-neutral-800 px-8 py-3.5 flex items-center gap-4">
+      <div className="border-y border-slate-300 dark:border-neutral-700 px-8 py-3.5 flex items-center gap-4">
         <div className="relative w-80">
           <HugeiconsIcon
             icon={Search01Icon}
@@ -217,19 +224,26 @@ export default function ManageOffersPage() {
             placeholder="Search"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
+            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
         <Select
           value={filterDept}
           onValueChange={(v) => setFilterDept(v ?? "all")}
         >
-          <SelectTrigger className="w-48 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-48 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Departments">
-              {({ all: "All Departments", Engineering: "Engineering", Design: "Design", Operations: "Operations" } as Record<string, string>)[filterDept] ?? filterDept}
+              {(
+                {
+                  all: "All Departments",
+                  Engineering: "Engineering",
+                  Design: "Design",
+                  Operations: "Operations",
+                } as Record<string, string>
+              )[filterDept] ?? filterDept}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Departments</SelectItem>
             <SelectItem value="Engineering">Engineering</SelectItem>
             <SelectItem value="Design">Design</SelectItem>
@@ -240,12 +254,22 @@ export default function ManageOffersPage() {
           value={filterStatus}
           onValueChange={(v) => setFilterStatus(v ?? "all")}
         >
-          <SelectTrigger className="w-40 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-40 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Status">
-              {({ all: "All Statuses", draft: "Draft", sent: "Sent", pending: "Pending", accepted: "Accepted", declined: "Declined", withdrawn: "Withdrawn" } as Record<string, string>)[filterStatus] ?? filterStatus}
+              {(
+                {
+                  all: "All Statuses",
+                  draft: "Draft",
+                  sent: "Sent",
+                  pending: "Pending",
+                  accepted: "Accepted",
+                  declined: "Declined",
+                  withdrawn: "Withdrawn",
+                } as Record<string, string>
+              )[filterStatus] ?? filterStatus}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="sent">Sent</SelectItem>
@@ -271,10 +295,10 @@ export default function ManageOffersPage() {
       </div>
 
       <div className="px-8 py-6">
-        <div className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
+        <div className="border border-slate-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-transparent">
+              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Candidate Name
                 </TableHead>
@@ -310,7 +334,7 @@ export default function ManageOffersPage() {
                 filtered.map((o) => (
                   <TableRow
                     key={o.id}
-                    className="border-b border-slate-200 dark:border-neutral-800 last:border-0 font-medium hover:bg-slate-50/50 dark:hover:bg-neutral-800/50 cursor-pointer"
+                    className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium hover:bg-slate-50/50 dark:hover:bg-neutral-800/50 cursor-pointer"
                     onClick={() => openOffer(o)}
                   >
                     <TableCell className="h-14 px-8 py-0 text-slate-700 dark:text-neutral-200 font-medium">
@@ -347,7 +371,7 @@ export default function ManageOffersPage() {
             </TableBody>
           </Table>
 
-          <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <span className="text-sm font-medium text-slate-400">
               Showing 1–{filtered.length} of {filtered.length} results
             </span>
@@ -404,33 +428,47 @@ export default function ManageOffersPage() {
                         className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap"
                       >
                         {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        <HugeiconsIcon icon={icon as any} className="size-3.5 text-slate-400" />
+                        <HugeiconsIcon
+                          icon={icon as any}
+                          className="size-3.5 text-slate-400"
+                        />
                         <span>{value as string}</span>
                       </div>
                     ))}
                   </div>
                 </div>
 
-                <div className="flex-1 overflow-hidden">
+                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
                   {selected.resumeUrl ? (
-                    <iframe
-                      src={`${selected.resumeUrl}#toolbar=0&navpanes=0&scrollbar=0`}
-                      title="Resume"
-                      className="w-full h-full border-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
-                    />
+                    <ResumeScrollView resumeUrl={selected.resumeUrl} />
                   ) : (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
-                      <svg className="size-10 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                      <svg
+                        className="size-10 opacity-30"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth={1.5}
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                        />
                       </svg>
-                      <p className="text-[13px] font-medium">No resume uploaded</p>
+                      <p className="text-[13px] font-medium">
+                        No resume uploaded
+                      </p>
                     </div>
                   )}
                 </div>
               </div>
 
               {/* Right — candidate side panel */}
-              <CandidateSidePanel candidateId={selected.candidateId} />
+              <CandidateSidePanel
+                candidateId={selected.candidateId}
+                open={sheetOpen}
+              />
             </>
           )}
         </SheetContent>

@@ -12,7 +12,6 @@ import {
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ModeToggle } from "@/components/mode-toggle";
 
 const SEGMENT_LABELS: Record<string, string> = {
   "": "Dashboard",
@@ -43,21 +42,41 @@ export function SiteHeader() {
   // Build crumbs from path segments
   const segments = pathname.split("/").filter(Boolean);
 
-  const crumbs =
+  const routeCrumbs =
     segments.length === 0
       ? [{ label: "Dashboard", href: "/" }]
       : segments.map((seg, i) => ({
-        label: labelFor(seg),
-        href: "/" + segments.slice(0, i + 1).join("/"),
-      }));
+          label: labelFor(seg),
+          href: "/" + segments.slice(0, i + 1).join("/"),
+        }));
 
   return (
     <header className="bg-white dark:bg-neutral-950 sticky top-0 z-50 flex w-full items-center border-b border-slate-100 dark:border-neutral-800">
       <div className="flex h-(--header-height) w-full items-center justify-between px-6">
         <Breadcrumb>
           <BreadcrumbList>
-            {crumbs.map((crumb, i) => {
-              const isLast = i === crumbs.length - 1;
+            <BreadcrumbItem>
+              {routeCrumbs.length === 0 ? (
+                <BreadcrumbPage className="text-slate-600 dark:text-neutral-300 font-medium">
+                  OpenATS
+                </BreadcrumbPage>
+              ) : (
+                <>
+                  <BreadcrumbLink
+                    href="/"
+                    className="text-slate-400 dark:text-neutral-500 font-medium hover:text-slate-600 dark:hover:text-neutral-300 transition-colors"
+                  >
+                    OpenATS
+                  </BreadcrumbLink>
+                  <BreadcrumbSeparator className="text-slate-300 dark:text-neutral-700">
+                    <span className="text-lg font-light">&gt;</span>
+                  </BreadcrumbSeparator>
+                </>
+              )}
+            </BreadcrumbItem>
+
+            {routeCrumbs.map((crumb, i) => {
+              const isLast = i === routeCrumbs.length - 1;
               return (
                 <BreadcrumbItem key={crumb.href}>
                   {!isLast ? (
@@ -84,8 +103,6 @@ export function SiteHeader() {
         </Breadcrumb>
 
         <div className="flex items-center gap-4">
-          <ModeToggle />
-
           <button className="flex items-center justify-center size-9 rounded-full bg-slate-100/80 dark:bg-neutral-900 text-slate-500 dark:text-neutral-400 hover:bg-slate-200 dark:hover:bg-neutral-800 transition-colors">
             <HugeiconsIcon icon={Notification03Icon} className="size-5" />
           </button>

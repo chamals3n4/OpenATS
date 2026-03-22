@@ -9,6 +9,8 @@ import assessmentExecutionRoutes from "./assessment-execution.routes";
 import offerRoutes from "./offer.routes";
 import uploadRoutes from "./upload.routes";
 import chatRoutes from "./chat.routes";
+import reportRoutes from "./report.routes";
+import activeLogRoutes from "./active-log.routes";
 
 const router: Router = Router();
 
@@ -22,5 +24,7 @@ router.use("/assessment-execution", assessmentExecutionRoutes);
 router.use("/offers", offerRoutes);
 router.use("/upload", uploadRoutes);
 router.use("/chat", chatRoutes);
+router.use("/reports", reportRoutes);
+router.use("/logs", activeLogRoutes);
 
 export default router;

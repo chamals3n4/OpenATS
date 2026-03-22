@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { CandidateJobFitTab } from "@/components/candidate-job-fit-tab";
 import { useCandidate, usePipeline, useUpdateOffer, useUpdateOfferStatus, useCandidateAssessments } from "@/hooks/use-api";
 
 function timeAgo(dateStr: string) {
@@ -48,10 +49,17 @@ const OFFER_STATUS_STYLES: Record<string, { bg: string; text: string }> = {
 
 interface CandidateSidePanelProps {
   candidateId: number;
+  /** When false, candidate detail is not fetched (e.g. sheet closed). */
+  open?: boolean;
 }
 
-export function CandidateSidePanel({ candidateId }: CandidateSidePanelProps) {
-  const { data, isLoading } = useCandidate(candidateId);
+export function CandidateSidePanel({
+  candidateId,
+  open = true,
+}: CandidateSidePanelProps) {
+  const { data, isLoading } = useCandidate(candidateId, {
+    enabled: open && !!candidateId,
+  });
   const candidate = data?.data;
 
   const { data: pipelineData } = usePipeline(candidate?.jobId ?? 0);
@@ -141,7 +149,10 @@ export function CandidateSidePanel({ candidateId }: CandidateSidePanelProps) {
     ? (OFFER_STATUS_STYLES[offer.status] ?? OFFER_STATUS_STYLES.draft)
     : null;
 
+  const cvAnalysis = candidate.cvAnalysis;
+
   const TABS = [
+    { value: "job-fit", label: "Job fit" },
     { value: "answers", label: "Answers" },
     { value: "history", label: "Stage History" },
     { value: "offer", label: "Offer" },
@@ -167,7 +178,7 @@ export function CandidateSidePanel({ candidateId }: CandidateSidePanelProps) {
         )}
       </div>
 
-      <Tabs defaultValue="answers" className="flex-1 flex flex-col overflow-hidden m-0 min-h-0">
+      <Tabs defaultValue="job-fit" className="flex-1 flex flex-col overflow-hidden m-0 min-h-0">
         <div
           ref={tabsScrollRef}
           onWheel={handleTabsWheel}
@@ -178,6 +189,11 @@ export function CandidateSidePanel({ candidateId }: CandidateSidePanelProps) {
               {TABS.map(({ value, label }) => (
                 <TabsTrigger key={value} value={value} className={triggerBase}>
                   {label}
+                  {value === "job-fit" && cvAnalysis?.status === "pending" && (
+                    <span className="ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
+                      …
+                    </span>
+                  )}
                   {value === "offer" && offer && (
                     <span className={`ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${offerStyle?.bg} dark:bg-opacity-20 ${offerStyle?.text}`}>
                       {offer.status}
@@ -189,7 +205,17 @@ export function CandidateSidePanel({ candidateId }: CandidateSidePanelProps) {
           </div>
         </div>
 
-        <TabsContent value="answers" className="flex-1 overflow-y-auto p-5 outline-none min-h-0">
+        <TabsContent
+          value="job-fit"
+          className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel"
+        >
+          <CandidateJobFitTab
+            resumeUrl={candidate.resumeUrl}
+            cv={cvAnalysis}
+          />
+        </TabsContent>
+
+        <TabsContent value="answers" className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel">
           {candidate.answers.length === 0 && candidate.selections.length === 0 ? (
             <p className="text-slate-400 dark:text-neutral-500 text-sm italic">No custom answers submitted.</p>
           ) : (
@@ -228,7 +254,7 @@ export function CandidateSidePanel({ candidateId }: CandidateSidePanelProps) {
           )}
         </TabsContent>
 
-        <TabsContent value="history" className="flex-1 overflow-y-auto p-5 outline-none min-h-0">
+        <TabsContent value="history" className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel">
           {candidate.history.length === 0 ? (
             <p className="text-slate-400 dark:text-neutral-500 text-sm italic">No stage history yet.</p>
           ) : (
@@ -267,7 +293,7 @@ export function CandidateSidePanel({ candidateId }: CandidateSidePanelProps) {
           )}
         </TabsContent>
 
-        <TabsContent value="offer" className="flex-1 overflow-y-auto p-5 outline-none min-h-0">
+        <TabsContent value="offer" className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel">
           {!offer ? (
             <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-12">
               <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center">
@@ -469,7 +495,7 @@ export function CandidateSidePanel({ candidateId }: CandidateSidePanelProps) {
           )}
         </TabsContent>
 
-        <TabsContent value="email" className="flex-1 overflow-y-auto p-5 outline-none min-h-0">
+        <TabsContent value="email" className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel">
           <div className="space-y-4 h-full flex flex-col">
             <div className="space-y-1.5">
               <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide">To</Label>
@@ -512,7 +538,7 @@ export function CandidateSidePanel({ candidateId }: CandidateSidePanelProps) {
           </div>
         </TabsContent>
 
-        <TabsContent value="scores" className="flex-1 overflow-y-auto p-5 outline-none min-h-0">
+        <TabsContent value="scores" className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel">
           {(() => {
             const attempts = assessmentsData?.data ?? [];
             if (!assessmentsData) {

@@ -43,7 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { CandidateCvPreviewPanel } from "@/components/candidate-cv-preview-panel";
+
 import { ResumeScrollView } from "@/components/resume-scroll-view";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
 

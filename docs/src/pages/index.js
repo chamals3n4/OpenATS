@@ -19,7 +19,7 @@ function HomepageHeader() {
         <div className={styles.buttons}>
           <Link
             className="button button--secondary button--lg"
-            to="/docs/intro"
+            to="/docs/overview/intro"
           >
             Try the Demo
           </Link>
@@ -28,7 +28,7 @@ function HomepageHeader() {
               "button button--outline button--lg",
               styles.docsButton,
             )}
-            to="/docs/intro"
+            to="/docs/overview/intro"
           >
             Read the Docs
           </Link>
@@ -40,6 +40,7 @@ function HomepageHeader() {
 
 export default function Home() {
   const { siteConfig } = useDocusaurusContext();
+
   return (
     <Layout
       title="OpenATS - Open Source Applicant Tracking System"

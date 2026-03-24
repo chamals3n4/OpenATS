@@ -50,11 +50,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function AssessmentsPage() {
   const { data, isLoading } = useAssessments();
   const deleteAssessment = useDeleteAssessment();
   const assessments = data?.data ?? [];
+  const [assessmentTab, setAssessmentTab] = useState("custom");
 
   const [deleteTarget, setDeleteTarget] = useState<Assessment | null>(null);
 
@@ -165,84 +167,111 @@ export default function AssessmentsPage() {
         </Button>
       </div>
 
-      <div className="px-8 py-6">
-        {isLoading ? (
-          <div className="flex items-center justify-center h-48 text-slate-400 text-sm gap-2">
-            <Loader2 className="size-4 animate-spin text-slate-400" />
-            Loading assessments...
-          </div>
-        ) : assessments.length === 0 ? (
-          <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
-            No assessments found.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {assessments.map((a) => (
-              <div
-                key={a.id}
-                className="flex flex-col border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 shadow-sm"
-              >
-                {/* Card body */}
-                <div className="flex flex-col gap-2.5 px-5 pt-5 pb-4">
-                  {/* Title */}
-                  <Link
-                    href={`/assessments/${a.id}`}
-                    className="text-[15px] font-semibold text-slate-800 dark:text-neutral-200 leading-snug hover:underline underline-offset-4 decoration-1 truncate"
-                  >
-                    {a.title}
-                  </Link>
+      <div className="px-8 pt-4">
+        <Tabs value={assessmentTab} onValueChange={setAssessmentTab} className="gap-4">
+          <TabsList className="h-10 bg-transparent p-0 gap-3">
+            <TabsTrigger
+              value="custom"
+              className="px-6 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 data-active:border-[var(--theme-color)] data-active:text-[var(--theme-color)]"
+            >
+              Custom Assesment
+            </TabsTrigger>
+            <TabsTrigger
+              value="individual"
+              className="px-6 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 data-active:border-[var(--theme-color)] data-active:text-[var(--theme-color)]"
+            >
+              Individual Assesment
+            </TabsTrigger>
+          </TabsList>
 
-                  {/* Badges + stats in one row */}
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`inline-flex items-center text-[12px] font-medium px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400`}
+          <TabsContent value="custom">
+            <div className="py-2">
+              {isLoading ? (
+                <div className="flex items-center justify-center h-48 text-slate-400 text-sm gap-2">
+                  <Loader2 className="size-4 animate-spin text-slate-400" />
+                  Loading assessments...
+                </div>
+              ) : assessments.length === 0 ? (
+                <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
+                  No assessments found.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {assessments.map((a) => (
+                    <div
+                      key={a.id}
+                      className="flex flex-col border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 shadow-sm"
                     >
-                      Active
-                    </span>
-                    <span className="ml-auto flex items-center gap-3">
-                      <span className="flex items-center gap-1 text-[12px] text-slate-400">
-                        <HugeiconsIcon
-                          icon={QuestionIcon}
-                          className="size-3.5"
-                        />
-                        {a.questions?.length || 0}
-                      </span>
-                      <span className="flex items-center gap-1 text-[12px] text-slate-400">
-                        <HugeiconsIcon icon={Time01Icon} className="size-3.5" />
-                        {a.timeLimit}m
-                      </span>
-                    </span>
-                  </div>
-                </div>
+                      {/* Card body */}
+                      <div className="flex flex-col gap-2.5 px-5 pt-5 pb-4">
+                        {/* Title */}
+                        <Link
+                          href={`/assessments/${a.id}`}
+                          className="text-[15px] font-semibold text-slate-800 dark:text-neutral-200 leading-snug hover:underline underline-offset-4 decoration-1 truncate"
+                        >
+                          {a.title}
+                        </Link>
 
-                {/* Card footer */}
-                <div className="flex items-center gap-1.5 px-4 py-3 border-t border-slate-100 dark:border-neutral-800">
-                  <ThemeButton
-                    asChild
-                    href={`/assessments/${a.id}`}
-                    className="h-8 px-5 text-[12px] font-medium shadow-none border-none rounded-md"
-                  >
-                    <Link href={`/assessments/${a.id}`}>Edit</Link>
-                  </ThemeButton>
-                  <button
-                    onClick={() => openInviteDialog(a)}
-                    className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-medium border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-700 dark:hover:text-neutral-200"
-                  >
-                    <HugeiconsIcon icon={UserAdd01Icon} className="size-3.5" />
-                    Invite
-                  </button>
-                  <button
-                    onClick={() => setDeleteTarget(a)}
-                    className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-medium border border-red-200 dark:border-red-900/50 text-red-400 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500"
-                  >
-                    <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
-                    Delete
-                  </button>
+                        {/* Badges + stats in one row */}
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`inline-flex items-center text-[12px] font-medium px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400`}
+                          >
+                            Active
+                          </span>
+                          <span className="ml-auto flex items-center gap-3">
+                            <span className="flex items-center gap-1 text-[12px] text-slate-400">
+                              <HugeiconsIcon
+                                icon={QuestionIcon}
+                                className="size-3.5"
+                              />
+                              {a.questions?.length || 0}
+                            </span>
+                            <span className="flex items-center gap-1 text-[12px] text-slate-400">
+                              <HugeiconsIcon icon={Time01Icon} className="size-3.5" />
+                              {a.timeLimit}m
+                            </span>
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Card footer */}
+                      <div className="flex items-center gap-1.5 px-4 py-3 border-t border-slate-100 dark:border-neutral-800">
+                        <ThemeButton
+                          asChild
+                          href={`/assessments/${a.id}`}
+                          className="h-8 px-5 text-[12px] font-medium shadow-none border-none rounded-md"
+                        >
+                          <Link href={`/assessments/${a.id}`}>Edit</Link>
+                        </ThemeButton>
+                        <button
+                          onClick={() => openInviteDialog(a)}
+                          className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-medium border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-700 dark:hover:text-neutral-200"
+                        >
+                          <HugeiconsIcon icon={UserAdd01Icon} className="size-3.5" />
+                          Invite
+                        </button>
+                        <button
+                          onClick={() => setDeleteTarget(a)}
+                          className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-medium border border-red-200 dark:border-red-900/50 text-red-400 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500"
+                        >
+                          <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+                          Delete
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="individual">
+            <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
+              No individual assessments found.
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
 
       {/* Invite dialog */}

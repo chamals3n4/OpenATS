@@ -4,17 +4,7 @@ import { useState, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Cancel01Icon,
-  TextBoldIcon,
-  TextItalicIcon,
-  TextUnderlineIcon,
-  Heading01Icon,
-  Heading02Icon,
-  Heading03Icon,
-  ListViewIcon,
-  Sorting05Icon,
-} from "@hugeicons/core-free-icons";
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateJob, useDepartments } from "@/hooks/use-api";
+import { JobDescriptionEditor } from "@/components/job-description-editor";
 
 export default function CreateNewJobPage() {
   const router = useRouter();
@@ -73,10 +64,21 @@ export default function CreateNewJobPage() {
     const salaryPayload = (() => {
       if (!isSalaryInfoIncluded) return {};
       if (salaryType === "fixed" && salaryFixed) {
-        return { salaryType: "fixed" as const, currency, payFrequency, salaryFixed: Number(salaryFixed) };
+        return {
+          salaryType: "fixed" as const,
+          currency,
+          payFrequency,
+          salaryFixed: Number(salaryFixed),
+        };
       }
       if (salaryType === "range" && salaryMin && salaryMax) {
-        return { salaryType: "range" as const, currency, payFrequency, salaryMin: Number(salaryMin), salaryMax: Number(salaryMax) };
+        return {
+          salaryType: "range" as const,
+          currency,
+          payFrequency,
+          salaryMin: Number(salaryMin),
+          salaryMax: Number(salaryMax),
+        };
       }
       return {};
     })();
@@ -90,10 +92,11 @@ export default function CreateNewJobPage() {
         description: description || undefined,
         skills: skills.length > 0 ? skills : undefined,
         ...salaryPayload,
+        status: isActive ? "published" : "draft",
       },
       {
         onSuccess: (res) => router.push(`/jobs/${res.data.id}`),
-      }
+      },
     );
   };
 
@@ -103,7 +106,7 @@ export default function CreateNewJobPage() {
     contract: "Contract",
     internship: "Internship",
     freelance: "Freelance",
-  }
+  };
 
   const PAY_FREQUENCY_LABELS: Record<string, string> = {
     hourly: "Hourly",
@@ -126,7 +129,7 @@ export default function CreateNewJobPage() {
               defaultChecked
               checked={isActive}
               onCheckedChange={setIsActive}
-              className="data-checked:bg-[var(--theme-color)] scale-110"
+              className="data-checked:bg-theme scale-110"
             />
             <Label
               htmlFor="job-active"
@@ -160,9 +163,9 @@ export default function CreateNewJobPage() {
                 <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0">
                   <SelectValue placeholder="Select">
                     {departmentId
-                      ? departments.find((d) => d.id == departmentId)?.name ?? null :
-                      null
-                    }
+                      ? (departments.find((d) => d.id == departmentId)?.name ??
+                        null)
+                      : null}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
@@ -189,7 +192,8 @@ export default function CreateNewJobPage() {
                   <SelectItem value="part_time">Part Time</SelectItem>
                   <SelectItem value="contract">Contract</SelectItem>
                   <SelectItem value="internship">Internship</SelectItem>
-                  <SelectItem value="freelance">Freelance</SelectItem>                </SelectContent>
+                  <SelectItem value="freelance">Freelance</SelectItem>{" "}
+                </SelectContent>
               </Select>
             </div>
           </div>
@@ -199,7 +203,7 @@ export default function CreateNewJobPage() {
             <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
               Skills
             </Label>
-            <div className="min-h-10 p-1.5 flex flex-wrap gap-2 border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 focus-within:border-[var(--theme-color)] transition-[border-color] duration-200">
+            <div className="min-h-10 p-1.5 flex flex-wrap gap-2 border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 focus-within:border-theme transition-[border-color] duration-200">
               {skills.map((skill) => (
                 <div
                   key={skill}
@@ -222,7 +226,7 @@ export default function CreateNewJobPage() {
                 placeholder={
                   skills.length === 0 ? "Type and press enter..." : ""
                 }
-                className="flex-1 min-w-[120px] bg-transparent border-none outline-none text-sm px-1 placeholder:text-slate-300 dark:placeholder:text-neutral-600 text-slate-900 dark:text-neutral-100"
+                className="flex-1 min-w-30 bg-transparent border-none outline-none text-sm px-1 placeholder:text-slate-300 dark:placeholder:text-neutral-600 text-slate-900 dark:text-neutral-100"
               />
             </div>
           </div>
@@ -245,74 +249,12 @@ export default function CreateNewJobPage() {
             <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
               Job Description
             </Label>
-            <div className="border border-slate-200 dark:border-neutral-800 rounded-xl overflow-hidden shadow-none">
-              <div className="flex items-center gap-1.5 p-2 bg-[#F8FAFC]/50 dark:bg-neutral-900/50 border-b border-slate-200 dark:border-neutral-800">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={TextBoldIcon} className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={TextItalicIcon} className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={TextUnderlineIcon} className="size-4" />
-                </Button>
-                <div className="w-[1px] h-4 bg-slate-200 mx-1" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={Heading01Icon} className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={Heading02Icon} className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={Heading03Icon} className="size-4" />
-                </Button>
-                <div className="w-[1px] h-4 bg-slate-200 mx-1" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={ListViewIcon} className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-100"
-                >
-                  <HugeiconsIcon icon={Sorting05Icon} className="size-4" />
-                </Button>
-              </div>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full min-h-[160px] p-4 text-sm bg-white dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 focus:outline-none placeholder:text-slate-300 dark:placeholder:text-neutral-600"
-                placeholder="Type here..."
-              />
-            </div>
+            <JobDescriptionEditor
+              value={description}
+              onChange={setDescription}
+              placeholder="Type here..."
+              minHeightClassName="min-h-[260px]"
+            />
           </div>
 
           <div className="border-t border-slate-100 dark:border-neutral-800 pt-10 space-y-5 mt-4">
@@ -329,7 +271,7 @@ export default function CreateNewJobPage() {
                     onCheckedChange={(checked) =>
                       setIsSalaryInfoIncluded(checked as boolean)
                     }
-                    className="data-checked:bg-[var(--theme-color)] data-checked:border-[var(--theme-color)] size-4.5"
+                    className="data-checked:bg-theme data-checked:border-theme size-4.5"
                   />
                   <Label
                     htmlFor="salary-info"
@@ -350,7 +292,7 @@ export default function CreateNewJobPage() {
                     <RadioGroupItem
                       value="range"
                       id="range"
-                      className="text-[var(--theme-color)] border-slate-300 data-checked:bg-[var(--theme-color)] data-checked:border-[var(--theme-color)] size-4.5"
+                      className="text-theme border-slate-300 data-checked:bg-theme data-checked:border-theme size-4.5"
                     />
                     <Label
                       htmlFor="range"
@@ -363,7 +305,7 @@ export default function CreateNewJobPage() {
                     <RadioGroupItem
                       value="fixed"
                       id="fixed"
-                      className="text-[var(--theme-color)] border-slate-300 data-checked:bg-[var(--theme-color)] data-checked:border-[var(--theme-color)] size-4.5"
+                      className="text-theme border-slate-300 data-checked:bg-theme data-checked:border-theme size-4.5"
                     />
                     <Label
                       htmlFor="fixed"
@@ -382,7 +324,10 @@ export default function CreateNewJobPage() {
                       <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
                         Currency
                       </Label>
-                      <Select value={currency} onValueChange={(val) => setCurrency(val || "USD")}>
+                      <Select
+                        value={currency}
+                        onValueChange={(val) => setCurrency(val || "USD")}
+                      >
                         <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0">
                           <SelectValue placeholder="USD" />
                         </SelectTrigger>
@@ -397,7 +342,12 @@ export default function CreateNewJobPage() {
                       <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
                         Paid Every
                       </Label>
-                      <Select value={payFrequency} onValueChange={(val) => setPayFrequency(val || "yearly")}>
+                      <Select
+                        value={payFrequency}
+                        onValueChange={(val) =>
+                          setPayFrequency(val || "yearly")
+                        }
+                      >
                         <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0">
                           <SelectValue placeholder="Month">
                             {PAY_FREQUENCY_LABELS[payFrequency] ?? null}
@@ -458,11 +408,18 @@ export default function CreateNewJobPage() {
           <div className="pt-10 flex items-center gap-4">
             <Button
               onClick={handleSubmit}
-              className="text-white cursor-pointer rounded-lg h-10 px-10 min-w-[140px] font-medium shadow-none border-none"
+              className="text-white cursor-pointer rounded-lg h-10 px-10 min-w-35 font-medium shadow-none border-none"
               style={{ backgroundColor: "var(--theme-color)" }}
-              disabled={!title || !departmentId || !employmentType || createJob.isPending}
+              disabled={
+                !title ||
+                !departmentId ||
+                !employmentType ||
+                createJob.isPending
+              }
             >
-              {createJob.isPending && <Loader2 className="w-4 h-4 animate-spin mr-1" />}
+              {createJob.isPending && (
+                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+              )}
               {createJob.isPending ? "Saving…" : "Save Job"}
             </Button>
             <Link

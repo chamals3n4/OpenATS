@@ -2,7 +2,6 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { assessmentService } from "../services/assessment.service";
 
-
 const optionSchema = z.object({
   label: z.string().min(1, "Option label is required").max(500),
   isCorrect: z.boolean().default(false),
@@ -38,8 +37,7 @@ const createAssessmentSchema = z.object({
     .int()
     .positive("Time limit must be a positive number of minutes"),
   passScore: z.number().min(0).max(100, "Pass score must be between 0 and 100"),
-  // TODO: replace with req.user.id once auth is in place
-  createdBy: z.number().int().positive().default(1),
+  createdBy: z.number().int().positive().optional(),
   questions: z.array(questionSchema).optional(),
 });
 
@@ -53,8 +51,6 @@ const updateAssessmentSchema = z.object({
 const createQuestionSchema = questionSchema;
 const updateQuestionSchema = baseQuestionSchema.partial();
 
-
-
 async function getAssessmentOrFail(res: Response, id: number) {
   const assessment = await assessmentService.getById(id);
   if (!assessment) {
@@ -63,8 +59,6 @@ async function getAssessmentOrFail(res: Response, id: number) {
   }
   return assessment;
 }
-
-
 
 export const getAllAssessments = async (req: Request, res: Response) => {
   try {
@@ -98,7 +92,11 @@ export const getAssessmentById = async (req: Request, res: Response) => {
 
 export const createAssessment = async (req: Request, res: Response) => {
   try {
-    const parsed = createAssessmentSchema.safeParse(req.body);
+    const authenticatedUserId = req.user?.id;
+    const parsed = createAssessmentSchema.safeParse({
+      ...req.body,
+      createdBy: req.body?.createdBy ?? authenticatedUserId,
+    });
     if (!parsed.success) {
       res.status(400).json({
         error: "Validation failed",
@@ -107,7 +105,16 @@ export const createAssessment = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await assessmentService.create(parsed.data);
+    const createdBy = parsed.data.createdBy ?? authenticatedUserId;
+    if (!createdBy) {
+      res.status(401).json({ error: "Authentication required" });
+      return;
+    }
+
+    const result = await assessmentService.create({
+      ...parsed.data,
+      createdBy,
+    });
     res.status(201).json({ data: result });
   } catch (error: any) {
     if (error?.code === "23503") {
@@ -166,8 +173,6 @@ export const deleteAssessment = async (req: Request, res: Response) => {
     res.status(500).json({ error: "Failed to delete assessment" });
   }
 };
-
-
 
 export const createQuestion = async (req: Request, res: Response) => {
   try {

@@ -31,6 +31,15 @@ const updateStageSchema = z.object({
   rejectionTemplateId: z.number().int().positive().optional().nullable(),
 });
 
+const reorderStagesSchema = z.object({
+  stages: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      position: z.number().int().positive(),
+    }),
+  ),
+});
+
 async function getJobOrFail(res: Response, jobId: number) {
   const job = await jobService.getById(jobId);
   if (!job) {
@@ -88,9 +97,9 @@ export const createStage = async (req: Request, res: Response) => {
         .json({ error: "A stage already exists at that position" });
       return;
     }
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to create stage",
-      message: error.message || "Unknown server error" 
+      message: error.message || "Unknown server error",
     });
   }
 };
@@ -132,6 +141,37 @@ export const updateStage = async (req: Request, res: Response) => {
       return;
     }
     res.status(500).json({ error: "Failed to update stage" });
+  }
+};
+
+export const reorderStages = async (req: Request, res: Response) => {
+  try {
+    const jobId = parseInt((req.params.jobId ?? "").toString());
+    if (isNaN(jobId)) {
+      res.status(400).json({ error: "Invalid job ID" });
+      return;
+    }
+
+    const job = await getJobOrFail(res, jobId);
+    if (!job) return;
+
+    const parsed = reorderStagesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const result = await pipelineService.reorder(jobId, parsed.data.stages);
+    res.status(200).json({ data: result });
+  } catch (error: any) {
+    console.error("Reorder stages error:", error);
+    res.status(500).json({
+      error: "Failed to reorder stages",
+      message: error.message || "Unknown server error",
+    });
   }
 };
 

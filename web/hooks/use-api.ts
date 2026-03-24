@@ -115,6 +115,23 @@ export function useDeleteStage(jobId: number) {
   });
 }
 
+export function useReorderStages(jobId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (stages: Array<{ id: number; position: number }>) =>
+      serverFetch<{ data: PipelineStage[] }>(
+        `/jobs/${jobId}/pipeline/reorder`,
+        {
+          method: "POST",
+          body: JSON.stringify({ stages }),
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
+    },
+  });
+}
+
 export function useCustomQuestions(jobId: number) {
   return useQuery({
     queryKey: ["jobs", jobId, "questions"],
@@ -156,6 +173,7 @@ export function useUpdateQuestion(jobId: number) {
         title?: string;
         questionType?: "short_answer" | "long_answer" | "checkbox" | "radio";
         isRequired?: boolean;
+        position?: number;
       };
     }) =>
       serverFetch<{ data: CustomQuestion }>(
@@ -362,6 +380,7 @@ export function useCreateJob() {
       salaryFixed?: number | null;
       salaryMin?: number | null;
       salaryMax?: number | null;
+      status?: Job["status"];
     }) =>
       serverFetch<{ data: Job }>("/jobs", {
         method: "POST",

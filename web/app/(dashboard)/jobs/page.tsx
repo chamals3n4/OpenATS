@@ -49,6 +49,14 @@ const EMPLOYMENT_TYPE_LABELS: Record<Job["employmentType"], string> = {
   freelance: "Freelance",
 };
 
+const STATUS_LABELS: Record<Job["status"], string> = {
+  draft: "Draft",
+  inactive: "Inactive",
+  published: "Published",
+  closed: "Closed",
+  archived: "Archived",
+};
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB");
 }
@@ -65,6 +73,7 @@ export default function ManageJobsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDept, setFilterDept] = useState("all");
   const [filterType, setFilterType] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const departmentNameById = useMemo(() => {
     const map = new Map<number, string>();
@@ -82,7 +91,10 @@ export default function ManageJobsPage() {
       const matchesType =
         filterType === "all" || job.employmentType === filterType;
 
-      if (!q) return matchesDepartment && matchesType;
+      const matchesStatus =
+        filterStatus === "all" || job.status === filterStatus;
+
+      if (!q) return matchesDepartment && matchesType && matchesStatus;
 
       const departmentName =
         departmentNameById.get(job.departmentId)?.toLowerCase() ?? "";
@@ -92,9 +104,16 @@ export default function ManageJobsPage() {
         (job.location ?? "").toLowerCase().includes(q) ||
         departmentName.includes(q);
 
-      return matchesDepartment && matchesType && matchesSearch;
+      return matchesDepartment && matchesType && matchesStatus && matchesSearch;
     });
-  }, [jobs, searchTerm, filterDept, filterType, departmentNameById]);
+  }, [
+    jobs,
+    searchTerm,
+    filterDept,
+    filterType,
+    filterStatus,
+    departmentNameById,
+  ]);
 
   const confirmDelete = () => {
     if (!deleteTarget) return;
@@ -183,12 +202,34 @@ export default function ManageJobsPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select
+          value={filterStatus}
+          onValueChange={(v) => setFilterStatus(v ?? "all")}
+        >
+          <SelectTrigger className="w-44 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+            <SelectValue placeholder="Status">
+              {filterStatus === "all"
+                ? "All Status"
+                : (STATUS_LABELS[filterStatus as Job["status"]] ??
+                  filterStatus)}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+            <SelectItem value="all">All Status</SelectItem>
+            {(Object.keys(STATUS_LABELS) as Job["status"][]).map((status) => (
+              <SelectItem key={status} value={status}>
+                {STATUS_LABELS[status]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
           variant="ghost"
           onClick={() => {
             setSearchTerm("");
             setFilterDept("all");
             setFilterType("all");
+            setFilterStatus("all");
           }}
           className="text-slate-600 dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-4"
         >

@@ -15,6 +15,7 @@ import {
   createStage,
   updateStage,
   deleteStage,
+  reorderStages,
 } from "../controllers/pipeline.controller";
 import {
   getHiringTeam,
@@ -36,6 +37,7 @@ router.delete("/:id", deleteJob);
 // pipeline stages
 router.get("/:jobId/pipeline", getPipeline);
 router.post("/:jobId/pipeline", createStage);
+router.post("/:jobId/pipeline/reorder", reorderStages);
 router.put("/:jobId/pipeline/:stageId", updateStage);
 router.delete("/:jobId/pipeline/:stageId", deleteStage);
 

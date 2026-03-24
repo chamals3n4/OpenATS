@@ -7,6 +7,8 @@ import {
   jobPipelineStages,
   jobHiringTeam,
   jobAssessmentAttachments,
+  offers,
+  candidates,
 } from "../db/schema";
 
 export type CreateJobInput = {
@@ -27,6 +29,7 @@ export type CreateJobInput = {
   salaryFixed?: number | null;
   salaryMin?: number | null;
   salaryMax?: number | null;
+  status?: "draft" | "inactive" | "published" | "closed" | "archived";
   createdBy: number;
 };
 
@@ -146,6 +149,7 @@ export const jobService = {
         salaryFixed: jobData.salaryFixed ?? null,
         salaryMin: jobData.salaryMin ?? null,
         salaryMax: jobData.salaryMax ?? null,
+        status: jobData.status ?? "draft",
         createdBy: jobData.createdBy,
       };
 
@@ -227,8 +231,17 @@ export const jobService = {
   },
 
   async delete(id: number) {
-    const [deleted] = await db.delete(jobs).where(eq(jobs.id, id)).returning();
-    return deleted ?? null;
+    return await db.transaction(async (tx) => {
+      await tx.delete(offers).where(eq(offers.jobId, id));
+      await tx.delete(candidates).where(eq(candidates.jobId, id));
+
+      const [deleted] = await tx
+        .delete(jobs)
+        .where(eq(jobs.id, id))
+        .returning();
+
+      return deleted ?? null;
+    });
   },
 
   async getAssessments(jobId: number) {
@@ -243,7 +256,11 @@ export const jobService = {
       .where(eq(jobAssessmentAttachments.jobId, jobId));
   },
 
-  async attachAssessment(input: { jobId: number; assessmentId: number; triggerStageId: number }) {
+  async attachAssessment(input: {
+    jobId: number;
+    assessmentId: number;
+    triggerStageId: number;
+  }) {
     const [attached] = await db
       .insert(jobAssessmentAttachments)
       .values({

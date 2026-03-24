@@ -5,7 +5,14 @@ import { jobPipelineStages } from "../db/schema";
 export type CreateStageInput = {
   name: string;
   position: number;
-  stageType?: "none" | "source" | "assessment" | "interview" | "offer" | "rejection" | undefined;
+  stageType?:
+    | "none"
+    | "source"
+    | "assessment"
+    | "interview"
+    | "offer"
+    | "rejection"
+    | undefined;
   offerTemplateId?: number | null | undefined;
   offerMode?: "auto_draft" | "auto_send" | null | undefined;
 };
@@ -13,7 +20,14 @@ export type CreateStageInput = {
 export type UpdateStageInput = {
   name?: string | undefined;
   position?: number | undefined;
-  stageType?: "none" | "source" | "assessment" | "interview" | "offer" | "rejection" | undefined;
+  stageType?:
+    | "none"
+    | "source"
+    | "assessment"
+    | "interview"
+    | "offer"
+    | "rejection"
+    | undefined;
   offerTemplateId?: number | null | undefined;
   offerMode?: "auto_draft" | "auto_send" | null | undefined;
   offerExpiryDays?: number | null | undefined;
@@ -61,8 +75,8 @@ export const pipelineService = {
       })
       .where(
         and(
-          eq(jobPipelineStages.jobId, jobId), 
-          eq(jobPipelineStages.id, stageId)
+          eq(jobPipelineStages.jobId, jobId),
+          eq(jobPipelineStages.id, stageId),
         ),
       )
       .returning();
@@ -80,5 +94,43 @@ export const pipelineService = {
       )
       .returning();
     return deleted ?? null;
+  },
+
+  async reorder(
+    jobId: number,
+    stages: Array<{ id: number; position: number }>,
+  ) {
+    return await db.transaction(async (tx) => {
+      // First, temporarily set all positions to negative values to avoid unique constraint conflicts
+      for (const stage of stages) {
+        await tx
+          .update(jobPipelineStages)
+          .set({ position: -stage.id, updatedAt: new Date() })
+          .where(
+            and(
+              eq(jobPipelineStages.jobId, jobId),
+              eq(jobPipelineStages.id, stage.id),
+            ),
+          );
+      }
+
+      // Then, update to the actual target positions
+      const results = [];
+      for (const stage of stages) {
+        const [updated] = await tx
+          .update(jobPipelineStages)
+          .set({ position: stage.position, updatedAt: new Date() })
+          .where(
+            and(
+              eq(jobPipelineStages.jobId, jobId),
+              eq(jobPipelineStages.id, stage.id),
+            ),
+          )
+          .returning();
+        results.push(updated);
+      }
+
+      return results;
+    });
   },
 };

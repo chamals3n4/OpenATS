@@ -27,14 +27,15 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-
 //jobdetails and the questions to evaluate the candidate
 import type { JobDetail, CustomQuestion } from "@/types";
 
-
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
-async function publicFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
+async function publicFetch<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
   const res = await fetch(`${API_BASE}/public${path}`, {
     ...options,
     headers: { "Content-Type": "application/json", ...options.headers },
@@ -58,13 +59,12 @@ function formatSalary(job: JobDetail): string | null {
   if (!job.salaryType) return null;
   const fmt = (n: string | null) => (n ? Number(n).toLocaleString() : "");
   const freq = job.payFrequency ? `/${job.payFrequency}` : "";
-  if (job.salaryType === "fixed") return `${job.currency} ${fmt(job.salaryFixed)}${freq}`;
+  if (job.salaryType === "fixed")
+    return `${job.currency} ${fmt(job.salaryFixed)}${freq}`;
   return `${job.currency} ${fmt(job.salaryMin)} – ${fmt(job.salaryMax)}${freq}`;
 }
 
-
 type Answer = { answerText?: string; optionIds?: number[] };
-
 
 export default function JobApplicationPage() {
   const params = useParams();
@@ -178,7 +178,9 @@ export default function JobApplicationPage() {
       });
       setSubmitted(true);
     } catch (e: unknown) {
-      setSubmitError(e instanceof Error ? e.message : "Failed to submit. Please try again.");
+      setSubmitError(
+        e instanceof Error ? e.message : "Failed to submit. Please try again.",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -189,14 +191,29 @@ export default function JobApplicationPage() {
       <div className="min-h-screen bg-slate-50/50 dark:bg-neutral-900 flex flex-col items-center pt-32 pb-12 px-4 transition-colors duration-300">
         <div className="bg-white dark:bg-neutral-950 p-10 rounded-2xl shadow-sm border border-slate-300 dark:border-neutral-800 text-center max-w-md w-full">
           <div className="size-16 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+            <svg
+              className="size-8"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d="M5 13l4 4L19 7"
+              />
             </svg>
           </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-neutral-100 mb-2">Application Submitted!</h2>
+          <h2 className="text-2xl font-bold text-slate-900 dark:text-neutral-100 mb-2">
+            Application Submitted!
+          </h2>
           <p className="text-slate-500 dark:text-neutral-400 mb-8 leading-relaxed">
-            Thank you for applying to <strong className="text-slate-700 dark:text-neutral-200">{job?.title}</strong>.
-            We are reviewing your application and will be in touch soon.
+            Thank you for applying to{" "}
+            <strong className="text-slate-700 dark:text-neutral-200">
+              {job?.title}
+            </strong>
+            . We are reviewing your application and will be in touch soon.
           </p>
         </div>
       </div>
@@ -206,7 +223,9 @@ export default function JobApplicationPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-white dark:bg-neutral-950 flex items-center justify-center">
-        <p className="text-slate-400 dark:text-neutral-600 text-sm font-medium animate-pulse">Loading job…</p>
+        <p className="text-slate-400 dark:text-neutral-600 text-sm font-medium animate-pulse">
+          Loading job…
+        </p>
       </div>
     );
   }
@@ -214,7 +233,9 @@ export default function JobApplicationPage() {
   if (error || !job) {
     return (
       <div className="min-h-screen bg-white dark:bg-neutral-950 flex items-center justify-center p-6">
-        <p className="text-red-500 dark:text-red-400 text-sm font-medium border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg">{error ?? "Job not found."}</p>
+        <p className="text-red-500 dark:text-red-400 text-sm font-medium border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg">
+          {error ?? "Job not found."}
+        </p>
       </div>
     );
   }
@@ -238,7 +259,9 @@ export default function JobApplicationPage() {
           </h1>
           <Button
             onClick={() =>
-              document.getElementById("apply-form")?.scrollIntoView({ behavior: "smooth" })
+              document
+                .getElementById("apply-form")
+                ?.scrollIntoView({ behavior: "smooth" })
             }
             className="bg-[#F97316] hover:bg-[#EA580C] text-white px-8 h-10 rounded-[6px] shadow-none font-medium shrink-0 w-full sm:w-auto text-[15px]"
           >
@@ -249,19 +272,30 @@ export default function JobApplicationPage() {
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3 mb-12 text-[14px] text-slate-500 dark:text-neutral-400">
           {job.employmentType && (
             <div className="flex items-center gap-2">
-              <HugeiconsIcon icon={Briefcase01Icon} className="size-[18px] text-slate-400 dark:text-neutral-500" />
-              <span className="font-medium">{EMPLOYMENT_LABELS[job.employmentType] ?? job.employmentType}</span>
+              <HugeiconsIcon
+                icon={Briefcase01Icon}
+                className="size-[18px] text-slate-400 dark:text-neutral-500"
+              />
+              <span className="font-medium">
+                {EMPLOYMENT_LABELS[job.employmentType] ?? job.employmentType}
+              </span>
             </div>
           )}
           {job.location && (
             <div className="flex items-center gap-2">
-              <HugeiconsIcon icon={Location01Icon} className="size-[18px] text-slate-400 dark:text-neutral-500" />
+              <HugeiconsIcon
+                icon={Location01Icon}
+                className="size-[18px] text-slate-400 dark:text-neutral-500"
+              />
               <span className="font-medium">{job.location}</span>
             </div>
           )}
           {salary && (
             <div className="flex items-center gap-2">
-              <HugeiconsIcon icon={Wallet01Icon} className="size-[18px] text-slate-400 dark:text-neutral-500" />
+              <HugeiconsIcon
+                icon={Wallet01Icon}
+                className="size-[18px] text-slate-400 dark:text-neutral-500"
+              />
               <span className="font-medium">{salary}</span>
             </div>
           )}
@@ -269,7 +303,7 @@ export default function JobApplicationPage() {
 
         {job.description && (
           <div
-            className="text-slate-600 dark:text-neutral-300 text-[15px] leading-relaxed space-y-4 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:font-semibold [&_h2]:text-slate-900 dark:[&_h2]:text-neutral-100 [&_h2]:text-[17px] [&_h2]:mt-6 [&_h3]:font-medium [&_h3]:text-slate-800 dark:[&_h3]:text-neutral-200"
+            className="text-slate-600 dark:text-neutral-300 text-[15px] leading-[1.45] [&_p]:m-0 [&_p+p]:mt-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:text-slate-900 dark:[&_h1]:text-neutral-100 [&_h1]:m-0 [&_h1+p]:mt-1.5 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-slate-900 dark:[&_h2]:text-neutral-100 [&_h2]:m-0 [&_h2+p]:mt-1.5 [&_h3]:text-lg [&_h3]:font-medium [&_h3]:text-slate-800 dark:[&_h3]:text-neutral-200 [&_h3]:m-0 [&_h3+p]:mt-1"
             dangerouslySetInnerHTML={{ __html: job.description }}
           />
         )}
@@ -277,12 +311,16 @@ export default function JobApplicationPage() {
         <div className="my-14 border-t border-slate-100 dark:border-neutral-800" />
 
         <div id="apply-form">
-          <h2 className="text-2xl font-semibold text-slate-900 dark:text-neutral-100 mb-8">Apply for this job</h2>
+          <h2 className="text-2xl font-semibold text-slate-900 dark:text-neutral-100 mb-8">
+            Apply for this job
+          </h2>
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">First Name <span className="text-red-500">*</span></Label>
+                <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">
+                  First Name <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   required
                   value={firstName}
@@ -291,7 +329,9 @@ export default function JobApplicationPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">Last Name <span className="text-red-500">*</span></Label>
+                <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">
+                  Last Name <span className="text-red-500">*</span>
+                </Label>
                 <Input
                   required
                   value={lastName}
@@ -302,7 +342,9 @@ export default function JobApplicationPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">Email <span className="text-red-500">*</span></Label>
+              <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">
+                Email <span className="text-red-500">*</span>
+              </Label>
               <Input
                 type="email"
                 required
@@ -313,9 +355,14 @@ export default function JobApplicationPage() {
             </div>
 
             <div className="space-y-2">
-              <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">Phone</Label>
+              <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">
+                Phone
+              </Label>
               <div className="flex gap-3">
-                <Select value={phoneCode} onValueChange={(val) => setPhoneCode(val || "+94")}>
+                <Select
+                  value={phoneCode}
+                  onValueChange={(val) => setPhoneCode(val || "+94")}
+                >
                   <SelectTrigger className="w-[100px] h-11! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-800 shadow-none rounded-md focus:ring-0 text-slate-900 dark:text-neutral-100">
                     <SelectValue placeholder="+94" />
                   </SelectTrigger>
@@ -338,7 +385,9 @@ export default function JobApplicationPage() {
             <div className="space-y-2">
               <Label className="text-slate-700 dark:text-neutral-300 text-[14px] flex items-center justify-between">
                 Resume / CV
-                <span className="text-slate-400 dark:text-neutral-500 font-normal text-xs">(Optional)</span>
+                <span className="text-slate-400 dark:text-neutral-500 font-normal text-xs">
+                  (Optional)
+                </span>
               </Label>
               <input
                 ref={fileInputRef}
@@ -354,7 +403,9 @@ export default function JobApplicationPage() {
                 role="button"
                 tabIndex={0}
                 onClick={() => fileInputRef.current?.click()}
-                onKeyDown={(e) => e.key === "Enter" && fileInputRef.current?.click()}
+                onKeyDown={(e) =>
+                  e.key === "Enter" && fileInputRef.current?.click()
+                }
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault();
@@ -366,25 +417,44 @@ export default function JobApplicationPage() {
                 {resumeUploading ? (
                   <>
                     <div className="size-5 border-2 border-slate-300 dark:border-neutral-700 border-t-[#F97316] rounded-full animate-spin" />
-                    <span className="text-[13px] font-medium text-slate-500 dark:text-neutral-400">Uploading…</span>
+                    <span className="text-[13px] font-medium text-slate-500 dark:text-neutral-400">
+                      Uploading…
+                    </span>
                   </>
                 ) : resumeUrl ? (
                   <>
-                    <svg className="size-6 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                    <svg
+                      className="size-6 text-green-500"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2.5}
+                        d="M5 13l4 4L19 7"
+                      />
                     </svg>
                     <span className="text-[13px] font-medium text-green-600 max-w-[260px] truncate px-4 text-center">
                       {resumeFile?.name}
                     </span>
-                    <span className="text-[12px] text-slate-400">Click to replace</span>
+                    <span className="text-[12px] text-slate-400">
+                      Click to replace
+                    </span>
                   </>
                 ) : (
                   <>
-                    <HugeiconsIcon icon={CloudUploadIcon} className="size-6 group-hover:text-slate-500 dark:group-hover:text-neutral-400 transition-colors" />
+                    <HugeiconsIcon
+                      icon={CloudUploadIcon}
+                      className="size-6 group-hover:text-slate-500 dark:group-hover:text-neutral-400 transition-colors"
+                    />
                     <span className="text-[13px] font-medium group-hover:text-slate-600 dark:group-hover:text-neutral-300 text-slate-500 dark:text-neutral-400">
                       Click or drag to upload your resume
                     </span>
-                    <span className="text-[11px] text-slate-400 dark:text-neutral-600">PDF, DOC, DOCX · max 10 MB</span>
+                    <span className="text-[11px] text-slate-400 dark:text-neutral-600">
+                      PDF, DOC, DOCX · max 10 MB
+                    </span>
                   </>
                 )}
               </div>
@@ -401,14 +471,18 @@ export default function JobApplicationPage() {
                       <div key={q.id} className="space-y-2.5">
                         <Label className="text-slate-700 dark:text-neutral-300 text-[14px] font-medium">
                           {q.title}
-                          {q.isRequired && <span className="text-red-500 ml-1">*</span>}
+                          {q.isRequired && (
+                            <span className="text-red-500 ml-1">*</span>
+                          )}
                         </Label>
 
                         {q.questionType === "short_answer" && (
                           <Input
                             required={q.isRequired}
                             value={answers[q.id]?.answerText ?? ""}
-                            onChange={(e) => setTextAnswer(q.id, e.target.value)}
+                            onChange={(e) =>
+                              setTextAnswer(q.id, e.target.value)
+                            }
                             className="h-11 bg-white dark:bg-neutral-900 rounded-md border-slate-300 dark:border-neutral-800 shadow-none focus-visible:ring-0 focus-visible:border-[#F97316] text-slate-900 dark:text-neutral-100"
                           />
                         )}
@@ -417,32 +491,44 @@ export default function JobApplicationPage() {
                           <textarea
                             required={q.isRequired}
                             value={answers[q.id]?.answerText ?? ""}
-                            onChange={(e) => setTextAnswer(q.id, e.target.value)}
+                            onChange={(e) =>
+                              setTextAnswer(q.id, e.target.value)
+                            }
                             rows={4}
                             className="w-full rounded-md border border-slate-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2.5 text-sm text-slate-700 dark:text-neutral-300 focus:outline-none focus:border-[#F97316] resize-none transition-colors"
                           />
                         )}
 
-                        {q.questionType === "checkbox" && q.options.length > 0 && (
-                          <div className="space-y-2.5">
-                            {q.options.map((opt) => (
-                              <div key={opt.id} className="flex items-center gap-3">
-                                <Checkbox
-                                  id={`q${q.id}-opt${opt.id}`}
-                                  checked={answers[q.id]?.optionIds?.includes(opt.id) ?? false}
-                                  onCheckedChange={() => toggleCheckbox(q.id, opt.id)}
-                                  className="size-4 border-slate-300 data-[state=checked]:bg-[#F97316] data-[state=checked]:border-[#F97316]"
-                                />
-                                <Label
-                                  htmlFor={`q${q.id}-opt${opt.id}`}
-                                  className="text-slate-600 text-[14px] cursor-pointer font-normal"
+                        {q.questionType === "checkbox" &&
+                          q.options.length > 0 && (
+                            <div className="space-y-2.5">
+                              {q.options.map((opt) => (
+                                <div
+                                  key={opt.id}
+                                  className="flex items-center gap-3"
                                 >
-                                  {opt.label}
-                                </Label>
-                              </div>
-                            ))}
-                          </div>
-                        )}
+                                  <Checkbox
+                                    id={`q${q.id}-opt${opt.id}`}
+                                    checked={
+                                      answers[q.id]?.optionIds?.includes(
+                                        opt.id,
+                                      ) ?? false
+                                    }
+                                    onCheckedChange={() =>
+                                      toggleCheckbox(q.id, opt.id)
+                                    }
+                                    className="size-4 border-slate-300 data-[state=checked]:bg-[#F97316] data-[state=checked]:border-[#F97316]"
+                                  />
+                                  <Label
+                                    htmlFor={`q${q.id}-opt${opt.id}`}
+                                    className="text-slate-600 text-[14px] cursor-pointer font-normal"
+                                  >
+                                    {opt.label}
+                                  </Label>
+                                </div>
+                              ))}
+                            </div>
+                          )}
 
                         {q.questionType === "radio" && q.options.length > 0 && (
                           <RadioGroup
@@ -451,7 +537,10 @@ export default function JobApplicationPage() {
                             className="space-y-2.5"
                           >
                             {q.options.map((opt) => (
-                              <div key={opt.id} className="flex items-center gap-3">
+                              <div
+                                key={opt.id}
+                                className="flex items-center gap-3"
+                              >
                                 <RadioGroupItem
                                   value={String(opt.id)}
                                   id={`q${q.id}-opt${opt.id}`}
@@ -484,7 +573,11 @@ export default function JobApplicationPage() {
                 disabled={submitting || resumeUploading}
                 className="bg-[#F97316] hover:bg-[#EA580C] text-white px-10 h-12 rounded-[6px] shadow-none font-medium text-[15px] min-w-[180px] disabled:opacity-60"
               >
-                {submitting ? "Submitting…" : resumeUploading ? "Uploading resume…" : "Submit Application"}
+                {submitting
+                  ? "Submitting…"
+                  : resumeUploading
+                    ? "Uploading resume…"
+                    : "Submit Application"}
               </Button>
             </div>
           </form>

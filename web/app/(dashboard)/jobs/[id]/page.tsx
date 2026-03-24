@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { Ref } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -28,6 +28,7 @@ import {
   useCreateStage,
   useUpdateStage,
   useDeleteStage,
+  useReorderStages,
   useCustomQuestions,
   useCreateQuestion,
   useUpdateQuestion,
@@ -43,7 +44,7 @@ import {
   useTemplates,
 } from "@/hooks/use-api";
 import { useJobChat } from "@/hooks/use-job-chat";
-import type { PipelineStage, JobDetail, CustomQuestion, User } from "@/types";
+import type { PipelineStage, JobDetail, CustomQuestion } from "@/types";
 
 const STAGE_COLORS: Record<PipelineStage["stageType"], string> = {
   none: "bg-slate-400",
@@ -145,13 +146,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
 
 export default function JobDetailsPage() {
   const params = useParams();
@@ -170,6 +164,7 @@ export default function JobDetailsPage() {
   const createStageMutation = useCreateStage(jobId);
   const updateStageMutation = useUpdateStage(jobId);
   const deleteStageMutation = useDeleteStage(jobId);
+  const reorderStagesMutation = useReorderStages(jobId);
   const createQuestionMutation = useCreateQuestion(jobId);
   const updateQuestionMutation = useUpdateQuestion(jobId);
   const deleteQuestionMutation = useDeleteQuestion(jobId);
@@ -374,10 +369,56 @@ export default function JobDetailsPage() {
     return copy;
   }
 
+  const stageReorderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const questionReorderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const handleStageReorder = (from: number, to: number) => {
+    const reordered = moveItem(stages, from, to);
+    setStages(reordered);
+
+    // Debounce the backend updates to avoid conflicts
+    if (stageReorderTimeoutRef.current) {
+      clearTimeout(stageReorderTimeoutRef.current);
+    }
+
+    stageReorderTimeoutRef.current = setTimeout(() => {
+      // Use bulk reorder API to update all positions in a single transaction
+      const stageUpdates = reordered.map((stage, index) => ({
+        id: stage.id,
+        position: index + 1,
+      }));
+
+      reorderStagesMutation.mutate(stageUpdates);
+    }, 500);
+  };
+
+  const handleQuestionReorder = (from: number, to: number) => {
+    const reordered = moveItem(questions, from, to);
+    setQuestions(reordered);
+
+    // Debounce the backend updates
+    if (questionReorderTimeoutRef.current) {
+      clearTimeout(questionReorderTimeoutRef.current);
+    }
+
+    questionReorderTimeoutRef.current = setTimeout(() => {
+      // Update positions for all affected questions
+      reordered.forEach((question, index) => {
+        const newPosition = index + 1;
+        if (question.position !== newPosition) {
+          updateQuestionMutation.mutate({
+            questionId: question.id,
+            data: { position: newPosition },
+          });
+        }
+      });
+    }, 500);
+  };
+
   return (
     <div className="flex flex-1 overflow-hidden bg-slate-50 dark:bg-neutral-950">
       <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 overflow-y-auto relative">
-        <div className="px-8 pt-10 pb-0 max-w-full 2xl:max-w-[1600px] w-full mx-auto">
+        <div className="px-8 pt-10 pb-0 max-w-full 2xl:max-w-400 w-full mx-auto">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8 mt-2">
             {/* Left Column: Job Info */}
             <div className="space-y-4">
@@ -418,7 +459,7 @@ export default function JobDetailsPage() {
                 <Link
                   href={`/careers/${jobId}`}
                   target="_blank"
-                  className="inline-flex items-center gap-2 text-[var(--theme-color)] bg-[var(--theme-color)]/5 hover:bg-[var(--theme-color)]/10 px-3 py-1.5 rounded-md text-[14px] font-semibold transition-colors w-fit"
+                  className="inline-flex items-center gap-2 text-theme bg-(--theme-color)/5 hover:bg-theme/10 px-3 py-1.5 rounded-md text-[14px] font-semibold transition-colors w-fit"
                 >
                   <HugeiconsIcon icon={Link01Icon} className="size-4" />
                   <span>openats.org/careers/{jobId}</span>
@@ -444,13 +485,13 @@ export default function JobDetailsPage() {
               >
                 <HugeiconsIcon
                   icon={ParagraphIcon}
-                  className="size-[18px]"
+                  className="size-4.5"
                   strokeWidth={2}
                 />
                 <span>Internal Notes</span>
               </Button>
               <Link href={`/jobs/${jobId}/pipeline`}>
-                <Button className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-11 px-7 font-medium border-none gap-2">
+                <Button className="bg-theme hover:bg-theme-hover text-white rounded-lg h-11 px-7 font-medium border-none gap-2">
                   <span>Hiring Pipeline</span>
                   <HugeiconsIcon
                     icon={ArrowRight01Icon}
@@ -465,11 +506,11 @@ export default function JobDetailsPage() {
 
         <Tabs defaultValue="overview" className="w-full">
           <div className="w-full border-y border-slate-100 dark:border-neutral-800 py-3 bg-white dark:bg-neutral-950 shadow-none">
-            <div className="px-8 max-w-full 2xl:max-w-[1600px] w-full mx-auto">
+            <div className="px-8 max-w-full 2xl:max-w-400 w-full mx-auto">
               <TabsList className="bg-transparent w-full justify-start rounded-none h-auto p-0 gap-3">
                 <TabsTrigger
                   value="overview"
-                  className="data-[state=active]:bg-transparent !shadow-none border border-slate-200 dark:border-neutral-800 data-[state=active]:border-[var(--theme-color)] rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
+                  className="data-[state=active]:bg-transparent shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 h-9.5 text-slate-600 dark:text-neutral-400 data-[state=active]:text-theme font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
                 >
                   Overview
                 </TabsTrigger>
@@ -512,7 +553,7 @@ export default function JobDetailsPage() {
                 </p>
               ) : job?.description ? (
                 <div
-                  className="text-slate-600 dark:text-neutral-300 leading-relaxed text-[15px] [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:font-semibold [&_h2]:text-slate-800 dark:[&_h2]:text-neutral-100 [&_h2]:mb-2 [&_h3]:font-medium [&_h3]:text-slate-700 dark:[&_h3]:text-neutral-200 [&_h3]:mb-1"
+                  className="text-slate-600 dark:text-neutral-300 text-[15px] leading-[1.45] [&_p]:m-0 [&_p+p]:mt-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:m-0 [&_h1+p]:mt-1.5 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-slate-800 dark:[&_h2]:text-neutral-100 [&_h2]:m-0 [&_h2+p]:mt-1.5 [&_h3]:text-lg [&_h3]:font-medium [&_h3]:text-slate-700 dark:[&_h3]:text-neutral-200 [&_h3]:m-0 [&_h3+p]:mt-1"
                   dangerouslySetInnerHTML={{ __html: job.description }}
                 />
               ) : (
@@ -728,8 +769,7 @@ export default function JobDetailsPage() {
                       id: stage.id,
                       index,
                       type: "HIRING_STAGE",
-                      onMove: (from, to) =>
-                        setStages((prev) => moveItem(prev, from, to)),
+                      onMove: handleStageReorder,
                     });
                     return (
                       <div
@@ -858,8 +898,7 @@ export default function JobDetailsPage() {
                         id: q.id,
                         index,
                         type: "CUSTOM_QUESTION",
-                        onMove: (from, to) =>
-                          setQuestions((prev) => moveItem(prev, from, to)),
+                        onMove: handleQuestionReorder,
                       });
                       return (
                         <div

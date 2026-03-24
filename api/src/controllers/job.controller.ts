@@ -54,6 +54,9 @@ const createJobSchema = z
     salaryFixed: z.number().positive().optional().nullable(),
     salaryMin: z.number().positive().optional().nullable(),
     salaryMax: z.number().positive().optional().nullable(),
+    status: z
+      .enum(["draft", "inactive", "published", "closed", "archived"])
+      .optional(),
   })
   .refine(
     (data) => {
@@ -161,6 +164,7 @@ export const createJob = async (req: Request, res: Response) => {
       salaryFixed: parsed.data.salaryFixed ?? null,
       salaryMin: parsed.data.salaryMin ?? null,
       salaryMax: parsed.data.salaryMax ?? null,
+      status: parsed.data.status ?? "draft",
     };
     const result = await jobService.create(data);
     res.status(201).json({ data: result });

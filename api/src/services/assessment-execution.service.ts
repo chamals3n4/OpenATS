@@ -20,8 +20,11 @@ export interface SubmitAnswerInput {
 }
 
 export const assessmentExecutionService = {
-
-  async inviteCandidate(candidateId: number, assessmentId: number, expiryDays: number = 7) {
+  async inviteCandidate(
+    candidateId: number,
+    assessmentId: number,
+    expiryDays: number = 7,
+  ) {
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expiryDays);
@@ -38,13 +41,19 @@ export const assessmentExecutionService = {
       .returning();
 
     if (attempt) {
-      const [candidate] = await db.select().from(candidates).where(eq(candidates.id, candidateId));
-      const [assessment] = await db.select().from(assessments).where(eq(assessments.id, assessmentId));
-      
+      const [candidate] = await db
+        .select()
+        .from(candidates)
+        .where(eq(candidates.id, candidateId));
+      const [assessment] = await db
+        .select()
+        .from(assessments)
+        .where(eq(assessments.id, assessmentId));
+
       if (candidate && assessment) {
         const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-        const inviteUrl = `${frontendUrl}/assessments/${token}`;
-        
+        const inviteUrl = `${frontendUrl}/assessment/${token}`;
+
         const subject = `Assessment Invitation: ${assessment.title}`;
         const html = `
           <div style="font-family: sans-serif; line-height: 1.5; color: #333;">
@@ -64,13 +73,16 @@ export const assessmentExecutionService = {
           </div>
         `;
 
-        await mailService.sendAssessmentInviteEmail(candidate.email, subject, html);
+        await mailService.sendAssessmentInviteEmail(
+          candidate.email,
+          subject,
+          html,
+        );
       }
     }
 
     return attempt;
   },
-
 
   async getAttemptsByCandidate(candidateId: number) {
     return db
@@ -87,11 +99,13 @@ export const assessmentExecutionService = {
         assessmentTitle: assessments.title,
       })
       .from(candidateAssessmentAttempts)
-      .innerJoin(assessments, eq(candidateAssessmentAttempts.assessmentId, assessments.id))
+      .innerJoin(
+        assessments,
+        eq(candidateAssessmentAttempts.assessmentId, assessments.id),
+      )
       .where(eq(candidateAssessmentAttempts.candidateId, candidateId))
       .orderBy(desc(candidateAssessmentAttempts.createdAt));
   },
-
 
   async getAttemptByToken(token: string) {
     const [attempt] = await db
@@ -115,8 +129,14 @@ export const assessmentExecutionService = {
         },
       })
       .from(candidateAssessmentAttempts)
-      .innerJoin(assessments, eq(candidateAssessmentAttempts.assessmentId, assessments.id))
-      .innerJoin(candidates, eq(candidateAssessmentAttempts.candidateId, candidates.id))
+      .innerJoin(
+        assessments,
+        eq(candidateAssessmentAttempts.assessmentId, assessments.id),
+      )
+      .innerJoin(
+        candidates,
+        eq(candidateAssessmentAttempts.candidateId, candidates.id),
+      )
       .where(eq(candidateAssessmentAttempts.token, token));
 
     if (!attempt) return null;
@@ -151,9 +171,11 @@ export const assessmentExecutionService = {
       }),
     );
 
-    return { ...attempt, assessment: { ...attempt.assessment, questions: questionsWithOptions } };
+    return {
+      ...attempt,
+      assessment: { ...attempt.assessment, questions: questionsWithOptions },
+    };
   },
-
 
   async startAttempt(id: number) {
     const [attempt] = await db
@@ -163,15 +185,18 @@ export const assessmentExecutionService = {
         startedAt: new Date(),
         updatedAt: new Date(),
       })
-      .where(and(eq(candidateAssessmentAttempts.id, id), eq(candidateAssessmentAttempts.status, "pending")))
+      .where(
+        and(
+          eq(candidateAssessmentAttempts.id, id),
+          eq(candidateAssessmentAttempts.status, "pending"),
+        ),
+      )
       .returning();
 
     return attempt;
   },
 
-
   async saveAnswer(attemptId: number, input: SubmitAnswerInput) {
-
     return await db.transaction(async (tx) => {
       // 1. save or update answer
       const [answer] = await tx
@@ -182,12 +207,16 @@ export const assessmentExecutionService = {
           answerText: input.answerText ?? null,
         })
         .onConflictDoUpdate({
-          target: [candidateAssessmentAnswers.attemptId, candidateAssessmentAnswers.questionId],
+          target: [
+            candidateAssessmentAnswers.attemptId,
+            candidateAssessmentAnswers.questionId,
+          ],
           set: { answerText: input.answerText ?? null, updatedAt: new Date() },
         })
         .returning();
 
-      if (!answer) throw new Error("Database failed to return the saved answer record.");
+      if (!answer)
+        throw new Error("Database failed to return the saved answer record.");
 
       // clear old selections and save new ones (for multiple choice)
       await tx
@@ -195,7 +224,6 @@ export const assessmentExecutionService = {
         .where(eq(candidateAssessmentAnswerSelections.answerId, answer.id));
 
       if (input.optionIds && input.optionIds.length > 0) {
-
         await tx.insert(candidateAssessmentAnswerSelections).values(
           input.optionIds.map((optionId) => ({
             answerId: answer.id,
@@ -204,11 +232,9 @@ export const assessmentExecutionService = {
         );
       }
 
-
       return answer;
     });
   },
-
 
   async completeAttempt(id: number) {
     return await db.transaction(async (tx) => {
@@ -221,13 +247,19 @@ export const assessmentExecutionService = {
         throw new Error("Attempt is not in 'started' status");
       }
 
-      const [assessment] = await tx.select().from(assessments).where(eq(assessments.id, attempt.assessmentId));
+      const [assessment] = await tx
+        .select()
+        .from(assessments)
+        .where(eq(assessments.id, attempt.assessmentId));
 
       if (!assessment) {
         throw new Error("Assessment not found");
       }
 
-      const questions = await tx.select().from(assessmentQuestions).where(eq(assessmentQuestions.assessmentId, attempt.assessmentId));
+      const questions = await tx
+        .select()
+        .from(assessmentQuestions)
+        .where(eq(assessmentQuestions.assessmentId, attempt.assessmentId));
 
       let totalScoreRaw = 0;
       let totalPossiblePoints = 0;
@@ -239,27 +271,50 @@ export const assessmentExecutionService = {
         const [candidateAnswer] = await tx
           .select()
           .from(candidateAssessmentAnswers)
-          .where(and(eq(candidateAssessmentAnswers.attemptId, id), eq(candidateAssessmentAnswers.questionId, question.id)));
+          .where(
+            and(
+              eq(candidateAssessmentAnswers.attemptId, id),
+              eq(candidateAssessmentAnswers.questionId, question.id),
+            ),
+          );
 
         if (!candidateAnswer) continue;
 
         let pointsEarned = 0;
 
-        if (question.questionType === "multiple_choice" || question.questionType === "radio" || question.questionType === "checkbox") {
+        if (
+          question.questionType === "multiple_choice" ||
+          question.questionType === "radio" ||
+          question.questionType === "checkbox"
+        ) {
           const correctOptions = await tx
             .select()
             .from(assessmentQuestionOptions)
-            .where(and(eq(assessmentQuestionOptions.questionId, question.id), eq(assessmentQuestionOptions.isCorrect, true)));
+            .where(
+              and(
+                eq(assessmentQuestionOptions.questionId, question.id),
+                eq(assessmentQuestionOptions.isCorrect, true),
+              ),
+            );
 
           const candidateSelections = await tx
             .select()
             .from(candidateAssessmentAnswerSelections)
-            .where(eq(candidateAssessmentAnswerSelections.answerId, candidateAnswer.id));
+            .where(
+              eq(
+                candidateAssessmentAnswerSelections.answerId,
+                candidateAnswer.id,
+              ),
+            );
 
           const correctOptionIds = correctOptions.map((o) => o.id).sort();
-          const candidateOptionIds = candidateSelections.map((s) => s.optionId).sort();
+          const candidateOptionIds = candidateSelections
+            .map((s) => s.optionId)
+            .sort();
 
-          const isCorrect = JSON.stringify(correctOptionIds) === JSON.stringify(candidateOptionIds);
+          const isCorrect =
+            JSON.stringify(correctOptionIds) ===
+            JSON.stringify(candidateOptionIds);
           if (isCorrect) pointsEarned = questionPoints;
         } else {
           pointsEarned = 0;
@@ -273,7 +328,10 @@ export const assessmentExecutionService = {
         totalScoreRaw += pointsEarned;
       }
 
-      const scorePercentage = totalPossiblePoints > 0 ? (totalScoreRaw / totalPossiblePoints) * 100 : 0;
+      const scorePercentage =
+        totalPossiblePoints > 0
+          ? (totalScoreRaw / totalPossiblePoints) * 100
+          : 0;
       const passed = scorePercentage >= Number(assessment.passScore ?? 0);
 
       const [completed] = await tx

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useParams } from "next/navigation";
 import {
   AlertDialog,
@@ -160,10 +160,14 @@ export default function AssessmentPage() {
   const [answers, setAnswers] = useState<Record<number, Answer>>({});
   const [timeLeft, setTimeLeft] = useState(0);
   const [quitOpen, setQuitOpen] = useState(false);
+  const [policyOpen, setPolicyOpen] = useState(false);
   const [starting, setStarting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [scoreResult, setScoreResult] = useState<{ passed: boolean; scorePercentage: number } | null>(null);
+  const [submissionReason, setSubmissionReason] = useState<string | null>(null);
+  const [restrictionWarning, setRestrictionWarning] = useState<string | null>(null);
+  const violationTriggeredRef = useRef(false);
 
   // ── Fetch assessment on mount ───────────────────────────────────────────────
   useEffect(() => {
@@ -207,6 +211,8 @@ export default function AssessmentPage() {
     setStarting(true);
     try {
       await apiFetch(`/assessment/${token}/start`, { method: "POST" });
+      violationTriggeredRef.current = false;
+      setSubmissionReason(null);
       setScreen("quiz");
     } catch (e: unknown) {
       setErrorMsg(e instanceof Error ? e.message : "Failed to start");
@@ -228,7 +234,7 @@ export default function AssessmentPage() {
     });
   }, [token]);
 
-  const handleComplete = async () => {
+  const handleComplete = async (reason?: string) => {
     if (submitting) return;
     setSubmitting(true);
     setSubmitError(null);
@@ -242,9 +248,14 @@ export default function AssessmentPage() {
       );
 
       const res = await apiFetch<{ message: string; data: { passed: boolean; scorePercentage: number } }>(
-        `/assessment/${token}/complete`, { method: "POST" }
+        `/assessment/${token}/complete`,
+        {
+          method: "POST",
+          body: JSON.stringify(reason ? { autoSubmitReason: reason } : {}),
+        }
       );
       setScoreResult(res.data);
+      if (reason) setSubmissionReason(reason);
       setScreen("submitted");
     } catch (e: unknown) {
       setSubmitError(e instanceof Error ? e.message : "Submission failed. Please try again.");
@@ -252,6 +263,61 @@ export default function AssessmentPage() {
       setSubmitting(false);
     }
   };
+
+  const submitOnViolation = useCallback((reason: string) => {
+    if (screen !== "quiz") return;
+    if (violationTriggeredRef.current) return;
+    violationTriggeredRef.current = true;
+    void handleComplete(reason);
+  }, [screen, handleComplete]);
+
+  useEffect(() => {
+    if (!restrictionWarning) return;
+    const t = setTimeout(() => setRestrictionWarning(null), 3500);
+    return () => clearTimeout(t);
+  }, [restrictionWarning]);
+
+  // Fullscreen + focus enforcement during quiz.
+  useEffect(() => {
+    if (screen !== "quiz") return;
+
+    const tryEnterFullscreen = async () => {
+      if (document.fullscreenElement) return;
+      try {
+        await document.documentElement.requestFullscreen();
+      } catch {
+        setRestrictionWarning("Fullscreen could not be enabled on this device. Do not leave this window.");
+      }
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState !== "visible") {
+        submitOnViolation("Assessment auto-submitted: you switched tabs or minimized the browser.");
+      }
+    };
+
+    const onBlur = () => {
+      submitOnViolation("Assessment auto-submitted: the assessment window lost focus.");
+    };
+
+    const onFullscreenChange = () => {
+      if (!document.fullscreenElement) {
+        submitOnViolation("Assessment auto-submitted: fullscreen mode was exited.");
+      }
+    };
+
+    void tryEnterFullscreen();
+    window.addEventListener("blur", onBlur);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+
+    return () => {
+      window.removeEventListener("blur", onBlur);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+    };
+  }, [screen, submitOnViolation]);
+
 
   const goNext = async () => {
     if (!attempt) return;
@@ -354,6 +420,11 @@ export default function AssessmentPage() {
               Thank you for completing <strong>{attempt?.assessment.title}</strong>,{" "}
               {attempt?.candidate.firstName}.
             </p>
+            {submissionReason && (
+              <p style={{ fontSize: 13, color: "#b45309", margin: 0, lineHeight: 1.7 }}>
+                {submissionReason}
+              </p>
+            )}
           </div>
           <div style={{ width: "100%", backgroundColor: "#f8fafc", borderRadius: 12, padding: "20px 32px", display: "flex", flexDirection: "column", gap: 8, textAlign: "center" }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: TEXT_MAIN, margin: 0 }}>
@@ -421,13 +492,41 @@ export default function AssessmentPage() {
             </div>
 
             <button
-              onClick={handleStart}
+              onClick={() => setPolicyOpen(true)}
               disabled={starting}
               style={{ width: "100%", height: 52, backgroundColor: starting ? "#94a3b8" : DARK, color: WHITE, border: "none", borderRadius: 12, fontSize: 15, fontWeight: 600, cursor: starting ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: 10, transition: "opacity 0.15s" }}
             >
               {starting ? "Starting…" : "Start Assessment"}
               {!starting && <PlayIcon />}
             </button>
+            <AlertDialog open={policyOpen} onOpenChange={setPolicyOpen}>
+              <AlertDialogContent className="max-w-md rounded-2xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+                    Strict Assessment Policy
+                  </AlertDialogTitle>
+                  <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+                    <span style={{ display: "block", marginBottom: 6 }}>
+                      1. Do not exit the full screen mode.
+                    </span>
+                    <span style={{ display: "block" }}>
+                      2. If you switch tabs, minimize, or move away from this assessment window, the assessment will be stopped and automatically submitted immediately.
+                    </span>
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter className="gap-2">
+                  <AlertDialogCancel className="h-9 px-5 rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800">
+                    Cancel
+                  </AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleStart}
+                    className="h-9 px-5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-[13px] font-medium shadow-none border-none"
+                  >
+                    I Agree, Start
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
       </div>
@@ -443,6 +542,29 @@ export default function AssessmentPage() {
 
   return (
     <div style={{ height: "100vh", backgroundColor: LIGHT_BG, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+      {restrictionWarning && (
+        <div
+          role="status"
+          style={{
+            position: "fixed",
+            top: 14,
+            left: "50%",
+            transform: "translateX(-50%)",
+            zIndex: 2000,
+            backgroundColor: "#fff7ed",
+            border: "1px solid #fdba74",
+            color: "#9a3412",
+            borderRadius: 10,
+            padding: "10px 14px",
+            fontSize: 13,
+            fontWeight: 600,
+            boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
+          }}
+        >
+          {restrictionWarning}
+        </div>
+      )}
+
       {/* Header */}
       <div style={{ backgroundColor: WHITE, borderBottom: `1px solid ${BORDER}`, flexShrink: 0, padding: "16px 28px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
@@ -628,6 +750,7 @@ export default function AssessmentPage() {
           </div>
         </div>
       </div>
+
     </div>
   );
 }

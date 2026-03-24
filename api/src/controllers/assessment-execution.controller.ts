@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { assessmentExecutionService } from "../services/assessment-execution.service";
+import { mailService } from "../services/mail.service";
 
 const inviteCandidateSchema = z.object({
   candidateId: z.number().int().positive(),
@@ -12,6 +13,10 @@ const submitAnswerSchema = z.object({
   questionId: z.number().int().positive(),
   answerText: z.string().optional().nullable(),
   optionIds: z.array(z.number().int().positive()).optional(),
+});
+
+const completeAssessmentSchema = z.object({
+  autoSubmitReason: z.string().trim().min(1).max(500).optional(),
 });
 
 
@@ -144,6 +149,16 @@ export const submitAssessmentAnswer = async (req: Request, res: Response) => {
 
 export const completeAssessment = async (req: Request, res: Response) => {
   try {
+    const parsed = completeAssessmentSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const { autoSubmitReason } = parsed.data;
     const { token } = req.params;
     const tokenStr = (token ?? "").toString();
     const attempt = await getAttemptByTokenOrFail(res, tokenStr);
@@ -157,6 +172,22 @@ export const completeAssessment = async (req: Request, res: Response) => {
     const result = await assessmentExecutionService.completeAttempt(attempt.id);
     if (!result) {
       throw new Error("Failed to finalize assessment");
+    }
+
+    const completionContext = await assessmentExecutionService.getAttemptCompletionEmailContext(attempt.id);
+    if (completionContext) {
+      mailService
+        .sendAssessmentCompletionEmail(
+          completionContext.candidateEmail,
+          completionContext.candidateFirstName,
+          completionContext.assessmentTitle,
+          autoSubmitReason
+        )
+        .catch((emailError) => {
+          console.error("Assessment completion email failed:", emailError);
+        });
+    } else {
+      console.warn(`Assessment completion email skipped: context not found for attempt ${attempt.id}`);
     }
 
     res.status(200).json({

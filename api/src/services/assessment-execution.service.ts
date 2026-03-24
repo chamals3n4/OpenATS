@@ -19,6 +19,12 @@ export interface SubmitAnswerInput {
   optionIds?: number[] | undefined;
 }
 
+export interface AttemptCompletionEmailContext {
+  candidateEmail: string;
+  candidateFirstName: string;
+  assessmentTitle: string;
+}
+
 export const assessmentExecutionService = {
   async inviteCandidate(
     candidateId: number,
@@ -175,6 +181,27 @@ export const assessmentExecutionService = {
       ...attempt,
       assessment: { ...attempt.assessment, questions: questionsWithOptions },
     };
+  },
+
+  async getAttemptCompletionEmailContext(attemptId: number): Promise<AttemptCompletionEmailContext | null> {
+    const [result] = await db
+      .select({
+        candidateEmail: candidates.email,
+        candidateFirstName: candidates.firstName,
+        assessmentTitle: assessments.title,
+      })
+      .from(candidateAssessmentAttempts)
+      .innerJoin(
+        candidates,
+        eq(candidateAssessmentAttempts.candidateId, candidates.id),
+      )
+      .innerJoin(
+        assessments,
+        eq(candidateAssessmentAttempts.assessmentId, assessments.id),
+      )
+      .where(eq(candidateAssessmentAttempts.id, attemptId));
+
+    return result ?? null;
   },
 
   async startAttempt(id: number) {

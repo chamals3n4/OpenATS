@@ -13,6 +13,11 @@ import {
 
 import { mailService } from "./mail.service";
 import { aiGradingService } from "./ai-grading.service";
+import {
+  canTransitionAttemptStatus,
+  clampScore,
+  isObjectiveAnswerCorrect,
+} from "./assessment-execution.logic";
 
 export interface SubmitAnswerInput {
   questionId: number;
@@ -331,6 +336,10 @@ export const assessmentExecutionService = {
   },
 
   async startAttempt(id: number) {
+    // Pure rule check (behavior unchanged; DB WHERE is authoritative)
+    if (!canTransitionAttemptStatus("pending", "started")) {
+      throw new Error("Invalid attempt status transition");
+    }
     const [attempt] = await db
       .update(candidateAssessmentAttempts)
       .set({
@@ -466,9 +475,10 @@ export const assessmentExecutionService = {
             .map((s) => s.optionId)
             .sort();
 
-          const isCorrect =
-            JSON.stringify(correctOptionIds) ===
-            JSON.stringify(candidateOptionIds);
+          const isCorrect = isObjectiveAnswerCorrect(
+            correctOptionIds,
+            candidateOptionIds,
+          );
           if (isCorrect) pointsEarned = questionPoints;
           aiFeedback = null;
         } else if (question.questionType === "short_answer") {
@@ -495,6 +505,8 @@ export const assessmentExecutionService = {
           pointsEarned = 0;
           aiFeedback = null;
         }
+
+        pointsEarned = clampScore(pointsEarned, questionPoints);
 
         await tx
           .update(candidateAssessmentAnswers)

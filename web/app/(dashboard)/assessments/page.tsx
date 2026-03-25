@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Search01Icon,
@@ -21,8 +21,9 @@ import {
   useCandidates,
   useInviteToAssessment,
   useCandidateAssessments,
+  useCandidate,
 } from "@/hooks/use-api";
-import type { Assessment } from "@/types";
+import type { Assessment, Candidate } from "@/types";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -53,10 +54,17 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-function parseRagCandidateId(description: string | null | undefined): number | null {
+function parseRagMeta(
+  description: string | null | undefined,
+): { candidateId: number; stageId: number } | null {
   if (!description) return null;
-  const m = description.match(/__rag_candidate_(\d+)_stage_\d+__/);
-  return m ? Number(m[1]) : null;
+  const m = description.match(/__rag_candidate_(\d+)_stage_(\d+)__/);
+  if (!m) return null;
+  return { candidateId: Number(m[1]), stageId: Number(m[2]) };
+}
+
+function parseRagCandidateId(description: string | null | undefined): number | null {
+  return parseRagMeta(description)?.candidateId ?? null;
 }
 
 function IndividualAssessmentCard({
@@ -148,8 +156,46 @@ function IndividualAssessmentCard({
   );
 }
 
+function PendingIndividualAssessmentCard({ candidate }: { candidate: Candidate }) {
+  const { data, isLoading } = useCandidate(candidate.id, { enabled: !!candidate.id });
+  const cvStatus = data?.data?.cvAnalysis?.status;
+  const isPending = cvStatus === "pending";
+  const isPreparing = cvStatus === "done";
+
+  return (
+    <div className="flex flex-col border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 shadow-sm">
+      <div className="flex flex-col gap-2.5 px-5 pt-5 pb-4">
+        <p className="text-[12px] text-slate-400 dark:text-neutral-500 font-medium">
+          Candidate:{" "}
+          <span className="text-slate-600 dark:text-neutral-300">
+            {candidate.firstName} {candidate.lastName}
+          </span>
+        </p>
+        <p className="text-[15px] font-semibold text-slate-800 dark:text-neutral-200 leading-snug truncate">
+          Individual Assessment - Preparing...
+        </p>
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center text-[12px] font-medium px-2.5 py-1 rounded-md bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400">
+            Individual
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-2 px-4 py-3 border-t border-slate-100 dark:border-neutral-800">
+        <Loader2 className={`size-4 text-[var(--theme-color)] ${isPending || isPreparing ? "animate-spin" : ""}`} />
+        <p className="text-[12px] text-slate-500 dark:text-neutral-400">
+          {isPending
+            ? "AI is analyzing CV..."
+            : isPreparing
+              ? "AI is preparing questions based on the CV..."
+              : "AI is preparing questions based on the CV..."}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 export default function AssessmentsPage() {
-  const { data, isLoading } = useAssessments();
+  const { data, isLoading, refetch } = useAssessments();
   const deleteAssessment = useDeleteAssessment();
   const assessments = data?.data ?? [];
   const [assessmentTab, setAssessmentTab] = useState("custom");
@@ -178,6 +224,29 @@ export default function AssessmentsPage() {
 
   const { data: candidatesData } = useCandidates();
   const candidates = candidatesData?.data ?? [];
+  const existingCandidateStagePairs = new Set(
+    individualAssessments
+      .map((a) => parseRagMeta(a.description))
+      .filter((meta): meta is { candidateId: number; stageId: number } => !!meta)
+      .map((meta) => `${meta.candidateId}:${meta.stageId}`),
+  );
+  const pendingCandidates = candidates.filter(
+    (c) =>
+      !!c.resumeUrl &&
+      !!c.currentStageId &&
+      !existingCandidateStagePairs.has(`${c.id}:${c.currentStageId}`),
+  );
+
+  // While AI is preparing questions, keep the page updated so the loading box
+  // disappears and the generated assessment card shows Edit/Delete immediately.
+  useEffect(() => {
+    if (assessmentTab !== "individual") return;
+    if (pendingCandidates.length === 0) return;
+    const t = setInterval(() => {
+      void refetch();
+    }, 2500);
+    return () => clearInterval(t);
+  }, [assessmentTab, pendingCandidates.length, refetch]);
   const inviteMutation = useInviteToAssessment();
 
   const openInviteDialog = (a: Assessment) => {
@@ -306,7 +375,7 @@ export default function AssessmentsPage() {
                   No assessments found.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-3">
                   {customAssessments.map((a) => (
                     <div
                       key={a.id}
@@ -383,18 +452,24 @@ export default function AssessmentsPage() {
                   <Loader2 className="size-4 animate-spin text-slate-400" />
                   Loading assessments...
                 </div>
-              ) : individualAssessments.length === 0 ? (
+              ) : individualAssessments.length === 0 && pendingCandidates.length === 0 ? (
                 <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
                   No individual assessments found.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-3 gap-3">
                   {individualAssessments.map((a) => (
                     <IndividualAssessmentCard
                       key={a.id}
                       a={a}
                       onDelete={(x) => setDeleteTarget(x)}
                       getCandidateName={getCandidateName}
+                    />
+                  ))}
+                  {pendingCandidates.map((candidate) => (
+                    <PendingIndividualAssessmentCard
+                      key={`pending-${candidate.id}`}
+                      candidate={candidate}
                     />
                   ))}
                 </div>

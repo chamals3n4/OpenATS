@@ -85,6 +85,12 @@ function timeLimitToSeconds(minutes: number) {
   return Math.max(0, Math.floor(minutes * 60));
 }
 
+function getVisibleAssessmentDescription(raw: string | null | undefined) {
+  if (!raw) return null;
+  if (/^__rag_candidate_\d+_stage_\d+__$/.test(raw.trim())) return null;
+  return raw;
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const DARK = "var(--assessment-dark)";
@@ -456,6 +462,9 @@ export default function AssessmentPage() {
 
   if (screen === "intro" && attempt) {
     const timeMins = attempt.assessment.timeLimit ?? 0;
+    const visibleDescription = getVisibleAssessmentDescription(
+      attempt.assessment.description,
+    );
     return (
       <div style={{ minHeight: "100vh", backgroundColor: LIGHT_BG, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "48px 16px" }}>
         <div style={{ width: "100%", maxWidth: 900, backgroundColor: WHITE, borderRadius: 16, border: `1px solid ${BORDER}`, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
@@ -463,9 +472,9 @@ export default function AssessmentPage() {
             <h1 style={{ fontSize: 26, fontWeight: 700, color: WHITE, margin: 0, marginBottom: 8, lineHeight: 1.3 }}>
               {attempt.assessment.title}
             </h1>
-            {attempt.assessment.description && (
+            {visibleDescription && (
               <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", margin: 0, lineHeight: 1.6 }}>
-                {attempt.assessment.description}
+                {visibleDescription}
               </p>
             )}
           </div>

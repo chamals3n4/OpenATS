@@ -2,7 +2,7 @@ import { Server, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
 import { db } from "../db";
 import { jobChatMessages, candidateChatMessages, users } from "../db/schema";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 
 export class SocketService {
   private static instance: SocketService;
@@ -53,20 +53,96 @@ export class SocketService {
             .returning();
 
           const [sender] = await db
-            .select({ firstName: users.firstName, avatarUrl: users.avatarUrl })
+            .select({
+              firstName: users.firstName,
+              lastName: users.lastName,
+              avatarUrl: users.avatarUrl,
+            })
             .from(users)
             .where(eq(users.id, data.senderId))
             .limit(1);
 
           this.io?.to(`job_${data.jobId}`).emit("new_job_message", {
             ...newMessage,
-            senderName: sender?.firstName ?? null,
+            senderName: sender ? `${sender.firstName} ${sender.lastName}` : null,
             senderAvatar: sender?.avatarUrl ?? null,
           });
         } catch (error) {
           console.error("Error saving job message:", error);
         }
       });
+
+      socket.on(
+        "edit_job_message",
+        async (data: {
+          jobId: number;
+          senderId: number;
+          messageId: number;
+          message: string;
+        }) => {
+          try {
+            const [updated] = await db
+              .update(jobChatMessages)
+              .set({ message: data.message })
+              .where(
+                and(
+                  eq(jobChatMessages.id, data.messageId),
+                  eq(jobChatMessages.jobId, data.jobId),
+                  eq(jobChatMessages.senderId, data.senderId),
+                  eq(jobChatMessages.isDeleted, false),
+                ),
+              )
+              .returning();
+
+            if (!updated) return;
+
+            const [sender] = await db
+              .select({
+                firstName: users.firstName,
+                lastName: users.lastName,
+                avatarUrl: users.avatarUrl,
+              })
+              .from(users)
+              .where(eq(users.id, data.senderId))
+              .limit(1);
+
+            this.io?.to(`job_${data.jobId}`).emit("job_message_updated", {
+              ...updated,
+              senderName: sender ? `${sender.firstName} ${sender.lastName}` : null,
+              senderAvatar: sender?.avatarUrl ?? null,
+            });
+          } catch (error) {
+            console.error("Error updating job message:", error);
+          }
+        },
+      );
+
+      socket.on(
+        "delete_job_message",
+        async (data: { jobId: number; senderId: number; messageId: number }) => {
+          try {
+            const [deleted] = await db
+              .update(jobChatMessages)
+              .set({ isDeleted: true })
+              .where(
+                and(
+                  eq(jobChatMessages.id, data.messageId),
+                  eq(jobChatMessages.jobId, data.jobId),
+                  eq(jobChatMessages.senderId, data.senderId),
+                  eq(jobChatMessages.isDeleted, false),
+                ),
+              )
+              .returning({ id: jobChatMessages.id });
+
+            if (!deleted) return;
+            this.io
+              ?.to(`job_${data.jobId}`)
+              .emit("job_message_deleted", { id: deleted.id });
+          } catch (error) {
+            console.error("Error deleting job message:", error);
+          }
+        },
+      );
 
       socket.on("send_candidate_message", async (data: { candidateId: number; senderId: number; message: string; replyToId?: number }) => {
         try {

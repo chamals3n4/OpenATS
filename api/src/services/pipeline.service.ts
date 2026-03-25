@@ -1,10 +1,10 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, desc } from "drizzle-orm";
 import { db } from "../db";
 import { jobPipelineStages } from "../db/schema";
 
 export type CreateStageInput = {
   name: string;
-  position: number;
+  position?: number;
   stageType?:
     | "none"
     | "source"
@@ -52,18 +52,47 @@ export const pipelineService = {
   },
 
   async create(jobId: number, input: CreateStageInput) {
-    const [created] = await db
-      .insert(jobPipelineStages)
-      .values({
-        jobId,
-        name: input.name,
-        position: input.position,
-        stageType: input.stageType ?? "none",
-        offerTemplateId: input.offerTemplateId ?? null,
-        offerMode: input.offerMode ?? "auto_draft",
-      })
-      .returning();
-    return created;
+    const [last] = await db
+      .select({ position: jobPipelineStages.position })
+      .from(jobPipelineStages)
+      .where(eq(jobPipelineStages.jobId, jobId))
+      .orderBy(desc(jobPipelineStages.position))
+      .limit(1);
+
+    const fallbackNext = (last?.position ?? 0) + 1;
+    const desiredPosition = input.position ?? fallbackNext;
+
+    try {
+      const [created] = await db
+        .insert(jobPipelineStages)
+        .values({
+          jobId,
+          name: input.name,
+          position: desiredPosition,
+          stageType: input.stageType ?? "none",
+          offerTemplateId: input.offerTemplateId ?? null,
+          offerMode: input.offerMode ?? "auto_draft",
+        })
+        .returning();
+      return created;
+    } catch (err: any) {
+      // If position is already taken, append to the end.
+      if (err?.code === "23505") {
+        const [created] = await db
+          .insert(jobPipelineStages)
+          .values({
+            jobId,
+            name: input.name,
+            position: fallbackNext,
+            stageType: input.stageType ?? "none",
+            offerTemplateId: input.offerTemplateId ?? null,
+            offerMode: input.offerMode ?? "auto_draft",
+          })
+          .returning();
+        return created;
+      }
+      throw err;
+    }
   },
 
   async update(jobId: number, stageId: number, input: UpdateStageInput) {

@@ -15,7 +15,11 @@ const stageTypeEnum = z.enum([
 
 const createStageSchema = z.object({
   name: z.string().min(1, "Stage name is required").max(100),
-  position: z.number().int().positive("Position must be a positive number"),
+  position: z
+    .number()
+    .int()
+    .positive("Position must be a positive number")
+    .optional(),
   stageType: stageTypeEnum.optional().default("none"),
   offerTemplateId: z.number().int().positive().optional().nullable(),
   offerMode: z.enum(["auto_draft", "auto_send"]).optional().nullable(),

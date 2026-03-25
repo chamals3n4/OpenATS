@@ -15,6 +15,7 @@ export const getJobChatHistory = async (req: Request, res: Response) => {
         sentAt: jobChatMessages.sentAt,
         isSystemMessage: jobChatMessages.isSystemMessage,
         senderName: users.firstName,
+        senderLastName: users.lastName,
         senderAvatar: users.avatarUrl,
       })
       .from(jobChatMessages)
@@ -27,7 +28,14 @@ export const getJobChatHistory = async (req: Request, res: Response) => {
       )
       .orderBy(desc(jobChatMessages.sentAt));
 
-    res.status(200).json({ data: messages });
+    res.status(200).json({
+      data: messages.map((m) => ({
+        ...m,
+        senderName: m.senderName
+          ? `${m.senderName} ${m.senderLastName ?? ""}`.trim()
+          : null,
+      })),
+    });
   } catch (error) {
     console.error("Error fetching job chat history:", error);
     res.status(500).json({ error: "Failed to fetch job chat history" });
@@ -46,6 +54,7 @@ export const getCandidateChatHistory = async (req: Request, res: Response) => {
         sentAt: candidateChatMessages.sentAt,
         isSystemMessage: candidateChatMessages.isSystemMessage,
         senderName: users.firstName,
+        senderLastName: users.lastName,
         senderAvatar: users.avatarUrl,
       })
       .from(candidateChatMessages)
@@ -58,7 +67,14 @@ export const getCandidateChatHistory = async (req: Request, res: Response) => {
       )
       .orderBy(desc(candidateChatMessages.sentAt));
 
-    res.status(200).json({ data: messages });
+    res.status(200).json({
+      data: messages.map((m) => ({
+        ...m,
+        senderName: m.senderName
+          ? `${m.senderName} ${m.senderLastName ?? ""}`.trim()
+          : null,
+      })),
+    });
   } catch (error) {
     console.error("Error fetching candidate chat history:", error);
     res.status(500).json({ error: "Failed to fetch candidate chat history" });

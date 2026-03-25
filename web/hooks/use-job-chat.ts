@@ -24,6 +24,20 @@ export function useJobChat(jobId: number, enabled: boolean) {
       setLiveMessages((prev) => [...prev, msg]);
     });
 
+    socket.on("job_message_updated", (msg: ChatMessage) => {
+      setLiveMessages((prev) => {
+        const next = prev.slice();
+        const idx = next.findIndex((m) => m.id === msg.id);
+        if (idx >= 0) next[idx] = msg;
+        else next.push(msg);
+        return next;
+      });
+    });
+
+    socket.on("job_message_deleted", (data: { id: number }) => {
+      setLiveMessages((prev) => prev.filter((m) => m.id !== data.id));
+    });
+
     return () => {
       socket.disconnect();
       socketRef.current = null;
@@ -36,5 +50,20 @@ export function useJobChat(jobId: number, enabled: boolean) {
     socketRef.current.emit("send_job_message", { jobId, senderId, message });
   };
 
-  return { liveMessages, sendMessage };
+  const editMessage = (senderId: number, messageId: number, message: string) => {
+    if (!message.trim() || !socketRef.current) return;
+    socketRef.current.emit("edit_job_message", {
+      jobId,
+      senderId,
+      messageId,
+      message,
+    });
+  };
+
+  const deleteMessage = (senderId: number, messageId: number) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit("delete_job_message", { jobId, senderId, messageId });
+  };
+
+  return { liveMessages, sendMessage, editMessage, deleteMessage };
 }

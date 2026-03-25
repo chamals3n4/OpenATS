@@ -28,7 +28,24 @@ type JobLevel =
   | "lead"
   | null;
 
+type DocumentType =
+  | "resume"
+  | "cv"
+  | "cover_letter"
+  | "certificate"
+  | "transcript"
+  | "assignment"
+  | "lab_sheet"
+  | "invoice"
+  | "id_document"
+  | "other";
+
 interface ParsedCv {
+  documentType: DocumentType;
+  isCvOrResume: boolean;
+  confidence: number; // 0..1
+  rationale: string[];
+
   listedSkills: string[];
   projectTechnologies: string[];
 
@@ -93,14 +110,23 @@ async function downloadPdfFromR2(objectKey: string): Promise<Buffer> {
 
 async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
   const prompt = [
-    "You are a comprehensive CV/resume parser.",
+    "You are a strict CV/resume parser and document classifier.",
     "",
-    "Carefully read the entire CV/resume document attached.",
-    "Extract ALL of the following information.",
+    "First decide whether the attached PDF is a CV/resume.",
+    "Only if it is a CV/resume, extract candidate information.",
+    "",
+    "Important:",
+    "- Many PDFs are NOT CVs (e.g., lab sheets, assignments, invoices, certificates, transcripts).",
+    "- Do NOT hallucinate skills, experience, certifications, or job level.",
+    "- If the document is not a CV/resume, return empty arrays and zeros for extraction fields.",
     "Return ONLY a valid JSON object — no explanation, no markdown, no code fences.",
     "",
     "JSON schema to return:",
     "{",
+    '  "documentType": "resume",',
+    '  "isCvOrResume": true,',
+    '  "confidence": 0.0,',
+    '  "rationale": ["short reason 1", "short reason 2"],',
     '  "listedSkills": ["skill1", "skill2"],',
     '  "projectTechnologies": ["tech1", "tech2"],',
     '  "certifications": ["cert1", "cert2"],',
@@ -108,12 +134,26 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
     '  "jobLevel": "entry"',
     "}",
     "",
+    "documentType:",
+    '  - One of: "resume","cv","cover_letter","certificate","transcript","assignment","lab_sheet","invoice","id_document","other"',
+    "",
+    "isCvOrResume:",
+    "  - true ONLY if the PDF is a candidate resume/CV (work history, education, projects, skills, contact info).",
+    "  - false if it is anything else (lab sheet, assignment, exam paper, course handout, certificate PDF, transcript, invoice).",
+    "",
+    "confidence:",
+    "  - A number from 0 to 1 indicating confidence in the classification.",
+    "",
+    "rationale:",
+    "  - 1 to 5 short bullet reasons (strings) explaining the classification.",
+    "",
     "Field rules:",
     "",
     "listedSkills:",
-    "  - Extract every skill explicitly listed in a skills, technologies, or competencies section",
-    "  - Include programming languages, frameworks, libraries, tools, platforms, databases",
-    "  - Include soft skills if listed (e.g. communication, leadership, teamwork)",
+    "  - Extract skills/technologies mentioned ANYWHERE in the CV (skills section, experience bullets, projects, education, tools).",
+    "  - Include programming languages, frameworks, libraries, tools, platforms, databases, cloud services, methodologies.",
+    "  - Keep items short (e.g., 'React', 'PostgreSQL', 'Docker').",
+    "  - Do not include generic words like 'project', 'team', 'lab', 'assignment'.",
     "",
     "projectTechnologies:",
     "  - Extract technologies mentioned in project descriptions, side projects,",
@@ -123,10 +163,12 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
     "  - Use empty array [] if no projects are mentioned",
     "",
     "certifications:",
-    "  - Extract every certification, licence, or credential the candidate holds",
-    "  - Include professional certs (AWS, Google Cloud, PMP, etc.)",
-    "  - Include online course completions if listed (Coursera, Udemy, etc.)",
-    "  - Use empty array [] if none found",
+    "  - Extract formal certifications/licences/credentials the candidate HOLDS.",
+    "  - Only include an item if the document indicates the candidate is the holder/recipient.",
+    "  - Prefer professional certifications (AWS, Azure, Google Cloud, PMP, etc.).",
+    "  - Do NOT include random course topics, lab sheets, module names, or assignment titles as certifications.",
+    "  - If unsure whether something is a real certification, do NOT include it.",
+    "  - Use empty array [] if none found.",
     "",
     "totalExperienceYears:",
     "  - Calculate total years of professional work experience as a decimal number",
@@ -144,6 +186,13 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
     '    "senior"  → 6 to 9 years of experience',
     '    "lead"    → 10+ years or holds lead/principal/architect/staff titles',
     "    null      → cannot be determined from the CV",
+    "",
+    "If isCvOrResume is false:",
+    "  - listedSkills: []",
+    "  - projectTechnologies: []",
+    "  - certifications: []",
+    "  - totalExperienceYears: 0",
+    "  - jobLevel: null",
   ].join("\n");
 
   const response = await ai.models.generateContent({
@@ -172,6 +221,32 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
   }
 
   return JSON.parse(raw) as ParsedCv;
+}
+
+function normalizeToken(s: string): string {
+  return s
+    .toLowerCase()
+    .replace(/[\u2019']/g, "")
+    .replace(/[^a-z0-9+.#\s-]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function normalizeCertName(s: string): string {
+  const n = normalizeToken(s);
+  return n
+    .replace(/\baws\b/g, "amazon web services")
+    .replace(/\bgcp\b/g, "google cloud")
+    .replace(/\bazure\b/g, "microsoft azure")
+    .trim();
+}
+
+function hasCertMatch(candidateCerts: string[], requiredCert: string): boolean {
+  const req = normalizeCertName(requiredCert);
+  if (!req) return false;
+  const cand = candidateCerts.map(normalizeCertName);
+  if (cand.includes(req)) return true;
+  return cand.some((c) => c.includes(req) || req.includes(c));
 }
 
 async function parseJdWithGemini(description: string): Promise<ParsedJd> {
@@ -283,9 +358,9 @@ function scoreCV(parsedCv: ParsedCv, jobReqs: JobRequirements): ScoreResult {
   const expScore =
     jobReqs.minExperienceYears > 0
       ? Math.min(
-          parsedCv.totalExperienceYears / jobReqs.minExperienceYears,
-          1,
-        ) * 25
+        parsedCv.totalExperienceYears / jobReqs.minExperienceYears,
+        1,
+      ) * 25
       : 25;
 
   const jobLevelTiers: Record<string, number> = {
@@ -323,16 +398,17 @@ function scoreCV(parsedCv: ParsedCv, jobReqs: JobRequirements): ScoreResult {
   }
 
   const cvCertsSet = new Set(
-    parsedCv.certifications.map((c) => c.toLowerCase().trim()),
+    parsedCv.certifications.map((c) => normalizeCertName(c)),
   );
 
   const certScore =
     jobReqs.requiredCertifications.length > 0
-      ? (jobReqs.requiredCertifications.filter((c) =>
-          cvCertsSet.has(c.toLowerCase().trim()),
-        ).length /
-          jobReqs.requiredCertifications.length) *
-        5
+      ? (jobReqs.requiredCertifications.filter((c) => {
+        const n = normalizeCertName(c);
+        return cvCertsSet.has(n) || hasCertMatch(parsedCv.certifications, c);
+      }).length /
+        jobReqs.requiredCertifications.length) *
+      5
       : 5;
   return {
     matchScore: Math.round(skillsScore + expScore + levelScore + certScore),
@@ -400,18 +476,27 @@ export const cvAnalysisService = {
         jobRow?.description
           ? parseJdWithGemini(jobRow.description)
           : Promise.resolve<ParsedJd>({
-              minExperienceYears: 0,
-              jobLevel: null,
-              requiredCertifications: [],
-            }),
+            minExperienceYears: 0,
+            jobLevel: null,
+            requiredCertifications: [],
+          }),
       ]);
 
       console.log(
         `[CV Analysis] CV parsed — ${parsedCv.listedSkills.length} listed skills, ${parsedCv.projectTechnologies.length} project techs, level: ${parsedCv.jobLevel}`,
       );
       console.log(
+        `[CV Analysis] Document type: ${parsedCv.documentType} isCvOrResume=${parsedCv.isCvOrResume} confidence=${parsedCv.confidence}`,
+      );
+      console.log(
         `[CV Analysis] JD parsed — min exp: ${parsedJd.minExperienceYears}yrs, level: ${parsedJd.jobLevel}`,
       );
+
+      if (!parsedCv.isCvOrResume || parsedCv.confidence < 0.6) {
+        throw new Error(
+          `Uploaded document doesn't look like a CV/resume (type: ${parsedCv.documentType}, confidence: ${parsedCv.confidence}). Please upload a resume/CV PDF.`,
+        );
+      }
 
       const jobReqs: JobRequirements = {
         skills: jobSkillRows.map((r) => r.skill),

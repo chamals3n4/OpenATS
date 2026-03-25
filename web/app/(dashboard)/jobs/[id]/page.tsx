@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import type { Ref } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -146,6 +146,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function JobDetailsPage() {
   const params = useParams();
@@ -153,12 +154,18 @@ export default function JobDetailsPage() {
 
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [noteText, setNoteText] = useState("");
+  const [notesPanelWidth, setNotesPanelWidth] = useState(450);
+  const [isResizingNotes, setIsResizingNotes] = useState(false);
+  const [isLgUp, setIsLgUp] = useState(false);
 
   const { data: jobData, isLoading: jobLoading } = useJob(jobId);
   const { data: pipelineData } = usePipeline(jobId);
   const { data: meData } = useCurrentUser();
   const { data: chatHistoryData } = useChatHistory(jobId, isNotesOpen);
-  const { liveMessages, sendMessage } = useJobChat(jobId, isNotesOpen);
+  const { liveMessages, sendMessage, editMessage, deleteMessage } = useJobChat(
+    jobId,
+    isNotesOpen,
+  );
   const { data: customQuestionsData } = useCustomQuestions(jobId);
 
   const createStageMutation = useCreateStage(jobId);
@@ -208,14 +215,29 @@ export default function JobDetailsPage() {
 
   const job = jobData?.data;
   const me = meData?.data;
-  const historyMessages = (chatHistoryData?.data ?? []).slice().reverse();
-  const allMessages = [...historyMessages, ...liveMessages];
+  const allMessages = useMemo(() => {
+    const history = chatHistoryData?.data ?? [];
+    const merged = [...history, ...liveMessages];
+    const byId = new Map<number, (typeof merged)[number]>();
+    for (const msg of merged) byId.set(msg.id, msg);
+    return Array.from(byId.values()).sort(
+      (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime(),
+    );
+  }, [chatHistoryData?.data, liveMessages]);
 
   const handleSendNote = () => {
     if (!noteText.trim() || !me) return;
     sendMessage(me.id, noteText.trim());
     setNoteText("");
   };
+
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
+  const [noteDeleteTarget, setNoteDeleteTarget] = useState<{
+    id: number;
+    senderName: string | null;
+    message: string | null;
+  } | null>(null);
 
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
   const [isAddingMode, setIsAddingMode] = useState(false);
@@ -230,6 +252,35 @@ export default function JobDetailsPage() {
       setQuestions(customQuestionsData.data);
     }
   }, [customQuestionsData]);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const onChange = () => setIsLgUp(mq.matches);
+    onChange();
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isResizingNotes) return;
+
+    const MIN = 360;
+    const MAX = 700;
+
+    const onMove = (e: MouseEvent) => {
+      const next = Math.round(window.innerWidth - e.clientX);
+      setNotesPanelWidth(Math.max(MIN, Math.min(MAX, next)));
+    };
+
+    const onUp = () => setIsResizingNotes(false);
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [isResizingNotes]);
 
   // ── Inline edit state ────────────────────────────────────────────────────
   const [editingStageId, setEditingStageId] = useState<number | null>(null);
@@ -282,10 +333,12 @@ export default function JobDetailsPage() {
   useEffect(() => {
     if (pipelineData?.data) {
       setStages(
-        pipelineData.data.map((s) => ({
-          ...s,
-          color: STAGE_COLORS[s.stageType] ?? "bg-slate-400",
-        })),
+        [...pipelineData.data]
+          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+          .map((s) => ({
+            ...s,
+            color: STAGE_COLORS[s.stageType] ?? "bg-slate-400",
+          })),
       );
     }
   }, [pipelineData]);
@@ -326,6 +379,10 @@ export default function JobDetailsPage() {
   const [newStageName, setNewStageName] = useState("");
   const [isAssessmentDialogOpen, setIsAssessmentDialogOpen] = useState(false);
   const [detachTarget, setDetachTarget] = useState<number | null>(null);
+  const [stageDeleteTarget, setStageDeleteTarget] = useState<{
+    id: number;
+    name: string;
+  } | null>(null);
   const [assessmentSelectId, setAssessmentSelectId] = useState("");
   const [triggerStageSelectId, setTriggerStageSelectId] = useState("");
 
@@ -347,10 +404,14 @@ export default function JobDetailsPage() {
 
   const handleAddStage = () => {
     if (!newStageName.trim()) return;
+    const nextPosition =
+      stages.length === 0
+        ? 1
+        : Math.max(...stages.map((s) => s.position ?? 0)) + 1;
     createStageMutation.mutate(
       {
         name: newStageName.trim(),
-        position: stages.length + 1,
+        position: nextPosition,
         stageType: "none",
       },
       {
@@ -373,7 +434,10 @@ export default function JobDetailsPage() {
   const questionReorderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleStageReorder = (from: number, to: number) => {
-    const reordered = moveItem(stages, from, to);
+    const reordered = moveItem(stages, from, to).map((stage, index) => ({
+      ...stage,
+      position: index + 1,
+    }));
     setStages(reordered);
 
     // Debounce the backend updates to avoid conflicts
@@ -383,9 +447,9 @@ export default function JobDetailsPage() {
 
     stageReorderTimeoutRef.current = setTimeout(() => {
       // Use bulk reorder API to update all positions in a single transaction
-      const stageUpdates = reordered.map((stage, index) => ({
+      const stageUpdates = reordered.map((stage) => ({
         id: stage.id,
-        position: index + 1,
+        position: stage.position,
       }));
 
       reorderStagesMutation.mutate(stageUpdates);
@@ -417,7 +481,14 @@ export default function JobDetailsPage() {
 
   return (
     <div className="flex flex-1 overflow-hidden bg-slate-50 dark:bg-neutral-950">
-      <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 overflow-y-auto relative">
+      <div
+        className="flex flex-1 flex-col bg-white dark:bg-neutral-950 overflow-y-auto relative"
+        style={
+          isNotesOpen && isLgUp
+            ? { paddingRight: `${notesPanelWidth}px` }
+            : undefined
+        }
+      >
         <div className="px-8 pt-10 pb-0 max-w-full 2xl:max-w-400 w-full mx-auto">
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8 mt-2">
             {/* Left Column: Job Info */}
@@ -510,31 +581,31 @@ export default function JobDetailsPage() {
               <TabsList className="bg-transparent w-full justify-start rounded-none h-auto p-0 gap-3">
                 <TabsTrigger
                   value="overview"
-                  className="data-[state=active]:bg-transparent shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 h-9.5 text-slate-600 dark:text-neutral-400 data-[state=active]:text-theme font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
+                  className="data-[state=active]:bg-transparent shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 h-9.5 text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
                 >
                   Overview
                 </TabsTrigger>
                 <TabsTrigger
                   value="hiring-team"
-                  className="data-[state=active]:bg-transparent !shadow-none border border-slate-200 dark:border-neutral-800 data-[state=active]:border-[var(--theme-color)] rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
+                  className="data-[state=active]:bg-transparent shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
                 >
                   Hiring Team
                 </TabsTrigger>
                 <TabsTrigger
                   value="hiring-process"
-                  className="data-[state=active]:bg-transparent !shadow-none border border-slate-200 dark:border-neutral-800 data-[state=active]:border-[var(--theme-color)] rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
+                  className="data-[state=active]:bg-transparent shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
                 >
                   Hiring Process
                 </TabsTrigger>
                 <TabsTrigger
                   value="custom-questions"
-                  className="data-[state=active]:bg-transparent !shadow-none border border-slate-200 dark:border-neutral-800 data-[state=active]:border-[var(--theme-color)] rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
+                  className="data-[state=active]:bg-transparent shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
                 >
                   Custom Questions
                 </TabsTrigger>
                 <TabsTrigger
                   value="assessments"
-                  className="data-[state=active]:bg-transparent !shadow-none border border-slate-200 dark:border-neutral-800 data-[state=active]:border-[var(--theme-color)] rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
+                  className="data-[state=active]:bg-transparent shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
                 >
                   Assessments
                 </TabsTrigger>
@@ -578,7 +649,7 @@ export default function JobDetailsPage() {
                   >
                     <DialogTrigger
                       render={
-                        <button className="flex items-center gap-2 text-[var(--theme-color)] hover:underline font-medium text-[14px]" />
+                        <button className="flex items-center gap-2 text-theme hover:underline font-medium text-[14px]" />
                       }
                     >
                       <HugeiconsIcon
@@ -608,13 +679,13 @@ export default function JobDetailsPage() {
                               <SelectValue placeholder="Select user">
                                 {newMemberId
                                   ? (() => {
-                                      const u = allUsers.find(
-                                        (u) => u.id.toString() === newMemberId,
-                                      );
-                                      return u
-                                        ? `${u.firstName} ${u.lastName}`
-                                        : null;
-                                    })()
+                                    const u = allUsers.find(
+                                      (u) => u.id.toString() === newMemberId,
+                                    );
+                                    return u
+                                      ? `${u.firstName} ${u.lastName}`
+                                      : null;
+                                  })()
                                   : null}
                               </SelectValue>
                             </SelectTrigger>
@@ -774,13 +845,12 @@ export default function JobDetailsPage() {
                     return (
                       <div
                         ref={ref as Ref<HTMLDivElement>}
-                        className={`flex items-center justify-between p-4 border rounded-lg transition-all group bg-white dark:bg-neutral-900 ${
-                          isDragging
-                            ? "opacity-40 border-slate-300 dark:border-neutral-700"
-                            : isOver
-                              ? "border-[var(--theme-color)]/40 bg-[var(--theme-color)]/5"
-                              : "border-slate-200/70 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700"
-                        }`}
+                        className={`flex items-center justify-between p-4 border rounded-lg transition-all group bg-white dark:bg-neutral-900 ${isDragging
+                          ? "opacity-40 border-slate-300 dark:border-neutral-700"
+                          : isOver
+                            ? "border-[var(--theme-color)]/40 bg-[var(--theme-color)]/5"
+                            : "border-slate-200/70 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700"
+                          }`}
                       >
                         <div className="flex items-center gap-4 flex-1 min-w-0">
                           <HugeiconsIcon
@@ -854,7 +924,10 @@ export default function JobDetailsPage() {
                             </button>
                             <button
                               onClick={() =>
-                                deleteStageMutation.mutate(stage.id)
+                                setStageDeleteTarget({
+                                  id: stage.id,
+                                  name: stage.name,
+                                })
                               }
                               disabled={deleteStageMutation.isPending}
                               className="text-red-400/80 hover:text-red-500 transition-colors disabled:opacity-50"
@@ -872,6 +945,52 @@ export default function JobDetailsPage() {
                   return <StageDraggable key={stage.id} />;
                 })}
               </div>
+
+              <AlertDialog
+                open={stageDeleteTarget !== null}
+                onOpenChange={(o) => !o && setStageDeleteTarget(null)}
+              >
+                <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
+                  <AlertDialogHeader>
+                    <AlertDialogTitle className="text-[19px] font-semibold text-slate-900 dark:text-neutral-100">
+                      Delete this stage?
+                    </AlertDialogTitle>
+                    <AlertDialogDescription className="text-[14px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+                      This will permanently delete{" "}
+                      <span className="font-medium">
+                        {stageDeleteTarget?.name ?? "this stage"}
+                      </span>
+                      .
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter className="gap-2">
+                    <AlertDialogCancel className="h-10 px-6 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[14px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer">
+                      Cancel
+                    </AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={() => {
+                        if (!stageDeleteTarget) return;
+                        deleteStageMutation.mutate(stageDeleteTarget.id, {
+                          onSuccess: () => setStageDeleteTarget(null),
+                        });
+                      }}
+                      disabled={
+                        deleteStageMutation.isPending || !stageDeleteTarget
+                      }
+                      className="h-10 px-6 rounded-md bg-red-700 hover:bg-red-800 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                    >
+                      {deleteStageMutation.isPending ? (
+                        <span className="inline-flex items-center gap-2">
+                          <Spinner className="text-white" />
+                          Deleting…
+                        </span>
+                      ) : (
+                        "Delete"
+                      )}
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </TabsContent>
 
             <TabsContent
@@ -903,13 +1022,12 @@ export default function JobDetailsPage() {
                       return (
                         <div
                           ref={ref as Ref<HTMLDivElement>}
-                          className={`group relative border rounded-lg bg-white dark:bg-neutral-900 transition-all ${
-                            isDragging
-                              ? "opacity-40 border-slate-300 dark:border-neutral-700"
-                              : isOver
-                                ? "border-[var(--theme-color)]/40 bg-[var(--theme-color)]/5"
-                                : "border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700"
-                          }`}
+                          className={`group relative border rounded-lg bg-white dark:bg-neutral-900 transition-all ${isDragging
+                            ? "opacity-40 border-slate-300 dark:border-neutral-700"
+                            : isOver
+                              ? "border-[var(--theme-color)]/40 bg-[var(--theme-color)]/5"
+                              : "border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700"
+                            }`}
                         >
                           {editingQuestionId === q.id ? (
                             <div className="p-3 space-y-4 animate-in fade-in duration-150">
@@ -919,10 +1037,10 @@ export default function JobDetailsPage() {
                                   onValueChange={(val) =>
                                     setEditQuestionType(
                                       val as
-                                        | "short_answer"
-                                        | "long_answer"
-                                        | "checkbox"
-                                        | "radio",
+                                      | "short_answer"
+                                      | "long_answer"
+                                      | "checkbox"
+                                      | "radio",
                                     )
                                   }
                                 >
@@ -1110,10 +1228,10 @@ export default function JobDetailsPage() {
                           onValueChange={(val) =>
                             setNewQuestionType(
                               val as
-                                | "short_answer"
-                                | "long_answer"
-                                | "checkbox"
-                                | "radio",
+                              | "short_answer"
+                              | "long_answer"
+                              | "checkbox"
+                              | "radio",
                             )
                           }
                         >
@@ -1172,71 +1290,71 @@ export default function JobDetailsPage() {
 
                         {(newQuestionType === "radio" ||
                           newQuestionType === "checkbox") && (
-                          <Dialog>
-                            <DialogTrigger
-                              render={
-                                <Button
-                                  variant="outline"
-                                  className="h-10 border-[var(--theme-color)] text-[var(--theme-color)] hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium px-4 shadow-none gap-2"
+                            <Dialog>
+                              <DialogTrigger
+                                render={
+                                  <Button
+                                    variant="outline"
+                                    className="h-10 border-[var(--theme-color)] text-[var(--theme-color)] hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium px-4 shadow-none gap-2"
+                                  />
+                                }
+                              >
+                                <HugeiconsIcon
+                                  icon={Settings02Icon}
+                                  className="size-4"
                                 />
-                              }
-                            >
-                              <HugeiconsIcon
-                                icon={Settings02Icon}
-                                className="size-4"
-                              />
-                              <span>Setup Options & Logic</span>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
-                              <DialogHeader>
-                                <DialogTitle className="text-slate-900 dark:text-neutral-100">
-                                  Setup Question Logic
-                                </DialogTitle>
-                                <DialogDescription className="text-slate-500 dark:text-neutral-400">
-                                  Add options and define the logic for this
-                                  question.
-                                </DialogDescription>
-                              </DialogHeader>
-                              <div className="space-y-4 py-4">
-                                <div className="space-y-2">
-                                  <Label className="text-slate-700 dark:text-neutral-300">
-                                    Options
-                                  </Label>
+                                <span>Setup Options & Logic</span>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
+                                <DialogHeader>
+                                  <DialogTitle className="text-slate-900 dark:text-neutral-100">
+                                    Setup Question Logic
+                                  </DialogTitle>
+                                  <DialogDescription className="text-slate-500 dark:text-neutral-400">
+                                    Add options and define the logic for this
+                                    question.
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
                                   <div className="space-y-2">
-                                    <div className="flex gap-2">
-                                      <Input
-                                        placeholder="Option 1"
-                                        className="h-9 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus-visible:ring-0"
-                                      />
-                                      <Button
-                                        variant="ghost"
-                                        className="size-9 p-0 text-red-500"
-                                      >
-                                        <HugeiconsIcon
-                                          icon={Delete02Icon}
-                                          className="size-4"
+                                    <Label className="text-slate-700 dark:text-neutral-300">
+                                      Options
+                                    </Label>
+                                    <div className="space-y-2">
+                                      <div className="flex gap-2">
+                                        <Input
+                                          placeholder="Option 1"
+                                          className="h-9 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus-visible:ring-0"
                                         />
-                                      </Button>
+                                        <Button
+                                          variant="ghost"
+                                          className="size-9 p-0 text-red-500"
+                                        >
+                                          <HugeiconsIcon
+                                            icon={Delete02Icon}
+                                            className="size-4"
+                                          />
+                                        </Button>
+                                      </div>
+                                      <button className="text-[var(--theme-color)] text-sm font-medium hover:underline flex items-center gap-1">
+                                        <HugeiconsIcon
+                                          icon={PlusSignIcon}
+                                          className="size-3"
+                                          strokeWidth={3}
+                                        />
+                                        <span>Add Another Option</span>
+                                      </button>
                                     </div>
-                                    <button className="text-[var(--theme-color)] text-sm font-medium hover:underline flex items-center gap-1">
-                                      <HugeiconsIcon
-                                        icon={PlusSignIcon}
-                                        className="size-3"
-                                        strokeWidth={3}
-                                      />
-                                      <span>Add Another Option</span>
-                                    </button>
                                   </div>
                                 </div>
-                              </div>
-                              <DialogFooter>
-                                <Button className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium px-5">
-                                  Save Logic
-                                </Button>
-                              </DialogFooter>
-                            </DialogContent>
-                          </Dialog>
-                        )}
+                                <DialogFooter>
+                                  <Button className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium px-5">
+                                    Save Logic
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          )}
 
                         <div className="flex items-center gap-2 px-2">
                           <Checkbox
@@ -1388,9 +1506,9 @@ export default function JobDetailsPage() {
                             <SelectValue placeholder="Choose assessment…">
                               {assessmentSelectId
                                 ? (allAssessments.find(
-                                    (a) =>
-                                      a.id.toString() === assessmentSelectId,
-                                  )?.title ?? null)
+                                  (a) =>
+                                    a.id.toString() === assessmentSelectId,
+                                )?.title ?? null)
                                 : null}
                             </SelectValue>
                           </SelectTrigger>
@@ -1423,9 +1541,9 @@ export default function JobDetailsPage() {
                             <SelectValue placeholder="When candidate moves into…">
                               {triggerStageSelectId
                                 ? (stages.find(
-                                    (s) =>
-                                      s.id.toString() === triggerStageSelectId,
-                                  )?.name ?? null)
+                                  (s) =>
+                                    s.id.toString() === triggerStageSelectId,
+                                )?.name ?? null)
                                 : null}
                             </SelectValue>
                           </SelectTrigger>
@@ -1575,22 +1693,20 @@ export default function JobDetailsPage() {
                   onClick={() => setConfigType(t)}
                 >
                   <div
-                    className={`size-[17px] rounded-full border-2 flex items-center justify-center ${
-                      configType === t
-                        ? "border-[var(--theme-color)]"
-                        : "border-slate-300"
-                    }`}
+                    className={`size-[17px] rounded-full border-2 flex items-center justify-center ${configType === t
+                      ? "border-[var(--theme-color)]"
+                      : "border-slate-300"
+                      }`}
                   >
                     {configType === t && (
                       <div className="size-2.5 rounded-full bg-[var(--theme-color)]" />
                     )}
                   </div>
                   <span
-                    className={`text-[15px] font-medium ${
-                      configType === t
-                        ? "text-[var(--theme-color)]"
-                        : "text-slate-600 dark:text-neutral-400"
-                    }`}
+                    className={`text-[15px] font-medium ${configType === t
+                      ? "text-[var(--theme-color)]"
+                      : "text-slate-600 dark:text-neutral-400"
+                      }`}
                   >
                     {t.charAt(0).toUpperCase() + t.slice(1)}
                   </span>
@@ -1612,8 +1728,8 @@ export default function JobDetailsPage() {
                       <SelectValue placeholder="Select an offer template">
                         {configOfferTemplate
                           ? (offerTemplates.find(
-                              (t) => String(t.id) === configOfferTemplate,
-                            )?.name ?? null)
+                            (t) => String(t.id) === configOfferTemplate,
+                          )?.name ?? null)
                           : null}
                       </SelectValue>
                     </SelectTrigger>
@@ -1682,8 +1798,8 @@ export default function JobDetailsPage() {
                     <SelectValue placeholder="Select a rejection email template">
                       {configRejectTemplate
                         ? (emailTemplates.find(
-                            (t) => String(t.id) === configRejectTemplate,
-                          )?.name ?? null)
+                          (t) => String(t.id) === configRejectTemplate,
+                        )?.name ?? null)
                         : null}
                     </SelectValue>
                   </SelectTrigger>
@@ -1792,10 +1908,17 @@ export default function JobDetailsPage() {
               </Button>
               <Button
                 onClick={handleAddStage}
-                disabled={!newStageName.trim()}
+                disabled={!newStageName.trim() || createStageMutation.isPending}
                 className="h-10 px-6 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium shadow-none rounded-md border-none disabled:opacity-50"
               >
-                Add Stage
+                {createStageMutation.isPending ? (
+                  <span className="inline-flex items-center gap-2">
+                    <Spinner className="text-white" />
+                    Adding…
+                  </span>
+                ) : (
+                  "Add Stage"
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>
@@ -1803,88 +1926,202 @@ export default function JobDetailsPage() {
       </div>
 
       {isNotesOpen && (
-        <div className="w-[450px] shrink-0 border-l border-slate-200 dark:border-neutral-800 flex flex-col bg-white dark:bg-neutral-950 shadow-[-8px_0_24px_rgba(0,0,0,0.05)] z-10 relative">
-          <div className="p-5 border-b border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-center justify-between shrink-0">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
-              Internal Notes
-            </h3>
-            <button
-              onClick={() => setIsNotesOpen(false)}
-              className="text-slate-400 dark:text-neutral-500 hover:text-slate-600 dark:hover:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 p-2 rounded-full transition-colors"
-            >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-[20px]" />
-            </button>
-          </div>
+        <>
+          <div
+            className="fixed right-0 top-[var(--header-height)] h-[calc(100vh-var(--header-height))] w-full border-l border-t border-slate-200 dark:border-neutral-800 flex flex-col bg-white dark:bg-neutral-950 z-50"
+            style={{ width: isLgUp ? `${notesPanelWidth}px` : "100vw" }}
+          >
+            {/* Resize handle (desktop) */}
+            <div
+              className="hidden lg:block absolute left-0 top-0 h-full w-2 -translate-x-1 cursor-col-resize"
+              onMouseDown={(e) => {
+                e.preventDefault();
+                setIsResizingNotes(true);
+              }}
+              title="Drag to resize"
+            />
+            <div className="p-5 border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-center justify-between shrink-0">
+              <h3 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
+                Internal Notes
+              </h3>
+              <button
+                onClick={() => setIsNotesOpen(false)}
+                className="text-slate-400 dark:text-neutral-500 hover:text-slate-600 dark:hover:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 p-2 rounded-full transition-colors"
+              >
+                <HugeiconsIcon icon={Cancel01Icon} className="size-[20px]" />
+              </button>
+            </div>
 
-          <div className="flex-1 overflow-y-auto p-5 space-y-4 bg-white dark:bg-neutral-950 scroll-smooth relative">
-            {allMessages.length === 0 ? (
-              <p className="text-slate-400 dark:text-neutral-500 text-[13px] text-center pt-8">
-                No notes yet. Be the first to add one.
-              </p>
-            ) : (
-              allMessages.map((msg) => (
-                <div
-                  key={msg.id}
-                  className="bg-slate-50/80 dark:bg-neutral-900 border border-slate-100 dark:border-neutral-800 p-4 rounded-xl space-y-3 w-full shadow-none"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="size-8 rounded-full bg-[var(--theme-color)] flex items-center justify-center text-white text-[11px] font-semibold overflow-hidden shrink-0">
-                      {msg.senderAvatar ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={msg.senderAvatar}
-                          alt=""
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        (msg.senderName?.[0] ?? "?").toUpperCase()
-                      )}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-slate-900 dark:text-neutral-100 font-semibold text-[13px] leading-tight">
+            <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4 bg-white dark:bg-neutral-950 scroll-smooth relative">
+              {allMessages.length === 0 ? (
+                <p className="text-slate-400 dark:text-neutral-500 text-[13px] text-center pt-8">
+                  No notes yet. Be the first to add one.
+                </p>
+              ) : (
+                allMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className="bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 p-4 rounded-lg w-full shadow-none"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <span className="text-slate-900 dark:text-neutral-100 font-semibold text-[14px] leading-tight truncate">
                         {msg.senderName ?? "Unknown"}
                       </span>
-                      <span className="text-slate-400 dark:text-neutral-500 text-[11px]">
-                        {timeAgo(msg.sentAt)}
-                      </span>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-slate-400 dark:text-neutral-500 text-[12px] font-medium">
+                          {timeAgo(msg.sentAt)}
+                        </span>
+                        {me &&
+                          msg.senderId === me.id &&
+                          !msg.isSystemMessage && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setEditingNoteId(msg.id);
+                                  setEditingNoteText(msg.message ?? "");
+                                }}
+                                className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                                title="Edit"
+                                type="button"
+                              >
+                                <HugeiconsIcon
+                                  icon={PencilEdit01Icon}
+                                  className="size-4"
+                                />
+                              </button>
+                              <button
+                                onClick={() =>
+                                  setNoteDeleteTarget({
+                                    id: msg.id,
+                                    senderName: msg.senderName,
+                                    message: msg.message,
+                                  })
+                                }
+                                className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                                title="Delete"
+                                type="button"
+                              >
+                                <HugeiconsIcon
+                                  icon={Delete02Icon}
+                                  className="size-4"
+                                />
+                              </button>
+                            </>
+                          )}
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-neutral-800">
+                      {editingNoteId === msg.id ? (
+                        <div className="space-y-3">
+                          <textarea
+                            value={editingNoteText}
+                            onChange={(e) => setEditingNoteText(e.target.value)}
+                            rows={3}
+                            className="w-full rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-2 text-[14px] text-slate-700 dark:text-neutral-200 shadow-none focus:ring-1 focus:ring-[var(--theme-color)]/20 focus:border-[var(--theme-color)] outline-none resize-none"
+                          />
+                          <div className="flex items-center justify-end gap-2">
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setEditingNoteId(null);
+                                setEditingNoteText("");
+                              }}
+                              className="h-9 px-4 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 shadow-none cursor-pointer"
+                            >
+                              Cancel
+                            </Button>
+                            <Button
+                              onClick={() => {
+                                if (!me) return;
+                                const next = editingNoteText.trim();
+                                if (!next) return;
+                                editMessage(me.id, msg.id, next);
+                                setEditingNoteId(null);
+                                setEditingNoteText("");
+                              }}
+                              disabled={!editingNoteText.trim()}
+                              className="h-9 px-4 rounded-md bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none cursor-pointer disabled:opacity-50"
+                            >
+                              Save
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-slate-700 dark:text-neutral-200 text-[14px] leading-relaxed">
+                          {msg.message}
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <p className="text-slate-600 dark:text-neutral-300 text-[13px] leading-relaxed">
-                    {msg.message}
-                  </p>
-                </div>
-              ))
-            )}
-            {/* spacer to ensure input box at bottom doesn't hide text */}
-            <div className="h-4 w-full"></div>
+                ))
+              )}
+              {/* spacer to ensure input box at bottom doesn't hide text */}
+              <div className="h-4 w-full"></div>
+            </div>
+
+            <div className="p-5 border-t border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shrink-0">
+              <div className="flex items-center gap-3">
+                <textarea
+                  value={noteText}
+                  onChange={(e) => setNoteText(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSendNote();
+                    }
+                  }}
+                  rows={1}
+                  placeholder="Type a note and press Enter…"
+                  className="flex-1 h-11 px-4 py-3 border border-slate-200 dark:border-neutral-800 rounded-md bg-white dark:bg-neutral-900 focus:ring-1 focus:ring-[var(--theme-color)]/20 focus:border-[var(--theme-color)] outline-none text-[14px] text-slate-700 dark:text-neutral-300 placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-all resize-none shadow-none leading-[1.2]"
+                />
+                <Button
+                  onClick={handleSendNote}
+                  disabled={!noteText.trim() || !me}
+                  className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white rounded-md h-11 w-11 p-0 font-medium shadow-none border-none disabled:opacity-50 transition-all active:scale-[0.98] cursor-pointer disabled:cursor-not-allowed inline-flex items-center justify-center"
+                  aria-label="Send note"
+                >
+                  <HugeiconsIcon
+                    icon={SentIcon}
+                    className="size-4"
+                    strokeWidth={3}
+                  />
+                </Button>
+              </div>
+            </div>
           </div>
 
-          <div className="p-5 border-t border-slate-100 dark:border-neutral-800 bg-white dark:bg-neutral-950 space-y-4 shrink-0">
-            <div className="relative">
-              <textarea
-                value={noteText}
-                onChange={(e) => setNoteText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && (e.metaKey || e.ctrlKey))
-                    handleSendNote();
-                }}
-                placeholder="Add a note... (Ctrl+Enter to send)"
-                className="w-full min-h-[100px] p-4 border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 focus:ring-1 focus:ring-[var(--theme-color)]/20 focus:border-[var(--theme-color)] outline-none text-[14px] text-slate-700 dark:text-neutral-300 placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-all resize-none shadow-none"
-              />
-            </div>
-            <Button
-              onClick={handleSendNote}
-              disabled={!noteText.trim() || !me}
-              className="w-full bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-11 font-medium shadow-none gap-2 border-none disabled:opacity-50 transition-all active:scale-[0.98]"
-            >
-              <HugeiconsIcon
-                icon={SentIcon}
-                className="size-4 rotate-[-45deg]"
-              />
-              <span>Add Note</span>
-            </Button>
-          </div>
-        </div>
+          <AlertDialog
+            open={noteDeleteTarget !== null}
+            onOpenChange={(o) => !o && setNoteDeleteTarget(null)}
+          >
+            <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
+              <AlertDialogHeader>
+                <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+                  Delete this note?
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+                  This will permanently remove the note.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter className="gap-2">
+                <AlertDialogCancel className="h-10 px-6 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[14px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer">
+                  Cancel
+                </AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={() => {
+                    if (!me || !noteDeleteTarget) return;
+                    deleteMessage(me.id, noteDeleteTarget.id);
+                    setNoteDeleteTarget(null);
+                  }}
+                  disabled={!me || !noteDeleteTarget}
+                  className="h-10 px-6 rounded-md bg-red-700 hover:bg-red-800 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </>
       )}
     </div>
   );

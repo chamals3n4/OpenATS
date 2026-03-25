@@ -98,6 +98,37 @@ export default function CreateAssessmentPage() {
     if (!assessmentTitle.trim()) {
       return alert("Assessment title is required.");
     }
+    const q1Title = questions[0]?.title?.trim() ?? "";
+    if (!q1Title) {
+      return alert("Please enter Question 1 before creating the assessment.");
+    }
+    const emptyQuestionIndex = questions.findIndex(
+      (q) => !(q.title?.trim() ?? ""),
+    );
+    if (emptyQuestionIndex >= 0) {
+      return alert(
+        `Please enter Question ${emptyQuestionIndex + 1} before creating the assessment.`,
+      );
+    }
+    const missingObjectiveAnswers = questions
+      .map((q, idx) => ({ q, idx }))
+      .filter(
+        ({ q }) =>
+          (q.type === "Multiple Choice" || q.type === "True/False") &&
+          !q.options.some((opt) => opt.isCorrect),
+      )
+      .map(
+        ({ q, idx }) =>
+          `Question ${idx + 1} (${q.type}): select the correct answer option.`,
+      );
+    if (missingObjectiveAnswers.length > 0) {
+      return alert(
+        [
+          "Assessment cannot be created because some objective questions are incomplete:",
+          ...missingObjectiveAnswers,
+        ].join("\n"),
+      );
+    }
 
     try {
       const formattedQuestions = questions.map((q, idx) => {

@@ -95,8 +95,28 @@ export default function CreateAssessmentPage() {
   const [selectedQ, setSelectedQ] = useState<number>(() => questions[0]?.uid || 11);
 
   const handleSave = () => {
+    const missingMeta: string[] = [];
+    const parsedTimeLimit = Number(timeLimit);
+    const parsedTotalPoints = Number(totalPoints);
+
     if (!assessmentTitle.trim()) {
-      return alert("Assessment title is required.");
+      missingMeta.push("Assessment title is required.");
+    }
+    if (!assessmentDesc.trim()) {
+      missingMeta.push("Description is required.");
+    }
+    if (!timeLimit.trim() || Number.isNaN(parsedTimeLimit) || parsedTimeLimit <= 0) {
+      missingMeta.push("Time limit must be greater than 0.");
+    }
+    if (!totalPoints.trim() || Number.isNaN(parsedTotalPoints) || parsedTotalPoints <= 0) {
+      missingMeta.push("Total points must be greater than 0.");
+    }
+    if (missingMeta.length > 0) {
+      return alert(
+        ["Please fix the following before creating the assessment:", ...missingMeta].join(
+          "\n",
+        ),
+      );
     }
     const q1Title = questions[0]?.title?.trim() ?? "";
     if (!q1Title) {
@@ -129,6 +149,19 @@ export default function CreateAssessmentPage() {
         ].join("\n"),
       );
     }
+    const missingPoints = questions
+      .map((q, idx) => ({ q, idx }))
+      .filter(({ q }) => !(q.points ?? "").trim())
+      .map(({ idx }) => `Question ${idx + 1}: points are required.`);
+    if (missingPoints.length > 0) {
+      return alert(
+        [
+          "Assessment cannot be created because points are missing:",
+          ...missingPoints,
+          "Please fill points for each question.",
+        ].join("\n"),
+      );
+    }
 
     try {
       const formattedQuestions = questions.map((q, idx) => {
@@ -152,9 +185,9 @@ export default function CreateAssessmentPage() {
 
       const payload = {
         title: assessmentTitle,
-        description: assessmentDesc || null,
-        timeLimit: parseInt(timeLimit) || 120,
-        passScore: parseInt(totalPoints) || 50,
+        description: assessmentDesc.trim(),
+        timeLimit: parsedTimeLimit,
+        passScore: parsedTotalPoints,
         questions: formattedQuestions,
       };
 

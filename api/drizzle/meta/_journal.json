@@ -43,6 +43,13 @@
       "when": 1774165634097,
       "tag": "0005_young_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774166000000,
+      "tag": "0006_assessment_answer_ai_feedback",
+      "breakpoints": true
     }
   ]
 }

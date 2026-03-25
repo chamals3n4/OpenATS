@@ -19,6 +19,7 @@ import { offerService } from "./offer.service";
 import { jobService } from "./job.service";
 import { socketService } from "./socket.service";
 import { mailService } from "./mail.service";
+import { ragAssessmentService } from "./rag-assessment.service";
 import { variableService } from "./variable.service";
 import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
@@ -299,10 +300,33 @@ export const candidateService = {
         );
 
       if (attachment) {
-        await assessmentExecutionService.inviteCandidate(
-          candidateId,
-          attachment.assessmentId,
-        );
+        let combinedAssessmentId: number | null = null;
+        try {
+          combinedAssessmentId =
+            await ragAssessmentService.createCombinedAssessmentForCandidate(
+              candidateId,
+              attachment.assessmentId,
+              newStageId,
+              movedBy,
+            );
+        } catch (error) {
+          console.error(
+            `[RAG Assessment] Failed for candidate ${candidateId} at stage ${newStageId}. Invite will be skipped.`,
+            error,
+          );
+        }
+
+        // Send invite only after AI-generated combined assessment is ready.
+        if (combinedAssessmentId) {
+          await assessmentExecutionService.inviteCandidate(
+            candidateId,
+            combinedAssessmentId,
+          );
+        } else {
+          console.warn(
+            `[RAG Assessment] Combined assessment not created for candidate ${candidateId} at stage ${newStageId}; invite not sent.`,
+          );
+        }
       }
 
       if (stage.stageType === "offer") {

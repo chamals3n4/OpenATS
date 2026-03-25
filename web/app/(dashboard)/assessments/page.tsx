@@ -20,6 +20,7 @@ import {
   useDeleteAssessment,
   useCandidates,
   useInviteToAssessment,
+  useCandidateAssessments,
 } from "@/hooks/use-api";
 import type { Assessment } from "@/types";
 
@@ -52,11 +53,120 @@ import {
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+function parseRagCandidateId(description: string | null | undefined): number | null {
+  if (!description) return null;
+  const m = description.match(/__rag_candidate_(\d+)_stage_\d+__/);
+  return m ? Number(m[1]) : null;
+}
+
+function IndividualAssessmentCard({
+  a,
+  onDelete,
+  getCandidateName,
+}: {
+  a: Assessment;
+  onDelete: (a: Assessment) => void;
+  getCandidateName: (a: Assessment) => string;
+}) {
+  const candidateId = parseRagCandidateId(a.description);
+  const { data: attemptsData } = useCandidateAssessments(candidateId ?? 0);
+  const attempts = attemptsData?.data ?? [];
+  const completedAttempt = candidateId
+    ? attempts.find(
+        (att) => att.assessmentId === a.id && att.status === "completed",
+      )
+    : undefined;
+  const showAnswers = Boolean(candidateId && completedAttempt);
+
+  return (
+    <div className="flex flex-col border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 shadow-sm">
+      <div className="flex flex-col gap-2.5 px-5 pt-5 pb-4">
+        <p className="text-[12px] text-slate-400 dark:text-neutral-500 font-medium">
+          Candidate:{" "}
+          <span className="text-slate-600 dark:text-neutral-300">
+            {getCandidateName(a)}
+          </span>
+        </p>
+        {showAnswers ? (
+          <p className="text-[15px] font-semibold text-slate-800 dark:text-neutral-200 leading-snug truncate">
+            {a.title}
+          </p>
+        ) : (
+          <Link
+            href={`/assessments/${a.id}`}
+            className="text-[15px] font-semibold text-slate-800 dark:text-neutral-200 leading-snug hover:underline underline-offset-4 decoration-1 truncate"
+          >
+            {a.title}
+          </Link>
+        )}
+        <div className="flex items-center gap-2">
+          <span className="inline-flex items-center text-[12px] font-medium px-2.5 py-1 rounded-md bg-orange-50 dark:bg-orange-950/30 text-orange-700 dark:text-orange-400">
+            Individual
+          </span>
+          <span className="ml-auto flex items-center gap-3">
+            <span className="flex items-center gap-1 text-[12px] text-slate-400">
+              <HugeiconsIcon icon={QuestionIcon} className="size-3.5" />
+              {a.questions?.length || 0}
+            </span>
+            <span className="flex items-center gap-1 text-[12px] text-slate-400">
+              <HugeiconsIcon icon={Time01Icon} className="size-3.5" />
+              {a.timeLimit}m
+            </span>
+          </span>
+        </div>
+      </div>
+      <div className="flex items-center gap-1.5 px-4 py-3 border-t border-slate-100 dark:border-neutral-800">
+        {showAnswers && candidateId && completedAttempt ? (
+          <ThemeButton
+            asChild
+            href={`/candidates/${candidateId}/assessments/${completedAttempt.id}`}
+            className="w-full h-8 px-5 text-[12px] font-medium shadow-none border-none rounded-md justify-center"
+          >
+            Show Candidate Answers
+          </ThemeButton>
+        ) : (
+          <>
+            <ThemeButton
+              asChild
+              href={`/assessments/${a.id}`}
+              className="h-8 px-5 text-[12px] font-medium shadow-none border-none rounded-md"
+            >
+              Edit
+            </ThemeButton>
+            <button
+              type="button"
+              onClick={() => onDelete(a)}
+              className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-medium border border-red-200 dark:border-red-900/50 text-red-400 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500"
+            >
+              <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+              Delete
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function AssessmentsPage() {
   const { data, isLoading } = useAssessments();
   const deleteAssessment = useDeleteAssessment();
   const assessments = data?.data ?? [];
   const [assessmentTab, setAssessmentTab] = useState("custom");
+  const isRagGeneratedAssessment = (a: Assessment) =>
+    (a.description ?? "").startsWith("__rag_candidate_");
+  const customAssessments = assessments.filter((a) => !isRagGeneratedAssessment(a));
+  const individualAssessments = assessments.filter((a) => isRagGeneratedAssessment(a));
+
+  const getCandidateName = (a: Assessment) => {
+    const prefix = "Individual Assessment - ";
+    if (a.title?.startsWith(prefix)) {
+      const full = a.title.slice(prefix.length).trim();
+      const cleaned = full.replace(/\s*\(.*\)\s*$/, "").trim();
+      return cleaned || "Candidate";
+    }
+    return "Candidate";
+  };
 
   const [deleteTarget, setDeleteTarget] = useState<Assessment | null>(null);
 
@@ -191,13 +301,13 @@ export default function AssessmentsPage() {
                   <Loader2 className="size-4 animate-spin text-slate-400" />
                   Loading assessments...
                 </div>
-              ) : assessments.length === 0 ? (
+              ) : customAssessments.length === 0 ? (
                 <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
                   No assessments found.
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {assessments.map((a) => (
+                  {customAssessments.map((a) => (
                     <div
                       key={a.id}
                       className="flex flex-col border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 shadow-sm"
@@ -267,8 +377,28 @@ export default function AssessmentsPage() {
           </TabsContent>
 
           <TabsContent value="individual">
-            <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
-              No individual assessments found.
+            <div className="py-2">
+              {isLoading ? (
+                <div className="flex items-center justify-center h-48 text-slate-400 text-sm gap-2">
+                  <Loader2 className="size-4 animate-spin text-slate-400" />
+                  Loading assessments...
+                </div>
+              ) : individualAssessments.length === 0 ? (
+                <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
+                  No individual assessments found.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {individualAssessments.map((a) => (
+                    <IndividualAssessmentCard
+                      key={a.id}
+                      a={a}
+                      onDelete={(x) => setDeleteTarget(x)}
+                      getCandidateName={getCandidateName}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
           </TabsContent>
         </Tabs>

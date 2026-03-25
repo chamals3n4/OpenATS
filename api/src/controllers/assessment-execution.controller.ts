@@ -65,6 +65,30 @@ export const inviteCandidateToAssessment = async (req: Request, res: Response) =
 };
 
 
+export const getCandidateAttemptReview = async (req: Request, res: Response) => {
+  try {
+    const candidateId = parseInt((req.params.candidateId ?? "").toString(), 10);
+    const attemptId = parseInt((req.params.attemptId ?? "").toString(), 10);
+    if (isNaN(candidateId) || isNaN(attemptId)) {
+      res.status(400).json({ error: "Invalid candidate or attempt ID" });
+      return;
+    }
+
+    const result = await assessmentExecutionService.getAttemptReviewForCandidate(
+      candidateId,
+      attemptId,
+    );
+    if (!result) {
+      res.status(404).json({ error: "Assessment attempt not found" });
+      return;
+    }
+
+    res.status(200).json({ data: result });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch assessment review" });
+  }
+};
+
 export const getCandidateAttempts = async (req: Request, res: Response) => {
   try {
     const candidateId = parseInt((req.params.candidateId ?? "").toString());

@@ -80,6 +80,11 @@ function formatTime(secs: number) {
   return `${m}:${s}`;
 }
 
+/** API `timeLimit` is stored in minutes; the quiz timer counts down in seconds. */
+function timeLimitToSeconds(minutes: number) {
+  return Math.max(0, Math.floor(minutes * 60));
+}
+
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 const DARK = "var(--assessment-dark)";
@@ -182,11 +187,12 @@ export default function AssessmentPage() {
           const elapsed = data.startedAt
             ? Math.floor((Date.now() - new Date(data.startedAt).getTime()) / 1000)
             : 0;
-          const remaining = Math.max(0, (data.assessment.timeLimit ?? 0) - elapsed);
+          const totalSecs = timeLimitToSeconds(data.assessment.timeLimit ?? 0);
+          const remaining = Math.max(0, totalSecs - elapsed);
           setTimeLeft(remaining);
           setScreen("quiz");
         } else {
-          setTimeLeft(data.assessment.timeLimit ?? 0);
+          setTimeLeft(timeLimitToSeconds(data.assessment.timeLimit ?? 0));
           setScreen("intro");
         }
       })
@@ -449,7 +455,7 @@ export default function AssessmentPage() {
   }
 
   if (screen === "intro" && attempt) {
-    const timeMins = Math.floor((attempt.assessment.timeLimit ?? 0) / 60);
+    const timeMins = attempt.assessment.timeLimit ?? 0;
     return (
       <div style={{ minHeight: "100vh", backgroundColor: LIGHT_BG, display: "flex", alignItems: "flex-start", justifyContent: "center", padding: "48px 16px" }}>
         <div style={{ width: "100%", maxWidth: 900, backgroundColor: WHITE, borderRadius: 16, border: `1px solid ${BORDER}`, overflow: "hidden", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
@@ -743,7 +749,7 @@ export default function AssessmentPage() {
           </div>
 
           <div style={{ marginTop: "auto" }}>
-            <button onClick={handleComplete} disabled={submitting} style={{ width: "100%", padding: "12px 0", backgroundColor: submitting ? "#94a3b8" : DARK, color: WHITE, border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: submitting ? "not-allowed" : "pointer", transition: "opacity 0.15s" }}>
+            <button type="button" onClick={() => void handleComplete()} disabled={submitting} style={{ width: "100%", padding: "12px 0", backgroundColor: submitting ? "#94a3b8" : DARK, color: WHITE, border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: submitting ? "not-allowed" : "pointer", transition: "opacity 0.15s" }}>
               {submitting ? "Submitting…" : "Submit Quiz"}
             </button>
             <p style={{ fontSize: 11, color: TEXT_LIGHT, textAlign: "center", margin: "8px 0 0 0" }}>{answered}/{total} answered</p>

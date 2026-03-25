@@ -1,4 +1,4 @@
-import { eq, and, sql, desc } from "drizzle-orm";
+import { eq, and, desc, asc } from "drizzle-orm";
 import crypto from "node:crypto";
 import { db } from "../db";
 import {
@@ -12,6 +12,7 @@ import {
 } from "../db/schema";
 
 import { mailService } from "./mail.service";
+import { aiGradingService } from "./ai-grading.service";
 
 export interface SubmitAnswerInput {
   questionId: number;
@@ -111,6 +112,131 @@ export const assessmentExecutionService = {
       )
       .where(eq(candidateAssessmentAttempts.candidateId, candidateId))
       .orderBy(desc(candidateAssessmentAttempts.createdAt));
+  },
+
+  async getAttemptReviewForCandidate(candidateId: number, attemptId: number) {
+    const [attempt] = await db
+      .select({
+        id: candidateAssessmentAttempts.id,
+        assessmentId: candidateAssessmentAttempts.assessmentId,
+        status: candidateAssessmentAttempts.status,
+        completedAt: candidateAssessmentAttempts.completedAt,
+        scorePercentage: candidateAssessmentAttempts.scorePercentage,
+        scoreRaw: candidateAssessmentAttempts.scoreRaw,
+        scoreTotal: candidateAssessmentAttempts.scoreTotal,
+        passed: candidateAssessmentAttempts.passed,
+        assessmentTitle: assessments.title,
+      })
+      .from(candidateAssessmentAttempts)
+      .innerJoin(
+        assessments,
+        eq(candidateAssessmentAttempts.assessmentId, assessments.id),
+      )
+      .where(
+        and(
+          eq(candidateAssessmentAttempts.id, attemptId),
+          eq(candidateAssessmentAttempts.candidateId, candidateId),
+        ),
+      );
+
+    if (!attempt) return null;
+
+    const questions = await db
+      .select()
+      .from(assessmentQuestions)
+      .where(eq(assessmentQuestions.assessmentId, attempt.assessmentId))
+      .orderBy(asc(assessmentQuestions.position));
+
+    const questionRows = await Promise.all(
+      questions.map(async (q) => {
+        const options = await db
+          .select()
+          .from(assessmentQuestionOptions)
+          .where(eq(assessmentQuestionOptions.questionId, q.id))
+          .orderBy(asc(assessmentQuestionOptions.position));
+
+        const correctLabels = options
+          .filter((o) => o.isCorrect)
+          .map((o) => o.label);
+
+        const [answerRow] = await db
+          .select()
+          .from(candidateAssessmentAnswers)
+          .where(
+            and(
+              eq(candidateAssessmentAnswers.attemptId, attemptId),
+              eq(candidateAssessmentAnswers.questionId, q.id),
+            ),
+          );
+
+        let selectedLabels: string[] = [];
+        let aiFeedback: string | null = null;
+        let pointsEarned: number | null = null;
+        let candidateAnswerText: string | null = null;
+
+        if (answerRow) {
+          pointsEarned =
+            answerRow.pointsEarned != null
+              ? Number(answerRow.pointsEarned)
+              : null;
+          candidateAnswerText = answerRow.answerText ?? null;
+          aiFeedback = answerRow.aiFeedback ?? null;
+
+          const selections = await db
+            .select({ label: assessmentQuestionOptions.label })
+            .from(candidateAssessmentAnswerSelections)
+            .innerJoin(
+              assessmentQuestionOptions,
+              eq(
+                candidateAssessmentAnswerSelections.optionId,
+                assessmentQuestionOptions.id,
+              ),
+            )
+            .where(
+              eq(
+                candidateAssessmentAnswerSelections.answerId,
+                answerRow.id,
+              ),
+            )
+            .orderBy(asc(assessmentQuestionOptions.position));
+
+          selectedLabels = selections.map((s) => s.label);
+        }
+
+        const maxPoints = Number(q.points);
+        return {
+          questionId: q.id,
+          title: q.title,
+          description: q.description,
+          questionType: q.questionType,
+          maxPoints,
+          pointsEarned,
+          candidateAnswerText,
+          selectedOptionLabels: selectedLabels,
+          correctOptionLabels: correctLabels,
+          aiFeedback,
+        };
+      }),
+    );
+
+    return {
+      attempt: {
+        id: attempt.id,
+        status: attempt.status,
+        completedAt: attempt.completedAt,
+        scorePercentage:
+          attempt.scorePercentage != null
+            ? Number(attempt.scorePercentage)
+            : null,
+        scoreRaw:
+          attempt.scoreRaw != null ? Number(attempt.scoreRaw) : null,
+        scoreTotal:
+          attempt.scoreTotal != null ? Number(attempt.scoreTotal) : null,
+        passed: attempt.passed,
+        assessmentTitle: attempt.assessmentTitle,
+      },
+      questions: questionRows,
+    };
   },
 
   async getAttemptByToken(token: string) {
@@ -308,6 +434,7 @@ export const assessmentExecutionService = {
         if (!candidateAnswer) continue;
 
         let pointsEarned = 0;
+        let aiFeedback: string | null = null;
 
         if (
           question.questionType === "multiple_choice" ||
@@ -343,13 +470,39 @@ export const assessmentExecutionService = {
             JSON.stringify(correctOptionIds) ===
             JSON.stringify(candidateOptionIds);
           if (isCorrect) pointsEarned = questionPoints;
+          aiFeedback = null;
+        } else if (question.questionType === "short_answer") {
+          const answerText = candidateAnswer.answerText?.trim() ?? "";
+          if (!answerText) {
+            pointsEarned = 0;
+            aiFeedback = null;
+          } else {
+            const rubric =
+              question.description?.startsWith("[AI_GRADED]")
+                ? question.description.replace("[AI_GRADED]", "").trim()
+                : "Award points for correctness, technical depth, and practical problem-solving clarity.";
+
+            const grade = await aiGradingService.gradeShortAnswer({
+              question: question.title,
+              rubric,
+              answer: answerText,
+              maxPoints: questionPoints,
+            });
+            pointsEarned = grade.score;
+            aiFeedback = grade.feedback ?? null;
+          }
         } else {
           pointsEarned = 0;
+          aiFeedback = null;
         }
 
         await tx
           .update(candidateAssessmentAnswers)
-          .set({ pointsEarned, updatedAt: new Date() })
+          .set({
+            pointsEarned,
+            aiFeedback,
+            updatedAt: new Date(),
+          })
           .where(eq(candidateAssessmentAnswers.id, candidateAnswer.id));
 
         totalScoreRaw += pointsEarned;

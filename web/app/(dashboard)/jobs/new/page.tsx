@@ -4,17 +4,7 @@ import { useState, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Cancel01Icon,
-  TextBoldIcon,
-  TextItalicIcon,
-  TextUnderlineIcon,
-  Heading01Icon,
-  Heading02Icon,
-  Heading03Icon,
-  ListViewIcon,
-  Sorting05Icon,
-} from "@hugeicons/core-free-icons";
+import { Cancel01Icon } from "@hugeicons/core-free-icons";
 import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useCreateJob, useDepartments } from "@/hooks/use-api";
+import { JobDescriptionEditor } from "@/components/job-description-editor";
 
 export default function CreateNewJobPage() {
   const router = useRouter();
@@ -245,74 +236,10 @@ export default function CreateNewJobPage() {
             <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
               Job Description
             </Label>
-            <div className="border border-slate-200 dark:border-neutral-800 rounded-xl overflow-hidden shadow-none">
-              <div className="flex items-center gap-1.5 p-2 bg-[#F8FAFC]/50 dark:bg-neutral-900/50 border-b border-slate-200 dark:border-neutral-800">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={TextBoldIcon} className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={TextItalicIcon} className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={TextUnderlineIcon} className="size-4" />
-                </Button>
-                <div className="w-[1px] h-4 bg-slate-200 mx-1" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={Heading01Icon} className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={Heading02Icon} className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={Heading03Icon} className="size-4" />
-                </Button>
-                <div className="w-[1px] h-4 bg-slate-200 mx-1" />
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 hover:text-slate-900"
-                >
-                  <HugeiconsIcon icon={ListViewIcon} className="size-4" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="size-8 text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-neutral-100"
-                >
-                  <HugeiconsIcon icon={Sorting05Icon} className="size-4" />
-                </Button>
-              </div>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full min-h-[160px] p-4 text-sm bg-white dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 focus:outline-none placeholder:text-slate-300 dark:placeholder:text-neutral-600"
-                placeholder="Type here..."
-              />
-            </div>
+            <JobDescriptionEditor
+              value={description}
+              onChange={setDescription}
+            />
           </div>
 
           <div className="border-t border-slate-100 dark:border-neutral-800 pt-10 space-y-5 mt-4">

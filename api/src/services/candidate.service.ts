@@ -1,4 +1,4 @@
-import { eq, and, desc, asc } from "drizzle-orm";
+import { eq, and, desc, asc, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   candidates,
@@ -13,13 +13,17 @@ import {
   jobs,
   offers,
   templates,
+  assessments,
 } from "../db/schema";
 import { assessmentExecutionService } from "./assessment-execution.service";
 import { offerService } from "./offer.service";
 import { jobService } from "./job.service";
 import { socketService } from "./socket.service";
 import { mailService } from "./mail.service";
-import { ragAssessmentService } from "./rag-assessment.service";
+import {
+  ragAssessmentService,
+  ragIndividualAssessmentDescriptionRegex,
+} from "./rag-assessment.service";
 import { variableService } from "./variable.service";
 import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
@@ -428,11 +432,16 @@ export const candidateService = {
   },
 
   async delete(id: number) {
-    const [deleted] = await db
-      .delete(candidates)
-      .where(eq(candidates.id, id))
-      .returning();
-    return deleted ?? null;
+    return await db.transaction(async (tx) => {
+      await tx.delete(assessments).where(
+        sql`${assessments.description} ~ ${ragIndividualAssessmentDescriptionRegex(id)}`,
+      );
+      const [deleted] = await tx
+        .delete(candidates)
+        .where(eq(candidates.id, id))
+        .returning();
+      return deleted ?? null;
+    });
   },
 };
 

@@ -512,7 +512,7 @@ export default function JobDetailsPage() {
                 </p>
               ) : job?.description ? (
                 <div
-                  className="text-slate-600 dark:text-neutral-300 leading-relaxed text-[15px] [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:font-semibold [&_h2]:text-slate-800 dark:[&_h2]:text-neutral-100 [&_h2]:mb-2 [&_h3]:font-medium [&_h3]:text-slate-700 dark:[&_h3]:text-neutral-200 [&_h3]:mb-1"
+                  className="whitespace-pre-line text-slate-600 dark:text-neutral-300 leading-relaxed text-[15px] [&_p]:mb-4 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-2 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:font-semibold [&_h2]:text-slate-800 dark:[&_h2]:text-neutral-100 [&_h2]:mb-2 [&_h3]:font-medium [&_h3]:text-slate-700 dark:[&_h3]:text-neutral-200 [&_h3]:mb-1"
                   dangerouslySetInnerHTML={{ __html: job.description }}
                 />
               ) : (

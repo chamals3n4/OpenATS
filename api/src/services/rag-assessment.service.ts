@@ -185,6 +185,13 @@ function runRagQuestionGenerator(pdfPath: string): Promise<RagQuestion[]> {
   });
 }
 
+/** Matches `assessments.description` for RAG-generated individual exams (see marker in createCombinedAssessmentForCandidate). */
+export function ragIndividualAssessmentDescriptionRegex(
+  candidateId: number,
+): string {
+  return `^__rag_candidate_${candidateId}_stage_[0-9]+__$`;
+}
+
 export const ragAssessmentService = {
   async createCombinedAssessmentForCandidate(
     candidateId: number,

@@ -269,7 +269,7 @@ export default function JobApplicationPage() {
 
         {job.description && (
           <div
-            className="text-slate-600 dark:text-neutral-300 text-[15px] leading-relaxed space-y-4 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_h2]:font-semibold [&_h2]:text-slate-900 dark:[&_h2]:text-neutral-100 [&_h2]:text-[17px] [&_h2]:mt-6 [&_h3]:font-medium [&_h3]:text-slate-800 dark:[&_h3]:text-neutral-200"
+            className="whitespace-pre-line text-slate-600 dark:text-neutral-300 text-[15px] leading-relaxed space-y-4 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:space-y-1.5 [&_ol]:list-decimal [&_ol]:pl-5 [&_strong]:font-semibold [&_em]:italic [&_u]:underline [&_h1]:font-bold [&_h1]:text-slate-900 dark:[&_h1]:text-neutral-100 [&_h1]:text-xl [&_h1]:mt-6 [&_h2]:font-semibold [&_h2]:text-slate-900 dark:[&_h2]:text-neutral-100 [&_h2]:text-[17px] [&_h2]:mt-6 [&_h3]:font-medium [&_h3]:text-slate-800 dark:[&_h3]:text-neutral-200"
             dangerouslySetInnerHTML={{ __html: job.description }}
           />
         )}

@@ -108,7 +108,10 @@ export function SiteHeader() {
           </button>
 
           <Avatar className="size-9 border-2 border-slate-100 dark:border-neutral-800">
-            <AvatarImage src="https://github.com/chamals3n4.png" alt="User" />
+            <AvatarImage
+              src="https://avatars.githubusercontent.com/u/172094470?s=400&u=f484cb0ec08ab3385c8553a5ad9f0c9f895460fc&v=4"
+              alt="User"
+            />
             <AvatarFallback className="bg-orange-100 text-orange-600 font-medium">
               JD
             </AvatarFallback>

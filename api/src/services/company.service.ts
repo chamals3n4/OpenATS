@@ -69,7 +69,7 @@ export const departmentService = {
   async create(input: CreateDepartmentInput) {
     const comp = await db.select().from(company).limit(1);
     if (!comp[0]) {
-      throw new Error("No existing company found to update.");
+      throw new Error("Company must be set up before creating departments.");
     }
 
     const [created] = await db

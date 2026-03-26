@@ -13,11 +13,19 @@ const upsertCompanySchema = z.object({
 });
 
 const createDepartmentSchema = z.object({
-  name: z.string().min(1, "Department name is required").max(255),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Department name is required")
+    .max(255),
 });
 
 const updateDepartmentSchema = z.object({
-  name: z.string().min(1, "Department name is required").max(255),
+  name: z
+    .string()
+    .trim()
+    .min(1, "Department name is required")
+    .max(255),
 });
 
 export const getCompany = async (req: Request, res: Response) => {
@@ -68,7 +76,7 @@ export const createDepartment = async (req: Request, res: Response) => {
     const parsed = createDepartmentSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({
-        error: "Validatin failed",
+        error: "Validation failed",
         details: parsed.error.flatten().fieldErrors,
       });
       return;

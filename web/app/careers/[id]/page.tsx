@@ -32,6 +32,8 @@ import type { JobDetail, CustomQuestion } from "@/types";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
+type PublicFetchError = Error & { code?: string; status?: number };
+
 async function publicFetch<T>(
   path: string,
   options: RequestInit = {},
@@ -40,11 +42,16 @@ async function publicFetch<T>(
     ...options,
     headers: { "Content-Type": "application/json", ...options.headers },
   });
+  const body = await res.json().catch(() => ({}));
   if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Request failed" }));
-    throw new Error((err as { error?: string }).error ?? `HTTP ${res.status}`);
+    const err = body as { error?: string; code?: string };
+    const message = err.error ?? `HTTP ${res.status}`;
+    const e = new Error(message) as PublicFetchError;
+    e.code = err.code;
+    e.status = res.status;
+    throw e;
   }
-  return res.json() as Promise<T>;
+  return body as T;
 }
 
 const EMPLOYMENT_LABELS: Record<string, string> = {
@@ -91,6 +98,7 @@ export default function JobApplicationPage() {
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!jobId) return;
@@ -151,6 +159,7 @@ export default function JobApplicationPage() {
     e.preventDefault();
     setSubmitting(true);
     setSubmitError(null);
+    setEmailError(null);
 
     const customAnswers = questions
       .map((q) => {
@@ -178,9 +187,19 @@ export default function JobApplicationPage() {
       });
       setSubmitted(true);
     } catch (e: unknown) {
-      setSubmitError(
-        e instanceof Error ? e.message : "Failed to submit. Please try again.",
-      );
+      const err = e as PublicFetchError;
+      if (err.code === "DUPLICATE_APPLICATION") {
+        setEmailError(
+          err.message ||
+            "This email has already been used to apply for this job.",
+        );
+      } else {
+        setSubmitError(
+          err instanceof Error
+            ? err.message
+            : "Failed to submit. Please try again.",
+        );
+      }
     } finally {
       setSubmitting(false);
     }
@@ -349,9 +368,22 @@ export default function JobApplicationPage() {
                 type="email"
                 required
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="h-11 bg-white dark:bg-neutral-900 rounded-md border-slate-300 dark:border-neutral-800 shadow-none focus-visible:ring-0 focus-visible:border-[#F97316] text-slate-900 dark:text-neutral-100"
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  setEmailError(null);
+                }}
+                aria-invalid={!!emailError}
+                className={`h-11 bg-white dark:bg-neutral-900 rounded-md shadow-none focus-visible:ring-0 text-slate-900 dark:text-neutral-100 ${
+                  emailError
+                    ? "border-2 border-red-500 focus-visible:border-red-500 dark:border-red-500"
+                    : "border border-slate-300 dark:border-neutral-800 focus-visible:border-[#F97316]"
+                }`}
               />
+              {emailError && (
+                <p className="text-sm text-red-600 dark:text-red-400">
+                  {emailError}
+                </p>
+              )}
             </div>
 
             <div className="space-y-2">

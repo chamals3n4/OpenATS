@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { candidateService } from "../services/candidate.service";
+import {
+  candidateService,
+  DuplicateApplicationError,
+} from "../services/candidate.service";
 import { jobService } from "../services/job.service";
 import { cvAnalysisService } from "../services/cv-analysis.service";
 import { r2Service } from "../services/r2.service";
@@ -76,10 +79,16 @@ export const applyForJob = async (req: Request, res: Response) => {
     }
 
     res.status(201).json({ data: result });
-  } catch (error: any) {
-    res
-      .status(500)
-      .json({ error: error.message || "Failed to submit application" });
+  } catch (error: unknown) {
+    if (error instanceof DuplicateApplicationError) {
+      res.status(409).json({
+        error: "You have already applied to this job with this email.",
+        code: "DUPLICATE_APPLICATION",
+      });
+      return;
+    }
+    console.error("applyForJob:", error);
+    res.status(500).json({ error: "Failed to submit application" });
   }
 };
 

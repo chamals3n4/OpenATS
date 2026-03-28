@@ -23,6 +23,27 @@ import { variableService } from "./variable.service";
 import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
 
+/** Drizzle wraps driver errors; Postgres code 23505 is often on `cause`. */
+function isPgUniqueViolation(err: unknown): boolean {
+  let current: unknown = err;
+  const seen = new Set<unknown>();
+  for (let depth = 0; depth < 12 && current && typeof current === "object"; depth++) {
+    if (seen.has(current)) break;
+    seen.add(current);
+    const code = (current as { code?: string }).code;
+    if (code === "23505") return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
+}
+
+export class DuplicateApplicationError extends Error {
+  constructor() {
+    super("DUPLICATE_APPLICATION");
+    this.name = "DuplicateApplicationError";
+  }
+}
+
 export interface CustomAnswerInput {
   questionId: number;
   answerText?: string | null | undefined;
@@ -53,9 +74,12 @@ export interface CandidateBasicUpdateInput {
 
 export const candidateService = {
   async apply(jobId: number, input: CandidateApplyInput) {
-    const { customAnswers, ...candidateData } = input;
+    const { customAnswers, ...rest } = input;
+    const normalizedEmail = rest.email.trim().toLowerCase();
+    const candidateData = { ...rest, email: normalizedEmail };
 
-    return await db.transaction(async (tx) => {
+    try {
+      return await db.transaction(async (tx) => {
       const [firstStage] = await tx
         .select()
         .from(jobPipelineStages)
@@ -123,6 +147,12 @@ export const candidateService = {
 
       return candidate;
     });
+    } catch (err) {
+      if (isPgUniqueViolation(err)) {
+        throw new DuplicateApplicationError();
+      }
+      throw err;
+    }
   },
 
   async getAll(jobId: number | undefined, filters: CandidateFilters = {}) {

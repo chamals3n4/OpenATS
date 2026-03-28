@@ -44,7 +44,9 @@ export const candidates = pgTable("candidates", {
 
   appliedAt: timestamp("applied_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-});
+},
+  (t) => [unique().on(t.jobId, t.email)],
+);
 
 export const candidateStageHistory = pgTable("candidate_stage_history", {
   id: serial("id").primaryKey(),

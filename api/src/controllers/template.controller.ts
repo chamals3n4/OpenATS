@@ -29,8 +29,6 @@ const createTemplateSchema = z.object({
   type: templateTypeEnum,
   subject: z.string().min(1, "Subject is required").max(500),
   bodyJson: z.array(contentBlockSchema).default([]),
-  // TODO: replace with req.user.id once auth is in place
-  createdBy: z.number().int().positive().default(1),
 });
 
 const updateTemplateSchema = z.object({
@@ -86,7 +84,10 @@ export const createTemplate = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await templateService.create(parsed.data);
+    const result = await templateService.create({
+      ...parsed.data,
+      createdBy: req.user.id,
+    });
     res.status(201).json({ data: result });
   } catch (error: any) {
     if (error?.code === "23503") {

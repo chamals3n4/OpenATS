@@ -15,6 +15,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   useAssessments,
   useDeleteAssessment,
@@ -83,6 +84,12 @@ export default function AssessmentsPage() {
         onSuccess: (res) => {
           const url = `${window.location.origin}/assessment/${res.data.token}`;
           setGeneratedLink(url);
+          if (res.didSendInvite === false) {
+            toast.message("Existing invite", {
+              description:
+                "This candidate already had an active assessment link — showing it below (no new email).",
+            });
+          }
         },
       },
     );

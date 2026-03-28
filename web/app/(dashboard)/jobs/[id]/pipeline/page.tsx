@@ -11,13 +11,44 @@ import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ResumeScrollView } from "@/components/resume-scroll-view";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
+import { toast } from "sonner";
+
 import {
   useJob,
   usePipeline,
   useCandidates,
   useMoveCandidateStage,
 } from "@/hooks/use-api";
-import type { Candidate, PipelineStage } from "@/types";
+import type { Candidate, PipelineStage, StageAutomationFlags } from "@/types";
+
+function showStageAutomationToasts(automation: StageAutomationFlags) {
+  if (automation.assessmentInvite === "skipped_active_invite") {
+    toast.message("Assessment", {
+      description:
+        "An invite is already active — no new email was sent. The existing link still works.",
+    });
+  } else if (automation.assessmentInvite === "sent") {
+    toast.success("Assessment invite sent.");
+  }
+
+  if (automation.offer === "skipped_open_exists") {
+    toast.message("Offer", {
+      description:
+        "This candidate already has an open offer — no duplicate was created.",
+    });
+  } else if (automation.offer === "created") {
+    toast.success("Offer created.");
+  }
+
+  if (automation.rejectionEmail === "skipped_already_sent") {
+    toast.message("Rejection", {
+      description:
+        "A rejection notice was already sent for this application — not sent again.",
+    });
+  } else if (automation.rejectionEmail === "sent") {
+    toast.success("Rejection email sent.");
+  }
+}
 
 const STAGE_COLORS: Record<PipelineStage["stageType"], string> = {
   none: "#94a3b8",
@@ -318,7 +349,10 @@ export default function HiringPipelinePage() {
     );
     moveStageMutation.mutate(
       { id: candidateId, newStageId: toStageId },
-      { onError: () => refetch() },
+      {
+        onSuccess: (res) => showStageAutomationToasts(res.stageAutomation),
+        onError: () => refetch(),
+      },
     );
   };
 

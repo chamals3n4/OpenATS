@@ -160,6 +160,13 @@ export type Candidate = {
   jobTitle: string | null;
 };
 
+/** Mirrors API `stageAutomation` on candidate stage move. */
+export type StageAutomationFlags = {
+  assessmentInvite?: "sent" | "skipped_active_invite";
+  offer?: "created" | "skipped_open_exists";
+  rejectionEmail?: "sent" | "skipped_already_sent";
+};
+
 export type CandidateCvAnalysisPayload = {
   status: "pending" | "done" | "failed";
   matchScore: number | null;

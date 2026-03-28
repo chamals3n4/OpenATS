@@ -30,8 +30,6 @@ const candidateApplySchema = z.object({
 
 const moveStageSchema = z.object({
   newStageId: z.number().int().positive("Target stage ID is required"),
-
-  movedBy: z.number().int().positive().default(1),
 });
 
 const updateCandidateBasicSchema = z.object({
@@ -156,9 +154,12 @@ export const moveCandidateStage = async (req: Request, res: Response) => {
     const result = await candidateService.moveStage(
       id,
       parsed.data.newStageId,
-      parsed.data.movedBy,
+      req.user.id,
     );
-    res.status(200).json({ data: result });
+    res.status(200).json({
+      data: result.candidate,
+      stageAutomation: result.stageAutomation,
+    });
   } catch (error: any) {
     res
       .status(400)

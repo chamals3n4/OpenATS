@@ -15,6 +15,7 @@ import type {
   AssessmentQuestion,
   Candidate,
   CandidateDetail,
+  StageAutomationFlags,
   User,
   Template,
   Offer,
@@ -757,7 +758,10 @@ export function useMoveCandidateStage() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, newStageId }: { id: number; newStageId: number }) =>
-      serverFetch<{ data: Candidate }>(`/candidates/${id}/stage`, {
+      serverFetch<{
+        data: Candidate;
+        stageAutomation: StageAutomationFlags;
+      }>(`/candidates/${id}/stage`, {
         method: "PUT",
         body: JSON.stringify({ newStageId }),
       }),
@@ -800,7 +804,10 @@ export function useInviteToAssessment() {
       assessmentId: number;
       expiryDays?: number;
     }) =>
-      serverFetch<{ data: { token: string } }>(`/assessment-execution/invite`, {
+      serverFetch<{
+        data: { token: string };
+        didSendInvite?: boolean;
+      }>(`/assessment-execution/invite`, {
         method: "POST",
         body: JSON.stringify({ candidateId, assessmentId, expiryDays }),
       }),

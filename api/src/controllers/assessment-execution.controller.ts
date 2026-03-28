@@ -52,9 +52,19 @@ export const inviteCandidateToAssessment = async (req: Request, res: Response) =
     }
 
     const { candidateId, assessmentId, expiryDays } = parsed.data;
-    const result = await assessmentExecutionService.inviteCandidate(candidateId, assessmentId, expiryDays);
+    const { attempt, didSendInvite } =
+      await assessmentExecutionService.inviteCandidate(
+        candidateId,
+        assessmentId,
+        expiryDays,
+      );
 
-    res.status(201).json({ data: result });
+    if (!attempt) {
+      res.status(500).json({ error: "Failed to create assessment attempt" });
+      return;
+    }
+
+    res.status(201).json({ data: attempt, didSendInvite });
   } catch (error: any) {
     console.error("Invite Error:", error);
     res.status(500).json({ 

@@ -79,7 +79,10 @@ export default function AssessmentsPage() {
   const handleGenerateLink = () => {
     if (!inviteTarget || !selectedCandidateId) return;
     inviteMutation.mutate(
-      { candidateId: Number(selectedCandidateId), assessmentId: inviteTarget.id },
+      {
+        candidateId: Number(selectedCandidateId),
+        assessmentId: inviteTarget.id,
+      },
       {
         onSuccess: (res) => {
           const url = `${window.location.origin}/assessment/${res.data.token}`;
@@ -123,6 +126,7 @@ export default function AssessmentsPage() {
         <ThemeButton
           asChild
           href="/assessments/new"
+          prefetch
           className="h-10 px-4 gap-2 text-sm shadow-none border-none"
         >
           <HugeiconsIcon
@@ -146,7 +150,7 @@ export default function AssessmentsPage() {
           />
         </div>
         <Select>
-          <SelectTrigger className="w-36 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-36 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
           <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
@@ -155,7 +159,7 @@ export default function AssessmentsPage() {
           </SelectContent>
         </Select>
         <Select>
-          <SelectTrigger className="w-36 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-36 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Difficulty" />
           </SelectTrigger>
           <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
@@ -166,7 +170,7 @@ export default function AssessmentsPage() {
         </Select>
         <Button
           variant="ghost"
-          className="text-slate-600 dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-2"
+          className="text-slate-600 cursor-pointer dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-2"
         >
           Clear All
         </Button>
@@ -253,7 +257,10 @@ export default function AssessmentsPage() {
       </div>
 
       {/* Invite dialog */}
-      <Dialog open={!!inviteTarget} onOpenChange={(o) => !o && setInviteTarget(null)}>
+      <Dialog
+        open={!!inviteTarget}
+        onOpenChange={(o) => !o && setInviteTarget(null)}
+      >
         <DialogContent className="max-w-md rounded-xl border-slate-200 dark:border-neutral-800 shadow-lg p-6 bg-white dark:bg-neutral-950">
           <DialogHeader>
             <DialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
@@ -269,20 +276,29 @@ export default function AssessmentsPage() {
               <Label className="text-[12px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
                 Assessment
               </Label>
-              <p className="text-[14px] font-medium text-slate-700 dark:text-neutral-300">{inviteTarget?.title}</p>
+              <p className="text-[14px] font-medium text-slate-700 dark:text-neutral-300">
+                {inviteTarget?.title}
+              </p>
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-[12px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
                 Select Candidate
               </Label>
-              <Select value={selectedCandidateId} onValueChange={(v) => setSelectedCandidateId(v ?? "")}>
+              <Select
+                value={selectedCandidateId}
+                onValueChange={(v) => setSelectedCandidateId(v ?? "")}
+              >
                 <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
                   <SelectValue placeholder="Choose a candidate…" />
                 </SelectTrigger>
                 <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
                   {candidates.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)} className="text-[13px]">
+                    <SelectItem
+                      key={c.id}
+                      value={String(c.id)}
+                      className="text-[13px]"
+                    >
                       {c.firstName} {c.lastName}
                       {c.jobTitle ? ` — ${c.jobTitle}` : ""}
                     </SelectItem>
@@ -298,7 +314,10 @@ export default function AssessmentsPage() {
                 className="w-full h-10 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-lg text-[13px] font-medium gap-2"
               >
                 {inviteMutation.isPending ? (
-                  <><Loader2 className="size-3.5 animate-spin" />Generating…</>
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Generating…
+                  </>
                 ) : (
                   "Generate Link"
                 )}
@@ -320,7 +339,10 @@ export default function AssessmentsPage() {
                         : "border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800"
                     }`}
                   >
-                    <HugeiconsIcon icon={copied ? CheckmarkCircle01Icon : Copy01Icon} className="size-3.5" />
+                    <HugeiconsIcon
+                      icon={copied ? CheckmarkCircle01Icon : Copy01Icon}
+                      className="size-3.5"
+                    />
                     {copied ? "Copied!" : "Copy"}
                   </button>
                 </div>
@@ -338,7 +360,8 @@ export default function AssessmentsPage() {
 
             {inviteMutation.isError && (
               <p className="text-red-500 text-[12px]">
-                {(inviteMutation.error as Error).message ?? "Failed to generate invite."}
+                {(inviteMutation.error as Error).message ??
+                  "Failed to generate invite."}
               </p>
             )}
           </div>
@@ -355,12 +378,14 @@ export default function AssessmentsPage() {
               Delete Assessment?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
-              <strong className="text-slate-700 dark:text-neutral-200">{deleteTarget?.title}</strong>{" "}
+              <strong className="text-slate-700 dark:text-neutral-200">
+                {deleteTarget?.title}
+              </strong>{" "}
               will be permanently deleted. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-9 px-5 rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 text-[13px] font-medium shadow-none">
+            <AlertDialogCancel className="h-9 px-5 cursor-pointer rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 text-[13px] font-medium shadow-none">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -369,9 +394,11 @@ export default function AssessmentsPage() {
                 confirmDelete();
               }}
               disabled={deleteAssessment.isPending}
-              className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none disabled:opacity-70"
+              className="h-9 px-5 rounded-lg cursor-pointer bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none disabled:opacity-70"
             >
-              {deleteAssessment.isPending && <Loader2 className="size-3.5 mr-1.5 animate-spin" />}
+              {deleteAssessment.isPending && (
+                <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+              )}
               {deleteAssessment.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>

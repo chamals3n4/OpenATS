@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
+import { motion } from "motion/react";
 
 import { cn } from "@/lib/utils";
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react";
@@ -32,6 +33,7 @@ function SelectTrigger({
   className,
   size = "default",
   children,
+  render,
   ...props
 }: SelectPrimitive.Trigger.Props & {
   size?: "sm" | "default";
@@ -40,6 +42,15 @@ function SelectTrigger({
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       data-size={size}
+      render={
+        render ?? (
+          <motion.button
+            whileHover={{ scale: 1.004 }}
+            whileTap={{ scale: 0.993 }}
+            transition={{ type: "spring", stiffness: 520, damping: 38, mass: 0.2 }}
+          />
+        )
+      }
       className={cn(
         "border-input data-placeholder:text-muted-foreground dark:bg-input/30 dark:hover:bg-input/50 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 gap-1.5 rounded-lg border bg-transparent py-2 pr-2 pl-2.5 text-sm transition-colors select-none focus-visible:ring-3 aria-invalid:ring-3 data-[size=default]:h-8 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] *:data-[slot=select-value]:gap-1.5 [&_svg:not([class*='size-'])]:size-4 flex w-fit items-center justify-between whitespace-nowrap outline-none disabled:cursor-not-allowed disabled:opacity-50 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className,
@@ -60,10 +71,11 @@ function SelectContent({
   className,
   children,
   side = "bottom",
-  sideOffset = 4,
-  align = "center",
-  alignOffset = 0,
-  alignItemWithTrigger = false,
+  sideOffset = 6,
+  align = "start",
+  alignOffset = -8,
+  alignItemWithTrigger = true,
+  render,
   ...props
 }: SelectPrimitive.Popup.Props &
   Pick<
@@ -74,17 +86,26 @@ function SelectContent({
     <SelectPrimitive.Portal>
       <SelectPrimitive.Positioner
         side={side}
-        sideOffset={-42}
-        align="start"
+        sideOffset={sideOffset}
+        align={align}
         alignOffset={alignOffset}
-        alignItemWithTrigger={false}
+        alignItemWithTrigger={alignItemWithTrigger}
         className="isolate z-50"
       >
         <SelectPrimitive.Popup
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
+          render={
+            render ?? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.995, y: 2 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                transition={{ type: "spring", stiffness: 520, damping: 40, mass: 0.26 }}
+              />
+            )
+          }
           className={cn(
-            "bg-popover text-popover-foreground data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 data-closed:zoom-out-95 data-open:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 ring-foreground/10 min-w-36 rounded-lg shadow-md ring-1 duration-100 data-[side=inline-start]:slide-in-from-right-2 data-[side=inline-end]:slide-in-from-left-2 relative isolate z-50 max-h-(--available-height) w-(--anchor-width) origin-(--transform-origin) overflow-x-hidden overflow-y-auto data-[align-trigger=true]:animate-none",
+            "relative isolate z-50 max-h-(--available-height) min-w-(--anchor-width) w-max max-w-[min(100vw-2rem,42rem)] origin-(--transform-origin) overflow-x-auto overflow-y-auto rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
             className,
           )}
           {...props}
@@ -122,18 +143,9 @@ function SelectItem({
     <SelectPrimitive.Item
       data-slot="select-item"
       className={cn(
-        "focus:text-white gap-1.5 rounded-md py-2 pr-8 pl-2.5 text-sm [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2 relative flex w-full cursor-default items-center outline-hidden select-none data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0",
+        "relative flex w-full cursor-default items-center gap-1.5 rounded-md py-2 pr-8 pl-2.5 text-sm outline-hidden select-none data-highlighted:bg-theme data-highlighted:text-white data-disabled:pointer-events-none data-disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4 *:[span]:last:flex *:[span]:last:items-center *:[span]:last:gap-2",
         className,
       )}
-      style={{ ["--item-bg" as string]: "var(--theme-color)" }}
-      onFocus={(e) =>
-        (e.currentTarget.style.backgroundColor = "var(--theme-color)")
-      }
-      onBlur={(e) => (e.currentTarget.style.backgroundColor = "")}
-      onMouseEnter={(e) =>
-        (e.currentTarget.style.backgroundColor = "var(--theme-color)")
-      }
-      onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = "")}
       {...props}
     >
       <SelectPrimitive.ItemText className="flex flex-1 gap-2 shrink-0 whitespace-nowrap">

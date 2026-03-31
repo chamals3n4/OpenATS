@@ -6,8 +6,6 @@ import { ThemeInitializer } from "@/components/theme-initializer";
 import { QueryProvider } from "@/components/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 
-export const dynamic = "force-dynamic";
-
 export default function DashboardLayout({
   children,
 }: {
@@ -15,7 +13,7 @@ export default function DashboardLayout({
 }) {
   return (
     <QueryProvider>
-      <div className="[--header-height:calc(theme(spacing.14))]">
+      <div className="[--header-height:calc(--spacing(14))]">
         <ThemeInitializer />
         <SidebarProvider className="flex flex-col">
           <SiteHeader />

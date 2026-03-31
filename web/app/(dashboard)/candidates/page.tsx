@@ -158,7 +158,7 @@ export default function ManageCandidatesPage() {
           Manage Candidates
         </h1>
         <Button
-          className="text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
+          className="text-white cursor-pointer rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
           style={{ backgroundColor: "var(--theme-color)" }}
         >
           <HugeiconsIcon
@@ -191,7 +191,7 @@ export default function ManageCandidatesPage() {
             setSelectedJobId(v === "all" ? undefined : Number(v))
           }
         >
-          <SelectTrigger className="w-52 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Job Position">
               {selectedJobId
                 ? (jobs.find((j) => j.id === selectedJobId)?.title ?? null)
@@ -214,7 +214,7 @@ export default function ManageCandidatesPage() {
             setSearch("");
             setSelectedJobId(undefined);
           }}
-          className="text-slate-600 dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-2"
+          className="text-slate-600 cursor-pointer dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-2"
         >
           Clear All
         </Button>
@@ -295,7 +295,7 @@ export default function ManageCandidatesPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 px-3 rounded-md border-slate-300 dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
+                          className="h-8 px-3 rounded-md cursor-pointer border-slate-300 dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
                           onClick={() => openEditDialog(c)}
                         >
                           <HugeiconsIcon
@@ -307,7 +307,7 @@ export default function ManageCandidatesPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 px-3 rounded-md border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400"
+                          className="h-8 px-3 rounded-md cursor-pointer border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400"
                           onClick={() => setDeleteTarget(c)}
                         >
                           <HugeiconsIcon
@@ -491,14 +491,14 @@ export default function ManageCandidatesPage() {
           <DialogFooter className="gap-2">
             <DialogClose
               disabled={updateMutation.isPending}
-              className="h-9 px-5 rounded-lg border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium hover:bg-slate-50 dark:hover:bg-neutral-800"
+              className="h-9 px-5 rounded-lg border cursor-pointer border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium hover:bg-slate-50 dark:hover:bg-neutral-800"
             >
               Cancel
             </DialogClose>
             <Button
               onClick={confirmUpdate}
               disabled={updateMutation.isPending}
-              className="h-9 px-5 rounded-lg text-white text-[13px] font-semibold shadow-none border-none"
+              className="h-9 px-5 cursor-pointer rounded-lg text-white text-[13px] font-semibold shadow-none border-none"
               style={{ backgroundColor: "var(--theme-color)" }}
             >
               {updateMutation.isPending ? "Saving…" : "Save"}

@@ -2,6 +2,7 @@
 
 import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
+import { motion } from "motion/react"
 
 import { cn } from "@/lib/utils"
 
@@ -39,12 +40,26 @@ function Button({
   className,
   variant = "default",
   size = "default",
+  render,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  const isDisabled = Boolean(
+    "disabled" in props && (props as { disabled?: boolean }).disabled
+  )
+
   return (
     <ButtonPrimitive
       data-slot="button"
       className={cn(buttonVariants({ variant, size, className }))}
+      render={
+        render ?? (
+          <motion.button
+            whileHover={isDisabled ? undefined : { scale: 1.004 }}
+            whileTap={isDisabled ? undefined : { scale: 0.993 }}
+            transition={{ type: "spring", stiffness: 520, damping: 38, mass: 0.2 }}
+          />
+        )
+      }
       {...props}
     />
   )

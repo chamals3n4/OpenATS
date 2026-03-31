@@ -408,7 +408,7 @@ export default function CreateNewJobPage() {
           <div className="pt-10 flex items-center gap-4">
             <Button
               onClick={handleSubmit}
-              className="text-white cursor-pointer rounded-lg h-10 px-10 min-w-35 font-medium shadow-none border-none"
+              className="text-white cursor-pointer rounded-lg h-10 px-10 min-w-35 font-medium shadow-none border-none gap-2"
               style={{ backgroundColor: "var(--theme-color)" }}
               disabled={
                 !title ||
@@ -417,10 +417,14 @@ export default function CreateNewJobPage() {
                 createJob.isPending
               }
             >
-              {createJob.isPending && (
-                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+              {createJob.isPending ? (
+                <>
+                  <Loader2 className="size-4 shrink-0 animate-spin" />
+                  <span>Saving…</span>
+                </>
+              ) : (
+                "Save Job"
               )}
-              {createJob.isPending ? "Saving…" : "Save Job"}
             </Button>
             <Link
               href="/jobs"

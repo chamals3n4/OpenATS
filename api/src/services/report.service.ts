@@ -118,11 +118,25 @@ function buildCsv(report: AnalyticsReport): string {
     .join("\n");
 }
 
+type AnalyticsCacheEntry = {
+  value: AnalyticsReport;
+  expiresAt: number;
+};
+
+// Simple in-memory cache to make the dashboard overview feel fast.
+// Analytics is aggregated data; we cache briefly and refresh on expiry.
+const analyticsCache = new Map<string, AnalyticsCacheEntry>();
+const ANALYTICS_CACHE_TTL_MS = 60_000;
+
 export const reportService = {
   async getAnalytics(
     period: ReportPeriod,
     departmentId?: number,
   ): Promise<AnalyticsReport> {
+    const cacheKey = `${period}|${departmentId ?? "all"}`;
+    const cached = analyticsCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.value;
+
     const days = getPeriodDays(period);
 
     const now = new Date();
@@ -421,7 +435,7 @@ export const reportService = {
       });
     }
 
-    return {
+    const report: AnalyticsReport = {
       summary: {
         totalCandidates,
         totalCandidatesDeltaPct: safePct(currentCandidates, previousCandidates),
@@ -441,6 +455,13 @@ export const reportService = {
       timeToHireByDepartment,
       offerTrends,
     };
+
+    analyticsCache.set(cacheKey, {
+      value: report,
+      expiresAt: Date.now() + ANALYTICS_CACHE_TTL_MS,
+    });
+
+    return report;
   },
 
   async exportAnalytics(

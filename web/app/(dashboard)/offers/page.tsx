@@ -11,7 +11,6 @@ import {
   Mail01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { archiveItem } from "@/lib/archive-store";
 import { useOffers, useDeleteOffer } from "@/hooks/use-api";
 
 import { Button } from "@/components/ui/button";
@@ -231,7 +230,7 @@ export default function ManageOffersPage() {
           value={filterDept}
           onValueChange={(v) => setFilterDept(v ?? "all")}
         >
-          <SelectTrigger className="w-48 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-48 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Departments">
               {(
                 {
@@ -254,7 +253,7 @@ export default function ManageOffersPage() {
           value={filterStatus}
           onValueChange={(v) => setFilterStatus(v ?? "all")}
         >
-          <SelectTrigger className="w-40 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-40 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Status">
               {(
                 {

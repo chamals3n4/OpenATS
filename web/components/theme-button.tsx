@@ -19,6 +19,8 @@ interface ThemeLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   variant?: "primary" | "outline";
   asChild: true;
   href: string;
+  /** Next.js Link: prefetch route when in viewport (default true in prod). */
+  prefetch?: boolean;
 }
 
 type Props = ThemeButtonProps | ThemeLinkProps;
@@ -66,11 +68,13 @@ export const ThemeButton = forwardRef<
 
   if ("asChild" in props && props.asChild) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { asChild: _asChild, href, style, ...rest } = props as ThemeLinkProps;
+    const { asChild: _asChild, href, style, prefetch, ...rest } =
+      props as ThemeLinkProps;
     return (
       <Link
         ref={ref as Ref<HTMLAnchorElement>}
         href={href}
+        prefetch={prefetch}
         className={cn(baseClasses, variantClasses, className)}
         style={getStyle(variant, style as CSSProperties)}
         onMouseEnter={(e) => onEnter(variant, e.currentTarget)}

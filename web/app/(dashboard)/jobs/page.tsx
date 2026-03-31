@@ -133,7 +133,8 @@ export default function ManageJobsPage() {
         </h1>
         <ThemeButton
           asChild
-          href="jobs/new"
+          href="/jobs/new"
+          prefetch
           className="h-10 px-4 gap-2 text-sm shadow-none border-none"
         >
           <HugeiconsIcon
@@ -162,14 +163,18 @@ export default function ManageJobsPage() {
           value={filterDept}
           onValueChange={(v) => setFilterDept(v ?? "all")}
         >
-          <SelectTrigger className="w-52 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Departments">
               {filterDept === "all"
                 ? "All Departments"
                 : (departmentNameById.get(Number(filterDept)) ?? "Department")}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          <SelectContent
+            align="start"
+            alignOffset={0}
+            className="-ml-2 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+          >
             <SelectItem value="all">All Departments</SelectItem>
             {departments.map((dept) => (
               <SelectItem key={dept.id} value={String(dept.id)}>
@@ -182,7 +187,7 @@ export default function ManageJobsPage() {
           value={filterType}
           onValueChange={(v) => setFilterType(v ?? "all")}
         >
-          <SelectTrigger className="w-44 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-44 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Job Types">
               {filterType === "all"
                 ? "All Types"
@@ -191,7 +196,11 @@ export default function ManageJobsPage() {
                   ] ?? filterType)}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          <SelectContent
+            align="start"
+            alignOffset={0}
+            className="-ml-2 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+          >
             <SelectItem value="all">All Types</SelectItem>
             {(
               Object.keys(EMPLOYMENT_TYPE_LABELS) as Job["employmentType"][]
@@ -206,7 +215,7 @@ export default function ManageJobsPage() {
           value={filterStatus}
           onValueChange={(v) => setFilterStatus(v ?? "all")}
         >
-          <SelectTrigger className="w-44 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-44 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="Status">
               {filterStatus === "all"
                 ? "All Status"
@@ -214,7 +223,11 @@ export default function ManageJobsPage() {
                   filterStatus)}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          <SelectContent
+            align="start"
+            alignOffset={0}
+            className="-ml-2 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+          >
             <SelectItem value="all">All Status</SelectItem>
             {(Object.keys(STATUS_LABELS) as Job["status"][]).map((status) => (
               <SelectItem key={status} value={status}>
@@ -231,7 +244,7 @@ export default function ManageJobsPage() {
             setFilterType("all");
             setFilterStatus("all");
           }}
-          className="text-slate-600 dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-4"
+          className="text-slate-600 cursor-pointer dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-4"
         >
           Clear All
         </Button>
@@ -314,7 +327,7 @@ export default function ManageJobsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 px-3 rounded-md border-slate-300 dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
+                          className="h-8 px-3 rounded-md border-slate-300 cursor-pointer dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
                           onClick={() => router.push(`/jobs/${job.id}/edit`)}
                         >
                           <HugeiconsIcon
@@ -326,7 +339,7 @@ export default function ManageJobsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 px-3 rounded-md border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400"
+                          className="h-8 px-3 rounded-md border-red-200 cursor-pointer dark:border-red-900/40 text-red-600 dark:text-red-400"
                           onClick={() => setDeleteTarget(job)}
                         >
                           <HugeiconsIcon
@@ -388,13 +401,13 @@ export default function ManageJobsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-9 px-5 rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors">
+            <AlertDialogCancel className="h-9 px-5 cursor-pointer rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               disabled={deleteMutation.isPending}
-              className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none"
+              className="h-9 px-5 rounded-lg cursor-pointer bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none"
             >
               {deleteMutation.isPending ? "Deleting…" : "Delete"}
             </AlertDialogAction>

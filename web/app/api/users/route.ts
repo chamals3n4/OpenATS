@@ -1,75 +1,105 @@
-import { NextResponse } from 'next/server';
-import { asgardeo } from '@asgardeo/nextjs/server';
-import { serverFetch } from '@/lib/auth-action';
-import { assignAsgardeoRole } from '@/lib/asgardeo-roles';
-import type { User } from '@/types';
+import { NextResponse } from "next/server";
+import { asgardeo } from "@asgardeo/nextjs/server";
+import { serverFetch } from "@/lib/auth-action";
+import { assignAsgardeoRole } from "@/lib/asgardeo-roles";
+import {
+  getAsgardeoApiBase,
+  getScimAccessToken,
+  scimRequestHeaders,
+} from "@/lib/asgardeo-scim-token";
+import type { User } from "@/types";
 
-async function getToken() {
-    const client = await asgardeo();
-    const sessionId = await client.getSessionId();
-    if (!sessionId) throw new Error('Unauthorized');
-    return client.getAccessToken(sessionId);
+const ROUTE_LOG = "[API /users]";
+
+async function requireSignedIn() {
+  const client = await asgardeo();
+  const sessionId = await client.getSessionId();
+  if (!sessionId) throw new Error("Unauthorized");
 }
 
-const BASE = process.env.NEXT_PUBLIC_ASGARDEO_BASE_URL;
-
 export async function GET() {
-    try {
-        const data = await serverFetch<{ data: User[] }>('/users');
-        return NextResponse.json(data.data);
-    } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
-    }
+  console.log(`${ROUTE_LOG} GET /api/users`);
+  try {
+    const data = await serverFetch<{ data: User[] }>("/users");
+    console.log(`${ROUTE_LOG} fetched ${data.data.length} users`);
+    return NextResponse.json(data.data);
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`${ROUTE_LOG} GET error:`, msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }
 
 export async function POST(req: Request) {
-    try {
-        const token = await getToken();
-        const body = await req.json();
-        const role = body.role ?? 'interviewer';
+  console.log(`${ROUTE_LOG} POST /api/users`);
+  try {
+    await requireSignedIn();
+    const scimToken = await getScimAccessToken();
+    const body = await req.json();
+    const role = body.role ?? "interviewer";
 
-        // create user on asgardeo
-        const scimRes = await fetch(`${BASE}/scim2/Users`, {
-            method: 'POST',
-            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                schemas: ['urn:ietf:params:scim:schemas:core:2.0:User'],
-                name: { givenName: body.firstName, familyName: body.lastName },
-                userName: `DEFAULT/${body.userName}`,
-                password: body.password,
-                emails: [{ primary: true, value: body.email }],
-                'urn:ietf:params:scim:schemas:extension:enterprise:2.0:User': {
-                    askPassword: body.askPassword ? 'true' : undefined,
-                },
-            }),
-        });
+    console.log(
+      `${ROUTE_LOG} creating user — email: ${body.email}, role: ${role}, askPassword: ${!!body.askPassword}`,
+    );
 
-        if (!scimRes.ok) {
-            const err = await scimRes.json();
-            return NextResponse.json(
-                { error: err.detail ?? 'Failed to create user in Asgardeo' },
-                { status: scimRes.status }
-            );
-        }
+    const base = getAsgardeoApiBase();
 
-        const scimUser = await scimRes.json();
-
-        await assignAsgardeoRole(token, scimUser.id, role);
-
-        // create db record — no waiting for first login ( when user creating through the app)
-        await serverFetch<{ data: unknown }>('/users', {
-            method: 'POST',
-            body: JSON.stringify({
-                asgardeoUserId: scimUser.id,
-                firstName: body.firstName,
-                lastName: body.lastName,
-                email: body.email,
-                role,
-            }),
-        });
-
-        return NextResponse.json({ success: true }, { status: 201 });
-    } catch (e: any) {
-        return NextResponse.json({ error: e.message }, { status: 500 });
+    const scimBody: Record<string, unknown> = {
+      schemas: ["urn:ietf:params:scim:schemas:core:2.0:User"],
+      name: { givenName: body.firstName, familyName: body.lastName },
+      userName: `DEFAULT/${body.userName}`,
+      emails: [{ primary: true, value: body.email }],
+    };
+    if (body.askPassword) {
+      scimBody["urn:scim:wso2:schema"] = { askPassword: true };
+    } else if (body.password) {
+      scimBody.password = body.password;
     }
+
+    const scimUrl = `${base}/scim2/Users`;
+    console.log(`${ROUTE_LOG} POST ${scimUrl}`);
+
+    const scimRes = await fetch(scimUrl, {
+      method: "POST",
+      headers: scimRequestHeaders(scimToken, true),
+      body: JSON.stringify(scimBody),
+    });
+
+    if (!scimRes.ok) {
+      const err = await scimRes.json();
+      console.error(
+        `${ROUTE_LOG} Asgardeo create user failed — HTTP ${scimRes.status}:`,
+        err,
+      );
+      return NextResponse.json(
+        { error: err.detail ?? "Failed to create user in Asgardeo" },
+        { status: scimRes.status },
+      );
+    }
+
+    const scimUser = await scimRes.json();
+    console.log(
+      `${ROUTE_LOG} Asgardeo user created — asgardeoUserId: ${scimUser.id}`,
+    );
+
+    await assignAsgardeoRole(scimToken, scimUser.id, role);
+
+    await serverFetch<{ data: unknown }>("/users", {
+      method: "POST",
+      body: JSON.stringify({
+        asgardeoUserId: scimUser.id,
+        firstName: body.firstName,
+        lastName: body.lastName,
+        email: body.email,
+        role,
+      }),
+    });
+
+    console.log(`${ROUTE_LOG} user created and stored in DB successfully`);
+    return NextResponse.json({ success: true }, { status: 201 });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`${ROUTE_LOG} POST error:`, msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
+  }
 }

@@ -66,6 +66,8 @@ export const updateUser = async (req: Request, res: Response) => {
       return;
     }
 
+    console.log(`[updateUser] id=${id} body=`, req.body); // add this
+
     const parsed = updateUserSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({
@@ -75,7 +77,12 @@ export const updateUser = async (req: Request, res: Response) => {
       return;
     }
 
+    console.log(`[updateUser] parsed=`, parsed.data); // add this
+
     const result = await userService.update(id, parsed.data);
+
+    console.log(`[updateUser] result=`, result); // add this
+
     if (!result) {
       res.status(404).json({ error: "User not found" });
       return;
@@ -83,6 +90,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
+    console.error(`[updateUser] error:`, error); // add this
     res.status(500).json({ error: "Failed to update user" });
   }
 };

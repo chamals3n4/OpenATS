@@ -1,6 +1,10 @@
 import { Router } from "express";
 import multer from "multer";
-import { getJobById } from "../controllers/job.controller";
+import {
+  getPublicJobById,
+  listPublishedCareersJobs,
+} from "../controllers/job.controller";
+import { checkOrigins } from "../middlewares/allowedOrigins.middleware";
 import { getCustomQuestions } from "../controllers/custom-question.controller";
 import { applyForJob } from "../controllers/candidate.controller";
 import { uploadFile } from "../controllers/upload.controller";
@@ -8,7 +12,7 @@ import {
   getAssessmentForCandidate,
   startAssessment,
   submitAssessmentAnswer,
-  completeAssessment
+  completeAssessment,
 } from "../controllers/assessment-execution.controller";
 
 const router: Router = Router();
@@ -18,10 +22,32 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
-router.get("/jobs/:id", getJobById);
-router.get("/jobs/:jobId/questions", getCustomQuestions);
-router.post("/jobs/:jobId/apply", applyForJob);
-router.post("/upload/resume", upload.single("file"), uploadFile);
+router.get(
+  "/jobs",
+  checkOrigins,
+  listPublishedCareersJobs,
+);
+router.get(
+  "/jobs/:id",
+  checkOrigins,
+  getPublicJobById,
+);
+router.get(
+  "/jobs/:jobId/questions",
+  checkOrigins,
+  getCustomQuestions,
+);
+router.post(
+  "/jobs/:jobId/apply",
+  checkOrigins,
+  applyForJob,
+);
+router.post(
+  "/upload/resume",
+  checkOrigins,
+  upload.single("file"),
+  uploadFile,
+);
 
 // assessments for candidates ( token based)
 router.get("/assessment/:token", getAssessmentForCandidate);

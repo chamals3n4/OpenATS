@@ -76,6 +76,10 @@ const navMainData = [
         url: "/settings/setup",
       },
       {
+        title: "Careers",
+        url: "/settings/careers",
+      },
+      {
         title: "Templates",
         url: "/settings/templates",
       },

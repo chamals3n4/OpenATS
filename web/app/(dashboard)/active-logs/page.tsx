@@ -19,6 +19,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -174,7 +175,7 @@ export default function ActiveLogsPage() {
         <div className="relative w-80">
           <HugeiconsIcon
             icon={Search01Icon}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-300 pointer-events-none"
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
           />
           <Input
             value={search}
@@ -188,10 +189,10 @@ export default function ActiveLogsPage() {
           value={level}
           onValueChange={(v) => setLevel((v as typeof level) ?? "all")}
         >
-          <SelectTrigger className="w-36 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-36 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-3">
             <SelectValue>{LEVEL_LABELS[level]}</SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg w-37 shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Levels</SelectItem>
             <SelectItem value="info">Info</SelectItem>
             <SelectItem value="success">Success</SelectItem>
@@ -204,14 +205,14 @@ export default function ActiveLogsPage() {
           value={service}
           onValueChange={(v) => setService((v as typeof service) ?? "all")}
         >
-          <SelectTrigger className="w-44 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-44 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-3">
             <SelectValue>
               {service === "all"
                 ? "All Services"
                 : `${service.charAt(0).toUpperCase()}${service.slice(1)}`}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg w-44 shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Services</SelectItem>
             {serviceOptions.map((s) => (
               <SelectItem key={s} value={s}>
@@ -227,10 +228,10 @@ export default function ActiveLogsPage() {
             setStatusGroup((v as typeof statusGroup) ?? "all")
           }
         >
-          <SelectTrigger className="w-32 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-32 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-3">
             <SelectValue>{STATUS_GROUP_LABELS[statusGroup]}</SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg w-33 shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="2xx">2xx</SelectItem>
             <SelectItem value="4xx">4xx</SelectItem>
@@ -244,10 +245,10 @@ export default function ActiveLogsPage() {
             setWindowSize((v as typeof windowSize) ?? "24h")
           }
         >
-          <SelectTrigger className="w-32 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-32 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-3">
             <SelectValue>{WINDOW_LABELS[windowSize]}</SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg w-33 shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
             <SelectItem value="15m">15m</SelectItem>
             <SelectItem value="1h">1h</SelectItem>
             <SelectItem value="6h">6h</SelectItem>
@@ -299,19 +300,23 @@ export default function ActiveLogsPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filteredLogs.length === 0 ? (
+              {logsQuery.isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="p-0">
+                    <ListSectionSpinner className="min-h-28" />
+                  </TableCell>
+                </TableRow>
+              ) : filteredLogs.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={7}
                     className="h-28 text-center text-slate-400 text-sm"
                   >
-                    {logsQuery.isLoading
-                      ? "Loading logs..."
-                      : !isApiEnabled
-                        ? "API calls are stopped. Click Start API Calls to resume."
-                        : logsQuery.isError
-                          ? "Failed to load logs."
-                          : "No logs found for current filters."}
+                    {!isApiEnabled
+                      ? "API calls are stopped. Click Start API Calls to resume."
+                      : logsQuery.isError
+                        ? "Failed to load logs."
+                        : "No logs found for current filters."}
                   </TableCell>
                 </TableRow>
               ) : (

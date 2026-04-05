@@ -85,12 +85,10 @@ export default function CareersSettingsPage() {
           Careers page
         </h1>
         <p className="text-sm text-slate-500 dark:text-neutral-400 max-w-3xl">
-          Public job JSON and embed reference. Allowed origins are stored in
-          the database (super admin and hiring manager only). Run{" "}
-          <code className="text-[11px] px-1 py-0.5 rounded bg-slate-100 dark:bg-neutral-800 font-mono">
-            drizzle-kit generate
-          </code>{" "}
-          then migrate after pulling the new schema.
+          Link your careers site or a custom page to OpenATS using the public job
+          URLs or the embed snippet below—pick whichever fits your setup so
+          visitors can browse listings and apply. Allowed origins control which
+          websites those requests may come from.
         </p>
       </div>
 
@@ -115,7 +113,7 @@ export default function CareersSettingsPage() {
                 <span>
                   {error?.message ?? "Could not load origins"}
                   {error?.message === "Forbidden"
-                    ? " — only super admins and hiring managers can edit."
+                    ? " — this isn’t available for your account."
                     : ""}
                 </span>
                 <Button
@@ -326,13 +324,11 @@ export default function CareersSettingsPage() {
               </div>
               <div className="mt-4 flex flex-col sm:flex-row gap-2 sm:gap-3">
                 <Button
-                  asChild
                   className="h-10 min-h-10 px-5 rounded-md text-sm font-medium text-white shadow-none border-0 w-full sm:w-auto justify-center hover:opacity-90 transition-opacity"
                   style={{ backgroundColor: "var(--theme-color)" }}
+                  render={<Link href="/settings/careers/preview" prefetch />}
                 >
-                  <Link href="/settings/careers/preview" prefetch>
-                    Open listing preview
-                  </Link>
+                  Open listing preview
                 </Button>
               </div>
             </section>

@@ -19,10 +19,12 @@ import {
   CircleIcon,
   SentIcon,
   Cancel01Icon,
+  Chatting01Icon,
 } from "@hugeicons/core-free-icons";
 import {
   useJob,
   usePipeline,
+  useCandidates,
   useCurrentUser,
   useChatHistory,
   useCreateStage,
@@ -147,6 +149,15 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
+
+const JOB_TAB_TRIGGER_CLASS =
+  "data-[state=active]:bg-transparent cursor-pointer shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap";
+
+const JOB_TAB_PRESS =
+  "motion-reduce:transition-none motion-reduce:active:scale-100 " +
+  "transition-[transform_280ms_cubic-bezier(0.4,0,0.2,1),background-color_180ms_ease-in-out,border-color_180ms_ease-in-out,color_180ms_ease-in-out,opacity_180ms_ease-in-out] " +
+  "active:scale-[0.993]";
 
 export default function JobDetailsPage() {
   const params = useParams();
@@ -160,6 +171,11 @@ export default function JobDetailsPage() {
 
   const { data: jobData, isLoading: jobLoading } = useJob(jobId);
   const { data: pipelineData } = usePipeline(jobId);
+  const { data: jobCandidatesData, isPending: jobCandidatesPending } =
+    useCandidates(jobId, undefined, {
+      enabled: Number.isFinite(jobId) && jobId > 0,
+    });
+  const jobCandidateCount = jobCandidatesData?.data?.length ?? 0;
   const { data: meData } = useCurrentUser();
   const { data: chatHistoryData } = useChatHistory(jobId, isNotesOpen);
   const { liveMessages, sendMessage, editMessage, deleteMessage } = useJobChat(
@@ -493,7 +509,7 @@ export default function JobDetailsPage() {
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8 mt-2">
             {/* Left Column: Job Info */}
             <div className="space-y-4">
-              <div className="flex flex-wrap items-center gap-4 cursor-default">
+              <div className="flex flex-wrap items-center gap-4">
                 <h1 className="text-[32px] font-semibold text-slate-900 dark:text-neutral-100 tracking-tight leading-none">
                   {jobLoading ? "Loading..." : (job?.title ?? "Job Not Found")}
                 </h1>
@@ -507,7 +523,7 @@ export default function JobDetailsPage() {
               </div>
 
               {job && (
-                <div className="flex flex-wrap items-center text-[15px] font-medium text-slate-500 dark:text-neutral-400 gap-x-4 gap-y-2 cursor-default">
+                <div className="flex flex-wrap items-center text-[15px] font-medium text-slate-500 dark:text-neutral-400 gap-x-4 gap-y-2">
                   <span>{EMPLOYMENT_LABELS[job.employmentType]}</span>
                   {job.location && (
                     <>
@@ -533,15 +549,20 @@ export default function JobDetailsPage() {
                   className="inline-flex items-center gap-2 text-theme bg-(--theme-color)/5 hover:bg-theme/10 px-3 py-1.5 rounded-md text-[14px] font-semibold transition-colors w-fit"
                 >
                   <HugeiconsIcon icon={Link01Icon} className="size-4" />
-                  <span>openats.org/careers/{jobId}</span>
+                  <span>
+                    {typeof window !== "undefined" &&
+                      `${window.location.host}/careers/${jobId}`}
+                  </span>
                 </Link>
 
-                <div className="flex items-center gap-1.5 cursor-default px-3 py-1.5 rounded-md text-[14px] transition-colors">
-                  <span className="font-semibold text-slate-900 dark:text-neutral-100 leading-none">
-                    0
+                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[14px] transition-colors">
+                  <span className="font-semibold text-slate-900 dark:text-neutral-100 leading-none tabular-nums">
+                    {jobCandidatesPending ? "…" : jobCandidateCount}
                   </span>
                   <span className="text-slate-600 dark:text-neutral-400 font-medium leading-none">
-                    Candidates
+                    {jobCandidateCount === 1 && !jobCandidatesPending
+                      ? "Candidate"
+                      : "Candidates"}
                   </span>
                 </div>
               </div>
@@ -552,14 +573,14 @@ export default function JobDetailsPage() {
               <Button
                 variant="outline"
                 onClick={() => setIsNotesOpen(!isNotesOpen)}
-                className="border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-neutral-100 rounded-lg h-11 px-5 font-medium gap-2.5"
+                className="border-slate-200 cursor-pointer dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-neutral-100 rounded-lg h-11 px-5 font-medium gap-2.5"
               >
                 <HugeiconsIcon
-                  icon={ParagraphIcon}
+                  icon={Chatting01Icon}
                   className="size-4.5"
                   strokeWidth={2}
                 />
-                <span>Internal Notes</span>
+                <span>Discussions</span>
               </Button>
               <Link href={`/jobs/${jobId}/pipeline`}>
                 <Button className="bg-theme hover:bg-theme-hover text-white rounded-lg h-11 px-7 font-medium border-none gap-2">
@@ -581,31 +602,47 @@ export default function JobDetailsPage() {
               <TabsList className="bg-transparent w-full justify-start rounded-none h-auto p-0 gap-3">
                 <TabsTrigger
                   value="overview"
-                  className="data-[state=active]:bg-transparent shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 h-9.5 text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
+                  className={cn(JOB_TAB_TRIGGER_CLASS, "h-9.5", JOB_TAB_PRESS)}
                 >
                   Overview
                 </TabsTrigger>
                 <TabsTrigger
                   value="hiring-team"
-                  className="data-[state=active]:bg-transparent shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
+                  className={cn(
+                    JOB_TAB_TRIGGER_CLASS,
+                    "h-[38px]",
+                    JOB_TAB_PRESS,
+                  )}
                 >
                   Hiring Team
                 </TabsTrigger>
                 <TabsTrigger
                   value="hiring-process"
-                  className="data-[state=active]:bg-transparent shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
+                  className={cn(
+                    JOB_TAB_TRIGGER_CLASS,
+                    "h-[38px]",
+                    JOB_TAB_PRESS,
+                  )}
                 >
                   Hiring Process
                 </TabsTrigger>
                 <TabsTrigger
                   value="custom-questions"
-                  className="data-[state=active]:bg-transparent shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
+                  className={cn(
+                    JOB_TAB_TRIGGER_CLASS,
+                    "h-[38px]",
+                    JOB_TAB_PRESS,
+                  )}
                 >
                   Custom Questions
                 </TabsTrigger>
                 <TabsTrigger
                   value="assessments"
-                  className="data-[state=active]:bg-transparent shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 h-[38px] text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] transition-all hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap"
+                  className={cn(
+                    JOB_TAB_TRIGGER_CLASS,
+                    "h-[38px]",
+                    JOB_TAB_PRESS,
+                  )}
                 >
                   Assessments
                 </TabsTrigger>
@@ -649,7 +686,7 @@ export default function JobDetailsPage() {
                   >
                     <DialogTrigger
                       render={
-                        <button className="flex items-center gap-2 text-theme hover:underline font-medium text-[14px]" />
+                        <button className="flex items-center cursor-pointer gap-2 text-theme hover:underline font-medium text-[14px]" />
                       }
                     >
                       <HugeiconsIcon
@@ -679,13 +716,13 @@ export default function JobDetailsPage() {
                               <SelectValue placeholder="Select user">
                                 {newMemberId
                                   ? (() => {
-                                    const u = allUsers.find(
-                                      (u) => u.id.toString() === newMemberId,
-                                    );
-                                    return u
-                                      ? `${u.firstName} ${u.lastName}`
-                                      : null;
-                                  })()
+                                      const u = allUsers.find(
+                                        (u) => u.id.toString() === newMemberId,
+                                      );
+                                      return u
+                                        ? `${u.firstName} ${u.lastName}`
+                                        : null;
+                                    })()
                                   : null}
                               </SelectValue>
                             </SelectTrigger>
@@ -822,7 +859,7 @@ export default function JobDetailsPage() {
                     setNewStageName("");
                     setAddStageOpen(true);
                   }}
-                  className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 font-medium shadow-none border-none gap-2 text-sm"
+                  className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 font-medium shadow-none border-none gap-2 text-sm"
                 >
                   <HugeiconsIcon
                     icon={PlusSignIcon}
@@ -845,12 +882,13 @@ export default function JobDetailsPage() {
                     return (
                       <div
                         ref={ref as Ref<HTMLDivElement>}
-                        className={`flex items-center justify-between p-4 border rounded-lg transition-all group bg-white dark:bg-neutral-900 ${isDragging
-                          ? "opacity-40 border-slate-300 dark:border-neutral-700"
-                          : isOver
-                            ? "border-[var(--theme-color)]/40 bg-[var(--theme-color)]/5"
-                            : "border-slate-200/70 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700"
-                          }`}
+                        className={`flex items-center justify-between p-4 border rounded-lg transition-all group bg-white dark:bg-neutral-900 ${
+                          isDragging
+                            ? "opacity-40 border-slate-300 dark:border-neutral-700"
+                            : isOver
+                              ? "border-[var(--theme-color)]/40 bg-[var(--theme-color)]/5"
+                              : "border-slate-200/70 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700"
+                        }`}
                       >
                         <div className="flex items-center gap-4 flex-1 min-w-0">
                           <HugeiconsIcon
@@ -902,7 +940,7 @@ export default function JobDetailsPage() {
                           <div className="flex items-center gap-4">
                             <button
                               onClick={() => openConfigure(stage)}
-                              className="text-[var(--theme-color)]/60 hover:text-[var(--theme-color)] transition-colors"
+                              className="text-[var(--theme-color)]/60 cursor-pointer hover:text-[var(--theme-color)] transition-colors"
                               title="Configure Stage"
                             >
                               <HugeiconsIcon
@@ -915,7 +953,7 @@ export default function JobDetailsPage() {
                                 setEditingStageId(stage.id);
                                 setEditingStageName(stage.name);
                               }}
-                              className="text-[var(--theme-color)]/60 hover:text-[var(--theme-color)] transition-colors"
+                              className="text-[var(--theme-color)]/60 cursor-pointer hover:text-[var(--theme-color)] transition-colors"
                             >
                               <HugeiconsIcon
                                 icon={PencilEdit01Icon}
@@ -930,7 +968,7 @@ export default function JobDetailsPage() {
                                 })
                               }
                               disabled={deleteStageMutation.isPending}
-                              className="text-red-400/80 hover:text-red-500 transition-colors disabled:opacity-50"
+                              className="text-red-400/80 cursor-pointer hover:text-red-500 transition-colors disabled:opacity-50"
                             >
                               <HugeiconsIcon
                                 icon={Delete02Icon}
@@ -964,7 +1002,7 @@ export default function JobDetailsPage() {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter className="gap-2">
-                    <AlertDialogCancel className="h-10 px-6 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[14px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer">
+                    <AlertDialogCancel className="h-10 px-6 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[14px] font-medium shadow-none  cursor-pointer">
                       Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
@@ -1000,7 +1038,7 @@ export default function JobDetailsPage() {
               <div className="flex flex-col gap-6">
                 <button
                   onClick={() => setIsAddingMode(true)}
-                  className="flex items-center gap-2 text-[var(--theme-color)] hover:underline font-medium text-[15px] w-fit"
+                  className="flex items-center cursor-pointer gap-2 text-[var(--theme-color)] hover:underline font-medium text-[15px] w-fit"
                 >
                   <HugeiconsIcon
                     icon={PlusSignIcon}
@@ -1022,12 +1060,13 @@ export default function JobDetailsPage() {
                       return (
                         <div
                           ref={ref as Ref<HTMLDivElement>}
-                          className={`group relative border rounded-lg bg-white dark:bg-neutral-900 transition-all ${isDragging
-                            ? "opacity-40 border-slate-300 dark:border-neutral-700"
-                            : isOver
-                              ? "border-[var(--theme-color)]/40 bg-[var(--theme-color)]/5"
-                              : "border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700"
-                            }`}
+                          className={`group relative border rounded-lg bg-white dark:bg-neutral-900 transition-all ${
+                            isDragging
+                              ? "opacity-40 border-slate-300 dark:border-neutral-700"
+                              : isOver
+                                ? "border-[var(--theme-color)]/40 bg-[var(--theme-color)]/5"
+                                : "border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700"
+                          }`}
                         >
                           {editingQuestionId === q.id ? (
                             <div className="p-3 space-y-4 animate-in fade-in duration-150">
@@ -1037,14 +1076,14 @@ export default function JobDetailsPage() {
                                   onValueChange={(val) =>
                                     setEditQuestionType(
                                       val as
-                                      | "short_answer"
-                                      | "long_answer"
-                                      | "checkbox"
-                                      | "radio",
+                                        | "short_answer"
+                                        | "long_answer"
+                                        | "checkbox"
+                                        | "radio",
                                     )
                                   }
                                 >
-                                  <SelectTrigger className="w-[180px] h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 shadow-none focus:ring-1 focus:ring-slate-300">
+                                  <SelectTrigger className="w-[180px] h-10! min-h-10 rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-0 text-[15px] text-slate-600 dark:text-neutral-300 shadow-none focus-visible:ring-1 focus-visible:ring-slate-300 dark:focus-visible:ring-neutral-600">
                                     <SelectValue>
                                       {QUESTION_TYPE_LABELS[editQuestionType] ??
                                         editQuestionType}
@@ -1102,7 +1141,7 @@ export default function JobDetailsPage() {
                                     if (e.key === "Escape")
                                       setEditingQuestionId(null);
                                   }}
-                                  className="flex-1 h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-none focus-visible:ring-1 focus-visible:ring-slate-300 text-[15px]"
+                                  className="flex-1 h-10 min-h-10 rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 shadow-none   text-[15px]"
                                 />
                                 <div className="flex items-center gap-2 px-2">
                                   <Checkbox
@@ -1111,7 +1150,7 @@ export default function JobDetailsPage() {
                                     onCheckedChange={(v) =>
                                       setEditQuestionRequired(!!v)
                                     }
-                                    className="size-4 border-slate-300 data-[state=checked]:bg-[var(--theme-color)] data-[state=checked]:border-[var(--theme-color)]"
+                                    className="size-4 shrink-0 border-slate-300 data-[state=checked]:bg-[var(--theme-color)] data-[state=checked]:border-[var(--theme-color)]"
                                   />
                                   <Label
                                     htmlFor={`edit-required-${q.id}`}
@@ -1134,7 +1173,7 @@ export default function JobDetailsPage() {
                                       updateQuestionMutation.isPending
                                     }
                                     onClick={() => handleSaveQuestion(q.id)}
-                                    className="h-10 px-6 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none rounded-lg font-medium disabled:opacity-50"
+                                    className="h-10 px-6 cursor-pointer bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none rounded-lg font-medium disabled:opacity-50"
                                   >
                                     {updateQuestionMutation.isPending
                                       ? "Saving…"
@@ -1228,14 +1267,14 @@ export default function JobDetailsPage() {
                           onValueChange={(val) =>
                             setNewQuestionType(
                               val as
-                              | "short_answer"
-                              | "long_answer"
-                              | "checkbox"
-                              | "radio",
+                                | "short_answer"
+                                | "long_answer"
+                                | "checkbox"
+                                | "radio",
                             )
                           }
                         >
-                          <SelectTrigger className="w-[180px] h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 shadow-none focus:ring-1 focus:ring-slate-300">
+                          <SelectTrigger className="w-[180px] h-10! min-h-10 cursor-pointer rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-0 text-[15px] text-slate-600 dark:text-neutral-300 shadow-none focus-visible:ring-1 focus-visible:ring-slate-300 dark:focus-visible:ring-neutral-600">
                             <SelectValue placeholder="Question Type">
                               {QUESTION_TYPE_LABELS[newQuestionType] ??
                                 newQuestionType}
@@ -1285,83 +1324,83 @@ export default function JobDetailsPage() {
                           placeholder="Enter the question here"
                           value={newQuestionText}
                           onChange={(e) => setNewQuestionText(e.target.value)}
-                          className="flex-1 h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-none focus-visible:ring-1 focus-visible:ring-slate-300 text-[15px]"
+                          className="flex-1 h-10 min-h-10 rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 shadow-none focus-visible:ring-1 focus-visible:ring-slate-300 dark:focus-visible:ring-neutral-600 text-[15px]"
                         />
 
                         {(newQuestionType === "radio" ||
                           newQuestionType === "checkbox") && (
-                            <Dialog>
-                              <DialogTrigger
-                                render={
-                                  <Button
-                                    variant="outline"
-                                    className="h-10 border-[var(--theme-color)] text-[var(--theme-color)] hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium px-4 shadow-none gap-2"
-                                  />
-                                }
-                              >
-                                <HugeiconsIcon
-                                  icon={Settings02Icon}
-                                  className="size-4"
+                          <Dialog>
+                            <DialogTrigger
+                              render={
+                                <Button
+                                  variant="outline"
+                                  className="h-10 border-[var(--theme-color)] text-[var(--theme-color)] hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium px-4 shadow-none gap-2"
                                 />
-                                <span>Setup Options & Logic</span>
-                              </DialogTrigger>
-                              <DialogContent className="max-w-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
-                                <DialogHeader>
-                                  <DialogTitle className="text-slate-900 dark:text-neutral-100">
-                                    Setup Question Logic
-                                  </DialogTitle>
-                                  <DialogDescription className="text-slate-500 dark:text-neutral-400">
-                                    Add options and define the logic for this
-                                    question.
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <div className="space-y-4 py-4">
+                              }
+                            >
+                              <HugeiconsIcon
+                                icon={Settings02Icon}
+                                className="size-4"
+                              />
+                              <span>Setup Options & Logic</span>
+                            </DialogTrigger>
+                            <DialogContent className="max-w-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
+                              <DialogHeader>
+                                <DialogTitle className="text-slate-900 dark:text-neutral-100">
+                                  Setup Question Logic
+                                </DialogTitle>
+                                <DialogDescription className="text-slate-500 dark:text-neutral-400">
+                                  Add options and define the logic for this
+                                  question.
+                                </DialogDescription>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                  <Label className="text-slate-700 dark:text-neutral-300">
+                                    Options
+                                  </Label>
                                   <div className="space-y-2">
-                                    <Label className="text-slate-700 dark:text-neutral-300">
-                                      Options
-                                    </Label>
-                                    <div className="space-y-2">
-                                      <div className="flex gap-2">
-                                        <Input
-                                          placeholder="Option 1"
-                                          className="h-9 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus-visible:ring-0"
-                                        />
-                                        <Button
-                                          variant="ghost"
-                                          className="size-9 p-0 text-red-500"
-                                        >
-                                          <HugeiconsIcon
-                                            icon={Delete02Icon}
-                                            className="size-4"
-                                          />
-                                        </Button>
-                                      </div>
-                                      <button className="text-[var(--theme-color)] text-sm font-medium hover:underline flex items-center gap-1">
+                                    <div className="flex gap-2">
+                                      <Input
+                                        placeholder="Option 1"
+                                        className="h-9 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus-visible:ring-0"
+                                      />
+                                      <Button
+                                        variant="ghost"
+                                        className="size-9 p-0 text-red-500"
+                                      >
                                         <HugeiconsIcon
-                                          icon={PlusSignIcon}
-                                          className="size-3"
-                                          strokeWidth={3}
+                                          icon={Delete02Icon}
+                                          className="size-4"
                                         />
-                                        <span>Add Another Option</span>
-                                      </button>
+                                      </Button>
                                     </div>
+                                    <button className="text-[var(--theme-color)] text-sm font-medium hover:underline flex items-center gap-1">
+                                      <HugeiconsIcon
+                                        icon={PlusSignIcon}
+                                        className="size-3"
+                                        strokeWidth={3}
+                                      />
+                                      <span>Add Another Option</span>
+                                    </button>
                                   </div>
                                 </div>
-                                <DialogFooter>
-                                  <Button className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium px-5">
-                                    Save Logic
-                                  </Button>
-                                </DialogFooter>
-                              </DialogContent>
-                            </Dialog>
-                          )}
+                              </div>
+                              <DialogFooter>
+                                <Button className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium px-5">
+                                  Save Logic
+                                </Button>
+                              </DialogFooter>
+                            </DialogContent>
+                          </Dialog>
+                        )}
 
                         <div className="flex items-center gap-2 px-2">
                           <Checkbox
                             id="required"
                             checked={newQuestionRequired}
                             onCheckedChange={(v) => setNewQuestionRequired(!!v)}
-                            className="size-4 border-slate-300 data-[state=checked]:bg-[var(--theme-color)] data-[state=checked]:border-[var(--theme-color)]"
+                            className="size-4 shrink-0 cursor-pointer border-slate-300 data-[state=checked]:bg-[var(--theme-color)] data-[state=checked]:border-[var(--theme-color)]"
                           />
                           <Label
                             htmlFor="required"
@@ -1379,7 +1418,7 @@ export default function JobDetailsPage() {
                               setNewQuestionText("");
                               setNewQuestionRequired(false);
                             }}
-                            className="h-10 px-6 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium shadow-none"
+                            className="h-10 px-6 border-slate-200 cursor-pointer dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium shadow-none"
                           >
                             Cancel
                           </Button>
@@ -1388,7 +1427,7 @@ export default function JobDetailsPage() {
                               !newQuestionText.trim() ||
                               createQuestionMutation.isPending
                             }
-                            className="h-10 px-6 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none rounded-lg font-medium disabled:opacity-50"
+                            className="h-10 px-6 bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white shadow-none rounded-lg font-medium disabled:opacity-50"
                             onClick={() => {
                               if (!newQuestionText.trim()) return;
                               createQuestionMutation.mutate(
@@ -1420,7 +1459,7 @@ export default function JobDetailsPage() {
                 </div>
 
                 <div className="pt-4">
-                  <Button className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-6 font-medium shadow-none">
+                  <Button className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-6 font-medium shadow-none">
                     Save Changes
                   </Button>
                 </div>
@@ -1450,14 +1489,14 @@ export default function JobDetailsPage() {
                 >
                   <DialogTrigger
                     render={
-                      <button className="inline-flex items-center gap-2 h-10 px-5 rounded-lg text-[13px] font-medium border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-800 dark:hover:text-neutral-100 transition-colors">
+                      <Button className="inline-flex cursor-pointer items-center gap-2 h-10 px-5 rounded-lg text-[13px] font-medium border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-800 dark:hover:text-neutral-100 transition-colors">
                         <HugeiconsIcon
                           icon={PlusSignIcon}
                           className="size-4"
                           strokeWidth={2.5}
                         />
                         Attach Assessment
-                      </button>
+                      </Button>
                     }
                   />
                   <DialogContent className="!top-[18%] !translate-y-0 max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg p-6 duration-0 data-open:zoom-in-100 data-closed:zoom-out-100">
@@ -1506,9 +1545,9 @@ export default function JobDetailsPage() {
                             <SelectValue placeholder="Choose assessment…">
                               {assessmentSelectId
                                 ? (allAssessments.find(
-                                  (a) =>
-                                    a.id.toString() === assessmentSelectId,
-                                )?.title ?? null)
+                                    (a) =>
+                                      a.id.toString() === assessmentSelectId,
+                                  )?.title ?? null)
                                 : null}
                             </SelectValue>
                           </SelectTrigger>
@@ -1541,9 +1580,9 @@ export default function JobDetailsPage() {
                             <SelectValue placeholder="When candidate moves into…">
                               {triggerStageSelectId
                                 ? (stages.find(
-                                  (s) =>
-                                    s.id.toString() === triggerStageSelectId,
-                                )?.name ?? null)
+                                    (s) =>
+                                      s.id.toString() === triggerStageSelectId,
+                                  )?.name ?? null)
                                 : null}
                             </SelectValue>
                           </SelectTrigger>
@@ -1609,16 +1648,16 @@ export default function JobDetailsPage() {
                             </p>
                           </div>
                         </div>
-                        <button
+                        <Button
                           onClick={() => setDetachTarget(attachment.id)}
-                          className="shrink-0 ml-4 inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium border border-red-200 dark:border-red-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-800 transition-colors"
+                          className="shrink-0 ml-4 cursor-pointer bg-red inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium border border-red-200 dark:border-red-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-800 transition-colors"
                         >
                           <HugeiconsIcon
                             icon={Delete02Icon}
                             className="size-3.5"
                           />
                           Remove
-                        </button>
+                        </Button>
                       </div>
                     );
                   })}
@@ -1630,7 +1669,7 @@ export default function JobDetailsPage() {
                   </p>
                   <button
                     onClick={() => setIsAssessmentDialogOpen(true)}
-                    className="mt-2 text-[12px] font-medium text-[var(--theme-color)] hover:underline"
+                    className="mt-2 cursor-pointer text-[12px] font-medium text-[var(--theme-color)] hover:underline"
                   >
                     Attach one
                   </button>
@@ -1652,7 +1691,7 @@ export default function JobDetailsPage() {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter className="gap-2">
-                    <AlertDialogCancel className="h-9 px-5 rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800">
+                    <AlertDialogCancel className="h-10 px-6 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[14px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer">
                       Cancel
                     </AlertDialogCancel>
                     <AlertDialogAction
@@ -1664,7 +1703,7 @@ export default function JobDetailsPage() {
                         }
                       }}
                       disabled={detachAssessmentMutation.isPending}
-                      className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none disabled:opacity-70"
+                      className="h-10 px-6 rounded-md bg-red-700 hover:bg-red-800 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
                     >
                       {detachAssessmentMutation.isPending
                         ? "Removing…"
@@ -1678,35 +1717,41 @@ export default function JobDetailsPage() {
         </Tabs>
 
         <Dialog open={configOpen} onOpenChange={setConfigOpen}>
-          <DialogContent className="!top-[18%] !translate-y-0 max-w-[780px] sm:max-w-[780px] rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg p-7 duration-0 data-open:zoom-in-100 data-closed:zoom-out-100">
-            <DialogHeader className="mb-1">
+          <DialogContent className="!top-[12%] !translate-y-0 flex max-h-[min(700px,88vh)] min-h-[min(700px,78vh)] w-full max-w-2xl sm:max-w-2xl flex-col rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg p-8 gap-0 duration-0 data-open:zoom-in-100 data-closed:zoom-out-100">
+            <DialogHeader className="mb-0 shrink-0 pb-5">
               <DialogTitle className="text-[19px] font-semibold text-slate-900 dark:text-neutral-100">
                 Configure Stage
               </DialogTitle>
             </DialogHeader>
 
-            <div className="flex items-center gap-7 py-3.5 border-b border-slate-100 dark:border-neutral-800">
+            <div
+              role="radiogroup"
+              aria-label="Stage type"
+              className="flex flex-wrap items-center gap-x-8 gap-y-3 border-b border-slate-100 dark:border-neutral-800 pb-4"
+            >
               {(["offer", "rejection", "none"] as const).map((t) => (
                 <label
                   key={t}
-                  className="flex items-center gap-2 cursor-pointer select-none"
+                  className="inline-flex cursor-pointer select-none items-center gap-2.5"
                   onClick={() => setConfigType(t)}
                 >
-                  <div
-                    className={`size-[17px] rounded-full border-2 flex items-center justify-center ${configType === t
-                      ? "border-[var(--theme-color)]"
-                      : "border-slate-300"
-                      }`}
+                  <span
+                    className={`relative inline-flex size-[18px] shrink-0 items-center justify-center rounded-full border-2 ${
+                      configType === t
+                        ? "border-[var(--theme-color)]"
+                        : "border-slate-300 dark:border-neutral-600"
+                    }`}
                   >
                     {configType === t && (
-                      <div className="size-2.5 rounded-full bg-[var(--theme-color)]" />
+                      <span className="size-2.5 shrink-0 rounded-full bg-[var(--theme-color)]" />
                     )}
-                  </div>
+                  </span>
                   <span
-                    className={`text-[15px] font-medium ${configType === t
-                      ? "text-[var(--theme-color)]"
-                      : "text-slate-600 dark:text-neutral-400"
-                      }`}
+                    className={`text-[15px] font-medium leading-snug ${
+                      configType === t
+                        ? "text-[var(--theme-color)]"
+                        : "text-slate-600 dark:text-neutral-400"
+                    }`}
                   >
                     {t.charAt(0).toUpperCase() + t.slice(1)}
                   </span>
@@ -1714,117 +1759,132 @@ export default function JobDetailsPage() {
               ))}
             </div>
 
-            {configType === "offer" && (
-              <div className="space-y-4 pt-1">
-                <div>
-                  <Label className="text-[13px] font-medium text-slate-700 dark:text-neutral-300 mb-1.5 block">
-                    Select Offer Template
-                  </Label>
-                  <Select
-                    value={configOfferTemplate}
-                    onValueChange={(val) => setConfigOfferTemplate(val || "")}
-                  >
-                    <SelectTrigger className="w-full h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-md shadow-none text-slate-400 dark:text-neutral-500 focus:ring-0 text-sm">
-                      <SelectValue placeholder="Select an offer template">
-                        {configOfferTemplate
-                          ? (offerTemplates.find(
-                            (t) => String(t.id) === configOfferTemplate,
-                          )?.name ?? null)
-                          : null}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-md">
-                      {offerTemplates.length === 0 ? (
-                        <SelectItem value="_none" disabled>
-                          No offer templates found
-                        </SelectItem>
-                      ) : (
-                        offerTemplates.map((t) => (
-                          <SelectItem key={t.id} value={String(t.id)}>
-                            {t.name}
-                          </SelectItem>
-                        ))
-                      )}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-[13px] font-medium text-slate-700 mb-1.5 block">
-                      Mode ( Auto-Draft Or Auto-Send )
+            <div className="flex min-h-0 flex-1 flex-col py-6">
+              {configType === "offer" && (
+                <div className="flex flex-col gap-6">
+                  <div className="space-y-2.5">
+                    <Label className="text-[13px] font-medium text-slate-700 dark:text-neutral-300 block">
+                      Select Offer Template
                     </Label>
                     <Select
-                      value={configMode}
-                      onValueChange={(val) => setConfigMode(val || "")}
+                      value={configOfferTemplate}
+                      onValueChange={(val) => setConfigOfferTemplate(val || "")}
                     >
-                      <SelectTrigger className="w-full h-10 border-slate-200 rounded-md shadow-none text-slate-400 focus:ring-0 text-sm">
-                        <SelectValue placeholder="Click here to select the mode">
-                          {configMode
-                            ? (OFFER_MODE_LABELS[configMode] ?? configMode)
+                      <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+                        <SelectValue placeholder="Select an offer template">
+                          {configOfferTemplate
+                            ? (offerTemplates.find(
+                                (t) => String(t.id) === configOfferTemplate,
+                              )?.name ?? null)
                             : null}
                         </SelectValue>
                       </SelectTrigger>
-                      <SelectContent className="rounded-lg border-slate-200 shadow-md">
-                        <SelectItem value="auto_draft">Auto-Draft</SelectItem>
-                        <SelectItem value="auto_send">Auto-Send</SelectItem>
+                      <SelectContent
+                        alignItemWithTrigger={false}
+                        className="w-(--anchor-width) max-h-60 rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
+                      >
+                        {offerTemplates.length === 0 ? (
+                          <SelectItem value="_none" disabled>
+                            No offer templates found
+                          </SelectItem>
+                        ) : (
+                          offerTemplates.map((t) => (
+                            <SelectItem key={t.id} value={String(t.id)}>
+                              {t.name}
+                            </SelectItem>
+                          ))
+                        )}
                       </SelectContent>
                     </Select>
                   </div>
-                  <div>
-                    <Label className="text-[13px] font-medium text-slate-700 dark:text-neutral-300 mb-1.5 block">
-                      Expiry Days
-                    </Label>
-                    <Input
-                      type="number"
-                      value={configExpiry}
-                      onChange={(e) => setConfigExpiry(e.target.value)}
-                      className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-md shadow-none focus-visible:ring-0 focus-visible:border-slate-300"
-                    />
+                  <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8">
+                    <div className="min-w-0 space-y-2.5">
+                      <Label className="text-[13px] font-medium text-slate-700 dark:text-neutral-300 block">
+                        Mode (auto-draft or auto-send)
+                      </Label>
+                      <Select
+                        value={configMode}
+                        onValueChange={(val) => setConfigMode(val || "")}
+                      >
+                        <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+                          <SelectValue placeholder="Select mode">
+                            {configMode
+                              ? (OFFER_MODE_LABELS[configMode] ?? configMode)
+                              : null}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent
+                          alignItemWithTrigger={false}
+                          className="w-(--anchor-width) max-h-60 rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
+                        >
+                          <SelectItem value="auto_draft">Auto-Draft</SelectItem>
+                          <SelectItem value="auto_send">Auto-Send</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="min-w-0 space-y-2.5">
+                      <Label className="text-[13px] font-medium text-slate-700 dark:text-neutral-300 block">
+                        Expiry Days
+                      </Label>
+                      <Input
+                        type="number"
+                        value={configExpiry}
+                        onChange={(e) => setConfigExpiry(e.target.value)}
+                        className="h-10! min-h-10 w-full rounded-lg border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 py-0 text-sm shadow-none focus-visible:ring-0"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {configType === "rejection" && (
-              <div className="pt-1">
-                <Label className="text-[13px] font-medium text-slate-700 dark:text-neutral-300 mb-1.5 block">
-                  Select Rejection Email Template
-                </Label>
-                <Select
-                  value={configRejectTemplate}
-                  onValueChange={(val) => setConfigRejectTemplate(val || "")}
-                >
-                  <SelectTrigger className="w-full h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-slate-400 dark:text-neutral-500 focus:ring-0 text-sm">
-                    <SelectValue placeholder="Select a rejection email template">
-                      {configRejectTemplate
-                        ? (emailTemplates.find(
-                          (t) => String(t.id) === configRejectTemplate,
-                        )?.name ?? null)
-                        : null}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-md">
-                    {emailTemplates.length === 0 ? (
-                      <SelectItem value="_none" disabled>
-                        No rejection templates found
-                      </SelectItem>
-                    ) : (
-                      emailTemplates.map((t) => (
-                        <SelectItem key={t.id} value={String(t.id)}>
-                          {t.name}
-                        </SelectItem>
-                      ))
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+              {configType === "rejection" && (
+                <div className="flex flex-col gap-6">
+                  <div className="space-y-2.5">
+                    <Label className="text-[13px] font-medium text-slate-700 dark:text-neutral-300 block">
+                      Select Rejection Email Template
+                    </Label>
+                    <Select
+                      value={configRejectTemplate}
+                      onValueChange={(val) =>
+                        setConfigRejectTemplate(val || "")
+                      }
+                    >
+                      <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+                        <SelectValue placeholder="Select a rejection email template">
+                          {configRejectTemplate
+                            ? (emailTemplates.find(
+                                (t) => String(t.id) === configRejectTemplate,
+                              )?.name ?? null)
+                            : null}
+                        </SelectValue>
+                      </SelectTrigger>
+                      <SelectContent
+                        alignItemWithTrigger={false}
+                        className="w-(--anchor-width) max-h-60 rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
+                      >
+                        {emailTemplates.length === 0 ? (
+                          <SelectItem value="_none" disabled>
+                            No rejection templates found
+                          </SelectItem>
+                        ) : (
+                          emailTemplates.map((t) => (
+                            <SelectItem key={t.id} value={String(t.id)}>
+                              {t.name}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+            </div>
 
-            <DialogFooter className="mt-5 gap-2">
+            <DialogFooter className="mt-auto shrink-0 gap-3 border-t border-slate-100 pt-6 dark:border-neutral-800 sm:pt-7">
               <Button
                 variant="outline"
                 onClick={() => setConfigOpen(false)}
-                className="h-10 px-6 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium shadow-none rounded-md"
+                className="h-10 px-6 border-slate-200 cursor-pointer dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium shadow-none rounded-md"
               >
                 Cancel
               </Button>
@@ -1858,7 +1918,7 @@ export default function JobDetailsPage() {
                     { onSuccess: () => setConfigOpen(false) },
                   );
                 }}
-                className="h-10 px-6 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium shadow-none rounded-md border-none disabled:opacity-50"
+                className="h-10 px-6 cursor-pointer bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium shadow-none rounded-md border-none disabled:opacity-50"
               >
                 {updateStageMutation.isPending ? "Saving…" : "Save"}
               </Button>
@@ -1940,13 +2000,13 @@ export default function JobDetailsPage() {
               }}
               title="Drag to resize"
             />
-            <div className="p-5 border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-center justify-between shrink-0">
+            <div className="p-3 pl-5 border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 flex items-center justify-between shrink-0">
               <h3 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
-                Internal Notes
+                Team Discussions
               </h3>
               <button
                 onClick={() => setIsNotesOpen(false)}
-                className="text-slate-400 dark:text-neutral-500 hover:text-slate-600 dark:hover:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 p-2 rounded-full transition-colors"
+                className="text-slate-400 cursor-pointer dark:text-neutral-500 hover:text-slate-600 dark:hover:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 p-2 rounded-full transition-colors"
               >
                 <HugeiconsIcon icon={Cancel01Icon} className="size-[20px]" />
               </button>

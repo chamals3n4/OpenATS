@@ -426,12 +426,14 @@ export default function CreateNewJobPage() {
                 "Save Job"
               )}
             </Button>
-            <Link
-              href="/jobs"
-              className="flex items-center justify-center border border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 rounded-lg h-10 px-6 font-medium bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
+            <Button
+              type="button"
+              variant="outline"
+              className="flex items-center cursor-pointer justify-center border border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 rounded-lg h-10 px-6 font-medium bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800"
+              onClick={() => router.push("/jobs")}
             >
               Cancel
-            </Link>
+            </Button>
           </div>
         </div>
       </div>

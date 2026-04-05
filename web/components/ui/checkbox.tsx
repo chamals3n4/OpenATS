@@ -27,7 +27,11 @@ function Checkbox({ className, ...props }: CheckboxPrimitive.Root.Props) {
           transition={{ type: "spring", stiffness: 520, damping: 30, mass: 0.25 }}
           className="grid place-content-center"
         >
-          <HugeiconsIcon icon={Tick02Icon} strokeWidth={2} />
+          <HugeiconsIcon
+            icon={Tick02Icon}
+            strokeWidth={2}
+            className="size-3 shrink-0"
+          />
         </motion.span>
       </CheckboxPrimitive.Indicator>
     </CheckboxPrimitive.Root>

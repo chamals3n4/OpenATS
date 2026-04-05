@@ -47,7 +47,12 @@ function SelectTrigger({
           <motion.button
             whileHover={{ scale: 1.004 }}
             whileTap={{ scale: 0.993 }}
-            transition={{ type: "spring", stiffness: 520, damping: 38, mass: 0.2 }}
+            transition={{
+              type: "spring",
+              stiffness: 520,
+              damping: 38,
+              mass: 0.2,
+            }}
           />
         )
       }
@@ -100,7 +105,12 @@ function SelectContent({
               <motion.div
                 initial={{ opacity: 0, scale: 0.995, y: 2 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{ type: "spring", stiffness: 520, damping: 40, mass: 0.26 }}
+                transition={{
+                  type: "spring",
+                  stiffness: 520,
+                  damping: 40,
+                  mass: 0.26,
+                }}
               />
             )
           }

@@ -84,15 +84,13 @@ export default function CareersPreviewPage() {
         <Button
           variant="outline"
           className="mb-4 h-10 min-h-10 px-4 gap-2 rounded-md w-full sm:w-fit justify-center text-sm font-medium border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-slate-800 dark:text-neutral-100 hover:bg-slate-50 dark:hover:bg-neutral-900 shadow-none"
-          asChild
+          render={<Link href="/settings/careers" prefetch />}
         >
-          <Link href="/settings/careers">
-            <HugeiconsIcon
-              icon={ArrowLeft01Icon}
-              className="size-4 shrink-0"
-            />
-            Careers settings
-          </Link>
+          <HugeiconsIcon
+            icon={ArrowLeft01Icon}
+            className="size-4 shrink-0"
+          />
+          Careers settings
         </Button>
         <h1 className="text-[22px] font-semibold text-slate-900 dark:text-neutral-100 leading-none mb-2">
           Careers preview

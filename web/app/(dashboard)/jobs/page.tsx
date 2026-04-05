@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Search01Icon,
@@ -40,6 +41,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useDeleteJob, useDepartments, useJobs } from "@/hooks/use-api";
 import type { Job } from "@/types";
+import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 
 const EMPLOYMENT_TYPE_LABELS: Record<Job["employmentType"], string> = {
   full_time: "Full Time",
@@ -131,11 +133,9 @@ export default function ManageJobsPage() {
         <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Manage Jobs
         </h1>
-        <ThemeButton
-          asChild
-          href="/jobs/new"
-          prefetch
-          className="h-10 px-4 gap-2 text-sm shadow-none border-none"
+        <Button
+          render={<Link href="/jobs/new" prefetch />}
+          className="bg-theme hover:bg-theme-hover text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium cursor-pointer"
         >
           <HugeiconsIcon
             icon={PlusSignIcon}
@@ -143,27 +143,27 @@ export default function ManageJobsPage() {
             strokeWidth={2.5}
           />
           <span>Create New Job</span>
-        </ThemeButton>
+        </Button>
       </div>
 
       <div className="border-y border-slate-300 dark:border-neutral-700 px-8 py-3.5 flex items-center gap-4">
         <div className="relative w-80">
           <HugeiconsIcon
             icon={Search01Icon}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-300 pointer-events-none"
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
           />
           <Input
             placeholder="Search"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
+            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600"
           />
         </div>
         <Select
           value={filterDept}
           onValueChange={(v) => setFilterDept(v ?? "all")}
         >
-          <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Departments">
               {filterDept === "all"
                 ? "All Departments"
@@ -173,7 +173,7 @@ export default function ManageJobsPage() {
           <SelectContent
             align="start"
             alignOffset={0}
-            className="-ml-2 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+            className="-ml-1 w-53 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
           >
             <SelectItem value="all">All Departments</SelectItem>
             {departments.map((dept) => (
@@ -187,7 +187,7 @@ export default function ManageJobsPage() {
           value={filterType}
           onValueChange={(v) => setFilterType(v ?? "all")}
         >
-          <SelectTrigger className="w-44 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-44 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Job Types">
               {filterType === "all"
                 ? "All Types"
@@ -199,7 +199,7 @@ export default function ManageJobsPage() {
           <SelectContent
             align="start"
             alignOffset={0}
-            className="-ml-2 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+            className="-ml-2  w-45 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
           >
             <SelectItem value="all">All Types</SelectItem>
             {(
@@ -215,7 +215,7 @@ export default function ManageJobsPage() {
           value={filterStatus}
           onValueChange={(v) => setFilterStatus(v ?? "all")}
         >
-          <SelectTrigger className="w-44 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-44 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Status">
               {filterStatus === "all"
                 ? "All Status"
@@ -226,7 +226,7 @@ export default function ManageJobsPage() {
           <SelectContent
             align="start"
             alignOffset={0}
-            className="-ml-2 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+            className="-ml-2 w-45 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
           >
             <SelectItem value="all">All Status</SelectItem>
             {(Object.keys(STATUS_LABELS) as Job["status"][]).map((status) => (
@@ -278,11 +278,8 @@ export default function ManageJobsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="h-32 text-center text-slate-400 text-sm"
-                  >
-                    Loading jobs...
+                  <TableCell colSpan={6} className="p-0">
+                    <ListSectionSpinner />
                   </TableCell>
                 </TableRow>
               ) : filteredJobs.length === 0 ? (
@@ -390,10 +387,10 @@ export default function ManageJobsPage() {
       >
         <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+            <AlertDialogTitle className="text-[19px] font-semibold text-slate-900 dark:text-neutral-100">
               Delete this job?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+            <AlertDialogDescription className="text-[14px] text-slate-500 dark:text-neutral-400 leading-relaxed">
               <strong className="text-slate-700 dark:text-neutral-200">
                 {deleteTarget?.title}
               </strong>{" "}
@@ -401,13 +398,13 @@ export default function ManageJobsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-9 px-5 cursor-pointer rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors">
+            <AlertDialogCancel className="h-10 px-6 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[14px] font-medium shadow-none cursor-pointer">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               disabled={deleteMutation.isPending}
-              className="h-9 px-5 rounded-lg cursor-pointer bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none"
+              className="h-10 px-6 rounded-md bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {deleteMutation.isPending ? "Deleting…" : "Delete"}
             </AlertDialogAction>

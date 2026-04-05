@@ -6,8 +6,10 @@ import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
   "/login",
-  "/careers/(.*)",
-  "/assessment/(.*)",
+  "/careers",
+  "/careers/*",
+  "/assessment/*",
+  "/api/public/*",
 ]);
 
 export const proxy = asgardeoMiddleware(
@@ -26,8 +28,6 @@ export const proxy = asgardeoMiddleware(
   },
   { signInUrl: "/login" },
 );
-
-//hi
 
 export const config = {
   matcher: [

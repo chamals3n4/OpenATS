@@ -4,6 +4,7 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DragDropProvider } from "@/components/drag-drop-provider";
 import { ThemeInitializer } from "@/components/theme-initializer";
 import { QueryProvider } from "@/components/query-provider";
+import { SetupCompanyGate } from "@/components/setup-company-gate";
 import { Toaster } from "@/components/ui/sonner";
 
 export default function DashboardLayout({
@@ -20,7 +21,9 @@ export default function DashboardLayout({
           <div className="flex flex-1 min-w-0 overflow-x-hidden w-full">
             <AppSidebar />
             <SidebarInset>
-              <DragDropProvider>{children}</DragDropProvider>
+              <DragDropProvider>
+                <SetupCompanyGate>{children}</SetupCompanyGate>
+              </DragDropProvider>
             </SidebarInset>
           </div>
         </SidebarProvider>

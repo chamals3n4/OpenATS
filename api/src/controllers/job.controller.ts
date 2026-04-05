@@ -94,6 +94,18 @@ const updateJobSchema = z.object({
     .optional(),
 });
 
+export const listPublishedCareersJobs = async (
+  _req: Request,
+  res: Response,
+) => {
+  try {
+    const result = await jobService.listPublishedForCareers();
+    res.status(200).json({ data: result });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch jobs" });
+  }
+};
+
 export const getAllJobs = async (req: Request, res: Response) => {
   try {
     const result = await jobService.getAll();
@@ -118,6 +130,27 @@ export const getJobById = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({ data: result });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch job" });
+  }
+};
+
+export const getPublicJobById = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid job ID" });
+      return;
+    }
+
+    const result = await jobService.getById(id);
+    if (!result) {
+      res.status(404).json({ error: "Job not found" });
+      return;
+    }
+
+    const { hiringTeam, pipelineStages, createdBy, ...data } = result;
+    res.status(200).json({ data });
   } catch (error) {
     res.status(500).json({ error: "Failed to fetch job" });
   }

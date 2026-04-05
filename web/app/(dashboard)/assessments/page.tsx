@@ -28,6 +28,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeButton } from "@/components/theme-button";
+import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import {
   Select,
   SelectContent,
@@ -139,49 +140,21 @@ export default function AssessmentsPage() {
       </div>
 
       <div className="border-y border-slate-200 dark:border-neutral-800 px-8 py-3.5 flex items-center gap-4">
-        <div className="relative w-80">
+        <div className="relative w-90">
           <HugeiconsIcon
             icon={Search01Icon}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-300 pointer-events-none"
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
           />
           <Input
             placeholder="Search assessments…"
             className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
-        <Select>
-          <SelectTrigger className="w-36 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select>
-          <SelectTrigger className="w-36 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
-            <SelectValue placeholder="Difficulty" />
-          </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-            <SelectItem value="easy">Easy</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="hard">Hard</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          variant="ghost"
-          className="text-slate-600 cursor-pointer dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-2"
-        >
-          Clear All
-        </Button>
       </div>
 
       <div className="px-8 py-6">
         {isLoading ? (
-          <div className="flex items-center justify-center h-48 text-slate-400 text-sm gap-2">
-            <Loader2 className="size-4 animate-spin text-slate-400" />
-            Loading assessments...
-          </div>
+          <ListSectionSpinner />
         ) : assessments.length === 0 ? (
           <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
             No assessments found.

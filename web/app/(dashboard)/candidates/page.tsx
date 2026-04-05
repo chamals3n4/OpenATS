@@ -39,6 +39,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import {
   Dialog,
   DialogClose,
@@ -175,7 +176,7 @@ export default function ManageCandidatesPage() {
         <div className="relative w-80">
           <HugeiconsIcon
             icon={Search01Icon}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-300 pointer-events-none"
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
           />
           <Input
             placeholder="Search Candidate"
@@ -191,7 +192,7 @@ export default function ManageCandidatesPage() {
             setSelectedJobId(v === "all" ? undefined : Number(v))
           }
         >
-          <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-62 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Job Position">
               {selectedJobId
                 ? (jobs.find((j) => j.id === selectedJobId)?.title ?? null)
@@ -246,11 +247,8 @@ export default function ManageCandidatesPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="h-32 text-center text-slate-400 text-sm"
-                  >
-                    Loading...
+                  <TableCell colSpan={5} className="p-0">
+                    <ListSectionSpinner />
                   </TableCell>
                 </TableRow>
               ) : candidates.length === 0 ? (

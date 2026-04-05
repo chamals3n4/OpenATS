@@ -265,7 +265,7 @@ export default function JobApplicationPage() {
     <div className="min-h-screen bg-white dark:bg-neutral-950 transition-colors duration-300">
       <div className="max-w-[800px] mx-auto pt-16 pb-24 px-6 sm:px-8">
         <Link
-          href="#"
+          href="/careers"
           className="flex items-center gap-2 text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-neutral-200 text-sm font-medium mb-10 w-fit transition-colors"
         >
           <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />

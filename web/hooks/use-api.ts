@@ -47,6 +47,7 @@ export function usePipeline(jobId: number) {
     queryKey: ["jobs", jobId, "pipeline"],
     queryFn: () =>
       serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
+
     enabled: !!jobId,
   });
 }
@@ -87,13 +88,10 @@ export function useUpdateStage(jobId: number) {
         rejectionTemplateId?: number | null;
       };
     }) =>
-      serverFetch<{ data: PipelineStage }>(
-        `/jobs/${jobId}/pipeline/${stageId}`,
-        {
-          method: "PUT",
-          body: JSON.stringify(data),
-        },
-      ),
+      serverFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline/${stageId}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -104,12 +102,9 @@ export function useDeleteStage(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (stageId: number) =>
-      serverFetch<{ data: PipelineStage }>(
-        `/jobs/${jobId}/pipeline/${stageId}`,
-        {
-          method: "DELETE",
-        },
-      ),
+      serverFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline/${stageId}`, {
+        method: "DELETE",
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -120,13 +115,10 @@ export function useReorderStages(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (stages: Array<{ id: number; position: number }>) =>
-      serverFetch<{ data: PipelineStage[] }>(
-        `/jobs/${jobId}/pipeline/reorder`,
-        {
-          method: "POST",
-          body: JSON.stringify({ stages }),
-        },
-      ),
+      serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline/reorder`, {
+        method: "POST",
+        body: JSON.stringify({ stages }),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -316,11 +308,12 @@ export function useUpsertCompany() {
   });
 }
 
-export function useDepartments() {
+export function useDepartments(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["departments"],
     queryFn: () => serverFetch<{ data: Department[] }>("/company/departments"),
     staleTime: 1000 * 60 * 10,
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -725,6 +718,7 @@ export function useUpdateOfferStatus() {
 export function useCandidates(
   jobId?: number,
   filters?: { stageId?: number; search?: string },
+  options?: { enabled?: boolean },
 ) {
   const params = new URLSearchParams();
   if (filters?.stageId) params.set("stageId", String(filters.stageId));
@@ -738,6 +732,7 @@ export function useCandidates(
   return useQuery({
     queryKey: ["candidates", jobId ?? "all", filters],
     queryFn: () => serverFetch<{ data: Candidate[] }>(path),
+    enabled: options?.enabled !== false,
   });
 }
 
@@ -1011,6 +1006,31 @@ export function useActiveLogs(
     enabled: options?.enabled ?? true,
     refetchInterval: options?.live ? 4500 : false,
     staleTime: 2000,
+  });
+}
+
+export function useSettingsAllowedOrigins() {
+  return useQuery({
+    queryKey: ["settings", "allowed-origins"],
+    queryFn: () =>
+      serverFetch<{ data: { origins: string[] } }>("/settings/allowed-origins"),
+    staleTime: 1000 * 30,
+  });
+}
+
+export function useUpdateSettingsAllowedOrigins() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (origins: string[]) =>
+      serverFetch<{ data: { origins: string[] } }>("/settings/allowed-origins", {
+        method: "PUT",
+        body: JSON.stringify({ origins }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["settings", "allowed-origins"],
+      });
+    },
   });
 }
 

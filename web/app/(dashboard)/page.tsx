@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowDown01Icon,
+  Download05Icon,
   ListViewIcon,
   TextIcon,
 } from "@hugeicons/core-free-icons";
@@ -42,6 +43,7 @@ import {
   useExportAnalyticsReport,
 } from "@/hooks/use-api";
 import { serverFetch } from "@/lib/auth-action";
+import { Button } from "@/components/ui/button";
 
 const pipelineConfig: ChartConfig = {
   current: { label: "This Period", color: "#D97757" },
@@ -126,7 +128,6 @@ export default function OverviewPage() {
       queryFn: () => serverFetch<{ data: any[] }>("/jobs"),
     });
 
-    // Keep the same queryKey shape that `useCandidates()` uses on its initial render.
     void queryClient.prefetchQuery({
       queryKey: ["candidates", "all", { search: undefined }],
       queryFn: () => serverFetch<{ data: any[] }>("/candidates"),
@@ -234,38 +235,51 @@ export default function OverviewPage() {
               setExportFormat((value as "csv" | "json") ?? "csv")
             }
           >
-            <SelectTrigger className="w-32 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-3">
+            <SelectTrigger className="w-35 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-2">
               <SelectValue>
                 <span className="flex items-center gap-2">
-                  <HugeiconsIcon
-                    icon={exportFormat === "json" ? TextIcon : ListViewIcon}
-                    className="size-4"
-                  />
+                  <span className="inline-flex w-6 shrink-0 items-center justify-center">
+                    <HugeiconsIcon
+                      icon={exportFormat === "json" ? TextIcon : ListViewIcon}
+                      className="size-4"
+                    />
+                  </span>
                   {exportFormat.toUpperCase()}
                 </span>
               </SelectValue>
             </SelectTrigger>
-            <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+            <SelectContent
+              className="rounded-lg shadow-lg w-37 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
+              sideOffset={({ side, anchor }) =>
+                side === "bottom" || side === "top" ? -anchor.height : 0
+              }
+            >
               <SelectItem value="csv">
                 <span className="flex items-center gap-2">
-                  <HugeiconsIcon icon={ListViewIcon} className="size-4" /> CSV
+                  <span className="inline-flex w-4 shrink-0 items-center justify-center">
+                    <HugeiconsIcon icon={ListViewIcon} className="size-4" />
+                  </span>
+                  CSV
                 </span>
               </SelectItem>
               <SelectItem value="json">
                 <span className="flex items-center gap-2">
-                  <HugeiconsIcon icon={TextIcon} className="size-4" /> JSON
+                  <span className="inline-flex w-4 shrink-0 items-center justify-center">
+                    <HugeiconsIcon icon={TextIcon} className="size-4" />
+                  </span>
+                  JSON
                 </span>
               </SelectItem>
             </SelectContent>
           </Select>
 
-          <button
+          <Button
             onClick={handleExport}
-            className="bg-theme hover:bg-theme-hover text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors cursor-pointer"
+            className="bg-theme hover:bg-theme-hover text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium cursor-pointer"
           >
-            <HugeiconsIcon icon={ArrowDown01Icon} className="size-4" />
+            <HugeiconsIcon icon={Download05Icon} className="size-4" />
             Export Report
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -274,7 +288,7 @@ export default function OverviewPage() {
           value={period}
           onValueChange={(value) => setPeriod(value ?? "7d")}
         >
-          <SelectTrigger className="w-52 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-52 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue>{PERIOD_LABELS[period]}</SelectValue>
           </SelectTrigger>
           <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
@@ -285,7 +299,7 @@ export default function OverviewPage() {
         </Select>
 
         <Select value={dept} onValueChange={(value) => setDept(value ?? "all")}>
-          <SelectTrigger className="w-52 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-52 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue>{DEPT_LABELS[dept]}</SelectValue>
           </SelectTrigger>
           <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">

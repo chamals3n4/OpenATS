@@ -10,6 +10,8 @@ import {
   CheckListIcon,
   Message01Icon,
   Settings02Icon,
+  Quiz02Icon,
+  Agreement02Icon,
 } from "@hugeicons/core-free-icons";
 
 import { usePathname } from "next/navigation";
@@ -46,12 +48,12 @@ const navMainData = [
   {
     title: "Assessments",
     url: "/assessments",
-    icon: CheckListIcon,
+    icon: Quiz02Icon,
   },
   {
     title: "Manage Offers",
     url: "/offers",
-    icon: Message01Icon,
+    icon: Agreement02Icon,
   },
   {
     title: "Active Logs",
@@ -72,8 +74,8 @@ const navMainData = [
         url: "/settings/theme",
       },
       {
-        title: "Page Setup",
-        url: "/settings/setup",
+        title: "Careers Page",
+        url: "/settings/careers",
       },
       {
         title: "Templates",

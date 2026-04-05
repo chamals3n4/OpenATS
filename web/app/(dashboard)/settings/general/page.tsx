@@ -36,7 +36,26 @@ import {
 const inputCls =
   "h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 rounded-lg shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-700 transition-colors";
 
-function CompanyForm({ company }: { company: Company }) {
+const NEW_COMPANY_PLACEHOLDER: Company = {
+  id: 0,
+  name: "",
+  email: "",
+  website: null,
+  phone: null,
+  address: null,
+  description: null,
+  logoUrl: null,
+  createdAt: "",
+  updatedAt: "",
+};
+
+function CompanyForm({
+  company,
+  isNew,
+}: {
+  company: Company;
+  isNew?: boolean;
+}) {
   const upsertCompany = useUpsertCompany();
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -179,7 +198,11 @@ function CompanyForm({ company }: { company: Company }) {
           }
           disabled={upsertCompany.isPending}
         >
-          {upsertCompany.isPending ? "Saving…" : "Save Changes"}
+          {upsertCompany.isPending
+            ? "Saving…"
+            : isNew
+              ? "Create company"
+              : "Save Changes"}
         </Button>
       </div>
     </>
@@ -187,13 +210,17 @@ function CompanyForm({ company }: { company: Company }) {
 }
 
 export default function SettingsGeneralPage() {
-  const { data: companyData } = useCompany();
-  const { data: deptData } = useDepartments();
+  const {
+    data: companyData,
+    isPending: companyLoading,
+    isError: companyError,
+  } = useCompany();
+  const company = companyData?.data;
+  const { data: deptData } = useDepartments({ enabled: !!company });
   const createDept = useCreateDepartment();
   const updateDept = useUpdateDepartment();
   const deleteDept = useDeleteDepartment();
 
-  const company = companyData?.data;
   const departments = deptData?.data ?? [];
 
   const [newDept, setNewDept] = useState("");
@@ -203,16 +230,22 @@ export default function SettingsGeneralPage() {
 
   const handleAddDept = () => {
     if (!newDept.trim()) return;
-    createDept.mutate({ name: newDept.trim() }, {
-      onSuccess: () => setNewDept(""),
-    });
+    createDept.mutate(
+      { name: newDept.trim() },
+      {
+        onSuccess: () => setNewDept(""),
+      },
+    );
   };
 
   const handleSaveDept = (id: number) => {
     if (!editingVal.trim()) return;
-    updateDept.mutate({ id, name: editingVal.trim() }, {
-      onSuccess: () => setEditingId(null),
-    });
+    updateDept.mutate(
+      { id, name: editingVal.trim() },
+      {
+        onSuccess: () => setEditingId(null),
+      },
+    );
   };
 
   const handleDeleteDept = (id: number) => {
@@ -228,12 +261,28 @@ export default function SettingsGeneralPage() {
       </div>
 
       <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
-        {company ? (
-          <CompanyForm key={company.id} company={company} />
-        ) : (
+        {companyLoading ? (
           <>
             <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 h-36 animate-pulse bg-slate-50 dark:bg-neutral-900" />
             <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 h-64 animate-pulse bg-slate-50 dark:bg-neutral-900" />
+          </>
+        ) : companyError ? (
+          <p className="text-sm text-red-600 dark:text-red-400">
+            Could not load company settings. Try again later.
+          </p>
+        ) : company ? (
+          <CompanyForm key={company.id} company={company} />
+        ) : (
+          <>
+            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
+              Welcome—set your organization name and contact details below. You
+              can add departments after saving.
+            </div>
+            <CompanyForm
+              key="new-company"
+              company={NEW_COMPANY_PLACEHOLDER}
+              isNew
+            />
           </>
         )}
 
@@ -242,17 +291,24 @@ export default function SettingsGeneralPage() {
             Departments
           </p>
 
+          {!company && !companyLoading && !companyError ? (
+            <p className="text-[13px] text-slate-500 dark:text-neutral-500">
+              Save your company details above to manage departments.
+            </p>
+          ) : null}
+
           <div className="flex items-center gap-3">
             <Input
               placeholder="Add New Department"
               value={newDept}
               onChange={(e) => setNewDept(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddDept()}
-              className="flex-1 h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 rounded-lg shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-700 transition-colors"
+              disabled={!company}
+              className="flex-1 h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 rounded-lg shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-700 transition-colors disabled:opacity-50"
             />
             <Button
               onClick={handleAddDept}
-              disabled={createDept.isPending}
+              disabled={!company || createDept.isPending}
               className="h-10 px-5 text-white rounded-lg shadow-none border-none text-[13px] font-semibold whitespace-nowrap"
               style={{ backgroundColor: "var(--theme-color)" }}
             >
@@ -279,7 +335,9 @@ export default function SettingsGeneralPage() {
                     className="flex-1 mr-4 h-9 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 rounded-lg shadow-none text-sm focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-700"
                   />
                 ) : (
-                  <span className="text-[14px] text-slate-700 dark:text-neutral-300">{dept.name}</span>
+                  <span className="text-[14px] text-slate-700 dark:text-neutral-300">
+                    {dept.name}
+                  </span>
                 )}
 
                 <div className="flex items-center gap-1.5 shrink-0">

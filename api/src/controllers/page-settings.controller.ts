@@ -1,0 +1,36 @@
+import type { Request, Response } from "express";
+import { z } from "zod";
+import { pageSettingsService } from "../services/page-settings.service";
+
+const originsBodySchema = z.object({
+  origins: z.array(z.string().min(1).max(500)).max(50),
+});
+
+export async function getAllowedOrigins(_req: Request, res: Response) {
+  try {
+    const origins = await pageSettingsService.getAllowedOrigins();
+    res.status(200).json({ data: { origins } });
+  } catch {
+    res.status(500).json({ error: "Failed to load allowed origins" });
+  }
+}
+
+export async function putAllowedOrigins(req: Request, res: Response) {
+  try {
+    const parsed = originsBodySchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        error: "Validation failed",
+        details: parsed.error.flatten(),
+      });
+      return;
+    }
+
+    const origins = await pageSettingsService.setAllowedOrigins(
+      parsed.data.origins,
+    );
+    res.status(200).json({ data: { origins } });
+  } catch {
+    res.status(500).json({ error: "Failed to update allowed origins" });
+  }
+}

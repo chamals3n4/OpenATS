@@ -183,12 +183,6 @@ export default function ManageOffersPage() {
 
   const confirmArchive = () => {
     if (!archiveTarget) return;
-    archiveItem({
-      id: String(archiveTarget.id),
-      type: "offer",
-      name: archiveTarget.candidateName,
-      detail: archiveTarget.jobTitle,
-    });
     deleteOfferMutation.mutate(archiveTarget.id, {
       onSuccess: () => setArchiveTarget(null),
     });
@@ -489,8 +483,7 @@ export default function ManageOffersPage() {
               <strong className="text-slate-700 dark:text-neutral-200">
                 {archiveTarget?.candidateName}
               </strong>{" "}
-              will be moved to the Archive. You can permanently delete it from
-              Settings → Archive.
+              will be deleted permanently.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">

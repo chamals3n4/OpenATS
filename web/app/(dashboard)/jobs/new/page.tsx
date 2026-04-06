@@ -267,11 +267,11 @@ export default function CreateNewJobPage() {
                 <div className="flex items-center gap-3 shrink-0">
                   <Checkbox
                     id="salary-info"
+                    variant="theme"
                     checked={isSalaryInfoIncluded}
                     onCheckedChange={(checked) =>
                       setIsSalaryInfoIncluded(checked as boolean)
                     }
-                    className="data-checked:bg-theme data-checked:border-theme size-4.5"
                   />
                   <Label
                     htmlFor="salary-info"
@@ -289,11 +289,7 @@ export default function CreateNewJobPage() {
                   className="flex items-center gap-10"
                 >
                   <div className="flex items-center gap-2.5">
-                    <RadioGroupItem
-                      value="range"
-                      id="range"
-                      className="text-theme border-slate-300 data-checked:bg-theme data-checked:border-theme size-4.5"
-                    />
+                    <RadioGroupItem variant="theme" value="range" id="range" />
                     <Label
                       htmlFor="range"
                       className="text-sm font-medium text-slate-600 dark:text-neutral-400 cursor-pointer"
@@ -302,11 +298,7 @@ export default function CreateNewJobPage() {
                     </Label>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <RadioGroupItem
-                      value="fixed"
-                      id="fixed"
-                      className="text-theme border-slate-300 data-checked:bg-theme data-checked:border-theme size-4.5"
-                    />
+                    <RadioGroupItem variant="theme" value="fixed" id="fixed" />
                     <Label
                       htmlFor="fixed"
                       className="text-sm font-medium text-slate-600 dark:text-neutral-400 cursor-pointer"

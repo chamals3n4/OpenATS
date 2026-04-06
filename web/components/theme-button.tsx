@@ -26,7 +26,7 @@ interface ThemeLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
 type Props = ThemeButtonProps | ThemeLinkProps;
 
 const baseClasses =
-  "inline-flex items-center justify-center rounded-lg font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
+  "inline-flex items-center justify-center rounded-lg font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50";
 
 function getStyle(
   variant: "primary" | "outline",
@@ -68,8 +68,13 @@ export const ThemeButton = forwardRef<
 
   if ("asChild" in props && props.asChild) {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { asChild: _asChild, href, style, prefetch, ...rest } =
-      props as ThemeLinkProps;
+    const {
+      asChild: _asChild,
+      href,
+      style,
+      prefetch,
+      ...rest
+    } = props as ThemeLinkProps;
     return (
       <Link
         ref={ref as Ref<HTMLAnchorElement>}

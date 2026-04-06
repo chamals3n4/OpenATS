@@ -158,17 +158,6 @@ export default function ManageCandidatesPage() {
         <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Manage Candidates
         </h1>
-        <Button
-          className="text-white cursor-pointer rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
-          style={{ backgroundColor: "var(--theme-color)" }}
-        >
-          <HugeiconsIcon
-            icon={PlusSignIcon}
-            className="size-4"
-            strokeWidth={2.5}
-          />
-          <span>Add Candidate</span>
-        </Button>
       </div>
 
       {/* Filters */}

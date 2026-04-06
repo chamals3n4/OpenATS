@@ -4,12 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { Archive01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  getArchived,
-  permanentlyDelete,
-  type ArchiveType,
-  type ArchiveEntry,
-} from "@/lib/archive-store";
-import {
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -19,6 +13,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+
+type ArchiveType = "job" | "candidate" | "offer";
+
+type ArchiveEntry = {
+  id: string;
+  type: ArchiveType;
+  name: string;
+  detail: string;
+  archivedAt: string;
+};
 
 const TYPE_LABELS: Record<ArchiveType, string> = {
   job: "Jobs",
@@ -45,7 +49,7 @@ export default function ArchivePage() {
   const [activeTab, setActiveTab] = useState<ArchiveType>("job");
   const [deleteTarget, setDeleteTarget] = useState<ArchiveEntry | null>(null);
 
-  const refresh = useCallback(() => setItems(getArchived()), []);
+  const refresh = useCallback(() => setItems([]), []);
   useEffect(() => {
     refresh();
     window.addEventListener("focus", refresh);
@@ -54,8 +58,12 @@ export default function ArchivePage() {
 
   const confirmDelete = () => {
     if (!deleteTarget) return;
-    permanentlyDelete(deleteTarget.id, deleteTarget.type);
-    refresh();
+    setItems((prev) =>
+      prev.filter(
+        (item) =>
+          !(item.id === deleteTarget.id && item.type === deleteTarget.type),
+      ),
+    );
     setDeleteTarget(null);
   };
 
@@ -81,7 +89,7 @@ export default function ArchivePage() {
               onClick={() => setActiveTab(t)}
               className={`h-9 px-4 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === t
-                  ? "bg-[#355872] text-white"
+                  ? "bg-brand text-white"
                   : "bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 hover:border-slate-300 dark:hover:border-neutral-700"
               }`}
             >

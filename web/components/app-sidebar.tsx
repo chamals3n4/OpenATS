@@ -7,8 +7,6 @@ import {
   Briefcase01Icon,
   UserGroupIcon,
   SearchList02Icon,
-  CheckListIcon,
-  Message01Icon,
   Settings02Icon,
   Quiz02Icon,
   Agreement02Icon,
@@ -21,7 +19,6 @@ import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarFooter,
 } from "@/components/ui/sidebar";
 
 const changaOne = Changa_One({
@@ -113,8 +110,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
       {...props}
     >
-      <SidebarHeader className="h-16 justify-center px-6">
-        <div className="flex items-center justify-start w-full">
+      <SidebarHeader className="h-16 shrink-0 px-6">
+        <div className="flex h-full w-full items-center justify-start">
           <span
             className={`${changaOne.className} font-normal text-[2.5rem] leading-none tracking-normal text-black dark:text-white select-none`}
           >
@@ -125,7 +122,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={items} />
       </SidebarContent>
-      <SidebarFooter />
     </Sidebar>
   );
 }

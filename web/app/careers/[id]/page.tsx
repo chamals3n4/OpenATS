@@ -282,7 +282,7 @@ export default function JobApplicationPage() {
                 .getElementById("apply-form")
                 ?.scrollIntoView({ behavior: "smooth" })
             }
-            className="bg-[#F97316] hover:bg-[#EA580C] text-white px-8 h-10 rounded-[6px] shadow-none font-medium shrink-0 w-full sm:w-auto text-[15px]"
+            className="bg-theme hover:bg-theme-hover text-white px-8 h-10 rounded-[6px] shadow-none font-medium shrink-0 w-full sm:w-auto text-[15px]"
           >
             Apply
           </Button>
@@ -603,7 +603,7 @@ export default function JobApplicationPage() {
               <Button
                 type="submit"
                 disabled={submitting || resumeUploading}
-                className="bg-[#F97316] hover:bg-[#EA580C] text-white px-10 h-12 rounded-[6px] shadow-none font-medium text-[15px] min-w-[180px] disabled:opacity-60"
+                className="bg-theme hover:bg-theme-hover text-white px-10 h-12 rounded-[6px] shadow-none font-medium text-[15px] min-w-[180px] disabled:opacity-60"
               >
                 {submitting
                   ? "Submitting…"

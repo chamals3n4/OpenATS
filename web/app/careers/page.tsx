@@ -94,7 +94,7 @@ export default function CareersIndexPage() {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
                     <div className="min-w-0 flex-1 space-y-2">
-                      <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 group-hover:text-[#F97316] transition-colors">
+                      <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 transition-colors">
                         {job.title}
                       </h2>
                       <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px] text-slate-500 dark:text-neutral-400">
@@ -122,7 +122,7 @@ export default function CareersIndexPage() {
                         </span>
                       </div>
                     </div>
-                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-[#F97316] shrink-0 sm:pt-0.5">
+                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-theme shrink-0 sm:pt-0.5">
                       Apply
                       <HugeiconsIcon
                         icon={ArrowRight01Icon}

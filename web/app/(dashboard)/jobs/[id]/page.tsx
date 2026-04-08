@@ -150,6 +150,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
+import { ArrowLeft } from "lucide-react";
 
 const JOB_TAB_TRIGGER_CLASS =
   "data-[state=active]:bg-transparent cursor-pointer shadow-none! border border-slate-200 dark:border-neutral-800 data-[state=active]:border-theme rounded-lg px-6 text-slate-600 dark:text-neutral-400 data-[state=active]:text-[var(--theme-color)] font-medium text-[15px] hover:bg-slate-50 dark:hover:bg-neutral-900 flex-none flex items-center justify-center whitespace-nowrap";
@@ -505,7 +506,16 @@ export default function JobDetailsPage() {
             : undefined
         }
       >
-        <div className="px-8 pt-10 pb-0 max-w-full 2xl:max-w-400 w-full mx-auto">
+        <div className="px-8 pt-6 pb-0 max-w-full 2xl:max-w-400 w-full mx-auto">
+          <div className="mb-4">
+            <Link
+              href="/jobs"
+              className="inline-flex items-center gap-2 text-[13px] font-medium text-theme hover:underline"
+            >
+              <ArrowLeft className="size-3.5" />
+              Back to Job Listing
+            </Link>
+          </div>
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6 mb-8 mt-2">
             {/* Left Column: Job Info */}
             <div className="space-y-4">
@@ -583,7 +593,7 @@ export default function JobDetailsPage() {
                 <span>Discussions</span>
               </Button>
               <Link href={`/jobs/${jobId}/pipeline`}>
-                <Button className="bg-theme hover:bg-theme-hover text-white rounded-lg h-11 px-7 font-medium border-none gap-2">
+                <Button className="bg-theme hover:bg-theme-hover cursor-pointer text-white rounded-lg h-11 px-7 font-medium border-none gap-2">
                   <span>Hiring Pipeline</span>
                   <HugeiconsIcon
                     icon={ArrowRight01Icon}
@@ -700,7 +710,7 @@ export default function JobDetailsPage() {
                       <DialogHeader>
                         <DialogTitle>Add Team Member</DialogTitle>
                         <DialogDescription>
-                          Assign a user to this job's hiring team.
+                          Assign a user to this job&apos;s hiring team.
                         </DialogDescription>
                       </DialogHeader>
                       <div className="grid gap-4 py-4">

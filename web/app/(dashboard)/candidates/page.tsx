@@ -460,9 +460,25 @@ export default function ManageCandidatesPage() {
             </div>
 
             <div className="col-span-2">
-              <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5">
-                Upload new CV (PDF)
-              </p>
+              <div className="mb-1.5 flex items-center justify-between gap-3">
+                <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400">
+                  Upload new CV (PDF)
+                </p>
+                {editTarget?.resumeUrl ? (
+                  <a
+                    href={editTarget.resumeUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center text-[12px] font-medium text-theme hover:underline whitespace-nowrap"
+                  >
+                    View current CV
+                  </a>
+                ) : (
+                  <p className="text-[12px] text-slate-400">
+                    No CV uploaded yet
+                  </p>
+                )}
+              </div>
               <Input
                 type="file"
                 accept="application/pdf"

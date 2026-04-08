@@ -2,7 +2,7 @@ import http from "http";
 import app from "./app";
 import { socketService } from "./services/socket.service";
 
-const PORT = 8080;
+const PORT = process.env.PORT || 8080;
 
 const server = http.createServer(app);
 

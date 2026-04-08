@@ -3,9 +3,10 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import type { Ref } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useDrag, useDrop, useDragLayer } from "react-dnd";
 import { getEmptyImage } from "react-dnd-html5-backend";
-import { GripVertical } from "lucide-react";
+import { ArrowLeft, GripVertical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
@@ -377,7 +378,7 @@ export default function HiringPipelinePage() {
           .filter((c) => c.currentStageId !== fromStageId)
           .concat(newList);
       }
-
+      ArrowLeft;
       const toList = (candidatesByStage[toStageId] ?? []).slice();
       toList.splice(toIndex, 0, { ...card, currentStageId: toStageId });
       return prev
@@ -431,6 +432,17 @@ export default function HiringPipelinePage() {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-neutral-950 shrink-0 w-full">
         <div className="px-8 pt-8 pb-6 overflow-hidden">
+          <div className="mb-4 flex items-center gap-2 text-[12px]">
+            <Link
+              href={`/jobs/${jobId}`}
+              className="font-medium text-theme hover:underline"
+            >
+              <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                <ArrowLeft className="size-3.5" />
+                Back to the Job
+              </span>
+            </Link>
+          </div>
           <div className="flex items-center justify-between gap-4 max-w-full">
             <div className="space-y-4 min-w-0">
               <div className="flex items-center gap-4">

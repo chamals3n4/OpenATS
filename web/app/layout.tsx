@@ -29,6 +29,7 @@ export const dynamic = "force-dynamic";
 
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeInitializer } from "@/components/theme-initializer";
+import { QueryProvider } from "@/components/query-provider";
 
 export default function RootLayout({
   children,
@@ -52,7 +53,9 @@ export default function RootLayout({
         >
           <ThemeInitializer />
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <AsgardeoProvider>{children as any}</AsgardeoProvider>
+          <AsgardeoProvider>
+            <QueryProvider>{children as any}</QueryProvider>
+          </AsgardeoProvider>
         </ThemeProvider>
       </body>
     </html>

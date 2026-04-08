@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useAsgardeo } from "@asgardeo/nextjs";
+import { useQueryClient } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ComputerIcon,
@@ -64,6 +66,8 @@ export function SidebarUserMenu({ variant = "header" }: SidebarUserMenuProps) {
   const { user, signOut, isLoading } = useAsgardeo();
   const { theme, setTheme } = useTheme();
   const { state } = useSidebar();
+  const router = useRouter();
+  const queryClient = useQueryClient();
   const [mounted, setMounted] = React.useState(false);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = React.useState(false);
 
@@ -221,7 +225,11 @@ export function SidebarUserMenu({ variant = "header" }: SidebarUserMenuProps) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={() => void signOut()}
+              onClick={() => {
+                queryClient.invalidateQueries();
+                router.push("/login");
+                void signOut();
+              }}
             >
               Log out
             </AlertDialogAction>

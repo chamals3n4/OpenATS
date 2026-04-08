@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { serverFetch } from "@/lib/auth-action";
 import type { Ref } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
@@ -46,7 +48,7 @@ import {
   useTemplates,
 } from "@/hooks/use-api";
 import { useJobChat } from "@/hooks/use-job-chat";
-import type { PipelineStage, JobDetail, CustomQuestion } from "@/types";
+import type { PipelineStage, JobDetail, CustomQuestion, ChatMessage, Candidate, User } from "@/types";
 
 const STAGE_COLORS: Record<PipelineStage["stageType"], string> = {
   none: "bg-slate-400",
@@ -163,6 +165,62 @@ const JOB_TAB_PRESS =
 export default function JobDetailsPage() {
   const params = useParams();
   const jobId = Number(params.id);
+  const queryClient = useQueryClient();
+
+  // Prefetch all per-job data on mount so every tab and the candidate count
+  // render immediately without a loading state.
+  useEffect(() => {
+    if (!jobId) return;
+
+    // Hiring process (pipeline stages)
+    void queryClient.prefetchQuery({
+      queryKey: ["jobs", jobId, "pipeline"],
+      queryFn: () =>
+        serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
+    });
+
+    // Candidates for this job (drives the count badge on the overview tab)
+    void queryClient.prefetchQuery({
+      queryKey: ["candidates", jobId, undefined],
+      queryFn: () =>
+        serverFetch<{ data: Candidate[] }>(`/candidates/jobs/${jobId}`),
+      staleTime: 0,
+    });
+
+    // Hiring team members
+    void queryClient.prefetchQuery({
+      queryKey: ["jobs", jobId, "team"],
+      queryFn: () =>
+        serverFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
+    });
+
+    // All users (needed for the "add team member" dropdown)
+    void queryClient.prefetchQuery({
+      queryKey: ["users"],
+      queryFn: () => serverFetch<{ data: User[] }>("/users"),
+    });
+
+    // Custom questions tab
+    void queryClient.prefetchQuery({
+      queryKey: ["jobs", jobId, "questions"],
+      queryFn: () =>
+        serverFetch<{ data: CustomQuestion[] }>(`/jobs/${jobId}/questions`),
+    });
+
+    // Assessments attached to this job
+    void queryClient.prefetchQuery({
+      queryKey: ["jobs", jobId, "assessments"],
+      queryFn: () =>
+        serverFetch<{ data: any[] }>(`/jobs/${jobId}/assessments`),
+    });
+
+    // Discussion / internal notes history
+    void queryClient.prefetchQuery({
+      queryKey: ["chat", "job", jobId],
+      queryFn: () =>
+        serverFetch<{ data: ChatMessage[] }>(`/chat/job/${jobId}`),
+    });
+  }, [jobId, queryClient]);
 
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [noteText, setNoteText] = useState("");

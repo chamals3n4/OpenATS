@@ -1,6 +1,3 @@
-"use client";
-
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -29,31 +26,27 @@ const EMPLOYMENT_LABELS: Record<Job["employmentType"], string> = {
   freelance: "Freelance",
 };
 
-async function fetchCareersJobList(): Promise<CareerJobRow[]> {
-  const res = await fetch("/api/public/jobs", {
-    headers: { Accept: "application/json" },
-  });
-  const body = (await res.json().catch(() => ({}))) as {
-    data?: unknown;
-    error?: string;
-  };
-  if (!res.ok) {
-    throw new Error(body.error ?? `HTTP ${res.status}`);
+async function getPublishedJobs(): Promise<CareerJobRow[]> {
+  const base = (
+    process.env.OPENATS_API_URL ??
+    process.env.NEXT_PUBLIC_API_URL ??
+    ""
+  ).replace(/\/$/, "");
+
+  if (!base) return [];
+
+  try {
+    const res = await fetch(`${base}/public/jobs`, { cache: "no-store" });
+    if (!res.ok) return [];
+    const body = (await res.json()) as { data?: unknown };
+    return Array.isArray(body.data) ? (body.data as CareerJobRow[]) : [];
+  } catch {
+    return [];
   }
-  return Array.isArray(body.data) ? (body.data as CareerJobRow[]) : [];
 }
 
-export default function CareersIndexPage() {
-  const [jobs, setJobs] = useState<CareerJobRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    fetchCareersJobList()
-      .then((list) => setJobs(list))
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, []);
+export default async function CareersIndexPage() {
+  const jobs = await getPublishedJobs();
 
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950 transition-colors duration-300">
@@ -66,25 +59,11 @@ export default function CareersIndexPage() {
           application carefully.
         </p>
 
-        {loading && (
-          <p className="text-slate-400 dark:text-neutral-600 text-sm font-medium animate-pulse">
-            Loading openings…
-          </p>
-        )}
-
-        {error && (
-          <p className="text-red-500 dark:text-red-400 text-sm font-medium border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg w-fit">
-            {error}
-          </p>
-        )}
-
-        {!loading && !error && jobs.length === 0 && (
+        {jobs.length === 0 ? (
           <p className="text-slate-500 dark:text-neutral-400 text-[15px]">
             There are no open positions at the moment. Please check back later.
           </p>
-        )}
-
-        {!loading && !error && jobs.length > 0 && (
+        ) : (
           <ul className="flex flex-col gap-4">
             {jobs.map((job) => (
               <li key={job.id}>

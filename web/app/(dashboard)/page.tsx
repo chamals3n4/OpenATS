@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ArrowDown01Icon,
   Download05Icon,
@@ -8,7 +8,6 @@ import {
   TextIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useQueryClient } from "@tanstack/react-query";
 import {
   Bar,
   BarChart,
@@ -42,7 +41,6 @@ import {
   useDepartments,
   useExportAnalyticsReport,
 } from "@/hooks/use-api";
-import { serverFetch } from "@/lib/auth-action";
 import { Button } from "@/components/ui/button";
 
 const pipelineConfig: ChartConfig = {
@@ -100,8 +98,6 @@ export default function OverviewPage() {
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("7d");
   const [dept, setDept] = useState("all");
   const [exportFormat, setExportFormat] = useState<"csv" | "json">("csv");
-  const queryClient = useQueryClient();
-  const prefetchDoneRef = useRef(false);
 
   const selectedDepartmentId = dept === "all" ? undefined : Number(dept);
 
@@ -114,35 +110,6 @@ export default function OverviewPage() {
   );
   const exportReport = useExportAnalyticsReport();
   const report = analyticsRes?.data;
-
-  useEffect(() => {
-    if (prefetchDoneRef.current) return;
-    // Wait for the overview's critical data so navigation prefetch doesn't compete on the first paint.
-    if (!deptRes || !analyticsRes) return;
-
-    prefetchDoneRef.current = true;
-
-    // Warm the main list pages so navigation feels instant.
-    void queryClient.prefetchQuery({
-      queryKey: ["jobs"],
-      queryFn: () => serverFetch<{ data: any[] }>("/jobs"),
-    });
-
-    void queryClient.prefetchQuery({
-      queryKey: ["candidates", "all", { search: undefined }],
-      queryFn: () => serverFetch<{ data: any[] }>("/candidates"),
-    });
-
-    void queryClient.prefetchQuery({
-      queryKey: ["offers", "all"],
-      queryFn: () => serverFetch<{ data: any[] }>("/offers"),
-    });
-
-    void queryClient.prefetchQuery({
-      queryKey: ["assessments"],
-      queryFn: () => serverFetch<{ data: any[] }>("/assessments"),
-    });
-  }, [analyticsRes, deptRes, queryClient]);
 
   const pipelineData = report?.pipelineReport ?? [];
   const volumeData = report?.candidateVolume ?? [];

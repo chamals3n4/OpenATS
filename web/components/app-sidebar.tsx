@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Changa_One } from "next/font/google";
+import { Public_Sans } from "next/font/google";
 import {
   Home01Icon,
   Briefcase01Icon,
@@ -21,9 +21,9 @@ import {
   SidebarHeader,
 } from "@/components/ui/sidebar";
 
-const changaOne = Changa_One({
+const publicSans = Public_Sans({
   subsets: ["latin"],
-  weight: "400",
+  weight: "700",
 });
 
 const navMainData = [
@@ -113,7 +113,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarHeader className="h-16 shrink-0 px-6">
         <div className="flex h-full w-full items-center justify-start">
           <span
-            className={`${changaOne.className} font-normal text-[2.5rem] leading-none tracking-normal text-black dark:text-white select-none`}
+            className={`${publicSans.className} font-bold text-[2rem] leading-none tracking-tight text-black dark:text-white select-none`}
           >
             OpenATS
           </span>

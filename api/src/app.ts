@@ -5,12 +5,41 @@ import publicRouter from "./routes/public.routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import { swaggerUi, swaggerDocument } from "./config/swagger";
 import { authMiddleware } from "./middlewares/auth.middleware";
+import { pageSettingsService } from "./services/page-settings.service";
 // import { activeLogMiddleware } from "./middlewares/active-log.middleware";
 
 const app: Express = express();
+
+function normalizeOrigin(origin: string): string {
+  return origin.trim().replace(/\/$/, "");
+}
+
 app.use(
   cors({
-    origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
+    origin: (origin, callback) => {
+      if (!origin) {
+        callback(null, true);
+        return;
+      }
+
+      const requestOrigin = normalizeOrigin(origin);
+      const fallbackFrontend = normalizeOrigin(
+        process.env.FRONTEND_URL ?? "http://localhost:3000",
+      );
+
+      if (requestOrigin === fallbackFrontend) {
+        callback(null, true);
+        return;
+      }
+
+      pageSettingsService
+        .getAllowedOrigins()
+        .then((origins) => {
+          const allowed = origins.map(normalizeOrigin);
+          callback(null, allowed.includes(requestOrigin));
+        })
+        .catch((err) => callback(err));
+    },
     credentials: true,
   }),
 );

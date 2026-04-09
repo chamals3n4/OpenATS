@@ -5,6 +5,7 @@ import {
 } from "@aws-sdk/client-s3";
 import crypto from "crypto";
 import path from "path";
+import logger from "../utils/logger";
 
 const r2Client = new S3Client({
   region: "us-east-1",
@@ -34,7 +35,7 @@ export const r2Service = {
     try {
       await r2Client.send(command);
     } catch (error: any) {
-      console.error(
+      logger.error(
         `Attempting upload to Bucket: ${process.env.R2_BUCKET_NAME}`,
       );
       throw error;

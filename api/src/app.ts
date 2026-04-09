@@ -1,5 +1,6 @@
 import express, { type Express } from "express";
 import cors from "cors";
+import morgan from "morgan";
 import router from "./routes";
 import publicRouter from "./routes/public.routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
@@ -7,6 +8,7 @@ import { swaggerUi, swaggerDocument } from "./config/swagger";
 import { authMiddleware } from "./middlewares/auth.middleware";
 import { pageSettingsService } from "./services/page-settings.service";
 // import { activeLogMiddleware } from "./middlewares/active-log.middleware";
+import logger from "./utils/logger";
 
 const app: Express = express();
 
@@ -46,6 +48,17 @@ app.use(
 app.use(express.json());
 // app.use(activeLogMiddleware);
 
+app.use(
+  morgan(
+    ":remote-addr :method :url :status :res[content-length] - :response-time ms",
+    {
+      skip: (req) => req.url.startsWith("/api-docs"),
+      stream: {
+        write: (message: string) => logger.info(message.trim()),
+      },
+    },
+  ),
+);
 app.get("/health", (req, res) => {
   res.status(200).json({ status: "working" });
 });

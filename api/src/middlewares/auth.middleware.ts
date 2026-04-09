@@ -3,6 +3,7 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import { db } from "../db";
 import { users } from "../db/schema/users";
 import { eq } from "drizzle-orm";
+import logger from "../utils/logger";
 
 const JWKS = createRemoteJWKSet(new URL(process.env.ASGARDEO_JWKS_URL!));
 
@@ -153,7 +154,7 @@ export const authMiddleware = async (
     next();
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[authMiddleware] error:", msg);
+    logger.error("[authMiddleware] error:", msg);
     res.status(401).json({ error: "Invalid or expired token" });
   }
 };

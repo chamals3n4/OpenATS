@@ -3,6 +3,7 @@ import { Server as HttpServer } from "http";
 import { db } from "../db";
 import { jobChatMessages, candidateChatMessages, users } from "../db/schema";
 import { eq, and } from "drizzle-orm";
+import logger from "../utils/logger";
 
 export class SocketService {
   private static instance: SocketService;
@@ -26,18 +27,18 @@ export class SocketService {
     });
 
     this.io.on("connection", (socket: Socket) => {
-      console.log(`Socket connected: ${socket.id}`);
+      logger.info(`Socket connected: ${socket.id}`);
 
       // job room
       socket.on("join_job", (jobId: number) => {
         socket.join(`job_${jobId}`);
-        console.log(`Socket ${socket.id} joined job room: job_${jobId}`);
+        logger.info(`Socket ${socket.id} joined job room: job_${jobId}`);
       });
 
       // candidate room
       socket.on("join_candidate", (candidateId: number) => {
         socket.join(`candidate_${candidateId}`);
-        console.log(`Socket ${socket.id} joined candidate room: candidate_${candidateId}`);
+        logger.info(`Socket ${socket.id} joined candidate room: candidate_${candidateId}`);
       });
 
       socket.on("send_job_message", async (data: { jobId: number; senderId: number; message: string; replyToId?: number }) => {
@@ -68,7 +69,7 @@ export class SocketService {
             senderAvatar: sender?.avatarUrl ?? null,
           });
         } catch (error) {
-          console.error("Error saving job message:", error);
+          logger.error("Error saving job message: " + error);
         }
       });
 
@@ -112,7 +113,7 @@ export class SocketService {
               senderAvatar: sender?.avatarUrl ?? null,
             });
           } catch (error) {
-            console.error("Error updating job message:", error);
+            logger.error("Error updating job message: " + error);
           }
         },
       );
@@ -139,7 +140,7 @@ export class SocketService {
               ?.to(`job_${data.jobId}`)
               .emit("job_message_deleted", { id: deleted.id });
           } catch (error) {
-            console.error("Error deleting job message:", error);
+            logger.error("Error deleting job message: " + error);
           }
         },
       );
@@ -159,12 +160,12 @@ export class SocketService {
           // broadcast to the candidate room
           this.io?.to(`candidate_${data.candidateId}`).emit("new_candidate_message", newMessage);
         } catch (error) {
-          console.error("Error saving candidate message:", error);
+          logger.error("Error saving candidate message: " + error);
         }
       });
 
       socket.on("disconnect", () => {
-        console.log(`Socket disconnected: ${socket.id}`);
+        logger.info(`Socket disconnected: ${socket.id}`);
       });
     });
   }
@@ -184,7 +185,7 @@ export class SocketService {
 
       this.io?.to(`job_${jobId}`).emit("new_job_message", newMessage);
     } catch (error) {
-      console.error("Error sending system job message:", error);
+      logger.error("Error sending system job message: " + error);
     }
   }
 }

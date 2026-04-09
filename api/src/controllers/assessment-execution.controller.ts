@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { assessmentExecutionService } from "../services/assessment-execution.service";
 import { mailService } from "../services/mail.service";
+import logger from "../utils/logger";
 
 const inviteCandidateSchema = z.object({
   candidateId: z.number().int().positive(),
@@ -19,12 +20,12 @@ const completeAssessmentSchema = z.object({
   autoSubmitReason: z.string().trim().min(1).max(500).optional(),
 });
 
-
-
 async function getAttemptByTokenOrFail(res: Response, token: string) {
   const attempt = await assessmentExecutionService.getAttemptByToken(token);
   if (!attempt) {
-    res.status(404).json({ error: "Assessment attempt not found or invalid token" });
+    res
+      .status(404)
+      .json({ error: "Assessment attempt not found or invalid token" });
     return null;
   }
 
@@ -37,10 +38,10 @@ async function getAttemptByTokenOrFail(res: Response, token: string) {
   return attempt;
 }
 
-
-
-
-export const inviteCandidateToAssessment = async (req: Request, res: Response) => {
+export const inviteCandidateToAssessment = async (
+  req: Request,
+  res: Response,
+) => {
   try {
     const parsed = inviteCandidateSchema.safeParse(req.body);
     if (!parsed.success) {
@@ -64,16 +65,16 @@ export const inviteCandidateToAssessment = async (req: Request, res: Response) =
       return;
     }
 
+    logger.info(`Assessment invite created: attemptId=${attempt.id}, candidateId=${candidateId}, assessmentId=${assessmentId}, didSendInvite=${didSendInvite}`);
     res.status(201).json({ data: attempt, didSendInvite });
   } catch (error: any) {
-    console.error("Invite Error:", error);
-    res.status(500).json({ 
+    logger.error(`Failed to generate assessment invite - candidateId=${req.body?.candidateId}, assessmentId=${req.body?.assessmentId}: ${error?.message}`);
+    res.status(500).json({
       error: "Failed to generate assessment invite",
-      message: error.message || "Unknown error" 
+      message: error.message || "Unknown error",
     });
   }
 };
-
 
 export const getCandidateAttempts = async (req: Request, res: Response) => {
   try {
@@ -83,15 +84,20 @@ export const getCandidateAttempts = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await assessmentExecutionService.getAttemptsByCandidate(candidateId);
+    const result =
+      await assessmentExecutionService.getAttemptsByCandidate(candidateId);
     res.status(200).json({ data: result });
   } catch (error) {
-    res.status(500).json({ error: "Failed to fetch candidate assessment attempts" });
+    res
+      .status(500)
+      .json({ error: "Failed to fetch candidate assessment attempts" });
   }
 };
 
-
-export const getAssessmentForCandidate = async (req: Request, res: Response) => {
+export const getAssessmentForCandidate = async (
+  req: Request,
+  res: Response,
+) => {
   try {
     const { token } = req.params;
     const tokenStr = (token ?? "").toString();
@@ -104,7 +110,6 @@ export const getAssessmentForCandidate = async (req: Request, res: Response) => 
   }
 };
 
-
 export const startAssessment = async (req: Request, res: Response) => {
   try {
     const { token } = req.params;
@@ -113,17 +118,20 @@ export const startAssessment = async (req: Request, res: Response) => {
     if (!attempt) return;
 
     if (attempt.status !== "pending") {
-      res.status(400).json({ error: `Cannot start an assessment that is already ${attempt.status}` });
+      res.status(400).json({
+        error: `Cannot start an assessment that is already ${attempt.status}`,
+      });
       return;
     }
 
     const result = await assessmentExecutionService.startAttempt(attempt.id);
+    logger.info(`Assessment started: attemptId=${attempt.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to start assessment attempt for token=${req.params.token}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to start assessment" });
   }
 };
-
 
 export const submitAssessmentAnswer = async (req: Request, res: Response) => {
   try {
@@ -133,7 +141,9 @@ export const submitAssessmentAnswer = async (req: Request, res: Response) => {
     if (!attempt) return;
 
     if (attempt.status !== "started") {
-      res.status(403).json({ error: "Assessment must be in 'started' state to submit answers" });
+      res.status(403).json({
+        error: "Assessment must be in 'started' state to submit answers",
+      });
       return;
     }
 
@@ -146,16 +156,19 @@ export const submitAssessmentAnswer = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await assessmentExecutionService.saveAnswer(attempt.id, parsed.data);
+    const result = await assessmentExecutionService.saveAnswer(
+      attempt.id,
+      parsed.data,
+    );
     res.status(200).json({ data: result });
   } catch (error: any) {
-    res.status(500).json({ 
+    logger.error(`Failed to save answer for attempt token=${req.params.token}: ${error?.message}`);
+    res.status(500).json({
       error: "Failed to save answer",
-      message: error.message || "Unknown error"
+      message: error.message || "Unknown error",
     });
   }
 };
-
 
 export const completeAssessment = async (req: Request, res: Response) => {
   try {
@@ -175,7 +188,9 @@ export const completeAssessment = async (req: Request, res: Response) => {
     if (!attempt) return;
 
     if (attempt.status !== "started") {
-      res.status(400).json({ error: "Only started assessments can be completed" });
+      res
+        .status(400)
+        .json({ error: "Only started assessments can be completed" });
       return;
     }
 
@@ -184,22 +199,28 @@ export const completeAssessment = async (req: Request, res: Response) => {
       throw new Error("Failed to finalize assessment");
     }
 
-    const completionContext = await assessmentExecutionService.getAttemptCompletionEmailContext(attempt.id);
+    const completionContext =
+      await assessmentExecutionService.getAttemptCompletionEmailContext(
+        attempt.id,
+      );
     if (completionContext) {
       mailService
         .sendAssessmentCompletionEmail(
           completionContext.candidateEmail,
           completionContext.candidateFirstName,
           completionContext.assessmentTitle,
-          autoSubmitReason
+          autoSubmitReason,
         )
         .catch((emailError) => {
-          console.error("Assessment completion email failed:", emailError);
+          logger.error("Assessment completion email failed:", emailError);
         });
     } else {
-      console.warn(`Assessment completion email skipped: context not found for attempt ${attempt.id}`);
+      logger.warn(
+        `Assessment completion email skipped: context not found for attempt ${attempt.id}`,
+      );
     }
 
+    logger.info(`Assessment completed: attemptId=${attempt.id}, passed=${result.passed}, score=${result.scorePercentage}%${autoSubmitReason ? `, autoSubmit="${autoSubmitReason}"` : ""}`);
     res.status(200).json({
       message: "Assessment completed successfully",
       data: {
@@ -208,6 +229,9 @@ export const completeAssessment = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    res.status(500).json({ error: error.message || "Failed to finalize assessment" });
+    logger.error(`Failed to complete assessment for token=${req.params.token}: ${error?.message}`);
+    res
+      .status(500)
+      .json({ error: error.message || "Failed to finalize assessment" });
   }
 };

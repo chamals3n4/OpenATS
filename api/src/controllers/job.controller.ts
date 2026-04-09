@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { jobService } from "../services/job.service";
 import { cleanObject as clean } from "../utils/object.utils";
+import logger from "../utils/logger";
 
 const employmentTypeEnum = z.enum([
   "full_time",
@@ -102,6 +103,7 @@ export const listPublishedCareersJobs = async (
     const result = await jobService.listPublishedForCareers();
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch published careers jobs: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch jobs" });
   }
 };
@@ -111,6 +113,7 @@ export const getAllJobs = async (req: Request, res: Response) => {
     const result = await jobService.getAll();
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch all jobs: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch jobs" });
   }
 };
@@ -131,6 +134,7 @@ export const getJobById = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch job id=${req.params.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch job" });
   }
 };
@@ -152,6 +156,7 @@ export const getPublicJobById = async (req: Request, res: Response) => {
     const { hiringTeam, pipelineStages, createdBy, ...data } = result;
     res.status(200).json({ data });
   } catch (error) {
+    logger.error(`Failed to fetch public job id=${req.params.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch job" });
   }
 };
@@ -170,6 +175,7 @@ export const getJobBySlug = async (req: Request, res: Response) => {
     }
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch job by slug="${req.params.slug}": ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch job" });
   }
 };
@@ -178,6 +184,7 @@ export const createJob = async (req: Request, res: Response) => {
   try {
     const parsed = createJobSchema.safeParse(req.body);
     if (!parsed.success) {
+      logger.warn(`Job creation validation failed - user ${req.user?.id}: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
       res.status(400).json({
         error: "Validation failed",
         details: parsed.error.flatten().fieldErrors,
@@ -200,12 +207,14 @@ export const createJob = async (req: Request, res: Response) => {
       status: parsed.data.status ?? "draft",
     };
     const result = await jobService.create(data);
+    logger.info(`Job created: id=${result.id}, title="${result.title}", status=${result.status}, createdBy=${req.user.id}`);
     res.status(201).json({ data: result });
   } catch (error: any) {
     if (error?.code === "23503") {
       res.status(400).json({ error: "Department not found" });
       return;
     }
+    logger.error(`Failed to create job - user ${req.user?.id}: ${error?.message}`);
     res.status(500).json({ error: "Failed to create job" });
   }
 };
@@ -220,6 +229,7 @@ export const updateJob = async (req: Request, res: Response) => {
 
     const parsed = updateJobSchema.safeParse(req.body);
     if (!parsed.success) {
+      logger.warn(`Job update validation failed - id=${id}, user ${req.user?.id}: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
       res.status(400).json({
         error: "Validation failed",
         details: parsed.error.flatten().fieldErrors,
@@ -234,12 +244,14 @@ export const updateJob = async (req: Request, res: Response) => {
       return;
     }
 
+    logger.info(`Job updated: id=${id}, status=${result.status}, updatedBy=${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error: any) {
     if (error?.code === "23503") {
       res.status(400).json({ error: "Department not found" });
       return;
     }
+    logger.error(`Failed to update job id=${req.params.id} - user ${req.user?.id}: ${error?.message}`);
     res.status(500).json({ error: "Failed to update job" });
   }
 };
@@ -252,12 +264,14 @@ export const deleteJob = async (req: Request, res: Response) => {
       return;
     }
 
+    logger.warn(`Job deletion requested: id=${id} by user ${req.user?.id}`);
     const result = await jobService.delete(id);
     if (!result) {
       res.status(404).json({ error: "Job not found" });
       return;
     }
 
+    logger.info(`Job deleted: id=${id}, title="${result.title}" by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error: any) {
     if (error?.code === "23503") {
@@ -267,6 +281,7 @@ export const deleteJob = async (req: Request, res: Response) => {
       });
       return;
     }
+    logger.error(`Failed to delete job id=${req.params.id} - user ${req.user?.id}: ${error?.message}`);
     res.status(500).json({ error: "Failed to delete job" });
   }
 };
@@ -281,6 +296,7 @@ export const getAssessments = async (req: Request, res: Response) => {
     const result = await jobService.getAssessments(jobId);
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch assessments for job id=${req.params.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch job assessments" });
   }
 };
@@ -307,15 +323,16 @@ export const attachAssessment = async (req: Request, res: Response) => {
       triggerStageId: parseInt(triggerStageId),
     });
 
+    logger.info(`Assessment attached to job: jobId=${jobId}, assessmentId=${assessmentId}, triggerStageId=${triggerStageId} by user ${req.user?.id}`);
     res.status(201).json({ data: result });
   } catch (error: any) {
     if (error?.code === "23505") {
-      // Unique constraint violation
       res.status(409).json({
         error: "An assessment is already attached to this stage for this job",
       });
       return;
     }
+    logger.error(`Failed to attach assessment to job id=${req.params.id} - user ${req.user?.id}: ${error?.message}`);
     res.status(500).json({ error: "Failed to attach assessment" });
   }
 };
@@ -332,8 +349,10 @@ export const detachAssessment = async (req: Request, res: Response) => {
       res.status(404).json({ error: "Attachment not found" });
       return;
     }
+    logger.info(`Assessment detached: attachmentId=${attachmentId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to detach assessment attachmentId=${req.params.attachmentId} - user ${req.user?.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to detach assessment" });
   }
 };

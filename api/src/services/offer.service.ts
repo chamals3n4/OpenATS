@@ -1,10 +1,36 @@
 import { eq, desc } from "drizzle-orm";
 import { db } from "../db";
-import { offers, candidates, jobs, templates, users } from "../db/schema";
+import { offers, candidates, jobs, templates } from "../db/schema";
+import type { Offer } from "../db/schema/offers";
 import { variableService } from "./variable.service";
 import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
 import { mailService } from "./mail.service";
+
+/** Sends the rendered offer letter via Resend (see `mail.service.ts`). */
+async function sendOfferEmailForOffer(offer: Offer): Promise<void> {
+  if (!offer.renderedHtml) return;
+
+  const [candidate] = await db
+    .select()
+    .from(candidates)
+    .where(eq(candidates.id, offer.candidateId));
+  if (!candidate) return;
+
+  let subject = "Offer Letter";
+  if (offer.templateId) {
+    const [template] = await db
+      .select()
+      .from(templates)
+      .where(eq(templates.id, offer.templateId));
+    if (template) {
+      const context = await variableService.getContextForOffer(candidate.id, offer);
+      subject = templateEngineService.replaceVariables(template.subject, context);
+    }
+  }
+
+  await mailService.sendOfferEmail(candidate.email, subject, offer.renderedHtml);
+}
 
 export interface CreateOfferInput {
   candidateId: number;
@@ -13,8 +39,9 @@ export interface CreateOfferInput {
   salary?: number | null | undefined;
   currency?: string | null | undefined;
   payFrequency?: "hourly" | "daily" | "weekly" | "monthly" | "yearly" | null | undefined;
-  startDate?: string | null | undefined; 
+  startDate?: string | null | undefined;
   expiryDate?: string | null | undefined;
+  benefitsText?: string | null | undefined;
   status?: "draft" | "sent" | "pending" | "accepted" | "declined" | "withdrawn" | undefined;
   createdBy: number;
 }
@@ -27,6 +54,7 @@ export interface UpdateOfferInput {
   payFrequency?: "hourly" | "daily" | "weekly" | "monthly" | "yearly" | null | undefined;
   startDate?: string | null | undefined;
   expiryDate?: string | null | undefined;
+  benefitsText?: string | null | undefined;
   renderedHtml?: string | null | undefined;
 }
 
@@ -120,20 +148,47 @@ export const offerService = {
     const [existing] = await db.select().from(offers).where(eq(offers.id, id));
     if (!existing) return null;
 
-    const updatedData = { ...clean(input), updatedAt: new Date() };
+    const updatedData: Record<string, unknown> = {
+      ...clean(input),
+      updatedAt: new Date(),
+    };
 
-    if (input.templateId !== undefined || input.salary !== undefined) {
-      const renderInput = { ...existing, ...input };
-      updatedData.renderedHtml = await this._renderOfferHtml(renderInput);
+    if (input.status === "sent" && existing.status !== "sent") {
+      updatedData.sentAt = new Date();
+    }
+
+    const merged = { ...existing, ...input };
+    const affectsOfferLetter =
+      input.templateId !== undefined ||
+      input.salary !== undefined ||
+      input.currency !== undefined ||
+      input.payFrequency !== undefined ||
+      input.startDate !== undefined ||
+      input.expiryDate !== undefined ||
+      input.benefitsText !== undefined;
+
+    if (merged.templateId && (affectsOfferLetter || !existing.renderedHtml)) {
+      updatedData.renderedHtml = await this._renderOfferHtml(merged);
     }
 
     const [updated] = await db
       .update(offers)
-      .set(updatedData)
+      .set(updatedData as typeof offers.$inferInsert)
       .where(eq(offers.id, id))
       .returning();
-    
-    return updated ?? null;
+
+    if (!updated) return null;
+
+    // First transition to "sent" via PUT: send once. (Resend / repeat sends use PATCH /status only.)
+    if (
+      input.status === "sent" &&
+      existing.status !== "sent" &&
+      updated.renderedHtml
+    ) {
+      await sendOfferEmailForOffer(updated);
+    }
+
+    return updated;
   },
 
   async delete(id: number) {
@@ -166,21 +221,9 @@ export const offerService = {
     if (!updated) return null;
 
     if (status === "sent" && updated.renderedHtml) {
-      const [candidate] = await db.select().from(candidates).where(eq(candidates.id, updated.candidateId));
-      if (candidate) {
-        let subject = "Offer Letter";
-        if (updated.templateId) {
-          const [template] = await db.select().from(templates).where(eq(templates.id, updated.templateId));
-          if (template) {
-            const context = await variableService.getContextForOffer(candidate.id, updated);
-            subject = templateEngineService.replaceVariables(template.subject, context);
-          }
-        }
-
-        await mailService.sendOfferEmail(candidate.email, subject, updated.renderedHtml);
-      }
+      await sendOfferEmailForOffer(updated);
     }
-    
+
     return updated ?? null;
   },
 

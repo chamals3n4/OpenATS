@@ -32,12 +32,24 @@ export const variableService = {
   async getContextForOffer(candidateId: number, offerData: any): Promise<TemplateContext> {
     const baseContext = await this.getContextForCandidate(candidateId);
     
+    const benefitsRaw =
+      offerData.benefitsText != null && String(offerData.benefitsText).trim()
+        ? String(offerData.benefitsText).trim()
+        : "";
+
+    const payFreq =
+      offerData.payFrequency != null && String(offerData.payFrequency).trim()
+        ? String(offerData.payFrequency).replace(/_/g, " ")
+        : "";
+
     return {
       ...baseContext,
       salary: offerData.salary ?? "TBD",
       currency: offerData.currency ?? "",
+      pay_frequency: payFreq || "—",
       start_date: offerData.startDate || "TBD",
       expiry_date: offerData.expiryDate || "TBD",
+      benefits: benefitsRaw || "—",
     };
   }
 };

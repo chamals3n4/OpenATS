@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../db";
 import { templates } from "../db/schema";
 import type { ContentBlock } from "../db/schema";
@@ -10,6 +10,8 @@ export interface CreateTemplateInput {
   subject: string;
   bodyJson: ContentBlock[];
   createdBy: number;
+  /** When true, clears other defaults for this `type` and marks this row. */
+  isDefault?: boolean | undefined;
 }
 
 export interface UpdateTemplateInput {
@@ -17,11 +19,44 @@ export interface UpdateTemplateInput {
   type?: ("offer" | "rejection" | "assessment_invite" | "general") | undefined;
   subject?: string | undefined;
   bodyJson?: ContentBlock[] | undefined;
+  isDefault?: boolean | undefined;
 }
 
 
 
 export const templateService = {
+  /**
+   * Marks one template as the default for its type (others of the same type become non-default).
+   */
+  async setAsDefaultForType(templateId: number) {
+    const existing = await this.getById(templateId);
+    if (!existing) return null;
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(templates)
+        .set({ isDefault: false, updatedAt: new Date() })
+        .where(eq(templates.type, existing.type));
+      await tx
+        .update(templates)
+        .set({ isDefault: true, updatedAt: new Date() })
+        .where(eq(templates.id, templateId));
+    });
+
+    return this.getById(templateId);
+  },
+
+  async getDefaultTemplateIdForType(
+    type: "offer" | "rejection" | "assessment_invite" | "general",
+  ): Promise<number | null> {
+    const [row] = await db
+      .select({ id: templates.id })
+      .from(templates)
+      .where(and(eq(templates.type, type), eq(templates.isDefault, true)))
+      .limit(1);
+    return row?.id ?? null;
+  },
+
   async getAll() {
     return db.select().from(templates).orderBy(templates.createdAt);
   },
@@ -42,27 +77,36 @@ export const templateService = {
   },
 
   async create(input: CreateTemplateInput) {
+    const { isDefault, ...rest } = input;
     const [created] = await db
       .insert(templates)
-      .values(clean(input))
+      .values(clean(rest))
       .returning();
 
     if (!created) {
       throw new Error("Failed to create template");
     }
+    if (isDefault === true) {
+      return (await this.setAsDefaultForType(created.id)) ?? created;
+    }
     return created;
   },
 
   async update(id: number, input: UpdateTemplateInput) {
+    const { isDefault, ...fields } = input;
     const [updated] = await db
       .update(templates)
       .set({
-        ...clean(input),
+        ...clean(fields),
         updatedAt: new Date(),
       })
       .where(eq(templates.id, id))
       .returning();
-    return updated ?? null;
+    if (!updated) return null;
+    if (isDefault === true) {
+      return (await this.setAsDefaultForType(id)) ?? updated;
+    }
+    return updated;
   },
 
   async delete(id: number) {

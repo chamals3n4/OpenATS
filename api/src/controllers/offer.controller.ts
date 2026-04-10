@@ -2,26 +2,50 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { offerService } from "../services/offer.service";
 
+/** ISO 4217; empty string → null. Undefined = omit field (partial update). */
+const currencyField = z.preprocess((v) => {
+  if (v === undefined) return undefined;
+  if (v === "" || v === null) return null;
+  return v;
+}, z.union([z.string().length(3, "Currency must be a 3-letter ISO code (e.g. USD)"), z.null()]).optional());
+
+const templateIdField = z.preprocess((v) => {
+  if (v === undefined) return undefined;
+  if (v === "" || v === null) return null;
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n) || n < 1) return null;
+  return Math.trunc(n);
+}, z.union([z.number().int().positive(), z.null()]).optional());
+
+const salaryField = z.preprocess((v) => {
+  if (v === undefined) return undefined;
+  if (v === "" || v === null) return null;
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}, z.union([z.number().positive("Salary must be greater than zero"), z.null()]).optional());
 
 const createOfferSchema = z.object({
   candidateId: z.number().int().positive(),
   jobId: z.number().int().positive(),
-  templateId: z.number().int().positive().optional().nullable(),
-  salary: z.number().positive().optional().nullable(),
-  currency: z.string().length(3).optional().nullable(),
+  templateId: templateIdField,
+  salary: salaryField,
+  currency: currencyField,
   payFrequency: z.enum(["hourly", "daily", "weekly", "monthly", "yearly"]).optional().nullable(),
   startDate: z.string().optional().nullable(),
   expiryDate: z.string().optional().nullable(),
+  benefitsText: z.string().max(20000).optional().nullable(),
 });
 
 const updateOfferSchema = z.object({
-  templateId: z.number().int().positive().optional().nullable(),
+  templateId: templateIdField,
   status: z.enum(["draft", "sent", "pending", "accepted", "declined", "withdrawn"]).optional(),
-  salary: z.number().positive().optional().nullable(),
-  currency: z.string().length(3).optional().nullable(),
+  salary: salaryField,
+  currency: currencyField,
   payFrequency: z.enum(["hourly", "daily", "weekly", "monthly", "yearly"]).optional().nullable(),
   startDate: z.string().optional().nullable(),
   expiryDate: z.string().optional().nullable(),
+  benefitsText: z.string().max(20000).optional().nullable(),
   renderedHtml: z.string().optional().nullable(),
 });
 
@@ -77,8 +101,9 @@ export const createOffer = async (req: Request, res: Response) => {
   try {
     const parsed = createOfferSchema.safeParse(req.body);
     if (!parsed.success) {
+      const first = parsed.error.issues[0];
       res.status(400).json({
-        error: "Validation failed",
+        error: first?.message ?? "Validation failed",
         details: parsed.error.flatten().fieldErrors,
       });
       return;
@@ -86,8 +111,9 @@ export const createOffer = async (req: Request, res: Response) => {
 
     const result = await offerService.create({
       ...parsed.data,
-      createdBy: req.user.id, // ← from auth middleware
-    });    res.status(201).json({ data: result });
+      createdBy: req.user.id,
+    });
+    res.status(201).json({ data: result });
   } catch (error: any) {
     res.status(400).json({ error: error.message || "Failed to create offer" });
   }
@@ -103,8 +129,9 @@ export const updateOffer = async (req: Request, res: Response) => {
 
     const parsed = updateOfferSchema.safeParse(req.body);
     if (!parsed.success) {
+      const first = parsed.error.issues[0];
       res.status(400).json({
-        error: "Validation failed",
+        error: first?.message ?? "Validation failed",
         details: parsed.error.flatten().fieldErrors,
       });
       return;
@@ -117,8 +144,13 @@ export const updateOffer = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({ data: result });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to update offer" });
+  } catch (error: unknown) {
+    const msg =
+      error instanceof Error && error.message
+        ? error.message
+        : "Failed to update offer";
+    console.error("[updateOffer]", error);
+    res.status(500).json({ error: msg });
   }
 };
 
@@ -146,8 +178,13 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({ data: result });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to update offer status" });
+  } catch (error: unknown) {
+    const msg =
+      error instanceof Error && error.message
+        ? error.message
+        : "Failed to update offer status";
+    console.error("[updateOfferStatus]", error);
+    res.status(500).json({ error: msg });
   }
 };
 
@@ -166,7 +203,12 @@ export const deleteOffer = async (req: Request, res: Response) => {
     }
 
     res.status(200).json({ data: result });
-  } catch (error) {
-    res.status(500).json({ error: "Failed to delete offer" });
+  } catch (error: any) {
+    console.error("[deleteOffer]", error);
+    const msg =
+      typeof error?.message === "string" && error.message.length > 0
+        ? error.message
+        : "Failed to delete offer";
+    res.status(500).json({ error: msg });
   }
 };

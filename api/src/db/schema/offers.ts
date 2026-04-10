@@ -39,6 +39,9 @@ export const offers = pgTable("offers", {
   startDate: date("start_date"),
   expiryDate: date("expiry_date"),
 
+  /** Free-form perks / benefits shown in offer templates via {{benefits}} */
+  benefitsText: text("benefits_text"),
+
   renderedHtml: text("rendered_html"),
   sentAt: timestamp("sent_at"),
 

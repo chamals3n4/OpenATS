@@ -423,6 +423,21 @@ function scoreCV(parsedCv: ParsedCv, jobReqs: JobRequirements): ScoreResult {
   };
 }
 
+function sanitizeAnalysisError(err: unknown): string {
+  const raw = err instanceof Error ? err.message : String(err);
+  if (
+    /API_KEY_INVALID|API key not valid|invalid api key|GEMINI_API_KEY/i.test(
+      raw,
+    )
+  ) {
+    return "CV analysis failed: invalid or missing GEMINI_API_KEY in api/.env. Get a key from Google AI Studio and restart the API.";
+  }
+  if (raw.length > 600) {
+    return `${raw.slice(0, 520)}…`;
+  }
+  return raw;
+}
+
 export const cvAnalysisService = {
   async analyze(
     candidateId: number,
@@ -537,7 +552,7 @@ export const cvAnalysisService = {
         .update(candidateCvAnalysis)
         .set({
           status: "failed",
-          errorMessage: error?.message ?? "Unknown error during CV analysis",
+          errorMessage: sanitizeAnalysisError(error),
           updatedAt: new Date(),
         })
         .where(eq(candidateCvAnalysis.candidateId, candidateId));

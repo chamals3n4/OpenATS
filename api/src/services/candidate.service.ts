@@ -1,4 +1,13 @@
-import { eq, and, desc, asc } from "drizzle-orm";
+import {
+  eq,
+  and,
+  desc,
+  asc,
+  or,
+  ilike,
+  sql,
+  type InferSelectModel,
+} from "drizzle-orm";
 import { db } from "../db";
 import {
   candidates,
@@ -16,12 +25,21 @@ import {
 } from "../db/schema";
 import { assessmentExecutionService } from "./assessment-execution.service";
 import { offerService } from "./offer.service";
+import { templateService } from "./template.service";
 import { jobService } from "./job.service";
 import { socketService } from "./socket.service";
 import { mailService } from "./mail.service";
 import { variableService } from "./variable.service";
 import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
+
+type CandidateRow = InferSelectModel<typeof candidates>;
+
+type RejectionEmailPayload = {
+  to: string;
+  subject: string;
+  html: string;
+};
 
 export interface CustomAnswerInput {
   questionId: number;
@@ -136,6 +154,26 @@ export const candidateService = {
       conditions.push(eq(candidates.currentStageId, filters.stageId));
     }
 
+    const rawSearch = filters.search?.trim();
+    if (rawSearch) {
+      const escaped = rawSearch
+        .replace(/\\/g, "\\\\")
+        .replace(/%/g, "\\%")
+        .replace(/_/g, "\\_");
+      const pattern = `%${escaped}%`;
+      // NULL ILIKE … is NULL in Postgres, so `phone ILIKE …` breaks the whole OR when phone is null.
+      // Match full name, coalesce phone, and keep per-field matches.
+      conditions.push(
+        or(
+          ilike(candidates.firstName, pattern),
+          ilike(candidates.lastName, pattern),
+          ilike(candidates.email, pattern),
+          ilike(sql`COALESCE(${candidates.phone}, '')`, pattern),
+          sql`(${candidates.firstName} || ' ' || ${candidates.lastName}) ILIKE ${pattern}`,
+        ),
+      );
+    }
+
     return db
       .select({
         id: candidates.id,
@@ -218,7 +256,9 @@ export const candidateService = {
     const [offer] = await db
       .select()
       .from(offers)
-      .where(eq(offers.candidateId, id));
+      .where(eq(offers.candidateId, id))
+      .orderBy(desc(offers.createdAt))
+      .limit(1);
 
     const [cvRow] = await db
       .select()
@@ -253,7 +293,11 @@ export const candidateService = {
     newStageId: number,
     movedBy: number | null = null,
   ) {
-    return await db.transaction(async (tx) => {
+    const { updated, rejectionMail } = await db.transaction(
+      async (tx): Promise<{
+        updated: CandidateRow | undefined;
+        rejectionMail: RejectionEmailPayload | null;
+      }> => {
       const [candidate] = await tx
         .select()
         .from(candidates)
@@ -273,7 +317,7 @@ export const candidateService = {
 
       if (!stage) throw new Error("Invalid stage for this job");
 
-      const [updated] = await tx
+      const [row] = await tx
         .update(candidates)
         .set({
           currentStageId: newStageId,
@@ -309,22 +353,14 @@ export const candidateService = {
         const job = await jobService.getById(candidate.jobId);
         if (job) {
           let salary: number | null = null;
-          let blockAutoSend = false;
 
           if (job.salaryType === "range" && job.salaryMin && job.salaryMax) {
             salary = (Number(job.salaryMin) + Number(job.salaryMax)) / 2;
-            blockAutoSend = true;
           } else if (job.salaryType === "fixed" && job.salaryFixed) {
             salary = Number(job.salaryFixed);
-          } else if (!job.salaryType) {
-            blockAutoSend = true;
           }
 
-          const mode =
-            blockAutoSend || stage.offerMode === "auto_draft"
-              ? "draft"
-              : "sent";
-
+          // Offers always start as draft so recruiters can review the letter before sending.
           let expiryDate: string | null = null;
           if (stage.offerExpiryDays) {
             const expiry = new Date();
@@ -332,26 +368,56 @@ export const candidateService = {
             expiryDate = expiry.toISOString();
           }
 
-          await offerService.create({
-            candidateId: candidate.id,
-            jobId: job.id,
-            templateId: stage.offerTemplateId,
-            salary,
-            currency: job.currency,
-            payFrequency: job.payFrequency,
-            expiryDate,
-            status: mode,
-            createdBy: movedBy ?? 1,
-          });
+          let offerTemplateId = stage.offerTemplateId;
+          if (!offerTemplateId) {
+            offerTemplateId =
+              (await templateService.getDefaultTemplateIdForType("offer")) ??
+              null;
+          }
+
+          const existingOffer = await tx
+            .select({ id: offers.id })
+            .from(offers)
+            .where(
+              and(
+                eq(offers.candidateId, candidate.id),
+                eq(offers.jobId, job.id),
+              ),
+            )
+            .limit(1);
+
+          if (existingOffer.length === 0) {
+            await offerService.create({
+              candidateId: candidate.id,
+              jobId: job.id,
+              templateId: offerTemplateId,
+              salary,
+              currency: job.currency,
+              payFrequency: job.payFrequency,
+              expiryDate,
+              status: "draft",
+              createdBy: movedBy ?? 1,
+            });
+          }
         }
       }
 
+      let rejectionMail: RejectionEmailPayload | null = null;
+
       if (stage.stageType === "rejection") {
-        if (stage.rejectionTemplateId) {
+        let rejectionTemplateId = stage.rejectionTemplateId;
+        if (!rejectionTemplateId) {
+          rejectionTemplateId =
+            (await templateService.getDefaultTemplateIdForType(
+              "rejection",
+            )) ?? null;
+        }
+
+        if (rejectionTemplateId && candidate.email?.trim()) {
           const [template] = await tx
             .select()
             .from(templates)
-            .where(eq(templates.id, stage.rejectionTemplateId));
+            .where(eq(templates.id, rejectionTemplateId));
 
           if (template) {
             const context = await variableService.getContextForCandidate(
@@ -362,18 +428,34 @@ export const candidateService = {
               template.bodyJson,
               context,
             );
-
-            await mailService.sendRejectionEmail(
-              candidate.email,
+            rejectionMail = {
+              to: candidate.email.trim(),
               subject,
               html,
-            );
+            };
           }
         }
       }
 
-      return updated;
+      return { updated: row, rejectionMail };
     });
+
+    if (rejectionMail) {
+      try {
+        await mailService.sendRejectionEmail(
+          rejectionMail.to,
+          rejectionMail.subject,
+          rejectionMail.html,
+        );
+      } catch (err) {
+        console.error(
+          "[candidate] moveStage: rejection email failed (stage move already saved)",
+          err instanceof Error ? err.message : err,
+        );
+      }
+    }
+
+    return updated;
   },
 
   async updateBasicDetails(id: number, data: CandidateBasicUpdateInput) {

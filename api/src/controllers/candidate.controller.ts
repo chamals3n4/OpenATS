@@ -27,8 +27,6 @@ const candidateApplySchema = z.object({
 
 const moveStageSchema = z.object({
   newStageId: z.number().int().positive("Target stage ID is required"),
-
-  movedBy: z.number().int().positive().default(1),
 });
 
 const updateCandidateBasicSchema = z.object({
@@ -37,6 +35,16 @@ const updateCandidateBasicSchema = z.object({
   email: z.string().email("Invalid email address").max(255).optional(),
   phone: z.union([z.string().max(50), z.null()]).optional(),
 });
+
+/** Browsers/OS often send PDFs as application/octet-stream; only trust extension + non-image mime. */
+function isLikelyPdfUpload(file: Express.Multer.File): boolean {
+  const mime = (file.mimetype || "").toLowerCase();
+  if (mime === "application/pdf" || mime === "application/x-pdf") return true;
+  const name = (file.originalname || "").toLowerCase();
+  if (!name.endsWith(".pdf")) return false;
+  if (mime.startsWith("image/") || mime.startsWith("video/")) return false;
+  return true;
+}
 
 async function getJobOrFail(res: Response, jobId: number) {
   const job = await jobService.getById(jobId);
@@ -127,6 +135,45 @@ export const getCandidateById = async (req: Request, res: Response) => {
   }
 };
 
+/** Stream resume PDF via API so the browser can load it same-origin (private R2 bucket; no public GET). */
+export const getCandidateResume = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid candidate ID" });
+      return;
+    }
+
+    const candidate = await candidateService.getById(id);
+    if (!candidate?.resumeUrl) {
+      res.status(404).json({ error: "No resume on file" });
+      return;
+    }
+
+    const key = r2Service.getResumeKeyFromStoredUrl(candidate.resumeUrl);
+    if (!key) {
+      res.status(500).json({
+        error:
+          "Could not resolve resume object key from stored URL. Check R2_PUBLIC_URL and stored resume_url format in api/.env.",
+      });
+      return;
+    }
+
+    const buffer = await r2Service.getObjectBuffer(key);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="resume-${id}.pdf"`,
+    );
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.send(buffer);
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Failed to load resume";
+    res.status(500).json({ error: message });
+  }
+};
+
 export const moveCandidateStage = async (req: Request, res: Response) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
@@ -147,7 +194,7 @@ export const moveCandidateStage = async (req: Request, res: Response) => {
     const result = await candidateService.moveStage(
       id,
       parsed.data.newStageId,
-      parsed.data.movedBy,
+      req.user.id,
     );
     res.status(200).json({ data: result });
   } catch (error: any) {
@@ -227,7 +274,7 @@ export const updateCandidateBasicDetails = async (
 
     let newResumeUrl: string | undefined;
     if (req.file) {
-      if (req.file.mimetype !== "application/pdf") {
+      if (!isLikelyPdfUpload(req.file)) {
         res.status(400).json({ error: "Only PDF files are allowed" });
         return;
       }

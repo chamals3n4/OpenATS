@@ -45,6 +45,7 @@ import {
 } from "@/hooks/use-api";
 import { useJobChat } from "@/hooks/use-job-chat";
 import type { PipelineStage, JobDetail, CustomQuestion } from "@/types";
+import { formatTimeAgo } from "@/lib/time-ago";
 
 const STAGE_COLORS: Record<PipelineStage["stageType"], string> = {
   none: "bg-slate-400",
@@ -93,16 +94,6 @@ const STATUS_BADGE: Record<
     text: "text-slate-500 dark:text-neutral-400",
   },
 };
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
 
 function formatSalary(job: JobDetail) {
   if (!job.salaryType) return null;
@@ -1969,7 +1960,7 @@ export default function JobDetailsPage() {
                       </span>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-slate-400 dark:text-neutral-500 text-[12px] font-medium">
-                          {timeAgo(msg.sentAt)}
+                          {formatTimeAgo(msg.sentAt)}
                         </span>
                         {me &&
                           msg.senderId === me.id &&

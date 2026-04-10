@@ -203,12 +203,14 @@ export type CandidateDetail = Candidate & {
   }[];
   offer: {
     id: number;
+    templateId: number | null;
     status: string;
     salary: string | null;
     currency: string | null;
     payFrequency: string | null;
     startDate: string | null;
     expiryDate: string | null;
+    benefitsText: string | null;
     sentAt: string | null;
     renderedHtml: string | null;
   } | null;
@@ -226,10 +228,14 @@ export type User = {
   updatedAt: string;
 };
 
-export type TemplateBodyBlock = {
-  type: "heading" | "text" | "button" | "image";
-  content: string;
-};
+/** Serialized `body_json` for templates (matches API / DB `ContentBlock`). */
+export type TemplateBodyBlock =
+  | { type: "heading"; content: string }
+  | { type: "text"; content: string }
+  | { type: "button"; content: string }
+  | { type: "image"; content: string }
+  | { type: "divider" }
+  | { type: "spacer"; height: number };
 
 export type Template = {
   id: number;
@@ -237,6 +243,7 @@ export type Template = {
   type: "offer" | "rejection" | "assessment_invite" | "general";
   subject: string;
   bodyJson: TemplateBodyBlock[];
+  isDefault?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -251,6 +258,7 @@ export type Offer = {
   payFrequency: "hourly" | "daily" | "weekly" | "monthly" | "yearly" | null;
   startDate: string | null;
   expiryDate: string | null;
+  benefitsText: string | null;
   status: "draft" | "sent" | "pending" | "accepted" | "declined" | "withdrawn";
   renderedHtml: string | null;
   createdAt: string;

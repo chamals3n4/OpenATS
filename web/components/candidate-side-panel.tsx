@@ -1,13 +1,14 @@
 "use client";
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowUpRight01Icon, SentIcon, PencilEdit01Icon, Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import { SentIcon, PencilEdit01Icon, Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Select,
   SelectContent,
@@ -18,17 +19,18 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { CandidateJobFitTab } from "@/components/candidate-job-fit-tab";
-import { useCandidate, usePipeline, useUpdateOffer, useUpdateOfferStatus, useCandidateAssessments } from "@/hooks/use-api";
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
+import { useCandidateDetailSheet } from "@/components/candidate-detail-sheet-context";
+import {
+  useCandidate,
+  useJob,
+  usePipeline,
+  useTemplates,
+  useUpdateOffer,
+  useUpdateOfferStatus,
+  useCandidateAssessments,
+} from "@/hooks/use-api";
+import { toast } from "sonner";
+import { formatTimeAgo } from "@/lib/time-ago";
 
 function formatDate(dateStr: string | null) {
   if (!dateStr) return "—";
@@ -39,9 +41,25 @@ function formatDate(dateStr: string | null) {
   });
 }
 
+/** `<input type="date">` only accepts YYYY-MM-DD; API may return full ISO strings. */
+function toDateInputValue(dateStr: string | null | undefined): string {
+  if (!dateStr) return "";
+  const s = String(dateStr).trim();
+  const ymd = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (ymd) return ymd[1];
+  const t = Date.parse(s);
+  if (Number.isNaN(t)) return "";
+  const d = new Date(t);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
 const OFFER_STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   draft: { bg: "bg-amber-50 dark:bg-amber-950/30", text: "text-amber-600 dark:text-amber-400" },
   sent: { bg: "bg-blue-50 dark:bg-blue-950/30", text: "text-blue-600 dark:text-blue-400" },
+  pending: { bg: "bg-violet-50 dark:bg-violet-950/30", text: "text-violet-600 dark:text-violet-400" },
   accepted: { bg: "bg-green-50 dark:bg-green-950/30", text: "text-green-600 dark:text-green-400" },
   declined: { bg: "bg-red-50 dark:bg-red-950/30", text: "text-red-500 dark:text-red-400" },
   withdrawn: { bg: "bg-slate-50 dark:bg-neutral-800", text: "text-slate-500 dark:text-neutral-400" },
@@ -61,16 +79,30 @@ export function CandidateSidePanel({
     enabled: open && !!candidateId,
   });
   const candidate = data?.data;
+  const jobIdForOffer = data?.data?.jobId ?? 0;
+  const { data: jobData } = useJob(jobIdForOffer);
 
   const { data: pipelineData } = usePipeline(candidate?.jobId ?? 0);
   const { data: assessmentsData } = useCandidateAssessments(candidateId);
+  const { data: templatesRes } = useTemplates();
   const stageMap = useMemo(
     () => Object.fromEntries((pipelineData?.data ?? []).map((s) => [s.id, s.name])),
     [pipelineData],
   );
 
-  const [emailSubject, setEmailSubject] = useState("");
-  const [emailBody, setEmailBody] = useState("");
+  const allTemplates = templatesRes?.data ?? [];
+  const offerTemplates = useMemo(
+    () => allTemplates.filter((t) => t.type === "offer"),
+    [allTemplates],
+  );
+
+  const {
+    setPreviewPane,
+    emailSubject,
+    setEmailSubject,
+    emailBody,
+    setEmailBody,
+  } = useCandidateDetailSheet();
 
   const [isEditingOffer, setIsEditingOffer] = useState(false);
   const [editSalary, setEditSalary] = useState("");
@@ -78,11 +110,57 @@ export function CandidateSidePanel({
   const [editPayFreq, setEditPayFreq] = useState("monthly");
   const [editStartDate, setEditStartDate] = useState("");
   const [editExpiryDate, setEditExpiryDate] = useState("");
+  const [editBenefits, setEditBenefits] = useState("");
   const [editStatus, setEditStatus] = useState("draft");
+  /** Empty string or "__none__" resolved to null on save; otherwise numeric id string. */
+  const [editTemplateId, setEditTemplateId] = useState("");
+  const [activeTab, setActiveTab] = useState("job-fit");
+
+  /** Label shown in the template Select trigger (resolved from full template list so the id never shows as the label). */
+  const editTemplateSelectLabel = useMemo(() => {
+    if (!editTemplateId || editTemplateId === "__none__") return "No template";
+    const id = Number(editTemplateId);
+    if (!Number.isFinite(id)) return "Select template";
+    const t = allTemplates.find((x) => x.id === id);
+    if (!t) return `Template #${id}`;
+    return `${t.name}${t.isDefault ? " (default)" : ""}`;
+  }, [editTemplateId, allTemplates]);
 
   const updateOfferMutation = useUpdateOffer();
   const updateOfferStatusMutation = useUpdateOfferStatus();
   const tabsScrollRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    if (candidate?.offer?.status === "draft") setIsEditingOffer(false);
+  }, [candidate?.offer?.id, candidate?.offer?.status]);
+
+  useLayoutEffect(() => {
+    const o = candidate?.offer;
+    if (!o) return;
+    setEditSalary(o.salary ? String(Number(o.salary)) : "");
+    const cur = o.currency ? String(o.currency).trim().toUpperCase() : "";
+    setEditCurrency(/^[A-Z]{3}$/.test(cur) ? cur : "USD");
+    setEditPayFreq(o.payFrequency ?? "monthly");
+    setEditStartDate(toDateInputValue(o.startDate));
+    setEditExpiryDate(toDateInputValue(o.expiryDate));
+    setEditBenefits(o.benefitsText ?? "");
+    setEditStatus(o.status ?? "draft");
+    setEditTemplateId(o.templateId != null ? String(o.templateId) : "");
+  }, [candidate?.offer?.id, candidate?.offer?.templateId]);
+
+  useEffect(() => {
+    if (!candidate) return;
+    if (candidate.resumeUrl) setPreviewPane("resume");
+    else if (candidate.offer) setPreviewPane("offer");
+    else setPreviewPane("email");
+  }, [candidateId, candidate?.resumeUrl, candidate?.offer?.id]);
+
+  useEffect(() => {
+    if (activeTab === "email") setPreviewPane("email");
+    else if (activeTab === "offer" && candidate?.offer) setPreviewPane("offer");
+    else if (activeTab === "job-fit" && candidate?.resumeUrl)
+      setPreviewPane("resume");
+  }, [activeTab, candidate?.offer?.id, candidate?.resumeUrl]);
 
   const handleTabsWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     const el = tabsScrollRef.current;
@@ -95,40 +173,68 @@ export function CandidateSidePanel({
   const openOfferEdit = () => {
     if (!offer) return;
     setEditSalary(offer.salary ? String(Number(offer.salary)) : "");
-    setEditCurrency(offer.currency ?? "USD");
+    const cur = offer.currency ? String(offer.currency).trim().toUpperCase() : "";
+    setEditCurrency(/^[A-Z]{3}$/.test(cur) ? cur : "USD");
     setEditPayFreq(offer.payFrequency ?? "monthly");
-    setEditStartDate(offer.startDate ?? "");
-    setEditExpiryDate(offer.expiryDate ?? "");
+    setEditStartDate(toDateInputValue(offer.startDate));
+    setEditExpiryDate(toDateInputValue(offer.expiryDate));
+    setEditBenefits(offer.benefitsText ?? "");
     setEditStatus(offer.status ?? "draft");
+    setEditTemplateId(offer.templateId != null ? String(offer.templateId) : "");
     setIsEditingOffer(true);
   };
 
   const saveOffer = () => {
     if (!offer) return;
-    const statusChanged = editStatus !== offer.status;
     const newStatus = editStatus as "draft" | "sent" | "pending" | "accepted" | "declined" | "withdrawn";
+
+    const salaryTrim = editSalary.trim();
+    let salaryNum: number | null = null;
+    if (salaryTrim !== "") {
+      salaryNum = Number(salaryTrim);
+      if (Number.isNaN(salaryNum) || salaryNum < 0) {
+        toast.error("Enter a valid salary or leave it empty.");
+        return;
+      }
+      if (salaryNum === 0) {
+        toast.error("Salary must be greater than zero, or leave it empty.");
+        return;
+      }
+    }
+
+    let templateIdResolved: number | null = null;
+    if (editTemplateId && editTemplateId !== "__none__") {
+      const tid = Number(editTemplateId);
+      if (Number.isFinite(tid) && tid > 0) templateIdResolved = Math.trunc(tid);
+    }
+
+    const currencyTrim = editCurrency.trim().toUpperCase();
+    const currencyOut = /^[A-Z]{3}$/.test(currencyTrim) ? currencyTrim : null;
 
     updateOfferMutation.mutate(
       {
         offerId: offer.id,
         data: {
-          salary: editSalary ? Number(editSalary) : null,
-          currency: editCurrency || null,
+          templateId: templateIdResolved,
+          salary: salaryNum,
+          currency: currencyOut,
           payFrequency: editPayFreq as "hourly" | "daily" | "weekly" | "monthly" | "yearly",
           startDate: editStartDate || null,
           expiryDate: editExpiryDate || null,
+          benefitsText: editBenefits.trim() || null,
+          status: newStatus,
         },
       },
       {
         onSuccess: () => {
-          if (statusChanged) {
-            updateOfferStatusMutation.mutate(
-              { id: offer.id, status: newStatus },
-              { onSuccess: () => setIsEditingOffer(false) },
-            );
-          } else {
-            setIsEditingOffer(false);
-          }
+          setPreviewPane("offer");
+          setIsEditingOffer(false);
+          toast.success("Offer saved");
+        },
+        onError: (e) => {
+          toast.error(
+            e instanceof Error ? e.message : "Failed to save offer",
+          );
         },
       },
     );
@@ -149,7 +255,43 @@ export function CandidateSidePanel({
     ? (OFFER_STATUS_STYLES[offer.status] ?? OFFER_STATUS_STYLES.draft)
     : null;
 
+  const fillFromJobAndCandidate = () => {
+    const job = jobData?.data;
+    if (!job) {
+      toast.error("Job details could not be loaded.");
+      return;
+    }
+    if (job.salaryType === "fixed" && job.salaryFixed) {
+      setEditSalary(String(Number(job.salaryFixed)));
+    } else if (job.salaryType === "range" && job.salaryMin && job.salaryMax) {
+      setEditSalary(
+        String(
+          Math.round(
+            (Number(job.salaryMin) + Number(job.salaryMax)) / 2,
+          ),
+        ),
+      );
+    }
+    if (job.currency) setEditCurrency(job.currency);
+    const pf = job.payFrequency;
+    if (
+      pf &&
+      ["hourly", "daily", "weekly", "monthly", "yearly"].includes(pf)
+    ) {
+      setEditPayFreq(pf);
+    }
+    if (!editBenefits.trim()) {
+      setEditBenefits(
+        `Candidate: ${candidate.firstName} ${candidate.lastName}\nEmail: ${candidate.email}${candidate.phone ? `\nPhone: ${candidate.phone}` : ""}`,
+      );
+    }
+    toast.success("Filled salary and pay from the job; added candidate details to benefits when empty.");
+  };
+
   const cvAnalysis = candidate.cvAnalysis;
+  const resumeViewUrl = candidate.resumeUrl
+    ? `/api/candidates/${candidateId}/resume`
+    : null;
 
   const TABS = [
     { value: "job-fit", label: "Job fit" },
@@ -163,22 +305,70 @@ export function CandidateSidePanel({
   const triggerBase =
     "shrink-0 data-active:!bg-[var(--theme-color)] data-active:!border-[var(--theme-color)] data-active:!text-white border border-slate-200 dark:border-neutral-800 rounded-[8px] px-4 py-1.5 text-[13px] font-medium text-slate-600 dark:text-neutral-400 shadow-none bg-white dark:bg-neutral-900 cursor-pointer whitespace-nowrap";
 
-  return (
-    <div className="w-[520px] border-l border-slate-100 dark:border-neutral-800 flex flex-col bg-white dark:bg-neutral-950 overflow-hidden shrink-0">
-      <div className="h-[58px] shrink-0 flex items-center px-5 border-b border-slate-100 dark:border-neutral-800">
-        {candidate.resumeUrl ? (
-          <a href={candidate.resumeUrl} target="_blank" rel="noreferrer">
-            <Button className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium text-[12px] gap-2 px-4 h-9 rounded-[8px] shadow-none border-none">
-              <span>View CV</span>
-              <HugeiconsIcon icon={ArrowUpRight01Icon} className="size-4" strokeWidth={2.5} />
-            </Button>
-          </a>
-        ) : (
-          <span className="text-slate-400 dark:text-neutral-500 text-sm italic">No resume uploaded</span>
-        )}
-      </div>
+  const orphanOfferTemplateSelected =
+    editTemplateId &&
+    editTemplateId !== "__none__" &&
+    !offerTemplates.some((t) => String(t.id) === editTemplateId);
 
-      <Tabs defaultValue="job-fit" className="flex-1 flex flex-col overflow-hidden m-0 min-h-0">
+  const offerTemplateField = (
+    <div className="space-y-1.5">
+      <Label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+        Offer letter template
+      </Label>
+      <Select
+        value={editTemplateId || "__none__"}
+        onValueChange={(v) =>
+          setEditTemplateId(v == null || v === "__none__" ? "" : v)
+        }
+      >
+        <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] w-full">
+          <SelectValue placeholder="Select template">
+            {editTemplateSelectLabel}
+          </SelectValue>
+        </SelectTrigger>
+        <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 max-h-[min(60vh,280px)]">
+          <SelectItem value="__none__" className="text-[13px] text-slate-500">
+            No template
+          </SelectItem>
+          {orphanOfferTemplateSelected && (
+            <SelectItem
+              value={editTemplateId}
+              className="text-[13px] text-amber-700 dark:text-amber-400"
+            >
+              {editTemplateSelectLabel}
+              {" — not in offer list"}
+            </SelectItem>
+          )}
+          {offerTemplates.map((t) => (
+            <SelectItem key={t.id} value={String(t.id)} className="text-[13px]">
+              {t.name}
+              {t.isDefault ? " (default)" : ""}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      {offerTemplates.length === 0 && (
+        <p className="text-[12px] text-amber-700 dark:text-amber-400 leading-relaxed">
+          Create an offer template under Settings → Templates. Mark one as{" "}
+          <strong>default</strong> so it is used when a pipeline stage does not specify a template.
+        </p>
+      )}
+    </div>
+  );
+
+  const selectedOfferTemplateLabel =
+    offer?.templateId != null
+      ? allTemplates.find((t) => t.id === offer.templateId)?.name ??
+        `Template #${offer.templateId}`
+      : "—";
+
+  return (
+    <div className="w-[520px] border-l border-slate-100 dark:border-neutral-800 flex flex-col flex-1 min-h-0 bg-white dark:bg-neutral-950 overflow-hidden shrink-0">
+      <Tabs
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="flex-1 flex flex-col overflow-hidden m-0 min-h-0"
+      >
         <div
           ref={tabsScrollRef}
           onWheel={handleTabsWheel}
@@ -210,7 +400,7 @@ export function CandidateSidePanel({
           className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel"
         >
           <CandidateJobFitTab
-            resumeUrl={candidate.resumeUrl}
+            resumeUrl={resumeViewUrl}
             cv={cvAnalysis}
           />
         </TabsContent>
@@ -274,7 +464,7 @@ export function CandidateSidePanel({
                         {stageMap[h.stageId] ?? `Stage #${h.stageId}`}
                       </span>
                       <span className="text-[11px] text-slate-400 shrink-0">
-                        {timeAgo(h.movedAt)}
+                        {formatTimeAgo(h.movedAt)}
                       </span>
                     </div>
                     <p className="text-[12px] text-slate-400 mt-0.5">
@@ -306,9 +496,29 @@ export function CandidateSidePanel({
             </div>
           ) : isEditingOffer ? (
             <div className="space-y-4">
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between mb-1 flex-wrap gap-2">
                 <p className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">Edit Offer</p>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    title="Switch the left column to the offer letter preview."
+                    onClick={() => setPreviewPane("offer")}
+                    className="h-8 px-3 text-[12px] border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 shadow-none rounded-lg"
+                  >
+                    Letter preview
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    title="Prefill salary and pay frequency from the job; if benefits are empty, add candidate name, email, and phone."
+                    onClick={fillFromJobAndCandidate}
+                    className="h-8 px-3 text-[12px] border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 shadow-none rounded-lg"
+                  >
+                    Fill from job &amp; candidate
+                  </Button>
                   <Button
                     variant="outline"
                     size="sm"
@@ -329,6 +539,8 @@ export function CandidateSidePanel({
                   </Button>
                 </div>
               </div>
+
+              {offerTemplateField}
 
               <div className="space-y-1.5">
                 <Label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Status</Label>
@@ -406,6 +618,198 @@ export function CandidateSidePanel({
                 </div>
               </div>
 
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+                  Benefits & perks
+                </Label>
+                <Textarea
+                  value={editBenefits}
+                  onChange={(e) => setEditBenefits(e.target.value)}
+                  placeholder="e.g. Health insurance, 20 days PTO, remote work… (use {{benefits}} in the offer template)"
+                  rows={4}
+                  className="border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[13px] resize-y min-h-[88px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                />
+              </div>
+
+              {updateOfferMutation.isError && (
+                <p className="text-red-500 text-[12px]">
+                  {(updateOfferMutation.error as Error).message ?? "Failed to save offer."}
+                </p>
+              )}
+            </div>
+          ) : offer.status === "draft" ? (
+            <div className="space-y-4">
+              <div className="rounded-lg border border-slate-200 dark:border-neutral-800 bg-slate-50/90 dark:bg-neutral-900/50 px-3 py-2.5">
+                <p className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200">Draft offer</p>
+                <p className="text-[12px] text-slate-600 dark:text-neutral-400 mt-1 leading-relaxed">
+                  Fill in the details below, then <strong>Save draft</strong> to refresh the letter in the <strong>left preview</strong>. When it looks right, send it to {candidate.email}. Templates can include{" "}
+                  <code className="text-[11px] bg-slate-200/80 dark:bg-neutral-800 px-1 rounded">{"{{benefits}}"}</code>{" "}
+                  for this block.
+                </p>
+              </div>
+
+              {offerTemplateField}
+
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  title="Switch the left column to the offer letter preview."
+                  onClick={() => setPreviewPane("offer")}
+                  className="h-9 px-4 text-[13px] border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-200 shadow-none rounded-lg"
+                >
+                  Show letter preview
+                </Button>
+              </div>
+
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                title="Prefill salary and pay frequency from the job; if benefits are empty, add candidate name, email, and phone."
+                onClick={fillFromJobAndCandidate}
+                className="h-9 w-full sm:w-auto px-4 text-[13px] border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-200 shadow-none rounded-lg"
+              >
+                Fill from job &amp; candidate
+              </Button>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Currency</Label>
+                  <Select value={editCurrency} onValueChange={(v) => setEditCurrency(v ?? "")}>
+                    <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+                      {["USD", "EUR", "GBP", "LKR", "INR", "AUD"].map((c) => (
+                        <SelectItem key={c} value={c} className="text-[13px]">{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">Pay Frequency</Label>
+                  <Select value={editPayFreq} onValueChange={(v) => setEditPayFreq(v ?? "")}>
+                    <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+                      {["hourly", "daily", "weekly", "monthly", "yearly"].map((f) => (
+                        <SelectItem key={f} value={f} className="text-[13px] capitalize">{f}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Salary</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  value={editSalary}
+                  onChange={(e) => setEditSalary(e.target.value)}
+                  placeholder="e.g. 75000"
+                  className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] transition-[border-color] duration-200"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Start date</Label>
+                  <Input
+                    type="date"
+                    value={editStartDate}
+                    onChange={(e) => setEditStartDate(e.target.value)}
+                    className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] transition-[border-color] duration-200"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">Offer expires</Label>
+                  <Input
+                    type="date"
+                    value={editExpiryDate}
+                    onChange={(e) => setEditExpiryDate(e.target.value)}
+                    className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] transition-[border-color] duration-200"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">
+                  Benefits & perks
+                </Label>
+                <Textarea
+                  value={editBenefits}
+                  onChange={(e) => setEditBenefits(e.target.value)}
+                  placeholder="Health, PTO, equity, signing bonus, etc."
+                  rows={4}
+                  className="border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[13px] resize-y min-h-[88px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                />
+              </div>
+
+              <Button
+                type="button"
+                size="sm"
+                onClick={saveOffer}
+                disabled={updateOfferMutation.isPending}
+                className="h-9 w-full sm:w-auto px-4 text-[13px] bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-lg"
+              >
+                {updateOfferMutation.isPending ? "Saving…" : "Save draft & update preview"}
+              </Button>
+
+              <p className="text-[12px] text-slate-500 dark:text-neutral-400 leading-relaxed pt-1">
+                The rendered letter appears at the top when you choose <strong>Offer letter</strong> in the preview (or open the <strong>Offer</strong> tab — it switches the preview automatically).
+                {!offer.renderedHtml && (
+                  <>
+                    {" "}
+                    If preview stays empty, ensure the job’s offer stage has an <strong>offer template</strong>, then save again.
+                  </>
+                )}
+              </p>
+
+              <div className="flex flex-wrap items-center gap-2 pt-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={
+                    updateOfferStatusMutation.isPending ||
+                    !offer.renderedHtml
+                  }
+                  title={
+                    !offer.renderedHtml
+                      ? "Save draft first to build the letter from your template"
+                      : "Email the candidate via Resend"
+                  }
+                  onClick={() =>
+                    updateOfferStatusMutation.mutate(
+                      { id: offer.id, status: "sent" },
+                      {
+                        onSuccess: () => {
+                          toast.success(
+                            offer.renderedHtml
+                              ? "Offer sent to the candidate’s email."
+                              : "Offer marked as sent.",
+                          );
+                        },
+                        onError: (e) => {
+                          toast.error(
+                            e instanceof Error
+                              ? e.message
+                              : "Could not send offer",
+                          );
+                        },
+                      },
+                    )
+                  }
+                  className="h-9 px-4 text-[13px] bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-lg gap-1.5 disabled:opacity-50"
+                >
+                  <HugeiconsIcon icon={SentIcon} className="size-3.5 rotate-[-45deg]" strokeWidth={2.5} />
+                  {updateOfferStatusMutation.isPending ? "Sending…" : "Send offer to candidate"}
+                </Button>
+              </div>
+
               {updateOfferMutation.isError && (
                 <p className="text-red-500 text-[12px]">
                   {(updateOfferMutation.error as Error).message ?? "Failed to save offer."}
@@ -422,26 +826,44 @@ export function CandidateSidePanel({
                   </Badge>
                 </div>
                 <div className="flex items-center gap-2">
-                  {(offer.status === "draft") && (
-                    <Button
-                      size="sm"
-                      disabled={updateOfferStatusMutation.isPending}
-                      onClick={() =>
-                        updateOfferStatusMutation.mutate({ id: offer.id, status: "sent" })
-                      }
-                      className="h-8 px-3 text-[12px] bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-lg gap-1.5 disabled:opacity-50"
-                    >
-                      <HugeiconsIcon icon={SentIcon} className="size-3.5 rotate-[-45deg]" strokeWidth={2.5} />
-                      {updateOfferStatusMutation.isPending ? "Sending…" : "Send Offer"}
-                    </Button>
-                  )}
                   {(offer.status === "sent" || offer.status === "pending") && (
                     <Button
                       size="sm"
                       variant="outline"
-                      disabled={updateOfferStatusMutation.isPending}
+                      disabled={
+                        updateOfferStatusMutation.isPending ||
+                        !offer.renderedHtml
+                      }
+                      title={
+                        !offer.renderedHtml
+                          ? "No letter HTML — edit the offer, pick a template, and save."
+                          : "Send again via Resend (see RESEND_FROM_EMAIL, e.g. user.openats@gmail.com)"
+                      }
                       onClick={() =>
-                        updateOfferStatusMutation.mutate({ id: offer.id, status: "sent" })
+                        updateOfferStatusMutation.mutate(
+                          {
+                            id: offer.id,
+                            status: "sent",
+                            candidateId,
+                          },
+                          {
+                            onSuccess: (payload) => {
+                              const o = payload?.data;
+                              toast.success(
+                                o?.renderedHtml
+                                  ? "Offer resent to the candidate."
+                                  : "Status updated. No email — letter is not rendered yet.",
+                              );
+                            },
+                            onError: (e) => {
+                              toast.error(
+                                e instanceof Error
+                                  ? e.message
+                                  : "Could not resend",
+                              );
+                            },
+                          },
+                        )
                       }
                       className="h-8 px-3 text-[12px] border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200 shadow-none rounded-lg gap-1.5 disabled:opacity-50"
                     >
@@ -463,6 +885,7 @@ export function CandidateSidePanel({
 
               <div className="divide-y divide-slate-100 dark:divide-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-800 overflow-hidden">
                 {[
+                  { label: "Letter template", value: selectedOfferTemplateLabel },
                   {
                     label: "Salary",
                     value: offer.salary
@@ -471,7 +894,12 @@ export function CandidateSidePanel({
                   },
                   { label: "Start Date", value: formatDate(offer.startDate) },
                   { label: "Expiry Date", value: formatDate(offer.expiryDate) },
-                  { label: "Sent At", value: offer.sentAt ? timeAgo(offer.sentAt) : "Not sent yet" },
+                  {
+                    label: "Benefits",
+                    value:
+                      offer.benefitsText?.trim() ? offer.benefitsText.trim() : "—",
+                  },
+                  { label: "Sent At", value: offer.sentAt ? formatTimeAgo(offer.sentAt) : "Not sent yet" },
                 ].map(({ label, value }) => (
                   <div key={label} className="flex items-center justify-between px-4 py-3 gap-4">
                     <span className="text-[13px] text-slate-500 dark:text-neutral-400 font-medium shrink-0">{label}</span>
@@ -480,23 +908,29 @@ export function CandidateSidePanel({
                 ))}
               </div>
 
-              {offer.renderedHtml && (
-                <div className="space-y-2">
-                  <p className="text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
-                    Offer Letter Preview
-                  </p>
-                  <div
-                    className="rounded-xl border border-slate-200 dark:border-neutral-800 p-4 text-[13px] text-slate-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 leading-relaxed max-h-[340px] overflow-y-auto prose prose-sm w-full"
-                    dangerouslySetInnerHTML={{ __html: offer.renderedHtml }}
-                  />
-                </div>
-              )}
+              <p className="text-[12px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+                Use <strong>Offer letter</strong> on the <strong>left</strong> to read the full letter, or stay on this tab for details.
+              </p>
             </div>
           )}
         </TabsContent>
 
         <TabsContent value="email" className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel">
           <div className="space-y-4 h-full flex flex-col">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <p className="text-[12px] text-slate-500 dark:text-neutral-400 leading-relaxed -mt-1 flex-1 min-w-0">
+                The <strong>Email</strong> preview on the <strong>left</strong> updates as you type (choose <strong>Email</strong> there if you don’t see it).
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setPreviewPane("email")}
+                className="h-8 shrink-0 px-3 text-[12px] border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-200 shadow-none rounded-lg"
+              >
+                Show email preview
+              </Button>
+            </div>
             <div className="space-y-1.5">
               <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide">To</Label>
               <Input

@@ -19,7 +19,16 @@ export interface UpdateUserPayload {
 
 export async function fetchUsers(): Promise<User[]> {
     const res = await fetch('/api/users');
-    if (!res.ok) throw new Error('Failed to fetch users');
+    if (!res.ok) {
+        let message = 'Failed to fetch users';
+        try {
+            const err = await res.json();
+            if (err?.error) message = err.error;
+        } catch {
+            // Keep fallback message when response body is not JSON.
+        }
+        throw new Error(message);
+    }
     return res.json();
 }
 
@@ -30,8 +39,14 @@ export async function createUser(payload: CreateUserPayload): Promise<User> {
         body: JSON.stringify(payload),
     });
     if (!res.ok) {
-        const err = await res.json();
-        throw new Error(err.error ?? 'Failed to create user');
+        let message = 'Failed to create user';
+        try {
+            const err = await res.json();
+            if (err?.error) message = err.error;
+        } catch {
+            // Keep fallback message when response body is not JSON.
+        }
+        throw new Error(message);
     }
     return res.json();
 }

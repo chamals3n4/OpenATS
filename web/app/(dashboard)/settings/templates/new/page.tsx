@@ -18,18 +18,37 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 import { useCreateTemplate } from "@/hooks/use-api";
+import {
+  TemplateBlockPreview,
+  renderPreviewHtml,
+  type TemplateEditorBlock,
+} from "@/components/template-block-preview";
+import {
+  createDefaultOfferBlocks,
+  createDefaultRejectionBlocks,
+  createDefaultAssessmentBlocks,
+  createDefaultGeneralBlocks,
+  DEFAULT_OFFER_TEMPLATE_NAME,
+  DEFAULT_OFFER_TEMPLATE_SUBJECT,
+  DEFAULT_REJECTION_TEMPLATE_NAME,
+  DEFAULT_REJECTION_TEMPLATE_SUBJECT,
+  DEFAULT_ASSESSMENT_INVITE_TEMPLATE_NAME,
+  DEFAULT_ASSESSMENT_INVITE_TEMPLATE_SUBJECT,
+  DEFAULT_GENERAL_TEMPLATE_NAME,
+  DEFAULT_GENERAL_TEMPLATE_SUBJECT,
+  DEFAULT_TEMPLATE_BUTTON_LABEL,
+  DEFAULT_TEMPLATE_HINT,
+} from "@/lib/template-defaults";
+import { editorBlocksToApiBodyJson } from "@/lib/template-mapper";
 import type { TemplateBodyBlock } from "@/types";
 
 type TemplateType = "offer" | "rejection" | "assessment" | "general";
-type BlockKind = TemplateBodyBlock["type"] | "divider" | "spacer";
+type BlockKind = TemplateBodyBlock["type"];
 
-export interface Block {
-  id: string;
-  kind: BlockKind;
-  content: string;
-}
+export type { TemplateEditorBlock as Block } from "@/components/template-block-preview";
 
 const TYPE_META: Record<TemplateType, { label: string; badge: string }> = {
   offer: {
@@ -56,12 +75,20 @@ const VARIABLES: Record<TemplateType, string[]> = {
     "job_title",
     "salary",
     "currency",
+    "pay_frequency",
     "start_date",
     "expiry_date",
+    "benefits",
     "company_name",
   ],
   rejection: ["candidate_name", "job_title", "company_name"],
-  assessment: ["candidate_name", "job_title", "assessment_link", "expiry_date"],
+  assessment: [
+    "candidate_name",
+    "job_title",
+    "company_name",
+    "assessment_link",
+    "expiry_date",
+  ],
   general: [
     "candidate_name",
     "job_title",
@@ -69,20 +96,10 @@ const VARIABLES: Record<TemplateType, string[]> = {
     "currency",
     "start_date",
     "expiry_date",
+    "benefits",
     "company_name",
     "assessment_link",
   ],
-};
-
-const SAMPLE: Record<string, string> = {
-  candidate_name: "Alex Johnson",
-  job_title: "Senior Software Engineer",
-  salary: "5,000",
-  currency: "USD",
-  start_date: "March 15, 2026",
-  expiry_date: "March 5, 2026",
-  company_name: "OpenATS Inc.",
-  assessment_link: "https://openats.io/assess/abc123",
 };
 
 const DEFAULT_CONTENT: Record<BlockKind, string> = {
@@ -103,101 +120,13 @@ const BLOCK_ICONS: Record<BlockKind, any> = {
   spacer: PlusSignIcon,
 };
 
-function renderPreview(text: string, vars: string[]) {
-  let out = text;
-  vars.forEach((key) => {
-    out = out.replaceAll(
-      `{{${key}}}`,
-      `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:600;font-size:0.85em">${SAMPLE[key] ?? key}</span>`,
-    );
-  });
-  return out;
-}
-
-function BlockPreview({ block, vars }: { block: Block; vars: string[] }) {
-  switch (block.kind) {
-    case "heading":
-      return (
-        <h2
-          style={{
-            fontSize: 22,
-            fontWeight: 700,
-            color: "#1e293b",
-            margin: "0 0 4px",
-          }}
-          dangerouslySetInnerHTML={{
-            __html: renderPreview(block.content, vars),
-          }}
-        />
-      );
-    case "text":
-      return (
-        <p
-          style={{ fontSize: 14, color: "#475569", lineHeight: 1.8, margin: 0 }}
-          dangerouslySetInnerHTML={{
-            __html: renderPreview(block.content, vars).replace(/\n/g, "<br/>"),
-          }}
-        />
-      );
-    case "button":
-      return (
-        <div style={{ textAlign: "center", margin: "8px 0" }}>
-          <span
-            style={{
-              display: "inline-block",
-              background: "var(--theme-color)",
-              color: "#fff",
-              padding: "10px 28px",
-              borderRadius: 8,
-              fontWeight: 600,
-              fontSize: 14,
-            }}
-          >
-            {block.content}
-          </span>
-        </div>
-      );
-    case "image":
-      return (
-        <div
-          style={{
-            background: "#f1f5f9",
-            borderRadius: 8,
-            height: 120,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <span style={{ color: "#94a3b8", fontSize: 13 }}>
-            Image placeholder
-          </span>
-        </div>
-      );
-    case "divider":
-      return (
-        <hr
-          style={{
-            border: "none",
-            borderTop: "1px solid #e2e8f0",
-            margin: "4px 0",
-          }}
-        />
-      );
-    case "spacer":
-      return <div style={{ height: 24 }} />;
-    default:
-      return null;
-  }
-}
-
 function BlockEditor({
   block,
   onChange,
   onDelete,
   vars,
 }: {
-  block: Block;
+  block: TemplateEditorBlock;
   onChange(id: string, c: string): void;
   onDelete(id: string): void;
   vars: string[];
@@ -238,7 +167,7 @@ function BlockEditor({
         placeholder={`Enter ${block.kind} content`}
       />
       <div className="px-4 pb-3 flex flex-wrap gap-1.5">
-        {vars.slice(0, 5).map((v) => (
+        {vars.map((v) => (
           <button
             key={v}
             onClick={() => onChange(block.id, block.content + `{{${v}}}`)}
@@ -264,7 +193,40 @@ export default function NewTemplatePage() {
 
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
-  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [blocks, setBlocks] = useState<TemplateEditorBlock[]>([]);
+
+  const applyDefaultTemplate = () => {
+    if (
+      blocks.length > 0 &&
+      !window.confirm(
+        "Replace the current blocks with the standard layout for this template type? Your edits will be lost.",
+      )
+    ) {
+      return;
+    }
+    switch (templateType) {
+      case "offer":
+        setName((n) => (n.trim() ? n : DEFAULT_OFFER_TEMPLATE_NAME));
+        setSubject(DEFAULT_OFFER_TEMPLATE_SUBJECT);
+        setBlocks(createDefaultOfferBlocks());
+        break;
+      case "rejection":
+        setName((n) => (n.trim() ? n : DEFAULT_REJECTION_TEMPLATE_NAME));
+        setSubject(DEFAULT_REJECTION_TEMPLATE_SUBJECT);
+        setBlocks(createDefaultRejectionBlocks());
+        break;
+      case "assessment":
+        setName((n) => (n.trim() ? n : DEFAULT_ASSESSMENT_INVITE_TEMPLATE_NAME));
+        setSubject(DEFAULT_ASSESSMENT_INVITE_TEMPLATE_SUBJECT);
+        setBlocks(createDefaultAssessmentBlocks());
+        break;
+      case "general":
+        setName((n) => (n.trim() ? n : DEFAULT_GENERAL_TEMPLATE_NAME));
+        setSubject(DEFAULT_GENERAL_TEMPLATE_SUBJECT);
+        setBlocks(createDefaultGeneralBlocks());
+        break;
+    }
+  };
 
   const addBlock = (kind: BlockKind) =>
     setBlocks((prev) => [
@@ -281,14 +243,7 @@ export default function NewTemplatePage() {
   const handleSave = () => {
     if (!name.trim()) return;
 
-    // Convert editor blocks to API TemplateBodyBlocks, filtering out UI-only blocks
-    // The API schema only supports [heading, text, button, image]
-    const bodyJson: TemplateBodyBlock[] = blocks
-      .filter((b) => ["heading", "text", "button", "image"].includes(b.kind))
-      .map((b) => ({
-        type: b.kind as TemplateBodyBlock["type"],
-        content: b.content,
-      }));
+    const bodyJson: TemplateBodyBlock[] = editorBlocksToApiBodyJson(blocks);
 
     createMutation.mutate(
       {
@@ -306,8 +261,11 @@ export default function NewTemplatePage() {
       },
       {
         onSuccess: () => {
+          toast.success("Template saved");
           router.push("/settings/templates");
         },
+        onError: (e) =>
+          toast.error(e instanceof Error ? e.message : "Could not save template"),
       },
     );
   };
@@ -321,7 +279,6 @@ export default function NewTemplatePage() {
     { kind: "spacer", label: "Spacer" },
   ];
 
-  const previewSubject = renderPreview(subject, vars);
   const canSave = name.trim().length > 0;
 
   return (
@@ -329,7 +286,7 @@ export default function NewTemplatePage() {
       <div className="flex items-center justify-between px-7 py-4 border-b border-slate-200 shrink-0">
         <div className="flex items-center gap-4">
           <Link
-            href="settings/templates"
+            href="/settings/templates"
             className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 text-[13px] font-medium transition-colors"
           >
             <HugeiconsIcon
@@ -367,7 +324,7 @@ export default function NewTemplatePage() {
                 placeholder="e.g. Standard Offer Letter"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-[15px]"
+                className="h-10 rounded-lg border border-slate-200 bg-white shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-[15px] text-slate-700 placeholder:text-slate-300 dark:border-slate-200 dark:bg-white dark:text-slate-700 dark:placeholder:text-slate-400"
               />
             </div>
 
@@ -379,8 +336,35 @@ export default function NewTemplatePage() {
                 placeholder={`e.g. Offer of Employment — {{job_title}}`}
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm"
+                className="h-10 rounded-lg border border-slate-200 bg-white shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm text-slate-700 placeholder:text-slate-300 dark:border-slate-200 dark:bg-white dark:text-slate-700 dark:placeholder:text-slate-400"
               />
+            </div>
+
+            <div className="rounded-xl border border-slate-200 bg-slate-50/80 px-4 py-3">
+              <p className="text-[12px] font-medium text-slate-600 mb-2">
+                Start from a polished layout
+              </p>
+              <Button
+                type="button"
+                onClick={applyDefaultTemplate}
+                className="h-10 px-5 rounded-lg text-white text-[13px] font-semibold shadow-none border-none"
+                style={{ backgroundColor: "var(--theme-color)" }}
+              >
+                {DEFAULT_TEMPLATE_BUTTON_LABEL[templateType]}
+              </Button>
+              <p className="text-[11px] text-slate-500 mt-2 leading-relaxed">
+                {templateType === "offer" ? (
+                  <>
+                    Fills in name, subject, and blocks (including{" "}
+                    <code className="text-[10px] bg-white px-1 rounded border border-slate-200">
+                      {"{{benefits}}"}
+                    </code>
+                    ). You can edit everything afterward.
+                  </>
+                ) : (
+                  DEFAULT_TEMPLATE_HINT[templateType]
+                )}
+              </p>
             </div>
 
             <div>
@@ -470,7 +454,7 @@ export default function NewTemplatePage() {
             <div className="w-full max-w-[560px] bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 space-y-2 text-[13px]">
                 {[
-                  ["From", "hr@openats.io"],
+                  ["From", "user.openats@gmail.com"],
                   ["To", "candidate@email.com"],
                 ].map(([label, val]) => (
                   <div key={label} className="flex gap-3">
@@ -484,8 +468,10 @@ export default function NewTemplatePage() {
                   <span className="text-slate-400 w-14 shrink-0">Subject</span>
                   {subject ? (
                     <span
-                      className="text-slate-900 font-semibold leading-snug"
-                      dangerouslySetInnerHTML={{ __html: previewSubject }}
+                      className="text-[13px] font-medium leading-snug text-slate-800"
+                      dangerouslySetInnerHTML={{
+                        __html: renderPreviewHtml(subject, vars),
+                      }}
                     />
                   ) : (
                     <span className="text-slate-300 italic">No subject</span>
@@ -497,7 +483,7 @@ export default function NewTemplatePage() {
                   <div className="size-8 rounded-full bg-[var(--theme-color)] flex items-center justify-center">
                     <div className="size-3.5 rounded-full border-2 border-white" />
                   </div>
-                  <span className="text-[13px] font-bold text-slate-800 tracking-tight">
+                  <span className="text-[13px] font-semibold text-slate-800 tracking-tight">
                     OpenATS
                   </span>
                 </div>
@@ -508,7 +494,7 @@ export default function NewTemplatePage() {
                 ) : (
                   <div className="space-y-4">
                     {blocks.map((b) => (
-                      <BlockPreview key={b.id} block={b} vars={vars} />
+                      <TemplateBlockPreview key={b.id} block={b} vars={vars} />
                     ))}
                   </div>
                 )}

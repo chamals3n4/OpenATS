@@ -13,6 +13,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 import { archiveItem } from "@/lib/archive-store";
 import { useOffers, useDeleteOffer } from "@/hooks/use-api";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,7 +45,8 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { ResumeScrollView } from "@/components/resume-scroll-view";
+import { CandidateDetailSheetProvider } from "@/components/candidate-detail-sheet-context";
+import { CandidatePreviewPane } from "@/components/candidate-preview-pane";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
 
 type OfferStatus =
@@ -183,14 +185,21 @@ export default function ManageOffersPage() {
 
   const confirmArchive = () => {
     if (!archiveTarget) return;
-    archiveItem({
-      id: String(archiveTarget.id),
-      type: "offer",
-      name: archiveTarget.candidateName,
-      detail: archiveTarget.jobTitle,
-    });
-    deleteOfferMutation.mutate(archiveTarget.id, {
-      onSuccess: () => setArchiveTarget(null),
+    const target = archiveTarget;
+    deleteOfferMutation.mutate(target.id, {
+      onSuccess: () => {
+        archiveItem({
+          id: String(target.id),
+          type: "offer",
+          name: target.candidateName,
+          detail: target.jobTitle,
+        });
+        setArchiveTarget(null);
+        toast.success("Offer removed");
+      },
+      onError: (e) => {
+        toast.error(e instanceof Error ? e.message : "Could not remove offer");
+      },
     });
   };
 
@@ -401,9 +410,8 @@ export default function ManageOffersPage() {
           className="w-[98vw] sm:max-w-[98vw] p-0 flex flex-row gap-0 border-l border-slate-200 dark:border-neutral-800 shadow-none overflow-hidden bg-white dark:bg-neutral-950"
         >
           {selected && (
-            <>
-              {/* Left — CV preview */}
-              <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <CandidateDetailSheetProvider key={selected.candidateId}>
+              <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
                 <div className="px-6 lg:px-8 py-4 lg:py-5 border-b border-slate-100 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-950">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0">
                     <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 tracking-tight">
@@ -438,38 +446,17 @@ export default function ManageOffersPage() {
                   </div>
                 </div>
 
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                  {selected.resumeUrl ? (
-                    <ResumeScrollView resumeUrl={selected.resumeUrl} />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
-                      <svg
-                        className="size-10 opacity-30"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                      <p className="text-[13px] font-medium">
-                        No resume uploaded
-                      </p>
-                    </div>
-                  )}
-                </div>
+                <CandidatePreviewPane
+                  candidateId={selected.candidateId}
+                  open={sheetOpen}
+                />
               </div>
 
-              {/* Right — candidate side panel */}
               <CandidateSidePanel
                 candidateId={selected.candidateId}
                 open={sheetOpen}
               />
-            </>
+            </CandidateDetailSheetProvider>
           )}
         </SheetContent>
       </Sheet>

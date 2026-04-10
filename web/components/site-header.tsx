@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { usePathname } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Notification03Icon } from "@hugeicons/core-free-icons";
@@ -55,50 +56,53 @@ export function SiteHeader() {
       <div className="flex h-(--header-height) w-full items-center justify-between px-6">
         <Breadcrumb>
           <BreadcrumbList>
-            <BreadcrumbItem>
-              {routeCrumbs.length === 0 ? (
+            {routeCrumbs.length === 0 ? (
+              <BreadcrumbItem>
                 <BreadcrumbPage className="text-slate-600 dark:text-neutral-300 font-medium">
                   OpenATS
                 </BreadcrumbPage>
-              ) : (
-                <>
+              </BreadcrumbItem>
+            ) : (
+              <>
+                <BreadcrumbItem>
                   <BreadcrumbLink
                     href="/"
                     className="text-slate-400 dark:text-neutral-500 font-medium hover:text-slate-600 dark:hover:text-neutral-300 transition-colors"
                   >
                     OpenATS
                   </BreadcrumbLink>
-                  <BreadcrumbSeparator className="text-slate-300 dark:text-neutral-700">
-                    <span className="text-lg font-light">&gt;</span>
-                  </BreadcrumbSeparator>
-                </>
-              )}
-            </BreadcrumbItem>
-
-            {routeCrumbs.map((crumb, i) => {
-              const isLast = i === routeCrumbs.length - 1;
-              return (
-                <BreadcrumbItem key={crumb.href}>
-                  {!isLast ? (
-                    <>
-                      <BreadcrumbLink
-                        href={crumb.href}
-                        className="text-slate-400 dark:text-neutral-500 font-medium hover:text-slate-600 dark:hover:text-neutral-300 transition-colors"
-                      >
-                        {crumb.label}
-                      </BreadcrumbLink>
-                      <BreadcrumbSeparator className="text-slate-300 dark:text-neutral-700">
-                        <span className="text-lg font-light">&gt;</span>
-                      </BreadcrumbSeparator>
-                    </>
-                  ) : (
-                    <BreadcrumbPage className="text-slate-600 dark:text-neutral-300 font-medium">
-                      {crumb.label}
-                    </BreadcrumbPage>
-                  )}
                 </BreadcrumbItem>
-              );
-            })}
+                <BreadcrumbSeparator className="text-slate-300 dark:text-neutral-700">
+                  <span className="text-lg font-light">&gt;</span>
+                </BreadcrumbSeparator>
+                {routeCrumbs.map((crumb, i) => {
+                  const isLast = i === routeCrumbs.length - 1;
+                  return (
+                    <Fragment key={crumb.href}>
+                      <BreadcrumbItem>
+                        {isLast ? (
+                          <BreadcrumbPage className="text-slate-600 dark:text-neutral-300 font-medium">
+                            {crumb.label}
+                          </BreadcrumbPage>
+                        ) : (
+                          <BreadcrumbLink
+                            href={crumb.href}
+                            className="text-slate-400 dark:text-neutral-500 font-medium hover:text-slate-600 dark:hover:text-neutral-300 transition-colors"
+                          >
+                            {crumb.label}
+                          </BreadcrumbLink>
+                        )}
+                      </BreadcrumbItem>
+                      {!isLast && (
+                        <BreadcrumbSeparator className="text-slate-300 dark:text-neutral-700">
+                          <span className="text-lg font-light">&gt;</span>
+                        </BreadcrumbSeparator>
+                      )}
+                    </Fragment>
+                  );
+                })}
+              </>
+            )}
           </BreadcrumbList>
         </Breadcrumb>
 
@@ -108,7 +112,7 @@ export function SiteHeader() {
           </button>
 
           <Avatar className="size-9 border-2 border-slate-100 dark:border-neutral-800">
-            <AvatarImage src="https://github.com/chamals3n4.png" alt="User" />
+            <AvatarImage src="https://t3.ftcdn.net/jpg/02/73/71/46/360_F_273714684_GXTZHmfFM3yvZwP7KaGc1h2Md00F83UF.jpg" alt="User" />
             <AvatarFallback className="bg-orange-100 text-orange-600 font-medium">
               JD
             </AvatarFallback>

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Changa_One, Geist, Geist_Mono, Public_Sans } from "next/font/google";
 import { AsgardeoProvider } from "@asgardeo/nextjs/server";
 import "./globals.css";
+import "@/lib/asgardeo-fetch-retry";
 
 const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-sans" });
 const changaOne = Changa_One({
@@ -34,6 +35,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const asgardeoConfig = {
+    baseUrl: process.env.NEXT_PUBLIC_ASGARDEO_BASE_URL,
+    organizationHandle: process.env.NEXT_PUBLIC_ASGARDEO_ORGANIZATION_HANDLE,
+    clientId: process.env.NEXT_PUBLIC_ASGARDEO_CLIENT_ID,
+    applicationId:
+      process.env.NEXT_PUBLIC_ASGARDEO_APPLICATION_ID ??
+      process.env.NEXT_PUBLIC_ASGARDEO_CLIENT_ID,
+    clientSecret: process.env.ASGARDEO_CLIENT_SECRET,
+    afterSignInUrl: process.env.NEXT_PUBLIC_ASGARDEO_AFTER_SIGN_IN_URL,
+    afterSignOutUrl: process.env.NEXT_PUBLIC_ASGARDEO_AFTER_SIGN_OUT_URL,
+    scopes: process.env.NEXT_PUBLIC_ASGARDEO_SCOPES,
+    inheritFromBranding: false,
+  };
+
   return (
     <html
       lang="en"
@@ -50,7 +65,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-          <AsgardeoProvider>{children as any}</AsgardeoProvider>
+          <AsgardeoProvider {...asgardeoConfig}>{children as any}</AsgardeoProvider>
         </ThemeProvider>
       </body>
     </html>

@@ -699,7 +699,10 @@ export function useDeleteOffer() {
         method: "DELETE",
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["offers"] });
+      queryClient.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) && q.queryKey[0] === "offers",
+      });
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });
@@ -708,14 +711,26 @@ export function useDeleteOffer() {
 export function useUpdateOfferStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: string }) =>
-      serverFetch<{ data: any }>(`/offers/${id}/status`, {
+    mutationFn: ({
+      id,
+      status,
+    }: {
+      id: number;
+      status: string;
+      candidateId?: number;
+    }) =>
+      serverFetch<{ data: Offer }>(`/offers/${id}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status }),
       }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["offers", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["offers"] });
+      if (variables.candidateId != null) {
+        queryClient.invalidateQueries({
+          queryKey: ["candidates", variables.candidateId],
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });
@@ -837,14 +852,26 @@ export function useUpdateCandidateBasicDetails() {
 
       const json = (await res.json().catch(() => null)) as
         | { data: Candidate }
-        | { error?: string }
+        | {
+            error?: string;
+            details?: Record<string, string[] | undefined>;
+          }
         | null;
 
       if (!res.ok) {
-        throw new Error(
-          (json as { error?: string } | null)?.error ??
-            "Failed to update candidate",
-        );
+        const err = json as {
+          error?: string;
+          details?: Record<string, string[] | undefined>;
+        } | null;
+        let msg = err?.error ?? "Failed to update candidate";
+        const d = err?.details;
+        if (d && typeof d === "object") {
+          const parts = Object.entries(d).flatMap(([k, v]) =>
+            Array.isArray(v) ? v.map((x) => `${k}: ${x}`) : [],
+          );
+          if (parts.length) msg = `${msg} (${parts.join("; ")})`;
+        }
+        throw new Error(msg);
       }
 
       return json as { data: Candidate };
@@ -852,6 +879,36 @@ export function useUpdateCandidateBasicDetails() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
       queryClient.invalidateQueries({ queryKey: ["candidates", variables.id] });
+    },
+  });
+}
+
+export function useAddCandidate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      jobId: number;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string | null;
+      resumeUrl?: string | null;
+    }) =>
+      serverFetch<{ data: Candidate }>(
+        `/candidates/jobs/${data.jobId}/apply`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: data.phone ?? undefined,
+            resumeUrl: data.resumeUrl ?? undefined,
+          }),
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });
 }

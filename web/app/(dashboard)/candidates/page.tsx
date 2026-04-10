@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Search01Icon,
   PlusSignIcon,
@@ -43,30 +43,28 @@ import {
   Dialog,
   DialogClose,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 import {
+  useAddCandidate,
   useCandidates,
   useDeleteCandidate,
   useJobs,
   useUpdateCandidateBasicDetails,
 } from "@/hooks/use-api";
-import { ResumeScrollView } from "@/components/resume-scroll-view";
+import { CandidateDetailSheetProvider } from "@/components/candidate-detail-sheet-context";
+import { CandidatePreviewPane } from "@/components/candidate-preview-pane";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
 import type { Candidate } from "@/types";
+import { formatTimeAgo } from "@/lib/time-ago";
 
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export default function ManageCandidatesPage() {
   const [selectedJobId, setSelectedJobId] = useState<number | undefined>();
@@ -83,19 +81,44 @@ export default function ManageCandidatesPage() {
   const [editResumeFile, setEditResumeFile] = useState<File | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data: candidatesData, isLoading } = useCandidates(selectedJobId, {
-    search: debouncedSearch || undefined,
-  });
+  const candidateListFilters = useMemo(
+    () => ({
+      search: debouncedSearch.length > 0 ? debouncedSearch : undefined,
+    }),
+    [debouncedSearch],
+  );
+
+  const { data: candidatesData, isLoading } = useCandidates(
+    selectedJobId,
+    candidateListFilters,
+  );
   const { data: jobsData } = useJobs();
   const deleteMutation = useDeleteCandidate();
   const updateMutation = useUpdateCandidateBasicDetails();
+  const addMutation = useAddCandidate();
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [addJobId, setAddJobId] = useState("");
+  const [addFirstName, setAddFirstName] = useState("");
+  const [addLastName, setAddLastName] = useState("");
+  const [addEmail, setAddEmail] = useState("");
+  const [addPhone, setAddPhone] = useState("");
+  const [addResumeFile, setAddResumeFile] = useState<File | null>(null);
+  const [addResumeUploading, setAddResumeUploading] = useState(false);
 
   const candidates = candidatesData?.data ?? [];
   const jobs = jobsData?.data ?? [];
+
+  const addCandidateJobTitle = useMemo(() => {
+    if (!addJobId) return null;
+    const id = Number(addJobId);
+    if (Number.isNaN(id)) return null;
+    return jobs.find((j) => j.id === id)?.title ?? null;
+  }, [addJobId, jobs]);
 
   const selectedCandidate = candidates.find((c) => c.id === selectedId) ?? null;
 
@@ -123,6 +146,160 @@ export default function ManageCandidatesPage() {
     });
   };
 
+  const openAddDialog = () => {
+    // #region agent log
+    fetch("http://127.0.0.1:7267/ingest/11bbd170-05b2-46d3-89e7-32f5eaf14055", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Debug-Session-Id": "f66cd2",
+      },
+      body: JSON.stringify({
+        sessionId: "f66cd2",
+        runId: "pre-fix",
+        hypothesisId: "H1",
+        location: "candidates/page.tsx:openAddDialog",
+        message: "Add Candidate button clicked",
+        data: { hasSelectedJobFilter: selectedJobId != null },
+        timestamp: Date.now(),
+      }),
+    }).catch(() => {});
+    // #endregion
+    const initial =
+      selectedJobId != null
+        ? String(selectedJobId)
+        : jobs[0]
+          ? String(jobs[0].id)
+          : "";
+    setAddJobId(initial);
+    setAddFirstName("");
+    setAddLastName("");
+    setAddEmail("");
+    setAddPhone("");
+    setAddResumeFile(null);
+    setAddOpen(true);
+  };
+
+  const handleConfirmAdd = async () => {
+    const jid = Number(addJobId);
+    if (!addJobId || Number.isNaN(jid)) {
+      toast.error("Select a job position.");
+      return;
+    }
+    if (!addFirstName.trim() || !addLastName.trim() || !addEmail.trim()) {
+      toast.error("First name, last name, and email are required.");
+      return;
+    }
+
+    let resumeUrl: string | null = null;
+    if (addResumeFile) {
+      setAddResumeUploading(true);
+      try {
+        const form = new FormData();
+        form.append("file", addResumeFile);
+        const res = await fetch(`${API_BASE}/public/upload/resume`, {
+          method: "POST",
+          body: form,
+        });
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(
+            (err as { error?: string }).error ?? "Resume upload failed",
+          );
+        }
+        const data = (await res.json()) as { data: { url: string } };
+        resumeUrl = data.data.url;
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "Resume upload failed";
+        toast.error(msg);
+        // #region agent log
+        fetch("http://127.0.0.1:7267/ingest/11bbd170-05b2-46d3-89e7-32f5eaf14055", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "X-Debug-Session-Id": "f66cd2",
+          },
+          body: JSON.stringify({
+            sessionId: "f66cd2",
+            runId: "pre-fix",
+            hypothesisId: "H3",
+            location: "candidates/page.tsx:handleConfirmAdd",
+            message: "Add candidate resume upload failed",
+            data: { error: msg },
+            timestamp: Date.now(),
+          }),
+        }).catch(() => {});
+        // #endregion
+        return;
+      } finally {
+        setAddResumeUploading(false);
+      }
+    }
+
+    addMutation.mutate(
+      {
+        jobId: jid,
+        firstName: addFirstName.trim(),
+        lastName: addLastName.trim(),
+        email: addEmail.trim(),
+        phone: addPhone.trim() || null,
+        resumeUrl,
+      },
+      {
+        onSuccess: () => {
+          // #region agent log
+          fetch("http://127.0.0.1:7267/ingest/11bbd170-05b2-46d3-89e7-32f5eaf14055", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Debug-Session-Id": "f66cd2",
+            },
+            body: JSON.stringify({
+              sessionId: "f66cd2",
+              runId: "pre-fix",
+              hypothesisId: "H3",
+              location: "candidates/page.tsx:addMutation.onSuccess",
+              message: "Add candidate API success",
+              data: { jobId: jid },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
+          toast.success("Candidate added");
+          setAddOpen(false);
+          setAddFirstName("");
+          setAddLastName("");
+          setAddEmail("");
+          setAddPhone("");
+          setAddResumeFile(null);
+        },
+        onError: (e) => {
+          const msg =
+            e instanceof Error ? e.message : "Failed to add candidate";
+          toast.error(msg);
+          // #region agent log
+          fetch("http://127.0.0.1:7267/ingest/11bbd170-05b2-46d3-89e7-32f5eaf14055", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Debug-Session-Id": "f66cd2",
+            },
+            body: JSON.stringify({
+              sessionId: "f66cd2",
+              runId: "pre-fix",
+              hypothesisId: "H3",
+              location: "candidates/page.tsx:addMutation.onError",
+              message: "Add candidate API error",
+              data: { error: msg },
+              timestamp: Date.now(),
+            }),
+          }).catch(() => {});
+          // #endregion
+        },
+      },
+    );
+  };
+
   const confirmUpdate = () => {
     if (!editTarget) return;
 
@@ -145,6 +322,12 @@ export default function ManageCandidatesPage() {
         onSuccess: () => {
           setEditTarget(null);
           setEditResumeFile(null);
+          toast.success("Candidate updated");
+        },
+        onError: (e) => {
+          toast.error(
+            e instanceof Error ? e.message : "Failed to update candidate",
+          );
         },
       },
     );
@@ -158,6 +341,14 @@ export default function ManageCandidatesPage() {
           Manage Candidates
         </h1>
         <Button
+          type="button"
+          onClick={openAddDialog}
+          disabled={jobs.length === 0}
+          title={
+            jobs.length === 0
+              ? "Create a job first to add candidates"
+              : undefined
+          }
           className="text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
           style={{ backgroundColor: "var(--theme-color)" }}
         >
@@ -285,7 +476,7 @@ export default function ManageCandidatesPage() {
                       {c.jobTitle ?? "—"}
                     </TableCell>
                     <TableCell className="h-13 px-8 py-0 text-slate-500 dark:text-neutral-400 font-normal">
-                      {timeAgo(c.appliedAt)}
+                      {formatTimeAgo(c.appliedAt)}
                     </TableCell>
                     <TableCell
                       className="h-13 px-4 py-0"
@@ -341,9 +532,9 @@ export default function ManageCandidatesPage() {
           className="w-[98vw] sm:max-w-[98vw] p-0 flex flex-row gap-0 border-l border-slate-200 dark:border-neutral-800 shadow-none overflow-hidden bg-white dark:bg-neutral-950"
         >
           {selectedCandidate && (
-            <>
-              {/* Left — CV preview */}
-              <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <CandidateDetailSheetProvider key={selectedCandidate.id}>
+              {/* Left — resume / offer letter / email (same viewport as CV) */}
+              <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
                 <div className="px-6 lg:px-8 py-4 lg:py-5 border-b border-slate-100 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-950">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0">
                     <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 tracking-tight">
@@ -358,7 +549,7 @@ export default function ManageCandidatesPage() {
                   <p className="text-slate-500 dark:text-neutral-400 text-[13px] mt-0.5">
                     {selectedCandidate.jobTitle ?? "Unknown Job"}
                     <span className="mx-1.5 opacity-30 mt-1">•</span>
-                    Applied {timeAgo(selectedCandidate.appliedAt)}
+                    Applied {formatTimeAgo(selectedCandidate.appliedAt)}
                   </p>
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1.5">
                     {[
@@ -379,41 +570,154 @@ export default function ManageCandidatesPage() {
                   </div>
                 </div>
 
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                  {selectedCandidate.resumeUrl ? (
-                    <ResumeScrollView resumeUrl={selectedCandidate.resumeUrl} />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
-                      <svg
-                        className="size-10 opacity-30"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                      <p className="text-[13px] font-medium">
-                        No resume uploaded
-                      </p>
-                    </div>
-                  )}
-                </div>
+                <CandidatePreviewPane
+                  candidateId={selectedCandidate.id}
+                  open={isDetailOpen}
+                />
               </div>
 
-              {/* Right — answers + history */}
               <CandidateSidePanel
                 candidateId={selectedCandidate.id}
                 open={isDetailOpen}
               />
-            </>
+            </CandidateDetailSheetProvider>
           )}
         </SheetContent>
       </Sheet>
+
+      <Dialog
+        open={addOpen}
+        onOpenChange={(o) => {
+          if (!o) setAddResumeFile(null);
+          setAddOpen(o);
+        }}
+      >
+        <DialogContent className="max-w-lg rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+              Add Candidate
+            </DialogTitle>
+            <DialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400">
+              Add someone to a job pipeline. They start in the first stage.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="grid gap-4">
+            <div>
+              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                Job position
+              </Label>
+              <Select
+                value={addJobId || undefined}
+                onValueChange={(v) => setAddJobId(v ?? "")}
+              >
+                <SelectTrigger className="h-10 w-full min-w-0 rounded-lg border-slate-200 dark:border-neutral-800">
+                  <SelectValue placeholder="Select a job position">
+                    {addCandidateJobTitle}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 max-h-[min(60vh,320px)]">
+                  {jobs.map((j) => (
+                    <SelectItem
+                      key={j.id}
+                      value={String(j.id)}
+                      className="cursor-pointer"
+                    >
+                      <span className="flex flex-col gap-0.5 text-left">
+                        <span className="font-medium text-slate-900 dark:text-neutral-100">
+                          {j.title}
+                        </span>
+                        {(j.location || j.employmentType) && (
+                          <span className="text-[11px] font-normal text-slate-500 dark:text-neutral-400">
+                            {[j.location, j.employmentType?.replace(/_/g, " ")]
+                              .filter(Boolean)
+                              .join(" · ")}
+                          </span>
+                        )}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5">
+                  First name
+                </p>
+                <Input
+                  value={addFirstName}
+                  onChange={(e) => setAddFirstName(e.target.value)}
+                  className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+                />
+              </div>
+              <div>
+                <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5">
+                  Last name
+                </p>
+                <Input
+                  value={addLastName}
+                  onChange={(e) => setAddLastName(e.target.value)}
+                  className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+                />
+              </div>
+            </div>
+            <div>
+              <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5">
+                Email
+              </p>
+              <Input
+                type="email"
+                value={addEmail}
+                onChange={(e) => setAddEmail(e.target.value)}
+                className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+              />
+            </div>
+            <div>
+              <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5">
+                Phone
+              </p>
+              <Input
+                value={addPhone}
+                onChange={(e) => setAddPhone(e.target.value)}
+                className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+                placeholder="Optional"
+              />
+            </div>
+            <div>
+              <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5">
+                Resume (PDF, optional)
+              </p>
+              <Input
+                type="file"
+                accept="application/pdf"
+                onChange={(e) => setAddResumeFile(e.target.files?.[0] ?? null)}
+                className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <DialogClose
+              disabled={addMutation.isPending || addResumeUploading}
+              className="h-9 px-5 rounded-lg border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium hover:bg-slate-50 dark:hover:bg-neutral-800"
+            >
+              Cancel
+            </DialogClose>
+            <Button
+              type="button"
+              onClick={() => void handleConfirmAdd()}
+              disabled={addMutation.isPending || addResumeUploading}
+              className="h-9 px-5 rounded-lg text-white text-[13px] font-semibold shadow-none border-none"
+              style={{ backgroundColor: "var(--theme-color)" }}
+            >
+              {addMutation.isPending || addResumeUploading
+                ? "Saving…"
+                : "Add candidate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog
         open={!!editTarget}
@@ -496,6 +800,7 @@ export default function ManageCandidatesPage() {
               Cancel
             </DialogClose>
             <Button
+              type="button"
               onClick={confirmUpdate}
               disabled={updateMutation.isPending}
               className="h-9 px-5 rounded-lg text-white text-[13px] font-semibold shadow-none border-none"

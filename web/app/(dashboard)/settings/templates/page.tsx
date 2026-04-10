@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -8,10 +8,10 @@ import {
   PlusSignIcon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
-  MoreVerticalIcon,
   PencilEdit01Icon,
   Copy01Icon,
   Delete02Icon,
+  StarIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -54,101 +54,46 @@ import {
   useTemplates,
   useDeleteTemplate,
   useCreateTemplate,
+  useUpdateTemplate,
 } from "@/hooks/use-api";
 import type { Template } from "@/types";
+import { toast } from "sonner";
 
 type TemplateType = "offer" | "rejection" | "assessment" | "general";
 
 const TYPE_META: Record<TemplateType, { label: string; badge: string }> = {
   offer: {
     label: "Offer Letter",
-    badge: "bg-emerald-50 text-emerald-700 border border-emerald-200",
+    badge:
+      "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/30 dark:text-emerald-400 dark:border-emerald-800",
   },
   rejection: {
     label: "Rejection",
-    badge: "bg-red-50 text-red-600 border border-red-200",
+    badge:
+      "bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/30 dark:text-red-400 dark:border-red-800",
   },
   assessment: {
     label: "Assessment Invite",
-    badge: "bg-blue-50 text-blue-700 border border-blue-200",
+    badge:
+      "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800",
   },
   general: {
     label: "General",
-    badge: "bg-slate-100 text-slate-600 border border-slate-200",
+    badge:
+      "bg-slate-100 text-slate-600 border border-slate-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700",
   },
 };
 
-function RowMenu({
-  onEdit,
-  onDuplicate,
-  onDelete,
-}: {
-  onEdit(): void;
-  onDuplicate(): void;
-  onDelete(): void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
+function matchesTemplateFilter(t: Template, filterType: string) {
+  if (filterType === "all") return true;
+  if (filterType === "assessment") return t.type === "assessment_invite";
+  return t.type === filterType;
+}
 
-  useEffect(() => {
-    if (!open) return;
-    const fn = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", fn);
-    return () => document.removeEventListener("mousedown", fn);
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative flex justify-end">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="p-1.5 rounded-md text-[var(--theme-color)]/50 hover:text-[var(--theme-color)] hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
-      >
-        <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-8 z-50 w-44 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-lg shadow-lg py-1 text-sm">
-          <button
-            onClick={() => {
-              setOpen(false);
-              onEdit();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800"
-          >
-            <HugeiconsIcon
-              icon={PencilEdit01Icon}
-              className="size-4 text-slate-400"
-            />{" "}
-            Edit
-          </button>
-          <button
-            onClick={() => {
-              setOpen(false);
-              onDuplicate();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800"
-          >
-            <HugeiconsIcon
-              icon={Copy01Icon}
-              className="size-4 text-slate-400"
-            />{" "}
-            Duplicate
-          </button>
-          <div className="border-t border-slate-100 dark:border-neutral-800 my-1" />
-          <button
-            onClick={() => {
-              setOpen(false);
-              onDelete();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
-          >
-            <HugeiconsIcon icon={Delete02Icon} className="size-4" /> Delete
-          </button>
-        </div>
-      )}
-    </div>
-  );
+/** API uses `assessment_invite`; UI meta keys use `assessment`. */
+function apiTemplateTypeToUi(type: Template["type"]): TemplateType {
+  if (type === "assessment_invite") return "assessment";
+  return type as TemplateType;
 }
 
 export default function TemplatesPage() {
@@ -158,6 +103,7 @@ export default function TemplatesPage() {
   
   const createMutation = useCreateTemplate();
   const deleteMutation = useDeleteTemplate();
+  const updateMutation = useUpdateTemplate();
   
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -168,27 +114,52 @@ export default function TemplatesPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const deleteName = templates.find((t) => t.id === deleteId)?.name;
 
+  const handleSetDefault = (t: Template) => {
+    updateMutation.mutate(
+      { id: t.id, data: { isDefault: true } },
+      {
+        onSuccess: () =>
+          toast.success(
+            `“${t.name}” is now the default ${TYPE_META[apiTemplateTypeToUi(t.type)].label} template.`,
+          ),
+        onError: (e) =>
+          toast.error(e instanceof Error ? e.message : "Could not set default"),
+      },
+    );
+  };
+
   const handleDuplicate = (t: Template) => {
-    createMutation.mutate({
-      name: `${t.name} (Copy)`,
-      type: t.type,
-      subject: t.subject,
-      bodyJson: t.bodyJson,
-    });
+    createMutation.mutate(
+      {
+        name: `${t.name} (Copy)`,
+        type: t.type,
+        subject: t.subject,
+        bodyJson: t.bodyJson,
+      },
+      {
+        onSuccess: () => toast.success("Template duplicated"),
+        onError: (e) =>
+          toast.error(e instanceof Error ? e.message : "Could not duplicate"),
+      },
+    );
   };
 
   const handleDelete = () => {
     if (deleteId === null) return;
     deleteMutation.mutate(deleteId, {
-      onSuccess: () => setDeleteId(null),
+      onSuccess: () => {
+        setDeleteId(null);
+        toast.success("Template deleted");
+      },
+      onError: (e) =>
+        toast.error(e instanceof Error ? e.message : "Could not delete"),
     });
   };
 
   const filtered = templates.filter((t) => {
     const q = search.toLowerCase();
     return (
-      t.name.toLowerCase().includes(q) &&
-      (filterType === "all" || t.type === filterType)
+      t.name.toLowerCase().includes(q) && matchesTemplateFilter(t, filterType)
     );
   });
 
@@ -214,7 +185,7 @@ export default function TemplatesPage() {
         </button>
       </div>
 
-      <div className="border-y border-slate-200 dark:border-neutral-800 px-8 py-3.5 flex items-center gap-4">
+      <div className="border-y border-slate-300 dark:border-neutral-700 px-8 py-3.5 flex items-center gap-4">
         <div className="relative w-80">
           <HugeiconsIcon
             icon={Search01Icon}
@@ -224,7 +195,7 @@ export default function TemplatesPage() {
             placeholder="Search templates..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 focus-visible:border-slate-300 dark:focus-visible:border-neutral-700 focus-visible:ring-0"
+            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out focus-visible:ring-0"
           />
         </div>
 
@@ -232,10 +203,10 @@ export default function TemplatesPage() {
           value={filterType}
           onValueChange={(val) => setFilterType(val || "")}
         >
-          <SelectTrigger className="w-48 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-48 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Types</SelectItem>
             <SelectItem value="offer">Offer Letter</SelectItem>
             <SelectItem value="rejection">Rejection</SelectItem>
@@ -251,7 +222,7 @@ export default function TemplatesPage() {
               setSearch("");
               setFilterType("all");
             }}
-            className="text-slate-600 dark:text-neutral-400 text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none"
+            className="text-slate-600 dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none"
           >
             Clear All
           </Button>
@@ -259,10 +230,10 @@ export default function TemplatesPage() {
       </div>
 
       <div className="px-8 py-6">
-        <div className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-950 shadow-none overflow-hidden text-[var(--theme-color)]">
+        <div className="border border-slate-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:bg-transparent">
+              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Template Name
                 </TableHead>
@@ -275,7 +246,9 @@ export default function TemplatesPage() {
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Last Edited
                 </TableHead>
-                <TableHead className="h-13 px-4" />
+                <TableHead className="h-13 px-4 w-[11rem] text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -301,38 +274,111 @@ export default function TemplatesPage() {
                 filtered.map((t) => (
                   <TableRow
                     key={t.id}
-                    className="border-b border-slate-200 dark:border-neutral-800 last:border-0 font-medium hover:bg-slate-50/50 dark:hover:bg-neutral-900/50"
+                    className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
                   >
-                    <TableCell className="h-14 px-8 py-0">
-                      <Link
-                        href={`/settings/templates/${t.id}/edit`}
-                        className="text-[var(--theme-color)] font-medium hover:underline decoration-1 underline-offset-4"
-                      >
-                        {t.name}
-                      </Link>
+                    <TableCell className="h-13 px-8 py-0">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Link
+                          href={`/settings/templates/${t.id}/edit`}
+                          className="text-slate-700 dark:text-neutral-200 font-medium hover:text-[var(--theme-color)] transition-colors"
+                        >
+                          {t.name}
+                        </Link>
+                        {t.isDefault && (
+                          <span className="text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 border border-slate-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700">
+                            Default
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0">
+                    <TableCell className="h-13 px-8 py-0">
                       <span
-                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${TYPE_META[t.type as TemplateType].badge}`}
+                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${TYPE_META[apiTemplateTypeToUi(t.type)].badge}`}
                       >
-                        {TYPE_META[t.type as TemplateType].label}
+                        {TYPE_META[apiTemplateTypeToUi(t.type)].label}
                       </span>
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-[var(--theme-color)] font-normal">
-                      {/* You'd display the real createdBy name here, hardcoded user ID 1 for now if needed */}
+                    <TableCell className="h-13 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
                       System
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-[var(--theme-color)] font-normal">
+                    <TableCell className="h-13 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
                       {new Date(t.updatedAt).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="h-14 px-4 py-0">
-                      <RowMenu
-                        onEdit={() =>
-                          router.push(`/settings/templates/${t.id}/edit`)
-                        }
-                        onDuplicate={() => handleDuplicate(t)}
-                        onDelete={() => setDeleteId(t.id)}
-                      />
+                    <TableCell className="h-13 px-4 py-0">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          title="Edit template"
+                          aria-label="Edit template"
+                          className="h-8 w-8 shrink-0 rounded-md border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 shadow-none"
+                          onClick={() =>
+                            router.push(`/settings/templates/${t.id}/edit`)
+                          }
+                        >
+                          <HugeiconsIcon
+                            icon={PencilEdit01Icon}
+                            className="size-3.5"
+                            strokeWidth={2.5}
+                          />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          title={
+                            t.isDefault
+                              ? "Already the default for this type"
+                              : "Set as default template"
+                          }
+                          aria-label={
+                            t.isDefault
+                              ? "Already the default for this type"
+                              : "Set as default template"
+                          }
+                          className="h-8 w-8 shrink-0 rounded-md border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 shadow-none disabled:opacity-50"
+                          disabled={updateMutation.isPending || !!t.isDefault}
+                          onClick={() => handleSetDefault(t)}
+                        >
+                          <HugeiconsIcon
+                            icon={StarIcon}
+                            className="size-3.5"
+                            strokeWidth={2.5}
+                          />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          title="Duplicate template"
+                          aria-label="Duplicate template"
+                          className="h-8 w-8 shrink-0 rounded-md border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 shadow-none"
+                          onClick={() => handleDuplicate(t)}
+                          disabled={createMutation.isPending}
+                        >
+                          <HugeiconsIcon
+                            icon={Copy01Icon}
+                            className="size-3.5"
+                            strokeWidth={2.5}
+                          />
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="icon"
+                          title="Delete template"
+                          aria-label="Delete template"
+                          className="h-8 w-8 shrink-0 rounded-md border-red-200 dark:border-red-900/50 bg-white dark:bg-neutral-900 text-red-600 dark:text-red-400 shadow-none hover:bg-red-50 dark:hover:bg-red-950/30"
+                          onClick={() => setDeleteId(t.id)}
+                        >
+                          <HugeiconsIcon
+                            icon={Delete02Icon}
+                            className="size-3.5"
+                            strokeWidth={2.5}
+                          />
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -340,14 +386,14 @@ export default function TemplatesPage() {
             </TableBody>
           </Table>
 
-          <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+          <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <span className="text-sm font-medium text-slate-400 dark:text-neutral-500">
               Showing 1–{filtered.length} of {filtered.length} results
             </span>
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                className="h-10 px-6 rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-[var(--theme-color)] font-semibold text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 shadow-none gap-2"
+                className="h-10 px-6 rounded-lg bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 text-slate-700 dark:text-neutral-300 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 shadow-none gap-2"
               >
                 <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />{" "}
                 Previous

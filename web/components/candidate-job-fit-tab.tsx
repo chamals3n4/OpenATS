@@ -25,6 +25,19 @@ const BAR_COLORS: Record<(typeof BREAKDOWN)[number]["key"], string> = {
   certs: "#ec4899",
 };
 
+/** Older failed rows may store raw Gemini JSON; keep the UI readable. */
+function displayAnalysisError(message: string): string {
+  if (
+    /API_KEY_INVALID|API key not valid|generativelanguage\.googleapis/i.test(
+      message,
+    )
+  ) {
+    return "CV analysis failed: set a valid GEMINI_API_KEY in api/.env (Google AI Studio), restart the API, then upload the resume again or wait for re-analysis.";
+  }
+  if (message.length > 500) return `${message.slice(0, 480)}…`;
+  return message;
+}
+
 function scoreTone(score: number): string {
   if (score >= 75) return "text-emerald-600 dark:text-emerald-400";
   if (score >= 50) return "text-amber-600 dark:text-amber-400";
@@ -137,8 +150,11 @@ export function CandidateJobFitTab({
         <p className="text-[12px] font-medium text-red-600 dark:text-red-400 uppercase tracking-wide">
           Could not complete analysis
         </p>
-        <p className="text-[13px] font-normal text-red-800 dark:text-red-200/90 mt-2 leading-relaxed">
-          {cv.errorMessage ?? "An error occurred while analyzing this resume."}
+        <p className="text-[13px] font-normal text-red-800 dark:text-red-200/90 mt-2 leading-relaxed whitespace-pre-wrap break-words">
+          {displayAnalysisError(
+            cv.errorMessage ??
+              "An error occurred while analyzing this resume.",
+          )}
         </p>
       </div>
     );

@@ -9,6 +9,8 @@ import {
   type ArchiveType,
   type ArchiveEntry,
 } from "@/lib/archive-store";
+import { useDeleteOffer } from "@/hooks/use-api";
+import { toast } from "sonner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -44,6 +46,7 @@ export default function ArchivePage() {
   const [items, setItems] = useState<ArchiveEntry[]>([]);
   const [activeTab, setActiveTab] = useState<ArchiveType>("job");
   const [deleteTarget, setDeleteTarget] = useState<ArchiveEntry | null>(null);
+  const deleteOfferMutation = useDeleteOffer();
 
   const refresh = useCallback(() => setItems(getArchived()), []);
   useEffect(() => {
@@ -54,7 +57,37 @@ export default function ArchivePage() {
 
   const confirmDelete = () => {
     if (!deleteTarget) return;
-    permanentlyDelete(deleteTarget.id, deleteTarget.type);
+    const t = deleteTarget;
+
+    if (t.type === "offer") {
+      const id = Number(t.id);
+      if (Number.isNaN(id) || id < 1) {
+        toast.error("Invalid offer id");
+        return;
+      }
+      deleteOfferMutation.mutate(id, {
+        onSuccess: () => {
+          permanentlyDelete(t.id, t.type);
+          refresh();
+          setDeleteTarget(null);
+          toast.success("Offer deleted");
+        },
+        onError: (e) => {
+          const msg = e instanceof Error ? e.message : "";
+          if (/not found|404/i.test(msg)) {
+            permanentlyDelete(t.id, t.type);
+            refresh();
+            setDeleteTarget(null);
+            toast.success("Removed from archive");
+            return;
+          }
+          toast.error(msg || "Could not delete offer");
+        },
+      });
+      return;
+    }
+
+    permanentlyDelete(t.id, t.type);
     refresh();
     setDeleteTarget(null);
   };
@@ -179,9 +212,10 @@ export default function ArchivePage() {
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
+              disabled={deleteOfferMutation.isPending}
               className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none"
             >
-              Delete Permanently
+              {deleteOfferMutation.isPending ? "Deleting…" : "Delete Permanently"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

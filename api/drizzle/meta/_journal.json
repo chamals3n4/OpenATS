@@ -43,6 +43,27 @@
       "when": 1774165634097,
       "tag": "0005_young_chat",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774687573582,
+      "tag": "0006_melted_bloodaxe",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1774689669323,
+      "tag": "0007_quick_viper",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1775243614421,
+      "tag": "0008_magenta_marten_broadcloak",
+      "breakpoints": true
     }
   ]
 }

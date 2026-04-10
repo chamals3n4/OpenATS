@@ -3,6 +3,7 @@ import { GoogleGenAI } from "@google/genai";
 import { eq } from "drizzle-orm";
 import { candidateCvAnalysis, db } from "../db";
 import { CandidateCvAnalysis, jobSkills, jobs } from "../db";
+import logger from "../utils/logger";
 
 const r2Client = new S3Client({
   region: "us-east-1",
@@ -358,9 +359,9 @@ function scoreCV(parsedCv: ParsedCv, jobReqs: JobRequirements): ScoreResult {
   const expScore =
     jobReqs.minExperienceYears > 0
       ? Math.min(
-        parsedCv.totalExperienceYears / jobReqs.minExperienceYears,
-        1,
-      ) * 25
+          parsedCv.totalExperienceYears / jobReqs.minExperienceYears,
+          1,
+        ) * 25
       : 25;
 
   const jobLevelTiers: Record<string, number> = {
@@ -404,11 +405,11 @@ function scoreCV(parsedCv: ParsedCv, jobReqs: JobRequirements): ScoreResult {
   const certScore =
     jobReqs.requiredCertifications.length > 0
       ? (jobReqs.requiredCertifications.filter((c) => {
-        const n = normalizeCertName(c);
-        return cvCertsSet.has(n) || hasCertMatch(parsedCv.certifications, c);
-      }).length /
-        jobReqs.requiredCertifications.length) *
-      5
+          const n = normalizeCertName(c);
+          return cvCertsSet.has(n) || hasCertMatch(parsedCv.certifications, c);
+        }).length /
+          jobReqs.requiredCertifications.length) *
+        5
       : 5;
   return {
     matchScore: Math.round(skillsScore + expScore + levelScore + certScore),
@@ -461,7 +462,7 @@ export const cvAnalysisService = {
         },
       });
 
-    console.log(
+    logger.info(
       `[CV Analysis] Started for candidate ${candidateId}, job ${jobId}`,
     );
 
@@ -476,14 +477,14 @@ export const cvAnalysisService = {
         .from(jobSkills)
         .where(eq(jobSkills.jobId, jobId));
 
-      console.log(
+      logger.info(
         `[CV Analysis] Job has ${jobSkillRows.length} required skills`,
       );
 
       const objectKey = extractKeyFromUrl(resumeUrl);
       const pdfBuffer = await downloadPdfFromR2(objectKey);
 
-      console.log(`[CV Analysis] PDF downloaded (${pdfBuffer.length} bytes)`);
+      logger.info(`[CV Analysis] PDF downloaded (${pdfBuffer.length} bytes)`);
 
       const [parsedCv, parsedJd] = await Promise.all([
         ParsedCvWithGemini(pdfBuffer),
@@ -491,19 +492,19 @@ export const cvAnalysisService = {
         jobRow?.description
           ? parseJdWithGemini(jobRow.description)
           : Promise.resolve<ParsedJd>({
-            minExperienceYears: 0,
-            jobLevel: null,
-            requiredCertifications: [],
-          }),
+              minExperienceYears: 0,
+              jobLevel: null,
+              requiredCertifications: [],
+            }),
       ]);
 
-      console.log(
+      logger.info(
         `[CV Analysis] CV parsed — ${parsedCv.listedSkills.length} listed skills, ${parsedCv.projectTechnologies.length} project techs, level: ${parsedCv.jobLevel}`,
       );
-      console.log(
+      logger.info(
         `[CV Analysis] Document type: ${parsedCv.documentType} isCvOrResume=${parsedCv.isCvOrResume} confidence=${parsedCv.confidence}`,
       );
-      console.log(
+      logger.info(
         `[CV Analysis] JD parsed — min exp: ${parsedJd.minExperienceYears}yrs, level: ${parsedJd.jobLevel}`,
       );
 
@@ -523,7 +524,7 @@ export const cvAnalysisService = {
       const { matchScore, matchedSkills, missingSkills, scoreBreakdown } =
         scoreCV(parsedCv, jobReqs);
 
-      console.log(
+      logger.info(
         `[CV Analysis] Score: ${matchScore}/100 — matched: [${matchedSkills}] missing: [${missingSkills}]`,
       );
 
@@ -539,14 +540,11 @@ export const cvAnalysisService = {
         })
         .where(eq(candidateCvAnalysis.candidateId, candidateId));
 
-      console.log(
+      logger.info(
         `[CV Analysis] Done for candidate ${candidateId} — score: ${matchScore}`,
       );
     } catch (error: any) {
-      console.error(
-        `[CV Analysis] Failed for candidate ${candidateId}:`,
-        error,
-      );
+      logger.error(`[CV Analysis] Failed for candidate ${candidateId}:`, error);
 
       await db
         .update(candidateCvAnalysis)

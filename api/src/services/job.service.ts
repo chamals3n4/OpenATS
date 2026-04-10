@@ -9,6 +9,7 @@ import {
   jobAssessmentAttachments,
   offers,
   candidates,
+  departments,
 } from "../db/schema";
 
 export type CreateJobInput = {
@@ -68,6 +69,26 @@ function generateSlug(title: string): string {
 }
 
 export const jobService = {
+  /** Published jobs for the public careers index (no auth). */
+  async listPublishedForCareers() {
+    const rows = await db
+      .select({
+        id: jobs.id,
+        slug: jobs.slug,
+        title: jobs.title,
+        employmentType: jobs.employmentType,
+        location: jobs.location,
+        departmentName: departments.name,
+        createdAt: jobs.createdAt,
+      })
+      .from(jobs)
+      .innerJoin(departments, eq(jobs.departmentId, departments.id))
+      .where(eq(jobs.status, "published"))
+      .orderBy(desc(jobs.createdAt));
+
+    return rows;
+  },
+
   async getAll() {
     const allJobs = await db.select().from(jobs).orderBy(desc(jobs.createdAt));
 

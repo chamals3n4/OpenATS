@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { templateService } from "../services/template.service";
 import { templateEngineService } from "../services/template-engine.service";
-
+import logger from "../utils/logger";
 
 const contentBlockSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("heading"), content: z.string() }),
@@ -91,7 +91,6 @@ const updateTemplateSchema = z.object({
   isDefault: z.boolean().optional(),
 });
 
-
 export const getAllTemplates = async (req: Request, res: Response) => {
   try {
     const { type } = req.query;
@@ -102,6 +101,7 @@ export const getAllTemplates = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch templates: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch templates" });
   }
 };
@@ -122,6 +122,7 @@ export const getTemplateById = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch template id=${req.params.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch template" });
   }
 };
@@ -135,6 +136,9 @@ export const createTemplate = async (req: Request, res: Response) => {
     const parsed = createTemplateSchema.safeParse(body);
     if (!parsed.success) {
       const first = parsed.error.issues[0];
+      logger.warn(
+        `Template creation validation failed - user ${req.user?.id}: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`,
+      );
       res.status(400).json({
         error: first?.message ?? "Validation failed",
         details: parsed.error.flatten().fieldErrors,
@@ -146,6 +150,9 @@ export const createTemplate = async (req: Request, res: Response) => {
       ...parsed.data,
       createdBy: req.user.id,
     });
+    logger.info(
+      `Template created: id=${result.id}, name="${result.name}", type="${result.type}" by user ${req.user.id}`,
+    );
     res.status(201).json({ data: result });
   } catch (error: any) {
     console.error("[createTemplate]", error);
@@ -163,6 +170,7 @@ export const createTemplate = async (req: Request, res: Response) => {
       });
       return;
     }
+    logger.error(`Failed to create template - user ${req.user?.id}: ${error?.message}`);
     const msg =
       typeof error?.message === "string" && error.message.length > 0
         ? error.message
@@ -202,9 +210,12 @@ export const updateTemplate = async (req: Request, res: Response) => {
       return;
     }
 
+    logger.info(`Template updated: id=${id}, name="${result.name}" by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error: any) {
-    console.error("[updateTemplate]", error);
+    logger.error(
+      `Failed to update template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`,
+    );
     if (error?.code === "42703") {
       res.status(500).json({
         error:
@@ -228,14 +239,17 @@ export const deleteTemplate = async (req: Request, res: Response) => {
       return;
     }
 
+    logger.warn(`Template deletion requested: id=${id} by user ${req.user?.id}`);
     const result = await templateService.delete(id);
     if (!result) {
       res.status(404).json({ error: "Template not found" });
       return;
     }
 
+    logger.info(`Template deleted: id=${id}, name="${result.name}", type="${result.type}" by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to delete template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to delete template" });
   }
 };
@@ -263,6 +277,7 @@ export const previewTemplate = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to preview template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to preview template" });
   }
 };

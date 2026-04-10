@@ -3,10 +3,9 @@ import { createRemoteJWKSet, jwtVerify } from "jose";
 import { db } from "../db";
 import { users } from "../db/schema/users";
 import { eq } from "drizzle-orm";
+import logger from "../utils/logger";
 
-const JWKS = createRemoteJWKSet(
-  new URL(process.env.ASGARDEO_JWKS_URL!)
-);
+const JWKS = createRemoteJWKSet(new URL(process.env.ASGARDEO_JWKS_URL!));
 
 function getAllowedIssuers(): string[] {
   const configured = (process.env.ASGARDEO_ISSUER ?? "").replace(/\/+$/, "");
@@ -148,17 +147,68 @@ function decodeOpaqueTokenUnsafe(token: string): TokenPayload | null {
   }
 }
 
-function mapAsgardeoRole(roles: string[]): "super_admin" | "hiring_manager" | "interviewer" {
-  if (roles.includes("Super Admin")) return "super_admin";
-  if (roles.includes("Hiring Manager")) return "hiring_manager";
-  if (roles.includes("Interviewer")) return "interviewer";
-  return "interviewer";
+type AppRole = "super_admin" | "hiring_manager" | "interviewer";
+
+function collectRolesFromPayload(payload: Record<string, unknown>): string[] {
+  const out: string[] = [];
+
+  const rolesClaim = payload["roles"];
+  if (Array.isArray(rolesClaim)) {
+    for (const x of rolesClaim) {
+      if (typeof x === "string" && x.trim()) out.push(x.trim());
+    }
+  } else if (typeof rolesClaim === "string" && rolesClaim.trim()) {
+    out.push(rolesClaim.trim());
+  }
+
+  const wso2 = payload["http://wso2.org/claims/role"];
+  if (Array.isArray(wso2)) {
+    for (const x of wso2) {
+      if (typeof x === "string" && x.trim()) out.push(x.trim());
+    }
+  } else if (typeof wso2 === "string" && wso2.trim()) {
+    for (const part of wso2.split(",")) {
+      const s = part.trim();
+      if (s) out.push(s);
+    }
+  }
+
+  return out;
+}
+
+function normalizeRoleLabel(s: string): string {
+  return s.trim().toLowerCase().replace(/_/g, " ").replace(/\s+/g, " ");
+}
+
+function mapAsgardeoRoleNamesToAppRole(names: string[]): AppRole | null {
+  const normalized = names.map(normalizeRoleLabel);
+
+  const has = (pred: (n: string) => boolean) => normalized.some(pred);
+
+  if (
+    has(
+      (n) =>
+        n === "super admin" ||
+        n.endsWith("/super admin") ||
+        n.includes("super admin"),
+    )
+  ) {
+    return "super_admin";
+  }
+  if (has((n) => n === "hiring manager" || n.endsWith("/hiring manager"))) {
+    return "hiring_manager";
+  }
+  if (has((n) => n === "interviewer" || n.endsWith("/interviewer"))) {
+    return "interviewer";
+  }
+
+  return null;
 }
 
 export const authMiddleware = async (
   req: Request,
   res: Response,
-  next: NextFunction
+  next: NextFunction,
 ) => {
   const authHeader = req.headers.authorization;
 
@@ -214,8 +264,10 @@ export const authMiddleware = async (
       return;
     }
 
-    const tokenRoles = (payload["roles"] as string[] | undefined) ?? [];
-    const role = mapAsgardeoRole(tokenRoles);
+    const tokenRoleNames = collectRolesFromPayload(
+      payload as Record<string, unknown>,
+    );
+    const roleFromToken = mapAsgardeoRoleNamesToAppRole(tokenRoleNames);
 
     const email =
       (payload["email"] as string | undefined) ?? `${sub}@openats.local`;
@@ -229,7 +281,8 @@ export const authMiddleware = async (
       .limit(1);
 
     if (!user) {
-      // first login — provision with role from token
+      // first login — provision; default interviewer if token has no mappable roles
+      const role = roleFromToken ?? "interviewer";
       [user] = await db
         .insert(users)
         .values({ asgardeoUserId: sub, firstName, lastName, email, role })
@@ -240,10 +293,16 @@ export const authMiddleware = async (
         return;
       }
     } else {
-      // existing user — sync role + profile from token in case anything changed
+      // existing user
       const [updated] = await db
         .update(users)
-        .set({ role, firstName, lastName, email, updatedAt: new Date() })
+        .set({
+          ...(roleFromToken !== null ? { role: roleFromToken } : {}),
+          firstName,
+          lastName,
+          email,
+          updatedAt: new Date(),
+        })
         .where(eq(users.asgardeoUserId, sub))
         .returning();
 
@@ -262,7 +321,9 @@ export const authMiddleware = async (
 
     req.user = user;
     next();
-  } catch (err) {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error("[authMiddleware] error:", msg);
     res.status(401).json({ error: "Invalid or expired token" });
   }
 };

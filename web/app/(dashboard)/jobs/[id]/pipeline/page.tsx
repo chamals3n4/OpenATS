@@ -3,23 +3,55 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import type { Ref } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useDrag, useDrop, useDragLayer } from "react-dnd";
 import { getEmptyImage } from "react-dnd-html5-backend";
-import { GripVertical } from "lucide-react";
+import { ArrowLeft, GripVertical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { CandidateDetailSheetProvider } from "@/components/candidate-detail-sheet-context";
 import { CandidatePreviewPane } from "@/components/candidate-preview-pane";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
+import { toast } from "sonner";
+
 import {
   useJob,
   usePipeline,
   useCandidates,
   useMoveCandidateStage,
 } from "@/hooks/use-api";
-import type { Candidate, PipelineStage } from "@/types";
+import type { Candidate, PipelineStage, StageAutomationFlags } from "@/types";
 import { formatTimeAgo } from "@/lib/time-ago";
+
+function showStageAutomationToasts(automation: StageAutomationFlags) {
+  if (automation.assessmentInvite === "skipped_active_invite") {
+    toast.message("Assessment", {
+      description:
+        "An invite is already active — no new email was sent. The existing link still works.",
+    });
+  } else if (automation.assessmentInvite === "sent") {
+    toast.success("Assessment invite sent.");
+  }
+
+  if (automation.offer === "skipped_open_exists") {
+    toast.message("Offer", {
+      description:
+        "This candidate already has an open offer — no duplicate was created.",
+    });
+  } else if (automation.offer === "created") {
+    toast.success("Offer created.");
+  }
+
+  if (automation.rejectionEmail === "skipped_already_sent") {
+    toast.message("Rejection", {
+      description:
+        "A rejection notice was already sent for this application — not sent again.",
+    });
+  } else if (automation.rejectionEmail === "sent") {
+    toast.success("Rejection email sent.");
+  }
+}
 
 const STAGE_COLORS: Record<PipelineStage["stageType"], string> = {
   none: "#94a3b8",
@@ -310,7 +342,10 @@ export default function HiringPipelinePage() {
     );
     moveStageMutation.mutate(
       { id: candidateId, newStageId: toStageId },
-      { onError: () => refetch() },
+      {
+        onSuccess: (res) => showStageAutomationToasts(res.stageAutomation),
+        onError: () => refetch(),
+      },
     );
   };
 
@@ -335,7 +370,7 @@ export default function HiringPipelinePage() {
           .filter((c) => c.currentStageId !== fromStageId)
           .concat(newList);
       }
-
+      ArrowLeft;
       const toList = (candidatesByStage[toStageId] ?? []).slice();
       toList.splice(toIndex, 0, { ...card, currentStageId: toStageId });
       return prev
@@ -389,6 +424,17 @@ export default function HiringPipelinePage() {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-neutral-950 shrink-0 w-full">
         <div className="px-8 pt-8 pb-6 overflow-hidden">
+          <div className="mb-4 flex items-center gap-2 text-[12px]">
+            <Link
+              href={`/jobs/${jobId}`}
+              className="font-medium text-theme hover:underline"
+            >
+              <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                <ArrowLeft className="size-3.5" />
+                Back to the Job
+              </span>
+            </Link>
+          </div>
           <div className="flex items-center justify-between gap-4 max-w-full">
             <div className="space-y-4 min-w-0">
               <div className="flex items-center gap-4">

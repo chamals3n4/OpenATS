@@ -9,7 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
-    "@asgardeo/nextjs": "^0.1.90",
+    "@asgardeo/nextjs": "^0.2.5",
     "@base-ui/react": "^1.1.0",
     "@hugeicons/core-free-icons": "^3.1.1",
     "@hugeicons/react": "^1.1.5",
@@ -24,6 +24,7 @@
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.4.2",
     "lucide-react": "^0.575.0",
+    "motion": "^12.38.0",
     "next": "16.1.6",
     "next-themes": "^0.4.6",
     "react": "19.2.3",
@@ -43,6 +44,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
+    "@tanstack/react-query-devtools": "^5.95.2",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

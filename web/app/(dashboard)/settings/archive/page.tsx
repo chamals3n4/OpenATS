@@ -114,7 +114,7 @@ export default function ArchivePage() {
               onClick={() => setActiveTab(t)}
               className={`h-9 px-4 rounded-lg text-sm font-medium transition-colors ${
                 activeTab === t
-                  ? "bg-[#355872] text-white"
+                  ? "bg-brand text-white"
                   : "bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 hover:border-slate-300 dark:hover:border-neutral-700"
               }`}
             >

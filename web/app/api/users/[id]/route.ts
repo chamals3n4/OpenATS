@@ -2,45 +2,56 @@ import { NextRequest, NextResponse } from "next/server";
 import { asgardeo } from "@asgardeo/nextjs/server";
 import { serverFetch } from "@/lib/auth-action";
 import { assignAsgardeoRole, removeAsgardeoRole } from "@/lib/asgardeo-roles";
+import {
+  getAsgardeoApiBase,
+  getScimAccessToken,
+  scimRequestHeaders,
+} from "@/lib/asgardeo-scim-token";
 import type { User } from "@/types";
 
-async function getToken() {
+const ROUTE_LOG = "[API /users/[id]]";
+
+async function requireSignedInAndScimToken() {
   const client = await asgardeo();
   const sessionId = await client.getSessionId();
   if (!sessionId) throw new Error("Unauthorized");
-  return client.getAccessToken(sessionId);
+  return getScimAccessToken();
 }
-
-const BASE = process.env.NEXT_PUBLIC_ASGARDEO_BASE_URL;
 
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
 export async function GET(_req: NextRequest, context: RouteContext) {
+  const { id } = await context.params;
+  console.log(`${ROUTE_LOG} GET /api/users/${id}`);
   try {
-    const { id } = await context.params;
     const data = await serverFetch<{ data: User }>(`/users/${id}`);
     return NextResponse.json(data.data);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    console.error(`${ROUTE_LOG} GET error:`, msg);
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }
 
 export async function PATCH(req: NextRequest, context: RouteContext) {
+  const { id } = await context.params;
+  console.log(`${ROUTE_LOG} PATCH /api/users/${id}`);
   try {
-    const { id } = await context.params;
-    const token = await getToken();
+    const scimToken = await requireSignedInAndScimToken();
     const body = await req.json();
+    const base = getAsgardeoApiBase();
 
-    // 1. Get current user from DB
     const existing = await serverFetch<{
       data: User & { asgardeoUserId: string };
     }>(`/users/${id}`);
     const { asgardeoUserId, role: oldRole } = existing.data;
+    console.log(
+      `${ROUTE_LOG} updating asgardeoUserId=${asgardeoUserId}, oldRole=${oldRole}`,
+    );
 
-    // 2. Update name/email in Asgardeo
-    const operations: any[] = [];
+    const operations: { op: string; path: string; value: string }[] = [];
     if (body.firstName !== undefined)
       operations.push({
         op: "replace",
@@ -61,31 +72,43 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       });
 
     if (operations.length > 0) {
-      const scimRes = await fetch(`${BASE}/scim2/Users/${asgardeoUserId}`, {
+      const scimUrl = `${base}/scim2/Users/${asgardeoUserId}`;
+      console.log(
+        `${ROUTE_LOG} PATCH ${scimUrl} with ${operations.length} operation(s)`,
+      );
+
+      const scimRes = await fetch(scimUrl, {
         method: "PATCH",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
+        headers: scimRequestHeaders(scimToken, true),
         body: JSON.stringify({
           schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
           Operations: operations,
         }),
       });
-      if (!scimRes.ok)
+
+      if (!scimRes.ok) {
+        const errBody = await scimRes.text();
+        console.error(
+          `${ROUTE_LOG} SCIM PATCH failed — HTTP ${scimRes.status}: ${errBody}`,
+        );
         return NextResponse.json(
-          { error: await scimRes.text() },
+          { error: errBody },
           { status: scimRes.status },
         );
+      }
+      console.log(`${ROUTE_LOG} SCIM PATCH successful`);
+    } else {
+      console.log(`${ROUTE_LOG} no profile fields to update in Asgardeo`);
     }
 
-    // 3. Sync Asgardeo role if changed
     if (body.role !== undefined && body.role !== oldRole) {
-      await removeAsgardeoRole(token, asgardeoUserId, oldRole);
-      await assignAsgardeoRole(token, asgardeoUserId, body.role);
+      console.log(
+        `${ROUTE_LOG} role changed from "${oldRole}" → "${body.role}"`,
+      );
+      await removeAsgardeoRole(scimToken, asgardeoUserId, oldRole);
+      await assignAsgardeoRole(scimToken, asgardeoUserId, body.role);
     }
 
-    // 4. Update DB
     const updated = await serverFetch<{ data: User }>(`/users/${id}`, {
       method: "PUT",
       body: JSON.stringify({
@@ -95,45 +118,58 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       }),
     });
 
+    console.log(`${ROUTE_LOG} user ${id} updated successfully`);
     return NextResponse.json(updated.data);
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const status = msg === "Unauthorized" ? 401 : 500;
+    console.error(`${ROUTE_LOG} PATCH error (id=${id}):`, msg);
+    return NextResponse.json({ error: msg }, { status });
   }
 }
 
 export async function DELETE(_req: NextRequest, context: RouteContext) {
+  const { id } = await context.params;
+  console.log(`${ROUTE_LOG} DELETE /api/users/${id}`);
   try {
-    const { id } = await context.params;
-    const token = await getToken();
+    const scimToken = await requireSignedInAndScimToken();
+    const base = getAsgardeoApiBase();
 
-    // 1. Get user from DB
     const existing = await serverFetch<{
       data: User & { asgardeoUserId: string };
     }>(`/users/${id}`);
-    const { asgardeoUserId, role } = existing.data;
+    const { asgardeoUserId } = existing.data;
+    console.log(`${ROUTE_LOG} deleting asgardeoUserId=${asgardeoUserId}`);
 
-    // 2. Remove Asgardeo role
-    await removeAsgardeoRole(token, asgardeoUserId, role);
+    const scimUrl = `${base}/scim2/Users/${asgardeoUserId}`;
+    console.log(`${ROUTE_LOG} DELETE ${scimUrl}`);
 
-    // 3. Delete from Asgardeo
-    const scimRes = await fetch(`${BASE}/scim2/Users/${asgardeoUserId}`, {
+    const scimRes = await fetch(scimUrl, {
       method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
+      headers: scimRequestHeaders(scimToken, false),
     });
-    if (!scimRes.ok)
-      return NextResponse.json(
-        { error: await scimRes.text() },
-        { status: scimRes.status },
-      );
 
-    // 4. Soft delete in DB
+    if (!scimRes.ok) {
+      const errBody = await scimRes.text();
+      console.error(
+        `${ROUTE_LOG} SCIM DELETE failed — HTTP ${scimRes.status}: ${errBody}`,
+      );
+      return NextResponse.json({ error: errBody }, { status: scimRes.status });
+    }
+
+    console.log(`${ROUTE_LOG} Asgardeo user deleted (HTTP 204)`);
+
     await serverFetch(`/users/${id}`, {
       method: "PUT",
       body: JSON.stringify({ isActive: false }),
     });
 
+    console.log(`${ROUTE_LOG} user ${id} soft-deleted in DB`);
     return NextResponse.json({ success: true });
-  } catch (e: any) {
-    return NextResponse.json({ error: e.message }, { status: 500 });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e);
+    const status = msg === "Unauthorized" ? 401 : 500;
+    console.error(`${ROUTE_LOG} DELETE error (id=${id}):`, msg);
+    return NextResponse.json({ error: msg }, { status });
   }
 }

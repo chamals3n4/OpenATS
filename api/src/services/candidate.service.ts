@@ -1,13 +1,4 @@
-import {
-  eq,
-  and,
-  desc,
-  asc,
-  or,
-  ilike,
-  sql,
-  type InferSelectModel,
-} from "drizzle-orm";
+import { eq, and, desc, asc, inArray, or, ilike, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   candidates,
@@ -23,6 +14,7 @@ import {
   offers,
   templates,
 } from "../db/schema";
+import type { Candidate } from "../db/schema/candidates";
 import { assessmentExecutionService } from "./assessment-execution.service";
 import { offerService } from "./offer.service";
 import { templateService } from "./template.service";
@@ -33,13 +25,26 @@ import { variableService } from "./variable.service";
 import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
 
-type CandidateRow = InferSelectModel<typeof candidates>;
+/** Drizzle wraps driver errors; Postgres code 23505 is often on `cause`. */
+function isPgUniqueViolation(err: unknown): boolean {
+  let current: unknown = err;
+  const seen = new Set<unknown>();
+  for (let depth = 0; depth < 12 && current && typeof current === "object"; depth++) {
+    if (seen.has(current)) break;
+    seen.add(current);
+    const code = (current as { code?: string }).code;
+    if (code === "23505") return true;
+    current = (current as { cause?: unknown }).cause;
+  }
+  return false;
+}
 
-type RejectionEmailPayload = {
-  to: string;
-  subject: string;
-  html: string;
-};
+export class DuplicateApplicationError extends Error {
+  constructor() {
+    super("DUPLICATE_APPLICATION");
+    this.name = "DuplicateApplicationError";
+  }
+}
 
 export interface CustomAnswerInput {
   questionId: number;
@@ -69,11 +74,26 @@ export interface CandidateBasicUpdateInput {
   resumeUrl?: string | null;
 }
 
+/** Returned with move-stage so the UI can toast automation outcomes. */
+export type StageAutomationFlags = {
+  assessmentInvite?: "sent" | "skipped_active_invite";
+  offer?: "created" | "skipped_open_exists";
+  rejectionEmail?: "sent" | "skipped_already_sent";
+};
+
+export type MoveStageResult = {
+  candidate: Candidate;
+  stageAutomation: StageAutomationFlags;
+};
+
 export const candidateService = {
   async apply(jobId: number, input: CandidateApplyInput) {
-    const { customAnswers, ...candidateData } = input;
+    const { customAnswers, ...rest } = input;
+    const normalizedEmail = rest.email.trim().toLowerCase();
+    const candidateData = { ...rest, email: normalizedEmail };
 
-    return await db.transaction(async (tx) => {
+    try {
+      return await db.transaction(async (tx) => {
       const [firstStage] = await tx
         .select()
         .from(jobPipelineStages)
@@ -141,6 +161,12 @@ export const candidateService = {
 
       return candidate;
     });
+    } catch (err) {
+      if (isPgUniqueViolation(err)) {
+        throw new DuplicateApplicationError();
+      }
+      throw err;
+    }
   },
 
   async getAll(jobId: number | undefined, filters: CandidateFilters = {}) {
@@ -161,8 +187,6 @@ export const candidateService = {
         .replace(/%/g, "\\%")
         .replace(/_/g, "\\_");
       const pattern = `%${escaped}%`;
-      // NULL ILIKE … is NULL in Postgres, so `phone ILIKE …` breaks the whole OR when phone is null.
-      // Match full name, coalesce phone, and keep per-field matches.
       conditions.push(
         or(
           ilike(candidates.firstName, pattern),
@@ -170,7 +194,7 @@ export const candidateService = {
           ilike(candidates.email, pattern),
           ilike(sql`COALESCE(${candidates.phone}, '')`, pattern),
           sql`(${candidates.firstName} || ' ' || ${candidates.lastName}) ILIKE ${pattern}`,
-        ),
+        )!,
       );
     }
 
@@ -256,9 +280,7 @@ export const candidateService = {
     const [offer] = await db
       .select()
       .from(offers)
-      .where(eq(offers.candidateId, id))
-      .orderBy(desc(offers.createdAt))
-      .limit(1);
+      .where(eq(offers.candidateId, id));
 
     const [cvRow] = await db
       .select()
@@ -292,12 +314,10 @@ export const candidateService = {
     candidateId: number,
     newStageId: number,
     movedBy: number | null = null,
-  ) {
-    const { updated, rejectionMail } = await db.transaction(
-      async (tx): Promise<{
-        updated: CandidateRow | undefined;
-        rejectionMail: RejectionEmailPayload | null;
-      }> => {
+  ): Promise<MoveStageResult> {
+    return await db.transaction(async (tx) => {
+      const stageAutomation: StageAutomationFlags = {};
+
       const [candidate] = await tx
         .select()
         .from(candidates)
@@ -317,7 +337,7 @@ export const candidateService = {
 
       if (!stage) throw new Error("Invalid stage for this job");
 
-      const [row] = await tx
+      const [updated] = await tx
         .update(candidates)
         .set({
           currentStageId: newStageId,
@@ -325,6 +345,8 @@ export const candidateService = {
         })
         .where(eq(candidates.id, candidateId))
         .returning();
+
+      if (!updated) throw new Error("Failed to update candidate");
 
       await tx.insert(candidateStageHistory).values({
         candidateId,
@@ -343,50 +365,70 @@ export const candidateService = {
         );
 
       if (attachment) {
-        await assessmentExecutionService.inviteCandidate(
-          candidateId,
-          attachment.assessmentId,
-        );
+        const { didSendInvite } =
+          await assessmentExecutionService.inviteCandidate(
+            candidateId,
+            attachment.assessmentId,
+          );
+        stageAutomation.assessmentInvite = didSendInvite
+          ? "sent"
+          : "skipped_active_invite";
       }
 
       if (stage.stageType === "offer") {
         const job = await jobService.getById(candidate.jobId);
         if (job) {
-          let salary: number | null = null;
-
-          if (job.salaryType === "range" && job.salaryMin && job.salaryMax) {
-            salary = (Number(job.salaryMin) + Number(job.salaryMax)) / 2;
-          } else if (job.salaryType === "fixed" && job.salaryFixed) {
-            salary = Number(job.salaryFixed);
-          }
-
-          // Offers always start as draft so recruiters can review the letter before sending.
-          let expiryDate: string | null = null;
-          if (stage.offerExpiryDays) {
-            const expiry = new Date();
-            expiry.setDate(expiry.getDate() + stage.offerExpiryDays);
-            expiryDate = expiry.toISOString();
-          }
-
-          let offerTemplateId = stage.offerTemplateId;
-          if (!offerTemplateId) {
-            offerTemplateId =
-              (await templateService.getDefaultTemplateIdForType("offer")) ??
-              null;
-          }
-
-          const existingOffer = await tx
+          const [existingOpenOffer] = await tx
             .select({ id: offers.id })
             .from(offers)
             .where(
               and(
                 eq(offers.candidateId, candidate.id),
                 eq(offers.jobId, job.id),
+                inArray(offers.status, [
+                  "draft",
+                  "sent",
+                  "pending",
+                  "accepted",
+                ]),
               ),
             )
             .limit(1);
 
-          if (existingOffer.length === 0) {
+          if (existingOpenOffer) {
+            stageAutomation.offer = "skipped_open_exists";
+          } else {
+            let salary: number | null = null;
+            let blockAutoSend = false;
+
+            if (job.salaryType === "range" && job.salaryMin && job.salaryMax) {
+              salary = (Number(job.salaryMin) + Number(job.salaryMax)) / 2;
+              blockAutoSend = true;
+            } else if (job.salaryType === "fixed" && job.salaryFixed) {
+              salary = Number(job.salaryFixed);
+            } else if (!job.salaryType) {
+              blockAutoSend = true;
+            }
+
+            const mode =
+              blockAutoSend || stage.offerMode === "auto_draft"
+                ? "draft"
+                : "sent";
+
+            let expiryDate: string | null = null;
+            if (stage.offerExpiryDays) {
+              const expiry = new Date();
+              expiry.setDate(expiry.getDate() + stage.offerExpiryDays);
+              expiryDate = expiry.toISOString();
+            }
+
+            let offerTemplateId = stage.offerTemplateId;
+            if (!offerTemplateId) {
+              offerTemplateId =
+                (await templateService.getDefaultTemplateIdForType("offer")) ??
+                null;
+            }
+
             await offerService.create({
               candidateId: candidate.id,
               jobId: job.id,
@@ -395,67 +437,56 @@ export const candidateService = {
               currency: job.currency,
               payFrequency: job.payFrequency,
               expiryDate,
-              status: "draft",
+              status: mode,
               createdBy: movedBy ?? 1,
             });
+            stageAutomation.offer = "created";
           }
         }
       }
-
-      let rejectionMail: RejectionEmailPayload | null = null;
 
       if (stage.stageType === "rejection") {
-        let rejectionTemplateId = stage.rejectionTemplateId;
-        if (!rejectionTemplateId) {
-          rejectionTemplateId =
-            (await templateService.getDefaultTemplateIdForType(
-              "rejection",
-            )) ?? null;
-        }
+        if (stage.rejectionTemplateId) {
+          if (candidate.rejectionNoticeSentAt) {
+            stageAutomation.rejectionEmail = "skipped_already_sent";
+          } else {
+            const [template] = await tx
+              .select()
+              .from(templates)
+              .where(eq(templates.id, stage.rejectionTemplateId));
 
-        if (rejectionTemplateId && candidate.email?.trim()) {
-          const [template] = await tx
-            .select()
-            .from(templates)
-            .where(eq(templates.id, rejectionTemplateId));
+            if (template) {
+              const context = await variableService.getContextForCandidate(
+                candidate.id,
+              );
+              const { subject, html } = templateEngineService.compileTemplate(
+                template.subject,
+                template.bodyJson,
+                context,
+              );
 
-          if (template) {
-            const context = await variableService.getContextForCandidate(
-              candidate.id,
-            );
-            const { subject, html } = templateEngineService.compileTemplate(
-              template.subject,
-              template.bodyJson,
-              context,
-            );
-            rejectionMail = {
-              to: candidate.email.trim(),
-              subject,
-              html,
-            };
+              await mailService.sendRejectionEmail(
+                candidate.email,
+                subject,
+                html,
+              );
+
+              await tx
+                .update(candidates)
+                .set({
+                  rejectionNoticeSentAt: new Date(),
+                  updatedAt: new Date(),
+                })
+                .where(eq(candidates.id, candidateId));
+
+              stageAutomation.rejectionEmail = "sent";
+            }
           }
         }
       }
 
-      return { updated: row, rejectionMail };
+      return { candidate: updated, stageAutomation };
     });
-
-    if (rejectionMail) {
-      try {
-        await mailService.sendRejectionEmail(
-          rejectionMail.to,
-          rejectionMail.subject,
-          rejectionMail.html,
-        );
-      } catch (err) {
-        console.error(
-          "[candidate] moveStage: rejection email failed (stage move already saved)",
-          err instanceof Error ? err.message : err,
-        );
-      }
-    }
-
-    return updated;
   },
 
   async updateBasicDetails(id: number, data: CandidateBasicUpdateInput) {

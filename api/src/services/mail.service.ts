@@ -8,6 +8,7 @@
  * - Default `from` is `onboarding@resend.dev` (works with a valid API key). Use a verified domain address in production.
  */
 import { Resend } from "resend";
+import logger from "../utils/logger";
 
 /** Resend’s sandbox sender — works without domain verification. Override via `RESEND_FROM_EMAIL` after you verify a domain in Resend. */
 const DEFAULT_FROM = "onboarding@resend.dev";
@@ -56,7 +57,7 @@ export const mailService = {
       });
 
       if (error) {
-        console.error("Resend error:", error);
+        logger.error("Resend error:", error);
         const msg =
           typeof error === "object" && error !== null && "message" in error
             ? String((error as { message: string }).message)
@@ -66,9 +67,9 @@ export const mailService = {
 
       return data;
     } catch (err) {
+      logger.error("Failed to send email:", err);
       const message =
         err instanceof Error ? err.message : "Failed to send email";
-      console.error("Failed to send email:", message, { to, from: fromAddr });
       throw err instanceof Error ? err : new Error(message);
     }
   },
@@ -89,7 +90,7 @@ export const mailService = {
     to: string,
     candidateFirstName: string,
     assessmentTitle: string,
-    autoSubmitReason?: string
+    autoSubmitReason?: string,
   ) {
     const subject = autoSubmitReason
       ? `Assessment Auto-Submitted: ${assessmentTitle}`

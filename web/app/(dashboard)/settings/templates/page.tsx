@@ -15,6 +15,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
+import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -100,11 +101,11 @@ export default function TemplatesPage() {
   const router = useRouter();
   const { data: templatesRes, isLoading } = useTemplates();
   const templates = templatesRes?.data || [];
-  
+
   const createMutation = useCreateTemplate();
   const deleteMutation = useDeleteTemplate();
   const updateMutation = useUpdateTemplate();
-  
+
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
 
@@ -169,12 +170,12 @@ export default function TemplatesPage() {
         <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Templates
         </h1>
-        <button
+        <Button
           onClick={() => {
             setPickedType(null);
             setTypePickerOpen(true);
           }}
-          className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
+          className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
         >
           <HugeiconsIcon
             icon={PlusSignIcon}
@@ -182,14 +183,14 @@ export default function TemplatesPage() {
             strokeWidth={2.5}
           />
           <span>New Template</span>
-        </button>
+        </Button>
       </div>
 
       <div className="border-y border-slate-300 dark:border-neutral-700 px-8 py-3.5 flex items-center gap-4">
         <div className="relative w-80">
           <HugeiconsIcon
             icon={Search01Icon}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-300 pointer-events-none"
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
           />
           <Input
             placeholder="Search templates..."
@@ -254,11 +255,8 @@ export default function TemplatesPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={5}
-                    className="h-32 text-center text-slate-400 text-sm animate-pulse"
-                  >
-                    Loading templates...
+                  <TableCell colSpan={5} className="p-0">
+                    <ListSectionSpinner />
                   </TableCell>
                 </TableRow>
               ) : filtered.length === 0 ? (
@@ -481,8 +479,10 @@ export default function TemplatesPage() {
               Delete Template?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
-              <strong className="text-slate-700 dark:text-neutral-200">{deleteName}</strong> will be
-              permanently removed. This cannot be undone.
+              <strong className="text-slate-700 dark:text-neutral-200">
+                {deleteName}
+              </strong>{" "}
+              will be permanently removed. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">

@@ -1,40 +1,46 @@
-export type ArchiveType = 'job' | 'candidate' | 'offer'
+const STORAGE_KEY = "openats_archive_v1";
 
-export interface ArchiveEntry {
-  id: string
-  type: ArchiveType
-  name: string       // primary display name
-  detail: string     // secondary info (role, dept, etc.)
-  archivedAt: string // ISO date string
-}
+export type ArchiveType = "job" | "candidate" | "offer";
 
-const KEY = 'openats_archive'
+export type ArchiveEntry = {
+  id: string;
+  type: ArchiveType;
+  name: string;
+  detail: string;
+  archivedAt: string;
+};
 
-function load(): ArchiveEntry[] {
-  if (typeof window === 'undefined') return []
+function read(): ArchiveEntry[] {
+  if (typeof window === "undefined") return [];
   try {
-    return JSON.parse(localStorage.getItem(KEY) || '[]')
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    return Array.isArray(parsed) ? (parsed as ArchiveEntry[]) : [];
   } catch {
-    return []
+    return [];
   }
 }
 
-function save(entries: ArchiveEntry[]) {
-  localStorage.setItem(KEY, JSON.stringify(entries))
+function write(entries: ArchiveEntry[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
 }
 
-export function archiveItem(entry: Omit<ArchiveEntry, 'archivedAt'>) {
-  const all = load()
-  // avoid duplicates
-  if (all.find(e => e.id === entry.id && e.type === entry.type)) return
-  save([...all, { ...entry, archivedAt: new Date().toISOString() }])
+export function getArchived(): ArchiveEntry[] {
+  return read();
 }
 
-export function getArchived(type?: ArchiveType): ArchiveEntry[] {
-  const all = load()
-  return type ? all.filter(e => e.type === type) : all
+export function archiveItem(entry: Omit<ArchiveEntry, "archivedAt">): void {
+  const items = read();
+  const next: ArchiveEntry = {
+    ...entry,
+    archivedAt: new Date().toISOString(),
+  };
+  write([next, ...items.filter((x) => !(x.id === entry.id && x.type === entry.type))]);
 }
 
-export function permanentlyDelete(id: string, type: ArchiveType) {
-  save(load().filter(e => !(e.id === id && e.type === type)))
+export function permanentlyDelete(id: string, type: ArchiveType): void {
+  const items = read().filter((x) => !(x.id === id && x.type === type));
+  write(items);
 }

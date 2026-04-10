@@ -45,25 +45,24 @@ export default function ThemeSettingsPage() {
   };
 
   const applyThemeColor = (color: string) => {
-    document.documentElement.style.setProperty("--sidebar-primary", color);
-    document.documentElement.style.setProperty("--sidebar-accent", color);
-    document.documentElement.style.setProperty("--sidebar-ring", color);
-    document.documentElement.style.setProperty("--theme-color", color);
+    const root = document.documentElement;
+    root.style.removeProperty("--sidebar-primary");
+    root.style.removeProperty("--sidebar-accent");
+    root.style.removeProperty("--sidebar-accent-foreground");
+    root.style.removeProperty("--sidebar-ring");
+    root.style.removeProperty("--sidebar-hover");
+    root.style.setProperty("--theme-color", color);
 
     const r = parseInt(color.slice(1, 3), 16);
     const g = parseInt(color.slice(3, 5), 16);
     const b = parseInt(color.slice(5, 7), 16);
-    document.documentElement.style.setProperty(
-      "--sidebar-hover",
-      `rgba(${r}, ${g}, ${b}, 0.1)`,
-    );
-    document.documentElement.style.setProperty(
+    root.style.setProperty(
       "--theme-color-hover",
       `rgba(${r}, ${g}, ${b}, 0.9)`,
     );
 
     const oklch = hexToOKLCH(color);
-    document.documentElement.style.setProperty("--primary", oklch);
+    root.style.setProperty("--primary", oklch);
   };
 
   useEffect(() => {
@@ -101,8 +100,8 @@ export default function ThemeSettingsPage() {
           Theme
         </h1>
         <p className="text-sm text-slate-500 dark:text-neutral-400 mt-1.5">
-          Choose an accent color for buttons, sidebar highlights, and focus
-          states.
+          Choose an accent color for buttons and primary UI; the sidebar stays
+          neutral in light and dark mode.
         </p>
       </div>
 

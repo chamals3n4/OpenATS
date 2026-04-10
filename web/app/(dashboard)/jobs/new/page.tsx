@@ -267,11 +267,11 @@ export default function CreateNewJobPage() {
                 <div className="flex items-center gap-3 shrink-0">
                   <Checkbox
                     id="salary-info"
+                    variant="theme"
                     checked={isSalaryInfoIncluded}
                     onCheckedChange={(checked) =>
                       setIsSalaryInfoIncluded(checked as boolean)
                     }
-                    className="data-checked:bg-theme data-checked:border-theme size-4.5"
                   />
                   <Label
                     htmlFor="salary-info"
@@ -289,11 +289,7 @@ export default function CreateNewJobPage() {
                   className="flex items-center gap-10"
                 >
                   <div className="flex items-center gap-2.5">
-                    <RadioGroupItem
-                      value="range"
-                      id="range"
-                      className="text-theme border-slate-300 data-checked:bg-theme data-checked:border-theme size-4.5"
-                    />
+                    <RadioGroupItem variant="theme" value="range" id="range" />
                     <Label
                       htmlFor="range"
                       className="text-sm font-medium text-slate-600 dark:text-neutral-400 cursor-pointer"
@@ -302,11 +298,7 @@ export default function CreateNewJobPage() {
                     </Label>
                   </div>
                   <div className="flex items-center gap-2.5">
-                    <RadioGroupItem
-                      value="fixed"
-                      id="fixed"
-                      className="text-theme border-slate-300 data-checked:bg-theme data-checked:border-theme size-4.5"
-                    />
+                    <RadioGroupItem variant="theme" value="fixed" id="fixed" />
                     <Label
                       htmlFor="fixed"
                       className="text-sm font-medium text-slate-600 dark:text-neutral-400 cursor-pointer"
@@ -408,7 +400,7 @@ export default function CreateNewJobPage() {
           <div className="pt-10 flex items-center gap-4">
             <Button
               onClick={handleSubmit}
-              className="text-white cursor-pointer rounded-lg h-10 px-10 min-w-35 font-medium shadow-none border-none"
+              className="text-white cursor-pointer rounded-lg h-10 px-10 min-w-35 font-medium shadow-none border-none gap-2"
               style={{ backgroundColor: "var(--theme-color)" }}
               disabled={
                 !title ||
@@ -417,17 +409,23 @@ export default function CreateNewJobPage() {
                 createJob.isPending
               }
             >
-              {createJob.isPending && (
-                <Loader2 className="w-4 h-4 animate-spin mr-1" />
+              {createJob.isPending ? (
+                <>
+                  <Loader2 className="size-4 shrink-0 animate-spin" />
+                  <span>Saving…</span>
+                </>
+              ) : (
+                "Save Job"
               )}
-              {createJob.isPending ? "Saving…" : "Save Job"}
             </Button>
-            <Link
-              href="/jobs"
-              className="flex items-center justify-center border border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 rounded-lg h-10 px-6 font-medium bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
+            <Button
+              type="button"
+              variant="outline"
+              className="flex items-center cursor-pointer justify-center border border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 rounded-lg h-10 px-6 font-medium bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800"
+              onClick={() => router.push("/jobs")}
             >
               Cancel
-            </Link>
+            </Button>
           </div>
         </div>
       </div>

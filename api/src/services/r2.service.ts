@@ -6,6 +6,7 @@ import {
 } from "@aws-sdk/client-s3";
 import crypto from "crypto";
 import path from "path";
+import logger from "../utils/logger";
 
 function mapS3Error(err: unknown, action: "upload" | "delete" | "read"): Error {
   const e = err as {
@@ -75,7 +76,7 @@ export const r2Service = {
     try {
       await r2Client.send(command);
     } catch (error: unknown) {
-      console.error(
+      logger.error(
         `Attempting upload to Bucket: ${process.env.R2_BUCKET_NAME}`,
       );
       throw mapS3Error(error, "upload");

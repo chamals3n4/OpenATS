@@ -1,6 +1,7 @@
 import express, { type Express } from "express";
 import cors from "cors";
 import morgan from "morgan";
+import helmet from "helmet";
 import router from "./routes";
 import publicRouter from "./routes/public.routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
@@ -11,6 +12,8 @@ import { pageSettingsService } from "./services/page-settings.service";
 import logger from "./utils/logger";
 
 const app: Express = express();
+
+app.use(helmet());
 
 function normalizeOrigin(origin: string): string {
   return origin.trim().replace(/\/$/, "");
@@ -60,7 +63,7 @@ app.use(
   ),
 );
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "working perfectly" });
+  res.status(200).json({ status: "working" });
 });
 
 app.use("/public", publicRouter);

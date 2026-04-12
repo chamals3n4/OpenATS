@@ -38,7 +38,6 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Checkbox } from "@/components/ui/checkbox";
-import { cn } from "@/lib/utils";
 
 import { CandidateJobFitTab } from "@/components/candidate-job-fit-tab";
 import { useCandidateDetailSheet } from "@/components/candidate-detail-sheet-context";

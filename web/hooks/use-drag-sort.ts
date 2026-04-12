@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { useRef, type RefObject } from "react";
+import type { ConnectDragPreview } from "react-dnd";
 import { useDrag, useDrop } from "react-dnd";
 
 interface UseDragSortOptions {
@@ -6,10 +7,27 @@ interface UseDragSortOptions {
   index: number;
   type: string;
   onMove: (dragIndex: number, hoverIndex: number) => void;
+  /** When true, only the element with `dragHandleRef` starts a drag; the row is still the drop target. */
+  dragHandleOnly?: boolean;
 }
 
-export function useDragSort({ id, index, type, onMove }: UseDragSortOptions) {
+export type UseDragSortReturn = {
+  ref: RefObject<HTMLElement | null>;
+  isDragging: boolean;
+  isOver: boolean;
+  dragPreviewRef: ConnectDragPreview;
+  dragHandleRef?: RefObject<HTMLElement | null>;
+};
+
+export function useDragSort({
+  id,
+  index,
+  type,
+  onMove,
+  dragHandleOnly = false,
+}: UseDragSortOptions): UseDragSortReturn {
   const ref = useRef<HTMLElement>(null);
+  const dragHandleRef = useRef<HTMLElement>(null);
 
   const [{ isDragging }, dragRef, dragPreviewRef] = useDrag({
     type,
@@ -44,7 +62,18 @@ export function useDragSort({ id, index, type, onMove }: UseDragSortOptions) {
     },
   });
 
-  dragRef(dropRef(ref));
+  if (dragHandleOnly) {
+    dragRef(dragHandleRef);
+    dropRef(ref);
+  } else {
+    dragRef(dropRef(ref));
+  }
 
-  return { ref, isDragging, isOver, dragPreviewRef };
+  return {
+    ref,
+    isDragging,
+    isOver,
+    dragPreviewRef,
+    ...(dragHandleOnly ? { dragHandleRef } : {}),
+  };
 }

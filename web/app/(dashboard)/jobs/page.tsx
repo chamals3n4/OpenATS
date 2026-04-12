@@ -15,6 +15,7 @@ import {
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { ThemeButton } from "@/components/theme-button";
 import { Input } from "@/components/ui/input";
 import {
@@ -82,8 +83,7 @@ export default function ManageJobsPage() {
       });
       void queryClient.prefetchQuery({
         queryKey: ["jobs", jobId, "team"],
-        queryFn: () =>
-          serverFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
+        queryFn: () => serverFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
       });
       void queryClient.prefetchQuery({
         queryKey: ["candidates", jobId, undefined],
@@ -302,9 +302,9 @@ export default function ManageJobsPage() {
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Department Name
                 </TableHead>
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                {/* <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Location
-                </TableHead>
+                </TableHead> */}
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Created At
                 </TableHead>
@@ -349,9 +349,9 @@ export default function ManageJobsPage() {
                       {departmentNameById.get(job.departmentId) ??
                         `Department #${job.departmentId}`}
                     </TableCell>
-                    <TableCell className="h-13 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+                    {/* <TableCell className="h-13 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
                       {job.location ?? "—"}
-                    </TableCell>
+                    </TableCell> */}
                     <TableCell className="h-13 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
                       {formatDate(job.createdAt)}
                     </TableCell>
@@ -449,9 +449,10 @@ export default function ManageJobsPage() {
             <AlertDialogAction
               onClick={confirmDelete}
               disabled={deleteMutation.isPending}
-              className="h-10 px-6 rounded-md bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
+              className="h-10 px-6 rounded-md bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
-              {deleteMutation.isPending ? "Deleting…" : "Delete"}
+              {deleteMutation.isPending && <Spinner className="size-3.5" />}
+              {deleteMutation.isPending ? "Deleting" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

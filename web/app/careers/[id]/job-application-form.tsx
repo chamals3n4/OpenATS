@@ -7,8 +7,8 @@ import {
   ArrowLeft01Icon,
   Briefcase01Icon,
   Location01Icon,
-  Wallet01Icon,
   CloudUploadIcon,
+  Cash01Icon,
 } from "@hugeicons/core-free-icons";
 
 import { Button } from "@/components/ui/button";
@@ -242,9 +242,9 @@ export function JobApplicationForm({
                 .getElementById("apply-form")
                 ?.scrollIntoView({ behavior: "smooth" })
             }
-            className="bg-theme hover:bg-theme-hover text-white px-8 h-10 rounded-[6px] shadow-none font-medium shrink-0 w-full sm:w-auto text-[15px]"
+            className="bg-theme cursor-pointer hover:bg-theme-hover text-white px-8 h-10 rounded-[7px] shadow-none font-medium shrink-0 w-full sm:w-auto text-[15px]"
           >
-            Apply
+            Apply for this job
           </Button>
         </div>
 
@@ -272,7 +272,7 @@ export function JobApplicationForm({
           {salary && (
             <div className="flex items-center gap-2">
               <HugeiconsIcon
-                icon={Wallet01Icon}
+                icon={Cash01Icon}
                 className="size-[18px] text-slate-400 dark:text-neutral-500"
               />
               <span className="font-medium">{salary}</span>
@@ -520,9 +520,7 @@ export function JobApplicationForm({
                       {q.questionType === "radio" && q.options.length > 0 && (
                         <RadioGroup
                           value={String(answers[q.id]?.optionIds?.[0] ?? "")}
-                          onValueChange={(val) =>
-                            setRadio(q.id, Number(val))
-                          }
+                          onValueChange={(val) => setRadio(q.id, Number(val))}
                           className="space-y-2.5"
                         >
                           {q.options.map((opt) => (
@@ -559,7 +557,7 @@ export function JobApplicationForm({
               <Button
                 type="submit"
                 disabled={submitting || resumeUploading}
-                className="bg-theme hover:bg-theme-hover text-white px-10 h-12 rounded-[6px] shadow-none font-medium text-[15px] min-w-[180px] disabled:opacity-60"
+                className="bg-theme hover:bg-theme-hover cursor-pointer  text-white px-10 h-12 rounded-[8px] shadow-none font-medium text-[15px] min-w-[180px] disabled:opacity-60"
               >
                 {submitting
                   ? "Submitting…"

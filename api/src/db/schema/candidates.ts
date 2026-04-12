@@ -157,6 +157,7 @@ export const candidateAssessmentAnswers = pgTable(
       precision: 6,
       scale: 2,
     }).$type<number>(),
+    aiFeedback: text("ai_feedback"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

@@ -6,11 +6,16 @@ import {
   submitAssessmentAnswer,
   completeAssessment,
   getCandidateAttempts,
+  getCandidateAttemptReview,
 } from "../controllers/assessment-execution.controller";
 
 const router: Router = Router();
 
 router.post("/invite", inviteCandidateToAssessment);
+router.get(
+  "/candidate/:candidateId/attempt/:attemptId/review",
+  getCandidateAttemptReview,
+);
 router.get("/candidate/:candidateId", getCandidateAttempts);
 
 router.get("/public/:token", getAssessmentForCandidate);

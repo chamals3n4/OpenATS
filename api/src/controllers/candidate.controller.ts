@@ -91,8 +91,12 @@ export const applyForJob = async (req: Request, res: Response) => {
 
     if (result.resumeUrl) {
       cvAnalysisService
-        .startAnalysis(result.id, result.jobId, result.resumeUrl)
-        .catch((err) => logger.error(`CV analysis error for candidateId=${result.id}: ${err?.message}`));
+        .analyze(result.id, result.jobId, result.resumeUrl)
+        .catch((err: unknown) =>
+          logger.error(
+            `CV analysis error for candidateId=${result.id}: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        );
     }
 
     res.status(201).json({ data: result });
@@ -151,7 +155,7 @@ export const getCandidateById = async (req: Request, res: Response) => {
 
     if (result.resumeUrl && !result.cvAnalysis) {
       try {
-        await cvAnalysisService.startAnalysis(
+        await cvAnalysisService.analyze(
           result.id,
           result.jobId,
           result.resumeUrl,
@@ -351,8 +355,12 @@ export const updateCandidateBasicDetails = async (
 
     if (newResumeUrl) {
       cvAnalysisService
-        .startAnalysis(updated.id, updated.jobId, newResumeUrl)
-        .catch((err) => logger.error(`CV analysis error for candidateId=${updated.id}: ${err?.message}`));
+        .analyze(updated.id, updated.jobId, newResumeUrl)
+        .catch((err: unknown) =>
+          logger.error(
+            `CV analysis error for candidateId=${updated.id}: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        );
     }
 
     logger.info(`Candidate details updated: id=${id}${newResumeUrl ? ", resumeReplaced=true" : ""} by user ${req.user?.id}`);

@@ -1002,6 +1002,50 @@ export function useCandidateAssessments(candidateId: number) {
   });
 }
 
+export type AssessmentReviewQuestion = {
+  questionId: number;
+  title: string;
+  description: string | null;
+  questionType: string;
+  maxPoints: number;
+  pointsEarned: number | null;
+  candidateAnswerText: string | null;
+  selectedOptionLabels: string[];
+  correctOptionLabels: string[];
+  aiFeedback: string | null;
+};
+
+export type AssessmentAttemptReview = {
+  attempt: {
+    id: number;
+    status: string;
+    completedAt: string | null;
+    scorePercentage: number | null;
+    scoreRaw: number | null;
+    scoreTotal: number | null;
+    passed: boolean | null;
+    assessmentTitle: string;
+  };
+  questions: AssessmentReviewQuestion[];
+};
+
+export function useAssessmentAttemptReview(
+  candidateId: number,
+  attemptId: number,
+  options?: { enabled?: boolean },
+) {
+  const enabled =
+    (options?.enabled ?? true) && !!candidateId && !!attemptId;
+  return useQuery({
+    queryKey: ["assessment-attempt-review", candidateId, attemptId],
+    queryFn: () =>
+      serverFetch<{ data: AssessmentAttemptReview }>(
+        `/assessment-execution/candidate/${candidateId}/attempt/${attemptId}/review`,
+      ),
+    enabled,
+  });
+}
+
 export function useInviteToAssessment() {
   return useMutation({
     mutationFn: ({

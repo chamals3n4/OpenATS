@@ -88,6 +88,19 @@ function formatTime(secs: number) {
   return `${m}:${s}`;
 }
 
+/** API `timeLimit` is stored in minutes; the quiz timer counts down in seconds. */
+function timeLimitToSeconds(minutes: number) {
+  return Math.max(0, Math.floor(minutes * 60));
+}
+
+function getVisibleAssessmentDescription(raw: string | null | undefined) {
+  if (!raw) return null;
+  if (/^__rag_candidate_\d+_stage_\d+__$/.test(raw.trim())) return null;
+  return raw;
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
 const DARK = "var(--assessment-dark)";
 const LIGHT_BG = "var(--assessment-bg)";
 const WHITE = "var(--assessment-white)";
@@ -273,6 +286,9 @@ export default function AssessmentPage() {
                 (Date.now() - new Date(data.startedAt).getTime()) / 1000,
               )
             : 0;
+          const totalSecs = timeLimitToSeconds(data.assessment.timeLimit ?? 0);
+          // const remaining = Math.max(0, totalSecs - elapsed);
+
           const remaining = Math.max(
             0,
             (data.assessment.timeLimit ?? 0) - elapsed,
@@ -280,7 +296,7 @@ export default function AssessmentPage() {
           setTimeLeft(remaining);
           setScreen("quiz");
         } else {
-          setTimeLeft(data.assessment.timeLimit ?? 0);
+          setTimeLeft(timeLimitToSeconds(data.assessment.timeLimit ?? 0));
           setScreen("intro");
         }
       })
@@ -745,7 +761,10 @@ export default function AssessmentPage() {
   }
 
   if (screen === "intro" && attempt) {
-    const timeMins = Math.floor((attempt.assessment.timeLimit ?? 0) / 60);
+    const timeMins = attempt.assessment.timeLimit ?? 0;
+    const visibleDescription = getVisibleAssessmentDescription(
+      attempt.assessment.description,
+    );
     return (
       <div
         style={{
@@ -781,7 +800,7 @@ export default function AssessmentPage() {
             >
               {attempt.assessment.title}
             </h1>
-            {attempt.assessment.description && (
+            {visibleDescription && (
               <p
                 style={{
                   fontSize: 14,
@@ -790,7 +809,7 @@ export default function AssessmentPage() {
                   lineHeight: 1.6,
                 }}
               >
-                {attempt.assessment.description}
+                {visibleDescription}
               </p>
             )}
           </div>

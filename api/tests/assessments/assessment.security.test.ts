@@ -2,6 +2,7 @@ import { describe, it, expect } from "vitest";
 import { z } from "zod";
 
 describe("Assessments - Security/Rule Tests", () => {
+  // Test 6: Prevent SQL injection via numeric IDs (schema-level)
   it("should reject SQL-injection-like values for questionId", () => {
     const questionIdSchema = z.number().int().positive();
 
@@ -12,6 +13,7 @@ describe("Assessments - Security/Rule Tests", () => {
     });
   });
 
+  // Test 7: XSS attempts in answer text should still pass validation (escape later)
   it("should allow XSS-like strings in answerText validation", () => {
     const answerTextSchema = z.string().trim().min(1).max(5000);
 
@@ -23,9 +25,11 @@ describe("Assessments - Security/Rule Tests", () => {
 
     xssAttempts.forEach((attempt) => {
       expect(answerTextSchema.safeParse(attempt).success).toBe(true);
+      // In production, render with escaping or DOM sanitization.
     });
   });
 
+  // Test 8: Path traversal prevention for stored resume paths (sanitization-level)
   it("should prevent path traversal in resume storage identifiers", () => {
     const maliciousPaths = [
       "../../../etc/passwd",
@@ -34,6 +38,7 @@ describe("Assessments - Security/Rule Tests", () => {
     ];
 
     const sanitizePath = (path: string) => {
+      // Remove traversal markers and normalize separators.
       return path.replace(/\.\./g, "").replace(/[\/\\]/g, "_");
     };
 
@@ -45,6 +50,7 @@ describe("Assessments - Security/Rule Tests", () => {
     });
   });
 
+  // Test 9: Authorization (simulated role allowlist)
   it("should allow only assessment-capable roles to submit answers", () => {
     const allowedRoles = ["super_admin", "hiring_manager", "interviewer"];
     const allowed = "interviewer";
@@ -54,4 +60,3 @@ describe("Assessments - Security/Rule Tests", () => {
     expect(allowedRoles.includes(notAllowed)).toBe(false);
   });
 });
-

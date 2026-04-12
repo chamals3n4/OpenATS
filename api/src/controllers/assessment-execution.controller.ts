@@ -65,14 +65,46 @@ export const inviteCandidateToAssessment = async (
       return;
     }
 
-    logger.info(`Assessment invite created: attemptId=${attempt.id}, candidateId=${candidateId}, assessmentId=${assessmentId}, didSendInvite=${didSendInvite}`);
+    logger.info(
+      `Assessment invite created: attemptId=${attempt.id}, candidateId=${candidateId}, assessmentId=${assessmentId}, didSendInvite=${didSendInvite}`,
+    );
     res.status(201).json({ data: attempt, didSendInvite });
   } catch (error: any) {
-    logger.error(`Failed to generate assessment invite - candidateId=${req.body?.candidateId}, assessmentId=${req.body?.assessmentId}: ${error?.message}`);
+    logger.error(
+      `Failed to generate assessment invite - candidateId=${req.body?.candidateId}, assessmentId=${req.body?.assessmentId}: ${error?.message}`,
+    );
     res.status(500).json({
       error: "Failed to generate assessment invite",
       message: error.message || "Unknown error",
     });
+  }
+};
+
+export const getCandidateAttemptReview = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const candidateId = parseInt((req.params.candidateId ?? "").toString(), 10);
+    const attemptId = parseInt((req.params.attemptId ?? "").toString(), 10);
+    if (isNaN(candidateId) || isNaN(attemptId)) {
+      res.status(400).json({ error: "Invalid candidate or attempt ID" });
+      return;
+    }
+
+    const result =
+      await assessmentExecutionService.getAttemptReviewForCandidate(
+        candidateId,
+        attemptId,
+      );
+    if (!result) {
+      res.status(404).json({ error: "Assessment attempt not found" });
+      return;
+    }
+
+    res.status(200).json({ data: result });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to fetch assessment review" });
   }
 };
 
@@ -128,7 +160,9 @@ export const startAssessment = async (req: Request, res: Response) => {
     logger.info(`Assessment started: attemptId=${attempt.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to start assessment attempt for token=${req.params.token}: ${(error as any)?.message}`);
+    logger.error(
+      `Failed to start assessment attempt for token=${req.params.token}: ${(error as any)?.message}`,
+    );
     res.status(500).json({ error: "Failed to start assessment" });
   }
 };
@@ -162,7 +196,9 @@ export const submitAssessmentAnswer = async (req: Request, res: Response) => {
     );
     res.status(200).json({ data: result });
   } catch (error: any) {
-    logger.error(`Failed to save answer for attempt token=${req.params.token}: ${error?.message}`);
+    logger.error(
+      `Failed to save answer for attempt token=${req.params.token}: ${error?.message}`,
+    );
     res.status(500).json({
       error: "Failed to save answer",
       message: error.message || "Unknown error",
@@ -216,7 +252,9 @@ export const completeAssessment = async (req: Request, res: Response) => {
       );
     }
 
-    logger.info(`Assessment completed: attemptId=${attempt.id}, passed=${result.passed}, score=${result.scorePercentage}%${autoSubmitReason ? `, autoSubmit="${autoSubmitReason}"` : ""}`);
+    logger.info(
+      `Assessment completed: attemptId=${attempt.id}, passed=${result.passed}, score=${result.scorePercentage}%${autoSubmitReason ? `, autoSubmit="${autoSubmitReason}"` : ""}`,
+    );
     res.status(200).json({
       message: "Assessment completed successfully",
       data: {
@@ -225,7 +263,9 @@ export const completeAssessment = async (req: Request, res: Response) => {
       },
     });
   } catch (error: any) {
-    logger.error(`Failed to complete assessment for token=${req.params.token}: ${error?.message}`);
+    logger.error(
+      `Failed to complete assessment for token=${req.params.token}: ${error?.message}`,
+    );
     res
       .status(500)
       .json({ error: error.message || "Failed to finalize assessment" });

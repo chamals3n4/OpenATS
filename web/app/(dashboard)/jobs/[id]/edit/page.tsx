@@ -128,7 +128,7 @@ function EditJobForm({
           salaryType: "fixed",
           currency,
           payFrequency,
-          salaryFixed: salaryFixed ? Number(salaryFixed) : null,
+          salaryFixed: salaryFixed ? Number(salaryFixed.replace(/,/g, "")) : null,
           salaryMin: null,
           salaryMax: null,
         } as const;
@@ -139,8 +139,8 @@ function EditJobForm({
         currency,
         payFrequency,
         salaryFixed: null,
-        salaryMin: salaryMin ? Number(salaryMin) : null,
-        salaryMax: salaryMax ? Number(salaryMax) : null,
+        salaryMin: salaryMin ? Number(salaryMin.replace(/,/g, "")) : null,
+        salaryMax: salaryMax ? Number(salaryMax.replace(/,/g, "")) : null,
       } as const;
     })();
 
@@ -295,12 +295,7 @@ function EditJobForm({
         <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
           Job Description
         </Label>
-        <JobDescriptionEditor
-          value={description}
-          onChange={setDescription}
-          placeholder="Type here..."
-          minHeightClassName="min-h-[260px]"
-        />
+        <JobDescriptionEditor value={description} onChange={setDescription} />
       </div>
 
       <div className="border-t border-slate-100 dark:border-neutral-800 pt-10 space-y-5 mt-4">

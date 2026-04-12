@@ -8,6 +8,7 @@ import {
   moveCandidateStage,
   deleteCandidate,
   updateCandidateBasicDetails,
+  sendCandidateAdHocEmail,
 } from "../controllers/candidate.controller";
 
 const router: Router = Router();
@@ -25,6 +26,7 @@ router.post("/jobs/:jobId/apply", applyForJob);
 router.get("/", getCandidates);
 router.get("/jobs/:jobId", getCandidates);
 router.get("/:id/resume", getCandidateResume);
+router.post("/:id/send-email", sendCandidateAdHocEmail);
 router.get("/:id", getCandidateById);
 router.patch("/:id", upload.single("resume"), updateCandidateBasicDetails);
 router.put("/:id/stage", moveCandidateStage);

@@ -251,6 +251,17 @@ export const authMiddleware = async (
             if (opaqueDecoded) {
               payload = opaqueDecoded;
             } else {
+              const jwtHint =
+                lastError instanceof Error ? lastError.message : String(lastError);
+              logger.warn(
+                "[authMiddleware] all token paths failed; check API logs / ASGARDEO_* env",
+                {
+                  issuersTried: issuers,
+                  lastJwtVerifyError: jwtHint,
+                  bearerLooksLikeJwt: token.split(".").length === 3,
+                  bearerLength: token.length,
+                },
+              );
               throw lastError ?? new Error("Token verification failed");
             }
           }

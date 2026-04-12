@@ -199,24 +199,20 @@ export const completeAssessment = async (req: Request, res: Response) => {
       throw new Error("Failed to finalize assessment");
     }
 
-    const completionContext =
-      await assessmentExecutionService.getAttemptCompletionEmailContext(
+    const completionEmail =
+      await assessmentExecutionService.buildAssessmentCompletionEmail(
         attempt.id,
+        autoSubmitReason,
       );
-    if (completionContext) {
+    if (completionEmail) {
       mailService
-        .sendAssessmentCompletionEmail(
-          completionContext.candidateEmail,
-          completionContext.candidateFirstName,
-          completionContext.assessmentTitle,
-          autoSubmitReason,
-        )
+        .sendEmail(completionEmail)
         .catch((emailError) => {
           logger.error("Assessment completion email failed:", emailError);
         });
     } else {
       logger.warn(
-        `Assessment completion email skipped: context not found for attempt ${attempt.id}`,
+        `Assessment completion email skipped: could not build email for attempt ${attempt.id}`,
       );
     }
 

@@ -91,7 +91,7 @@ export default function LoginPage() {
                   lineHeight: 1.7,
                 }}
               >
-                By signing in, you agree to Asgardeo&apos;s{" "}
+                By signing in, you agree to WSO2 Asgardeo&apos;s{" "}
                 <a
                   href="https://wso2.com/terms-of-use/"
                   target="_blank"

@@ -128,7 +128,7 @@ function EditJobForm({
           salaryType: "fixed",
           currency,
           payFrequency,
-          salaryFixed: salaryFixed ? Number(salaryFixed) : null,
+          salaryFixed: salaryFixed ? Number(salaryFixed.replace(/,/g, "")) : null,
           salaryMin: null,
           salaryMax: null,
         } as const;
@@ -139,8 +139,8 @@ function EditJobForm({
         currency,
         payFrequency,
         salaryFixed: null,
-        salaryMin: salaryMin ? Number(salaryMin) : null,
-        salaryMax: salaryMax ? Number(salaryMax) : null,
+        salaryMin: salaryMin ? Number(salaryMin.replace(/,/g, "")) : null,
+        salaryMax: salaryMax ? Number(salaryMax.replace(/,/g, "")) : null,
       } as const;
     })();
 

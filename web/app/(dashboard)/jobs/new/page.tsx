@@ -68,7 +68,7 @@ export default function CreateNewJobPage() {
           salaryType: "fixed" as const,
           currency,
           payFrequency,
-          salaryFixed: Number(salaryFixed),
+          salaryFixed: Number(salaryFixed.replace(/,/g, "")),
         };
       }
       if (salaryType === "range" && salaryMin && salaryMax) {
@@ -76,8 +76,8 @@ export default function CreateNewJobPage() {
           salaryType: "range" as const,
           currency,
           payFrequency,
-          salaryMin: Number(salaryMin),
-          salaryMax: Number(salaryMax),
+          salaryMin: Number(salaryMin.replace(/,/g, "")),
+          salaryMax: Number(salaryMax.replace(/,/g, "")),
         };
       }
       return {};

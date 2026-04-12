@@ -42,31 +42,6 @@ export default function LoginPage() {
                 />
               </div>
 
-              {/* <div style={{ textAlign: "center" }}>
-                <h1
-                  style={{
-                    margin: "0 0 6px 0",
-                    fontSize: 22,
-                    fontWeight: 600,
-                    color: "#0f172a",
-                    letterSpacing: "-0.3px",
-                    lineHeight: 1.3,
-                  }}
-                >
-                  Sign in to OpenATS
-                </h1>
-                <p
-                  style={{
-                    margin: 0,
-                    fontSize: 13,
-                    color: "#8896a5",
-                    lineHeight: 1.6,
-                  }}
-                >
-                  Securely authenticated via your Asgardeo organization.
-                </p>
-              </div> */}
-
               <style jsx>{`
                 :global(.custom-signin h2) {
                   font-size: 0;

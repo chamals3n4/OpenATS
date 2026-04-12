@@ -1,43 +1,318 @@
-import { eq } from "drizzle-orm";
+import { and, desc, eq, gt, or } from "drizzle-orm";
 import { db } from "../db";
-import { candidates, jobs, departments, company } from "../db/schema";
+import {
+  assessments,
+  candidateAssessmentAttempts,
+  candidates,
+  company,
+  departments,
+  jobs,
+  offers,
+} from "../db/schema";
 import { TemplateContext } from "./template-engine.service";
 
 export const variableService = {
   async getContextForCandidate(candidateId: number): Promise<TemplateContext> {
-    const [result] = await db
+    const [row] = await db
       .select({
         candidate: candidates,
         job: jobs,
-        department: departments,
         company: company,
       })
       .from(candidates)
-      .innerJoin(jobs, eq(candidates.jobId, jobs.id))
-      .innerJoin(departments, eq(jobs.departmentId, departments.id))
-      .innerJoin(company, eq(departments.companyId, company.id))
-      .where(eq(candidates.id, candidateId));
+      .leftJoin(jobs, eq(candidates.jobId, jobs.id))
+      .leftJoin(departments, eq(jobs.departmentId, departments.id))
+      .leftJoin(company, eq(departments.companyId, company.id))
+      .where(eq(candidates.id, candidateId))
+      .limit(1);
 
-    if (!result) return {};
+    if (!row?.candidate) return {};
 
     return {
-      candidate_name: `${result.candidate.firstName} ${result.candidate.lastName}`,
-      job_title: result.job.title,
-      company_name: result.company.name,
+      candidate_name: `${row.candidate.firstName} ${row.candidate.lastName}`,
+      job_title: row.job?.title ?? "—",
+      company_name: row.company?.name ?? "—",
       start_date: "TBD",
       expiry_date: "TBD",
     };
   },
 
-  async getContextForOffer(candidateId: number, offerData: any): Promise<TemplateContext> {
+  /**
+   * Offer letter variables: job/company come from the offer’s `jobId` when set,
+   * so they stay correct if the schema ever allows offers on a different job than
+   * the candidate’s current assignment.
+   */
+  async getContextForOffer(candidateId: number, offerData: { jobId?: number } & Record<string, unknown>): Promise<TemplateContext> {
+    const jobId =
+      typeof offerData.jobId === "number" && Number.isFinite(offerData.jobId)
+        ? offerData.jobId
+        : undefined;
+
+    const [candidate] = await db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.id, candidateId));
+
+    if (!candidate) return {};
+
+    const candidateName = `${candidate.firstName} ${candidate.lastName}`;
+
+    if (jobId != null) {
+      const [row] = await db
+        .select({
+          job: jobs,
+          department: departments,
+          company: company,
+        })
+        .from(jobs)
+        .innerJoin(departments, eq(jobs.departmentId, departments.id))
+        .innerJoin(company, eq(departments.companyId, company.id))
+        .where(eq(jobs.id, jobId));
+
+      if (row) {
+        return this._offerOverlay(
+          {
+            candidate_name: candidateName,
+            job_title: row.job.title,
+            company_name: row.company.name,
+            start_date: "TBD",
+            expiry_date: "TBD",
+          },
+          offerData,
+        );
+      }
+    }
+
     const baseContext = await this.getContextForCandidate(candidateId);
-    
+    return this._offerOverlay(
+      {
+        ...baseContext,
+        candidate_name: candidateName,
+      },
+      offerData,
+    );
+  },
+
+  _offerOverlay(
+    base: TemplateContext,
+    offerData: Record<string, unknown>,
+  ): TemplateContext {
+    const benefitsRaw =
+      offerData.benefitsText != null && String(offerData.benefitsText).trim()
+        ? String(offerData.benefitsText).trim()
+        : "";
+
+    const payFreq =
+      offerData.payFrequency != null && String(offerData.payFrequency).trim()
+        ? String(offerData.payFrequency).replace(/_/g, " ")
+        : "";
+
+    const sal = offerData.salary;
+    const salaryOut: string | number =
+      sal == null || sal === ""
+        ? "TBD"
+        : typeof sal === "number"
+          ? sal
+          : String(sal);
+
     return {
-      ...baseContext,
-      salary: offerData.salary ?? "TBD",
-      currency: offerData.currency ?? "",
-      start_date: offerData.startDate || "TBD",
-      expiry_date: offerData.expiryDate || "TBD",
+      ...base,
+      salary: salaryOut,
+      currency:
+        offerData.currency != null && offerData.currency !== ""
+          ? String(offerData.currency)
+          : "",
+      pay_frequency: payFreq || "—",
+      start_date:
+        offerData.startDate != null && String(offerData.startDate).trim()
+          ? String(offerData.startDate)
+          : "TBD",
+      expiry_date:
+        offerData.expiryDate != null && String(offerData.expiryDate).trim()
+          ? String(offerData.expiryDate)
+          : "TBD",
+      benefits: benefitsRaw || "—",
     };
-  }
+  },
+
+  /**
+   * General templates list salary/benefits/assessment_link; merge candidate + latest offer + invite link.
+   */
+  async getContextForGeneralTemplatePreview(
+    candidateId: number,
+  ): Promise<TemplateContext> {
+    const [offer] = await db
+      .select()
+      .from(offers)
+      .where(eq(offers.candidateId, candidateId))
+      .orderBy(desc(offers.updatedAt))
+      .limit(1);
+
+    let ctx: TemplateContext;
+    if (offer) {
+      ctx = await this.getContextForOffer(candidateId, offer);
+    } else {
+      const base = await this.getContextForCandidate(candidateId);
+      ctx = this._offerOverlay(base, {});
+    }
+
+    const now = new Date();
+    const [attempt] = await db
+      .select()
+      .from(candidateAssessmentAttempts)
+      .where(
+        and(
+          eq(candidateAssessmentAttempts.candidateId, candidateId),
+          or(
+            eq(candidateAssessmentAttempts.status, "pending"),
+            eq(candidateAssessmentAttempts.status, "started"),
+          ),
+          gt(candidateAssessmentAttempts.expiresAt, now),
+        ),
+      )
+      .orderBy(desc(candidateAssessmentAttempts.createdAt))
+      .limit(1);
+
+    let assessment_link = "—";
+    let assessment_title = ctx.assessment_title ?? "—";
+    if (attempt) {
+      const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+      assessment_link = `${frontendUrl.replace(/\/$/, "")}/assessment/${attempt.token}`;
+      const [a] = await db
+        .select()
+        .from(assessments)
+        .where(eq(assessments.id, attempt.assessmentId))
+        .limit(1);
+      if (a?.title?.trim()) assessment_title = a.title.trim();
+    }
+
+    return {
+      ...ctx,
+      assessment_link,
+      assessment_title,
+    };
+  },
+
+  /**
+   * Candidate-scoped preview/send context by template type (dashboard preview & ad-hoc flows).
+   */
+  async getContextForTemplatePreview(
+    candidateId: number,
+    templateType:
+      | "offer"
+      | "rejection"
+      | "assessment_invite"
+      | "general"
+      | "application_received"
+      | "assessment_completion"
+      | "interview_invite",
+  ): Promise<TemplateContext> {
+    switch (templateType) {
+      case "general":
+        return this.getContextForGeneralTemplatePreview(candidateId);
+      case "offer": {
+        const [offer] = await db
+          .select()
+          .from(offers)
+          .where(eq(offers.candidateId, candidateId))
+          .orderBy(desc(offers.updatedAt))
+          .limit(1);
+        if (offer) {
+          return this.getContextForOffer(candidateId, offer);
+        }
+        const base = await this.getContextForCandidate(candidateId);
+        return this._offerOverlay(base, {});
+      }
+      case "application_received":
+        return this.getContextForCandidate(candidateId);
+      case "assessment_completion": {
+        const base = await this.getContextForCandidate(candidateId);
+        return {
+          ...base,
+          assessment_title: "Sample assessment",
+          score_percentage: "85%",
+          score_summary: "17 / 20",
+          passed: "Passed",
+          auto_submit_reason: "",
+        };
+      }
+      case "interview_invite": {
+        const base = await this.getContextForCandidate(candidateId);
+        return {
+          ...base,
+          interview_date: "Mon, Jan 15, 2026",
+          interview_time: "2:00 PM (your local time)",
+          interview_location: "123 Main St or Remote",
+          video_link: "https://example.com/meet",
+          interviewer_names: "Alex Kim, Jordan Lee",
+        };
+      }
+      default:
+        return this.getContextForCandidate(candidateId);
+    }
+  },
+
+  /**
+   * Assessment invite email: job/company from candidate; link and expiry from the attempt.
+   * If the full candidate→job→company join fails (data edge case), still fill name and link
+   * so templates render and mail sends.
+   */
+  async getContextForAssessmentInvite(
+    candidateId: number,
+    assessmentTitle: string,
+    assessmentLink: string,
+    expiresAt: Date,
+  ): Promise<TemplateContext> {
+    let base = await this.getContextForCandidate(candidateId);
+
+    if (!base.candidate_name) {
+      const [c] = await db
+        .select()
+        .from(candidates)
+        .where(eq(candidates.id, candidateId))
+        .limit(1);
+
+      if (c) {
+        base = {
+          ...base,
+          candidate_name: `${c.firstName} ${c.lastName}`,
+          job_title: base.job_title ?? "—",
+          company_name: base.company_name ?? "—",
+        };
+
+        if (c.jobId != null) {
+          const [row] = await db
+            .select({
+              job: jobs,
+              company: company,
+            })
+            .from(jobs)
+            .innerJoin(departments, eq(jobs.departmentId, departments.id))
+            .innerJoin(company, eq(departments.companyId, company.id))
+            .where(eq(jobs.id, c.jobId))
+            .limit(1);
+
+          if (row) {
+            base = {
+              ...base,
+              job_title: row.job.title,
+              company_name: row.company.name,
+            };
+          }
+        }
+      }
+    }
+
+    const expiryStr = expiresAt.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+    return {
+      ...base,
+      assessment_title: assessmentTitle,
+      assessment_link: assessmentLink,
+      expiry_date: expiryStr,
+    };
+  },
 };

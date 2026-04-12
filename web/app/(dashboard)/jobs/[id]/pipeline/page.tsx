@@ -10,7 +10,8 @@ import { ArrowLeft, GripVertical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { ResumeScrollView } from "@/components/resume-scroll-view";
+import { CandidateDetailSheetProvider } from "@/components/candidate-detail-sheet-context";
+import { CandidatePreviewPane } from "@/components/candidate-preview-pane";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
 import { toast } from "sonner";
 
@@ -21,6 +22,9 @@ import {
   useMoveCandidateStage,
 } from "@/hooks/use-api";
 import type { Candidate, PipelineStage, StageAutomationFlags } from "@/types";
+import { formatTimeAgo } from "@/lib/time-ago";
+import { cn } from "@/lib/utils";
+import { stageBadgeToneClasses } from "@/lib/stage-badge";
 
 function showStageAutomationToasts(automation: StageAutomationFlags) {
   if (automation.assessmentInvite === "skipped_active_invite") {
@@ -53,9 +57,9 @@ function showStageAutomationToasts(automation: StageAutomationFlags) {
 
 const STAGE_COLORS: Record<PipelineStage["stageType"], string> = {
   none: "#94a3b8",
-  source: "#60a5fa",
+  source: "#d97706",
   assessment: "#a78bfa",
-  interview: "#3b82f6",
+  interview: "#2563eb",
   offer: "#22c55e",
   rejection: "#ef4444",
 };
@@ -69,16 +73,6 @@ const EMPLOYMENT_LABELS: Record<string, string> = {
 };
 
 const CARD_TYPE = "PIPELINE_CARD";
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
 
 function CustomDragLayer() {
   const { isDragging, item, currentOffset } = useDragLayer((monitor) => ({
@@ -138,7 +132,7 @@ function DraggableCard({
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const name = `${candidate.firstName} ${candidate.lastName}`;
-  const appliedAtLabel = timeAgo(candidate.appliedAt);
+  const appliedAtLabel = formatTimeAgo(candidate.appliedAt);
 
   const [{ isDragging }, dragRef, dragPreviewRef] = useDrag({
     type: CARD_TYPE,
@@ -527,16 +521,20 @@ export default function HiringPipelinePage() {
               );
               if (!c) return null;
               return (
-                <>
-                  {/* Left — candidate info + CV */}
-                  <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                <CandidateDetailSheetProvider key={selectedCandidateId}>
+                  <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
                     <div className="px-6 lg:px-8 py-4 lg:py-5 border-b border-slate-100 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-950">
                       <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0">
                         <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 tracking-tight">
                           {c.firstName} {c.lastName}
                         </h2>
                         {c.stageName && (
-                          <Badge className="bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 border-none shadow-none font-medium px-2 py-0.5 rounded-full text-[11px] uppercase tracking-wider whitespace-nowrap">
+                          <Badge
+                            className={cn(
+                              stageBadgeToneClasses(c.stageType, c.stageName),
+                              "border-none shadow-none font-medium px-2 py-0.5 rounded-full text-[11px] uppercase tracking-wider whitespace-nowrap",
+                            )}
+                          >
                             {c.stageName}
                           </Badge>
                         )}
@@ -544,7 +542,7 @@ export default function HiringPipelinePage() {
                       <p className="text-slate-500 dark:text-neutral-400 text-[13px] mt-0.5">
                         {job?.title ?? ""}
                         <span className="mx-1.5 opacity-30">•</span>
-                        Applied {timeAgo(c.appliedAt)}
+                        Applied {formatTimeAgo(c.appliedAt)}
                       </p>
                       <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1.5">
                         <span className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium">
@@ -558,38 +556,17 @@ export default function HiringPipelinePage() {
                       </div>
                     </div>
 
-                    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                      {c.resumeUrl ? (
-                        <ResumeScrollView resumeUrl={c.resumeUrl} />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
-                          <svg
-                            className="size-10 opacity-30"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.5}
-                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                          </svg>
-                          <p className="text-[13px] font-medium">
-                            No resume uploaded
-                          </p>
-                        </div>
-                      )}
-                    </div>
+                    <CandidatePreviewPane
+                      candidateId={selectedCandidateId}
+                      open={isDetailOpen}
+                    />
                   </div>
 
-                  {/* Right — tabbed detail panel */}
                   <CandidateSidePanel
                     candidateId={selectedCandidateId}
                     open={isDetailOpen}
                   />
-                </>
+                </CandidateDetailSheetProvider>
               );
             })()}
         </SheetContent>

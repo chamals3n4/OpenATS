@@ -1,12 +1,47 @@
 import { ContentBlock } from "../db/schema/templates";
 
+/** Default matches `web/app/globals.css` `--theme-color` (offer emails have no CSS variables). */
+const DEFAULT_THEME_HEX = "#d97757";
+
+function normalizeThemeHex(input: string | undefined): string {
+  const t = (input ?? "").trim();
+  if (/^#[0-9a-f]{6}$/i.test(t)) return t;
+  if (/^[0-9a-f]{6}$/i.test(t)) return `#${t}`;
+  return DEFAULT_THEME_HEX;
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } {
+  const h = hex.replace("#", "");
+  const n = parseInt(h, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+/** Inline styles for template button blocks in HTML email / stored offer HTML. */
+function themeButtonEmailStyles() {
+  const color = normalizeThemeHex(process.env.BRAND_THEME_COLOR_HEX);
+  const { r, g, b } = hexToRgb(color);
+  return {
+    color,
+    backgroundColor: `rgba(${r}, ${g}, ${b}, 0.12)`,
+    borderColor: `rgba(${r}, ${g}, ${b}, 0.28)`,
+  };
+}
+
+/** Shared with system fallback emails so pill buttons match template blocks. */
+export function getEmailButtonAnchorStyleString(): string {
+  const btn = themeButtonEmailStyles();
+  return `display: inline-block; color: ${btn.color}; background-color: ${btn.backgroundColor}; border: 1px solid ${btn.borderColor}; padding: 6px 12px; text-decoration: none; border-radius: 9999px; font-size: 12px; font-weight: 600; line-height: 1.25;`;
+}
+
 export interface TemplateContext {
   candidate_name?: string;
   job_title?: string;
   salary?: string | number;
   currency?: string;
+  pay_frequency?: string;
   start_date?: string;
   expiry_date?: string;
+  benefits?: string;
   company_name?: string;
   [key: string]: any;
 }
@@ -54,16 +89,18 @@ export const templateEngineService = {
     return processedBlocks.map((block) => {
       switch (block.type) {
         case "heading":
-          return `<h1 style="margin-bottom: 16px;">${block.content}</h1>`;
+          return `<p style="display:block;margin:0 0 1em 0;font-size:15px;font-weight:600;line-height:1.5;">${block.content.replace(/\n/g, "<br>")}</p>`;
         case "text":
-          return `<p style="margin-bottom: 16px; line-height: 1.5;">${block.content.replace(/\n/g, "<br>")}</p>`;
-        case "button":
+          return `<p style="display:block;margin:0 0 1em 0;line-height:1.5;">${block.content.replace(/\n/g, "<br>")}</p>`;
+        case "button": {
+          const anchorStyle = getEmailButtonAnchorStyleString();
           return `
             <div style="margin-bottom: 16px;">
-              <a href="${block.url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+              <a href="${block.url}" style="${anchorStyle}">
                 ${block.label}
               </a>
             </div>`;
+        }
         case "image":
           return `<img src="${block.url}" alt="${block.alt || ""}" style="max-width: 100%; height: auto; margin-bottom: 16px; display: block;">`;
         case "divider":

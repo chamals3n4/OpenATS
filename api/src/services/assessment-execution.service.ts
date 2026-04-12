@@ -1,6 +1,7 @@
 import { eq, and, or, gt, sql, desc, asc } from "drizzle-orm";
 import crypto from "node:crypto";
 import { db } from "../db";
+import type { ContentBlock } from "../db/schema/templates";
 import {
   candidateAssessmentAttempts,
   candidateAssessmentAnswers,
@@ -12,6 +13,19 @@ import {
 } from "../db/schema";
 
 import { mailService } from "./mail.service";
+import { templateService } from "./template.service";
+import {
+  templateEngineService,
+  type TemplateContext,
+} from "./template-engine.service";
+import { variableService } from "./variable.service";
+import logger from "../utils/logger";
+import {
+  buildAssessmentCompletionFallbackInner,
+  buildAssessmentInviteFallbackInner,
+  wrapCompiledTemplateEmail,
+  wrapFallbackEmail,
+} from "../utils/email-fallback-layout";
 import { aiGradingService } from "./ai-grading.service";
 import {
   canTransitionAttemptStatus,
@@ -23,12 +37,6 @@ export interface SubmitAnswerInput {
   questionId: number;
   answerText?: string | null | undefined;
   optionIds?: number[] | undefined;
-}
-
-export interface AttemptCompletionEmailContext {
-  candidateEmail: string;
-  candidateFirstName: string;
-  assessmentTitle: string;
 }
 
 export type InviteCandidateResult = {
@@ -99,24 +107,68 @@ export const assessmentExecutionService = {
         const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
         const inviteUrl = `${frontendUrl}/assessment/${token}`;
 
-        const subject = `Assessment Invitation: ${assessment.title}`;
-        const html = `
-          <div style="font-family: sans-serif; line-height: 1.5; color: #333;">
-            <h2>Hello ${candidate.firstName},</h2>
-            <p>You have been invited to complete an assessment for your application.</p>
-            <p><strong>Assessment:</strong> ${assessment.title}</p>
-            <p>Please click the button below to start the assessment. This link will expire on ${expiresAt.toLocaleDateString()}.</p>
-            <div style="margin: 24px 0;">
-              <a href="${inviteUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                Start Assessment
-              </a>
-            </div>
-            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
-            <p><a href="${inviteUrl}">${inviteUrl}</a></p>
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 24px 0;">
-            <p style="font-size: 14px; color: #666;">This is an automated message from OpenATS.</p>
-          </div>
-        `;
+        let subject: string;
+        let html: string;
+
+        const defaultTplId =
+          await templateService.getDefaultTemplateIdForType(
+            "assessment_invite",
+          );
+        const templateRow =
+          defaultTplId != null
+            ? await templateService.getById(defaultTplId)
+            : null;
+
+        const canUseTemplate =
+          templateRow?.type === "assessment_invite" &&
+          Array.isArray(templateRow.bodyJson) &&
+          templateRow.bodyJson.length > 0;
+
+        if (canUseTemplate && templateRow) {
+          try {
+            const context = await variableService.getContextForAssessmentInvite(
+              candidateId,
+              assessment.title,
+              inviteUrl,
+              expiresAt,
+            );
+            const compiled = templateEngineService.compileTemplate(
+              templateRow.subject,
+              templateRow.bodyJson as ContentBlock[],
+              context,
+            );
+            subject = compiled.subject;
+            html = wrapCompiledTemplateEmail(compiled.html);
+          } catch (err: unknown) {
+            logger.warn(
+              `Assessment invite template render failed (templateId=${templateRow.id}): ${(err as Error)?.message}`,
+            );
+            subject = `Assessment Invitation: ${assessment.title}`;
+            html = wrapFallbackEmail(
+              buildAssessmentInviteFallbackInner({
+                firstName: candidate.firstName,
+                assessmentTitle: assessment.title,
+                inviteUrl,
+                expiresLabel: expiresAt.toLocaleDateString(),
+              }),
+            );
+          }
+        } else {
+          if (!canUseTemplate) {
+            logger.warn(
+              "No default assessment_invite template with body — using built-in invite email. Set a default under Settings → Templates.",
+            );
+          }
+          subject = `Assessment Invitation: ${assessment.title}`;
+          html = wrapFallbackEmail(
+            buildAssessmentInviteFallbackInner({
+              firstName: candidate.firstName,
+              assessmentTitle: assessment.title,
+              inviteUrl,
+              expiresLabel: expiresAt.toLocaleDateString(),
+            }),
+          );
+        }
 
         await mailService.sendAssessmentInviteEmail(
           candidate.email,
@@ -344,14 +396,19 @@ export const assessmentExecutionService = {
     };
   },
 
-  async getAttemptCompletionEmailContext(
+  /**
+   * Completion email: default **assessment_completion** template when present; else built-in fallback.
+   */
+  async buildAssessmentCompletionEmail(
     attemptId: number,
-  ): Promise<AttemptCompletionEmailContext | null> {
-    const [result] = await db
+    autoSubmitReason?: string,
+  ): Promise<{ to: string; subject: string; html: string } | null> {
+    const [row] = await db
       .select({
+        attempt: candidateAssessmentAttempts,
+        assessment: assessments,
         candidateEmail: candidates.email,
         candidateFirstName: candidates.firstName,
-        assessmentTitle: assessments.title,
       })
       .from(candidateAssessmentAttempts)
       .innerJoin(
@@ -362,9 +419,75 @@ export const assessmentExecutionService = {
         assessments,
         eq(candidateAssessmentAttempts.assessmentId, assessments.id),
       )
-      .where(eq(candidateAssessmentAttempts.id, attemptId));
+      .where(eq(candidateAssessmentAttempts.id, attemptId))
+      .limit(1);
 
-    return result ?? null;
+    if (!row || row.attempt.status !== "completed") return null;
+    const { attempt, assessment, candidateEmail, candidateFirstName } = row;
+    if (!candidateEmail?.trim()) return null;
+
+    const base = await variableService.getContextForCandidate(
+      attempt.candidateId,
+    );
+    const scoreTotal =
+      attempt.scoreTotal != null ? Number(attempt.scoreTotal) : 0;
+    const scoreRaw = attempt.scoreRaw != null ? Number(attempt.scoreRaw) : 0;
+    const pctNum =
+      attempt.scorePercentage != null ? Number(attempt.scorePercentage) : 0;
+    const pctRounded = Math.round(pctNum * 100) / 100;
+
+    const context: TemplateContext = {
+      ...base,
+      assessment_title: assessment.title,
+      score_percentage: `${pctRounded}%`,
+      score_summary:
+        scoreTotal > 0 ? `${scoreRaw} / ${scoreTotal}` : "—",
+      passed: attempt.passed ? "Passed" : "Not passed",
+      auto_submit_reason: autoSubmitReason?.trim()
+        ? `\n\n${autoSubmitReason.trim()}`
+        : "",
+    };
+
+    const defaultTplId =
+      await templateService.getDefaultTemplateIdForType(
+        "assessment_completion",
+      );
+    const templateRow =
+      defaultTplId != null ? await templateService.getById(defaultTplId) : null;
+    const canUseTemplate =
+      templateRow?.type === "assessment_completion" &&
+      Array.isArray(templateRow.bodyJson) &&
+      templateRow.bodyJson.length > 0;
+
+    let subject: string;
+    let html: string;
+
+    if (canUseTemplate && templateRow) {
+      const compiled = templateEngineService.compileTemplate(
+        templateRow.subject,
+        templateRow.bodyJson as ContentBlock[],
+        context,
+      );
+      subject = compiled.subject;
+      html = wrapCompiledTemplateEmail(compiled.html);
+    } else {
+      subject = autoSubmitReason?.trim()
+        ? `Assessment Auto-Submitted: ${assessment.title}`
+        : `Assessment Completed: ${assessment.title}`;
+      html = wrapFallbackEmail(
+        buildAssessmentCompletionFallbackInner({
+          firstName: candidateFirstName,
+          assessmentTitle: assessment.title,
+          autoSubmitReason,
+        }),
+      );
+    }
+
+    return {
+      to: candidateEmail.trim(),
+      subject: subject.slice(0, 500),
+      html,
+    };
   },
 
   async startAttempt(id: number) {
@@ -513,7 +636,10 @@ export const assessmentExecutionService = {
           );
           if (isCorrect) pointsEarned = questionPoints;
           aiFeedback = null;
-        } else if (question.questionType === "short_answer") {
+        } else if (
+          question.questionType === "short_answer" ||
+          question.questionType === "long_answer"
+        ) {
           const answerText = candidateAnswer.answerText?.trim() ?? "";
           if (!answerText) {
             pointsEarned = 0;

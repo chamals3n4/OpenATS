@@ -40,6 +40,16 @@ const updateCandidateBasicSchema = z.object({
   phone: z.union([z.string().max(50), z.null()]).optional(),
 });
 
+/** Browsers/OS often send PDFs as application/octet-stream; only trust extension + non-image mime. */
+function isLikelyPdfUpload(file: Express.Multer.File): boolean {
+  const mime = (file.mimetype || "").toLowerCase();
+  if (mime === "application/pdf" || mime === "application/x-pdf") return true;
+  const name = (file.originalname || "").toLowerCase();
+  if (!name.endsWith(".pdf")) return false;
+  if (mime.startsWith("image/") || mime.startsWith("video/")) return false;
+  return true;
+}
+
 async function getJobOrFail(res: Response, jobId: number) {
   const job = await jobService.getById(jobId);
   if (!job) {
@@ -73,10 +83,20 @@ export const applyForJob = async (req: Request, res: Response) => {
 
     logger.info(`New application submitted: candidateId=${result.id}, email="${result.email}", jobId=${jobId}${result.resumeUrl ? ", hasResume=true" : ""}`);
 
+    candidateService.sendApplicationReceivedConfirmation(result.id).catch((err: unknown) => {
+      logger.warn(
+        `Application confirmation email failed candidateId=${result.id}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    });
+
     if (result.resumeUrl) {
       cvAnalysisService
         .analyze(result.id, result.jobId, result.resumeUrl)
-        .catch((err) => logger.error(`CV analysis error for candidateId=${result.id}: ${err?.message}`));
+        .catch((err: unknown) =>
+          logger.error(
+            `CV analysis error for candidateId=${result.id}: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        );
     }
 
     res.status(201).json({ data: result });
@@ -127,16 +147,70 @@ export const getCandidateById = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await candidateService.getById(id);
+    let result = await candidateService.getById(id);
     if (!result) {
       res.status(404).json({ error: "Candidate not found" });
       return;
+    }
+
+    if (result.resumeUrl && !result.cvAnalysis) {
+      try {
+        await cvAnalysisService.analyze(
+          result.id,
+          result.jobId,
+          result.resumeUrl,
+        );
+        result = (await candidateService.getById(id)) ?? result;
+      } catch (err: unknown) {
+        logger.error(
+          `CV analysis kickoff failed for candidateId=${id}: ${(err as Error)?.message}`,
+        );
+      }
     }
 
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(`Failed to fetch candidate id=${req.params.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch candidate" });
+  }
+};
+
+/** Stream resume PDF via API so the browser can load it same-origin (private R2 bucket; no public GET). */
+export const getCandidateResume = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid candidate ID" });
+      return;
+    }
+
+    const candidate = await candidateService.getById(id);
+    if (!candidate?.resumeUrl) {
+      res.status(404).json({ error: "No resume on file" });
+      return;
+    }
+
+    const key = r2Service.getResumeKeyFromStoredUrl(candidate.resumeUrl);
+    if (!key) {
+      res.status(500).json({
+        error:
+          "Could not resolve resume object key from stored URL. Check R2_PUBLIC_URL and stored resume_url format in api/.env.",
+      });
+      return;
+    }
+
+    const buffer = await r2Service.getObjectBuffer(key);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="resume-${id}.pdf"`,
+    );
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.send(buffer);
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Failed to load resume";
+    res.status(500).json({ error: message });
   }
 };
 
@@ -248,7 +322,7 @@ export const updateCandidateBasicDetails = async (
 
     let newResumeUrl: string | undefined;
     if (req.file) {
-      if (req.file.mimetype !== "application/pdf") {
+      if (!isLikelyPdfUpload(req.file)) {
         res.status(400).json({ error: "Only PDF files are allowed" });
         return;
       }
@@ -282,7 +356,11 @@ export const updateCandidateBasicDetails = async (
     if (newResumeUrl) {
       cvAnalysisService
         .analyze(updated.id, updated.jobId, newResumeUrl)
-        .catch((err) => logger.error(`CV analysis error for candidateId=${updated.id}: ${err?.message}`));
+        .catch((err: unknown) =>
+          logger.error(
+            `CV analysis error for candidateId=${updated.id}: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        );
     }
 
     logger.info(`Candidate details updated: id=${id}${newResumeUrl ? ", resumeReplaced=true" : ""} by user ${req.user?.id}`);
@@ -292,5 +370,69 @@ export const updateCandidateBasicDetails = async (
     res
       .status(500)
       .json({ error: error.message || "Failed to update candidate details" });
+  }
+};
+
+const sendAdHocEmailSchema = z
+  .object({
+    subject: z.string().min(1, "Subject is required").max(500),
+    bodyText: z.string().max(50_000).optional().default(""),
+    /** When set (e.g. from template preview), sent as-is inside a styled wrapper. */
+    bodyHtml: z.string().max(200_000).optional().nullable(),
+    templateId: z.number().int().positive().optional().nullable(),
+  })
+  .refine(
+    (d) =>
+      (d.bodyText?.trim().length ?? 0) > 0 ||
+      (d.bodyHtml?.trim().length ?? 0) > 0,
+    { message: "Message or HTML body is required" },
+  );
+
+export const sendCandidateAdHocEmail = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid candidate ID" });
+      return;
+    }
+
+    const parsed = sendAdHocEmailSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      res.status(400).json({ error: first?.message ?? "Validation failed" });
+      return;
+    }
+
+    const { row, providerMessageId } = await candidateService.sendAdHocEmail(
+      id,
+      req.user.id,
+      parsed.data.subject,
+      parsed.data.bodyText ?? "",
+      {
+        bodyHtml: parsed.data.bodyHtml ?? undefined,
+        templateId: parsed.data.templateId ?? undefined,
+      },
+    );
+    if (!row) {
+      res.status(404).json({ error: "Candidate not found" });
+      return;
+    }
+
+    logger.info(
+      `Ad-hoc email sent: candidateId=${id} to="${row.recipientEmail}" by user ${req.user.id}${providerMessageId ? ` resendId=${providerMessageId}` : ""}`,
+    );
+    res.status(200).json({
+      data: {
+        id: row.id,
+        sentAt: row.sentAt,
+        ...(providerMessageId ? { providerMessageId } : {}),
+      },
+    });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    logger.error(
+      `sendCandidateAdHocEmail candidateId=${req.params.id} user ${req.user?.id}: ${msg}`,
+    );
+    res.status(500).json({ error: msg || "Failed to send email" });
   }
 };

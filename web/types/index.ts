@@ -157,6 +157,8 @@ export type Candidate = {
   appliedAt: string;
   updatedAt: string;
   stageName: string | null;
+  /** From pipeline stage type; drives badge colors in the UI. */
+  stageType?: PipelineStage["stageType"] | null;
   jobTitle: string | null;
 };
 
@@ -210,14 +212,18 @@ export type CandidateDetail = Candidate & {
   }[];
   offer: {
     id: number;
+    templateId: number | null;
     status: string;
     salary: string | null;
     currency: string | null;
     payFrequency: string | null;
     startDate: string | null;
     expiryDate: string | null;
+    benefitsText: string | null;
     sentAt: string | null;
     renderedHtml: string | null;
+    /** Present when API returns full offer row; used to sync after saves. */
+    updatedAt?: string;
   } | null;
 };
 
@@ -233,17 +239,29 @@ export type User = {
   updatedAt: string;
 };
 
-export type TemplateBodyBlock = {
-  type: "heading" | "text" | "button" | "image";
-  content: string;
-};
+/** Serialized `body_json` for templates (matches API / DB `ContentBlock`). */
+export type TemplateBodyBlock =
+  | { type: "heading"; content: string }
+  | { type: "text"; content: string }
+  | { type: "button"; content: string; url?: string }
+  | { type: "image"; content: string }
+  | { type: "divider" }
+  | { type: "spacer"; height: number };
 
 export type Template = {
   id: number;
   name: string;
-  type: "offer" | "rejection" | "assessment_invite" | "general";
+  type:
+    | "offer"
+    | "rejection"
+    | "assessment_invite"
+    | "general"
+    | "application_received"
+    | "assessment_completion"
+    | "interview_invite";
   subject: string;
   bodyJson: TemplateBodyBlock[];
+  isDefault?: boolean;
   createdAt: string;
   updatedAt: string;
 };
@@ -258,10 +276,30 @@ export type Offer = {
   payFrequency: "hourly" | "daily" | "weekly" | "monthly" | "yearly" | null;
   startDate: string | null;
   expiryDate: string | null;
+  benefitsText: string | null;
   status: "draft" | "sent" | "pending" | "accepted" | "declined" | "withdrawn";
   renderedHtml: string | null;
+  sentAt?: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+/** `GET /offers/:id` — same row plus relations from the API. */
+export type OfferWithRelations = Offer & {
+  candidate?: {
+    id: number;
+    firstName: string;
+    lastName: string;
+    email: string;
+    phone?: string | null;
+    currentStage?: { name: string } | null;
+  };
+  job?: {
+    id: number;
+    title: string;
+    department?: { name: string } | null;
+  };
+  template?: { id: number; name: string; type: string } | null;
 };
 
 export type AnalyticsReport = {

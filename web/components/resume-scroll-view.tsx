@@ -16,16 +16,30 @@ const ZOOM_MAX = 2.5;
 const ZOOM_STEP = 0.15;
 
 type ResumeScrollViewProps = {
-  resumeUrl: string;
+  candidateId: number;
+  /** Optional legacy direct URL — only used if the same-origin proxy fails to load. */
+  resumeUrl?: string | null;
 };
 
 /**
  * Renders the resume with pdf.js so scrolling uses the page’s thin-scrollbar-panel
  * (the browser PDF iframe uses a wide OS scrollbar we cannot style).
+ * PDF is loaded from `/api/candidates/:id/resume` (authenticated proxy), not the private R2 URL.
  */
-export function ResumeScrollView({ resumeUrl }: ResumeScrollViewProps) {
+export function ResumeScrollView({
+  candidateId,
+  resumeUrl: resumeUrlFallback,
+}: ResumeScrollViewProps) {
+  const proxyUrl = `/api/candidates/${candidateId}/resume`;
+  const [pdfSrc, setPdfSrc] = useState(proxyUrl);
   const [numPages, setNumPages] = useState(0);
   const [useIframe, setUseIframe] = useState(false);
+
+  useEffect(() => {
+    setPdfSrc(`/api/candidates/${candidateId}/resume`);
+    setUseIframe(false);
+    setNumPages(0);
+  }, [candidateId]);
   const [scale, setScale] = useState(1);
   const containerRef = useRef<HTMLDivElement>(null);
   const [pageWidth, setPageWidth] = useState(640);
@@ -86,7 +100,7 @@ export function ResumeScrollView({ resumeUrl }: ResumeScrollViewProps) {
           Embedded viewer — use browser PDF controls to zoom, or open “View CV” for a new tab.
         </p>
         <iframe
-          src={`${resumeUrl}#toolbar=0&navpanes=0&scrollbar=0`}
+          src={`${pdfSrc}#toolbar=0&navpanes=0&scrollbar=0`}
           title="Resume"
           className="min-h-0 flex-1 w-full border-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         />
@@ -151,9 +165,15 @@ export function ResumeScrollView({ resumeUrl }: ResumeScrollViewProps) {
       >
         <div className="flex flex-col items-center pt-0 pb-2 px-1 min-h-full">
           <Document
-            file={resumeUrl}
+            file={pdfSrc}
             onLoadSuccess={onLoadSuccess}
-            onLoadError={() => setUseIframe(true)}
+            onLoadError={() => {
+              if (resumeUrlFallback && pdfSrc === proxyUrl) {
+                setPdfSrc(resumeUrlFallback);
+                return;
+              }
+              setUseIframe(true);
+            }}
             loading={
               <p className="py-8 text-[13px] font-normal text-slate-500 dark:text-neutral-500">
                 Loading resume…

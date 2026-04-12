@@ -55,6 +55,7 @@ import {
 } from "@/hooks/use-api";
 import { toast } from "sonner";
 import { formatTimeAgo } from "@/lib/time-ago";
+import { buildOfferTemplatePreviewContext } from "@/lib/build-offer-template-preview-context";
 function formatDate(dateStr: string | null) {
   if (!dateStr) return "—";
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -251,9 +252,12 @@ export function CandidateSidePanel({
   candidateId,
   open = true,
 }: CandidateSidePanelProps) {
-  const { data, isLoading } = useCandidate(candidateId, {
-    enabled: open && !!candidateId,
-  });
+  const { data, isLoading, refetch: refetchCandidateDetail } = useCandidate(
+    candidateId,
+    {
+      enabled: open && !!candidateId,
+    },
+  );
   const candidate = data?.data;
   const offer = candidate?.offer;
   const offerStyle = offer
@@ -374,13 +378,37 @@ export function CandidateSidePanel({
     setEmailHtml,
     emailTemplateId,
     setEmailTemplateId,
+    setOfferPreviewHtml,
+    setOfferPreviewSubject,
   } = useCandidateDetailSheet();
 
   const emailTemplateIdRef = useRef<number | null>(emailTemplateId);
   emailTemplateIdRef.current = emailTemplateId;
   const interviewPreviewSeqRef = useRef(0);
+  const offerPreviewSeqRef = useRef(0);
   /** After picking an interview template, prefill interviewer names once the job hiring team loads. */
   const interviewHiringTeamPrefillPendingRef = useRef(false);
+  /** Tracks template selection so we always clear interview fields when it changes (plain text ↔ template, or template A → B). */
+  const prevEmailTemplateIdRef = useRef<number | null | undefined>(undefined);
+
+  useEffect(() => {
+    if (prevEmailTemplateIdRef.current === undefined) {
+      prevEmailTemplateIdRef.current = emailTemplateId;
+      return;
+    }
+    if (prevEmailTemplateIdRef.current === emailTemplateId) return;
+
+    prevEmailTemplateIdRef.current = emailTemplateId;
+
+    resetInterviewInviteFields();
+    if (emailTemplateId != null) {
+      const t = allTemplates.find((x) => x.id === emailTemplateId);
+      interviewHiringTeamPrefillPendingRef.current =
+        t?.type === "interview_invite";
+    } else {
+      interviewHiringTeamPrefillPendingRef.current = false;
+    }
+  }, [allTemplates, emailTemplateId, resetInterviewInviteFields]);
 
   /** Loaded template wins so the correct list + toggle show on first paint. */
   const activeEmailComposerKind: "general" | "interview_invite" = useMemo(() => {
@@ -565,6 +593,90 @@ export function CandidateSidePanel({
   ]);
 
   useEffect(() => {
+    const live =
+      !!offer && (isEditingOffer || offer.status === "draft");
+
+    if (!live) {
+      offerPreviewSeqRef.current += 1;
+      setOfferPreviewHtml(null);
+      setOfferPreviewSubject(null);
+      return;
+    }
+
+    if (!editTemplateId || editTemplateId === "__none__") {
+      offerPreviewSeqRef.current += 1;
+      setOfferPreviewHtml(null);
+      setOfferPreviewSubject(null);
+      return;
+    }
+
+    const tid = Number(editTemplateId);
+    if (!Number.isFinite(tid) || tid <= 0) {
+      offerPreviewSeqRef.current += 1;
+      setOfferPreviewHtml(null);
+      setOfferPreviewSubject(null);
+      return;
+    }
+
+    const tpl = allTemplates.find((x) => x.id === tid);
+    if (tpl?.type !== "offer") {
+      offerPreviewSeqRef.current += 1;
+      setOfferPreviewHtml(null);
+      setOfferPreviewSubject(null);
+      return;
+    }
+
+    const seq = ++offerPreviewSeqRef.current;
+    const context = buildOfferTemplatePreviewContext({
+      salaryInput: editSalary,
+      currency: editCurrency,
+      payFrequency: editPayFreq,
+      startDate: editStartDate,
+      expiryDate: editExpiryDate,
+      benefits: editBenefits,
+    });
+
+    const timer = window.setTimeout(() => {
+      if (seq !== offerPreviewSeqRef.current) return;
+      void previewTemplateMutateRef
+        .current({
+          id: tid,
+          candidateId,
+          context,
+        })
+        .then((res) => {
+          if (seq !== offerPreviewSeqRef.current) return;
+          setOfferPreviewHtml(res.data.html);
+          setOfferPreviewSubject(res.data.subject);
+        })
+        .catch((e) => {
+          if (seq !== offerPreviewSeqRef.current) return;
+          toast.error(
+            e instanceof Error
+              ? e.message
+              : "Could not refresh offer preview",
+          );
+        });
+    }, 320);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    allTemplates,
+    candidateId,
+    editBenefits,
+    editCurrency,
+    editExpiryDate,
+    editPayFreq,
+    editSalary,
+    editStartDate,
+    editTemplateId,
+    isEditingOffer,
+    offer,
+    setOfferPreviewHtml,
+    setOfferPreviewSubject,
+  ]);
+
+  useEffect(() => {
     const tpl =
       emailTemplateId != null
         ? allTemplates.find((x) => x.id === emailTemplateId)
@@ -581,9 +693,8 @@ export function CandidateSidePanel({
 
     const team = (hiringTeamRes?.data as JobHiringTeamMember[] | undefined) ?? [];
     if (!team.length) return;
-    setInterviewInviteInterviewerUserIds((prev) =>
-      prev.length === 0 ? team.map((m) => m.userId) : prev,
-    );
+    /** Template pick always resets ids to [] first; prefill assigns the full hiring team once. */
+    setInterviewInviteInterviewerUserIds(team.map((m) => m.userId));
   }, [
     allTemplates,
     candidate?.jobId,
@@ -715,7 +826,15 @@ export function CandidateSidePanel({
       toast.error("No offer record is available for this candidate.");
       return;
     }
+    if (isEditingOffer) {
+      toast.message(
+        "Offer letter preview on the left updates as you edit (like Email). Save to persist.",
+      );
+    }
     setPreviewPane("offer");
+    void refetchCandidateDetail().catch(() => {
+      /* preview still shows cached letter */
+    });
     const elId = `candidate-preview-pane-${candidateId}`;
     const scroll = () => {
       document.getElementById(elId)?.scrollIntoView({
@@ -727,7 +846,13 @@ export function CandidateSidePanel({
     requestAnimationFrame(() => {
       requestAnimationFrame(scroll);
     });
-  }, [candidateId, offer, setPreviewPane]);
+  }, [
+    candidateId,
+    isEditingOffer,
+    offer,
+    refetchCandidateDetail,
+    setPreviewPane,
+  ]);
 
   const openOfferEdit = () => {
     if (!offer) return;
@@ -796,6 +921,8 @@ export function CandidateSidePanel({
         onSuccess: () => {
           setPreviewPane("offer");
           setIsEditingOffer(false);
+          setOfferPreviewHtml(null);
+          setOfferPreviewSubject(null);
           toast.success("Offer saved");
         },
         onError: (e) => {
@@ -1314,7 +1441,7 @@ export function CandidateSidePanel({
                   {updateOfferMutation.isPending ? "Saving…" : "Save draft & update preview"}
                 </Button>
                 <p className="text-[11px] text-slate-500 dark:text-neutral-500 leading-snug">
-                  No preview? Pick a template above and save again.
+                  The left preview updates as you type (with a template selected). Save to persist the draft.
                 </p>
                 {!offer.renderedHtml?.trim() && (
                   <p className="text-[11px] text-amber-800 dark:text-amber-200/90 bg-amber-50 dark:bg-amber-950/35 border border-amber-200/80 dark:border-amber-900/50 rounded-md px-2 py-1.5 leading-snug">
@@ -1890,6 +2017,7 @@ export function CandidateSidePanel({
                   type="button"
                   className="text-[var(--theme-color)] font-semibold underline-offset-2 hover:underline"
                   onClick={() => {
+                    interviewHiringTeamPrefillPendingRef.current = false;
                     interviewPreviewSeqRef.current += 1;
                     const src = emailHtml?.trim() ?? "";
                     let plain = src
@@ -1960,8 +2088,8 @@ export function CandidateSidePanel({
                         const mid = res?.data?.providerMessageId;
                         toast.success(
                           mid
-                            ? `Email queued for delivery (message id ${mid}). If it does not arrive, check spam and the Resend dashboard → Logs.`
-                            : "Email queued for delivery. If it does not arrive, check spam and the Resend dashboard → Logs.",
+                            ? `Message sent to the candidate. Provider id: ${mid}.`
+                            : "Message sent to the candidate.",
                         );
                       },
                       onError: (e) => {

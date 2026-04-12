@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowUpRight01Icon } from "@hugeicons/core-free-icons";
 
@@ -16,6 +18,47 @@ html,body{margin:0;padding:0;background:#fff;color:#0f172a;}
 body{padding:12px;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-size:13px;line-height:1.5;}
 a{color:#2563eb;}
 </style></head><body>${innerHtml}</body></html>`;
+}
+
+/** Same chrome as the Send Email preview: To bar, Subject, body region. */
+function MessagePreviewCard(props: {
+  toEmail: string;
+  subjectLine: string;
+  subjectEmptyHint: ReactNode;
+  body: ReactNode;
+}) {
+  const { toEmail, subjectLine, subjectEmptyHint, body } = props;
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm">
+      <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800 bg-slate-50/90 dark:bg-neutral-900/80">
+        <p className="text-[11px] text-slate-500 dark:text-neutral-500">
+          <span className="font-semibold text-slate-600 dark:text-neutral-400">
+            To
+          </span>{" "}
+          <span className="text-[12px] text-slate-800 dark:text-neutral-200 break-all">
+            {toEmail}
+          </span>
+        </p>
+      </div>
+      <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800">
+        <p className="text-[11px] font-semibold text-slate-500 dark:text-neutral-500 uppercase tracking-wide mb-1">
+          Subject
+        </p>
+        {subjectLine.trim() ? (
+          <p className="text-[13px] text-slate-800 dark:text-neutral-200 leading-snug">
+            {subjectLine}
+          </p>
+        ) : (
+          <p className="text-[13px] text-slate-500 dark:text-neutral-400 leading-snug">
+            {subjectEmptyHint}
+          </p>
+        )}
+      </div>
+      <div className="px-3 py-3 text-[13px] text-slate-700 dark:text-neutral-300 leading-relaxed min-h-[120px]">
+        {body}
+      </div>
+    </div>
+  );
 }
 
 const OFFER_STATUS_STYLES: Record<string, { bg: string; text: string }> = {
@@ -50,9 +93,19 @@ export function CandidatePreviewPane({
     emailSubject,
     emailBody,
     emailHtml,
+    offerPreviewHtml,
+    offerPreviewSubject,
   } = useCandidateDetailSheet();
 
   const offer = candidate?.offer;
+  const offerSavedHtml = offer?.renderedHtml?.trim() ?? "";
+  const offerLiveHtml = offerPreviewHtml?.trim() ?? "";
+  const offerDisplayHtml = offerLiveHtml || offerSavedHtml;
+  const offerDefaultSubject = candidate?.jobTitle?.trim()
+    ? `Offer — ${candidate.jobTitle.trim()}`
+    : "Offer of employment";
+  const offerDisplaySubject =
+    offerPreviewSubject?.trim() || offerDefaultSubject;
   const offerStyle = offer
     ? (OFFER_STATUS_STYLES[offer.status] ?? OFFER_STATUS_STYLES.draft)
     : null;
@@ -169,56 +222,71 @@ export function CandidatePreviewPane({
           </div>
         ) : showOfferPane && offer ? (
           <div className="px-4 py-3">
-            {offer.renderedHtml ? (
-              <div
-                className="prose prose-sm dark:prose-invert max-w-none text-[13px] text-slate-700 dark:text-neutral-300 leading-relaxed"
-                dangerouslySetInnerHTML={{ __html: offer.renderedHtml }}
+            {offerDisplayHtml ? (
+              <MessagePreviewCard
+                toEmail={candidate.email ?? ""}
+                subjectLine={offerDisplaySubject}
+                subjectEmptyHint={<>—</>}
+                body={
+                  <iframe
+                    key={
+                      offerLiveHtml
+                        ? `live-${offerLiveHtml.length}-${offerLiveHtml.slice(0, 64)}`
+                        : `${offer.id}-${offer.updatedAt}`
+                    }
+                    title="Offer letter preview"
+                    sandbox=""
+                    className="w-full min-h-[280px] h-[min(52vh,520px)] border-0 rounded-md block bg-white"
+                    srcDoc={emailDraftPreviewSrcDoc(offerDisplayHtml)}
+                  />
+                }
               />
             ) : (
-              <p className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
-                {offer.status === "draft" ? (
+              <MessagePreviewCard
+                toEmail={candidate.email ?? ""}
+                subjectLine={
+                  candidate.jobTitle?.trim()
+                    ? `Offer — ${candidate.jobTitle.trim()}`
+                    : ""
+                }
+                subjectEmptyHint={
                   <>
-                    <strong>Draft</strong> — no letter rendered yet. Use the{" "}
-                    <strong>Offer</strong> tab, fill details, then{" "}
-                    <strong>Save draft &amp; update preview</strong>.
+                    Pick an offer template on the <strong>Offer</strong> tab —
+                    the preview updates as you edit (like <strong>Email</strong>
+                    ), then save to persist.
                   </>
-                ) : (
-                  <>
-                    No letter HTML yet. Open <strong>Offer</strong> → <strong>Edit</strong> and save to refresh.
-                  </>
-                )}
-              </p>
+                }
+                body={
+                  <p className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+                    {offer.status === "draft" ? (
+                      <>
+                        <strong>Draft</strong> — choose a template and fill
+                        salary/dates on <strong>Offer</strong>; the letter appears
+                        on the left within a moment.
+                      </>
+                    ) : (
+                      <>
+                        No letter HTML yet. Open <strong>Offer</strong> →{" "}
+                        <strong>Edit</strong> and save to refresh.
+                      </>
+                    )}
+                  </p>
+                }
+              />
             )}
           </div>
         ) : showEmailPane ? (
           <div className="px-4 py-3">
-            <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden shadow-sm">
-              <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800 bg-slate-50/90 dark:bg-neutral-900/80">
-                <p className="text-[11px] text-slate-500 dark:text-neutral-500">
-                  <span className="font-semibold text-slate-600 dark:text-neutral-400">
-                    To
-                  </span>{" "}
-                  <span className="text-[12px] text-slate-800 dark:text-neutral-200 break-all">
-                    {candidate.email}
-                  </span>
-                </p>
-              </div>
-              <div className="px-3 py-2 border-b border-slate-100 dark:border-neutral-800">
-                <p className="text-[11px] font-semibold text-slate-500 dark:text-neutral-500 uppercase tracking-wide mb-1">
-                  Subject
-                </p>
-                {emailSubject.trim() ? (
-                  <p className="text-[13px] text-slate-800 dark:text-neutral-200 leading-snug">
-                    {emailSubject}
-                  </p>
-                ) : (
-                  <p className="text-[13px] text-slate-400 dark:text-neutral-500 italic">
-                    No subject yet — add one under <strong>Send Email</strong>.
-                  </p>
-                )}
-              </div>
-              <div className="px-3 py-3 text-[13px] text-slate-700 dark:text-neutral-300 leading-relaxed min-h-[120px]">
-                {emailHtml?.trim() ? (
+            <MessagePreviewCard
+              toEmail={candidate.email ?? ""}
+              subjectLine={emailSubject}
+              subjectEmptyHint={
+                <>
+                  No subject yet — add one under <strong>Send Email</strong>.
+                </>
+              }
+              body={
+                emailHtml?.trim() ? (
                   <iframe
                     key={emailHtml.trim()}
                     title="Email preview"
@@ -229,13 +297,13 @@ export function CandidatePreviewPane({
                 ) : emailBody.trim() ? (
                   <span className="whitespace-pre-wrap">{emailBody}</span>
                 ) : (
-                  <span className="text-slate-400 dark:text-neutral-500 italic">
+                  <span className="text-slate-500 dark:text-neutral-400">
                     Your message will appear here when you type or choose a
                     template under <strong>Send Email</strong>.
                   </span>
-                )}
-              </div>
-            </div>
+                )
+              }
+            />
           </div>
         ) : (
           <div className="px-4 py-6 text-center">

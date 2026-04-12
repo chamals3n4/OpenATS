@@ -700,7 +700,11 @@ function patchDetailOfferFromRow(
     expiryDate: updated.expiryDate ?? null,
     benefitsText: updated.benefitsText ?? null,
     sentAt: updated.sentAt ?? prev.sentAt ?? null,
-    renderedHtml: updated.renderedHtml ?? null,
+    /** Keep prior HTML if the API body omits `renderedHtml` (avoid blank preview after save). */
+    renderedHtml:
+      updated.renderedHtml !== undefined
+        ? updated.renderedHtml
+        : prev.renderedHtml,
     updatedAt: updated.updatedAt,
   };
 }

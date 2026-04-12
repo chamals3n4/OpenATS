@@ -24,6 +24,11 @@ type Ctx = {
   /** Template used for the current HTML body (for `email_messages.template_id`). */
   emailTemplateId: number | null;
   setEmailTemplateId: (id: number | null) => void;
+  /** Live offer letter HTML from debounced template preview while editing a draft / offer (mirrors email preview). */
+  offerPreviewHtml: string | null;
+  setOfferPreviewHtml: (s: string | null) => void;
+  offerPreviewSubject: string | null;
+  setOfferPreviewSubject: (s: string | null) => void;
 };
 
 const CandidateDetailSheetContext = createContext<Ctx | null>(null);
@@ -39,6 +44,10 @@ export function CandidateDetailSheetProvider({
   const [emailBody, setEmailBody] = useState("");
   const [emailHtml, setEmailHtml] = useState<string | null>(null);
   const [emailTemplateId, setEmailTemplateId] = useState<number | null>(null);
+  const [offerPreviewHtml, setOfferPreviewHtml] = useState<string | null>(null);
+  const [offerPreviewSubject, setOfferPreviewSubject] = useState<string | null>(
+    null,
+  );
 
   const setPreviewPane = useCallback((p: PreviewPane) => {
     setPreviewPaneState(p);
@@ -56,6 +65,10 @@ export function CandidateDetailSheetProvider({
       setEmailHtml,
       emailTemplateId,
       setEmailTemplateId,
+      offerPreviewHtml,
+      setOfferPreviewHtml,
+      offerPreviewSubject,
+      setOfferPreviewSubject,
     }),
     [
       previewPane,
@@ -64,6 +77,8 @@ export function CandidateDetailSheetProvider({
       emailBody,
       emailHtml,
       emailTemplateId,
+      offerPreviewHtml,
+      offerPreviewSubject,
     ],
   );
 

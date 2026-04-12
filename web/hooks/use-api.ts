@@ -6,6 +6,7 @@ import {
   useQueryClient,
   keepPreviousData,
 } from "@tanstack/react-query";
+import type { QueryClient } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
 import type {
   Job,
@@ -24,6 +25,7 @@ import type {
   User,
   Template,
   Offer,
+  OfferWithRelations,
   AnalyticsReport,
   AnalyticsExportPayload,
   ActiveLog,
@@ -45,6 +47,7 @@ export function useJob(id: number) {
     queryKey: ["jobs", id],
     queryFn: () => serverFetch<{ data: JobDetail }>(`/jobs/${id}`),
     enabled: !!id,
+    staleTime: 0,
     // Seed from the jobs list cache so clicking a job shows content
     // immediately while the full detail (pipelineStages, hiringTeam) loads.
     initialData: () => {
@@ -656,7 +659,8 @@ export function useOffers(jobId?: number) {
 export function useOffer(id: number) {
   return useQuery({
     queryKey: ["offers", id],
-    queryFn: () => serverFetch<{ data: Offer }>(`/offers/${id}`),
+    queryFn: () =>
+      serverFetch<{ data: OfferWithRelations }>(`/offers/${id}`),
     enabled: !!id,
   });
 }
@@ -680,24 +684,77 @@ export function useCreateOffer() {
   });
 }
 
+function patchDetailOfferFromRow(
+  prev: NonNullable<CandidateDetail["offer"]>,
+  updated: Offer,
+): NonNullable<CandidateDetail["offer"]> {
+  return {
+    ...prev,
+    id: updated.id,
+    templateId: updated.templateId ?? prev.templateId,
+    status: updated.status,
+    salary: updated.salary != null ? String(updated.salary) : null,
+    currency: updated.currency ?? null,
+    payFrequency: updated.payFrequency ?? null,
+    startDate: updated.startDate ?? null,
+    expiryDate: updated.expiryDate ?? null,
+    benefitsText: updated.benefitsText ?? null,
+    sentAt: updated.sentAt ?? prev.sentAt ?? null,
+    renderedHtml: updated.renderedHtml ?? null,
+    updatedAt: updated.updatedAt,
+  };
+}
+
+function mergeOfferIntoCandidateCache(
+  queryClient: QueryClient,
+  candidateId: number,
+  updated: Offer,
+) {
+  queryClient.setQueryData<{ data: CandidateDetail }>(
+    ["candidates", candidateId],
+    (old) => {
+      if (!old?.data?.offer || old.data.offer.id !== updated.id) return old;
+      return {
+        data: {
+          ...old.data,
+          offer: patchDetailOfferFromRow(old.data.offer, updated),
+        },
+      };
+    },
+  );
+}
+
 export function useUpdateOffer() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({
-      offerId,
-      data,
-    }: {
+    mutationFn: (variables: {
       offerId: number;
+      /** When set, refreshes that candidate’s detail query immediately. */
+      candidateId?: number;
       data: Partial<Offer>;
     }) =>
-      serverFetch<{ data: Offer }>(`/offers/${offerId}`, {
+      serverFetch<{ data: Offer }>(`/offers/${variables.offerId}`, {
         method: "PUT",
-        body: JSON.stringify(data),
+        body: JSON.stringify(variables.data),
       }),
-    onSuccess: (_, variables) => {
+    onSuccess: (res, variables) => {
+      const updated = res?.data;
+      if (updated && variables.candidateId != null) {
+        mergeOfferIntoCandidateCache(
+          queryClient,
+          variables.candidateId,
+          updated,
+        );
+      }
       queryClient.invalidateQueries({
         queryKey: ["offers", variables.offerId],
       });
+      queryClient.invalidateQueries({ queryKey: ["offers"] });
+      if (variables.candidateId != null) {
+        queryClient.invalidateQueries({
+          queryKey: ["candidates", variables.candidateId],
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });
@@ -711,8 +768,43 @@ export function useDeleteOffer() {
         method: "DELETE",
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["offers"] });
+      queryClient.invalidateQueries({
+        predicate: (q) =>
+          Array.isArray(q.queryKey) && q.queryKey[0] === "offers",
+      });
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+  });
+}
+
+export function useSendCandidateEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (variables: {
+      candidateId: number;
+      subject: string;
+      bodyText: string;
+      bodyHtml?: string | null;
+      templateId?: number | null;
+    }) =>
+      serverFetch<{
+        data: { id: number; sentAt: string; providerMessageId?: string };
+      }>(
+        `/candidates/${variables.candidateId}/send-email`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            subject: variables.subject,
+            bodyText: variables.bodyText,
+            bodyHtml: variables.bodyHtml ?? undefined,
+            templateId: variables.templateId ?? undefined,
+          }),
+        },
+      ),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["candidates", variables.candidateId],
+      });
     },
   });
 }
@@ -720,14 +812,34 @@ export function useDeleteOffer() {
 export function useUpdateOfferStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: string }) =>
-      serverFetch<{ data: any }>(`/offers/${id}/status`, {
+    mutationFn: ({
+      id,
+      status,
+    }: {
+      id: number;
+      status: string;
+      candidateId?: number;
+    }) =>
+      serverFetch<{ data: Offer }>(`/offers/${id}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status }),
       }),
-    onSuccess: (_, variables) => {
+    onSuccess: (res, variables) => {
+      const updated = res?.data;
+      if (updated && variables.candidateId != null) {
+        mergeOfferIntoCandidateCache(
+          queryClient,
+          variables.candidateId,
+          updated,
+        );
+      }
       queryClient.invalidateQueries({ queryKey: ["offers", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["offers"] });
+      if (variables.candidateId != null) {
+        queryClient.invalidateQueries({
+          queryKey: ["candidates", variables.candidateId],
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });
@@ -806,6 +918,10 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
     queryKey: ["candidates", id],
     queryFn: () => serverFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
     enabled,
+    // Global default staleTime is 5m. Without this, list-sourced initialData +
+    // initialDataUpdatedAt makes this query look "fresh" so it never refetches
+    // and the UI stays stuck on placeholder history: [] and offer: null.
+    staleTime: 0,
     // Seed from any cached candidates list so the sheet shows the candidate's
     // basic info immediately while the full detail (cv analysis, answers,
     // history) loads in the background — same pattern as useJob.
@@ -937,14 +1053,26 @@ export function useUpdateCandidateBasicDetails() {
 
       const json = (await res.json().catch(() => null)) as
         | { data: Candidate }
-        | { error?: string }
+        | {
+            error?: string;
+            details?: Record<string, string[] | undefined>;
+          }
         | null;
 
       if (!res.ok) {
-        throw new Error(
-          (json as { error?: string } | null)?.error ??
-            "Failed to update candidate",
-        );
+        const err = json as {
+          error?: string;
+          details?: Record<string, string[] | undefined>;
+        } | null;
+        let msg = err?.error ?? "Failed to update candidate";
+        const d = err?.details;
+        if (d && typeof d === "object") {
+          const parts = Object.entries(d).flatMap(([k, v]) =>
+            Array.isArray(v) ? v.map((x) => `${k}: ${x}`) : [],
+          );
+          if (parts.length) msg = `${msg} (${parts.join("; ")})`;
+        }
+        throw new Error(msg);
       }
 
       return json as { data: Candidate };
@@ -952,6 +1080,36 @@ export function useUpdateCandidateBasicDetails() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
       queryClient.invalidateQueries({ queryKey: ["candidates", variables.id] });
+    },
+  });
+}
+
+export function useAddCandidate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: {
+      jobId: number;
+      firstName: string;
+      lastName: string;
+      email: string;
+      phone?: string | null;
+      resumeUrl?: string | null;
+    }) =>
+      serverFetch<{ data: Candidate }>(
+        `/candidates/jobs/${data.jobId}/apply`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            firstName: data.firstName,
+            lastName: data.lastName,
+            email: data.email,
+            phone: data.phone ?? undefined,
+            resumeUrl: data.resumeUrl ?? undefined,
+          }),
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });
 }
@@ -1015,12 +1173,35 @@ export function useDeleteTemplate() {
   });
 }
 
+export type TemplatePreviewResult = {
+  subject: string;
+  html: string;
+  bodyJson?: unknown;
+};
+
 export function usePreviewTemplate() {
   return useMutation({
-    mutationFn: ({ id, context }: { id: number; context: any }) =>
-      serverFetch<any>(`/templates/${id}/preview`, {
+    mutationFn: ({
+      id,
+      context,
+      candidateId,
+    }: {
+      id: number;
+      context?: Record<string, unknown>;
+      candidateId?: number;
+    }) =>
+      serverFetch<{ data: TemplatePreviewResult }>(`/templates/${id}/preview`, {
         method: "POST",
-        body: JSON.stringify({ context }),
+        body: JSON.stringify(
+          candidateId != null
+            ? {
+                candidateId,
+                ...(context && Object.keys(context).length > 0
+                  ? { context }
+                  : {}),
+              }
+            : { context: context ?? {} },
+        ),
       }),
   });
 }

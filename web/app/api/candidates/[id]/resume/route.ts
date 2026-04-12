@@ -1,14 +1,7 @@
 import { NextResponse } from "next/server";
-import { asgardeo } from "@asgardeo/nextjs/server";
+import { getRequiredAccessToken } from "@/lib/asgardeo-access-token";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-
-async function getAccessToken() {
-  const client = await asgardeo();
-  const sessionId = await client.getSessionId();
-  if (!sessionId) throw new Error("Unauthorized");
-  return client.getAccessToken(sessionId);
-}
 
 export async function GET(
   _req: Request,
@@ -23,7 +16,7 @@ export async function GET(
       );
     }
 
-    const token = await getAccessToken();
+    const token = await getRequiredAccessToken();
     const res = await fetch(`${API_BASE_URL}/api/candidates/${id}/resume`, {
       method: "GET",
       headers: {

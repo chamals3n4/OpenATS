@@ -1,17 +1,14 @@
 "use server";
 
-import { asgardeo } from "@asgardeo/nextjs/server";
 import { headers } from "next/headers";
+import { getRequiredAccessToken } from "./asgardeo-access-token";
 import { apiFetch } from "./api";
 
 export async function serverFetch<T>(
   path: string,
   options?: RequestInit,
 ): Promise<T> {
-  const client = await asgardeo();
-  const sessionId = await client.getSessionId();
-  if (!sessionId) throw new Error("Not authenticated");
-  const token = await client.getAccessToken(sessionId);
+  const token = await getRequiredAccessToken();
 
   const incomingHeaders = await headers();
   const forwardedHeaders: Record<string, string> = {};

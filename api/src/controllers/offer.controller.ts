@@ -3,25 +3,50 @@ import { z } from "zod";
 import { offerService } from "../services/offer.service";
 import logger from "../utils/logger";
 
+/** ISO 4217; empty string → null. Undefined = omit field (partial update). */
+const currencyField = z.preprocess((v) => {
+  if (v === undefined) return undefined;
+  if (v === "" || v === null) return null;
+  return v;
+}, z.union([z.string().length(3, "Currency must be a 3-letter ISO code (e.g. USD)"), z.null()]).optional());
+
+const templateIdField = z.preprocess((v) => {
+  if (v === undefined) return undefined;
+  if (v === "" || v === null) return null;
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n) || n < 1) return null;
+  return Math.trunc(n);
+}, z.union([z.number().int().positive(), z.null()]).optional());
+
+const salaryField = z.preprocess((v) => {
+  if (v === undefined) return undefined;
+  if (v === "" || v === null) return null;
+  const n = typeof v === "number" ? v : Number(v);
+  if (!Number.isFinite(n) || n <= 0) return null;
+  return n;
+}, z.union([z.number().positive("Salary must be greater than zero"), z.null()]).optional());
+
 const createOfferSchema = z.object({
   candidateId: z.number().int().positive(),
   jobId: z.number().int().positive(),
-  templateId: z.number().int().positive().optional().nullable(),
-  salary: z.number().positive().optional().nullable(),
-  currency: z.string().length(3).optional().nullable(),
+  templateId: templateIdField,
+  salary: salaryField,
+  currency: currencyField,
   payFrequency: z.enum(["hourly", "daily", "weekly", "monthly", "yearly"]).optional().nullable(),
   startDate: z.string().optional().nullable(),
   expiryDate: z.string().optional().nullable(),
+  benefitsText: z.string().max(20000).optional().nullable(),
 });
 
 const updateOfferSchema = z.object({
-  templateId: z.number().int().positive().optional().nullable(),
+  templateId: templateIdField,
   status: z.enum(["draft", "sent", "pending", "accepted", "declined", "withdrawn"]).optional(),
-  salary: z.number().positive().optional().nullable(),
-  currency: z.string().length(3).optional().nullable(),
+  salary: salaryField,
+  currency: currencyField,
   payFrequency: z.enum(["hourly", "daily", "weekly", "monthly", "yearly"]).optional().nullable(),
   startDate: z.string().optional().nullable(),
   expiryDate: z.string().optional().nullable(),
+  benefitsText: z.string().max(20000).optional().nullable(),
   renderedHtml: z.string().optional().nullable(),
 });
 
@@ -80,9 +105,12 @@ export const createOffer = async (req: Request, res: Response) => {
   try {
     const parsed = createOfferSchema.safeParse(req.body);
     if (!parsed.success) {
-      logger.warn(`Offer creation validation failed - user ${req.user?.id}: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
+      const first = parsed.error.issues[0];
+      logger.warn(
+        `Offer creation validation failed - user ${req.user?.id}: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`,
+      );
       res.status(400).json({
-        error: "Validation failed",
+        error: first?.message ?? "Validation failed",
         details: parsed.error.flatten().fieldErrors,
       });
       return;
@@ -92,7 +120,9 @@ export const createOffer = async (req: Request, res: Response) => {
       ...parsed.data,
       createdBy: req.user.id,
     });
-    logger.info(`Offer created: id=${result.id}, candidateId=${parsed.data.candidateId}, jobId=${parsed.data.jobId}, createdBy=${req.user.id}`);
+    logger.info(
+      `Offer created: id=${result.id}, candidateId=${parsed.data.candidateId}, jobId=${parsed.data.jobId}, createdBy=${req.user.id}`,
+    );
     res.status(201).json({ data: result });
   } catch (error: any) {
     logger.error(`Failed to create offer - user ${req.user?.id}: ${error?.message}`);
@@ -110,8 +140,9 @@ export const updateOffer = async (req: Request, res: Response) => {
 
     const parsed = updateOfferSchema.safeParse(req.body);
     if (!parsed.success) {
+      const first = parsed.error.issues[0];
       res.status(400).json({
-        error: "Validation failed",
+        error: first?.message ?? "Validation failed",
         details: parsed.error.flatten().fieldErrors,
       });
       return;
@@ -126,7 +157,9 @@ export const updateOffer = async (req: Request, res: Response) => {
     logger.info(`Offer updated: id=${id} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to update offer id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(
+      `Failed to update offer id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`,
+    );
     res.status(500).json({ error: "Failed to update offer" });
   }
 };
@@ -154,10 +187,14 @@ export const updateOfferStatus = async (req: Request, res: Response) => {
       return;
     }
 
-    logger.info(`Offer status updated: id=${id}, newStatus="${parsed.data.status}" by user ${req.user?.id}`);
+    logger.info(
+      `Offer status updated: id=${id}, newStatus="${parsed.data.status}" by user ${req.user?.id}`,
+    );
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to update offer status id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(
+      `Failed to update offer status id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`,
+    );
     res.status(500).json({ error: "Failed to update offer status" });
   }
 };
@@ -180,7 +217,9 @@ export const deleteOffer = async (req: Request, res: Response) => {
     logger.info(`Offer deleted: id=${id} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to delete offer id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(
+      `Failed to delete offer id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`,
+    );
     res.status(500).json({ error: "Failed to delete offer" });
   }
 };

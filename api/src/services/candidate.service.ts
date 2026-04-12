@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { eq, and, desc, asc, sql } from "drizzle-orm";
-=======
 import { eq, and, desc, asc, inArray } from "drizzle-orm";
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
 import { db } from "../db";
 import {
   candidates,
@@ -37,7 +33,11 @@ import { cleanObject as clean } from "../utils/object.utils";
 function isPgUniqueViolation(err: unknown): boolean {
   let current: unknown = err;
   const seen = new Set<unknown>();
-  for (let depth = 0; depth < 12 && current && typeof current === "object"; depth++) {
+  for (
+    let depth = 0;
+    depth < 12 && current && typeof current === "object";
+    depth++
+  ) {
     if (seen.has(current)) break;
     seen.add(current);
     const code = (current as { code?: string }).code;
@@ -102,73 +102,73 @@ export const candidateService = {
 
     try {
       return await db.transaction(async (tx) => {
-      const [firstStage] = await tx
-        .select()
-        .from(jobPipelineStages)
-        .where(eq(jobPipelineStages.jobId, jobId))
-        .orderBy(asc(jobPipelineStages.position))
-        .limit(1);
+        const [firstStage] = await tx
+          .select()
+          .from(jobPipelineStages)
+          .where(eq(jobPipelineStages.jobId, jobId))
+          .orderBy(asc(jobPipelineStages.position))
+          .limit(1);
 
-      if (!firstStage) {
-        throw new Error("No pipeline stages defined for this job");
-      }
+        if (!firstStage) {
+          throw new Error("No pipeline stages defined for this job");
+        }
 
-      const [candidate] = await tx
-        .insert(candidates)
-        .values(
-          clean({
-            ...candidateData,
-            jobId,
-            currentStageId: firstStage.id,
-          }),
-        )
-        .returning();
+        const [candidate] = await tx
+          .insert(candidates)
+          .values(
+            clean({
+              ...candidateData,
+              jobId,
+              currentStageId: firstStage.id,
+            }),
+          )
+          .returning();
 
-      if (!candidate) {
-        throw new Error("Failed to create candidate");
-      }
+        if (!candidate) {
+          throw new Error("Failed to create candidate");
+        }
 
-      await tx.insert(candidateStageHistory).values({
-        candidateId: candidate.id,
-        stageId: firstStage.id,
-      });
+        await tx.insert(candidateStageHistory).values({
+          candidateId: candidate.id,
+          stageId: firstStage.id,
+        });
 
-      if (customAnswers && customAnswers.length > 0) {
-        for (const answer of customAnswers) {
-          const [question] = await tx
-            .select()
-            .from(jobCustomQuestions)
-            .where(
-              and(
-                eq(jobCustomQuestions.id, answer.questionId),
-                eq(jobCustomQuestions.jobId, jobId),
-              ),
-            );
+        if (customAnswers && customAnswers.length > 0) {
+          for (const answer of customAnswers) {
+            const [question] = await tx
+              .select()
+              .from(jobCustomQuestions)
+              .where(
+                and(
+                  eq(jobCustomQuestions.id, answer.questionId),
+                  eq(jobCustomQuestions.jobId, jobId),
+                ),
+              );
 
-          if (!question) continue;
+            if (!question) continue;
 
-          if (answer.answerText !== undefined) {
-            await tx.insert(candidateCustomAnswers).values({
-              candidateId: candidate.id,
-              questionId: answer.questionId,
-              answerText: answer.answerText,
-            });
-          }
-
-          if (answer.optionIds && answer.optionIds.length > 0) {
-            await tx.insert(candidateCustomAnswerSelections).values(
-              answer.optionIds.map((optionId) => ({
+            if (answer.answerText !== undefined) {
+              await tx.insert(candidateCustomAnswers).values({
                 candidateId: candidate.id,
                 questionId: answer.questionId,
-                optionId,
-              })),
-            );
+                answerText: answer.answerText,
+              });
+            }
+
+            if (answer.optionIds && answer.optionIds.length > 0) {
+              await tx.insert(candidateCustomAnswerSelections).values(
+                answer.optionIds.map((optionId) => ({
+                  candidateId: candidate.id,
+                  questionId: answer.questionId,
+                  optionId,
+                })),
+              );
+            }
           }
         }
-      }
 
-      return candidate;
-    });
+        return candidate;
+      });
     } catch (err) {
       if (isPgUniqueViolation(err)) {
         throw new DuplicateApplicationError();
@@ -355,7 +355,6 @@ export const candidateService = {
         );
 
       if (attachment) {
-<<<<<<< HEAD
         let combinedAssessmentId: number | null = null;
         try {
           combinedAssessmentId =
@@ -383,16 +382,6 @@ export const candidateService = {
             `[RAG Assessment] Combined assessment not created for candidate ${candidateId} at stage ${newStageId}; invite not sent.`,
           );
         }
-=======
-        const { didSendInvite } =
-          await assessmentExecutionService.inviteCandidate(
-            candidateId,
-            attachment.assessmentId,
-          );
-        stageAutomation.assessmentInvite = didSendInvite
-          ? "sent"
-          : "skipped_active_invite";
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
       }
 
       if (stage.stageType === "offer") {
@@ -531,9 +520,11 @@ export const candidateService = {
 
   async delete(id: number) {
     return await db.transaction(async (tx) => {
-      await tx.delete(assessments).where(
-        sql`${assessments.description} ~ ${ragIndividualAssessmentDescriptionRegex(id)}`,
-      );
+      await tx
+        .delete(assessments)
+        .where(
+          sql`${assessments.description} ~ ${ragIndividualAssessmentDescriptionRegex(id)}`,
+        );
       const [deleted] = await tx
         .delete(candidates)
         .where(eq(candidates.id, id))

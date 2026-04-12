@@ -295,16 +295,7 @@ function EditJobForm({
         <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
           Job Description
         </Label>
-        <JobDescriptionEditor
-          value={description}
-          onChange={setDescription}
-<<<<<<< HEAD
-          minHeightClass="min-h-40"
-=======
-          placeholder="Type here..."
-          minHeightClassName="min-h-[260px]"
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
-        />
+        <JobDescriptionEditor value={description} onChange={setDescription} />
       </div>
 
       <div className="border-t border-slate-100 dark:border-neutral-800 pt-10 space-y-5 mt-4">

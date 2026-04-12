@@ -7,7 +7,7 @@ CREATE TYPE "public"."offer_status" AS ENUM('draft', 'sent', 'pending', 'accepte
 CREATE TYPE "public"."pay_frequency" AS ENUM('hourly', 'daily', 'weekly', 'monthly', 'yearly');--> statement-breakpoint
 CREATE TYPE "public"."question_type" AS ENUM('short_answer', 'long_answer', 'checkbox', 'radio', 'multiple_choice');--> statement-breakpoint
 CREATE TYPE "public"."salary_type" AS ENUM('range', 'fixed');--> statement-breakpoint
-CREATE TYPE "public"."stage_type" AS ENUM('none', 'offer', 'rejection');--> statement-breakpoint
+CREATE TYPE "public"."stage_type" AS ENUM('none', 'source', 'assessment', 'interview', 'offer', 'rejection');--> statement-breakpoint
 CREATE TYPE "public"."template_type" AS ENUM('offer', 'rejection', 'assessment_invite', 'general');--> statement-breakpoint
 CREATE TYPE "public"."user_role" AS ENUM('super_admin', 'hiring_manager', 'interviewer');--> statement-breakpoint
 CREATE TABLE "company" (
@@ -200,7 +200,9 @@ CREATE TABLE "candidate_assessment_answers" (
 	"question_id" integer NOT NULL,
 	"answer_text" text,
 	"points_earned" numeric(6, 2),
+	"ai_feedback" text,
 	"created_at" timestamp DEFAULT now() NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL,
 	CONSTRAINT "candidate_assessment_answers_attempt_id_question_id_unique" UNIQUE("attempt_id","question_id")
 );
 --> statement-breakpoint
@@ -249,6 +251,7 @@ CREATE TABLE "candidate_cv_analysis" (
 	"match_score" numeric(5, 2),
 	"matched_skills" text[],
 	"missing_skills" text[],
+	"score_breakdown" jsonb,
 	"extracted_text" text,
 	"status" "cv_analysis_status" DEFAULT 'pending' NOT NULL,
 	"error_message" text,
@@ -275,7 +278,9 @@ CREATE TABLE "candidates" (
 	"job_id" integer NOT NULL,
 	"current_stage_id" integer,
 	"applied_at" timestamp DEFAULT now() NOT NULL,
-	"updated_at" timestamp DEFAULT now() NOT NULL
+	"updated_at" timestamp DEFAULT now() NOT NULL,
+	"rejection_notice_sent_at" timestamp,
+	CONSTRAINT "candidates_job_id_email_unique" UNIQUE("job_id","email")
 );
 --> statement-breakpoint
 CREATE TABLE "offers" (
@@ -296,6 +301,17 @@ CREATE TABLE "offers" (
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "candidate_chat_messages" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"candidate_id" integer NOT NULL,
+	"sender_id" integer NOT NULL,
+	"message" text,
+	"reply_to_id" integer,
+	"sent_at" timestamp DEFAULT now() NOT NULL,
+	"is_system_message" boolean DEFAULT false NOT NULL,
+	"is_deleted" boolean DEFAULT false NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "email_messages" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"candidate_id" integer NOT NULL,
@@ -314,7 +330,30 @@ CREATE TABLE "job_chat_messages" (
 	"message" text,
 	"reply_to_id" integer,
 	"sent_at" timestamp DEFAULT now() NOT NULL,
+	"is_system_message" boolean DEFAULT false NOT NULL,
 	"is_deleted" boolean DEFAULT false NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "active_logs" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"timestamp" timestamp DEFAULT now() NOT NULL,
+	"level" varchar(20) NOT NULL,
+	"service" varchar(100) NOT NULL,
+	"action" text NOT NULL,
+	"endpoint" varchar(500) NOT NULL,
+	"actor" varchar(255) NOT NULL,
+	"status_code" integer NOT NULL,
+	"latency_ms" integer NOT NULL,
+	"request_id" varchar(255) NOT NULL,
+	"ip" varchar(100) NOT NULL,
+	"device" varchar(255) NOT NULL,
+	"meta" jsonb
+);
+--> statement-breakpoint
+CREATE TABLE "public_page_settings" (
+	"id" serial PRIMARY KEY NOT NULL,
+	"allowed_origins" text[] DEFAULT ARRAY[]::text[] NOT NULL,
+	"updated_at" timestamp DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
 ALTER TABLE "departments" ADD CONSTRAINT "departments_company_id_company_id_fk" FOREIGN KEY ("company_id") REFERENCES "public"."company"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
@@ -358,6 +397,9 @@ ALTER TABLE "offers" ADD CONSTRAINT "offers_candidate_id_candidates_id_fk" FOREI
 ALTER TABLE "offers" ADD CONSTRAINT "offers_job_id_jobs_id_fk" FOREIGN KEY ("job_id") REFERENCES "public"."jobs"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "offers" ADD CONSTRAINT "offers_template_id_templates_id_fk" FOREIGN KEY ("template_id") REFERENCES "public"."templates"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "offers" ADD CONSTRAINT "offers_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "candidate_chat_messages" ADD CONSTRAINT "candidate_chat_messages_candidate_id_candidates_id_fk" FOREIGN KEY ("candidate_id") REFERENCES "public"."candidates"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "candidate_chat_messages" ADD CONSTRAINT "candidate_chat_messages_sender_id_users_id_fk" FOREIGN KEY ("sender_id") REFERENCES "public"."users"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "candidate_chat_messages" ADD CONSTRAINT "candidate_chat_messages_reply_to_id_candidate_chat_messages_id_fk" FOREIGN KEY ("reply_to_id") REFERENCES "public"."candidate_chat_messages"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "email_messages" ADD CONSTRAINT "email_messages_candidate_id_candidates_id_fk" FOREIGN KEY ("candidate_id") REFERENCES "public"."candidates"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "email_messages" ADD CONSTRAINT "email_messages_sent_by_users_id_fk" FOREIGN KEY ("sent_by") REFERENCES "public"."users"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "email_messages" ADD CONSTRAINT "email_messages_template_id_templates_id_fk" FOREIGN KEY ("template_id") REFERENCES "public"."templates"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint

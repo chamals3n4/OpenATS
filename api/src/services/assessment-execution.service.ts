@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import { eq, and, desc, asc } from "drizzle-orm";
-=======
 import { eq, and, or, gt, sql, desc } from "drizzle-orm";
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
 import crypto from "node:crypto";
 import { db } from "../db";
 import {
@@ -236,10 +232,7 @@ export const assessmentExecutionService = {
               ),
             )
             .where(
-              eq(
-                candidateAssessmentAnswerSelections.answerId,
-                answerRow.id,
-              ),
+              eq(candidateAssessmentAnswerSelections.answerId, answerRow.id),
             )
             .orderBy(asc(assessmentQuestionOptions.position));
 
@@ -271,8 +264,7 @@ export const assessmentExecutionService = {
           attempt.scorePercentage != null
             ? Number(attempt.scorePercentage)
             : null,
-        scoreRaw:
-          attempt.scoreRaw != null ? Number(attempt.scoreRaw) : null,
+        scoreRaw: attempt.scoreRaw != null ? Number(attempt.scoreRaw) : null,
         scoreTotal:
           attempt.scoreTotal != null ? Number(attempt.scoreTotal) : null,
         passed: attempt.passed,
@@ -352,7 +344,9 @@ export const assessmentExecutionService = {
     };
   },
 
-  async getAttemptCompletionEmailContext(attemptId: number): Promise<AttemptCompletionEmailContext | null> {
+  async getAttemptCompletionEmailContext(
+    attemptId: number,
+  ): Promise<AttemptCompletionEmailContext | null> {
     const [result] = await db
       .select({
         candidateEmail: candidates.email,
@@ -525,10 +519,9 @@ export const assessmentExecutionService = {
             pointsEarned = 0;
             aiFeedback = null;
           } else {
-            const rubric =
-              question.description?.startsWith("[AI_GRADED]")
-                ? question.description.replace("[AI_GRADED]", "").trim()
-                : "Award points for correctness, technical depth, and practical problem-solving clarity.";
+            const rubric = question.description?.startsWith("[AI_GRADED]")
+              ? question.description.replace("[AI_GRADED]", "").trim()
+              : "Award points for correctness, technical depth, and practical problem-solving clarity.";
 
             const grade = await aiGradingService.gradeShortAnswer({
               question: question.title,

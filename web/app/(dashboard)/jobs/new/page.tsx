@@ -252,11 +252,7 @@ export default function CreateNewJobPage() {
             <JobDescriptionEditor
               value={description}
               onChange={setDescription}
-<<<<<<< HEAD
-=======
               placeholder="Type here..."
-              minHeightClassName="min-h-[260px]"
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
             />
           </div>
 

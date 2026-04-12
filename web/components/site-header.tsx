@@ -113,22 +113,8 @@ export function SiteHeader() {
             className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-slate-100/80 text-slate-500 hover:bg-slate-200 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800"
           >
             <HugeiconsIcon icon={Notification03Icon} className="size-5" />
-<<<<<<< HEAD
-          </button>
-
-          <Avatar className="size-9 border-2 border-slate-100 dark:border-neutral-800">
-            <AvatarImage
-              src="https://avatars.githubusercontent.com/u/172094470?s=400&u=f484cb0ec08ab3385c8553a5ad9f0c9f895460fc&v=4"
-              alt="User"
-            />
-            <AvatarFallback className="bg-orange-100 text-orange-600 font-medium">
-              JD
-            </AvatarFallback>
-          </Avatar>
-=======
           </Button>
           <SidebarUserMenu variant="header" />
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
         </div>
       </div>
     </header>

@@ -30,7 +30,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeButton } from "@/components/theme-button";
-import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import {
   Select,
   SelectContent,
@@ -65,7 +64,9 @@ function parseRagMeta(
   return { candidateId: Number(m[1]), stageId: Number(m[2]) };
 }
 
-function parseRagCandidateId(description: string | null | undefined): number | null {
+function parseRagCandidateId(
+  description: string | null | undefined,
+): number | null {
   return parseRagMeta(description)?.candidateId ?? null;
 }
 
@@ -158,8 +159,12 @@ function IndividualAssessmentCard({
   );
 }
 
-function PendingIndividualAssessmentCard({ candidate }: { candidate: Candidate }) {
-  const { data, isLoading } = useCandidate(candidate.id, { enabled: !!candidate.id });
+function PendingIndividualAssessmentCard({
+  candidate,
+}: {
+  candidate: Candidate;
+}) {
+  const { data } = useCandidate(candidate.id, { enabled: !!candidate.id });
   const cvStatus = data?.data?.cvAnalysis?.status;
   const isPending = cvStatus === "pending";
   const isPreparing = cvStatus === "done";
@@ -183,7 +188,9 @@ function PendingIndividualAssessmentCard({ candidate }: { candidate: Candidate }
         </div>
       </div>
       <div className="flex items-center gap-2 px-4 py-3 border-t border-slate-100 dark:border-neutral-800">
-        <Loader2 className={`size-4 text-[var(--theme-color)] ${isPending || isPreparing ? "animate-spin" : ""}`} />
+        <Loader2
+          className={`size-4 text-theme ${isPending || isPreparing ? "animate-spin" : ""}`}
+        />
         <p className="text-[12px] text-slate-500 dark:text-neutral-400">
           {isPending
             ? "AI is analyzing CV..."
@@ -203,8 +210,12 @@ export default function AssessmentsPage() {
   const [assessmentTab, setAssessmentTab] = useState("custom");
   const isRagGeneratedAssessment = (a: Assessment) =>
     (a.description ?? "").startsWith("__rag_candidate_");
-  const customAssessments = assessments.filter((a) => !isRagGeneratedAssessment(a));
-  const individualAssessments = assessments.filter((a) => isRagGeneratedAssessment(a));
+  const customAssessments = assessments.filter(
+    (a) => !isRagGeneratedAssessment(a),
+  );
+  const individualAssessments = assessments.filter((a) =>
+    isRagGeneratedAssessment(a),
+  );
 
   const getCandidateName = (a: Assessment) => {
     const prefix = "Individual Assessment - ";
@@ -229,7 +240,9 @@ export default function AssessmentsPage() {
   const existingCandidateStagePairs = new Set(
     individualAssessments
       .map((a) => parseRagMeta(a.description))
-      .filter((meta): meta is { candidateId: number; stageId: number } => !!meta)
+      .filter(
+        (meta): meta is { candidateId: number; stageId: number } => !!meta,
+      )
       .map((meta) => `${meta.candidateId}:${meta.stageId}`),
   );
   const pendingCandidates = candidates.filter(
@@ -292,7 +305,7 @@ export default function AssessmentsPage() {
     if (!deleteTarget) return;
     deleteAssessment.mutate(deleteTarget.id, {
       onSuccess: () => setDeleteTarget(null),
-      onError: (error: any) => {
+      onError: (error: Error) => {
         alert(error.message || "Failed to delete assessment");
         setDeleteTarget(null);
       },
@@ -333,48 +346,26 @@ export default function AssessmentsPage() {
         </div>
       </div>
 
-<<<<<<< HEAD
       <div className="px-8 pt-4">
-        <Tabs value={assessmentTab} onValueChange={setAssessmentTab} className="gap-4">
+        <Tabs
+          value={assessmentTab}
+          onValueChange={setAssessmentTab}
+          className="gap-4"
+        >
           <TabsList className="h-10 bg-transparent p-0 gap-3">
             <TabsTrigger
               value="custom"
-              className="px-6 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 data-active:border-[var(--theme-color)] data-active:text-[var(--theme-color)]"
+              className="px-6 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 data-active:border-theme data-active:text-theme"
             >
               Custom Assesment
             </TabsTrigger>
             <TabsTrigger
               value="individual"
-              className="px-6 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 data-active:border-[var(--theme-color)] data-active:text-[var(--theme-color)]"
+              className="px-6 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 data-active:border-theme data-active:text-theme"
             >
               Individual Assesment
             </TabsTrigger>
           </TabsList>
-=======
-      <div className="px-8 py-6">
-        {isLoading ? (
-          <ListSectionSpinner />
-        ) : assessments.length === 0 ? (
-          <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
-            No assessments found.
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            {assessments.map((a) => (
-              <div
-                key={a.id}
-                className="flex flex-col border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 shadow-sm"
-              >
-                {/* Card body */}
-                <div className="flex flex-col gap-2.5 px-5 pt-5 pb-4">
-                  {/* Title */}
-                  <Link
-                    href={`/assessments/${a.id}`}
-                    className="text-[15px] font-semibold text-slate-800 dark:text-neutral-200 leading-snug hover:underline underline-offset-4 decoration-1 truncate"
-                  >
-                    {a.title}
-                  </Link>
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
 
           <TabsContent value="custom">
             <div className="py-2">
@@ -420,7 +411,10 @@ export default function AssessmentsPage() {
                               {a.questions?.length || 0}
                             </span>
                             <span className="flex items-center gap-1 text-[12px] text-slate-400">
-                              <HugeiconsIcon icon={Time01Icon} className="size-3.5" />
+                              <HugeiconsIcon
+                                icon={Time01Icon}
+                                className="size-3.5"
+                              />
                               {a.timeLimit}m
                             </span>
                           </span>
@@ -440,14 +434,20 @@ export default function AssessmentsPage() {
                           onClick={() => openInviteDialog(a)}
                           className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-medium border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-700 dark:hover:text-neutral-200"
                         >
-                          <HugeiconsIcon icon={UserAdd01Icon} className="size-3.5" />
+                          <HugeiconsIcon
+                            icon={UserAdd01Icon}
+                            className="size-3.5"
+                          />
                           Invite
                         </button>
                         <button
                           onClick={() => setDeleteTarget(a)}
                           className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-medium border border-red-200 dark:border-red-900/50 text-red-400 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500"
                         >
-                          <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+                          <HugeiconsIcon
+                            icon={Delete02Icon}
+                            className="size-3.5"
+                          />
                           Delete
                         </button>
                       </div>
@@ -465,7 +465,8 @@ export default function AssessmentsPage() {
                   <Loader2 className="size-4 animate-spin text-slate-400" />
                   Loading assessments...
                 </div>
-              ) : individualAssessments.length === 0 && pendingCandidates.length === 0 ? (
+              ) : individualAssessments.length === 0 &&
+                pendingCandidates.length === 0 ? (
                 <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
                   No individual assessments found.
                 </div>
@@ -547,7 +548,7 @@ export default function AssessmentsPage() {
               <Button
                 onClick={handleGenerateLink}
                 disabled={!selectedCandidateId || inviteMutation.isPending}
-                className="w-full h-10 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-lg text-[13px] font-medium gap-2"
+                className="w-full h-10 bg-theme hover:bg-theme-hover text-white shadow-none border-none rounded-lg text-[13px] font-medium gap-2"
               >
                 {inviteMutation.isPending ? (
                   <>
@@ -586,7 +587,7 @@ export default function AssessmentsPage() {
                   href={generatedLink}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex items-center gap-1.5 text-[12px] text-[var(--theme-color)] font-medium hover:underline"
+                  className="inline-flex items-center gap-1.5 text-[12px] text-theme font-medium hover:underline"
                 >
                   <HugeiconsIcon icon={LinkSquare01Icon} className="size-3.5" />
                   Open in new tab

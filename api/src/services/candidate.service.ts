@@ -591,13 +591,21 @@ export const candidateService = {
           let rejectionSubject: string | null = null;
           let rejectionHtml: string | null = null;
 
-          if (stage.rejectionTemplateId) {
+          let effectiveRejectionTemplateId = stage.rejectionTemplateId;
+          if (effectiveRejectionTemplateId == null) {
+            effectiveRejectionTemplateId =
+              (await templateService.getDefaultTemplateIdForType(
+                "rejection",
+              )) ?? null;
+          }
+
+          if (effectiveRejectionTemplateId) {
             const [template] = await tx
               .select()
               .from(templates)
-              .where(eq(templates.id, stage.rejectionTemplateId));
+              .where(eq(templates.id, effectiveRejectionTemplateId));
 
-            if (template) {
+            if (template?.type === "rejection") {
               try {
                 const compiled = templateEngineService.compileTemplate(
                   template.subject,
@@ -615,9 +623,9 @@ export const candidateService = {
           }
 
           if (!rejectionHtml) {
-            if (!stage.rejectionTemplateId) {
+            if (effectiveRejectionTemplateId == null) {
               logger.warn(
-                `Rejection stage "${stage.name}" has no template — using built-in rejection message (candidateId=${candidateId}).`,
+                `Rejection stage "${stage.name}" has no stage-assigned or default rejection template — using built-in rejection message (candidateId=${candidateId}).`,
               );
             }
             rejectionSubject = `Update regarding your application — ${jobTitle}`;

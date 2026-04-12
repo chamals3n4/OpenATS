@@ -6,7 +6,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft01Icon,
   PlusSignIcon,
-  Delete02Icon,
   TextIcon,
   Heading01Icon,
   LinkSquare02Icon,
@@ -18,77 +17,61 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
 
 import { useCreateTemplate } from "@/hooks/use-api";
+import {
+  TemplateBlockPreview,
+  renderPreviewHtml,
+  type TemplateEditorBlock,
+} from "@/components/template-block-preview";
+import {
+  createDefaultOfferBlocks,
+  createDefaultRejectionBlocks,
+  createDefaultAssessmentBlocks,
+  createDefaultGeneralBlocks,
+  createDefaultApplicationReceivedBlocks,
+  createDefaultAssessmentCompletionBlocks,
+  createDefaultInterviewInviteBlocks,
+  DEFAULT_OFFER_TEMPLATE_NAME,
+  DEFAULT_OFFER_TEMPLATE_SUBJECT,
+  DEFAULT_REJECTION_TEMPLATE_NAME,
+  DEFAULT_REJECTION_TEMPLATE_SUBJECT,
+  DEFAULT_ASSESSMENT_INVITE_TEMPLATE_NAME,
+  DEFAULT_ASSESSMENT_INVITE_TEMPLATE_SUBJECT,
+  DEFAULT_GENERAL_TEMPLATE_NAME,
+  DEFAULT_GENERAL_TEMPLATE_SUBJECT,
+  DEFAULT_APPLICATION_RECEIVED_TEMPLATE_NAME,
+  DEFAULT_APPLICATION_RECEIVED_TEMPLATE_SUBJECT,
+  DEFAULT_ASSESSMENT_COMPLETION_TEMPLATE_NAME,
+  DEFAULT_ASSESSMENT_COMPLETION_TEMPLATE_SUBJECT,
+  DEFAULT_INTERVIEW_INVITE_TEMPLATE_NAME,
+  DEFAULT_INTERVIEW_INVITE_TEMPLATE_SUBJECT,
+  DEFAULT_TEMPLATE_BUTTON_LABEL,
+  DEFAULT_TEMPLATE_HINT,
+} from "@/lib/template-defaults";
+import {
+  VARIABLES,
+  TYPE_META,
+  uiTemplateTypeToApi,
+  type TemplateTypeUi,
+} from "@/lib/template-type-ui";
+import { editorBlocksToApiBodyJson } from "@/lib/template-mapper";
 import type { TemplateBodyBlock } from "@/types";
+import {
+  TemplateBlockEditor,
+  TemplateVariablesToolbar,
+} from "@/components/template-editor-block";
+import { useTemplateVariableInsert } from "@/hooks/use-template-variable-insert";
 
-type TemplateType = "offer" | "rejection" | "assessment" | "general";
-type BlockKind = TemplateBodyBlock["type"] | "divider" | "spacer";
+type BlockKind = TemplateBodyBlock["type"];
 
-export interface Block {
-  id: string;
-  kind: BlockKind;
-  content: string;
-}
-
-const TYPE_META: Record<TemplateType, { label: string; badge: string }> = {
-  offer: {
-    label: "Offer Letter",
-    badge: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  },
-  rejection: {
-    label: "Rejection",
-    badge: "bg-red-50 text-red-600 border border-red-200",
-  },
-  assessment: {
-    label: "Assessment Invite",
-    badge: "bg-blue-50 text-blue-700 border border-blue-200",
-  },
-  general: {
-    label: "General",
-    badge: "bg-slate-100 text-slate-600 border border-slate-200",
-  },
-};
-
-const VARIABLES: Record<TemplateType, string[]> = {
-  offer: [
-    "candidate_name",
-    "job_title",
-    "salary",
-    "currency",
-    "start_date",
-    "expiry_date",
-    "company_name",
-  ],
-  rejection: ["candidate_name", "job_title", "company_name"],
-  assessment: ["candidate_name", "job_title", "assessment_link", "expiry_date"],
-  general: [
-    "candidate_name",
-    "job_title",
-    "salary",
-    "currency",
-    "start_date",
-    "expiry_date",
-    "company_name",
-    "assessment_link",
-  ],
-};
-
-const SAMPLE: Record<string, string> = {
-  candidate_name: "Alex Johnson",
-  job_title: "Senior Software Engineer",
-  salary: "5,000",
-  currency: "USD",
-  start_date: "March 15, 2026",
-  expiry_date: "March 5, 2026",
-  company_name: "OpenATS Inc.",
-  assessment_link: "https://openats.io/assess/abc123",
-};
+export type { TemplateEditorBlock as Block } from "@/components/template-block-preview";
 
 const DEFAULT_CONTENT: Record<BlockKind, string> = {
-  heading: "Your Heading Here",
-  text: "Start writing your paragraph here. You can use variables like {{candidate_name}}.",
-  button: "Click Here",
+  heading: "",
+  text: "",
+  button: "",
   image: "",
   divider: "",
   spacer: "",
@@ -103,168 +86,71 @@ const BLOCK_ICONS: Record<BlockKind, any> = {
   spacer: PlusSignIcon,
 };
 
-function renderPreview(text: string, vars: string[]) {
-  let out = text;
-  vars.forEach((key) => {
-    out = out.replaceAll(
-      `{{${key}}}`,
-      `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:600;font-size:0.85em">${SAMPLE[key] ?? key}</span>`,
-    );
-  });
-  return out;
-}
-
-function BlockPreview({ block, vars }: { block: Block; vars: string[] }) {
-  switch (block.kind) {
-    case "heading":
-      return (
-        <h2
-          style={{
-            fontSize: 22,
-            fontWeight: 700,
-            color: "#1e293b",
-            margin: "0 0 4px",
-          }}
-          dangerouslySetInnerHTML={{
-            __html: renderPreview(block.content, vars),
-          }}
-        />
-      );
-    case "text":
-      return (
-        <p
-          style={{ fontSize: 14, color: "#475569", lineHeight: 1.8, margin: 0 }}
-          dangerouslySetInnerHTML={{
-            __html: renderPreview(block.content, vars).replace(/\n/g, "<br/>"),
-          }}
-        />
-      );
-    case "button":
-      return (
-        <div style={{ textAlign: "center", margin: "8px 0" }}>
-          <span
-            style={{
-              display: "inline-block",
-              background: "var(--theme-color)",
-              color: "#fff",
-              padding: "10px 28px",
-              borderRadius: 8,
-              fontWeight: 600,
-              fontSize: 14,
-            }}
-          >
-            {block.content}
-          </span>
-        </div>
-      );
-    case "image":
-      return (
-        <div
-          style={{
-            background: "#f1f5f9",
-            borderRadius: 8,
-            height: 120,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <span style={{ color: "#94a3b8", fontSize: 13 }}>
-            Image placeholder
-          </span>
-        </div>
-      );
-    case "divider":
-      return (
-        <hr
-          style={{
-            border: "none",
-            borderTop: "1px solid #e2e8f0",
-            margin: "4px 0",
-          }}
-        />
-      );
-    case "spacer":
-      return <div style={{ height: 24 }} />;
-    default:
-      return null;
-  }
-}
-
-function BlockEditor({
-  block,
-  onChange,
-  onDelete,
-  vars,
-}: {
-  block: Block;
-  onChange(id: string, c: string): void;
-  onDelete(id: string): void;
-  vars: string[];
-}) {
-  if (["divider", "spacer", "image"].includes(block.kind)) {
-    return (
-      <div className="flex items-center justify-between px-4 py-3 border border-slate-200 rounded-xl bg-slate-50 group">
-        <span className="text-[13px] text-slate-500 capitalize font-medium">
-          {block.kind}
-        </span>
-        <button
-          onClick={() => onDelete(block.id)}
-          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all"
-        >
-          <HugeiconsIcon icon={Delete02Icon} className="size-4" />
-        </button>
-      </div>
-    );
-  }
-  return (
-    <div className="border border-slate-200 rounded-xl bg-white group overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2.5 border-b border-slate-100 bg-slate-50/60">
-        <span className="text-[12px] font-semibold text-slate-400 uppercase tracking-wide">
-          {block.kind}
-        </span>
-        <button
-          onClick={() => onDelete(block.id)}
-          className="opacity-0 group-hover:opacity-100 text-red-400 hover:text-red-600 transition-all"
-        >
-          <HugeiconsIcon icon={Delete02Icon} className="size-4" />
-        </button>
-      </div>
-      <textarea
-        value={block.content}
-        onChange={(e) => onChange(block.id, e.target.value)}
-        rows={block.kind === "text" ? 5 : 2}
-        className="w-full px-4 py-3 text-[14px] text-slate-700 leading-relaxed resize-none focus:outline-none placeholder:text-slate-300"
-        placeholder={`Enter ${block.kind} content`}
-      />
-      <div className="px-4 pb-3 flex flex-wrap gap-1.5">
-        {vars.slice(0, 5).map((v) => (
-          <button
-            key={v}
-            onClick={() => onChange(block.id, block.content + `{{${v}}}`)}
-            className="text-[11px] font-mono px-2 py-0.5 rounded bg-[var(--theme-color)]/8 border border-[var(--theme-color)]/20 text-[var(--theme-color)] hover:bg-[var(--theme-color)]/15 transition-colors"
-          >
-            {`{{${v}}}`}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export default function NewTemplatePage() {
   const router = useRouter();
   const createMutation = useCreateTemplate();
 
   const searchParams = useSearchParams();
-  const rawType = searchParams.get("type") as TemplateType | null;
-  const templateType: TemplateType =
+  const rawType = searchParams.get("type") as TemplateTypeUi | null;
+  const templateType: TemplateTypeUi =
     rawType && rawType in TYPE_META ? rawType : "general";
   const vars = VARIABLES[templateType];
 
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
-  const [blocks, setBlocks] = useState<Block[]>([]);
+  const [blocks, setBlocks] = useState<TemplateEditorBlock[]>([]);
+
+  const applyDefaultTemplate = () => {
+    if (
+      blocks.length > 0 &&
+      !window.confirm(
+        "Replace the current blocks with the standard layout for this template type? Your edits will be lost.",
+      )
+    ) {
+      return;
+    }
+    switch (templateType) {
+      case "application_received":
+        setName((n) =>
+          n.trim() ? n : DEFAULT_APPLICATION_RECEIVED_TEMPLATE_NAME,
+        );
+        setSubject(DEFAULT_APPLICATION_RECEIVED_TEMPLATE_SUBJECT);
+        setBlocks(createDefaultApplicationReceivedBlocks());
+        break;
+      case "assessment":
+        setName((n) => (n.trim() ? n : DEFAULT_ASSESSMENT_INVITE_TEMPLATE_NAME));
+        setSubject(DEFAULT_ASSESSMENT_INVITE_TEMPLATE_SUBJECT);
+        setBlocks(createDefaultAssessmentBlocks());
+        break;
+      case "assessment_completion":
+        setName((n) =>
+          n.trim() ? n : DEFAULT_ASSESSMENT_COMPLETION_TEMPLATE_NAME,
+        );
+        setSubject(DEFAULT_ASSESSMENT_COMPLETION_TEMPLATE_SUBJECT);
+        setBlocks(createDefaultAssessmentCompletionBlocks());
+        break;
+      case "interview_invite":
+        setName((n) => (n.trim() ? n : DEFAULT_INTERVIEW_INVITE_TEMPLATE_NAME));
+        setSubject(DEFAULT_INTERVIEW_INVITE_TEMPLATE_SUBJECT);
+        setBlocks(createDefaultInterviewInviteBlocks());
+        break;
+      case "offer":
+        setName((n) => (n.trim() ? n : DEFAULT_OFFER_TEMPLATE_NAME));
+        setSubject(DEFAULT_OFFER_TEMPLATE_SUBJECT);
+        setBlocks(createDefaultOfferBlocks());
+        break;
+      case "rejection":
+        setName((n) => (n.trim() ? n : DEFAULT_REJECTION_TEMPLATE_NAME));
+        setSubject(DEFAULT_REJECTION_TEMPLATE_SUBJECT);
+        setBlocks(createDefaultRejectionBlocks());
+        break;
+      case "general":
+        setName((n) => (n.trim() ? n : DEFAULT_GENERAL_TEMPLATE_NAME));
+        setSubject(DEFAULT_GENERAL_TEMPLATE_SUBJECT);
+        setBlocks(createDefaultGeneralBlocks());
+        break;
+    }
+  };
 
   const addBlock = (kind: BlockKind) =>
     setBlocks((prev) => [
@@ -278,36 +164,33 @@ export default function NewTemplatePage() {
   const deleteBlock = (id: string) =>
     setBlocks((prev) => prev.filter((b) => b.id !== id));
 
+  const { captureSubjectCaret, captureBlockCaret, insertVariable } =
+    useTemplateVariableInsert({
+      subject,
+      setSubject,
+      blocks,
+      updateBlock,
+    });
+
   const handleSave = () => {
     if (!name.trim()) return;
 
-    // Convert editor blocks to API TemplateBodyBlocks, filtering out UI-only blocks
-    // The API schema only supports [heading, text, button, image]
-    const bodyJson: TemplateBodyBlock[] = blocks
-      .filter((b) => ["heading", "text", "button", "image"].includes(b.kind))
-      .map((b) => ({
-        type: b.kind as TemplateBodyBlock["type"],
-        content: b.content,
-      }));
+    const bodyJson: TemplateBodyBlock[] = editorBlocksToApiBodyJson(blocks);
 
     createMutation.mutate(
       {
         name: name.trim(),
-        type:
-          templateType === "offer"
-            ? "offer"
-            : templateType === "rejection"
-              ? "rejection"
-              : templateType === "assessment"
-                ? "assessment_invite"
-                : "general",
+        type: uiTemplateTypeToApi(templateType),
         subject,
         bodyJson,
       },
       {
         onSuccess: () => {
+          toast.success("Template saved");
           router.push("/settings/templates");
         },
+        onError: (e) =>
+          toast.error(e instanceof Error ? e.message : "Could not save template"),
       },
     );
   };
@@ -321,7 +204,6 @@ export default function NewTemplatePage() {
     { kind: "spacer", label: "Spacer" },
   ];
 
-  const previewSubject = renderPreview(subject, vars);
   const canSave = name.trim().length > 0;
 
   return (
@@ -329,7 +211,7 @@ export default function NewTemplatePage() {
       <div className="flex items-center justify-between px-7 py-4 border-b border-slate-200 shrink-0">
         <div className="flex items-center gap-4">
           <Link
-            href="settings/templates"
+            href="/settings/templates"
             className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 text-[13px] font-medium transition-colors"
           >
             <HugeiconsIcon
@@ -348,6 +230,7 @@ export default function NewTemplatePage() {
           <span className="text-[14px] text-slate-400">New template</span>
         </div>
         <Button
+          type="button"
           onClick={handleSave}
           disabled={!canSave || createMutation.isPending}
           className="h-9 px-6 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium shadow-none rounded-lg text-sm border-none disabled:opacity-50 gap-2"
@@ -359,6 +242,30 @@ export default function NewTemplatePage() {
       <div className="flex flex-1 overflow-hidden">
         <div className="w-[52%] border-r border-slate-200 flex flex-col overflow-y-auto bg-white">
           <div className="p-7 space-y-6">
+            <div className="rounded-xl border border-slate-200 bg-white px-4 py-3.5 dark:border-neutral-800 dark:bg-neutral-950">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+                <div className="min-w-0 space-y-1">
+                  <p className="text-[12px] font-semibold text-slate-700 dark:text-neutral-200">
+                    Starter layout
+                  </p>
+                  <p className="text-[11px] text-slate-500 dark:text-neutral-500 leading-relaxed">
+                    {DEFAULT_TEMPLATE_HINT[templateType]}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={applyDefaultTemplate}
+                  className="h-8 shrink-0 border-slate-200 bg-white px-3 text-[12px] font-medium text-slate-700 shadow-xs hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200 dark:hover:bg-neutral-900"
+                >
+                  {DEFAULT_TEMPLATE_BUTTON_LABEL[templateType]}
+                </Button>
+              </div>
+            </div>
+
+            <TemplateVariablesToolbar vars={vars} onInsert={insertVariable} />
+
             <div>
               <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-widest mb-2 block">
                 Template Name
@@ -367,7 +274,7 @@ export default function NewTemplatePage() {
                 placeholder="e.g. Standard Offer Letter"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-[15px]"
+                className="h-10 rounded-lg border border-slate-200 bg-white shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-[15px] text-slate-700 placeholder:text-slate-300 dark:border-slate-200 dark:bg-white dark:text-slate-700 dark:placeholder:text-slate-400"
               />
             </div>
 
@@ -379,28 +286,12 @@ export default function NewTemplatePage() {
                 placeholder={`e.g. Offer of Employment — {{job_title}}`}
                 value={subject}
                 onChange={(e) => setSubject(e.target.value)}
-                className="h-10 border-slate-200 rounded-lg shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm"
+                onFocus={(e) => captureSubjectCaret(e.currentTarget)}
+                onSelect={(e) => captureSubjectCaret(e.currentTarget)}
+                onKeyUp={(e) => captureSubjectCaret(e.currentTarget)}
+                onClick={(e) => captureSubjectCaret(e.currentTarget)}
+                className="h-10 rounded-lg border border-slate-200 bg-white shadow-none focus-visible:ring-0 focus-visible:border-[var(--theme-color)]/50 text-sm text-slate-700 placeholder:text-slate-300 dark:border-slate-200 dark:bg-white dark:text-slate-700 dark:placeholder:text-slate-400"
               />
-            </div>
-
-            <div>
-              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                Variables{" "}
-                <span className="text-[10px] font-normal text-slate-400 normal-case tracking-normal">
-                  · click to copy
-                </span>
-              </Label>
-              <div className="flex flex-wrap gap-2">
-                {vars.map((v) => (
-                  <button
-                    key={v}
-                    onClick={() => navigator.clipboard.writeText(`{{${v}}}`)}
-                    className="text-[12px] font-mono px-2.5 py-1 rounded-md bg-[var(--theme-color)]/8 border border-[var(--theme-color)]/20 text-[var(--theme-color)] hover:bg-[var(--theme-color)]/15 transition-colors"
-                  >
-                    {`{{${v}}}`}
-                  </button>
-                ))}
-              </div>
             </div>
 
             <div>
@@ -439,12 +330,14 @@ export default function NewTemplatePage() {
             ) : (
               <div className="space-y-3">
                 {blocks.map((b) => (
-                  <BlockEditor
+                  <TemplateBlockEditor
                     key={b.id}
                     block={b}
                     onChange={updateBlock}
                     onDelete={deleteBlock}
                     vars={vars}
+                    onTextCaret={captureBlockCaret}
+                    darkMode={false}
                   />
                 ))}
               </div>
@@ -470,7 +363,7 @@ export default function NewTemplatePage() {
             <div className="w-full max-w-[560px] bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 space-y-2 text-[13px]">
                 {[
-                  ["From", "hr@openats.io"],
+                  ["From", "user.openats@gmail.com"],
                   ["To", "candidate@email.com"],
                 ].map(([label, val]) => (
                   <div key={label} className="flex gap-3">
@@ -484,8 +377,10 @@ export default function NewTemplatePage() {
                   <span className="text-slate-400 w-14 shrink-0">Subject</span>
                   {subject ? (
                     <span
-                      className="text-slate-900 font-semibold leading-snug"
-                      dangerouslySetInnerHTML={{ __html: previewSubject }}
+                      className="text-[13px] font-medium leading-snug text-slate-800"
+                      dangerouslySetInnerHTML={{
+                        __html: renderPreviewHtml(subject, vars),
+                      }}
                     />
                   ) : (
                     <span className="text-slate-300 italic">No subject</span>
@@ -497,7 +392,7 @@ export default function NewTemplatePage() {
                   <div className="size-8 rounded-full bg-[var(--theme-color)] flex items-center justify-center">
                     <div className="size-3.5 rounded-full border-2 border-white" />
                   </div>
-                  <span className="text-[13px] font-bold text-slate-800 tracking-tight">
+                  <span className="text-[13px] font-semibold text-slate-800 tracking-tight">
                     OpenATS
                   </span>
                 </div>
@@ -508,7 +403,7 @@ export default function NewTemplatePage() {
                 ) : (
                   <div className="space-y-4">
                     {blocks.map((b) => (
-                      <BlockPreview key={b.id} block={b} vars={vars} />
+                      <TemplateBlockPreview key={b.id} block={b} vars={vars} />
                     ))}
                   </div>
                 )}

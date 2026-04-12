@@ -308,8 +308,8 @@ export default function ManageJobsPage() {
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Created At
                 </TableHead>
-                <TableHead className="h-13 px-4 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
-                  Actions
+                <TableHead className="h-13 px-4 w-24 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                  <span className="sr-only">Edit or delete</span>
                 </TableHead>
               </TableRow>
             </TableHeader>
@@ -359,30 +359,36 @@ export default function ManageJobsPage() {
                       className="h-13 px-4 py-0"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="flex items-center justify-end gap-2">
+                      <div className="flex items-center justify-end gap-1.5">
                         <Button
+                          type="button"
                           variant="outline"
-                          size="sm"
-                          className="h-8 px-3 rounded-md border-slate-300 cursor-pointer dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
+                          size="icon"
+                          title="Edit job"
+                          aria-label="Edit job"
+                          className="h-8 w-8 shrink-0 rounded-md border-slate-300 dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
                           onClick={() => router.push(`/jobs/${job.id}/edit`)}
                         >
                           <HugeiconsIcon
                             icon={PencilEdit01Icon}
-                            className="size-3.5 mr-1"
+                            className="size-3.5"
+                            strokeWidth={2.5}
                           />
-                          Edit
                         </Button>
                         <Button
+                          type="button"
                           variant="outline"
-                          size="sm"
-                          className="h-8 px-3 rounded-md border-red-200 cursor-pointer dark:border-red-900/40 text-red-600 dark:text-red-400"
+                          size="icon"
+                          title="Delete job"
+                          aria-label="Delete job"
+                          className="h-8 w-8 shrink-0 rounded-md border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400"
                           onClick={() => setDeleteTarget(job)}
                         >
                           <HugeiconsIcon
                             icon={Delete02Icon}
-                            className="size-3.5 mr-1"
+                            className="size-3.5"
+                            strokeWidth={2.5}
                           />
-                          Delete
                         </Button>
                       </div>
                     </TableCell>

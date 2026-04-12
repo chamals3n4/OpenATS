@@ -24,14 +24,19 @@ export async function PATCH(
     }
 
     const token = await getAccessToken();
-    const formData = await req.formData();
+    const incoming = await req.formData();
+    // Rebuild multipart: forwarding the same FormData instance breaks file upload with Node fetch → Express/multer.
+    const forward = new FormData();
+    for (const [key, value] of incoming.entries()) {
+      forward.append(key, value);
+    }
 
     const res = await fetch(`${API_BASE_URL}/api/candidates/${id}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,
       },
-      body: formData,
+      body: forward,
     });
 
     const json = await res.json().catch(() => ({ error: "Request failed" }));

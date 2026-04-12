@@ -253,7 +253,6 @@ export default function CreateNewJobPage() {
               value={description}
               onChange={setDescription}
               placeholder="Type here..."
-              minHeightClassName="min-h-[260px]"
             />
           </div>
 

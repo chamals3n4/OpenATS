@@ -1,1 +1,0 @@
-ALTER TABLE "candidate_cv_analysis" ADD COLUMN "score_breakdown" jsonb;

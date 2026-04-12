@@ -1,5 +1,6 @@
 import http from "http";
 import app from "./app";
+import { ensureSchemaCompat } from "./db";
 import { socketService } from "./services/socket.service";
 import logger from "./utils/logger";
 

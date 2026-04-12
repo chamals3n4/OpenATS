@@ -21,4 +21,20 @@ pool.on("error", (err) => {
 
 export const db = drizzle(pool, { schema });
 
+/**
+ * Ensures columns exist when the DB was provisioned before migration 0006
+ * or drizzle migrate could not run the full chain. Idempotent.
+ */
+export async function ensureSchemaCompat(): Promise<void> {
+  if (!process.env.DATABASE_URL) return;
+  const client = await pool.connect();
+  try {
+    await client.query(
+      `ALTER TABLE "candidate_assessment_answers" ADD COLUMN IF NOT EXISTS "ai_feedback" text`,
+    );
+  } finally {
+    client.release();
+  }
+}
+
 export * from "./schema";

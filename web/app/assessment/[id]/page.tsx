@@ -88,6 +88,22 @@ function formatTime(secs: number) {
   return `${m}:${s}`;
 }
 
+<<<<<<< HEAD
+/** API `timeLimit` is stored in minutes; the quiz timer counts down in seconds. */
+function timeLimitToSeconds(minutes: number) {
+  return Math.max(0, Math.floor(minutes * 60));
+}
+
+function getVisibleAssessmentDescription(raw: string | null | undefined) {
+  if (!raw) return null;
+  if (/^__rag_candidate_\d+_stage_\d+__$/.test(raw.trim())) return null;
+  return raw;
+}
+
+// ── Constants ─────────────────────────────────────────────────────────────────
+
+=======
+>>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
 const DARK = "var(--assessment-dark)";
 const LIGHT_BG = "var(--assessment-bg)";
 const WHITE = "var(--assessment-white)";
@@ -273,14 +289,19 @@ export default function AssessmentPage() {
                 (Date.now() - new Date(data.startedAt).getTime()) / 1000,
               )
             : 0;
+<<<<<<< HEAD
+          const totalSecs = timeLimitToSeconds(data.assessment.timeLimit ?? 0);
+          const remaining = Math.max(0, totalSecs - elapsed);
+=======
           const remaining = Math.max(
             0,
             (data.assessment.timeLimit ?? 0) - elapsed,
           );
+>>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
           setTimeLeft(remaining);
           setScreen("quiz");
         } else {
-          setTimeLeft(data.assessment.timeLimit ?? 0);
+          setTimeLeft(timeLimitToSeconds(data.assessment.timeLimit ?? 0));
           setScreen("intro");
         }
       })
@@ -745,7 +766,10 @@ export default function AssessmentPage() {
   }
 
   if (screen === "intro" && attempt) {
-    const timeMins = Math.floor((attempt.assessment.timeLimit ?? 0) / 60);
+    const timeMins = attempt.assessment.timeLimit ?? 0;
+    const visibleDescription = getVisibleAssessmentDescription(
+      attempt.assessment.description,
+    );
     return (
       <div
         style={{
@@ -781,6 +805,11 @@ export default function AssessmentPage() {
             >
               {attempt.assessment.title}
             </h1>
+<<<<<<< HEAD
+            {visibleDescription && (
+              <p style={{ fontSize: 14, color: "rgba(255,255,255,0.75)", margin: 0, lineHeight: 1.6 }}>
+                {visibleDescription}
+=======
             {attempt.assessment.description && (
               <p
                 style={{
@@ -791,6 +820,7 @@ export default function AssessmentPage() {
                 }}
               >
                 {attempt.assessment.description}
+>>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
               </p>
             )}
           </div>
@@ -1541,6 +1571,9 @@ export default function AssessmentPage() {
           </div>
 
           <div style={{ marginTop: "auto" }}>
+<<<<<<< HEAD
+            <button type="button" onClick={() => void handleComplete()} disabled={submitting} style={{ width: "100%", padding: "12px 0", backgroundColor: submitting ? "#94a3b8" : DARK, color: WHITE, border: "none", borderRadius: 10, fontSize: 13, fontWeight: 600, cursor: submitting ? "not-allowed" : "pointer", transition: "opacity 0.15s" }}>
+=======
             <button
               onClick={() => {
                 void handleComplete();
@@ -1559,6 +1592,7 @@ export default function AssessmentPage() {
                 transition: "opacity 0.15s",
               }}
             >
+>>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
               {submitting ? "Submitting…" : "Submit Quiz"}
             </button>
             <p

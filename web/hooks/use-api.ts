@@ -1,6 +1,11 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useMutation,
+  useQueryClient,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
 import type {
   Job,
@@ -15,6 +20,7 @@ import type {
   AssessmentQuestion,
   Candidate,
   CandidateDetail,
+  StageAutomationFlags,
   User,
   Template,
   Offer,
@@ -34,10 +40,23 @@ export function useJobs() {
 }
 
 export function useJob(id: number) {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: ["jobs", id],
     queryFn: () => serverFetch<{ data: JobDetail }>(`/jobs/${id}`),
     enabled: !!id,
+    // Seed from the jobs list cache so clicking a job shows content
+    // immediately while the full detail (pipelineStages, hiringTeam) loads.
+    initialData: () => {
+      const list = queryClient.getQueryData<{ data: Job[] }>(["jobs"]);
+      const match = list?.data?.find((j) => j.id === id);
+      if (!match) return undefined;
+      return {
+        data: { ...match, pipelineStages: [], hiringTeam: [] } as JobDetail,
+      };
+    },
+    initialDataUpdatedAt: () =>
+      queryClient.getQueryState(["jobs"])?.dataUpdatedAt,
   });
 }
 
@@ -46,6 +65,7 @@ export function usePipeline(jobId: number) {
     queryKey: ["jobs", jobId, "pipeline"],
     queryFn: () =>
       serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
+
     enabled: !!jobId,
   });
 }
@@ -86,13 +106,10 @@ export function useUpdateStage(jobId: number) {
         rejectionTemplateId?: number | null;
       };
     }) =>
-      serverFetch<{ data: PipelineStage }>(
-        `/jobs/${jobId}/pipeline/${stageId}`,
-        {
-          method: "PUT",
-          body: JSON.stringify(data),
-        },
-      ),
+      serverFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline/${stageId}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -103,12 +120,23 @@ export function useDeleteStage(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (stageId: number) =>
-      serverFetch<{ data: PipelineStage }>(
-        `/jobs/${jobId}/pipeline/${stageId}`,
-        {
-          method: "DELETE",
-        },
-      ),
+      serverFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline/${stageId}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
+    },
+  });
+}
+
+export function useReorderStages(jobId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (stages: Array<{ id: number; position: number }>) =>
+      serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline/reorder`, {
+        method: "POST",
+        body: JSON.stringify({ stages }),
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -156,6 +184,7 @@ export function useUpdateQuestion(jobId: number) {
         title?: string;
         questionType?: "short_answer" | "long_answer" | "checkbox" | "radio";
         isRequired?: boolean;
+        position?: number;
       };
     }) =>
       serverFetch<{ data: CustomQuestion }>(
@@ -297,11 +326,12 @@ export function useUpsertCompany() {
   });
 }
 
-export function useDepartments() {
+export function useDepartments(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["departments"],
     queryFn: () => serverFetch<{ data: Department[] }>("/company/departments"),
     staleTime: 1000 * 60 * 10,
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -362,6 +392,7 @@ export function useCreateJob() {
       salaryFixed?: number | null;
       salaryMin?: number | null;
       salaryMax?: number | null;
+      status?: Job["status"];
     }) =>
       serverFetch<{ data: Job }>("/jobs", {
         method: "POST",
@@ -705,7 +736,9 @@ export function useUpdateOfferStatus() {
 export function useCandidates(
   jobId?: number,
   filters?: { stageId?: number; search?: string },
+  options?: { enabled?: boolean },
 ) {
+  const queryClient = useQueryClient();
   const params = new URLSearchParams();
   if (filters?.stageId) params.set("stageId", String(filters.stageId));
   if (filters?.search) params.set("search", filters.search);
@@ -715,18 +748,98 @@ export function useCandidates(
     ? `/candidates/jobs/${jobId}${query}`
     : `/candidates${query}`;
 
+  // When fetching candidates for a specific job with no extra filters, seed
+  // the list immediately from the global all-candidates cache so the count
+  // badge on the job overview renders without waiting for the per-job fetch.
+  const hasFilters = !!(filters?.stageId || filters?.search);
+  const seedInitialData =
+    jobId && !hasFilters
+      ? () => {
+          const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
+            queryKey: ["candidates", "all"],
+          });
+          for (const [, listData] of allLists) {
+            if (!listData?.data?.length) continue;
+            return { data: listData.data.filter((c) => c.jobId === jobId) };
+          }
+          return undefined;
+        }
+      : undefined;
+
+  const seedUpdatedAt =
+    jobId && !hasFilters
+      ? () => {
+          const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
+            queryKey: ["candidates", "all"],
+          });
+          for (const [key] of allLists) {
+            const s = queryClient.getQueryState(key);
+            if (s?.dataUpdatedAt) return s.dataUpdatedAt;
+          }
+          return undefined;
+        }
+      : undefined;
+
   return useQuery({
     queryKey: ["candidates", jobId ?? "all", filters],
     queryFn: () => serverFetch<{ data: Candidate[] }>(path),
+    enabled: options?.enabled !== false,
+    // Always treat candidates as stale so every mount triggers a background
+    // refresh. This ensures newly applied candidates (submitted via the public
+    // careers page, outside of React Query) always appear without a manual
+    // page reload.
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
+    // Keep showing the previous list while a fresh fetch is in flight so
+    // there's no blank flash when navigating to the candidates section.
+    placeholderData: keepPreviousData,
+    initialData: seedInitialData,
+    initialDataUpdatedAt: seedUpdatedAt,
   });
 }
 
 export function useCandidate(id: number, options?: { enabled?: boolean }) {
+  const queryClient = useQueryClient();
   const enabled = (options?.enabled ?? true) && !!id;
   return useQuery({
     queryKey: ["candidates", id],
     queryFn: () => serverFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
     enabled,
+    // Seed from any cached candidates list so the sheet shows the candidate's
+    // basic info immediately while the full detail (cv analysis, answers,
+    // history) loads in the background — same pattern as useJob.
+    initialData: () => {
+          const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
+            queryKey: ["candidates"],
+          });
+          for (const [, listData] of allLists) {
+            const match = listData?.data?.find((c) => c.id === id);
+            if (match) {
+              return {
+                data: {
+                  ...match,
+                  cvAnalysis: null,
+                  answers: [],
+                  selections: [],
+                  history: [],
+                  offer: null,
+                } as CandidateDetail,
+              };
+            }
+          }
+          return undefined;
+    },
+    initialDataUpdatedAt: () => {
+      const allStates = queryClient.getQueriesData<{ data: Candidate[] }>({
+        queryKey: ["candidates"],
+      });
+      for (const [key] of allStates) {
+        const state = queryClient.getQueryState(key);
+        if (state?.dataUpdatedAt) return state.dataUpdatedAt;
+      }
+      return undefined;
+    },
     refetchInterval: (query) =>
       enabled && query.state.data?.data?.cvAnalysis?.status === "pending"
         ? 2500
@@ -738,7 +851,10 @@ export function useMoveCandidateStage() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, newStageId }: { id: number; newStageId: number }) =>
-      serverFetch<{ data: Candidate }>(`/candidates/${id}/stage`, {
+      serverFetch<{
+        data: Candidate;
+        stageAutomation: StageAutomationFlags;
+      }>(`/candidates/${id}/stage`, {
         method: "PUT",
         body: JSON.stringify({ newStageId }),
       }),
@@ -825,7 +941,10 @@ export function useInviteToAssessment() {
       assessmentId: number;
       expiryDays?: number;
     }) =>
-      serverFetch<{ data: { token: string } }>(`/assessment-execution/invite`, {
+      serverFetch<{
+        data: { token: string };
+        didSendInvite?: boolean;
+      }>(`/assessment-execution/invite`, {
         method: "POST",
         body: JSON.stringify({ candidateId, assessmentId, expiryDays }),
       }),
@@ -1029,6 +1148,34 @@ export function useActiveLogs(
     enabled: options?.enabled ?? true,
     refetchInterval: options?.live ? 4500 : false,
     staleTime: 2000,
+    // Keep showing the previous page of logs while a new filter/page fetch is
+    // in flight – prevents the table from going blank between filter changes.
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useSettingsAllowedOrigins() {
+  return useQuery({
+    queryKey: ["settings", "allowed-origins"],
+    queryFn: () =>
+      serverFetch<{ data: { origins: string[] } }>("/settings/allowed-origins"),
+    staleTime: 1000 * 30,
+  });
+}
+
+export function useUpdateSettingsAllowedOrigins() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (origins: string[]) =>
+      serverFetch<{ data: { origins: string[] } }>("/settings/allowed-origins", {
+        method: "PUT",
+        body: JSON.stringify({ origins }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["settings", "allowed-origins"],
+      });
+    },
   });
 }
 

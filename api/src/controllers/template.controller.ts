@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { templateService } from "../services/template.service";
 import { templateEngineService } from "../services/template-engine.service";
-
+import logger from "../utils/logger";
 
 const contentBlockSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("heading"), content: z.string() }),
@@ -29,8 +29,6 @@ const createTemplateSchema = z.object({
   type: templateTypeEnum,
   subject: z.string().min(1, "Subject is required").max(500),
   bodyJson: z.array(contentBlockSchema).default([]),
-  // TODO: replace with req.user.id once auth is in place
-  createdBy: z.number().int().positive().default(1),
 });
 
 const updateTemplateSchema = z.object({
@@ -39,7 +37,6 @@ const updateTemplateSchema = z.object({
   subject: z.string().min(1).max(500).optional(),
   bodyJson: z.array(contentBlockSchema).optional(),
 });
-
 
 export const getAllTemplates = async (req: Request, res: Response) => {
   try {
@@ -51,6 +48,7 @@ export const getAllTemplates = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch templates: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch templates" });
   }
 };
@@ -71,6 +69,7 @@ export const getTemplateById = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch template id=${req.params.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch template" });
   }
 };
@@ -79,6 +78,7 @@ export const createTemplate = async (req: Request, res: Response) => {
   try {
     const parsed = createTemplateSchema.safeParse(req.body);
     if (!parsed.success) {
+      logger.warn(`Template creation validation failed - user ${req.user?.id}: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
       res.status(400).json({
         error: "Validation failed",
         details: parsed.error.flatten().fieldErrors,
@@ -86,13 +86,18 @@ export const createTemplate = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await templateService.create(parsed.data);
+    const result = await templateService.create({
+      ...parsed.data,
+      createdBy: req.user.id,
+    });
+    logger.info(`Template created: id=${result.id}, name="${result.name}", type="${result.type}" by user ${req.user.id}`);
     res.status(201).json({ data: result });
   } catch (error: any) {
     if (error?.code === "23503") {
       res.status(400).json({ error: "User not found" });
       return;
     }
+    logger.error(`Failed to create template - user ${req.user?.id}: ${error?.message}`);
     res.status(500).json({ error: "Failed to create template" });
   }
 };
@@ -120,8 +125,10 @@ export const updateTemplate = async (req: Request, res: Response) => {
       return;
     }
 
+    logger.info(`Template updated: id=${id}, name="${result.name}" by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to update template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to update template" });
   }
 };
@@ -134,14 +141,17 @@ export const deleteTemplate = async (req: Request, res: Response) => {
       return;
     }
 
+    logger.warn(`Template deletion requested: id=${id} by user ${req.user?.id}`);
     const result = await templateService.delete(id);
     if (!result) {
       res.status(404).json({ error: "Template not found" });
       return;
     }
 
+    logger.info(`Template deleted: id=${id}, name="${result.name}", type="${result.type}" by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to delete template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to delete template" });
   }
 };
@@ -169,6 +179,7 @@ export const previewTemplate = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to preview template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to preview template" });
   }
 };

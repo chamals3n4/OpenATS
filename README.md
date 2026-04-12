@@ -1,84 +1,45 @@
-# OpenATS
+## OpenATS
 
-Open-source applicant tracking system for companies that want full control over their hiring process.
+OpenATS is a modern open source applicant tracking system built to make hiring transparent, customizable, and accessible for teams everywhere.
 
 Most ATS tools are expensive, bloated, or black boxes. OpenATS is built to be self-hosted, transparent, and customizable — so teams can run their own hiring pipeline without depending on a SaaS vendor.
 
-## Features
+## Key Features
 
-- Job posting and management
-- Candidate application tracking
-- Hiring pipeline stages (Applied, Screening, Interview, Offer)
-- Resume parsing
-- Authentication via WSO2 Asgardeo
+- Centralized candidate management in one place
+- Structured hiring pipeline with customizable stages
+- Team collaboration with shared feedback
+- Built-in candidate evaluation and assessments
+- AI-powered CV parsing and candidate insights
+- Custom career page builder for your brand
+- Automated alerts and notifications
+- Easy integration and extensibility
+- Full data ownership with open-source flexibility
 
-## Tech Stack
+## Prerequisites
 
-| Layer | Technology |
-| --- | --- |
-| Frontend | Next.js, TypeScript, Tailwind CSS, shadcn/ui |
-| Backend | Express.js, TypeScript, Node.js |
-| Database | PostgreSQL, Drizzle ORM |
-| Auth | WSO2 Asgardeo |
-| Package Manager | pnpm |
+Before running OpenATS, make sure you have:
 
-## Getting Started
-
-### Prerequisites
-
-- Node.js 18+
-- Git
-- PostgreSQL database (Neon recommended — free tier)
+- Node.js (20+ recommended)
 - pnpm
+- PostgreSQL database (local or hosted, e.g. Neon)
+- Git
+- A code editor (VS Code recommended)
 
-### Installation
+## Technology Overview
 
-```bash
-git clone https://github.com/chamals3n4/OpenATS.git
-cd OpenATS
-```
+OpenATS is organized as a multi-app repository:
 
-Install dependencies:
+- **Web app (`web`)**: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui
+- **API (`api`)**: Express.js, TypeScript, PostgreSQL, Drizzle ORM, Socket.IO
+- **Documentation site (`docs`)**: Docusaurus
+- **Auth/Identity**: WSO2 Asgardeo
+- **Package manager**: pnpm
 
-```bash
-# Frontend
-cd web && pnpm install
+## Documentation
 
-# Backend
-cd api && pnpm install
-```
-
-Set up environment variables:
-
-```bash
-cd web && cp .env.example .env
-cd api && cp .env.example .env
-```
-
-Run database migrations and seed:
-
-```bash
-pnpm drizzle-kit generate
-pnpm drizzle-kit migrate
-pnpm tsx src/db/seed.ts
-```
-
-## Running the Project
-
-```bash
-# Frontend (http://localhost:3000)
-cd web && pnpm dev
-
-# Backend (http://localhost:5000)
-cd api && pnpm dev
-```
-
-Run both in separate terminals.
-
-For Asgardeo setup and full configuration, see the documentation.
+Check out the OpenATS website to find in-depth documentation for everything that OpenATS offers.
 
 ## Contributing
 
 See `CONTRIBUTING.md` for setup instructions, branching rules, and how to submit a pull request.
-## Contribution
-Added analytics reporting and resume parsing enhancements.

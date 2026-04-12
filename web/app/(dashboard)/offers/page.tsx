@@ -11,7 +11,6 @@ import {
   Mail01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { archiveItem } from "@/lib/archive-store";
 import { useOffers, useDeleteOffer } from "@/hooks/use-api";
 
 import { Button } from "@/components/ui/button";
@@ -46,6 +45,7 @@ import {
 
 import { ResumeScrollView } from "@/components/resume-scroll-view";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
+import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 
 type OfferStatus =
   | "Draft"
@@ -129,7 +129,7 @@ function RowMenu({ onArchive }: { onArchive(): void }) {
 }
 
 export default function ManageOffersPage() {
-  const { data: offersRes } = useOffers();
+  const { data: offersRes, isLoading: offersLoading } = useOffers();
   const deleteOfferMutation = useDeleteOffer();
 
   const rawOffers = offersRes?.data ?? [];
@@ -183,12 +183,6 @@ export default function ManageOffersPage() {
 
   const confirmArchive = () => {
     if (!archiveTarget) return;
-    archiveItem({
-      id: String(archiveTarget.id),
-      type: "offer",
-      name: archiveTarget.candidateName,
-      detail: archiveTarget.jobTitle,
-    });
     deleteOfferMutation.mutate(archiveTarget.id, {
       onSuccess: () => setArchiveTarget(null),
     });
@@ -218,7 +212,7 @@ export default function ManageOffersPage() {
         <div className="relative w-80">
           <HugeiconsIcon
             icon={Search01Icon}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-300 pointer-events-none"
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
           />
           <Input
             placeholder="Search"
@@ -231,7 +225,7 @@ export default function ManageOffersPage() {
           value={filterDept}
           onValueChange={(v) => setFilterDept(v ?? "all")}
         >
-          <SelectTrigger className="w-48 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-48 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Departments">
               {(
                 {
@@ -243,7 +237,7 @@ export default function ManageOffersPage() {
               )[filterDept] ?? filterDept}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg w-49 shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Departments</SelectItem>
             <SelectItem value="Engineering">Engineering</SelectItem>
             <SelectItem value="Design">Design</SelectItem>
@@ -254,7 +248,7 @@ export default function ManageOffersPage() {
           value={filterStatus}
           onValueChange={(v) => setFilterStatus(v ?? "all")}
         >
-          <SelectTrigger className="w-40 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-40 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Status">
               {(
                 {
@@ -269,7 +263,7 @@ export default function ManageOffersPage() {
               )[filterStatus] ?? filterStatus}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg w-41 shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="sent">Sent</SelectItem>
@@ -373,7 +367,9 @@ export default function ManageOffersPage() {
 
           <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <span className="text-sm font-medium text-slate-400">
-              Showing 1–{filtered.length} of {filtered.length} results
+              {offersLoading
+                ? "Loading..."
+                : `Showing 1–${filtered.length} of ${filtered.length} results`}
             </span>
             <div className="flex items-center gap-3">
               <Button
@@ -487,8 +483,7 @@ export default function ManageOffersPage() {
               <strong className="text-slate-700 dark:text-neutral-200">
                 {archiveTarget?.candidateName}
               </strong>{" "}
-              will be moved to the Archive. You can permanently delete it from
-              Settings → Archive.
+              will be deleted permanently.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">

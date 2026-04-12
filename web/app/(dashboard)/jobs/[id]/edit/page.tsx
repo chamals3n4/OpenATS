@@ -59,7 +59,7 @@ function EditJobForm({
     salaryFixed: number | null;
     salaryMin: number | null;
     salaryMax: number | null;
-    status: "published" | "inactive";
+    status: "draft" | "inactive" | "published" | "closed" | "archived";
   }) => void;
 }) {
   const [departmentId, setDepartmentId] = useState<number | null>(
@@ -152,7 +152,11 @@ function EditJobForm({
       description: description || null,
       skills,
       ...salaryPayload,
-      status: isActive ? "published" : "inactive",
+      status: isActive
+        ? "published"
+        : job.status === "published"
+          ? "draft"
+          : job.status,
     });
   };
 
@@ -294,7 +298,12 @@ function EditJobForm({
         <JobDescriptionEditor
           value={description}
           onChange={setDescription}
+<<<<<<< HEAD
           minHeightClass="min-h-40"
+=======
+          placeholder="Type here..."
+          minHeightClassName="min-h-[260px]"
+>>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
         />
       </div>
 
@@ -308,11 +317,11 @@ function EditJobForm({
             <div className="flex items-center gap-3 shrink-0">
               <Checkbox
                 id="salary-info"
+                variant="theme"
                 checked={isSalaryInfoIncluded}
                 onCheckedChange={(checked) =>
                   setIsSalaryInfoIncluded(checked as boolean)
                 }
-                className="data-checked:bg-theme data-checked:border-theme size-4.5"
               />
               <Label
                 htmlFor="salary-info"
@@ -328,11 +337,7 @@ function EditJobForm({
               className="flex items-center gap-10"
             >
               <div className="flex items-center gap-2.5">
-                <RadioGroupItem
-                  value="range"
-                  id="range"
-                  className="text-theme border-slate-300 data-checked:bg-theme data-checked:border-theme size-4.5"
-                />
+                <RadioGroupItem variant="theme" value="range" id="range" />
                 <Label
                   htmlFor="range"
                   className="text-sm font-medium text-slate-600 dark:text-neutral-400 cursor-pointer"
@@ -341,11 +346,7 @@ function EditJobForm({
                 </Label>
               </div>
               <div className="flex items-center gap-2.5">
-                <RadioGroupItem
-                  value="fixed"
-                  id="fixed"
-                  className="text-theme border-slate-300 data-checked:bg-theme data-checked:border-theme size-4.5"
-                />
+                <RadioGroupItem variant="theme" value="fixed" id="fixed" />
                 <Label
                   htmlFor="fixed"
                   className="text-sm font-medium text-slate-600 dark:text-neutral-400 cursor-pointer"

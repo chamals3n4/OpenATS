@@ -2,7 +2,6 @@
 
 - [Prerequisites](#prerequisites)
 - [Tech Stack](#tech-stack)
-- [Learning Resources](#learning-resources)
 - [Initial Setup](#initial-setup)
   - [Fork and Clone](#1-fork-and-clone)
   - [Add Upstream Remote](#2-add-upstream-remote)

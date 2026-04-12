@@ -7,6 +7,9 @@ import {
   jobPipelineStages,
   jobHiringTeam,
   jobAssessmentAttachments,
+  offers,
+  candidates,
+  departments,
 } from "../db/schema";
 
 export type CreateJobInput = {
@@ -27,6 +30,7 @@ export type CreateJobInput = {
   salaryFixed?: number | null;
   salaryMin?: number | null;
   salaryMax?: number | null;
+  status?: "draft" | "inactive" | "published" | "closed" | "archived";
   createdBy: number;
 };
 
@@ -65,6 +69,26 @@ function generateSlug(title: string): string {
 }
 
 export const jobService = {
+  /** Published jobs for the public careers index (no auth). */
+  async listPublishedForCareers() {
+    const rows = await db
+      .select({
+        id: jobs.id,
+        slug: jobs.slug,
+        title: jobs.title,
+        employmentType: jobs.employmentType,
+        location: jobs.location,
+        departmentName: departments.name,
+        createdAt: jobs.createdAt,
+      })
+      .from(jobs)
+      .innerJoin(departments, eq(jobs.departmentId, departments.id))
+      .where(eq(jobs.status, "published"))
+      .orderBy(desc(jobs.createdAt));
+
+    return rows;
+  },
+
   async getAll() {
     const allJobs = await db.select().from(jobs).orderBy(desc(jobs.createdAt));
 
@@ -146,6 +170,7 @@ export const jobService = {
         salaryFixed: jobData.salaryFixed ?? null,
         salaryMin: jobData.salaryMin ?? null,
         salaryMax: jobData.salaryMax ?? null,
+        status: jobData.status ?? "draft",
         createdBy: jobData.createdBy,
       };
 
@@ -227,8 +252,17 @@ export const jobService = {
   },
 
   async delete(id: number) {
-    const [deleted] = await db.delete(jobs).where(eq(jobs.id, id)).returning();
-    return deleted ?? null;
+    return await db.transaction(async (tx) => {
+      await tx.delete(offers).where(eq(offers.jobId, id));
+      await tx.delete(candidates).where(eq(candidates.jobId, id));
+
+      const [deleted] = await tx
+        .delete(jobs)
+        .where(eq(jobs.id, id))
+        .returning();
+
+      return deleted ?? null;
+    });
   },
 
   async getAssessments(jobId: number) {
@@ -243,7 +277,11 @@ export const jobService = {
       .where(eq(jobAssessmentAttachments.jobId, jobId));
   },
 
-  async attachAssessment(input: { jobId: number; assessmentId: number; triggerStageId: number }) {
+  async attachAssessment(input: {
+    jobId: number;
+    assessmentId: number;
+    triggerStageId: number;
+  }) {
     const [attached] = await db
       .insert(jobAssessmentAttachments)
       .values({

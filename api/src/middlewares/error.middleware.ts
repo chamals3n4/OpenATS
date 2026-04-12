@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import logger from "../utils/logger";
 
 export const errorMiddleware = (
   err: Error,
@@ -6,6 +7,6 @@ export const errorMiddleware = (
   res: Response,
   next: NextFunction,
 ) => {
-  console.error(`[Error] ${req.method} ${req.path}:`, err.message);
+  logger.error(`[Error] ${req.method} ${req.path}: ${err.message}`);
   res.status(500).json({ error: "Internal server error" });
 };

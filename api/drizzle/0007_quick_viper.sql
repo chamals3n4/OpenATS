@@ -1,0 +1,1 @@
+ALTER TABLE "candidates" ADD COLUMN "rejection_notice_sent_at" timestamp;

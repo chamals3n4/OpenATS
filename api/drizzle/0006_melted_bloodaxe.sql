@@ -1,0 +1,1 @@
+ALTER TABLE "candidates" ADD CONSTRAINT "candidates_job_id_email_unique" UNIQUE("job_id","email");

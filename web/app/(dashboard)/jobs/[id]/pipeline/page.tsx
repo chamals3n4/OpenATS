@@ -3,21 +3,53 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import type { Ref } from "react";
 import { useParams } from "next/navigation";
+import Link from "next/link";
 import { useDrag, useDrop, useDragLayer } from "react-dnd";
 import { getEmptyImage } from "react-dnd-html5-backend";
-import { GripVertical } from "lucide-react";
+import { ArrowLeft, GripVertical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { ResumeScrollView } from "@/components/resume-scroll-view";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
+import { toast } from "sonner";
+
 import {
   useJob,
   usePipeline,
   useCandidates,
   useMoveCandidateStage,
 } from "@/hooks/use-api";
-import type { Candidate, PipelineStage } from "@/types";
+import type { Candidate, PipelineStage, StageAutomationFlags } from "@/types";
+
+function showStageAutomationToasts(automation: StageAutomationFlags) {
+  if (automation.assessmentInvite === "skipped_active_invite") {
+    toast.message("Assessment", {
+      description:
+        "An invite is already active — no new email was sent. The existing link still works.",
+    });
+  } else if (automation.assessmentInvite === "sent") {
+    toast.success("Assessment invite sent.");
+  }
+
+  if (automation.offer === "skipped_open_exists") {
+    toast.message("Offer", {
+      description:
+        "This candidate already has an open offer — no duplicate was created.",
+    });
+  } else if (automation.offer === "created") {
+    toast.success("Offer created.");
+  }
+
+  if (automation.rejectionEmail === "skipped_already_sent") {
+    toast.message("Rejection", {
+      description:
+        "A rejection notice was already sent for this application — not sent again.",
+    });
+  } else if (automation.rejectionEmail === "sent") {
+    toast.success("Rejection email sent.");
+  }
+}
 
 const STAGE_COLORS: Record<PipelineStage["stageType"], string> = {
   none: "#94a3b8",
@@ -70,11 +102,11 @@ function CustomDragLayer() {
     >
       <div
         style={{ transform: "rotate(3deg)" }}
-        className="bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-800 shadow-xl px-3 py-2.5 rounded-lg flex items-center gap-2 w-[260px] opacity-95"
+        className="bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-800 shadow-xl px-3 py-2.5 rounded-lg flex items-center gap-2 w-65 opacity-95"
       >
         <GripVertical className="size-3.5 text-slate-300 shrink-0" />
         <div className="space-y-0.5 min-w-0">
-          <p className="font-semibold text-[var(--theme-color)] text-[13px] leading-snug truncate">
+          <p className="font-semibold text-theme text-[13px] leading-snug truncate">
             {item.name}
           </p>
           <p className="text-slate-400 text-[10px] font-medium uppercase tracking-tight">
@@ -140,8 +172,7 @@ function DraggableCard({
       const toIndex = hoverClientY < hoverMiddleY ? index : index + 1;
       onReorder(dragItem.fromStageId, dragItem.fromIndex, stageId, toIndex);
       dragItem.fromStageId = stageId;
-      dragItem.fromIndex =
-        toIndex > dragItem.fromIndex ? toIndex - 1 : toIndex;
+      dragItem.fromIndex = toIndex > dragItem.fromIndex ? toIndex - 1 : toIndex;
     },
   });
 
@@ -153,13 +184,13 @@ function DraggableCard({
       onClick={() => !isDragging && onClick(candidate.id)}
       className={`bg-white dark:bg-neutral-900 px-3 py-2.5 rounded-lg flex items-center gap-2 group select-none transition-colors ${
         isDragging
-          ? "border-2 border-dashed border-[var(--theme-color)] opacity-40 cursor-grabbing"
-          : "border border-slate-200 dark:border-neutral-800 hover:border-[var(--theme-color)]/40 cursor-pointer"
+          ? "border-2 border-dashed border-theme opacity-40 cursor-grabbing"
+          : "border border-slate-200 dark:border-neutral-800 hover:border-(--theme-color)/40 cursor-pointer"
       }`}
     >
       <GripVertical className="size-3.5 text-slate-300 dark:text-neutral-600 shrink-0 group-hover:text-slate-400 dark:group-hover:text-neutral-500 transition-colors cursor-grab" />
       <div className="space-y-0.5 min-w-0">
-        <p className="font-semibold text-slate-800 dark:text-neutral-200 text-[13px] leading-snug group-hover:text-[var(--theme-color)] transition-colors truncate">
+        <p className="font-semibold text-slate-800 dark:text-neutral-200 text-[13px] leading-snug group-hover:text-theme transition-colors truncate">
           {name}
         </p>
         <p className="text-slate-400 dark:text-neutral-500 text-[10px] font-medium uppercase tracking-tight">
@@ -212,7 +243,7 @@ function DroppableColumn({
   const isActive = isOver && canDrop;
 
   return (
-    <div className="w-[300px] min-h-[520px] flex flex-col shrink-0">
+    <div className="w-75 min-h-130 flex flex-col shrink-0">
       <div className="flex items-center gap-2.5 px-0.5 mb-4 shrink-0">
         <div
           className="size-2 rounded-full"
@@ -230,7 +261,7 @@ function DroppableColumn({
         ref={dropRef as unknown as Ref<HTMLDivElement>}
         className={`flex-1 rounded-xl p-3 space-y-2 overflow-y-auto custom-scrollbar-y transition-colors duration-150 ${
           isActive
-            ? "bg-[var(--theme-color)]/5 border-2 border-dashed border-[var(--theme-color)]/40"
+            ? "bg-(--theme-color)/5 border-2 border-dashed border-(--theme-color)/40"
             : "bg-slate-50/60 dark:bg-neutral-900/40 border border-slate-200 dark:border-neutral-800"
         }`}
       >
@@ -238,7 +269,7 @@ function DroppableColumn({
           <div
             className={`h-20 flex items-center justify-center rounded-lg border-2 border-dashed text-sm font-medium transition-colors ${
               isActive
-                ? "border-[var(--theme-color)]/40 text-[var(--theme-color)]/60 bg-[var(--theme-color)]/5"
+                ? "border-(--theme-color)/40 text-(--theme-color)/60 bg-(--theme-color)/5"
                 : "border-slate-200 dark:border-neutral-800 text-slate-300 dark:text-neutral-700"
             }`}
           >
@@ -273,7 +304,9 @@ export default function HiringPipelinePage() {
   const pipelineStages = pipelineData?.data ?? [];
 
   // Detail sheet state
-  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(null);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(
+    null,
+  );
   const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Local copy for optimistic drag-drop updates
@@ -317,7 +350,10 @@ export default function HiringPipelinePage() {
     );
     moveStageMutation.mutate(
       { id: candidateId, newStageId: toStageId },
-      { onError: () => refetch() },
+      {
+        onSuccess: (res) => showStageAutomationToasts(res.stageAutomation),
+        onError: () => refetch(),
+      },
     );
   };
 
@@ -337,23 +373,18 @@ export default function HiringPipelinePage() {
         if (fromIndex === toIndex) return prev;
         const newList = [...fromList];
         newList.splice(fromIndex, 1);
-        newList.splice(
-          toIndex > fromIndex ? toIndex - 1 : toIndex,
-          0,
-          card,
-        );
+        newList.splice(toIndex > fromIndex ? toIndex - 1 : toIndex, 0, card);
         return prev
           .filter((c) => c.currentStageId !== fromStageId)
           .concat(newList);
       }
-
+      ArrowLeft;
       const toList = (candidatesByStage[toStageId] ?? []).slice();
       toList.splice(toIndex, 0, { ...card, currentStageId: toStageId });
       return prev
         .filter(
           (c) =>
-            c.currentStageId !== fromStageId &&
-            c.currentStageId !== toStageId,
+            c.currentStageId !== fromStageId && c.currentStageId !== toStageId,
         )
         .concat(fromList.filter((_, i) => i !== fromIndex))
         .concat(toList);
@@ -401,6 +432,17 @@ export default function HiringPipelinePage() {
       {/* Header */}
       <div className="sticky top-0 z-10 bg-white dark:bg-neutral-950 shrink-0 w-full">
         <div className="px-8 pt-8 pb-6 overflow-hidden">
+          <div className="mb-4 flex items-center gap-2 text-[12px]">
+            <Link
+              href={`/jobs/${jobId}`}
+              className="font-medium text-theme hover:underline"
+            >
+              <span className="inline-flex items-center gap-2 whitespace-nowrap">
+                <ArrowLeft className="size-3.5" />
+                Back to the Job
+              </span>
+            </Link>
+          </div>
           <div className="flex items-center justify-between gap-4 max-w-full">
             <div className="space-y-4 min-w-0">
               <div className="flex items-center gap-4">
@@ -416,15 +458,20 @@ export default function HiringPipelinePage() {
               {job && (
                 <div className="flex items-center text-sm font-medium text-slate-500 dark:text-neutral-400 gap-2 truncate whitespace-nowrap opacity-80">
                   <span className="shrink-0">
-                    {EMPLOYMENT_LABELS[job.employmentType] ?? job.employmentType}
+                    {EMPLOYMENT_LABELS[job.employmentType] ??
+                      job.employmentType}
                   </span>
                   {job.location && (
                     <>
-                      <span className="text-slate-300 dark:text-neutral-700 shrink-0">-</span>
+                      <span className="text-slate-300 dark:text-neutral-700 shrink-0">
+                        -
+                      </span>
                       <span className="shrink-0 truncate">{job.location}</span>
                     </>
                   )}
-                  <span className="text-slate-300 dark:text-neutral-700 shrink-0">-</span>
+                  <span className="text-slate-300 dark:text-neutral-700 shrink-0">
+                    -
+                  </span>
                   <span className="shrink-0 text-slate-400 dark:text-neutral-500">
                     {localCandidates.length} candidate
                     {localCandidates.length !== 1 ? "s" : ""}
@@ -473,63 +520,78 @@ export default function HiringPipelinePage() {
           showCloseButton={true}
           className="w-[98vw] sm:max-w-[98vw] p-0 flex flex-row gap-0 border-l border-slate-200 dark:border-neutral-800 shadow-none overflow-hidden bg-white dark:bg-neutral-950"
         >
-          {selectedCandidateId && (() => {
-            const c = localCandidates.find((x) => x.id === selectedCandidateId);
-            if (!c) return null;
-            return (
-              <>
-                {/* Left — candidate info + CV */}
-                <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                  <div className="px-6 lg:px-8 py-4 lg:py-5 border-b border-slate-100 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-950">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0">
-                      <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 tracking-tight">
-                        {c.firstName} {c.lastName}
-                      </h2>
-                      {c.stageName && (
-                        <Badge className="bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 border-none shadow-none font-medium px-2 py-0.5 rounded-full text-[11px] uppercase tracking-wider whitespace-nowrap">
-                          {c.stageName}
-                        </Badge>
-                      )}
-                    </div>
-                    <p className="text-slate-500 dark:text-neutral-400 text-[13px] mt-0.5">
-                      {job?.title ?? ""}
-                      <span className="mx-1.5 opacity-30">•</span>
-                      Applied {timeAgo(c.appliedAt)}
-                    </p>
-                    <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1.5">
-                      <span className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium">
-                        {c.email}
-                      </span>
-                      {c.phone && (
-                        <span className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium">
-                          {c.phone}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                    {c.resumeUrl ? (
-                      <ResumeScrollView resumeUrl={c.resumeUrl} />
-                    ) : (
-                      <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
-                        <svg className="size-10 opacity-30" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                        <p className="text-[13px] font-medium">No resume uploaded</p>
+          {selectedCandidateId &&
+            (() => {
+              const c = localCandidates.find(
+                (x) => x.id === selectedCandidateId,
+              );
+              if (!c) return null;
+              return (
+                <>
+                  {/* Left — candidate info + CV */}
+                  <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+                    <div className="px-6 lg:px-8 py-4 lg:py-5 border-b border-slate-100 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-950">
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0">
+                        <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 tracking-tight">
+                          {c.firstName} {c.lastName}
+                        </h2>
+                        {c.stageName && (
+                          <Badge className="bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 border-none shadow-none font-medium px-2 py-0.5 rounded-full text-[11px] uppercase tracking-wider whitespace-nowrap">
+                            {c.stageName}
+                          </Badge>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </div>
+                      <p className="text-slate-500 dark:text-neutral-400 text-[13px] mt-0.5">
+                        {job?.title ?? ""}
+                        <span className="mx-1.5 opacity-30">•</span>
+                        Applied {timeAgo(c.appliedAt)}
+                      </p>
+                      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1.5">
+                        <span className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium">
+                          {c.email}
+                        </span>
+                        {c.phone && (
+                          <span className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium">
+                            {c.phone}
+                          </span>
+                        )}
+                      </div>
+                    </div>
 
-                {/* Right — tabbed detail panel */}
-                <CandidateSidePanel
-                  candidateId={selectedCandidateId}
-                  open={isDetailOpen}
-                />
-              </>
-            );
-          })()}
+                    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                      {c.resumeUrl ? (
+                        <ResumeScrollView resumeUrl={c.resumeUrl} />
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
+                          <svg
+                            className="size-10 opacity-30"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={1.5}
+                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          <p className="text-[13px] font-medium">
+                            No resume uploaded
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right — tabbed detail panel */}
+                  <CandidateSidePanel
+                    candidateId={selectedCandidateId}
+                    open={isDetailOpen}
+                  />
+                </>
+              );
+            })()}
         </SheetContent>
       </Sheet>
 
@@ -563,7 +625,8 @@ export default function HiringPipelinePage() {
         .pipeline-scroll-container::-webkit-scrollbar-thumb:hover {
           background: #94a3b8 !important;
         }
-        :global(.dark) .pipeline-scroll-container::-webkit-scrollbar-thumb:hover {
+        :global(.dark)
+          .pipeline-scroll-container::-webkit-scrollbar-thumb:hover {
           background: #404040 !important;
         }
         .custom-scrollbar-y::-webkit-scrollbar {

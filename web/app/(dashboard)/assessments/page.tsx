@@ -15,6 +15,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 import {
   useAssessments,
   useDeleteAssessment,
@@ -29,6 +30,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeButton } from "@/components/theme-button";
+import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import {
   Select,
   SelectContent,
@@ -259,11 +261,20 @@ export default function AssessmentsPage() {
   const handleGenerateLink = () => {
     if (!inviteTarget || !selectedCandidateId) return;
     inviteMutation.mutate(
-      { candidateId: Number(selectedCandidateId), assessmentId: inviteTarget.id },
+      {
+        candidateId: Number(selectedCandidateId),
+        assessmentId: inviteTarget.id,
+      },
       {
         onSuccess: (res) => {
           const url = `${window.location.origin}/assessment/${res.data.token}`;
           setGeneratedLink(url);
+          if (res.didSendInvite === false) {
+            toast.message("Existing invite", {
+              description:
+                "This candidate already had an active assessment link — showing it below (no new email).",
+            });
+          }
         },
       },
     );
@@ -297,6 +308,7 @@ export default function AssessmentsPage() {
         <ThemeButton
           asChild
           href="/assessments/new"
+          prefetch
           className="h-10 px-4 gap-2 text-sm shadow-none border-none"
         >
           <HugeiconsIcon
@@ -309,43 +321,19 @@ export default function AssessmentsPage() {
       </div>
 
       <div className="border-y border-slate-200 dark:border-neutral-800 px-8 py-3.5 flex items-center gap-4">
-        <div className="relative w-80">
+        <div className="relative w-90">
           <HugeiconsIcon
             icon={Search01Icon}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-300 pointer-events-none"
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
           />
           <Input
             placeholder="Search assessments…"
             className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
-        <Select>
-          <SelectTrigger className="w-36 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
-            <SelectValue placeholder="Status" />
-          </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-            <SelectItem value="active">Active</SelectItem>
-            <SelectItem value="inactive">Inactive</SelectItem>
-          </SelectContent>
-        </Select>
-        <Select>
-          <SelectTrigger className="w-36 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
-            <SelectValue placeholder="Difficulty" />
-          </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-            <SelectItem value="easy">Easy</SelectItem>
-            <SelectItem value="medium">Medium</SelectItem>
-            <SelectItem value="hard">Hard</SelectItem>
-          </SelectContent>
-        </Select>
-        <Button
-          variant="ghost"
-          className="text-slate-600 dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-2"
-        >
-          Clear All
-        </Button>
       </div>
 
+<<<<<<< HEAD
       <div className="px-8 pt-4">
         <Tabs value={assessmentTab} onValueChange={setAssessmentTab} className="gap-4">
           <TabsList className="h-10 bg-transparent p-0 gap-3">
@@ -362,6 +350,31 @@ export default function AssessmentsPage() {
               Individual Assesment
             </TabsTrigger>
           </TabsList>
+=======
+      <div className="px-8 py-6">
+        {isLoading ? (
+          <ListSectionSpinner />
+        ) : assessments.length === 0 ? (
+          <div className="flex items-center justify-center h-48 text-slate-400 text-sm">
+            No assessments found.
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            {assessments.map((a) => (
+              <div
+                key={a.id}
+                className="flex flex-col border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 shadow-sm"
+              >
+                {/* Card body */}
+                <div className="flex flex-col gap-2.5 px-5 pt-5 pb-4">
+                  {/* Title */}
+                  <Link
+                    href={`/assessments/${a.id}`}
+                    className="text-[15px] font-semibold text-slate-800 dark:text-neutral-200 leading-snug hover:underline underline-offset-4 decoration-1 truncate"
+                  >
+                    {a.title}
+                  </Link>
+>>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
 
           <TabsContent value="custom">
             <div className="py-2">
@@ -480,7 +493,10 @@ export default function AssessmentsPage() {
       </div>
 
       {/* Invite dialog */}
-      <Dialog open={!!inviteTarget} onOpenChange={(o) => !o && setInviteTarget(null)}>
+      <Dialog
+        open={!!inviteTarget}
+        onOpenChange={(o) => !o && setInviteTarget(null)}
+      >
         <DialogContent className="max-w-md rounded-xl border-slate-200 dark:border-neutral-800 shadow-lg p-6 bg-white dark:bg-neutral-950">
           <DialogHeader>
             <DialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
@@ -496,20 +512,29 @@ export default function AssessmentsPage() {
               <Label className="text-[12px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
                 Assessment
               </Label>
-              <p className="text-[14px] font-medium text-slate-700 dark:text-neutral-300">{inviteTarget?.title}</p>
+              <p className="text-[14px] font-medium text-slate-700 dark:text-neutral-300">
+                {inviteTarget?.title}
+              </p>
             </div>
 
             <div className="space-y-1.5">
               <Label className="text-[12px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
                 Select Candidate
               </Label>
-              <Select value={selectedCandidateId} onValueChange={(v) => setSelectedCandidateId(v ?? "")}>
+              <Select
+                value={selectedCandidateId}
+                onValueChange={(v) => setSelectedCandidateId(v ?? "")}
+              >
                 <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
                   <SelectValue placeholder="Choose a candidate…" />
                 </SelectTrigger>
                 <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
                   {candidates.map((c) => (
-                    <SelectItem key={c.id} value={String(c.id)} className="text-[13px]">
+                    <SelectItem
+                      key={c.id}
+                      value={String(c.id)}
+                      className="text-[13px]"
+                    >
                       {c.firstName} {c.lastName}
                       {c.jobTitle ? ` — ${c.jobTitle}` : ""}
                     </SelectItem>
@@ -525,7 +550,10 @@ export default function AssessmentsPage() {
                 className="w-full h-10 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-lg text-[13px] font-medium gap-2"
               >
                 {inviteMutation.isPending ? (
-                  <><Loader2 className="size-3.5 animate-spin" />Generating…</>
+                  <>
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Generating…
+                  </>
                 ) : (
                   "Generate Link"
                 )}
@@ -547,7 +575,10 @@ export default function AssessmentsPage() {
                         : "border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800"
                     }`}
                   >
-                    <HugeiconsIcon icon={copied ? CheckmarkCircle01Icon : Copy01Icon} className="size-3.5" />
+                    <HugeiconsIcon
+                      icon={copied ? CheckmarkCircle01Icon : Copy01Icon}
+                      className="size-3.5"
+                    />
                     {copied ? "Copied!" : "Copy"}
                   </button>
                 </div>
@@ -565,7 +596,8 @@ export default function AssessmentsPage() {
 
             {inviteMutation.isError && (
               <p className="text-red-500 text-[12px]">
-                {(inviteMutation.error as Error).message ?? "Failed to generate invite."}
+                {(inviteMutation.error as Error).message ??
+                  "Failed to generate invite."}
               </p>
             )}
           </div>
@@ -582,12 +614,14 @@ export default function AssessmentsPage() {
               Delete Assessment?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
-              <strong className="text-slate-700 dark:text-neutral-200">{deleteTarget?.title}</strong>{" "}
+              <strong className="text-slate-700 dark:text-neutral-200">
+                {deleteTarget?.title}
+              </strong>{" "}
               will be permanently deleted. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-9 px-5 rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 text-[13px] font-medium shadow-none">
+            <AlertDialogCancel className="h-9 px-5 cursor-pointer rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 text-[13px] font-medium shadow-none">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -596,9 +630,11 @@ export default function AssessmentsPage() {
                 confirmDelete();
               }}
               disabled={deleteAssessment.isPending}
-              className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none disabled:opacity-70"
+              className="h-9 px-5 rounded-lg cursor-pointer bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none disabled:opacity-70"
             >
-              {deleteAssessment.isPending && <Loader2 className="size-3.5 mr-1.5 animate-spin" />}
+              {deleteAssessment.isPending && (
+                <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+              )}
               {deleteAssessment.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>

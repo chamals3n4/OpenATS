@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { reportService } from "../services/report.service";
+import logger from "../utils/logger";
 
 const periodSchema = z.enum(["7d", "30d", "90d"]).default("7d");
 const formatSchema = z.enum(["csv", "json"]).default("csv");
@@ -33,6 +34,7 @@ export const getReportsAnalytics = async (req: Request, res: Response) => {
     const result = await reportService.getAnalytics(period, departmentId);
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch analytics report: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch analytics report" });
   }
 };
@@ -58,8 +60,10 @@ export const exportReportsAnalytics = async (req: Request, res: Response) => {
       departmentId,
     );
 
+    logger.info(`Analytics report exported: period=${period}, format=${format}${departmentId ? `, departmentId=${departmentId}` : ""} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to export analytics report - user ${req.user?.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to export analytics report" });
   }
 };

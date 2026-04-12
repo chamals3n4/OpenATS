@@ -1,5 +1,6 @@
 import { Resend } from "resend";
 import dotenv from "dotenv";
+import logger from "../utils/logger";
 
 dotenv.config();
 
@@ -23,13 +24,13 @@ export const mailService = {
       });
 
       if (error) {
-        console.error("Resend error:", error);
+        logger.error("Resend error:", error);
         throw new Error(error.message);
       }
 
       return data;
     } catch (err) {
-      console.error("Failed to send email:", err);
+      logger.error("Failed to send email:", err);
       throw err;
     }
   },
@@ -50,7 +51,7 @@ export const mailService = {
     to: string,
     candidateFirstName: string,
     assessmentTitle: string,
-    autoSubmitReason?: string
+    autoSubmitReason?: string,
   ) {
     const subject = autoSubmitReason
       ? `Assessment Auto-Submitted: ${assessmentTitle}`

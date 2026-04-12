@@ -11,6 +11,7 @@ import uploadRoutes from "./upload.routes";
 import chatRoutes from "./chat.routes";
 import reportRoutes from "./report.routes";
 import activeLogRoutes from "./active-log.routes";
+import settingsRoutes from "./settings.routes";
 
 const router: Router = Router();
 
@@ -26,5 +27,6 @@ router.use("/upload", uploadRoutes);
 router.use("/chat", chatRoutes);
 router.use("/reports", reportRoutes);
 router.use("/logs", activeLogRoutes);
+router.use("/settings", settingsRoutes);
 
 export default router;

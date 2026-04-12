@@ -1,224 +1,64 @@
-//details of specific job opening
-
-"use client";
-
-import { useRef, useState, useEffect, FormEvent } from "react";
-import Link from "next/link";
-import { useParams } from "next/navigation";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  ArrowLeft01Icon,
-  Briefcase01Icon,
-  Location01Icon,
-  Wallet01Icon,
-  CloudUploadIcon,
-} from "@hugeicons/core-free-icons";
-
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
-import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-
-
-//jobdetails and the questions to evaluate the candidate
+import { JobApplicationForm } from "./job-application-form";
 import type { JobDetail, CustomQuestion } from "@/types";
 
+const API_BASE = (
+  process.env.OPENATS_API_URL ??
+  process.env.NEXT_PUBLIC_API_URL ??
+  ""
+).replace(/\/$/, "");
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
-
-async function publicFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
-  const res = await fetch(`${API_BASE}/public${path}`, {
-    ...options,
-    headers: { "Content-Type": "application/json", ...options.headers },
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: "Request failed" }));
-    throw new Error((err as { error?: string }).error ?? `HTTP ${res.status}`);
-  }
-  return res.json() as Promise<T>;
-}
-
-const EMPLOYMENT_LABELS: Record<string, string> = {
-  full_time: "Full-time",
-  part_time: "Part-time",
-  contract: "Contract",
-  internship: "Internship",
-  freelance: "Freelance",
-};
-
-function formatSalary(job: JobDetail): string | null {
-  if (!job.salaryType) return null;
-  const fmt = (n: string | null) => (n ? Number(n).toLocaleString() : "");
-  const freq = job.payFrequency ? `/${job.payFrequency}` : "";
-  if (job.salaryType === "fixed") return `${job.currency} ${fmt(job.salaryFixed)}${freq}`;
-  return `${job.currency} ${fmt(job.salaryMin)} – ${fmt(job.salaryMax)}${freq}`;
-}
-
-
-type Answer = { answerText?: string; optionIds?: number[] };
-
-
-export default function JobApplicationPage() {
-  const params = useParams();
-  const jobId = Number(params.id);
-
-  const [job, setJob] = useState<JobDetail | null>(null);
-  const [questions, setQuestions] = useState<CustomQuestion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phoneCode, setPhoneCode] = useState("+94");
-  const [phoneNumber, setPhoneNumber] = useState("");
-  const [answers, setAnswers] = useState<Record<number, Answer>>({});
-
-  const [resumeFile, setResumeFile] = useState<File | null>(null);
-  const [resumeUploading, setResumeUploading] = useState(false);
-  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
-  const [resumeError, setResumeError] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!jobId) return;
-    Promise.all([
-      publicFetch<{ data: JobDetail }>(`/jobs/${jobId}`),
-      publicFetch<{ data: CustomQuestion[] }>(`/jobs/${jobId}/questions`),
-    ])
-      .then(([jobRes, qRes]) => {
-        setJob(jobRes.data);
-        setQuestions(qRes.data);
-      })
-      .catch((e: Error) => setError(e.message))
-      .finally(() => setLoading(false));
-  }, [jobId]);
-
-  const setTextAnswer = (qId: number, text: string) =>
-    setAnswers((prev) => ({ ...prev, [qId]: { answerText: text } }));
-
-  const toggleCheckbox = (qId: number, optId: number) =>
-    setAnswers((prev) => {
-      const current = prev[qId]?.optionIds ?? [];
-      const next = current.includes(optId)
-        ? current.filter((id) => id !== optId)
-        : [...current, optId];
-      return { ...prev, [qId]: { optionIds: next } };
+async function getJob(id: number): Promise<JobDetail | null> {
+  if (!API_BASE) return null;
+  try {
+    const res = await fetch(`${API_BASE}/public/jobs/${id}`, {
+      next: { revalidate: 60 },
     });
-
-  const setRadio = (qId: number, optId: number) =>
-    setAnswers((prev) => ({ ...prev, [qId]: { optionIds: [optId] } }));
-
-  const handleResumeChange = async (file: File) => {
-    setResumeFile(file);
-    setResumeError(null);
-    setResumeUrl(null);
-    setResumeUploading(true);
-    try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch(`${API_BASE}/public/upload/resume`, {
-        method: "POST",
-        body: form,
-      });
-      if (!res.ok) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error ?? "Upload failed");
-      }
-      const data = (await res.json()) as { data: { url: string } };
-      setResumeUrl(data.data.url);
-    } catch (e: unknown) {
-      setResumeError(e instanceof Error ? e.message : "Upload failed");
-      setResumeFile(null);
-    } finally {
-      setResumeUploading(false);
-    }
-  };
-
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setSubmitError(null);
-
-    const customAnswers = questions
-      .map((q) => {
-        const a = answers[q.id];
-        if (!a) return null;
-        return {
-          questionId: q.id,
-          answerText: a.answerText || undefined,
-          optionIds: a.optionIds?.length ? a.optionIds : undefined,
-        };
-      })
-      .filter(Boolean);
-
-    try {
-      await publicFetch(`/jobs/${jobId}/apply`, {
-        method: "POST",
-        body: JSON.stringify({
-          firstName,
-          lastName,
-          email,
-          phone: phoneNumber ? `${phoneCode} ${phoneNumber}` : undefined,
-          resumeUrl: resumeUrl ?? undefined,
-          customAnswers,
-        }),
-      });
-      setSubmitted(true);
-    } catch (e: unknown) {
-      setSubmitError(e instanceof Error ? e.message : "Failed to submit. Please try again.");
-    } finally {
-      setSubmitting(false);
-    }
-  };
-
-  if (submitted) {
-    return (
-      <div className="min-h-screen bg-slate-50/50 dark:bg-neutral-900 flex flex-col items-center pt-32 pb-12 px-4 transition-colors duration-300">
-        <div className="bg-white dark:bg-neutral-950 p-10 rounded-2xl shadow-sm border border-slate-300 dark:border-neutral-800 text-center max-w-md w-full">
-          <div className="size-16 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="size-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold text-slate-900 dark:text-neutral-100 mb-2">Application Submitted!</h2>
-          <p className="text-slate-500 dark:text-neutral-400 mb-8 leading-relaxed">
-            Thank you for applying to <strong className="text-slate-700 dark:text-neutral-200">{job?.title}</strong>.
-            We are reviewing your application and will be in touch soon.
-          </p>
-        </div>
-      </div>
-    );
+    if (!res.ok) return null;
+    const body = (await res.json()) as { data?: JobDetail };
+    return body.data ?? null;
+  } catch {
+    return null;
   }
+}
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-neutral-950 flex items-center justify-center">
-        <p className="text-slate-400 dark:text-neutral-600 text-sm font-medium animate-pulse">Loading job…</p>
-      </div>
-    );
+async function getQuestions(id: number): Promise<CustomQuestion[]> {
+  if (!API_BASE) return [];
+  try {
+    const res = await fetch(`${API_BASE}/public/jobs/${id}/questions`, {
+      next: { revalidate: 60 },
+    });
+    if (!res.ok) return [];
+    const body = (await res.json()) as { data?: CustomQuestion[] };
+    return Array.isArray(body.data) ? body.data : [];
+  } catch {
+    return [];
   }
+}
 
-  if (error || !job) {
+export default async function JobApplicationPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const jobId = Number(id);
+
+  const [job, questions] = await Promise.all([
+    getJob(jobId),
+    getQuestions(jobId),
+  ]);
+
+  if (!job) {
     return (
       <div className="min-h-screen bg-white dark:bg-neutral-950 flex items-center justify-center p-6">
-        <p className="text-red-500 dark:text-red-400 text-sm font-medium border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg">{error ?? "Job not found."}</p>
+        <p className="text-red-500 dark:text-red-400 text-sm font-medium border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg">
+          Job not found.
+        </p>
       </div>
     );
   }
 
+<<<<<<< HEAD
   const salary = formatSalary(job);
 
   return (
@@ -502,4 +342,7 @@ export default function JobApplicationPage() {
       </div>
     </div>
   );
+=======
+  return <JobApplicationForm job={job} questions={questions} />;
+>>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
 }

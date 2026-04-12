@@ -1,6 +1,7 @@
 import "dotenv/config";
 import { drizzle } from "drizzle-orm/node-postgres";
 import { pipelineStageTemplates } from "./schema";
+import logger from "../utils/logger";
 
 const db = drizzle(process.env.DATABASE_URL!);
 
@@ -28,11 +29,11 @@ async function seed() {
     ])
     .onConflictDoNothing();
 
-  console.log("Pipeline stage templates seeded.");
+  logger.info("Pipeline stage templates seeded.");
   process.exit(0);
 }
 
 seed().catch((err) => {
-  console.error("Seed failed:", err);
+  logger.error("Seed failed:", err);
   process.exit(1);
 });

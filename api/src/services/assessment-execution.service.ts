@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import { eq, and, desc, asc } from "drizzle-orm";
+=======
+import { eq, and, or, gt, sql, desc } from "drizzle-orm";
+>>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
 import crypto from "node:crypto";
 import { db } from "../db";
 import {
@@ -31,12 +35,43 @@ export interface AttemptCompletionEmailContext {
   assessmentTitle: string;
 }
 
+export type InviteCandidateResult = {
+  attempt: typeof candidateAssessmentAttempts.$inferSelect | null;
+  /** False when reusing an active attempt (no new email). */
+  didSendInvite: boolean;
+};
+
 export const assessmentExecutionService = {
   async inviteCandidate(
     candidateId: number,
     assessmentId: number,
     expiryDays: number = 7,
-  ) {
+  ): Promise<InviteCandidateResult> {
+    const now = new Date();
+
+    const [activeAttempt] = await db
+      .select()
+      .from(candidateAssessmentAttempts)
+      .where(
+        and(
+          eq(candidateAssessmentAttempts.candidateId, candidateId),
+          eq(candidateAssessmentAttempts.assessmentId, assessmentId),
+          or(
+            eq(candidateAssessmentAttempts.status, "started"),
+            and(
+              eq(candidateAssessmentAttempts.status, "pending"),
+              gt(candidateAssessmentAttempts.expiresAt, now),
+            ),
+          ),
+        ),
+      )
+      .orderBy(desc(candidateAssessmentAttempts.createdAt))
+      .limit(1);
+
+    if (activeAttempt) {
+      return { attempt: activeAttempt, didSendInvite: false };
+    }
+
     const token = crypto.randomBytes(32).toString("hex");
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + expiryDays);
@@ -51,6 +86,8 @@ export const assessmentExecutionService = {
         status: "pending",
       })
       .returning();
+
+    let didSendInvite = false;
 
     if (attempt) {
       const [candidate] = await db
@@ -90,10 +127,11 @@ export const assessmentExecutionService = {
           subject,
           html,
         );
+        didSendInvite = true;
       }
     }
 
-    return attempt;
+    return { attempt: attempt ?? null, didSendInvite };
   },
 
   async getAttemptsByCandidate(candidateId: number) {

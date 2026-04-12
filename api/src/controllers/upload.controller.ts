@@ -3,6 +3,7 @@ import { r2Service } from "../services/r2.service";
 import { db } from "../db";
 import { company } from "../db/schema";
 import { eq } from "drizzle-orm";
+import logger from "../utils/logger";
 
 export const uploadFile = async (req: Request, res: Response) => {
   try {
@@ -42,7 +43,7 @@ export const uploadFile = async (req: Request, res: Response) => {
       }
     });
   } catch (error: any) {
-    console.error("Upload error:", error);
+    logger.error("Upload error:" + error);
     res.status(500).json({ error: "Failed to upload file to storage" });
   }
 };

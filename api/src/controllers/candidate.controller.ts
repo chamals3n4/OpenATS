@@ -1,9 +1,13 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { candidateService } from "../services/candidate.service";
+import {
+  candidateService,
+  DuplicateApplicationError,
+} from "../services/candidate.service";
 import { jobService } from "../services/job.service";
 import { cvAnalysisService } from "../services/cv-analysis.service";
 import { r2Service } from "../services/r2.service";
+import logger from "../utils/logger";
 
 const customAnswerSchema = z.object({
   questionId: z.number().int().positive(),
@@ -27,8 +31,6 @@ const candidateApplySchema = z.object({
 
 const moveStageSchema = z.object({
   newStageId: z.number().int().positive("Target stage ID is required"),
-
-  movedBy: z.number().int().positive().default(1),
 });
 
 const updateCandidateBasicSchema = z.object({
@@ -69,17 +71,26 @@ export const applyForJob = async (req: Request, res: Response) => {
 
     const result = await candidateService.apply(jobId, parsed.data);
 
+    logger.info(`New application submitted: candidateId=${result.id}, email="${result.email}", jobId=${jobId}${result.resumeUrl ? ", hasResume=true" : ""}`);
+
     if (result.resumeUrl) {
       cvAnalysisService
         .analyze(result.id, result.jobId, result.resumeUrl)
-        .catch((err) => console.error("CV analysis error:", err));
+        .catch((err) => logger.error(`CV analysis error for candidateId=${result.id}: ${err?.message}`));
     }
 
     res.status(201).json({ data: result });
-  } catch (error: any) {
-    res
-      .status(500)
-      .json({ error: error.message || "Failed to submit application" });
+  } catch (error: unknown) {
+    if (error instanceof DuplicateApplicationError) {
+      logger.warn(`Duplicate application attempt: email="${req.body?.email}", jobId=${req.params.jobId}`);
+      res.status(409).json({
+        error: "You have already applied to this job with this email.",
+        code: "DUPLICATE_APPLICATION",
+      });
+      return;
+    }
+    logger.error(`Failed to submit application for jobId=${req.params.jobId}: ${(error as any)?.message}`);
+    res.status(500).json({ error: "Failed to submit application" });
   }
 };
 
@@ -103,6 +114,7 @@ export const getCandidates = async (req: Request, res: Response) => {
     const result = await candidateService.getAll(jobId, filters);
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch candidates${req.params.jobId ? ` for jobId=${req.params.jobId}` : ""}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch candidates" });
   }
 };
@@ -123,6 +135,7 @@ export const getCandidateById = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch candidate id=${req.params.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch candidate" });
   }
 };
@@ -147,10 +160,15 @@ export const moveCandidateStage = async (req: Request, res: Response) => {
     const result = await candidateService.moveStage(
       id,
       parsed.data.newStageId,
-      parsed.data.movedBy,
+      req.user.id,
     );
-    res.status(200).json({ data: result });
+    logger.info(`Candidate stage moved: candidateId=${id}, newStageId=${parsed.data.newStageId}, movedBy=${req.user.id}${result.stageAutomation ? `, automation="${result.stageAutomation}"` : ""}`);
+    res.status(200).json({
+      data: result.candidate,
+      stageAutomation: result.stageAutomation,
+    });
   } catch (error: any) {
+    logger.error(`Failed to move candidate id=${req.params.id} to stage ${req.body?.newStageId} - user ${req.user?.id}: ${error?.message}`);
     res
       .status(400)
       .json({ error: error.message || "Failed to move candidate" });
@@ -165,14 +183,17 @@ export const deleteCandidate = async (req: Request, res: Response) => {
       return;
     }
 
+    logger.warn(`Candidate deletion requested: id=${id} by user ${req.user?.id}`);
     const result = await candidateService.delete(id);
     if (!result) {
       res.status(404).json({ error: "Candidate not found" });
       return;
     }
 
+    logger.info(`Candidate deleted: id=${id}, email="${result.email}", jobId=${result.jobId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to delete candidate id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to delete candidate" });
   }
 };
@@ -254,18 +275,20 @@ export const updateCandidateBasicDetails = async (
       existing.resumeUrl !== newResumeUrl
     ) {
       await r2Service.deleteByUrl(existing.resumeUrl).catch((err) => {
-        console.error("Failed to delete old resume from storage:", err);
+        logger.error("Failed to delete old resume from storage:", err);
       });
     }
 
     if (newResumeUrl) {
       cvAnalysisService
         .analyze(updated.id, updated.jobId, newResumeUrl)
-        .catch((err) => console.error("CV analysis error:", err));
+        .catch((err) => logger.error(`CV analysis error for candidateId=${updated.id}: ${err?.message}`));
     }
 
+    logger.info(`Candidate details updated: id=${id}${newResumeUrl ? ", resumeReplaced=true" : ""} by user ${req.user?.id}`);
     res.status(200).json({ data: updated });
   } catch (error: any) {
+    logger.error(`Failed to update candidate details id=${req.params.id} - user ${req.user?.id}: ${error?.message}`);
     res
       .status(500)
       .json({ error: error.message || "Failed to update candidate details" });

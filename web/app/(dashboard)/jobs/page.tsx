@@ -1,7 +1,11 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
+import { serverFetch } from "@/lib/auth-action";
+import type { User, PipelineStage, Candidate, CustomQuestion } from "@/types";
 import {
   Search01Icon,
   PlusSignIcon,
@@ -40,6 +44,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useDeleteJob, useDepartments, useJobs } from "@/hooks/use-api";
 import type { Job } from "@/types";
+import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 
 const EMPLOYMENT_TYPE_LABELS: Record<Job["employmentType"], string> = {
   full_time: "Full Time",
@@ -49,13 +54,56 @@ const EMPLOYMENT_TYPE_LABELS: Record<Job["employmentType"], string> = {
   freelance: "Freelance",
 };
 
+const STATUS_LABELS: Record<Job["status"], string> = {
+  draft: "Draft",
+  inactive: "Inactive",
+  published: "Published",
+  closed: "Closed",
+  archived: "Archived",
+};
+
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString("en-GB");
 }
 
 export default function ManageJobsPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data, isLoading } = useJobs();
+
+  // Prefetch all per-job data when hovering a row so every tab on the
+  // job detail page renders instantly by the time the user clicks.
+  const prefetchJob = useCallback(
+    (jobId: number) => {
+      void queryClient.prefetchQuery({
+        queryKey: ["jobs", jobId, "pipeline"],
+        queryFn: () =>
+          serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
+      });
+      void queryClient.prefetchQuery({
+        queryKey: ["jobs", jobId, "team"],
+        queryFn: () =>
+          serverFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
+      });
+      void queryClient.prefetchQuery({
+        queryKey: ["candidates", jobId, undefined],
+        queryFn: () =>
+          serverFetch<{ data: Candidate[] }>(`/candidates/jobs/${jobId}`),
+        staleTime: 0,
+      });
+      void queryClient.prefetchQuery({
+        queryKey: ["jobs", jobId, "questions"],
+        queryFn: () =>
+          serverFetch<{ data: CustomQuestion[] }>(`/jobs/${jobId}/questions`),
+      });
+      void queryClient.prefetchQuery({
+        queryKey: ["jobs", jobId, "assessments"],
+        queryFn: () =>
+          serverFetch<{ data: any[] }>(`/jobs/${jobId}/assessments`),
+      });
+    },
+    [queryClient],
+  );
   const { data: deptData } = useDepartments();
   const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
   const deleteMutation = useDeleteJob();
@@ -65,6 +113,7 @@ export default function ManageJobsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [filterDept, setFilterDept] = useState("all");
   const [filterType, setFilterType] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
 
   const departmentNameById = useMemo(() => {
     const map = new Map<number, string>();
@@ -82,7 +131,10 @@ export default function ManageJobsPage() {
       const matchesType =
         filterType === "all" || job.employmentType === filterType;
 
-      if (!q) return matchesDepartment && matchesType;
+      const matchesStatus =
+        filterStatus === "all" || job.status === filterStatus;
+
+      if (!q) return matchesDepartment && matchesType && matchesStatus;
 
       const departmentName =
         departmentNameById.get(job.departmentId)?.toLowerCase() ?? "";
@@ -92,9 +144,16 @@ export default function ManageJobsPage() {
         (job.location ?? "").toLowerCase().includes(q) ||
         departmentName.includes(q);
 
-      return matchesDepartment && matchesType && matchesSearch;
+      return matchesDepartment && matchesType && matchesStatus && matchesSearch;
     });
-  }, [jobs, searchTerm, filterDept, filterType, departmentNameById]);
+  }, [
+    jobs,
+    searchTerm,
+    filterDept,
+    filterType,
+    filterStatus,
+    departmentNameById,
+  ]);
 
   const confirmDelete = () => {
     if (!deleteTarget) return;
@@ -112,10 +171,9 @@ export default function ManageJobsPage() {
         <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Manage Jobs
         </h1>
-        <ThemeButton
-          asChild
-          href="jobs/new"
-          className="h-10 px-4 gap-2 text-sm shadow-none border-none"
+        <Button
+          render={<Link href="/jobs/new" prefetch />}
+          className="bg-theme hover:bg-theme-hover text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium cursor-pointer"
         >
           <HugeiconsIcon
             icon={PlusSignIcon}
@@ -123,34 +181,38 @@ export default function ManageJobsPage() {
             strokeWidth={2.5}
           />
           <span>Create New Job</span>
-        </ThemeButton>
+        </Button>
       </div>
 
       <div className="border-y border-slate-300 dark:border-neutral-700 px-8 py-3.5 flex items-center gap-4">
         <div className="relative w-80">
           <HugeiconsIcon
             icon={Search01Icon}
-            className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-300 pointer-events-none"
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
           />
           <Input
             placeholder="Search"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
+            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600"
           />
         </div>
         <Select
           value={filterDept}
           onValueChange={(v) => setFilterDept(v ?? "all")}
         >
-          <SelectTrigger className="w-52 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Departments">
               {filterDept === "all"
                 ? "All Departments"
                 : (departmentNameById.get(Number(filterDept)) ?? "Department")}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          <SelectContent
+            align="start"
+            alignOffset={0}
+            className="-ml-1 w-53 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+          >
             <SelectItem value="all">All Departments</SelectItem>
             {departments.map((dept) => (
               <SelectItem key={dept.id} value={String(dept.id)}>
@@ -163,7 +225,7 @@ export default function ManageJobsPage() {
           value={filterType}
           onValueChange={(v) => setFilterType(v ?? "all")}
         >
-          <SelectTrigger className="w-44 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-4">
+          <SelectTrigger className="w-44 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Job Types">
               {filterType === "all"
                 ? "All Types"
@@ -172,7 +234,11 @@ export default function ManageJobsPage() {
                   ] ?? filterType)}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          <SelectContent
+            align="start"
+            alignOffset={0}
+            className="-ml-2  w-45 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+          >
             <SelectItem value="all">All Types</SelectItem>
             {(
               Object.keys(EMPLOYMENT_TYPE_LABELS) as Job["employmentType"][]
@@ -183,14 +249,40 @@ export default function ManageJobsPage() {
             ))}
           </SelectContent>
         </Select>
+        <Select
+          value={filterStatus}
+          onValueChange={(v) => setFilterStatus(v ?? "all")}
+        >
+          <SelectTrigger className="w-44 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+            <SelectValue placeholder="Status">
+              {filterStatus === "all"
+                ? "All Status"
+                : (STATUS_LABELS[filterStatus as Job["status"]] ??
+                  filterStatus)}
+            </SelectValue>
+          </SelectTrigger>
+          <SelectContent
+            align="start"
+            alignOffset={0}
+            className="-ml-2 w-45 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+          >
+            <SelectItem value="all">All Status</SelectItem>
+            {(Object.keys(STATUS_LABELS) as Job["status"][]).map((status) => (
+              <SelectItem key={status} value={status}>
+                {STATUS_LABELS[status]}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Button
           variant="ghost"
           onClick={() => {
             setSearchTerm("");
             setFilterDept("all");
             setFilterType("all");
+            setFilterStatus("all");
           }}
-          className="text-slate-600 dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-4"
+          className="text-slate-600 cursor-pointer dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-4"
         >
           Clear All
         </Button>
@@ -224,11 +316,8 @@ export default function ManageJobsPage() {
             <TableBody>
               {isLoading ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="h-32 text-center text-slate-400 text-sm"
-                  >
-                    Loading jobs...
+                  <TableCell colSpan={6} className="p-0">
+                    <ListSectionSpinner />
                   </TableCell>
                 </TableRow>
               ) : filteredJobs.length === 0 ? (
@@ -245,6 +334,7 @@ export default function ManageJobsPage() {
                   <TableRow
                     key={job.id}
                     onClick={() => router.push(`jobs/${job.id}`)}
+                    onMouseEnter={() => prefetchJob(job.id)}
                     className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer"
                   >
                     <TableCell className="h-13 px-8 py-0">
@@ -273,7 +363,7 @@ export default function ManageJobsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 px-3 rounded-md border-slate-300 dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
+                          className="h-8 px-3 rounded-md border-slate-300 cursor-pointer dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
                           onClick={() => router.push(`/jobs/${job.id}/edit`)}
                         >
                           <HugeiconsIcon
@@ -285,7 +375,7 @@ export default function ManageJobsPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 px-3 rounded-md border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400"
+                          className="h-8 px-3 rounded-md border-red-200 cursor-pointer dark:border-red-900/40 text-red-600 dark:text-red-400"
                           onClick={() => setDeleteTarget(job)}
                         >
                           <HugeiconsIcon
@@ -336,10 +426,10 @@ export default function ManageJobsPage() {
       >
         <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+            <AlertDialogTitle className="text-[19px] font-semibold text-slate-900 dark:text-neutral-100">
               Delete this job?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+            <AlertDialogDescription className="text-[14px] text-slate-500 dark:text-neutral-400 leading-relaxed">
               <strong className="text-slate-700 dark:text-neutral-200">
                 {deleteTarget?.title}
               </strong>{" "}
@@ -347,13 +437,13 @@ export default function ManageJobsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-9 px-5 rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors">
+            <AlertDialogCancel className="h-10 px-6 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[14px] font-medium shadow-none cursor-pointer">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               disabled={deleteMutation.isPending}
-              className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none"
+              className="h-10 px-6 rounded-md bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
             >
               {deleteMutation.isPending ? "Deleting…" : "Delete"}
             </AlertDialogAction>

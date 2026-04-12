@@ -3,6 +3,7 @@ import { z } from "zod";
 import { pipelineService } from "../services/pipeline.service";
 import { jobService } from "../services/job.service";
 import { cleanObject as clean } from "../utils/object.utils";
+import logger from "../utils/logger";
 
 const stageTypeEnum = z.enum([
   "none",
@@ -15,7 +16,11 @@ const stageTypeEnum = z.enum([
 
 const createStageSchema = z.object({
   name: z.string().min(1, "Stage name is required").max(100),
-  position: z.number().int().positive("Position must be a positive number"),
+  position: z
+    .number()
+    .int()
+    .positive("Position must be a positive number")
+    .optional(),
   stageType: stageTypeEnum.optional().default("none"),
   offerTemplateId: z.number().int().positive().optional().nullable(),
   offerMode: z.enum(["auto_draft", "auto_send"]).optional().nullable(),
@@ -29,6 +34,15 @@ const updateStageSchema = z.object({
   offerMode: z.enum(["auto_draft", "auto_send"]).optional().nullable(),
   offerExpiryDays: z.number().int().positive().optional().nullable(),
   rejectionTemplateId: z.number().int().positive().optional().nullable(),
+});
+
+const reorderStagesSchema = z.object({
+  stages: z.array(
+    z.object({
+      id: z.number().int().positive(),
+      position: z.number().int().positive(),
+    }),
+  ),
 });
 
 async function getJobOrFail(res: Response, jobId: number) {
@@ -54,6 +68,7 @@ export const getPipeline = async (req: Request, res: Response) => {
     const stages = await pipelineService.getByJobId(jobId);
     res.status(200).json({ data: stages });
   } catch (error) {
+    logger.error(`Failed to fetch pipeline for job id=${req.params.jobId}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch pipeline stages" });
   }
 };
@@ -79,18 +94,19 @@ export const createStage = async (req: Request, res: Response) => {
     }
 
     const result = await pipelineService.create(jobId, parsed.data);
+    logger.info(`Pipeline stage created: id=${result?.id}, name="${result?.name}", jobId=${jobId} by user ${req.user?.id}`);
     res.status(201).json({ data: result });
   } catch (error: any) {
-    console.error("Create stage error:", error);
+    logger.error(`Failed to create pipeline stage for job id=${req.params.jobId} - user ${req.user?.id}: ${error?.message}`);
     if (error?.code === "23505") {
       res
         .status(409)
         .json({ error: "A stage already exists at that position" });
       return;
     }
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to create stage",
-      message: error.message || "Unknown server error" 
+      message: error.message || "Unknown server error",
     });
   }
 };
@@ -123,6 +139,7 @@ export const updateStage = async (req: Request, res: Response) => {
       return;
     }
 
+    logger.info(`Pipeline stage updated: id=${stageId}, jobId=${jobId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error: any) {
     if (error?.code === "23505") {
@@ -131,7 +148,40 @@ export const updateStage = async (req: Request, res: Response) => {
         .json({ error: "A stage already exists at that position" });
       return;
     }
+    logger.error(`Failed to update pipeline stage id=${req.params.stageId} for job id=${req.params.jobId} - user ${req.user?.id}: ${error?.message}`);
     res.status(500).json({ error: "Failed to update stage" });
+  }
+};
+
+export const reorderStages = async (req: Request, res: Response) => {
+  try {
+    const jobId = parseInt((req.params.jobId ?? "").toString());
+    if (isNaN(jobId)) {
+      res.status(400).json({ error: "Invalid job ID" });
+      return;
+    }
+
+    const job = await getJobOrFail(res, jobId);
+    if (!job) return;
+
+    const parsed = reorderStagesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const result = await pipelineService.reorder(jobId, parsed.data.stages);
+    logger.info(`Pipeline stages reordered: jobId=${jobId}, stageCount=${parsed.data.stages.length} by user ${req.user?.id}`);
+    res.status(200).json({ data: result });
+  } catch (error: any) {
+    logger.error(`Failed to reorder pipeline stages for job id=${req.params.jobId} - user ${req.user?.id}: ${error?.message}`);
+    res.status(500).json({
+      error: "Failed to reorder stages",
+      message: error.message || "Unknown server error",
+    });
   }
 };
 
@@ -153,12 +203,14 @@ export const deleteStage = async (req: Request, res: Response) => {
       return;
     }
 
+    logger.warn(`Pipeline stage deletion requested: stageId=${stageId}, jobId=${jobId} by user ${req.user?.id}`);
     const result = await pipelineService.delete(jobId, stageId);
     if (!result) {
       res.status(404).json({ error: "Stage not found" });
       return;
     }
 
+    logger.info(`Pipeline stage deleted: id=${stageId}, name="${stage.name}", jobId=${jobId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error: any) {
     if (error?.code === "23503") {
@@ -168,6 +220,7 @@ export const deleteStage = async (req: Request, res: Response) => {
       });
       return;
     }
+    logger.error(`Failed to delete pipeline stage id=${req.params.stageId} for job id=${req.params.jobId} - user ${req.user?.id}: ${error?.message}`);
     res.status(500).json({ error: "Failed to delete stage" });
   }
 };

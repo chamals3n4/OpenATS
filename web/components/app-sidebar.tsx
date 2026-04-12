@@ -1,15 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Changa_One } from "next/font/google";
+import { Public_Sans } from "next/font/google";
 import {
   Home01Icon,
   Briefcase01Icon,
   UserGroupIcon,
   SearchList02Icon,
-  CheckListIcon,
-  Message01Icon,
   Settings02Icon,
+  Quiz02Icon,
+  Agreement02Icon,
 } from "@hugeicons/core-free-icons";
 
 import { usePathname } from "next/navigation";
@@ -19,12 +19,11 @@ import {
   Sidebar,
   SidebarContent,
   SidebarHeader,
-  SidebarFooter,
 } from "@/components/ui/sidebar";
 
-const changaOne = Changa_One({
+const publicSans = Public_Sans({
   subsets: ["latin"],
-  weight: "400",
+  weight: "700",
 });
 
 const navMainData = [
@@ -46,12 +45,12 @@ const navMainData = [
   {
     title: "Assessments",
     url: "/assessments",
-    icon: CheckListIcon,
+    icon: Quiz02Icon,
   },
   {
     title: "Manage Offers",
     url: "/offers",
-    icon: Message01Icon,
+    icon: Agreement02Icon,
   },
   {
     title: "Active Logs",
@@ -72,8 +71,8 @@ const navMainData = [
         url: "/settings/theme",
       },
       {
-        title: "Page Setup",
-        url: "/settings/setup",
+        title: "Careers Page",
+        url: "/settings/careers",
       },
       {
         title: "Templates",
@@ -111,10 +110,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
       {...props}
     >
-      <SidebarHeader className="h-16 justify-center px-6">
-        <div className="flex items-center justify-start w-full">
+      <SidebarHeader className="h-16 shrink-0 px-6">
+        <div className="flex h-full w-full items-center justify-start">
           <span
-            className={`${changaOne.className} font-normal text-[2.5rem] leading-none tracking-normal text-black dark:text-white select-none`}
+            className={`${publicSans.className} font-bold text-[2rem] leading-none tracking-tight text-black dark:text-white select-none`}
           >
             OpenATS
           </span>
@@ -123,7 +122,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       <SidebarContent>
         <NavMain items={items} />
       </SidebarContent>
-      <SidebarFooter />
     </Sidebar>
   );
 }

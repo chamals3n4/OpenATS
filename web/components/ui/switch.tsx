@@ -1,6 +1,7 @@
 "use client"
 
 import { Switch as SwitchPrimitive } from "@base-ui/react/switch"
+import { motion } from "motion/react"
 
 import { cn } from "@/lib/utils"
 
@@ -23,6 +24,11 @@ function Switch({
     >
       <SwitchPrimitive.Thumb
         data-slot="switch-thumb"
+        render={
+          <motion.span
+            transition={{ type: "spring", stiffness: 620, damping: 34, mass: 0.22 }}
+          />
+        }
         className="bg-background dark:data-unchecked:bg-foreground dark:data-checked:bg-primary-foreground rounded-full group-data-[size=default]/switch:size-4 group-data-[size=sm]/switch:size-3 group-data-[size=default]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=sm]/switch:data-checked:translate-x-[calc(100%-2px)] group-data-[size=default]/switch:data-unchecked:translate-x-0 group-data-[size=sm]/switch:data-unchecked:translate-x-0 pointer-events-none block ring-0 transition-transform"
       />
     </SwitchPrimitive.Root>

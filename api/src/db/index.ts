@@ -2,6 +2,7 @@ import "dotenv/config";
 import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "./schema";
+import logger from "../utils/logger";
 
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -15,7 +16,7 @@ const pool = new Pool({
 // an 'error' event on the pool when that happens, which Node treats as
 // an uncaught exception and terminates the process unless handled here.
 pool.on("error", (err) => {
-  console.warn("[pg pool] idle client error (connection dropped):", err.message);
+  logger.warn("[pg pool] idle client error (connection dropped):", err.message);
 });
 
 export const db = drizzle(pool, { schema });

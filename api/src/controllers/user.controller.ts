@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { userService } from "../services/user.service";
+import logger from "../utils/logger";
 
 const updateUserSchema = z.object({
   firstName: z.string().min(1).max(100).optional(),
@@ -66,6 +67,8 @@ export const updateUser = async (req: Request, res: Response) => {
       return;
     }
 
+    logger.info(`[updateUser] id=${id} body=`, req.body);
+
     const parsed = updateUserSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({
@@ -75,7 +78,12 @@ export const updateUser = async (req: Request, res: Response) => {
       return;
     }
 
+    logger.info(`[updateUser] parsed=`, parsed.data);
+
     const result = await userService.update(id, parsed.data);
+
+    logger.info(`[updateUser] result=`, result);
+
     if (!result) {
       res.status(404).json({ error: "User not found" });
       return;
@@ -83,6 +91,7 @@ export const updateUser = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`[updateUser] error:`, error);
     res.status(500).json({ error: "Failed to update user" });
   }
 };

@@ -43,6 +43,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 
 const inputCls =
   "h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color,box-shadow] duration-200 ease-in-out focus-visible:ring-1 focus-visible:ring-theme focus-visible:border-theme";
@@ -308,8 +309,8 @@ export default function UserManagementPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-32 text-center text-slate-400 text-sm">
-                    Loading users...
+                  <TableCell colSpan={4} className="p-0">
+                    <ListSectionSpinner />
                   </TableCell>
                 </TableRow>
               ) : filteredUsers.length === 0 ? (

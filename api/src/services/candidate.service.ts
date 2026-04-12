@@ -482,23 +482,29 @@ export const candidateService = {
               movedBy,
             );
         } catch (error) {
-          console.error(
-            `[RAG Assessment] Failed for candidate ${candidateId} at stage ${newStageId}. Invite will be skipped.`,
+          logger.error(
+            `[RAG Assessment] Failed for candidate ${candidateId} at stage ${newStageId}; falling back to job-linked assessment ${attachment.assessmentId}.`,
             error,
           );
         }
 
-        // Send invite only after AI-generated combined assessment is ready.
+        const assessmentIdToInvite =
+          combinedAssessmentId ?? attachment.assessmentId;
+
         if (combinedAssessmentId) {
-          await assessmentExecutionService.inviteCandidate(
-            candidateId,
-            combinedAssessmentId,
+          logger.info(
+            `[RAG Assessment] Inviting candidate ${candidateId} to combined assessment ${combinedAssessmentId}.`,
           );
         } else {
-          console.warn(
-            `[RAG Assessment] Combined assessment not created for candidate ${candidateId} at stage ${newStageId}; invite not sent.`,
+          logger.warn(
+            `[RAG Assessment] No combined assessment for candidate ${candidateId} at stage ${newStageId} (RAG off, no resume, or generator failed); inviting job-linked assessment ${attachment.assessmentId}.`,
           );
         }
+
+        await assessmentExecutionService.inviteCandidate(
+          candidateId,
+          assessmentIdToInvite,
+        );
       }
 
       if (stage.stageType === "offer") {

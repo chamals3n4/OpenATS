@@ -636,7 +636,10 @@ export const assessmentExecutionService = {
           );
           if (isCorrect) pointsEarned = questionPoints;
           aiFeedback = null;
-        } else if (question.questionType === "short_answer") {
+        } else if (
+          question.questionType === "short_answer" ||
+          question.questionType === "long_answer"
+        ) {
           const answerText = candidateAnswer.answerText?.trim() ?? "";
           if (!answerText) {
             pointsEarned = 0;

@@ -1,0 +1,40 @@
+name: Deploy ITP Backend
+
+on:
+  push:
+    branches:
+      - itp-main
+    paths:
+      - "api/**"
+      - "rag/**"
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to Azure VM via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.ITP_DEPLOY_PATH }}
+            git pull origin itp-main
+
+            # API
+            cd api
+            pnpm install --frozen-lockfile
+            pnpm build
+            pm2 restart openats-itp-backend || pm2 start "pnpm start" --name openats-itp-backend
+            pm2 save
+            cd ..
+
+            # RAG
+            cd rag
+            pip install -r requirements.txt
+            cd ..

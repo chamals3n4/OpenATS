@@ -28,7 +28,7 @@ const BAR_COLORS: Record<(typeof BREAKDOWN)[number]["key"], string> = {
 /** Older failed rows may store raw Gemini JSON; keep the UI readable. */
 function displayAnalysisError(message: string): string {
   if (
-    /API_KEY_INVALID|API key not valid|generativelanguage\.googleapis/i.test(
+    /API_KEY_INVALID|API key not valid|invalid API key|please pass a valid API key/i.test(
       message,
     )
   ) {

@@ -1,4 +1,5 @@
 import {
+  boolean,
   integer,
   jsonb,
   pgTable,
@@ -24,6 +25,8 @@ export const templates = pgTable("templates", {
   type: templateType("type").notNull(),
   subject: varchar("subject", { length: 500 }).notNull(),
   bodyJson: jsonb("body_json").$type<ContentBlock[]>().notNull().default([]),
+  /** One default per `type` — used when a pipeline stage does not pick a specific template. */
+  isDefault: boolean("is_default").notNull().default(false),
   createdBy: integer("created_by")
     .notNull()
     .references(() => users.id),

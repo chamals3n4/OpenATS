@@ -1,1 +1,0 @@
-ALTER TABLE "candidate_assessment_answers" ADD COLUMN "updated_at" timestamp DEFAULT now() NOT NULL;

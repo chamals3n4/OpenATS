@@ -1,10 +1,12 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useRef, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowUpRight01Icon, SentIcon, PencilEdit01Icon, Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -614,6 +616,19 @@ export function CandidateSidePanel({
                             <span className="text-[13px] text-slate-700 dark:text-neutral-300 font-medium">
                               {formatDate(a.completedAt)}
                             </span>
+                          </div>
+                        )}
+                        {a.status === "completed" && (
+                          <div className="px-4 py-3">
+                            <Link
+                              href={`/candidates/${candidateId}/assessments/${a.id}`}
+                              className={cn(
+                                buttonVariants({ variant: "default", size: "default" }),
+                                "w-full bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium text-[13px] h-9 rounded-[8px] shadow-none border-none hover:text-white",
+                              )}
+                            >
+                              Show Candidate Answers
+                            </Link>
                           </div>
                         )}
                         {a.status === "pending" && (

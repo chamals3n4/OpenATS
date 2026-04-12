@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, or, ilike, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   candidates,
@@ -13,16 +13,26 @@ import {
   jobs,
   offers,
   templates,
+  emailMessages,
 } from "../db/schema";
 import type { Candidate } from "../db/schema/candidates";
+import type { ContentBlock } from "../db/schema/templates";
 import { assessmentExecutionService } from "./assessment-execution.service";
 import { offerService } from "./offer.service";
+import { templateService } from "./template.service";
 import { jobService } from "./job.service";
 import { socketService } from "./socket.service";
-import { mailService } from "./mail.service";
+import { formatPlainTextAsHtmlEmail, mailService } from "./mail.service";
+import {
+  buildApplicationReceivedFallbackInner,
+  buildRejectionFallbackInner,
+  wrapCompiledTemplateEmail,
+  wrapFallbackEmail,
+} from "../utils/email-fallback-layout";
 import { variableService } from "./variable.service";
 import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
+import logger from "../utils/logger";
 
 /** Drizzle wraps driver errors; Postgres code 23505 is often on `cause`. */
 function isPgUniqueViolation(err: unknown): boolean {
@@ -84,6 +94,72 @@ export type MoveStageResult = {
   candidate: Candidate;
   stageAutomation: StageAutomationFlags;
 };
+
+/**
+ * After a successful public (or dashboard) apply: notifies the candidate.
+ * Prefers default **application_received**, then legacy default **general**, then built-in HTML.
+ * Callers should catch errors — a failed send must not roll back the application.
+ */
+async function sendApplicationReceivedConfirmation(
+  candidateId: number,
+): Promise<void> {
+  const [c] = await db
+    .select()
+    .from(candidates)
+    .where(eq(candidates.id, candidateId))
+    .limit(1);
+  if (!c?.email?.trim()) return;
+
+  const context = await variableService.getContextForCandidate(candidateId);
+  let defaultTplId =
+    await templateService.getDefaultTemplateIdForType("application_received");
+  if (defaultTplId == null) {
+    defaultTplId =
+      await templateService.getDefaultTemplateIdForType("general");
+  }
+  const templateRow =
+    defaultTplId != null ? await templateService.getById(defaultTplId) : null;
+  const canUseTemplate =
+    !!templateRow &&
+    (templateRow.type === "application_received" ||
+      templateRow.type === "general") &&
+    Array.isArray(templateRow.bodyJson) &&
+    templateRow.bodyJson.length > 0;
+
+  let subject: string;
+  let html: string;
+
+  if (canUseTemplate && templateRow) {
+    const compiled = templateEngineService.compileTemplate(
+      templateRow.subject,
+      templateRow.bodyJson as ContentBlock[],
+      context,
+    );
+    subject = compiled.subject;
+    html = wrapCompiledTemplateEmail(compiled.html);
+  } else {
+    subject = templateEngineService.replaceVariables(
+      "Application received — {{job_title}}",
+      context,
+    );
+    const name = context.candidate_name?.trim() || "there";
+    const jobTitle = context.job_title?.trim() || "the role";
+    const company = context.company_name?.trim() || "our company";
+    html = wrapFallbackEmail(
+      buildApplicationReceivedFallbackInner({
+        candidateName: name,
+        jobTitle,
+        companyName: company,
+      }),
+    );
+  }
+
+  await mailService.sendEmail({
+    to: c.email.trim(),
+    subject: subject.slice(0, 500),
+    html,
+  });
+}
 
 export const candidateService = {
   async apply(jobId: number, input: CandidateApplyInput) {
@@ -179,6 +255,24 @@ export const candidateService = {
       conditions.push(eq(candidates.currentStageId, filters.stageId));
     }
 
+    const rawSearch = filters.search?.trim();
+    if (rawSearch) {
+      const escaped = rawSearch
+        .replace(/\\/g, "\\\\")
+        .replace(/%/g, "\\%")
+        .replace(/_/g, "\\_");
+      const pattern = `%${escaped}%`;
+      conditions.push(
+        or(
+          ilike(candidates.firstName, pattern),
+          ilike(candidates.lastName, pattern),
+          ilike(candidates.email, pattern),
+          ilike(sql`COALESCE(${candidates.phone}, '')`, pattern),
+          sql`(${candidates.firstName} || ' ' || ${candidates.lastName}) ILIKE ${pattern}`,
+        )!,
+      );
+    }
+
     return db
       .select({
         id: candidates.id,
@@ -192,6 +286,7 @@ export const candidateService = {
         appliedAt: candidates.appliedAt,
         updatedAt: candidates.updatedAt,
         stageName: jobPipelineStages.name,
+        stageType: jobPipelineStages.stageType,
         jobTitle: jobs.title,
       })
       .from(candidates)
@@ -211,6 +306,24 @@ export const candidateService = {
       .where(eq(candidates.id, id));
 
     if (!candidate) return null;
+
+    let stageName: string | null = null;
+    let stageType: (typeof jobPipelineStages.$inferSelect)["stageType"] | null =
+      null;
+    if (candidate.currentStageId != null) {
+      const [st] = await db
+        .select({
+          name: jobPipelineStages.name,
+          stageType: jobPipelineStages.stageType,
+        })
+        .from(jobPipelineStages)
+        .where(eq(jobPipelineStages.id, candidate.currentStageId))
+        .limit(1);
+      if (st) {
+        stageName = st.name;
+        stageType = st.stageType;
+      }
+    }
 
     const answers = await db
       .select({
@@ -261,7 +374,9 @@ export const candidateService = {
     const [offer] = await db
       .select()
       .from(offers)
-      .where(eq(offers.candidateId, id));
+      .where(eq(offers.candidateId, id))
+      .orderBy(desc(offers.createdAt))
+      .limit(1);
 
     const [cvRow] = await db
       .select()
@@ -283,6 +398,8 @@ export const candidateService = {
 
     return {
       ...candidate,
+      stageName,
+      stageType,
       answers,
       selections,
       history,
@@ -403,10 +520,17 @@ export const candidateService = {
               expiryDate = expiry.toISOString();
             }
 
+            let offerTemplateId = stage.offerTemplateId;
+            if (!offerTemplateId) {
+              offerTemplateId =
+                (await templateService.getDefaultTemplateIdForType("offer")) ??
+                null;
+            }
+
             await offerService.create({
               candidateId: candidate.id,
               jobId: job.id,
-              templateId: stage.offerTemplateId,
+              templateId: offerTemplateId,
               salary,
               currency: job.currency,
               payFrequency: job.payFrequency,
@@ -420,42 +544,77 @@ export const candidateService = {
       }
 
       if (stage.stageType === "rejection") {
-        if (stage.rejectionTemplateId) {
-          if (candidate.rejectionNoticeSentAt) {
-            stageAutomation.rejectionEmail = "skipped_already_sent";
-          } else {
+        if (candidate.rejectionNoticeSentAt) {
+          stageAutomation.rejectionEmail = "skipped_already_sent";
+        } else {
+          const context = await variableService.getContextForCandidate(
+            candidate.id,
+          );
+          const name = context.candidate_name?.trim() || "there";
+          const jobTitle = context.job_title?.trim() || "the role";
+          const company = context.company_name?.trim() || "the company";
+
+          let rejectionSubject: string | null = null;
+          let rejectionHtml: string | null = null;
+
+          if (stage.rejectionTemplateId) {
             const [template] = await tx
               .select()
               .from(templates)
               .where(eq(templates.id, stage.rejectionTemplateId));
 
             if (template) {
-              const context = await variableService.getContextForCandidate(
-                candidate.id,
-              );
-              const { subject, html } = templateEngineService.compileTemplate(
-                template.subject,
-                template.bodyJson,
-                context,
-              );
-
-              await mailService.sendRejectionEmail(
-                candidate.email,
-                subject,
-                html,
-              );
-
-              await tx
-                .update(candidates)
-                .set({
-                  rejectionNoticeSentAt: new Date(),
-                  updatedAt: new Date(),
-                })
-                .where(eq(candidates.id, candidateId));
-
-              stageAutomation.rejectionEmail = "sent";
+              try {
+                const compiled = templateEngineService.compileTemplate(
+                  template.subject,
+                  template.bodyJson,
+                  context,
+                );
+                rejectionSubject = compiled.subject;
+                rejectionHtml = wrapCompiledTemplateEmail(compiled.html);
+              } catch (err: unknown) {
+                logger.warn(
+                  `Rejection template render failed (templateId=${template.id}): ${(err as Error)?.message}`,
+                );
+              }
             }
           }
+
+          if (!rejectionHtml) {
+            if (!stage.rejectionTemplateId) {
+              logger.warn(
+                `Rejection stage "${stage.name}" has no template — using built-in rejection message (candidateId=${candidateId}).`,
+              );
+            }
+            rejectionSubject = `Update regarding your application — ${jobTitle}`;
+            rejectionHtml = wrapFallbackEmail(
+              buildRejectionFallbackInner({
+                candidateName: name,
+                jobTitle,
+                companyName: company,
+              }),
+            );
+          }
+
+          const finalSubject = rejectionSubject?.trim()
+            ? rejectionSubject
+            : `Update regarding your application — ${jobTitle}`;
+
+          await mailService.sendRejectionEmail(
+            candidate.email,
+            finalSubject,
+            rejectionHtml,
+          );
+
+          await tx
+            .update(candidates)
+            .set({
+              rejectionNoticeSentAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(candidates.id, candidateId));
+
+          stageAutomation.rejectionEmail = "sent";
         }
       }
 
@@ -497,6 +656,73 @@ export const candidateService = {
       .returning();
     return deleted ?? null;
   },
+
+  /** One-off email from the dashboard “Send email” tab (Resend + `email_messages` row). */
+  async sendAdHocEmail(
+    candidateId: number,
+    sentByUserId: number,
+    subject: string,
+    bodyText: string,
+    options?: {
+      bodyHtml?: string | null | undefined;
+      templateId?: number | null | undefined;
+    },
+  ) {
+    const [c] = await db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.id, candidateId))
+      .limit(1);
+    if (!c) return { row: null, providerMessageId: null };
+
+    const safeSubject = subject.trim().slice(0, 500);
+    const trimmedHtml = options?.bodyHtml?.trim();
+    const html =
+      trimmedHtml && trimmedHtml.length > 0
+        ? wrapCompiledTemplateEmail(trimmedHtml)
+        : formatPlainTextAsHtmlEmail(bodyText);
+
+    const sendResult = await mailService.sendEmail({
+      to: c.email,
+      subject: safeSubject,
+      html,
+    });
+
+    const tid = options?.templateId;
+    const templateIdResolved =
+      typeof tid === "number" && Number.isFinite(tid) && tid > 0
+        ? Math.trunc(tid)
+        : null;
+
+    const [row] = await db
+      .insert(emailMessages)
+      .values({
+        candidateId,
+        sentBy: sentByUserId,
+        templateId: templateIdResolved,
+        subject: safeSubject,
+        bodyHtml: html,
+        recipientEmail: c.email,
+      })
+      .returning();
+
+    let providerMessageId: string | null = null;
+    if (
+      sendResult &&
+      typeof sendResult === "object" &&
+      "id" in sendResult
+    ) {
+      const id = (sendResult as { id?: string | number }).id;
+      if (id !== undefined && id !== null) providerMessageId = String(id);
+    }
+
+    return {
+      row: row ?? null,
+      providerMessageId,
+    };
+  },
+
+  sendApplicationReceivedConfirmation,
 };
 
 //TODO: implement kafka

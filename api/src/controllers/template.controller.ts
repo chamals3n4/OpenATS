@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { templateService } from "../services/template.service";
 import { templateEngineService } from "../services/template-engine.service";
+import { variableService } from "../services/variable.service";
+import { mailService } from "../services/mail.service";
 import logger from "../utils/logger";
 
 const contentBlockSchema = z.discriminatedUnion("type", [
@@ -22,6 +24,7 @@ const templateTypeEnum = z.enum([
   "rejection",
   "assessment_invite",
   "general",
+  "application_received",
 ]);
 
 const createTemplateSchema = z.object({
@@ -36,6 +39,25 @@ const updateTemplateSchema = z.object({
   type: templateTypeEnum.optional(),
   subject: z.string().min(1).max(500).optional(),
   bodyJson: z.array(contentBlockSchema).optional(),
+});
+
+const sendCandidateEmailSchema = z.object({
+  candidateId: z.number().int().positive(),
+  mode: z.enum(["general", "interview"]),
+  templateId: z.number().int().positive().optional().nullable(),
+  subject: z.string().min(1).max(500),
+  body: z.string().optional().default(""),
+  interview: z
+    .object({
+      date: z.string().optional(),
+      time: z.string().optional(),
+      timeZone: z.string().optional(),
+      location: z.string().optional(),
+      videoLink: z.string().optional(),
+      interviewers: z.array(z.string()).optional(),
+      otherInterviewers: z.string().optional(),
+    })
+    .optional(),
 });
 
 export const getAllTemplates = async (req: Request, res: Response) => {
@@ -181,5 +203,95 @@ export const previewTemplate = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error(`Failed to preview template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to preview template" });
+  }
+};
+
+export const sendCandidateEmail = async (req: Request, res: Response) => {
+  try {
+    const parsed = sendCandidateEmailSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const { candidateId, mode, templateId, subject, body, interview } = parsed.data;
+    const context = await variableService.getContextForCandidate(candidateId);
+    if (!context.candidate_name) {
+      res.status(404).json({ error: "Candidate not found" });
+      return;
+    }
+
+    const candidateName = String(context.candidate_name ?? "").trim();
+    const [firstName, ...restName] = candidateName.split(" ");
+    const candidateFirstName = firstName || candidateName || "Candidate";
+    const candidateLastName = restName.join(" ").trim();
+
+    const interviewersJoined = interview?.interviewers?.filter(Boolean).join(", ") ?? "";
+    const mergedInterviewers = [interviewersJoined, interview?.otherInterviewers ?? ""]
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .join(", ");
+
+    const emailContext = {
+      ...context,
+      candidate_name: candidateName,
+      candidate_first_name: candidateFirstName,
+      candidate_last_name: candidateLastName,
+      interview_date: interview?.date ?? "",
+      interview_time: interview?.time ?? "",
+      interview_timezone: interview?.timeZone ?? "",
+      interview_location: interview?.location ?? "",
+      interview_video_link: interview?.videoLink ?? "",
+      interview_interviewers: mergedInterviewers,
+    };
+
+    let finalSubject = templateEngineService.replaceVariables(subject, emailContext);
+    let html = body?.trim()
+      ? templateEngineService.replaceVariables(body, emailContext).replace(/\n/g, "<br>")
+      : "";
+
+    if (templateId) {
+      const template = await templateService.getById(templateId);
+      if (!template) {
+        res.status(404).json({ error: "Template not found" });
+        return;
+      }
+      const compiled = templateEngineService.compileTemplate(
+        template.subject,
+        template.bodyJson,
+        emailContext,
+      );
+      finalSubject = compiled.subject;
+      html = compiled.html;
+    }
+
+    if (!finalSubject.trim()) {
+      res.status(400).json({ error: "Email subject is required" });
+      return;
+    }
+    if (!html.trim()) {
+      res.status(400).json({ error: "Email body is required" });
+      return;
+    }
+
+    const to = String((context as { email?: string }).email ?? "").trim();
+    if (!to) {
+      res.status(400).json({ error: "Candidate email is missing" });
+      return;
+    }
+
+    await mailService.sendEmail({ to, subject: finalSubject, html });
+    logger.info(
+      `Candidate ${mode} email sent: candidateId=${candidateId}, templateId=${templateId ?? "none"}, user=${req.user?.id}`,
+    );
+    res.status(200).json({ data: { ok: true } });
+  } catch (error) {
+    logger.error(
+      `Failed to send candidate email - user ${req.user?.id}: ${(error as any)?.message}`,
+    );
+    res.status(500).json({ error: "Failed to send candidate email" });
   }
 };

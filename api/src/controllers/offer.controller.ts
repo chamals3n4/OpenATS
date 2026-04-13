@@ -12,6 +12,7 @@ const createOfferSchema = z.object({
   payFrequency: z.enum(["hourly", "daily", "weekly", "monthly", "yearly"]).optional().nullable(),
   startDate: z.string().optional().nullable(),
   expiryDate: z.string().optional().nullable(),
+  benefits: z.string().optional().nullable(),
 });
 
 const updateOfferSchema = z.object({
@@ -22,6 +23,7 @@ const updateOfferSchema = z.object({
   payFrequency: z.enum(["hourly", "daily", "weekly", "monthly", "yearly"]).optional().nullable(),
   startDate: z.string().optional().nullable(),
   expiryDate: z.string().optional().nullable(),
+  benefits: z.string().optional().nullable(),
   renderedHtml: z.string().optional().nullable(),
 });
 

@@ -235,7 +235,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [offer, rejection, assessment_invite, general]
+            enum: [offer, rejection, assessment_invite, general, application_received]
       responses:
         "200":
           description: List of offer/email templates
@@ -1480,7 +1480,7 @@ components:
         type:
           {
             type: string,
-            enum: [offer, rejection, assessment_invite, general],
+            enum: [offer, rejection, assessment_invite, general, application_received],
             example: "offer",
           }
         subject:

@@ -21,8 +21,12 @@ import { Label } from "@/components/ui/label";
 
 import { useTemplate, useUpdateTemplate } from "@/hooks/use-api";
 import type { TemplateBodyBlock } from "@/types";
+import {
+  type EmailTemplateType,
+  EMAIL_TEMPLATE_TYPE_CONFIG,
+  EMAIL_TEMPLATE_VARIABLES,
+} from "@/lib/email-template-types";
 
-type TemplateType = "offer" | "rejection" | "assessment" | "general";
 type BlockKind = TemplateBodyBlock["type"] | "divider" | "spacer";
 
 export interface Block {
@@ -30,49 +34,6 @@ export interface Block {
   kind: BlockKind;
   content: string;
 }
-
-const TYPE_META: Record<TemplateType, { label: string; badge: string }> = {
-  offer: {
-    label: "Offer Letter",
-    badge: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  },
-  rejection: {
-    label: "Rejection",
-    badge: "bg-red-50 text-red-600 border border-red-200",
-  },
-  assessment: {
-    label: "Assessment Invite",
-    badge: "bg-blue-50 text-blue-700 border border-blue-200",
-  },
-  general: {
-    label: "General",
-    badge: "bg-slate-100 text-slate-600 border border-slate-200",
-  },
-};
-
-const VARIABLES: Record<TemplateType, string[]> = {
-  offer: [
-    "candidate_name",
-    "job_title",
-    "salary",
-    "currency",
-    "start_date",
-    "expiry_date",
-    "company_name",
-  ],
-  rejection: ["candidate_name", "job_title", "company_name"],
-  assessment: ["candidate_name", "job_title", "assessment_link", "expiry_date"],
-  general: [
-    "candidate_name",
-    "job_title",
-    "salary",
-    "currency",
-    "start_date",
-    "expiry_date",
-    "company_name",
-    "assessment_link",
-  ],
-};
 
 const SAMPLE: Record<string, string> = {
   candidate_name: "Alex Johnson",
@@ -263,7 +224,8 @@ export default function EditTemplatePage() {
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [blocks, setBlocks] = useState<Block[]>([]);
-  const [templateType, setTemplateType] = useState<TemplateType>("general");
+  const [templateType, setTemplateType] =
+    useState<EmailTemplateType>("general");
   const [notFound, setNotFound] = useState(false);
 
   useEffect(() => {
@@ -275,15 +237,7 @@ export default function EditTemplatePage() {
     if (t) {
       setName(t.name);
       setSubject(t.subject);
-      setTemplateType(
-        t.type === "offer"
-          ? "offer"
-          : t.type === "rejection"
-            ? "rejection"
-            : t.type === "assessment_invite"
-              ? "assessment"
-              : "general",
-      );
+      setTemplateType(t.type);
 
       // Map API blocks to UI Blocks
       const mappedBlocks: Block[] = t.bodyJson.map((b, i) => ({
@@ -297,7 +251,7 @@ export default function EditTemplatePage() {
     }
   }, [templateRes, isError]);
 
-  const vars = VARIABLES[templateType];
+  const vars = EMAIL_TEMPLATE_VARIABLES[templateType];
 
   const addBlock = (kind: BlockKind) =>
     setBlocks((prev) => [
@@ -329,14 +283,7 @@ export default function EditTemplatePage() {
         id,
         data: {
           name: name.trim(),
-          type:
-            templateType === "offer"
-              ? "offer"
-              : templateType === "rejection"
-                ? "rejection"
-                : templateType === "assessment"
-                  ? "assessment_invite"
-                  : "general",
+          type: templateType,
           subject,
           bodyJson,
         },
@@ -404,9 +351,9 @@ export default function EditTemplatePage() {
           </Link>
           <div className="h-4 w-px bg-slate-200 dark:bg-neutral-800" />
           <span
-            className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${TYPE_META[templateType].badge}`}
+            className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${EMAIL_TEMPLATE_TYPE_CONFIG[templateType].badge}`}
           >
-            {TYPE_META[templateType].label}
+            {EMAIL_TEMPLATE_TYPE_CONFIG[templateType].label}
           </span>
           <span className="text-[14px] text-slate-600 dark:text-neutral-300 font-medium truncate max-w-sm">
             {name || "Edit template"}

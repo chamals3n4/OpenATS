@@ -1,0 +1,1 @@
+ALTER TYPE "public"."template_type" ADD VALUE 'application_received';

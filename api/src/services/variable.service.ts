@@ -22,6 +22,7 @@ export const variableService = {
 
     return {
       candidate_name: `${result.candidate.firstName} ${result.candidate.lastName}`,
+      email: result.candidate.email,
       job_title: result.job.title,
       company_name: result.company.name,
       start_date: "TBD",
@@ -38,6 +39,7 @@ export const variableService = {
       currency: offerData.currency ?? "",
       start_date: offerData.startDate || "TBD",
       expiry_date: offerData.expiryDate || "TBD",
+      benefits: offerData.benefits?.trim() || "",
     };
   }
 };

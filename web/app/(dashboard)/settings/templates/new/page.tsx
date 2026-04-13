@@ -21,8 +21,12 @@ import { Label } from "@/components/ui/label";
 
 import { useCreateTemplate } from "@/hooks/use-api";
 import type { TemplateBodyBlock } from "@/types";
+import {
+  EMAIL_TEMPLATE_TYPE_CONFIG,
+  EMAIL_TEMPLATE_VARIABLES,
+  normalizeEmailTemplateTypeParam,
+} from "@/lib/email-template-types";
 
-type TemplateType = "offer" | "rejection" | "assessment" | "general";
 type BlockKind = TemplateBodyBlock["type"] | "divider" | "spacer";
 
 export interface Block {
@@ -30,49 +34,6 @@ export interface Block {
   kind: BlockKind;
   content: string;
 }
-
-const TYPE_META: Record<TemplateType, { label: string; badge: string }> = {
-  offer: {
-    label: "Offer Letter",
-    badge: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  },
-  rejection: {
-    label: "Rejection",
-    badge: "bg-red-50 text-red-600 border border-red-200",
-  },
-  assessment: {
-    label: "Assessment Invite",
-    badge: "bg-blue-50 text-blue-700 border border-blue-200",
-  },
-  general: {
-    label: "General",
-    badge: "bg-slate-100 text-slate-600 border border-slate-200",
-  },
-};
-
-const VARIABLES: Record<TemplateType, string[]> = {
-  offer: [
-    "candidate_name",
-    "job_title",
-    "salary",
-    "currency",
-    "start_date",
-    "expiry_date",
-    "company_name",
-  ],
-  rejection: ["candidate_name", "job_title", "company_name"],
-  assessment: ["candidate_name", "job_title", "assessment_link", "expiry_date"],
-  general: [
-    "candidate_name",
-    "job_title",
-    "salary",
-    "currency",
-    "start_date",
-    "expiry_date",
-    "company_name",
-    "assessment_link",
-  ],
-};
 
 const SAMPLE: Record<string, string> = {
   candidate_name: "Alex Johnson",
@@ -257,10 +218,10 @@ export default function NewTemplatePage() {
   const createMutation = useCreateTemplate();
 
   const searchParams = useSearchParams();
-  const rawType = searchParams.get("type") as TemplateType | null;
-  const templateType: TemplateType =
-    rawType && rawType in TYPE_META ? rawType : "general";
-  const vars = VARIABLES[templateType];
+  const templateType = normalizeEmailTemplateTypeParam(
+    searchParams.get("type"),
+  );
+  const vars = EMAIL_TEMPLATE_VARIABLES[templateType];
 
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
@@ -293,14 +254,7 @@ export default function NewTemplatePage() {
     createMutation.mutate(
       {
         name: name.trim(),
-        type:
-          templateType === "offer"
-            ? "offer"
-            : templateType === "rejection"
-              ? "rejection"
-              : templateType === "assessment"
-                ? "assessment_invite"
-                : "general",
+        type: templateType,
         subject,
         bodyJson,
       },
@@ -341,9 +295,9 @@ export default function NewTemplatePage() {
           </Link>
           <div className="h-4 w-px bg-slate-200" />
           <span
-            className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${TYPE_META[templateType].badge}`}
+            className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${EMAIL_TEMPLATE_TYPE_CONFIG[templateType].badge}`}
           >
-            {TYPE_META[templateType].label}
+            {EMAIL_TEMPLATE_TYPE_CONFIG[templateType].label}
           </span>
           <span className="text-[14px] text-slate-400">New template</span>
         </div>

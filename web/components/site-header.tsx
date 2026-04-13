@@ -27,7 +27,6 @@ const SEGMENT_LABELS: Record<string, string> = {
   general: "General",
   profile: "Profile",
   theme: "Theme",
-  archive: "Archive",
   templates: "Templates",
 };
 

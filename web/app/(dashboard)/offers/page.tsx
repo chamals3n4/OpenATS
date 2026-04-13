@@ -1,12 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState } from "react";
 import {
   Search01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
-  MoreVerticalIcon,
-  Archive01Icon,
+  Delete02Icon,
   CallIcon,
   Mail01Icon,
 } from "@hugeicons/core-free-icons";
@@ -85,49 +84,6 @@ const OFFER_STATUS_STYLES: Record<OfferStatus, string> = {
     "bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400",
 };
 
-function RowMenu({ onArchive }: { onArchive(): void }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => {
-    if (!open) return;
-    const fn = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", fn);
-    return () => document.removeEventListener("mousedown", fn);
-  }, [open]);
-  return (
-    <div ref={ref} className="relative flex justify-end">
-      <button
-        onClick={(e) => {
-          e.stopPropagation();
-          setOpen((o) => !o);
-        }}
-        className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
-      >
-        <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-8 z-50 w-44 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-lg shadow-lg py-1 text-sm">
-          <button
-            onClick={() => {
-              setOpen(false);
-              onArchive();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800"
-          >
-            <HugeiconsIcon
-              icon={Archive01Icon}
-              className="size-4 text-slate-400"
-            />
-            Archive
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
 export default function ManageOffersPage() {
   const { data: offersRes, isLoading: offersLoading } = useOffers();
   const deleteOfferMutation = useDeleteOffer();
@@ -171,7 +127,7 @@ export default function ManageOffersPage() {
   const [filterDept, setFilterDept] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  const [archiveTarget, setArchiveTarget] = useState<Offer | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Offer | null>(null);
 
   const [selected, setSelected] = useState<Offer | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -181,10 +137,10 @@ export default function ManageOffersPage() {
     setSheetOpen(true);
   };
 
-  const confirmArchive = () => {
-    if (!archiveTarget) return;
-    deleteOfferMutation.mutate(archiveTarget.id, {
-      onSuccess: () => setArchiveTarget(null),
+  const confirmDelete = () => {
+    if (!deleteTarget) return;
+    deleteOfferMutation.mutate(deleteTarget.id, {
+      onSuccess: () => setDeleteTarget(null),
     });
   };
 
@@ -311,7 +267,9 @@ export default function ManageOffersPage() {
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Expired Date
                 </TableHead>
-                <TableHead className="h-13 px-4 w-12" />
+                <TableHead className="h-13 px-4 w-24 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -357,7 +315,17 @@ export default function ManageOffersPage() {
                       className="h-14 px-4 py-0"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <RowMenu onArchive={() => setArchiveTarget(o)} />
+                      <div className="flex justify-end">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="h-8 px-3 rounded-md border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400"
+                          onClick={() => setDeleteTarget(o)}
+                        >
+                          <HugeiconsIcon icon={Delete02Icon} className="size-3.5 mr-1" />
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -464,26 +432,27 @@ export default function ManageOffersPage() {
               <CandidateSidePanel
                 candidateId={selected.candidateId}
                 open={sheetOpen}
+                defaultTab="offer"
               />
             </>
           )}
         </SheetContent>
       </Sheet>
       <AlertDialog
-        open={!!archiveTarget}
-        onOpenChange={(o) => !o && setArchiveTarget(null)}
+        open={!!deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(null)}
       >
         <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
-              Archive this offer?
+              Delete this offer?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
               The offer for{" "}
               <strong className="text-slate-700 dark:text-neutral-200">
-                {archiveTarget?.candidateName}
+                {deleteTarget?.candidateName}
               </strong>{" "}
-              will be deleted permanently.
+              will be permanently deleted. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
@@ -491,11 +460,10 @@ export default function ManageOffersPage() {
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmArchive}
-              className="h-9 px-5 rounded-lg text-white text-[13px] font-medium shadow-none border-none"
-              style={{ backgroundColor: "var(--theme-color)" }}
+              onClick={confirmDelete}
+              className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none"
             >
-              Archive
+              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

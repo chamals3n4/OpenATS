@@ -65,6 +65,7 @@ export const templateType = pgEnum("template_type", [
   "rejection",
   "assessment_invite",
   "general",
+  "application_received",
 ]);
 
 export const assessmentStatus = pgEnum("assessment_status", [

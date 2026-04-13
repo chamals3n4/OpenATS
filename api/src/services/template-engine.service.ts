@@ -8,6 +8,7 @@ export interface TemplateContext {
   start_date?: string;
   expiry_date?: string;
   company_name?: string;
+  benefits?: string;
   [key: string]: any;
 }
 

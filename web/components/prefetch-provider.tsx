@@ -10,6 +10,7 @@ import type {
   Offer,
   Template,
   User,
+  AnalyticsReport,
 } from "@/types";
 
 export function PrefetchProvider() {
@@ -58,6 +59,13 @@ export function PrefetchProvider() {
           "/settings/allowed-origins",
         ),
       staleTime: 1000 * 30,
+    });
+
+    void queryClient.prefetchQuery({
+      queryKey: ["reports", "analytics", "7d", "all"],
+      queryFn: () =>
+        serverFetch<{ data: AnalyticsReport }>("/reports/analytics?period=7d"),
+      staleTime: 1000 * 60 * 5,
     });
 
     void queryClient.prefetchQuery({

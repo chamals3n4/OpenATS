@@ -39,6 +39,9 @@ export const offers = pgTable("offers", {
   startDate: date("start_date"),
   expiryDate: date("expiry_date"),
 
+  /** Free text for {{benefits}} in offer letter templates */
+  benefits: text("benefits"),
+
   renderedHtml: text("rendered_html"),
   sentAt: timestamp("sent_at"),
 

@@ -6,7 +6,12 @@ import { cleanObject as clean } from "../utils/object.utils";
 
 export interface CreateTemplateInput {
   name: string;
-  type: "offer" | "rejection" | "assessment_invite" | "general";
+  type:
+    | "offer"
+    | "rejection"
+    | "assessment_invite"
+    | "general"
+    | "application_received";
   subject: string;
   bodyJson: ContentBlock[];
   createdBy: number;
@@ -14,7 +19,9 @@ export interface CreateTemplateInput {
 
 export interface UpdateTemplateInput {
   name?: string | undefined;
-  type?: ("offer" | "rejection" | "assessment_invite" | "general") | undefined;
+  type?:
+    | ("offer" | "rejection" | "assessment_invite" | "general" | "application_received")
+    | undefined;
   subject?: string | undefined;
   bodyJson?: ContentBlock[] | undefined;
 }

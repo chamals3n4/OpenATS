@@ -7,6 +7,7 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const res = await fetch(`${API_BASE_URL}/api${path}`, {
     ...options,
+    cache: "no-store",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,

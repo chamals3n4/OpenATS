@@ -86,10 +86,6 @@ const navMainData = [
         title: "Profile",
         url: "/settings/profile",
       },
-      {
-        title: "Archive",
-        url: "/settings/archive",
-      },
     ],
   },
 ];

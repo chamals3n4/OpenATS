@@ -694,10 +694,17 @@ export function useUpdateOffer() {
         method: "PUT",
         body: JSON.stringify(data),
       }),
-    onSuccess: (_, variables) => {
+    onSuccess: (result, variables) => {
       queryClient.invalidateQueries({
         queryKey: ["offers", variables.offerId],
       });
+      queryClient.invalidateQueries({ queryKey: ["offers"] });
+      const updatedOffer = result?.data;
+      if (updatedOffer?.jobId) {
+        queryClient.invalidateQueries({
+          queryKey: ["offers", "job", updatedOffer.jobId],
+        });
+      }
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });
@@ -799,49 +806,64 @@ export function useCandidates(
   });
 }
 
-export function useCandidate(id: number, options?: { enabled?: boolean }) {
+export function useCandidate(
+  id: number,
+  options?: { enabled?: boolean; pollCvWhileSheetOpen?: boolean },
+) {
   const queryClient = useQueryClient();
   const enabled = (options?.enabled ?? true) && !!id;
+  const pollCv =
+    options?.pollCvWhileSheetOpen !== false;
   return useQuery({
     queryKey: ["candidates", id],
     queryFn: () => serverFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
     enabled,
+    // Candidate details must always refetch on mount; otherwise seeded list
+    // snapshots (with empty history/offer) can stay "fresh" for 5 minutes due
+    // to the app-wide default staleTime and hide real backend data.
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
     // Seed from any cached candidates list so the sheet shows the candidate's
     // basic info immediately while the full detail (cv analysis, answers,
     // history) loads in the background — same pattern as useJob.
     initialData: () => {
-          const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
-            queryKey: ["candidates"],
-          });
-          for (const [, listData] of allLists) {
-            const match = listData?.data?.find((c) => c.id === id);
-            if (match) {
-              return {
-                data: {
-                  ...match,
-                  cvAnalysis: null,
-                  answers: [],
-                  selections: [],
-                  history: [],
-                  offer: null,
-                } as CandidateDetail,
-              };
-            }
-          }
-          return undefined;
-    },
-    initialDataUpdatedAt: () => {
-      const allStates = queryClient.getQueriesData<{ data: Candidate[] }>({
+      const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
         queryKey: ["candidates"],
       });
-      for (const [key] of allStates) {
+      for (const [, listData] of allLists) {
+        if (!Array.isArray(listData?.data)) continue;
+        const match = listData.data.find((c) => c.id === id);
+        if (match) {
+          return {
+            data: {
+              ...match,
+              cvAnalysis: null,
+              answers: [],
+              selections: [],
+              history: [],
+              offer: null,
+            } as CandidateDetail,
+          };
+        }
+      }
+      return undefined;
+    },
+    initialDataUpdatedAt: () => {
+      const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
+        queryKey: ["candidates"],
+      });
+      for (const [key, listData] of allLists) {
+        if (!Array.isArray(listData?.data)) continue;
         const state = queryClient.getQueryState(key);
         if (state?.dataUpdatedAt) return state.dataUpdatedAt;
       }
       return undefined;
     },
     refetchInterval: (query) =>
-      enabled && query.state.data?.data?.cvAnalysis?.status === "pending"
+      enabled &&
+      pollCv &&
+      query.state.data?.data?.cvAnalysis?.status === "pending"
         ? 2500
         : false,
   });
@@ -858,8 +880,10 @@ export function useMoveCandidateStage() {
         method: "PUT",
         body: JSON.stringify({ newStageId }),
       }),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
+      // Sheet / side panel uses useCandidate(id); must refetch so offer & stage match server.
+      queryClient.invalidateQueries({ queryKey: ["candidates", variables.id] });
     },
   });
 }
@@ -1065,6 +1089,31 @@ export function usePreviewTemplate() {
       serverFetch<any>(`/templates/${id}/preview`, {
         method: "POST",
         body: JSON.stringify({ context }),
+      }),
+  });
+}
+
+export function useSendCandidateEmail() {
+  return useMutation({
+    mutationFn: (data: {
+      candidateId: number;
+      mode: "general" | "interview";
+      templateId?: number | null;
+      subject: string;
+      body?: string;
+      interview?: {
+        date?: string;
+        time?: string;
+        timeZone?: string;
+        location?: string;
+        videoLink?: string;
+        interviewers?: string[];
+        otherInterviewers?: string;
+      };
+    }) =>
+      serverFetch<{ data: { ok: true } }>("/templates/send-email", {
+        method: "POST",
+        body: JSON.stringify(data),
       }),
   });
 }

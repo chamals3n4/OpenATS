@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowUpRight01Icon, SentIcon, PencilEdit01Icon, Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
+import { format } from "date-fns";
 
 import { Button, buttonVariants } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -20,7 +21,24 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { CandidateJobFitTab } from "@/components/candidate-job-fit-tab";
-import { useCandidate, usePipeline, useUpdateOffer, useUpdateOfferStatus, useCandidateAssessments } from "@/hooks/use-api";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import {
+  useCandidate,
+  usePipeline,
+  useUpdateOffer,
+  useUpdateOfferStatus,
+  useCandidateAssessments,
+  useTemplates,
+  useHiringTeam,
+  useSendCandidateEmail,
+} from "@/hooks/use-api";
+import type { CandidateDetail, Offer, User } from "@/types";
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -41,6 +59,19 @@ function formatDate(dateStr: string | null) {
   });
 }
 
+function parseDateOnly(value: string) {
+  if (!value) return undefined;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return undefined;
+  const parsed = new Date(year, month - 1, day);
+  if (Number.isNaN(parsed.getTime())) return undefined;
+  return parsed;
+}
+
+function toDateOnlyValue(date: Date) {
+  return format(date, "yyyy-MM-dd");
+}
+
 const OFFER_STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   draft: { bg: "bg-amber-50 dark:bg-amber-950/30", text: "text-amber-600 dark:text-amber-400" },
   sent: { bg: "bg-blue-50 dark:bg-blue-950/30", text: "text-blue-600 dark:text-blue-400" },
@@ -49,41 +80,931 @@ const OFFER_STATUS_STYLES: Record<string, { bg: string; text: string }> = {
   withdrawn: { bg: "bg-slate-50 dark:bg-neutral-800", text: "text-slate-500 dark:text-neutral-400" },
 };
 
+const TIME_ZONE_OPTIONS = [
+  "UTC",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Europe/London",
+  "Europe/Paris",
+  "Asia/Dubai",
+  "Asia/Colombo",
+  "Asia/Singapore",
+  "Asia/Tokyo",
+  "Australia/Sydney",
+] as const;
+
+type EmailComposerMode = "general" | "interview";
+
+function userDisplayName(u: User) {
+  const n = `${u.firstName ?? ""} ${u.lastName ?? ""}`.trim();
+  return n || u.email || `User #${u.id}`;
+}
+
+function DatePickerField({
+  value,
+  onChange,
+  placeholder,
+  className,
+}: {
+  value: string;
+  onChange: (next: string) => void;
+  placeholder: string;
+  className?: string;
+}) {
+  const selectedDate = parseDateOnly(value);
+  return (
+    <Popover>
+      <PopoverTrigger
+        className={cn(
+          "h-10 w-full rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3 text-left text-[13px] shadow-none focus-visible:outline-none focus-visible:ring-0",
+          !selectedDate && "text-slate-400 dark:text-neutral-500",
+          selectedDate && "text-slate-700 dark:text-neutral-300",
+          className,
+        )}
+      >
+        {selectedDate ? format(selectedDate, "MMM dd, yyyy") : placeholder}
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0 border-slate-200 dark:border-neutral-800" align="start">
+        <Calendar
+          mode="single"
+          selected={selectedDate}
+          onSelect={(date) => onChange(date ? toDateOnlyValue(date) : "")}
+        />
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+function SidePanelEmailTab({ candidate }: { candidate: CandidateDetail }) {
+  const { data: templatesRes } = useTemplates();
+  const { data: hiringTeamRes } = useHiringTeam(candidate.jobId);
+  const sendCandidateEmailMutation = useSendCandidateEmail();
+  const templates = templatesRes?.data ?? [];
+  const hiringTeam: User[] = hiringTeamRes?.data ?? [];
+
+  const [mode, setMode] = useState<EmailComposerMode>("general");
+
+  const [genSubject, setGenSubject] = useState("");
+  const [genBody, setGenBody] = useState("");
+
+  const [intTemplateId, setIntTemplateId] = useState<string>("");
+  const [intDate, setIntDate] = useState("");
+  const [intTime, setIntTime] = useState("");
+  const [intTimeZone, setIntTimeZone] = useState(() => {
+    try {
+      return Intl.DateTimeFormat().resolvedOptions().timeZone;
+    } catch {
+      return "UTC";
+    }
+  });
+  const [intLocation, setIntLocation] = useState("");
+  const [intVideoLink, setIntVideoLink] = useState("");
+  const [selectedInterviewerIds, setSelectedInterviewerIds] = useState<number[]>([]);
+  const [otherInterviewers, setOtherInterviewers] = useState("");
+  const [intSubject, setIntSubject] = useState("");
+  const [intBody, setIntBody] = useState("");
+  const [intPlainText, setIntPlainText] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
+  const [sendSuccess, setSendSuccess] = useState<string | null>(null);
+
+  useEffect(() => {
+    setGenSubject("");
+    setGenBody("");
+    setMode("general");
+    setIntTemplateId("");
+    setIntDate("");
+    setIntTime("");
+    setIntLocation("");
+    setIntVideoLink("");
+    setOtherInterviewers("");
+    setIntBody("");
+    setIntPlainText(false);
+    setSendError(null);
+    setSendSuccess(null);
+  }, [candidate.id]);
+
+  useEffect(() => {
+    setIntSubject(`Interview — ${candidate.jobTitle ?? "Position"}`);
+  }, [candidate.id, candidate.jobTitle]);
+
+  useEffect(() => {
+    if (hiringTeam.length === 0) {
+      setSelectedInterviewerIds([]);
+      return;
+    }
+    setSelectedInterviewerIds(hiringTeam.map((u) => u.id));
+  }, [hiringTeam]);
+
+  const timeZoneOptions = useMemo(() => {
+    const set = new Set<string>(TIME_ZONE_OPTIONS);
+    if (intTimeZone) set.add(intTimeZone);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [intTimeZone]);
+
+  const interviewerSummary = useMemo(() => {
+    const selected = hiringTeam.filter((u) => selectedInterviewerIds.includes(u.id));
+    if (selected.length === 0) return "Select interviewers";
+    return selected.map(userDisplayName).join(", ");
+  }, [hiringTeam, selectedInterviewerIds]);
+
+  const selectedTemplate = templates.find((t) => String(t.id) === intTemplateId);
+
+  const interviewNeedsBody =
+    intPlainText || !selectedTemplate;
+
+  const interviewCanSend =
+    intSubject.trim() && (!interviewNeedsBody || intBody.trim());
+
+  const generalCanSend = genSubject.trim() && genBody.trim();
+
+  const toggleInterviewer = (id: number) => {
+    setSelectedInterviewerIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
+    );
+  };
+
+  const sendGeneralEmail = () => {
+    setSendError(null);
+    setSendSuccess(null);
+    sendCandidateEmailMutation.mutate(
+      {
+        candidateId: candidate.id,
+        mode: "general",
+        subject: genSubject.trim(),
+        body: genBody.trim(),
+      },
+      {
+        onSuccess: () => {
+          setSendSuccess("General email sent.");
+          setGenSubject("");
+          setGenBody("");
+        },
+        onError: (e) => {
+          setSendError((e as Error)?.message ?? "Failed to send email.");
+        },
+      },
+    );
+  };
+
+  const sendInterviewEmail = () => {
+    setSendError(null);
+    setSendSuccess(null);
+    const selectedInterviewerNames = hiringTeam
+      .filter((u) => selectedInterviewerIds.includes(u.id))
+      .map(userDisplayName);
+
+    sendCandidateEmailMutation.mutate(
+      {
+        candidateId: candidate.id,
+        mode: "interview",
+        templateId: intTemplateId ? Number(intTemplateId) : null,
+        subject: intSubject.trim(),
+        body: interviewNeedsBody ? intBody.trim() : "",
+        interview: {
+          date: intDate || undefined,
+          time: intTime || undefined,
+          timeZone: intTimeZone || undefined,
+          location: intLocation || undefined,
+          videoLink: intVideoLink || undefined,
+          interviewers: selectedInterviewerNames,
+          otherInterviewers: otherInterviewers || undefined,
+        },
+      },
+      {
+        onSuccess: () => {
+          setSendSuccess("Interview email sent.");
+        },
+        onError: (e) => {
+          setSendError((e as Error)?.message ?? "Failed to send email.");
+        },
+      },
+    );
+  };
+
+  const labelClass =
+    "text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide";
+
+  return (
+    <div className="space-y-4 flex flex-col min-h-0">
+      <div className="space-y-1.5">
+        <p className={labelClass}>Message type</p>
+        <div className="flex rounded-lg border border-slate-200 dark:border-neutral-800 p-0.5 bg-slate-100/90 dark:bg-neutral-800/60">
+          {(
+            [
+              { id: "general" as const, label: "General" },
+              { id: "interview" as const, label: "Interview invite" },
+            ] as const
+          ).map(({ id, label }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setMode(id)}
+              className={cn(
+                "flex-1 rounded-md py-2 text-[13px] font-medium transition-all",
+                mode === id
+                  ? "bg-white dark:bg-neutral-950 text-slate-900 dark:text-neutral-100 shadow-sm border border-slate-200/80 dark:border-neutral-700"
+                  : "text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200",
+              )}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {mode === "general" ? (
+        <div className="space-y-4 h-full flex flex-col">
+          <div className="space-y-1.5">
+            <Label className={labelClass}>To</Label>
+            <Input
+              value={candidate.email}
+              readOnly
+              className="h-10 border-slate-200 dark:border-neutral-800 shadow-none bg-slate-50 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 text-[13px] focus-visible:ring-0 focus-visible:border-slate-200 dark:focus-visible:border-neutral-800 cursor-default"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className={labelClass}>Subject</Label>
+            <Input
+              value={genSubject}
+              onChange={(e) => setGenSubject(e.target.value)}
+              placeholder="e.g. Update on your application"
+              className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] transition-[border-color] duration-200"
+            />
+          </div>
+          <div className="space-y-1.5 flex-1 flex flex-col min-h-0">
+            <Label className={labelClass}>Message</Label>
+            <textarea
+              value={genBody}
+              onChange={(e) => setGenBody(e.target.value)}
+              placeholder="Write your message here..."
+              className="flex-1 min-h-[160px] w-full rounded-md border border-slate-200 dark:border-neutral-800 px-3 py-2.5 text-[13px] text-slate-700 dark:text-neutral-300 bg-white dark:bg-neutral-950 leading-relaxed resize-none focus:outline-none focus:border-[var(--theme-color)] transition-[border-color] duration-200"
+            />
+          </div>
+          <div className="flex items-center justify-between pt-1 shrink-0">
+            <span className="text-[12px] text-slate-400 dark:text-neutral-500">
+              Sending to <strong className="text-slate-600 dark:text-neutral-300">{candidate.email}</strong>
+            </span>
+            <Button
+              disabled={!generalCanSend || sendCandidateEmailMutation.isPending}
+              onClick={sendGeneralEmail}
+              className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium text-[13px] gap-2 px-5 h-9 rounded-[8px] shadow-none border-none disabled:opacity-50"
+            >
+              <HugeiconsIcon icon={SentIcon} className="size-4 rotate-[-45deg]" strokeWidth={2.5} />
+              {sendCandidateEmailMutation.isPending ? "Sending..." : "Send Email"}
+            </Button>
+          </div>
+          {sendError && <p className="text-red-500 text-[12px]">{sendError}</p>}
+          {sendSuccess && <p className="text-green-600 text-[12px]">{sendSuccess}</p>}
+        </div>
+      ) : (
+        <div className="space-y-5 pb-1">
+          <div className="space-y-1.5">
+            <Label className={labelClass}>Template</Label>
+            <Select
+              value={intTemplateId || "__none__"}
+              onValueChange={(v) => {
+                const next = v ?? "";
+                setIntTemplateId(next && next !== "__none__" ? next : "");
+                setIntPlainText(false);
+              }}
+            >
+              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
+                <SelectValue placeholder="Choose a template" />
+              </SelectTrigger>
+              <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 max-h-60">
+                <SelectItem value="__none__" className="text-[13px]">
+                  No template (plain text only)
+                </SelectItem>
+                {templates.map((t) => (
+                  <SelectItem key={t.id} value={String(t.id)} className="text-[13px]">
+                    {t.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-3">
+            <p className={labelClass}>Interview schedule</p>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label className={labelClass}>Date</Label>
+                <DatePickerField
+                  value={intDate}
+                  onChange={setIntDate}
+                  placeholder="Select date"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className={labelClass}>Time</Label>
+                <Input
+                  type="time"
+                  value={intTime}
+                  onChange={(e) => setIntTime(e.target.value)}
+                  className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus-visible:ring-0"
+                />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className={labelClass}>Time zone</Label>
+              <Select value={intTimeZone} onValueChange={(v) => setIntTimeZone(v ?? "UTC")}>
+                <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 max-h-56">
+                  {timeZoneOptions.map((tz) => (
+                    <SelectItem key={tz} value={tz} className="text-[13px] font-mono">
+                      {tz}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <p className={labelClass}>Location &amp; video</p>
+            <div className="space-y-1.5">
+              <Label className={labelClass}>Location</Label>
+              <Input
+                value={intLocation}
+                onChange={(e) => setIntLocation(e.target.value)}
+                placeholder="Office address or Remote"
+                className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus-visible:ring-0"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className={labelClass}>Video link</Label>
+              <Input
+                value={intVideoLink}
+                onChange={(e) => setIntVideoLink(e.target.value)}
+                placeholder="Zoom / Meet / Teams URL (optional)"
+                className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus-visible:ring-0"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className={labelClass}>Interviewers</p>
+            <div className="space-y-1.5">
+              <Label className={labelClass}>From this job&apos;s hiring team</Label>
+              <Popover>
+                <PopoverTrigger
+                  className={cn(
+                    buttonVariants({ variant: "outline" }),
+                    "w-full h-auto min-h-10 justify-start text-left font-normal border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[13px] text-slate-700 dark:text-neutral-300 px-3 py-2 whitespace-normal shadow-none",
+                  )}
+                >
+                  {interviewerSummary}
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className="w-[min(100vw-2.5rem,480px)] p-3 border-slate-200 dark:border-neutral-800"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-8 text-[12px] border-[var(--theme-color)] text-[var(--theme-color)] hover:bg-[var(--theme-color)]/10 shadow-none"
+                      onClick={() => setSelectedInterviewerIds(hiringTeam.map((u) => u.id))}
+                    >
+                      Select all
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-8 text-[12px] text-slate-600 dark:text-neutral-400"
+                      onClick={() => setSelectedInterviewerIds([])}
+                    >
+                      Clear
+                    </Button>
+                  </div>
+                  <div className="max-h-48 overflow-y-auto space-y-2 pr-1">
+                    {hiringTeam.length === 0 ? (
+                      <p className="text-[12px] text-slate-400">No hiring team on this job yet.</p>
+                    ) : (
+                      hiringTeam.map((u) => (
+                        <label
+                          key={u.id}
+                          className="flex items-center gap-2.5 cursor-pointer text-[13px] text-slate-700 dark:text-neutral-300"
+                        >
+                          <Checkbox
+                            checked={selectedInterviewerIds.includes(u.id)}
+                            onCheckedChange={() => toggleInterviewer(u.id)}
+                            variant="theme"
+                            className="size-4 shrink-0"
+                          />
+                          <span>{userDisplayName(u)}</span>
+                        </label>
+                      ))
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <p className="text-[11px] text-slate-400 dark:text-neutral-500 leading-relaxed">
+                Choosing an interview template selects everyone on the team by default; use the menu to
+                change who is listed.
+              </p>
+            </div>
+            <div className="space-y-1.5 pt-1">
+              <Label className={labelClass}>Other names (optional)</Label>
+              <Input
+                value={otherInterviewers}
+                onChange={(e) => setOtherInterviewers(e.target.value)}
+                placeholder="Guest interviewers not on the hiring team"
+                className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus-visible:ring-0"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className={labelClass}>To</Label>
+            <Input
+              value={candidate.email}
+              readOnly
+              className="h-10 border-slate-200 dark:border-neutral-800 shadow-none bg-slate-50 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 text-[13px] focus-visible:ring-0 cursor-default"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className={labelClass}>Subject</Label>
+            <Input
+              value={intSubject}
+              onChange={(e) => setIntSubject(e.target.value)}
+              placeholder="Interview — Role at Company"
+              className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+            />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label className={labelClass}>Message</Label>
+            {selectedTemplate && !intPlainText ? (
+              <div className="rounded-lg border border-dashed border-slate-300 dark:border-neutral-600 bg-slate-50/50 dark:bg-neutral-900/30 px-4 py-3 text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+                <p>
+                  Body comes from the selected template. Need a text box?{" "}
+                  <button
+                    type="button"
+                    className="text-[var(--theme-color)] font-medium hover:underline"
+                    onClick={() => setIntPlainText(true)}
+                  >
+                    Switch to plain text.
+                  </button>
+                </p>
+              </div>
+            ) : (
+              <textarea
+                value={intBody}
+                onChange={(e) => setIntBody(e.target.value)}
+                placeholder="Write your interview message here..."
+                className="min-h-[140px] w-full rounded-md border border-slate-200 dark:border-neutral-800 px-3 py-2.5 text-[13px] text-slate-700 dark:text-neutral-300 bg-white dark:bg-neutral-950 leading-relaxed resize-none focus:outline-none focus:border-[var(--theme-color)]"
+              />
+            )}
+          </div>
+
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[12px] text-slate-400 dark:text-neutral-500">
+              Sending to <strong className="text-slate-600 dark:text-neutral-300">{candidate.email}</strong>
+            </span>
+            <Button
+              disabled={!interviewCanSend || sendCandidateEmailMutation.isPending}
+              onClick={sendInterviewEmail}
+              className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium text-[13px] gap-2 px-5 h-9 rounded-[8px] shadow-none border-none disabled:opacity-50"
+            >
+              <HugeiconsIcon icon={SentIcon} className="size-4 rotate-[-45deg]" strokeWidth={2.5} />
+              {sendCandidateEmailMutation.isPending ? "Sending..." : "Send Email"}
+            </Button>
+          </div>
+          {sendError && <p className="text-red-500 text-[12px]">{sendError}</p>}
+          {sendSuccess && <p className="text-green-600 text-[12px]">{sendSuccess}</p>}
+        </div>
+      )}
+    </div>
+  );
+}
+
+const offerLabelClass =
+  "text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide";
+
+function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
+  const offer = candidate.offer;
+  const { data: templatesRes } = useTemplates();
+  const offerTemplates = useMemo(
+    () => (templatesRes?.data ?? []).filter((t) => t.type === "offer"),
+    [templatesRes],
+  );
+
+  const updateOfferMutation = useUpdateOffer();
+  const updateOfferStatusMutation = useUpdateOfferStatus();
+
+  const [isEditing, setIsEditing] = useState(false);
+
+  const [templateId, setTemplateId] = useState("");
+  const [benefits, setBenefits] = useState("");
+  const [salary, setSalary] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [payFreq, setPayFreq] = useState("monthly");
+  const [startDate, setStartDate] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [status, setStatus] = useState("draft");
+
+  useEffect(() => {
+    if (!offer) return;
+    setTemplateId(offer.templateId != null ? String(offer.templateId) : "");
+    setBenefits(offer.benefits ?? "");
+    setSalary(offer.salary ? String(Number(offer.salary)) : "");
+    setCurrency(offer.currency ?? "USD");
+    setPayFreq((offer.payFrequency as "hourly" | "daily" | "weekly" | "monthly" | "yearly") ?? "monthly");
+    setStartDate(offer.startDate ?? "");
+    setExpiryDate(offer.expiryDate ?? "");
+    setStatus(offer.status ?? "draft");
+    setIsEditing(false);
+  }, [candidate.id, offer?.id, offer?.updatedAt]);
+
+  if (!offer) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-12">
+        <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center">
+          <span className="text-2xl">📄</span>
+        </div>
+        <p className="text-slate-500 dark:text-neutral-400 font-medium text-[14px]">No offer yet</p>
+        <p className="text-slate-400 dark:text-neutral-500 text-[13px] max-w-[220px] leading-relaxed">
+          An offer will appear here once the candidate reaches an offer stage.
+        </p>
+      </div>
+    );
+  }
+
+  const isDraft = offer.status === "draft";
+  const showForm = isDraft || isEditing;
+  const offerStyle =
+    OFFER_STATUS_STYLES[offer.status] ?? OFFER_STATUS_STYLES.draft;
+
+  const templateDisplayName =
+    offerTemplates.find((t) => t.id === offer.templateId)?.name ??
+    (offer.templateId ? `Template #${offer.templateId}` : "—");
+
+  const buildPayload = (): Partial<Offer> => ({
+    templateId: templateId ? Number(templateId) : null,
+    benefits: benefits.trim() || null,
+    salary: salary ? Number(salary) : null,
+    currency: currency || null,
+    payFrequency: payFreq as Offer["payFrequency"],
+    startDate: startDate || null,
+    expiryDate: expiryDate || null,
+  });
+
+  const saveDraft = () => {
+    updateOfferMutation.mutate({ offerId: offer.id, data: buildPayload() });
+  };
+
+  const sendOffer = () => {
+    updateOfferMutation.mutate(
+      { offerId: offer.id, data: buildPayload() },
+      {
+        onSuccess: () => {
+          updateOfferStatusMutation.mutate({ id: offer.id, status: "sent" });
+        },
+      },
+    );
+  };
+
+  const saveEdits = () => {
+    const newStatus = status as Offer["status"];
+    const statusChanged = newStatus !== offer.status;
+    updateOfferMutation.mutate(
+      { offerId: offer.id, data: buildPayload() },
+      {
+        onSuccess: () => {
+          if (statusChanged) {
+            updateOfferStatusMutation.mutate(
+              { id: offer.id, status: newStatus },
+              { onSuccess: () => setIsEditing(false) },
+            );
+          } else {
+            setIsEditing(false);
+          }
+        },
+      },
+    );
+  };
+
+  const openEdit = () => {
+    setTemplateId(offer.templateId != null ? String(offer.templateId) : "");
+    setBenefits(offer.benefits ?? "");
+    setSalary(offer.salary ? String(Number(offer.salary)) : "");
+    setCurrency(offer.currency ?? "USD");
+    setPayFreq((offer.payFrequency as "hourly" | "daily" | "weekly" | "monthly" | "yearly") ?? "monthly");
+    setStartDate(offer.startDate ?? "");
+    setExpiryDate(offer.expiryDate ?? "");
+    setStatus(offer.status ?? "draft");
+    setIsEditing(true);
+  };
+
+  const formFields = (
+    <div className="space-y-5">
+      <div className="space-y-1.5">
+        <Label className={offerLabelClass}>Offer letter template</Label>
+        <Select
+          value={templateId || "__none__"}
+          onValueChange={(v) => {
+            const next = v ?? "";
+            setTemplateId(next && next !== "__none__" ? next : "");
+          }}
+        >
+          <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
+            <SelectValue placeholder="Select template" />
+          </SelectTrigger>
+          <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 max-h-56">
+            <SelectItem value="__none__" className="text-[13px]">
+              Standard offer letter (default)
+            </SelectItem>
+            {offerTemplates.map((t) => (
+              <SelectItem key={t.id} value={String(t.id)} className="text-[13px]">
+                {t.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className="space-y-3">
+        <p className={offerLabelClass}>Pay &amp; currency</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className={offerLabelClass}>Currency</Label>
+            <Select value={currency} onValueChange={(v) => setCurrency(v ?? "USD")}>
+              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+                {["USD", "EUR", "GBP", "LKR", "INR", "AUD"].map((c) => (
+                  <SelectItem key={c} value={c} className="text-[13px]">
+                    {c}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1.5">
+            <Label className={offerLabelClass}>Pay frequency</Label>
+            <Select value={payFreq} onValueChange={(v) => setPayFreq(v ?? "monthly")}>
+              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+                {["hourly", "daily", "weekly", "monthly", "yearly"].map((f) => (
+                  <SelectItem key={f} value={f} className="text-[13px] capitalize">
+                    {f}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className={offerLabelClass}>Salary or rate</Label>
+        <Input
+          type="number"
+          min={0}
+          value={salary}
+          onChange={(e) => setSalary(e.target.value)}
+          placeholder="e.g. 65000"
+          className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+        />
+      </div>
+
+      <div className="space-y-3">
+        <p className={offerLabelClass}>Start date &amp; offer deadline</p>
+        <div className="grid grid-cols-2 gap-3">
+          <div className="space-y-1.5">
+            <Label className={offerLabelClass}>Start date</Label>
+            <DatePickerField
+              value={startDate}
+              onChange={setStartDate}
+              placeholder="Select start date"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label className={offerLabelClass}>Offer expires</Label>
+            <DatePickerField
+              value={expiryDate}
+              onChange={setExpiryDate}
+              placeholder="Select expiry date"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className={offerLabelClass}>Perks &amp; benefits (optional)</Label>
+        <textarea
+          value={benefits}
+          onChange={(e) => setBenefits(e.target.value)}
+          placeholder="For example: health insurance, paid time off, remote days… (use {{benefits}} in your letter template)"
+          className="min-h-[100px] w-full rounded-md border border-slate-200 dark:border-neutral-800 px-3 py-2.5 text-[13px] text-slate-700 dark:text-neutral-300 bg-white dark:bg-neutral-950 leading-relaxed resize-none focus:outline-none focus:border-[var(--theme-color)]"
+        />
+      </div>
+
+      {!isDraft && isEditing && (
+        <div className="space-y-1.5">
+          <Label className={offerLabelClass}>Status</Label>
+          <Select value={status} onValueChange={(v) => setStatus(v ?? "draft")}>
+            <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+              {["draft", "sent", "pending", "accepted", "declined", "withdrawn"].map((s) => (
+                <SelectItem key={s} value={s} className="text-[13px] capitalize">
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+      )}
+    </div>
+  );
+
+  return (
+    <div className="space-y-5">
+      {showForm && isDraft && (
+        <div className="rounded-lg border border-sky-200/80 dark:border-sky-900/50 bg-sky-50/90 dark:bg-sky-950/25 px-3 py-2.5 text-[12px] text-sky-900 dark:text-sky-100/90 leading-relaxed">
+          <strong>Save draft</strong> persists your offer details; <strong>Send</strong> emails{" "}
+          <span className="font-mono break-all">{candidate.email}</span>. Perks use{" "}
+          <code className="text-[11px] bg-white/70 dark:bg-sky-950/50 px-1 rounded border border-sky-200/60 dark:border-sky-800">
+            {`{{benefits}}`}
+          </code>{" "}
+          in the template.
+        </div>
+      )}
+
+      {showForm && !isDraft && (
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">Edit offer</p>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsEditing(false)}
+              className="h-8 px-3 text-[12px] border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none rounded-lg gap-1.5"
+            >
+              <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              onClick={saveEdits}
+              disabled={updateOfferMutation.isPending || updateOfferStatusMutation.isPending}
+              className="h-8 px-3 text-[12px] bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-lg gap-1.5"
+            >
+              <HugeiconsIcon icon={Tick02Icon} className="size-3.5" />
+              {updateOfferMutation.isPending || updateOfferStatusMutation.isPending ? "Saving…" : "Save"}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {showForm ? (
+        <>
+          {formFields}
+
+          {isDraft && (
+            <div className="flex flex-col gap-2 pt-1">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={updateOfferMutation.isPending}
+                onClick={saveDraft}
+                className="h-10 w-full border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-200 shadow-none rounded-lg text-[13px] font-medium"
+              >
+                {updateOfferMutation.isPending ? "Saving…" : "Save draft"}
+              </Button>
+              <Button
+                type="button"
+                disabled={updateOfferMutation.isPending || updateOfferStatusMutation.isPending}
+                onClick={sendOffer}
+                className="h-10 w-full bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-lg text-[13px] font-medium"
+              >
+                <HugeiconsIcon icon={SentIcon} className="size-4 rotate-[-45deg] mr-2" strokeWidth={2.5} />
+                Send
+              </Button>
+            </div>
+          )}
+
+          {updateOfferMutation.isError && (
+            <p className="text-red-500 text-[12px]">
+              {(updateOfferMutation.error as Error).message ?? "Failed to save offer."}
+            </p>
+          )}
+        </>
+      ) : (
+        <>
+          <div className="flex items-center justify-between gap-2 flex-wrap">
+            <div className="flex items-center gap-3">
+              <span className={offerLabelClass}>Status</span>
+              <Badge
+                className={`${offerStyle.bg} ${offerStyle.text} hover:opacity-90 border-none shadow-none font-semibold px-3 py-1 rounded-md text-[11px] uppercase tracking-wider`}
+              >
+                {offer.status}
+              </Badge>
+            </div>
+            <div className="flex items-center gap-2">
+              {(offer.status === "sent" || offer.status === "pending") && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  disabled={updateOfferStatusMutation.isPending}
+                  onClick={() =>
+                    updateOfferStatusMutation.mutate({ id: offer.id, status: "sent" })
+                  }
+                  className="h-8 px-3 text-[12px] border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none rounded-lg gap-1.5"
+                >
+                  <HugeiconsIcon icon={SentIcon} className="size-3.5 rotate-[-45deg]" strokeWidth={2.5} />
+                  {updateOfferStatusMutation.isPending ? "Resending…" : "Resend"}
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={openEdit}
+                className="h-8 px-3 text-[12px] border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none rounded-lg gap-1.5"
+              >
+                <HugeiconsIcon icon={PencilEdit01Icon} className="size-3.5" />
+                Edit
+              </Button>
+            </div>
+          </div>
+
+          <div className="divide-y divide-slate-100 dark:divide-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-800 overflow-hidden">
+            {[
+              { label: "Letter template", value: templateDisplayName },
+              {
+                label: "Salary",
+                value: offer.salary
+                  ? `${offer.currency ?? ""} ${Number(offer.salary).toLocaleString()}${offer.payFrequency ? ` / ${offer.payFrequency}` : ""}`.trim()
+                  : "—",
+              },
+              { label: "Start Date", value: formatDate(offer.startDate) },
+              { label: "Expiry Date", value: formatDate(offer.expiryDate) },
+              {
+                label: "Benefits",
+                value: offer.benefits?.trim() ? offer.benefits : "—",
+              },
+              { label: "Sent At", value: offer.sentAt ? timeAgo(offer.sentAt) : "Not sent yet" },
+            ].map(({ label, value }) => (
+              <div key={label} className="flex items-center justify-between px-4 py-3 gap-4">
+                <span className="text-[13px] text-slate-500 dark:text-neutral-400 font-medium shrink-0">
+                  {label}
+                </span>
+                <span className="text-[13px] text-slate-800 dark:text-neutral-200 font-semibold text-right break-words">
+                  {value}
+                </span>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 interface CandidateSidePanelProps {
   candidateId: number;
   /** When false, candidate detail is not fetched (e.g. sheet closed). */
   open?: boolean;
+  defaultTab?: "job-fit" | "answers" | "history" | "offer" | "email" | "scores";
 }
 
 export function CandidateSidePanel({
   candidateId,
   open = true,
+  defaultTab = "job-fit",
 }: CandidateSidePanelProps) {
-  const { data, isLoading } = useCandidate(candidateId, {
-    enabled: open && !!candidateId,
+  const { data, isLoading, isError, error } = useCandidate(candidateId, {
+    enabled: !!candidateId,
+    pollCvWhileSheetOpen: open,
   });
   const candidate = data?.data;
 
   const { data: pipelineData } = usePipeline(candidate?.jobId ?? 0);
-  const { data: assessmentsData } = useCandidateAssessments(candidateId);
+
+  const {
+    data: assessmentsData,
+    isLoading: isAssessmentsLoading,
+    isError: isAssessmentsError,
+    error: assessmentsError,
+  } = useCandidateAssessments(candidateId);
   const stageMap = useMemo(
     () => Object.fromEntries((pipelineData?.data ?? []).map((s) => [s.id, s.name])),
     [pipelineData],
   );
 
-  const [emailSubject, setEmailSubject] = useState("");
-  const [emailBody, setEmailBody] = useState("");
-
-  const [isEditingOffer, setIsEditingOffer] = useState(false);
-  const [editSalary, setEditSalary] = useState("");
-  const [editCurrency, setEditCurrency] = useState("USD");
-  const [editPayFreq, setEditPayFreq] = useState("monthly");
-  const [editStartDate, setEditStartDate] = useState("");
-  const [editExpiryDate, setEditExpiryDate] = useState("");
-  const [editStatus, setEditStatus] = useState("draft");
-
-  const updateOfferMutation = useUpdateOffer();
-  const updateOfferStatusMutation = useUpdateOfferStatus();
   const tabsScrollRef = useRef<HTMLDivElement>(null);
 
   const handleTabsWheel = (e: React.WheelEvent<HTMLDivElement>) => {
@@ -94,52 +1015,21 @@ export function CandidateSidePanel({
     el.scrollLeft += e.deltaY;
   };
 
-  const openOfferEdit = () => {
-    if (!offer) return;
-    setEditSalary(offer.salary ? String(Number(offer.salary)) : "");
-    setEditCurrency(offer.currency ?? "USD");
-    setEditPayFreq(offer.payFrequency ?? "monthly");
-    setEditStartDate(offer.startDate ?? "");
-    setEditExpiryDate(offer.expiryDate ?? "");
-    setEditStatus(offer.status ?? "draft");
-    setIsEditingOffer(true);
-  };
-
-  const saveOffer = () => {
-    if (!offer) return;
-    const statusChanged = editStatus !== offer.status;
-    const newStatus = editStatus as "draft" | "sent" | "pending" | "accepted" | "declined" | "withdrawn";
-
-    updateOfferMutation.mutate(
-      {
-        offerId: offer.id,
-        data: {
-          salary: editSalary ? Number(editSalary) : null,
-          currency: editCurrency || null,
-          payFrequency: editPayFreq as "hourly" | "daily" | "weekly" | "monthly" | "yearly",
-          startDate: editStartDate || null,
-          expiryDate: editExpiryDate || null,
-        },
-      },
-      {
-        onSuccess: () => {
-          if (statusChanged) {
-            updateOfferStatusMutation.mutate(
-              { id: offer.id, status: newStatus },
-              { onSuccess: () => setIsEditingOffer(false) },
-            );
-          } else {
-            setIsEditingOffer(false);
-          }
-        },
-      },
-    );
-  };
-
   if (isLoading) {
     return (
       <div className="w-[520px] border-l border-slate-100 dark:border-neutral-800 flex items-center justify-center bg-white dark:bg-neutral-950 shrink-0">
         <p className="text-slate-400 dark:text-neutral-500 text-sm">Loading...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div className="w-[520px] border-l border-slate-100 dark:border-neutral-800 flex flex-col items-center justify-center gap-2 bg-white dark:bg-neutral-950 shrink-0 p-5">
+        <p className="text-red-600 dark:text-red-400 text-sm font-medium">Couldn&apos;t load candidate</p>
+        <p className="text-slate-500 dark:text-neutral-500 text-xs text-center max-w-[280px]">
+          {(error as Error)?.message ?? "Request failed"}
+        </p>
       </div>
     );
   }
@@ -180,7 +1070,7 @@ export function CandidateSidePanel({
         )}
       </div>
 
-      <Tabs defaultValue="job-fit" className="flex-1 flex flex-col overflow-hidden m-0 min-h-0">
+      <Tabs defaultValue={defaultTab} className="flex-1 flex flex-col overflow-hidden m-0 min-h-0">
         <div
           ref={tabsScrollRef}
           onWheel={handleTabsWheel}
@@ -296,255 +1186,25 @@ export function CandidateSidePanel({
         </TabsContent>
 
         <TabsContent value="offer" className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel">
-          {!offer ? (
-            <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-12">
-              <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center">
-                <span className="text-2xl">📄</span>
-              </div>
-              <p className="text-slate-500 dark:text-neutral-400 font-medium text-[14px]">No offer yet</p>
-              <p className="text-slate-400 dark:text-neutral-500 text-[13px] max-w-[220px] leading-relaxed">
-                An offer will appear here once the candidate reaches an offer stage.
-              </p>
-            </div>
-          ) : isEditingOffer ? (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between mb-1">
-                <p className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">Edit Offer</p>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setIsEditingOffer(false)}
-                    className="h-8 px-3 text-[12px] border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-500 dark:text-neutral-400 shadow-none rounded-lg gap-1.5"
-                  >
-                    <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" />
-                    Cancel
-                  </Button>
-                  <Button
-                    size="sm"
-                    onClick={saveOffer}
-                    disabled={updateOfferMutation.isPending}
-                    className="h-8 px-3 text-[12px] bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-lg gap-1.5"
-                  >
-                    <HugeiconsIcon icon={Tick02Icon} className="size-3.5" />
-                    {updateOfferMutation.isPending ? "Saving…" : "Save"}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Status</Label>
-                <Select value={editStatus} onValueChange={(v) => setEditStatus(v ?? "")}>
-                  <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-                    {["draft", "sent", "pending", "accepted", "declined", "withdrawn"].map((s) => (
-                      <SelectItem key={s} value={s} className="text-[13px] capitalize">{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Currency</Label>
-                  <Select value={editCurrency} onValueChange={(v) => setEditCurrency(v ?? "")}>
-                    <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-                      {["USD", "EUR", "GBP", "LKR", "INR", "AUD"].map((c) => (
-                        <SelectItem key={c} value={c} className="text-[13px]">{c}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">Pay Frequency</Label>
-                  <Select value={editPayFreq} onValueChange={(v) => setEditPayFreq(v ?? "")}>
-                    <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-                      {["hourly", "daily", "weekly", "monthly", "yearly"].map((f) => (
-                        <SelectItem key={f} value={f} className="text-[13px] capitalize">{f}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Salary</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={editSalary}
-                  onChange={(e) => setEditSalary(e.target.value)}
-                  placeholder="e.g. 75000"
-                  className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] transition-[border-color] duration-200"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold text-slate-400 uppercase tracking-wide">Start Date</Label>
-                  <Input
-                    type="date"
-                    value={editStartDate}
-                    onChange={(e) => setEditStartDate(e.target.value)}
-                    className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] transition-[border-color] duration-200"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">Expiry Date</Label>
-                  <Input
-                    type="date"
-                    value={editExpiryDate}
-                    onChange={(e) => setEditExpiryDate(e.target.value)}
-                    className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] transition-[border-color] duration-200"
-                  />
-                </div>
-              </div>
-
-              {updateOfferMutation.isError && (
-                <p className="text-red-500 text-[12px]">
-                  {(updateOfferMutation.error as Error).message ?? "Failed to save offer."}
-                </p>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-5">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <span className="text-[12px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wide">Status</span>
-                  <Badge className={`${offerStyle?.bg} ${offerStyle?.text} hover:opacity-90 border-none shadow-none font-semibold px-3 py-1 rounded-md text-[11px] uppercase tracking-wider`}>
-                    {offer.status}
-                  </Badge>
-                </div>
-                <div className="flex items-center gap-2">
-                  {(offer.status === "draft") && (
-                    <Button
-                      size="sm"
-                      disabled={updateOfferStatusMutation.isPending}
-                      onClick={() =>
-                        updateOfferStatusMutation.mutate({ id: offer.id, status: "sent" })
-                      }
-                      className="h-8 px-3 text-[12px] bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-lg gap-1.5 disabled:opacity-50"
-                    >
-                      <HugeiconsIcon icon={SentIcon} className="size-3.5 rotate-[-45deg]" strokeWidth={2.5} />
-                      {updateOfferStatusMutation.isPending ? "Sending…" : "Send Offer"}
-                    </Button>
-                  )}
-                  {(offer.status === "sent" || offer.status === "pending") && (
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      disabled={updateOfferStatusMutation.isPending}
-                      onClick={() =>
-                        updateOfferStatusMutation.mutate({ id: offer.id, status: "sent" })
-                      }
-                      className="h-8 px-3 text-[12px] border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200 shadow-none rounded-lg gap-1.5 disabled:opacity-50"
-                    >
-                      <HugeiconsIcon icon={SentIcon} className="size-3.5 rotate-[-45deg]" strokeWidth={2.5} />
-                      {updateOfferStatusMutation.isPending ? "Resending…" : "Resend"}
-                    </Button>
-                  )}
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={openOfferEdit}
-                    className="h-8 px-3 text-[12px] border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200 shadow-none rounded-lg gap-1.5"
-                  >
-                    <HugeiconsIcon icon={PencilEdit01Icon} className="size-3.5" />
-                    Edit
-                  </Button>
-                </div>
-              </div>
-
-              <div className="divide-y divide-slate-100 dark:divide-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-800 overflow-hidden">
-                {[
-                  {
-                    label: "Salary",
-                    value: offer.salary
-                      ? `${offer.currency ?? ""} ${Number(offer.salary).toLocaleString()}${offer.payFrequency ? ` / ${offer.payFrequency}` : ""}`.trim()
-                      : "—",
-                  },
-                  { label: "Start Date", value: formatDate(offer.startDate) },
-                  { label: "Expiry Date", value: formatDate(offer.expiryDate) },
-                  { label: "Sent At", value: offer.sentAt ? timeAgo(offer.sentAt) : "Not sent yet" },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex items-center justify-between px-4 py-3 gap-4">
-                    <span className="text-[13px] text-slate-500 dark:text-neutral-400 font-medium shrink-0">{label}</span>
-                    <span className="text-[13px] text-slate-800 dark:text-neutral-200 font-semibold text-right break-words">{value}</span>
-                  </div>
-                ))}
-              </div>
-
-              {offer.renderedHtml && (
-                <div className="space-y-2">
-                  <p className="text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
-                    Offer Letter Preview
-                  </p>
-                  <div
-                    className="rounded-xl border border-slate-200 dark:border-neutral-800 p-4 text-[13px] text-slate-700 dark:text-neutral-300 bg-white dark:bg-neutral-900 leading-relaxed max-h-[340px] overflow-y-auto prose prose-sm w-full"
-                    dangerouslySetInnerHTML={{ __html: offer.renderedHtml }}
-                  />
-                </div>
-              )}
-            </div>
-          )}
+          <SidePanelOfferTab candidate={candidate} />
         </TabsContent>
 
         <TabsContent value="email" className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel">
-          <div className="space-y-4 h-full flex flex-col">
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide">To</Label>
-              <Input
-                value={candidate.email}
-                readOnly
-                className="h-10 border-slate-200 dark:border-neutral-800 shadow-none bg-slate-50 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 text-[13px] focus-visible:ring-0 focus-visible:border-slate-200 dark:focus-visible:border-neutral-800 cursor-default"
-              />
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide">Subject</Label>
-              <Input
-                value={emailSubject}
-                onChange={(e) => setEmailSubject(e.target.value)}
-                placeholder="e.g. Interview Invitation — Software Engineer"
-                className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] transition-[border-color] duration-200"
-              />
-            </div>
-            <div className="space-y-1.5 flex-1 flex flex-col min-h-0">
-              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wide">Message</Label>
-              <textarea
-                value={emailBody}
-                onChange={(e) => setEmailBody(e.target.value)}
-                placeholder="Write your message here..."
-                className="flex-1 min-h-[160px] w-full rounded-md border border-slate-200 dark:border-neutral-800 px-3 py-2.5 text-[13px] text-slate-700 dark:text-neutral-300 bg-white dark:bg-neutral-950 leading-relaxed resize-none focus:outline-none focus:border-[var(--theme-color)] transition-[border-color] duration-200"
-              />
-            </div>
-            <div className="flex items-center justify-between pt-1 shrink-0">
-              <span className="text-[12px] text-slate-400">
-                Sending to <strong className="text-slate-600 dark:text-neutral-300">{candidate.email}</strong>
-              </span>
-              <Button
-                disabled={!emailSubject.trim() || !emailBody.trim()}
-                className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium text-[13px] gap-2 px-5 h-9 rounded-[8px] shadow-none border-none disabled:opacity-50"
-              >
-                <HugeiconsIcon icon={SentIcon} className="size-4 rotate-[-45deg]" strokeWidth={2.5} />
-                Send Email
-              </Button>
-            </div>
-          </div>
+          <SidePanelEmailTab candidate={candidate} />
         </TabsContent>
 
         <TabsContent value="scores" className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel">
           {(() => {
             const attempts = assessmentsData?.data ?? [];
-            if (!assessmentsData) {
+            if (isAssessmentsLoading) {
               return <p className="text-slate-400 dark:text-neutral-500 text-sm italic">Loading…</p>;
+            }
+            if (isAssessmentsError) {
+              return (
+                <p className="text-red-500 text-sm">
+                  {(assessmentsError as Error)?.message ?? "Failed to load assessments."}
+                </p>
+              );
             }
             if (attempts.length === 0) {
               return (

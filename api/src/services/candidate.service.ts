@@ -16,6 +16,8 @@ import {
   assessments,
 } from "../db/schema";
 import type { Candidate } from "../db/schema/candidates";
+import type { JobPipelineStage } from "../db/schema/pipeline";
+import logger from "../utils/logger";
 import { assessmentExecutionService } from "./assessment-execution.service";
 import { offerService } from "./offer.service";
 import { jobService } from "./job.service";
@@ -93,6 +95,155 @@ export type MoveStageResult = {
   candidate: Candidate;
   stageAutomation: StageAutomationFlags;
 };
+
+type JobWithRelations = NonNullable<Awaited<ReturnType<typeof jobService.getById>>>;
+
+function computeOfferFieldsForJobStage(
+  job: JobWithRelations,
+  stage: JobPipelineStage,
+): { salary: number | null; expiryDate: string | null; status: "draft" | "sent" } {
+  let salary: number | null = null;
+  let blockAutoSend = false;
+
+  if (job.salaryType === "range" && job.salaryMin && job.salaryMax) {
+    salary = (Number(job.salaryMin) + Number(job.salaryMax)) / 2;
+    blockAutoSend = true;
+  } else if (job.salaryType === "fixed" && job.salaryFixed) {
+    salary = Number(job.salaryFixed);
+  } else if (!job.salaryType) {
+    blockAutoSend = true;
+  }
+
+  const status =
+    blockAutoSend || stage.offerMode === "auto_draft" ? "draft" : "sent";
+
+  let expiryDate: string | null = null;
+  if (stage.offerExpiryDays) {
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + stage.offerExpiryDays);
+    expiryDate = expiry.toISOString();
+  }
+
+  return { salary, expiryDate, status };
+}
+
+async function repairCandidatePipelineSnapshot(
+  candidateId: number,
+  candidate: Candidate,
+  history: (typeof candidateStageHistory.$inferSelect)[],
+  offer: (typeof offers.$inferSelect) | undefined,
+): Promise<{
+  history: (typeof candidateStageHistory.$inferSelect)[];
+  offer: (typeof offers.$inferSelect) | null;
+}> {
+  let historyOut = history;
+  let offerOut: (typeof offers.$inferSelect) | null = offer ?? null;
+
+  if (!candidate.currentStageId) {
+    return { history: historyOut, offer: offerOut };
+  }
+
+  const [stageRow] = await db
+    .select()
+    .from(jobPipelineStages)
+    .where(
+      and(
+        eq(jobPipelineStages.id, candidate.currentStageId),
+        eq(jobPipelineStages.jobId, candidate.jobId),
+      ),
+    );
+
+  if (!stageRow) {
+    return { history: historyOut, offer: offerOut };
+  }
+
+  const hasCurrentInHistory = historyOut.some(
+    (h) => h.stageId === candidate.currentStageId,
+  );
+
+  if (!hasCurrentInHistory) {
+    await db.insert(candidateStageHistory).values({
+      candidateId,
+      stageId: candidate.currentStageId,
+      movedBy: null,
+    });
+    logger.warn(
+      `[candidate.getById] Backfilled missing stage history for candidate ${candidateId} → stage ${candidate.currentStageId}`,
+    );
+    historyOut = await db
+      .select()
+      .from(candidateStageHistory)
+      .where(eq(candidateStageHistory.candidateId, candidateId))
+      .orderBy(asc(candidateStageHistory.movedAt));
+  }
+
+  if (stageRow.stageType !== "offer") {
+    return { history: historyOut, offer: offerOut };
+  }
+
+  const [existingOpenOffer] = await db
+    .select({ id: offers.id })
+    .from(offers)
+    .where(
+      and(
+        eq(offers.candidateId, candidateId),
+        eq(offers.jobId, candidate.jobId),
+        inArray(offers.status, ["draft", "sent", "pending", "accepted"]),
+      ),
+    )
+    .limit(1);
+
+  if (existingOpenOffer) {
+    const [latest] = await db
+      .select()
+      .from(offers)
+      .where(eq(offers.candidateId, candidateId))
+      .orderBy(desc(offers.createdAt))
+      .limit(1);
+    offerOut = latest ?? offerOut;
+    return { history: historyOut, offer: offerOut };
+  }
+
+  const job = await jobService.getById(candidate.jobId);
+  if (!job) {
+    return { history: historyOut, offer: offerOut };
+  }
+
+  const { salary, expiryDate } = computeOfferFieldsForJobStage(job, stageRow);
+  try {
+    await offerService.create(
+      {
+        candidateId,
+        jobId: job.id,
+        templateId: stageRow.offerTemplateId,
+        salary,
+        currency: job.currency,
+        payFrequency: job.payFrequency,
+        expiryDate,
+        status: "draft",
+        createdBy: 1,
+      },
+      db,
+    );
+    logger.warn(
+      `[candidate.getById] Backfilled missing offer row for candidate ${candidateId} (offer stage ${stageRow.id})`,
+    );
+  } catch (e) {
+    console.error(
+      `[candidate.getById] Failed to repair offer for candidate ${candidateId}:`,
+      e,
+    );
+  }
+
+  const [latestOffer] = await db
+    .select()
+    .from(offers)
+    .where(eq(offers.candidateId, candidateId))
+    .orderBy(desc(offers.createdAt))
+    .limit(1);
+
+  return { history: historyOut, offer: latestOffer ?? offerOut };
+}
 
 export const candidateService = {
   async apply(jobId: number, input: CandidateApplyInput) {
@@ -270,7 +421,9 @@ export const candidateService = {
     const [offer] = await db
       .select()
       .from(offers)
-      .where(eq(offers.candidateId, id));
+      .where(eq(offers.candidateId, id))
+      .orderBy(desc(offers.createdAt))
+      .limit(1);
 
     const [cvRow] = await db
       .select()
@@ -290,12 +443,17 @@ export const candidateService = {
         }
       : null;
 
+    console.log(`[getById] candidate ${id}: history=${history.length}, offer=${offer?.id ?? 'null'}, currentStageId=${candidate.currentStageId}`);
+    const { history: historyFixed, offer: offerFixed } =
+      await repairCandidatePipelineSnapshot(id, candidate, history, offer);
+    console.log(`[getById] candidate ${id} after repair: history=${historyFixed.length}, offer=${offerFixed?.id ?? 'null'}`);
+
     return {
       ...candidate,
       answers,
       selections,
-      history,
-      offer: offer ?? null,
+      history: historyFixed,
+      offer: offerFixed,
       cvAnalysis,
     };
   },
@@ -407,41 +565,23 @@ export const candidateService = {
           if (existingOpenOffer) {
             stageAutomation.offer = "skipped_open_exists";
           } else {
-            let salary: number | null = null;
-            let blockAutoSend = false;
+            const { salary, expiryDate, status } =
+              computeOfferFieldsForJobStage(job, stage);
 
-            if (job.salaryType === "range" && job.salaryMin && job.salaryMax) {
-              salary = (Number(job.salaryMin) + Number(job.salaryMax)) / 2;
-              blockAutoSend = true;
-            } else if (job.salaryType === "fixed" && job.salaryFixed) {
-              salary = Number(job.salaryFixed);
-            } else if (!job.salaryType) {
-              blockAutoSend = true;
-            }
-
-            const mode =
-              blockAutoSend || stage.offerMode === "auto_draft"
-                ? "draft"
-                : "sent";
-
-            let expiryDate: string | null = null;
-            if (stage.offerExpiryDays) {
-              const expiry = new Date();
-              expiry.setDate(expiry.getDate() + stage.offerExpiryDays);
-              expiryDate = expiry.toISOString();
-            }
-
-            await offerService.create({
-              candidateId: candidate.id,
-              jobId: job.id,
-              templateId: stage.offerTemplateId,
-              salary,
-              currency: job.currency,
-              payFrequency: job.payFrequency,
-              expiryDate,
-              status: mode,
-              createdBy: movedBy ?? 1,
-            });
+            await offerService.create(
+              {
+                candidateId: candidate.id,
+                jobId: job.id,
+                templateId: stage.offerTemplateId,
+                salary,
+                currency: job.currency,
+                payFrequency: job.payFrequency,
+                expiryDate,
+                status,
+                createdBy: movedBy ?? 1,
+              },
+              tx,
+            );
             stageAutomation.offer = "created";
           }
         }

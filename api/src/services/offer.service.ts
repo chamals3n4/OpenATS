@@ -6,6 +6,10 @@ import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
 import { mailService } from "./mail.service";
 
+export type DbExecutor =
+  | typeof db
+  | Parameters<Parameters<typeof db.transaction>[0]>[0];
+
 export interface CreateOfferInput {
   candidateId: number;
   jobId: number;
@@ -15,6 +19,7 @@ export interface CreateOfferInput {
   payFrequency?: "hourly" | "daily" | "weekly" | "monthly" | "yearly" | null | undefined;
   startDate?: string | null | undefined; 
   expiryDate?: string | null | undefined;
+  benefits?: string | null | undefined;
   status?: "draft" | "sent" | "pending" | "accepted" | "declined" | "withdrawn" | undefined;
   createdBy: number;
 }
@@ -27,6 +32,7 @@ export interface UpdateOfferInput {
   payFrequency?: "hourly" | "daily" | "weekly" | "monthly" | "yearly" | null | undefined;
   startDate?: string | null | undefined;
   expiryDate?: string | null | undefined;
+  benefits?: string | null | undefined;
   renderedHtml?: string | null | undefined;
 }
 
@@ -64,15 +70,15 @@ export const offerService = {
     return offer ?? null;
   },
 
-  async create(input: CreateOfferInput) {
-    const [candidate] = await db
+  async create(input: CreateOfferInput, executor: DbExecutor = db) {
+    const [candidate] = await executor
       .select()
       .from(candidates)
       .where(eq(candidates.id, input.candidateId));
     
     if (!candidate) throw new Error("Candidate not found");
 
-    const [job] = await db
+    const [job] = await executor
       .select()
       .from(jobs)
       .where(eq(jobs.id, input.jobId));
@@ -86,7 +92,7 @@ export const offerService = {
 
     const isSent = input.status === "sent";
 
-    const [newOffer] = await db
+    const [newOffer] = await executor
       .insert(offers)
       .values(clean({
         status: "draft",
@@ -122,7 +128,15 @@ export const offerService = {
 
     const updatedData = { ...clean(input), updatedAt: new Date() };
 
-    if (input.templateId !== undefined || input.salary !== undefined) {
+    if (
+      input.templateId !== undefined ||
+      input.salary !== undefined ||
+      input.currency !== undefined ||
+      input.payFrequency !== undefined ||
+      input.startDate !== undefined ||
+      input.expiryDate !== undefined ||
+      input.benefits !== undefined
+    ) {
       const renderInput = { ...existing, ...input };
       updatedData.renderedHtml = await this._renderOfferHtml(renderInput);
     }

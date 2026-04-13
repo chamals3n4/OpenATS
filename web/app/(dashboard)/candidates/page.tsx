@@ -181,14 +181,18 @@ export default function ManageCandidatesPage() {
             setSelectedJobId(v === "all" ? undefined : Number(v))
           }
         >
-          <SelectTrigger className="w-62 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Job Position">
               {selectedJobId
                 ? (jobs.find((j) => j.id === selectedJobId)?.title ?? null)
                 : "All Positions"}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          <SelectContent
+            align="start"
+            alignOffset={0}
+            className="-ml-1 w-53 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+          >
             <SelectItem value="all">All Positions</SelectItem>
             {jobs.map((j) => (
               <SelectItem key={j.id} value={String(j.id)}>

@@ -54,6 +54,12 @@ export const EMAIL_TEMPLATE_VARIABLES: Record<EmailTemplateType, string[]> = {
     "job_title",
     "assessment_link",
     "expiry_date",
+    "interview_date",
+    "interview_time",
+    "interview_timezone",
+    "interview_location",
+    "interview_video_link",
+    "interview_interviewers",
   ],
   offer: [
     "candidate_name",
@@ -74,6 +80,12 @@ export const EMAIL_TEMPLATE_VARIABLES: Record<EmailTemplateType, string[]> = {
     "expiry_date",
     "company_name",
     "assessment_link",
+    "interview_date",
+    "interview_time",
+    "interview_timezone",
+    "interview_location",
+    "interview_video_link",
+    "interview_interviewers",
   ],
 };
 

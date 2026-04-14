@@ -326,12 +326,18 @@ export function useUpsertCompany() {
   });
 }
 
-export function useDepartments(options?: { enabled?: boolean }) {
+export function useDepartments(options?: {
+  enabled?: boolean;
+  initialData?: Department[];
+}) {
   return useQuery({
     queryKey: ["departments"],
     queryFn: () => serverFetch<{ data: Department[] }>("/company/departments"),
     staleTime: 1000 * 60 * 10,
     enabled: options?.enabled ?? true,
+    initialData: options?.initialData
+      ? { data: options.initialData }
+      : undefined,
   });
 }
 
@@ -1121,6 +1127,10 @@ export function useSendCandidateEmail() {
 export function useAnalyticsReport(
   period: "7d" | "30d" | "90d",
   departmentId?: number,
+  options?: {
+    initialData?: AnalyticsReport;
+    initialDataUpdatedAt?: number;
+  },
 ) {
   return useQuery({
     queryKey: ["reports", "analytics", period, departmentId ?? "all"],
@@ -1132,6 +1142,8 @@ export function useAnalyticsReport(
       );
     },
     staleTime: 1000 * 60 * 5,
+    initialData: options?.initialData ? { data: options.initialData } : undefined,
+    initialDataUpdatedAt: options?.initialDataUpdatedAt,
   });
 }
 

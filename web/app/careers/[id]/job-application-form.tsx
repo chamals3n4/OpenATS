@@ -9,6 +9,7 @@ import {
   Location01Icon,
   CloudUploadIcon,
   Cash01Icon,
+  Upload06Icon,
 } from "@hugeicons/core-free-icons";
 
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { countryPhoneList } from "@/lib/countries";
 
 import type { JobDetail, CustomQuestion } from "@/types";
 
@@ -359,11 +361,11 @@ export function JobApplicationForm({
                     <SelectValue placeholder="+94" />
                   </SelectTrigger>
                   <SelectContent className="rounded-md border-slate-300 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-md min-w-[100px]">
-                    <SelectItem value="+94">+94</SelectItem>
-                    <SelectItem value="+1">+1</SelectItem>
-                    <SelectItem value="+44">+44</SelectItem>
-                    <SelectItem value="+91">+91</SelectItem>
-                    <SelectItem value="+61">+61</SelectItem>
+                    {countryPhoneList.map((c) => (
+                      <SelectItem key={c!.code} value={c!.phone}>
+                        {c!.name} ({c!.phone})
+                      </SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
                 <Input
@@ -374,12 +376,9 @@ export function JobApplicationForm({
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <Label className="text-slate-700 dark:text-neutral-300 text-[14px] flex items-center justify-between">
                 Resume / CV
-                <span className="text-slate-400 dark:text-neutral-500 font-normal text-xs">
-                  (Optional)
-                </span>
               </Label>
               <input
                 ref={fileInputRef}
@@ -438,14 +437,14 @@ export function JobApplicationForm({
                 ) : (
                   <>
                     <HugeiconsIcon
-                      icon={CloudUploadIcon}
+                      icon={Upload06Icon}
                       className="size-6 group-hover:text-slate-500 dark:group-hover:text-neutral-400 transition-colors"
                     />
-                    <span className="text-[13px] font-medium group-hover:text-slate-600 dark:group-hover:text-neutral-300 text-slate-500 dark:text-neutral-400">
+                    <span className="text-[15px] font-medium group-hover:text-slate-600 dark:group-hover:text-neutral-300 text-slate-500 dark:text-neutral-400">
                       Click or drag to upload your resume
                     </span>
-                    <span className="text-[11px] text-slate-400 dark:text-neutral-600">
-                      PDF, DOC, DOCX · max 10 MB
+                    <span className="text-[14px] text-slate-400 dark:text-neutral-600">
+                      Please upload your document as a PDF file.
                     </span>
                   </>
                 )}
@@ -572,9 +571,6 @@ export function JobApplicationForm({
         <div className="mt-24 pt-8 text-center flex items-center justify-center gap-2 w-full text-slate-500 dark:text-neutral-400 text-sm border-t border-slate-100 dark:border-neutral-800">
           <span>Powered by</span>
           <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-neutral-200">
-            <div className="size-5 rounded-full bg-green-500 flex items-center justify-center">
-              <div className="size-2.5 border-2 border-white rounded-full bg-transparent" />
-            </div>
             OpenATS
           </div>
         </div>

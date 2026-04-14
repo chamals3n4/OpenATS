@@ -41,6 +41,12 @@ importers:
       cmdk:
         specifier: ^1.1.1
         version: 1.1.1(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      country-list:
+        specifier: ^2.4.1
+        version: 2.4.1
+      currency-list:
+        specifier: ^1.0.8
+        version: 1.0.8
       date-fns:
         specifier: ^4.1.0
         version: 4.1.0
@@ -50,6 +56,9 @@ importers:
       input-otp:
         specifier: ^1.4.2
         version: 1.4.2(react-dom@19.2.3(react@19.2.3))(react@19.2.3)
+      libphonenumber-js:
+        specifier: ^1.12.41
+        version: 1.12.41
       lucide-react:
         specifier: ^0.575.0
         version: 0.575.0(react@19.2.3)
@@ -1881,6 +1890,9 @@ packages:
       typescript:
         optional: true
 
+  country-list@2.4.1:
+    resolution: {integrity: sha512-KhVV/UfUV3dSNpsWIqHTQxLpYDKPKz1UwkRjadt+YbX2PRhyCEihEoS5XgB7J7AMXpkicvl+tRHvkNI5wbji/g==}
+
   create-ecdh@4.0.4:
     resolution: {integrity: sha512-mf+TCx8wWc9VpuxfP2ht0iSISLZnt0JgWlrOKZiNqyUZWnjIaCIVNQArMHnCZKfEYRg6IM7A+NeJoN8gf/Ws0A==}
 
@@ -1911,6 +1923,9 @@ packages:
 
   csstype@3.2.3:
     resolution: {integrity: sha512-z1HGKcYy2xA8AGQfwrn0PAy+PB7X/GSj3UVJW9qKyn43xWa+gl5nXmU4qqLMRzWVLFC8KusUX8T/0kCiOYpAIQ==}
+
+  currency-list@1.0.8:
+    resolution: {integrity: sha512-KBUtf8AzoP2WYeAKUYFhhNdHRx8Xw2UoOUnBNVir43RxL96T+iSHMtThtT1DFNtYbbVVyD08ETe3aamn+JX7RA==}
 
   d3-array@3.2.4:
     resolution: {integrity: sha512-tdQAmyA18i4J7wprpYq8ClcxZy3SC31QMeByyCFyRt7BVHdREQZ5lpzoe5mFEYZUWe+oq8HBvk9JjpibyEV4Jg==}
@@ -2959,6 +2974,9 @@ packages:
   levn@0.4.1:
     resolution: {integrity: sha512-+bT2uH4E5LGE7h/n3evcS/sQlJXCpIp6ym8OWJ5eV6+67Dsql/LaaT7qJBAt2rzfoa/5QBGBhxDix1dMt2kQKQ==}
     engines: {node: '>= 0.8.0'}
+
+  libphonenumber-js@1.12.41:
+    resolution: {integrity: sha512-lsmMmGXBxXIK/VMLEj0kL6MtUs1kBGj1nTCzi6zgQoG1DEwqwt2DQyHxcLykceIxAnfE3hya7NuIh6PpC6S3fA==}
 
   lightningcss-android-arm64@1.31.1:
     resolution: {integrity: sha512-HXJF3x8w9nQ4jbXRiNppBCqeZPIAfUo8zE/kOEGbW5NZvGc/K7nMxbhIr+YlFlHW5mpbg/YFPdbnCh1wAXCKFg==}
@@ -6158,6 +6176,8 @@ snapshots:
     optionalDependencies:
       typescript: 5.9.3
 
+  country-list@2.4.1: {}
+
   create-ecdh@4.0.4:
     dependencies:
       bn.js: 4.12.3
@@ -6212,6 +6232,8 @@ snapshots:
   cssesc@3.0.0: {}
 
   csstype@3.2.3: {}
+
+  currency-list@1.0.8: {}
 
   d3-array@3.2.4:
     dependencies:
@@ -7385,6 +7407,8 @@ snapshots:
     dependencies:
       prelude-ls: 1.2.1
       type-check: 0.4.0
+
+  libphonenumber-js@1.12.41: {}
 
   lightningcss-android-arm64@1.31.1:
     optional: true

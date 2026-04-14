@@ -42,6 +42,7 @@ import {
   useExportAnalyticsReport,
 } from "@/hooks/use-api";
 import { Button } from "@/components/ui/button";
+import type { AnalyticsReport, Department } from "@/types";
 
 const pipelineConfig: ChartConfig = {
   current: { label: "This Period", color: "#D97757" },
@@ -94,19 +95,33 @@ const PERIOD_LABELS: Record<string, string> = {
   "90d": "Last 90 Days",
 };
 
-export function OverviewClient() {
+export function OverviewClient({
+  initialDepartments,
+  initialAnalyticsReport,
+  initialAnalyticsUpdatedAt,
+}: {
+  initialDepartments?: Department[];
+  initialAnalyticsReport?: AnalyticsReport;
+  initialAnalyticsUpdatedAt?: number;
+}) {
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("7d");
   const [dept, setDept] = useState("all");
   const [exportFormat, setExportFormat] = useState<"csv" | "json">("csv");
 
   const selectedDepartmentId = dept === "all" ? undefined : Number(dept);
 
-  const { data: deptRes } = useDepartments();
+  const { data: deptRes } = useDepartments({ initialData: initialDepartments });
   const departments = deptRes?.data ?? [];
 
   const { data: analyticsRes } = useAnalyticsReport(
     period,
     selectedDepartmentId,
+    period === "7d" && !selectedDepartmentId
+      ? {
+          initialData: initialAnalyticsReport,
+          initialDataUpdatedAt: initialAnalyticsUpdatedAt,
+        }
+      : undefined,
   );
   const exportReport = useExportAnalyticsReport();
   const report = analyticsRes?.data;

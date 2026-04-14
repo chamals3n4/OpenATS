@@ -44,6 +44,12 @@ const SAMPLE: Record<string, string> = {
   expiry_date: "March 5, 2026",
   company_name: "OpenATS Inc.",
   assessment_link: "https://openats.io/assess/abc123",
+  interview_date: "2026-04-20",
+  interview_time: "10:30",
+  interview_timezone: "Asia/Colombo",
+  interview_location: "OpenATS HQ",
+  interview_video_link: "https://meet.google.com/abc-defg-hij",
+  interview_interviewers: "John Doe, Jane Smith",
 };
 
 const DEFAULT_CONTENT: Record<BlockKind, string> = {
@@ -80,12 +86,7 @@ function BlockPreview({ block, vars }: { block: Block; vars: string[] }) {
     case "heading":
       return (
         <h2
-          style={{
-            fontSize: 22,
-            fontWeight: 700,
-            color: "#1e293b",
-            margin: "0 0 4px",
-          }}
+          className="m-0 mb-1 text-[22px] font-bold text-slate-800 dark:text-neutral-100"
           dangerouslySetInnerHTML={{
             __html: renderPreview(block.content, vars),
           }}
@@ -94,7 +95,7 @@ function BlockPreview({ block, vars }: { block: Block; vars: string[] }) {
     case "text":
       return (
         <p
-          style={{ fontSize: 14, color: "#475569", lineHeight: 1.8, margin: 0 }}
+          className="m-0 text-[14px] leading-[1.8] text-slate-600 dark:text-neutral-300"
           dangerouslySetInnerHTML={{
             __html: renderPreview(block.content, vars).replace(/\n/g, "<br/>"),
           }}
@@ -120,17 +121,8 @@ function BlockPreview({ block, vars }: { block: Block; vars: string[] }) {
       );
     case "image":
       return (
-        <div
-          style={{
-            background: "#f1f5f9",
-            borderRadius: 8,
-            height: 120,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-          }}
-        >
-          <span style={{ color: "#94a3b8", fontSize: 13 }}>
+        <div className="h-[120px] rounded-lg bg-slate-100 dark:bg-neutral-800 flex items-center justify-center">
+          <span className="text-[13px] text-slate-400 dark:text-neutral-500">
             Image placeholder
           </span>
         </div>
@@ -475,43 +467,43 @@ export default function EditTemplatePage() {
               </span>
             </div>
           </div>
-          <div className="flex-1 p-8 flex justify-center">
-            <div className="w-full max-w-[560px] bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-              <div className="bg-slate-50 border-b border-slate-100 px-6 py-4 space-y-2 text-[13px]">
+          <div className="flex-1">
+            <div className="h-full w-full bg-white dark:bg-neutral-950 rounded-none border-x-0 border-y-0 border border-slate-200 dark:border-neutral-800 shadow-none overflow-hidden">
+              <div className="bg-slate-50 dark:bg-neutral-900 border-b border-slate-100 dark:border-neutral-800 px-6 py-4 space-y-2 text-[13px]">
                 {[
                   ["From", "hr@openats.io"],
                   ["To", "candidate@email.com"],
                 ].map(([l, v]) => (
                   <div key={l} className="flex gap-3">
-                    <span className="text-slate-400 w-14 shrink-0">{l}</span>
-                    <span className="text-slate-700 font-medium">{v}</span>
+                    <span className="text-slate-400 dark:text-neutral-500 w-14 shrink-0">{l}</span>
+                    <span className="text-slate-700 dark:text-neutral-300 font-medium">{v}</span>
                   </div>
                 ))}
                 <div className="flex gap-3">
-                  <span className="text-slate-400 w-14 shrink-0">Subject</span>
+                  <span className="text-slate-400 dark:text-neutral-500 w-14 shrink-0">Subject</span>
                   {subject ? (
                     <span
-                      className="text-slate-900 font-semibold leading-snug"
+                      className="text-slate-900 dark:text-neutral-100 font-semibold leading-snug"
                       dangerouslySetInnerHTML={{
                         __html: renderPreview(subject, vars),
                       }}
                     />
                   ) : (
-                    <span className="text-slate-300 italic">No subject</span>
+                    <span className="text-slate-300 dark:text-neutral-600 italic">No subject</span>
                   )}
                 </div>
               </div>
               <div className="px-8 py-7">
-                <div className="flex items-center gap-2 mb-6 pb-5 border-b border-slate-100">
+                <div className="flex items-center gap-2 mb-6 pb-5 border-b border-slate-100 dark:border-neutral-800">
                   <div className="size-8 rounded-full bg-[var(--theme-color)] flex items-center justify-center">
                     <div className="size-3.5 rounded-full border-2 border-white" />
                   </div>
-                  <span className="text-[13px] font-bold text-slate-800 tracking-tight">
+                  <span className="text-[13px] font-bold text-slate-800 dark:text-neutral-100 tracking-tight">
                     OpenATS
                   </span>
                 </div>
                 {blocks.length === 0 ? (
-                  <div className="py-12 text-center text-[13px] text-slate-300">
+                  <div className="py-12 text-center text-[13px] text-slate-300 dark:text-neutral-600">
                     Add blocks to see a preview
                   </div>
                 ) : (
@@ -521,7 +513,7 @@ export default function EditTemplatePage() {
                     ))}
                   </div>
                 )}
-                <div className="mt-8 pt-5 border-t border-slate-100 text-center text-[12px] text-slate-400 space-y-1">
+                <div className="mt-8 pt-5 border-t border-slate-100 dark:border-neutral-800 text-center text-[12px] text-slate-400 dark:text-neutral-500 space-y-1">
                   <p>OpenATS Inc. · Colombo, Sri Lanka</p>
                   <p>
                     You're receiving this because you applied for a position.

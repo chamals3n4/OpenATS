@@ -226,8 +226,10 @@ export function SidebarUserMenu({ variant = "header" }: SidebarUserMenuProps) {
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                queryClient.invalidateQueries();
-                router.push("/login");
+                // Clear cached data immediately so logout navigation is not blocked
+                // by invalidating/refetching every query in the app.
+                queryClient.clear();
+                router.replace("/login");
                 void signOut();
               }}
             >

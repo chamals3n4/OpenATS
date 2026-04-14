@@ -12,6 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { currencyOptions } from "@/lib/currencies";
 import {
   Select,
   SelectContent,
@@ -323,9 +324,13 @@ export default function CreateNewJobPage() {
                           <SelectValue placeholder="USD" />
                         </SelectTrigger>
                         <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-                          <SelectItem value="USD">USD</SelectItem>
-                          <SelectItem value="EUR">EUR</SelectItem>
-                          <SelectItem value="LKR">LKR</SelectItem>
+                          {currencyOptions.map((c) => (
+                            <SelectItem key={c.code} value={c.code}>
+                              <span className="truncate block">
+                                {c.code} {c.symbol} {c.name}
+                              </span>
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>

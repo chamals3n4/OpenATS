@@ -13,6 +13,7 @@ import {
 } from "@hugeicons/core-free-icons";
 
 import { usePathname } from "next/navigation";
+import { useCurrentUser } from "@/hooks/use-api";
 
 import { NavMain } from "@/components/nav-main";
 import {
@@ -92,9 +93,28 @@ const navMainData = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const { data: meData } = useCurrentUser();
+  const role = meData?.data.role;
+
+  const settingsItems = navMainData.find((item) => item.url === "/settings")?.items ?? [];
+  const visibleSettingsItems = settingsItems.filter((item) => {
+    if (!role) return true;
+    if (role === "interviewer") {
+      return ![
+        "/settings/careers",
+        "/settings/templates",
+        "/settings/user-management",
+      ].includes(item.url);
+    }
+    if (role === "hiring_manager") {
+      return item.url !== "/settings/careers";
+    }
+    return true;
+  });
 
   const items = navMainData.map((item) => ({
     ...item,
+    ...(item.url === "/settings" ? { items: visibleSettingsItems } : {}),
     isActive:
       item.url === "/"
         ? pathname === "/"

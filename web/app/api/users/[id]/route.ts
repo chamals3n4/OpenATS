@@ -18,6 +18,11 @@ async function requireSignedInAndScimToken() {
   return getScimAccessToken();
 }
 
+async function getActorRole() {
+  const me = await serverFetch<{ data: User }>("/users/me");
+  return me.data.role;
+}
+
 type RouteContext = {
   params: Promise<{ id: string }>;
 };
@@ -40,8 +45,19 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
   console.log(`${ROUTE_LOG} PATCH /api/users/${id}`);
   try {
     const scimToken = await requireSignedInAndScimToken();
+    const actorRole = await getActorRole();
     const body = await req.json();
     const base = getAsgardeoApiBase();
+
+    if (actorRole === "interviewer") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (actorRole === "hiring_manager" && body.role === "super_admin") {
+      return NextResponse.json(
+        { error: "Hiring managers cannot assign super admin role" },
+        { status: 403 },
+      );
+    }
 
     const existing = await serverFetch<{
       data: User & { asgardeoUserId: string };
@@ -134,7 +150,12 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
   console.log(`${ROUTE_LOG} DELETE /api/users/${id}`);
   try {
     const scimToken = await requireSignedInAndScimToken();
+    const actorRole = await getActorRole();
     const base = getAsgardeoApiBase();
+
+    if (actorRole === "interviewer") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const existing = await serverFetch<{
       data: User & { asgardeoUserId: string };

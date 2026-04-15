@@ -53,6 +53,7 @@ import {
 
 import {
   useTemplates,
+  useCurrentUser,
   useDeleteTemplate,
   useCreateTemplate,
 } from "@/hooks/use-api";
@@ -138,6 +139,7 @@ function RowMenu({
 
 export default function TemplatesPage() {
   const router = useRouter();
+  const { data: meData, isLoading: meLoading } = useCurrentUser();
   const { data: templatesRes, isLoading } = useTemplates();
   const templates = templatesRes?.data || [];
 
@@ -176,6 +178,16 @@ export default function TemplatesPage() {
       (filterType === "all" || t.type === filterType)
     );
   });
+
+  useEffect(() => {
+    if (meData?.data.role === "interviewer") {
+      router.replace("/");
+    }
+  }, [meData?.data.role, router]);
+
+  if (meLoading || meData?.data.role === "interviewer") {
+    return null;
+  }
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">

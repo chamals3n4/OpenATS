@@ -17,6 +17,11 @@ async function requireSignedIn() {
   if (!sessionId) throw new Error("Unauthorized");
 }
 
+async function getActorRole() {
+  const me = await serverFetch<{ data: User }>("/users/me");
+  return me.data.role;
+}
+
 export async function GET() {
   console.log(`${ROUTE_LOG} GET /api/users`);
   try {
@@ -34,9 +39,20 @@ export async function POST(req: Request) {
   console.log(`${ROUTE_LOG} POST /api/users`);
   try {
     await requireSignedIn();
+    const actorRole = await getActorRole();
     const scimToken = await getScimAccessToken();
     const body = await req.json();
     const role = body.role ?? "interviewer";
+
+    if (actorRole === "interviewer") {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+    if (actorRole === "hiring_manager" && role === "super_admin") {
+      return NextResponse.json(
+        { error: "Hiring managers cannot create super admins" },
+        { status: 403 },
+      );
+    }
 
     console.log(
       `${ROUTE_LOG} creating user — email: ${body.email}, role: ${role}, askPassword: ${!!body.askPassword}`,

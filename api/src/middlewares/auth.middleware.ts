@@ -49,8 +49,7 @@ function mapAsgardeoRoleNamesToAppRole(names: string[]): AppRole | null {
     has(
       (n) =>
         n === "super admin" ||
-        n.endsWith("/super admin") ||
-        n.includes("super admin"),
+        n.endsWith("/super admin"),
     )
   ) {
     return "super_admin";
@@ -125,10 +124,15 @@ export const authMiddleware = async (
       }
     } else {
       // existing user
+      if (roleFromToken !== null && roleFromToken !== user.role) {
+        logger.warn(
+          `[authMiddleware] token role "${roleFromToken}" differs from DB role "${user.role}" for user ${sub}; preserving DB role`,
+        );
+      }
+
       const [updated] = await db
         .update(users)
         .set({
-          ...(roleFromToken !== null ? { role: roleFromToken } : {}),
           firstName,
           lastName,
           email,

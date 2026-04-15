@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Briefcase01Icon,
@@ -11,6 +12,7 @@ import {
 
 import type { Job } from "@/types";
 import { Button } from "@/components/ui/button";
+import { useCurrentUser } from "@/hooks/use-api";
 
 type ListRow = {
   id: number;
@@ -46,9 +48,27 @@ function formatPosted(iso: string) {
 }
 
 export default function CareersPreviewPage() {
+  const router = useRouter();
+  const { data: meData, isLoading: meLoading } = useCurrentUser();
   const [jobs, setJobs] = useState<ListRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const role = meData?.data.role;
+    if (!role) return;
+    if (role === "interviewer" || role === "hiring_manager") {
+      router.replace("/");
+    }
+  }, [meData?.data.role, router]);
+
+  if (
+    meLoading ||
+    meData?.data.role === "interviewer" ||
+    meData?.data.role === "hiring_manager"
+  ) {
+    return null;
+  }
 
   useEffect(() => {
     let cancelled = false;

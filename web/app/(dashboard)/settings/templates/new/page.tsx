@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { useCreateTemplate } from "@/hooks/use-api";
+import { useCreateTemplate, useCurrentUser } from "@/hooks/use-api";
 import type { TemplateBodyBlock } from "@/types";
 import {
   EMAIL_TEMPLATE_TYPE_CONFIG,
@@ -207,6 +207,7 @@ function BlockEditor({
 
 export default function NewTemplatePage() {
   const router = useRouter();
+  const { data: meData, isLoading: meLoading } = useCurrentUser();
   const createMutation = useCreateTemplate();
 
   const searchParams = useSearchParams();
@@ -218,6 +219,16 @@ export default function NewTemplatePage() {
   const [name, setName] = useState("");
   const [subject, setSubject] = useState("");
   const [blocks, setBlocks] = useState<Block[]>([]);
+
+  useEffect(() => {
+    if (meData?.data.role === "interviewer") {
+      router.replace("/");
+    }
+  }, [meData?.data.role, router]);
+
+  if (meLoading || meData?.data.role === "interviewer") {
+    return null;
+  }
 
   const addBlock = (kind: BlockKind) =>
     setBlocks((prev) => [

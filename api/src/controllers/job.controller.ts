@@ -110,7 +110,7 @@ export const listPublishedCareersJobs = async (
 
 export const getAllJobs = async (req: Request, res: Response) => {
   try {
-    const result = await jobService.getAll();
+    const result = await jobService.getAllAccessible(req.user.id, req.user.role);
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(`Failed to fetch all jobs: ${(error as any)?.message}`);

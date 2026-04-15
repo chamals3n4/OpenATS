@@ -8,6 +8,10 @@ import {
   deleteCandidate,
   updateCandidateBasicDetails,
 } from "../controllers/candidate.controller";
+import {
+  requireAnyRole,
+  requireJobReadAccess,
+} from "../middlewares/rbac.middleware";
 
 const router: Router = Router();
 
@@ -21,11 +25,24 @@ const upload = multer({
 
 router.post("/jobs/:jobId/apply", applyForJob);
 
-router.get("/", getCandidates);
-router.get("/jobs/:jobId", getCandidates);
-router.get("/:id", getCandidateById);
-router.patch("/:id", upload.single("resume"), updateCandidateBasicDetails);
-router.put("/:id/stage", moveCandidateStage);
-router.delete("/:id", deleteCandidate);
+router.get("/", requireAnyRole("super_admin", "hiring_manager"), getCandidates);
+router.get("/jobs/:jobId", requireJobReadAccess("jobId"), getCandidates);
+router.get("/:id", requireAnyRole("super_admin", "hiring_manager"), getCandidateById);
+router.patch(
+  "/:id",
+  requireAnyRole("super_admin", "hiring_manager"),
+  upload.single("resume"),
+  updateCandidateBasicDetails,
+);
+router.put(
+  "/:id/stage",
+  requireAnyRole("super_admin", "hiring_manager"),
+  moveCandidateStage,
+);
+router.delete(
+  "/:id",
+  requireAnyRole("super_admin", "hiring_manager"),
+  deleteCandidate,
+);
 
 export default router;

@@ -43,7 +43,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useDeleteJob, useDepartments, useJobs } from "@/hooks/use-api";
+import { useCurrentUser, useDeleteJob, useDepartments, useJobs } from "@/hooks/use-api";
 import type { Job } from "@/types";
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 
@@ -71,6 +71,9 @@ export default function ManageJobsPage() {
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data, isLoading } = useJobs();
+  const { data: meData } = useCurrentUser();
+  const me = meData?.data;
+  const canCreateJob = !!me && (me.role === "super_admin" || me.role === "hiring_manager");
 
   // Prefetch all per-job data when hovering a row so every tab on the
   // job detail page renders instantly by the time the user clicks.
@@ -171,17 +174,19 @@ export default function ManageJobsPage() {
         <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Manage Jobs
         </h1>
-        <Button
-          render={<Link href="/jobs/new" prefetch />}
-          className="bg-theme hover:bg-theme-hover text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium cursor-pointer"
-        >
-          <HugeiconsIcon
-            icon={PlusSignIcon}
-            className="size-4"
-            strokeWidth={2.5}
-          />
-          <span>Create New Job</span>
-        </Button>
+        {canCreateJob && (
+          <Button
+            render={<Link href="/jobs/new" prefetch />}
+            className="bg-theme hover:bg-theme-hover text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium cursor-pointer"
+          >
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              className="size-4"
+              strokeWidth={2.5}
+            />
+            <span>Create New Job</span>
+          </Button>
+        )}
       </div>
 
       <div className="border-y border-slate-300 dark:border-neutral-700 px-8 py-3.5 flex items-center gap-4">
@@ -360,30 +365,34 @@ export default function ManageJobsPage() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 px-3 rounded-md border-slate-300 cursor-pointer dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
-                          onClick={() => router.push(`/jobs/${job.id}/edit`)}
-                        >
-                          <HugeiconsIcon
-                            icon={PencilEdit01Icon}
-                            className="size-3.5 mr-1"
-                          />
-                          Edit
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 px-3 rounded-md border-red-200 cursor-pointer dark:border-red-900/40 text-red-600 dark:text-red-400"
-                          onClick={() => setDeleteTarget(job)}
-                        >
-                          <HugeiconsIcon
-                            icon={Delete02Icon}
-                            className="size-3.5 mr-1"
-                          />
-                          Delete
-                        </Button>
+                        {(me?.role === "super_admin" || (me?.role === "hiring_manager" && me.id === job.createdBy)) && (
+                          <>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-3 rounded-md border-slate-300 cursor-pointer dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
+                              onClick={() => router.push(`/jobs/${job.id}/edit`)}
+                            >
+                              <HugeiconsIcon
+                                icon={PencilEdit01Icon}
+                                className="size-3.5 mr-1"
+                              />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="h-8 px-3 rounded-md border-red-200 cursor-pointer dark:border-red-900/40 text-red-600 dark:text-red-400"
+                              onClick={() => setDeleteTarget(job)}
+                            >
+                              <HugeiconsIcon
+                                icon={Delete02Icon}
+                                className="size-3.5 mr-1"
+                              />
+                              Delete
+                            </Button>
+                          </>
+                        )}
                       </div>
                     </TableCell>
                   </TableRow>

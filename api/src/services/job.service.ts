@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, inArray } from "drizzle-orm";
 import { db, NewJob } from "../db";
 import {
   jobs,
@@ -94,6 +94,42 @@ export const jobService = {
 
     const jobsWithSkills = await Promise.all(
       allJobs.map(async (job) => {
+        const skills = await db
+          .select()
+          .from(jobSkills)
+          .where(eq(jobSkills.jobId, job.id));
+
+        return {
+          ...job,
+          skills: skills.map((s) => s.skill),
+        };
+      }),
+    );
+
+    return jobsWithSkills;
+  },
+
+  async getAllAccessible(userId: number, role: "super_admin" | "hiring_manager" | "interviewer") {
+    if (role !== "interviewer") {
+      return this.getAll();
+    }
+
+    const assignments = await db
+      .select({ jobId: jobHiringTeam.jobId })
+      .from(jobHiringTeam)
+      .where(eq(jobHiringTeam.userId, userId));
+
+    const jobIds = [...new Set(assignments.map((a) => a.jobId))];
+    if (jobIds.length === 0) return [];
+
+    const scopedJobs = await db
+      .select()
+      .from(jobs)
+      .where(inArray(jobs.id, jobIds))
+      .orderBy(desc(jobs.createdAt));
+
+    const jobsWithSkills = await Promise.all(
+      scopedJobs.map(async (job) => {
         const skills = await db
           .select()
           .from(jobSkills)

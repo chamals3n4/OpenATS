@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Copy } from "lucide-react";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -12,6 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
   useSettingsAllowedOrigins,
+  useCurrentUser,
   useUpdateSettingsAllowedOrigins,
 } from "@/hooks/use-api";
 
@@ -21,12 +23,30 @@ const inputCls =
   "h-9 rounded-md shadow-none bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 text-sm";
 
 export default function CareersSettingsPage() {
+  const router = useRouter();
+  const { data: meData, isLoading: meLoading } = useCurrentUser();
   const { data, isLoading, isError, error, refetch } =
     useSettingsAllowedOrigins();
   const updateOrigins = useUpdateSettingsAllowedOrigins();
 
   const [origins, setOrigins] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    const role = meData?.data.role;
+    if (!role) return;
+    if (role === "interviewer" || role === "hiring_manager") {
+      router.replace("/");
+    }
+  }, [meData?.data.role, router]);
+
+  if (
+    meLoading ||
+    meData?.data.role === "interviewer" ||
+    meData?.data.role === "hiring_manager"
+  ) {
+    return null;
+  }
 
   useEffect(() => {
     const list = data?.data?.origins;

@@ -294,6 +294,10 @@ export default function JobDetailsPage() {
 
   const job = jobData?.data;
   const me = meData?.data;
+  const canManageJob = !!me && !!job && (
+    me.role === "super_admin" ||
+    (me.role === "hiring_manager" && me.id === job.createdBy)
+  );
   const allMessages = useMemo(() => {
     const history = chatHistoryData?.data ?? [];
     const merged = [...history, ...liveMessages];
@@ -752,23 +756,24 @@ export default function JobDetailsPage() {
                   <span className="text-slate-500 dark:text-neutral-400 font-medium text-[15px]">
                     Team Members
                   </span>
-                  <Dialog
-                    open={addTeamMemberOpen}
-                    onOpenChange={setAddTeamMemberOpen}
-                  >
-                    <DialogTrigger
-                      render={
-                        <button className="flex items-center cursor-pointer gap-2 text-theme hover:underline font-medium text-[14px]" />
-                      }
+                  {canManageJob && (
+                    <Dialog
+                      open={addTeamMemberOpen}
+                      onOpenChange={setAddTeamMemberOpen}
                     >
-                      <HugeiconsIcon
-                        icon={PlusSignIcon}
-                        className="size-3.5"
-                        strokeWidth={3}
-                      />
-                      <span>Add New Member</span>
-                    </DialogTrigger>
-                    <DialogContent className="sm:max-w-[425px]">
+                      <DialogTrigger
+                        render={
+                          <button className="flex items-center cursor-pointer gap-2 text-theme hover:underline font-medium text-[14px]" />
+                        }
+                      >
+                        <HugeiconsIcon
+                          icon={PlusSignIcon}
+                          className="size-3.5"
+                          strokeWidth={3}
+                        />
+                        <span>Add New Member</span>
+                      </DialogTrigger>
+                      <DialogContent className="sm:max-w-[425px]">
                       <DialogHeader>
                         <DialogTitle>Add Team Member</DialogTitle>
                         <DialogDescription>
@@ -859,8 +864,9 @@ export default function JobDetailsPage() {
                             : "Add Member"}
                         </Button>
                       </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                      </DialogContent>
+                    </Dialog>
+                  )}
                 </div>
               </div>
 
@@ -897,16 +903,18 @@ export default function JobDetailsPage() {
                           </span>
                         </div>
                       </div>
-                      <button
-                        onClick={() =>
-                          removeTeamMemberMutation.mutate(member.id)
-                        }
-                        disabled={removeTeamMemberMutation.isPending}
-                        className="p-2 text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
-                        title="Remove Member"
-                      >
-                        <HugeiconsIcon icon={Delete02Icon} className="size-5" />
-                      </button>
+                      {canManageJob && (
+                        <button
+                          onClick={() =>
+                            removeTeamMemberMutation.mutate(member.id)
+                          }
+                          disabled={removeTeamMemberMutation.isPending}
+                          className="p-2 text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                          title="Remove Member"
+                        >
+                          <HugeiconsIcon icon={Delete02Icon} className="size-5" />
+                        </button>
+                      )}
                     </div>
                   ))
                 )}
@@ -926,20 +934,22 @@ export default function JobDetailsPage() {
                     Drag To Reorder Stages. Click To Edit Or Remove.
                   </p>
                 </div>
-                <Button
-                  onClick={() => {
-                    setNewStageName("");
-                    setAddStageOpen(true);
-                  }}
-                  className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 font-medium shadow-none border-none gap-2 text-sm"
-                >
-                  <HugeiconsIcon
-                    icon={PlusSignIcon}
-                    className="size-4"
-                    strokeWidth={3}
-                  />
-                  <span>Add New Stage</span>
-                </Button>
+                {canManageJob && (
+                  <Button
+                    onClick={() => {
+                      setNewStageName("");
+                      setAddStageOpen(true);
+                    }}
+                    className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 font-medium shadow-none border-none gap-2 text-sm"
+                  >
+                    <HugeiconsIcon
+                      icon={PlusSignIcon}
+                      className="size-4"
+                      strokeWidth={3}
+                    />
+                    <span>Add New Stage</span>
+                  </Button>
+                )}
               </div>
 
               <div className="space-y-2 pt-4">
@@ -1008,7 +1018,7 @@ export default function JobDetailsPage() {
                             </span>
                           )}
                         </div>
-                        {editingStageId !== stage.id && (
+                        {canManageJob && editingStageId !== stage.id && (
                           <div className="flex items-center gap-4">
                             <button
                               onClick={() => openConfigure(stage)}
@@ -1108,17 +1118,19 @@ export default function JobDetailsPage() {
               className="pt-10 space-y-8 animate-in fade-in duration-300"
             >
               <div className="flex flex-col gap-6">
-                <button
-                  onClick={() => setIsAddingMode(true)}
-                  className="flex items-center cursor-pointer gap-2 text-[var(--theme-color)] hover:underline font-medium text-[15px] w-fit"
-                >
-                  <HugeiconsIcon
-                    icon={PlusSignIcon}
-                    className="size-4"
-                    strokeWidth={3}
-                  />
-                  <span>Add Custom Question</span>
-                </button>
+                {canManageJob && (
+                  <button
+                    onClick={() => setIsAddingMode(true)}
+                    className="flex items-center cursor-pointer gap-2 text-[var(--theme-color)] hover:underline font-medium text-[15px] w-fit"
+                  >
+                    <HugeiconsIcon
+                      icon={PlusSignIcon}
+                      className="size-4"
+                      strokeWidth={3}
+                    />
+                    <span>Add Custom Question</span>
+                  </button>
+                )}
 
                 <div className="space-y-3">
                   {questions.map((q, index) => {

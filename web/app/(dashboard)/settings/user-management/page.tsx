@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Copy, Eye, EyeOff, RefreshCw, Search } from "lucide-react";
 import {
@@ -44,6 +45,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
+import { useCurrentUser } from "@/hooks/use-api";
 
 const inputCls =
   "h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color,box-shadow] duration-200 ease-in-out focus-visible:ring-1 focus-visible:ring-theme focus-visible:border-theme";
@@ -114,6 +116,17 @@ const emptyCreate = {
 };
 
 export default function UserManagementPage() {
+  const router = useRouter();
+  const { data: meData, isLoading: meLoading } = useCurrentUser();
+  const meRole = meData?.data.role;
+  const assignableRoles = useMemo(
+    () =>
+      ROLES.filter((r) =>
+        meRole === "hiring_manager" ? r.value !== "super_admin" : true,
+      ),
+    [meRole],
+  );
+
   const [users, setUsers] = useState<AsgardeoUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
@@ -130,6 +143,16 @@ export default function UserManagementPage() {
   const [passwordMethod, setPasswordMethod] = useState<PasswordMethod>("invite");
   const [createForm, setCreateForm] = useState(emptyCreate);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    if (meRole === "interviewer") {
+      router.replace("/");
+    }
+  }, [meRole, router]);
+
+  if (meLoading || meRole === "interviewer") {
+    return null;
+  }
 
   const load = async () => {
     setLoading(true);
@@ -423,7 +446,7 @@ export default function UserManagementPage() {
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
-                    {ROLES.map((r) => (
+                    {assignableRoles.map((r) => (
                       <SelectItem key={r.value} value={r.value}>
                         {r.label}
                       </SelectItem>
@@ -602,7 +625,7 @@ export default function UserManagementPage() {
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {ROLES.map((r) => (
+                  {assignableRoles.map((r) => (
                     <SelectItem key={r.value} value={r.value}>
                       {r.label}
                     </SelectItem>

@@ -26,6 +26,7 @@ import Image from "next/image";
 import type { Company } from "@/types";
 import {
   useCompany,
+  useCurrentUser,
   useUpsertCompany,
   useDepartments,
   useCreateDepartment,
@@ -52,9 +53,11 @@ const NEW_COMPANY_PLACEHOLDER: Company = {
 function CompanyForm({
   company,
   isNew,
+  readOnly = false,
 }: {
   company: Company;
   isNew?: boolean;
+  readOnly?: boolean;
 }) {
   const upsertCompany = useUpsertCompany();
   const fileRef = useRef<HTMLInputElement>(null);
@@ -83,7 +86,10 @@ function CompanyForm({
         <div className="flex items-start gap-5">
           <div
             className="w-20 h-20 border-2 border-dashed border-slate-200 dark:border-neutral-800 rounded-xl flex items-center justify-center bg-slate-50 dark:bg-neutral-900 shrink-0 overflow-hidden cursor-pointer hover:border-slate-300 dark:hover:border-neutral-700 transition-colors"
-            onClick={() => fileRef.current?.click()}
+            onClick={() => {
+              if (readOnly) return;
+              fileRef.current?.click();
+            }}
           >
             {logo ? (
               <Image
@@ -112,6 +118,7 @@ function CompanyForm({
             />
             <Button
               onClick={() => fileRef.current?.click()}
+              disabled={readOnly}
               className="h-9 px-5 rounded-lg text-white shadow-none border-none text-[13px] font-medium"
               style={{ backgroundColor: "var(--theme-color)" }}
             >
@@ -137,6 +144,7 @@ function CompanyForm({
             <Input
               value={companyName}
               onChange={(e) => setCompanyName(e.target.value)}
+              disabled={readOnly}
               className={inputCls}
             />
           </div>
@@ -148,6 +156,7 @@ function CompanyForm({
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              disabled={readOnly}
               className={inputCls}
             />
           </div>
@@ -158,6 +167,7 @@ function CompanyForm({
             <Input
               value={website}
               onChange={(e) => setWebsite(e.target.value)}
+              disabled={readOnly}
               className={inputCls}
             />
           </div>
@@ -168,6 +178,7 @@ function CompanyForm({
             <Input
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
+              disabled={readOnly}
               className={inputCls}
             />
           </div>
@@ -180,6 +191,7 @@ function CompanyForm({
           <Input
             value={address}
             onChange={(e) => setAddress(e.target.value)}
+            disabled={readOnly}
             className={inputCls}
           />
         </div>
@@ -187,16 +199,17 @@ function CompanyForm({
         <Button
           className="w-full h-11 text-white rounded-lg shadow-none border-none text-[14px] font-semibold transition-all active:scale-[0.99]"
           style={{ backgroundColor: "var(--theme-color)" }}
-          onClick={() =>
+          onClick={() => {
+            if (readOnly) return;
             upsertCompany.mutate({
               name: companyName,
               email,
               website: website || null,
               phone: phone || null,
               address: address || null,
-            })
-          }
-          disabled={upsertCompany.isPending}
+            });
+          }}
+          disabled={readOnly || upsertCompany.isPending}
         >
           {upsertCompany.isPending
             ? "Saving…"
@@ -210,6 +223,8 @@ function CompanyForm({
 }
 
 export default function SettingsGeneralPage() {
+  const { data: meData } = useCurrentUser();
+  const readOnly = meData?.data.role !== "super_admin";
   const {
     data: companyData,
     isPending: companyLoading,
@@ -271,7 +286,7 @@ export default function SettingsGeneralPage() {
             Could not load company settings. Try again later.
           </p>
         ) : company ? (
-          <CompanyForm key={company.id} company={company} />
+          <CompanyForm key={company.id} company={company} readOnly={readOnly} />
         ) : (
           <>
             <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
@@ -282,6 +297,7 @@ export default function SettingsGeneralPage() {
               key="new-company"
               company={NEW_COMPANY_PLACEHOLDER}
               isNew
+              readOnly={readOnly}
             />
           </>
         )}
@@ -303,12 +319,12 @@ export default function SettingsGeneralPage() {
               value={newDept}
               onChange={(e) => setNewDept(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddDept()}
-              disabled={!company}
+              disabled={!company || readOnly}
               className="flex-1 h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 rounded-lg shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-700 transition-colors disabled:opacity-50"
             />
             <Button
               onClick={handleAddDept}
-              disabled={!company || createDept.isPending}
+              disabled={!company || readOnly || createDept.isPending}
               className="h-10 px-5 text-white rounded-lg shadow-none border-none text-[13px] font-semibold whitespace-nowrap"
               style={{ backgroundColor: "var(--theme-color)" }}
             >
@@ -343,9 +359,11 @@ export default function SettingsGeneralPage() {
                 <div className="flex items-center gap-1.5 shrink-0">
                   <button
                     onClick={() => {
+                      if (readOnly) return;
                       setEditingId(dept.id);
                       setEditingVal(dept.name);
                     }}
+                    disabled={readOnly}
                     className="p-2 rounded-lg text-slate-400 dark:text-neutral-500 hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 dark:hover:bg-[var(--theme-color)]/10 transition-colors"
                     title="Edit"
                   >
@@ -356,7 +374,11 @@ export default function SettingsGeneralPage() {
                     />
                   </button>
                   <button
-                    onClick={() => setDeleteId(dept.id)}
+                    onClick={() => {
+                      if (readOnly) return;
+                      setDeleteId(dept.id);
+                    }}
+                    disabled={readOnly}
                     className="p-2 rounded-lg text-slate-400 dark:text-neutral-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                     title="Delete"
                   >

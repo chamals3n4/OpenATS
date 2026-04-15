@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { useTemplate, useUpdateTemplate } from "@/hooks/use-api";
+import { useCurrentUser, useTemplate, useUpdateTemplate } from "@/hooks/use-api";
 import type { TemplateBodyBlock } from "@/types";
 import {
   type EmailTemplateType,
@@ -207,6 +207,7 @@ function BlockEditor({
 
 export default function EditTemplatePage() {
   const router = useRouter();
+  const { data: meData, isLoading: meLoading } = useCurrentUser();
   const params = useParams();
   const id = Number(params.id);
 
@@ -219,6 +220,16 @@ export default function EditTemplatePage() {
   const [templateType, setTemplateType] =
     useState<EmailTemplateType>("general");
   const [notFound, setNotFound] = useState(false);
+
+  useEffect(() => {
+    if (meData?.data.role === "interviewer") {
+      router.replace("/");
+    }
+  }, [meData?.data.role, router]);
+
+  if (meLoading || meData?.data.role === "interviewer") {
+    return null;
+  }
 
   useEffect(() => {
     if (isError) {

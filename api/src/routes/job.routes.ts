@@ -23,35 +23,56 @@ import {
   removeTeamMember,
 } from "../controllers/hiring-team.controller";
 import customQuestionRoutes from "./custom-question.routes";
+import {
+  requireAnyRole,
+  requireJobManageAccess,
+  requireJobReadAccess,
+} from "../middlewares/rbac.middleware";
 
 const router: Router = Router();
 
 // jobs
 router.get("/", getAllJobs);
-router.post("/", createJob);
+router.post("/", requireAnyRole("super_admin", "hiring_manager"), createJob);
 router.get("/slug/:slug", getJobBySlug);
-router.get("/:id", getJobById);
-router.put("/:id", updateJob);
-router.delete("/:id", deleteJob);
+router.get("/:id", requireJobReadAccess("id"), getJobById);
+router.put("/:id", requireJobManageAccess("id"), updateJob);
+router.delete("/:id", requireJobManageAccess("id"), deleteJob);
 
 // pipeline stages
-router.get("/:jobId/pipeline", getPipeline);
-router.post("/:jobId/pipeline", createStage);
-router.post("/:jobId/pipeline/reorder", reorderStages);
-router.put("/:jobId/pipeline/:stageId", updateStage);
-router.delete("/:jobId/pipeline/:stageId", deleteStage);
+router.get("/:jobId/pipeline", requireJobReadAccess("jobId"), getPipeline);
+router.post("/:jobId/pipeline", requireJobManageAccess("jobId"), createStage);
+router.post(
+  "/:jobId/pipeline/reorder",
+  requireJobManageAccess("jobId"),
+  reorderStages,
+);
+router.put("/:jobId/pipeline/:stageId", requireJobManageAccess("jobId"), updateStage);
+router.delete(
+  "/:jobId/pipeline/:stageId",
+  requireJobManageAccess("jobId"),
+  deleteStage,
+);
 
 // hiring team
-router.get("/:jobId/team", getHiringTeam);
-router.post("/:jobId/team", addTeamMember);
-router.delete("/:jobId/team/:userId", removeTeamMember);
+router.get("/:jobId/team", requireJobReadAccess("jobId"), getHiringTeam);
+router.post("/:jobId/team", requireJobManageAccess("jobId"), addTeamMember);
+router.delete(
+  "/:jobId/team/:userId",
+  requireJobManageAccess("jobId"),
+  removeTeamMember,
+);
 
 // assessments tab
-router.get("/:id/assessments", getAssessments);
-router.post("/:id/assessments", attachAssessment);
-router.delete("/:id/assessments/:attachmentId", detachAssessment);
+router.get("/:id/assessments", requireJobReadAccess("id"), getAssessments);
+router.post("/:id/assessments", requireJobManageAccess("id"), attachAssessment);
+router.delete(
+  "/:id/assessments/:attachmentId",
+  requireJobManageAccess("id"),
+  detachAssessment,
+);
 
 // custom question + assessment attachment
-router.use("/:jobId/questions", customQuestionRoutes);
+router.use("/:jobId/questions", requireJobManageAccess("jobId"), customQuestionRoutes);
 
 export default router;

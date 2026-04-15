@@ -51,25 +51,26 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       `${ROUTE_LOG} updating asgardeoUserId=${asgardeoUserId}, oldRole=${oldRole}`,
     );
 
-    const operations: { op: string; path: string; value: string }[] = [];
-    if (body.firstName !== undefined)
+    const operations: { op: string; value: Record<string, unknown> }[] = [];
+    const patchValue: Record<string, unknown> = {};
+
+    if (body.firstName !== undefined || body.lastName !== undefined) {
+      const nameValue: Record<string, string> = {};
+      if (body.firstName !== undefined) nameValue.givenName = body.firstName;
+      if (body.lastName !== undefined) nameValue.familyName = body.lastName;
+      patchValue.name = nameValue;
+    }
+
+    if (body.email !== undefined) {
+      patchValue.emails = [{ primary: true, value: body.email }];
+    }
+
+    if (Object.keys(patchValue).length > 0) {
       operations.push({
         op: "replace",
-        path: "name.givenName",
-        value: body.firstName,
+        value: patchValue,
       });
-    if (body.lastName !== undefined)
-      operations.push({
-        op: "replace",
-        path: "name.familyName",
-        value: body.lastName,
-      });
-    if (body.email !== undefined)
-      operations.push({
-        op: "replace",
-        path: "emails[primary eq true].value",
-        value: body.email,
-      });
+    }
 
     if (operations.length > 0) {
       const scimUrl = `${base}/scim2/Users/${asgardeoUserId}`;

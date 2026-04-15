@@ -160,7 +160,6 @@ export default function UserManagementPage() {
     setEditForm({
       firstName: u.firstName ?? "",
       lastName: u.lastName ?? "",
-      email: u.email ?? "",
       role: u.role ?? "interviewer",
     });
   };
@@ -169,7 +168,11 @@ export default function UserManagementPage() {
     if (!editUser) return;
     setSaving(true);
     try {
-      await updateUser(editUser.id, editForm);
+      await updateUser(editUser.id, {
+        firstName: editForm.firstName,
+        lastName: editForm.lastName,
+        role: editForm.role,
+      });
       toast.success("User updated");
       setEditUser(null);
       await load();
@@ -580,8 +583,8 @@ export default function UserManagementPage() {
               <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">Email</Label>
               <Input
                 type="email"
-                value={editForm.email ?? ""}
-                onChange={(e) => setEditForm((f) => ({ ...f, email: e.target.value }))}
+                value={editUser?.email ?? ""}
+                disabled
                 className={inputCls}
               />
             </div>

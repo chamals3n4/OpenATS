@@ -30,7 +30,7 @@ jobs:
             cd api
             pnpm install --frozen-lockfile
             pnpm build
-            pm2 restart openats-itp-backend || pm2 start "pnpm start" --name openats-itp-backend
+            pm2 restart openats-itp-backend --update-env || pm2 start "pnpm start" --name openats-itp-backend
             pm2 save
             cd ..
 

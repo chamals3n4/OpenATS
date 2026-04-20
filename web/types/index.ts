@@ -157,6 +157,14 @@ export type Candidate = {
   appliedAt: string;
   updatedAt: string;
   stageName: string | null;
+  stageType:
+    | "none"
+    | "source"
+    | "assessment"
+    | "interview"
+    | "offer"
+    | "rejection"
+    | null;
   jobTitle: string | null;
 };
 
@@ -237,22 +245,41 @@ export type User = {
   updatedAt: string;
 };
 
-export type TemplateBodyBlock = {
-  type: "heading" | "text" | "button" | "image";
-  content: string;
-};
+/**
+ * Wire shape accepted by the API for template body blocks.
+ *
+ * Heading/text use `content`. Button uses `{ label, url }` once the API has
+ * normalized it; the editor sends a transitional `{ content }` for button/image
+ * which the API maps to `{ label, url }` / `{ url, alt }`.
+ */
+export type TemplateBodyBlock =
+  | { type: "heading"; content: string }
+  | { type: "text"; content: string }
+  | { type: "button"; label?: string; url?: string; content?: string }
+  | { type: "image"; url?: string; alt?: string; content?: string }
+  | { type: "divider" }
+  | { type: "spacer"; height: number };
+
+export type TemplateType =
+  | "offer"
+  | "offer_withdrawal"
+  | "rejection"
+  | "assessment_invite"
+  | "general"
+  | "application_received"
+  | "assessment_completion"
+  | "interview_invite";
 
 export type Template = {
   id: number;
   name: string;
-  type:
-    | "offer"
-    | "rejection"
-    | "assessment_invite"
-    | "general"
-    | "application_received";
+  type: TemplateType;
   subject: string;
   bodyJson: TemplateBodyBlock[];
+  isDefault?: boolean;
+  createdBy?: number;
+  /** Present on list/detail fetches that join the creator user. */
+  createdByName?: string;
   createdAt: string;
   updatedAt: string;
 };

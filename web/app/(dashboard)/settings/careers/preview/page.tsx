@@ -62,14 +62,6 @@ export default function CareersPreviewPage() {
     }
   }, [meData?.data.role, router]);
 
-  if (
-    meLoading ||
-    meData?.data.role === "interviewer" ||
-    meData?.data.role === "hiring_manager"
-  ) {
-    return null;
-  }
-
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -97,6 +89,14 @@ export default function CareersPreviewPage() {
       cancelled = true;
     };
   }, []);
+
+  if (
+    meLoading ||
+    meData?.data.role === "interviewer" ||
+    meData?.data.role === "hiring_manager"
+  ) {
+    return null;
+  }
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 min-w-0">

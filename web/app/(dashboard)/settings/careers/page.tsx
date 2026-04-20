@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { startTransition, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
@@ -40,6 +40,19 @@ export default function CareersSettingsPage() {
     }
   }, [meData?.data.role, router]);
 
+  useEffect(() => {
+    const list = data?.data?.origins;
+    if (!Array.isArray(list)) return;
+    startTransition(() => {
+      setOrigins(list);
+    });
+  }, [data]);
+
+  const appBase = useMemo(() => {
+    const env = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "").trim();
+    return env || "http://localhost:3000";
+  }, []);
+
   if (
     meLoading ||
     meData?.data.role === "interviewer" ||
@@ -47,16 +60,6 @@ export default function CareersSettingsPage() {
   ) {
     return null;
   }
-
-  useEffect(() => {
-    const list = data?.data?.origins;
-    if (Array.isArray(list)) setOrigins(list);
-  }, [data]);
-
-  const appBase = useMemo(() => {
-    const env = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "").trim();
-    return env || "http://localhost:3000";
-  }, []);
 
   const jobsListUrl = `${appBase}/api/public/jobs`;
   const jobDetailExampleUrl = `${appBase}/api/public/jobs/42`;

@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
+import type { RefCallback } from "react";
 import { useDrag, useDrop } from "react-dnd";
 
 interface UseDragSortOptions {
@@ -44,7 +45,13 @@ export function useDragSort({ id, index, type, onMove }: UseDragSortOptions) {
     },
   });
 
-  dragRef(dropRef(ref));
+  const setNodeRef: RefCallback<HTMLElement> = useCallback(
+    (el) => {
+      ref.current = el;
+      dragRef(dropRef(el));
+    },
+    [dragRef, dropRef],
+  );
 
-  return { ref, isDragging, isOver, dragPreviewRef };
+  return { ref: setNodeRef, isDragging, isOver, dragPreviewRef };
 }

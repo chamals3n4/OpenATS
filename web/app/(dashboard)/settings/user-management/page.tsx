@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Copy, Eye, EyeOff, RefreshCw, Search } from "lucide-react";
@@ -150,11 +150,7 @@ export default function UserManagementPage() {
     }
   }, [meRole, router]);
 
-  if (meLoading || meRole === "interviewer") {
-    return null;
-  }
-
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const list = await fetchUsers();
@@ -164,9 +160,12 @@ export default function UserManagementPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    if (meLoading || meRole === "interviewer") return;
+    void load();
+  }, [meLoading, meRole, load]);
 
   const filteredUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -177,6 +176,10 @@ export default function UserManagementPage() {
       return name.includes(q) || email.includes(q);
     });
   }, [query, users]);
+
+  if (meLoading || meRole === "interviewer") {
+    return null;
+  }
 
   const openEdit = (u: AsgardeoUser) => {
     setEditUser(u);

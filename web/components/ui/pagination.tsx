@@ -53,7 +53,6 @@ function PaginationLink({
       variant={isActive ? "outline" : "ghost"}
       size={size}
       className={cn(className)}
-      nativeButton={false}
       render={
         <a
           aria-current={isActive ? "page" : undefined}

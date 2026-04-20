@@ -1,6 +1,6 @@
 "use client";
 
-import { SignedIn, SignedOut, User, UserProfile } from "@asgardeo/nextjs";
+import { SignedIn, SignedOut, UserProfile } from "@asgardeo/nextjs";
 
 export default function AsgardeoUserDetailsPage() {
   return (

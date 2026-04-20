@@ -9,6 +9,9 @@ const isPublicRoute = createRouteMatcher([
   "/careers",
   "/careers/*",
   "/assessment/*",
+  /** Tokenized offer accept/decline — no Asgardeo session (see `app/offer/respond/page.tsx`). */
+  "/offer/respond",
+  "/offer/*",
   "/api/public/*",
 ]);
 

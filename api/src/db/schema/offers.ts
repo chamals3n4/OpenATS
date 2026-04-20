@@ -45,6 +45,9 @@ export const offers = pgTable("offers", {
   renderedHtml: text("rendered_html"),
   sentAt: timestamp("sent_at"),
 
+  /** Token embedded in offer email links for self-serve accept / decline. */
+  responseToken: varchar("response_token", { length: 64 }).unique(),
+
   createdBy: integer("created_by")
     .notNull()
     .references(() => users.id),

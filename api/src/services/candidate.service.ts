@@ -13,6 +13,8 @@ import {
   jobs,
   offers,
   templates,
+  users,
+  emailMessages,
   assessments,
 } from "../db/schema";
 import type { Candidate } from "../db/schema/candidates";
@@ -22,12 +24,20 @@ import { assessmentExecutionService } from "./assessment-execution.service";
 import { offerService } from "./offer.service";
 import { jobService } from "./job.service";
 import { socketService } from "./socket.service";
-import { mailService } from "./mail.service";
+import { formatPlainTextAsHtmlEmail, mailService } from "./mail.service";
+import type { TemplateContext } from "./template-engine.service";
+import {
+  buildApplicationReceivedFallbackInner,
+  buildRejectionFallbackInner,
+  wrapCompiledTemplateEmail,
+  wrapFallbackEmail,
+} from "../utils/email-fallback-layout";
 import {
   ragAssessmentService,
   ragIndividualAssessmentDescriptionRegex,
 } from "./rag-assessment.service";
 import { variableService } from "./variable.service";
+import { templateService } from "./template.service";
 import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
 
@@ -98,6 +108,44 @@ export type MoveStageResult = {
 
 type JobWithRelations = NonNullable<Awaited<ReturnType<typeof jobService.getById>>>;
 
+/**
+ * Calendar date `YYYY-MM-DD` in the server local timezone — same shape as the offer
+ * draft date picker, so pipeline “expiry in N days” and manual expiry edit one field
+ * without `toISOString()` shifting the day.
+ */
+function addCalendarDaysFromTodayLocal(days: number): string {
+  const d = new Date();
+  d.setHours(0, 0, 0, 0);
+  d.setDate(d.getDate() + days);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+/** Readable names for system fallback transactional emails when no template is configured. */
+function identityForTransactionalEmail(
+  candidateRow: Candidate,
+  ctx: TemplateContext,
+): { candidateName: string; jobTitle: string; companyName: string } {
+  const candidateName =
+    (typeof ctx.candidate_name === "string" && ctx.candidate_name.trim()) ||
+    `${candidateRow.firstName ?? ""} ${candidateRow.lastName ?? ""}`.trim() ||
+    "Candidate";
+
+  const jobTitle =
+    ctx.job_title && ctx.job_title !== "—"
+      ? ctx.job_title.trim()
+      : "the role";
+
+  const companyName =
+    ctx.company_name && ctx.company_name !== "—"
+      ? ctx.company_name.trim()
+      : "our company";
+
+  return { candidateName, jobTitle, companyName };
+}
+
 function computeOfferFieldsForJobStage(
   job: JobWithRelations,
   stage: JobPipelineStage,
@@ -106,7 +154,7 @@ function computeOfferFieldsForJobStage(
   let blockAutoSend = false;
 
   if (job.salaryType === "range" && job.salaryMin && job.salaryMax) {
-    salary = (Number(job.salaryMin) + Number(job.salaryMax)) / 2;
+    salary = Number(job.salaryMin);
     blockAutoSend = true;
   } else if (job.salaryType === "fixed" && job.salaryFixed) {
     salary = Number(job.salaryFixed);
@@ -119,9 +167,7 @@ function computeOfferFieldsForJobStage(
 
   let expiryDate: string | null = null;
   if (stage.offerExpiryDays) {
-    const expiry = new Date();
-    expiry.setDate(expiry.getDate() + stage.offerExpiryDays);
-    expiryDate = expiry.toISOString();
+    expiryDate = addCalendarDaysFromTodayLocal(stage.offerExpiryDays);
   }
 
   return { salary, expiryDate, status };
@@ -181,6 +227,8 @@ async function repairCandidatePipelineSnapshot(
     return { history: historyOut, offer: offerOut };
   }
 
+  /** Any non–auto-replaceable offer for this job — include terminal states so withdrawing
+   *  does not make `repair` think there is no offer and insert a duplicate draft. */
   const [existingOpenOffer] = await db
     .select({ id: offers.id })
     .from(offers)
@@ -188,7 +236,14 @@ async function repairCandidatePipelineSnapshot(
       and(
         eq(offers.candidateId, candidateId),
         eq(offers.jobId, candidate.jobId),
-        inArray(offers.status, ["draft", "sent", "pending", "accepted"]),
+        inArray(offers.status, [
+          "draft",
+          "sent",
+          "pending",
+          "accepted",
+          "declined",
+          "withdrawn",
+        ]),
       ),
     )
     .limit(1);
@@ -220,6 +275,7 @@ async function repairCandidatePipelineSnapshot(
         currency: job.currency,
         payFrequency: job.payFrequency,
         expiryDate,
+        benefits: null,
         status: "draft",
         createdBy: 1,
       },
@@ -443,10 +499,8 @@ export const candidateService = {
         }
       : null;
 
-    console.log(`[getById] candidate ${id}: history=${history.length}, offer=${offer?.id ?? 'null'}, currentStageId=${candidate.currentStageId}`);
     const { history: historyFixed, offer: offerFixed } =
       await repairCandidatePipelineSnapshot(id, candidate, history, offer);
-    console.log(`[getById] candidate ${id} after repair: history=${historyFixed.length}, offer=${offerFixed?.id ?? 'null'}`);
 
     return {
       ...candidate,
@@ -557,6 +611,8 @@ export const candidateService = {
                   "sent",
                   "pending",
                   "accepted",
+                  "declined",
+                  "withdrawn",
                 ]),
               ),
             )
@@ -577,6 +633,7 @@ export const candidateService = {
                 currency: job.currency,
                 payFrequency: job.payFrequency,
                 expiryDate,
+                benefits: null,
                 status,
                 createdBy: movedBy ?? 1,
               },
@@ -588,42 +645,66 @@ export const candidateService = {
       }
 
       if (stage.stageType === "rejection") {
-        if (stage.rejectionTemplateId) {
-          if (candidate.rejectionNoticeSentAt) {
-            stageAutomation.rejectionEmail = "skipped_already_sent";
+        if (candidate.rejectionNoticeSentAt) {
+          stageAutomation.rejectionEmail = "skipped_already_sent";
+        } else {
+          const rejectionTemplateId =
+            stage.rejectionTemplateId ??
+            (await templateService.getDefaultTemplateIdForType("rejection"));
+
+          const context = await variableService.getContextForCandidate(
+            candidate.id,
+          );
+          const { candidateName, jobTitle, companyName } =
+            identityForTransactionalEmail(candidate, context);
+
+          let subjectLine: string;
+          let htmlOut: string;
+
+          const [template] = rejectionTemplateId
+            ? await tx
+                .select()
+                .from(templates)
+                .where(eq(templates.id, rejectionTemplateId))
+                .limit(1)
+            : [];
+
+          if (template?.bodyJson?.length) {
+            const compiled = templateEngineService.compileTemplate(
+              template.subject,
+              template.bodyJson,
+              context,
+            );
+            htmlOut = wrapCompiledTemplateEmail(compiled.html);
+            subjectLine = compiled.subject.trim()
+              ? compiled.subject
+              : `Update on your application — ${jobTitle}`;
           } else {
-            const [template] = await tx
-              .select()
-              .from(templates)
-              .where(eq(templates.id, stage.rejectionTemplateId));
-
-            if (template) {
-              const context = await variableService.getContextForCandidate(
-                candidate.id,
-              );
-              const { subject, html } = templateEngineService.compileTemplate(
-                template.subject,
-                template.bodyJson,
-                context,
-              );
-
-              await mailService.sendRejectionEmail(
-                candidate.email,
-                subject,
-                html,
-              );
-
-              await tx
-                .update(candidates)
-                .set({
-                  rejectionNoticeSentAt: new Date(),
-                  updatedAt: new Date(),
-                })
-                .where(eq(candidates.id, candidateId));
-
-              stageAutomation.rejectionEmail = "sent";
-            }
+            htmlOut = wrapFallbackEmail(
+              buildRejectionFallbackInner({
+                candidateName,
+                jobTitle,
+                companyName,
+              }),
+            );
+            subjectLine = `Update on your application — ${jobTitle}`;
           }
+
+          await mailService.sendRejectionEmail(
+            candidate.email,
+            subjectLine,
+            htmlOut,
+          );
+
+          await tx
+            .update(candidates)
+            .set({
+              rejectionNoticeSentAt: new Date(),
+              updatedAt: new Date(),
+            })
+            .where(eq(candidates.id, candidateId));
+
+          stageAutomation.rejectionEmail = "sent";
         }
       }
 
@@ -671,6 +752,139 @@ export const candidateService = {
         .returning();
       return deleted ?? null;
     });
+  },
+
+  /**
+   * After a successful application, send the default `application_received` template when set,
+   * otherwise the built-in acknowledgement (same pattern as assessment invite / completion).
+   */
+  async trySendApplicationReceivedEmail(candidateId: number): Promise<void> {
+    const [c] = await db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.id, candidateId))
+      .limit(1);
+    if (!c?.email?.trim()) return;
+
+    const context = await variableService.getContextForCandidate(candidateId);
+    const { candidateName, jobTitle, companyName } =
+      identityForTransactionalEmail(c, context);
+
+    const tid = await templateService.getDefaultTemplateIdForType(
+      "application_received",
+    );
+    const template = tid ? await templateService.getById(tid) : null;
+
+    const defaultSubject = `Thank you for applying — ${jobTitle}`;
+
+    if (template?.bodyJson?.length) {
+      const compiled = templateEngineService.compileTemplate(
+        template.subject,
+        template.bodyJson,
+        context,
+      );
+      const html = wrapCompiledTemplateEmail(compiled.html);
+      await mailService.sendEmail({
+        to: c.email.trim(),
+        subject: compiled.subject.trim() ? compiled.subject : defaultSubject,
+        html,
+      });
+      return;
+    }
+
+    const html = wrapFallbackEmail(
+      buildApplicationReceivedFallbackInner({
+        candidateName,
+        jobTitle,
+        companyName,
+      }),
+    );
+    await mailService.sendEmail({
+      to: c.email.trim(),
+      subject: defaultSubject,
+      html,
+    });
+  },
+
+  /** One-off email from the dashboard "Send email" tab (Resend + `email_messages` row). */
+  async sendAdHocEmail(
+    candidateId: number,
+    sentByUserId: number,
+    subject: string,
+    bodyText: string,
+    options?: {
+      bodyHtml?: string | null | undefined;
+      templateId?: number | null | undefined;
+    },
+  ) {
+    const [c] = await db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.id, candidateId))
+      .limit(1);
+    if (!c) return { row: null, providerMessageId: null };
+
+    const safeSubject = subject.trim().slice(0, 500);
+    const trimmedHtml = options?.bodyHtml?.trim();
+    const html =
+      trimmedHtml && trimmedHtml.length > 0
+        ? wrapCompiledTemplateEmail(trimmedHtml)
+        : formatPlainTextAsHtmlEmail(bodyText);
+
+    const tid = options?.templateId;
+    const templateIdResolved =
+      typeof tid === "number" && Number.isFinite(tid) && tid > 0
+        ? Math.trunc(tid)
+        : null;
+
+    const [row] = await db
+      .insert(emailMessages)
+      .values({
+        candidateId,
+        sentBy: sentByUserId,
+        templateId: templateIdResolved,
+        subject: safeSubject,
+        bodyHtml: html,
+        recipientEmail: c.email,
+      })
+      .returning();
+
+    const sendResult = await mailService.sendEmail({
+      to: c.email,
+      subject: safeSubject,
+      html,
+    });
+
+    let providerMessageId: string | null = null;
+    if (sendResult && typeof sendResult === "object" && "id" in sendResult) {
+      const sid = (sendResult as { id?: string | number }).id;
+      if (sid !== undefined && sid !== null) providerMessageId = String(sid);
+    }
+
+    return {
+      row: row ?? null,
+      providerMessageId,
+    };
+  },
+
+  async getEmailHistory(candidateId: number) {
+    const rows = await db
+      .select({
+        id: emailMessages.id,
+        subject: emailMessages.subject,
+        recipientEmail: emailMessages.recipientEmail,
+        sentAt: emailMessages.sentAt,
+        sentByName: sql<string | null>`concat(${users.firstName}, ' ', ${users.lastName})`,
+        templateName: templates.name,
+        templateType: templates.type,
+      })
+      .from(emailMessages)
+      .leftJoin(users, eq(emailMessages.sentBy, users.id))
+      .leftJoin(templates, eq(emailMessages.templateId, templates.id))
+      .where(eq(emailMessages.candidateId, candidateId))
+      .orderBy(desc(emailMessages.sentAt));
+
+    return rows;
   },
 };
 

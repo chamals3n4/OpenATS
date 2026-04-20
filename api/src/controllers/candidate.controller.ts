@@ -73,6 +73,14 @@ export const applyForJob = async (req: Request, res: Response) => {
 
     logger.info(`New application submitted: candidateId=${result.id}, email="${result.email}", jobId=${jobId}${result.resumeUrl ? ", hasResume=true" : ""}`);
 
+    void candidateService
+      .trySendApplicationReceivedEmail(result.id)
+      .catch((err) =>
+        logger.error(
+          `Application received email failed candidateId=${result.id}: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
+
     if (result.resumeUrl) {
       cvAnalysisService
         .analyze(result.id, result.jobId, result.resumeUrl)
@@ -137,6 +145,134 @@ export const getCandidateById = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error(`Failed to fetch candidate id=${req.params.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch candidate" });
+  }
+};
+
+/** Stream resume PDF via API so the browser can load it same-origin (private R2 bucket; no public GET). */
+export const getCandidateResume = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid candidate ID" });
+      return;
+    }
+
+    const candidate = await candidateService.getById(id);
+    if (!candidate?.resumeUrl) {
+      res.status(404).json({ error: "No resume on file" });
+      return;
+    }
+
+    const key = r2Service.getResumeKeyFromStoredUrl(candidate.resumeUrl);
+    if (!key) {
+      res.status(500).json({
+        error:
+          "Could not resolve resume object key from stored URL. Check R2_PUBLIC_URL and stored resume_url format in api/.env.",
+      });
+      return;
+    }
+
+    const buffer = await r2Service.getObjectBuffer(key);
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      `inline; filename="resume-${id}.pdf"`,
+    );
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.send(buffer);
+  } catch (error: unknown) {
+    const message =
+      error instanceof Error ? error.message : "Failed to load resume";
+    logger.error(`Failed to load resume id=${req.params.id}: ${message}`);
+    res.status(500).json({ error: message });
+  }
+};
+
+const sendAdHocEmailSchema = z
+  .object({
+    subject: z.string().min(1, "Subject is required").max(500),
+    bodyText: z.string().max(50_000).optional().default(""),
+    /** When set (e.g. from template preview), sent as-is inside a styled wrapper. */
+    bodyHtml: z.string().max(200_000).optional().nullable(),
+    templateId: z.number().int().positive().optional().nullable(),
+  })
+  .refine(
+    (d) =>
+      (d.bodyText?.trim().length ?? 0) > 0 ||
+      (d.bodyHtml?.trim().length ?? 0) > 0,
+    { message: "Message or HTML body is required" },
+  );
+
+export const sendCandidateAdHocEmail = async (
+  req: Request,
+  res: Response,
+) => {
+  try {
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid candidate ID" });
+      return;
+    }
+
+    if (!req.user?.id) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+
+    const parsed = sendAdHocEmailSchema.safeParse(req.body);
+    if (!parsed.success) {
+      const first = parsed.error.issues[0];
+      res.status(400).json({ error: first?.message ?? "Validation failed" });
+      return;
+    }
+
+    const { row, providerMessageId } = await candidateService.sendAdHocEmail(
+      id,
+      req.user.id,
+      parsed.data.subject,
+      parsed.data.bodyText ?? "",
+      {
+        bodyHtml: parsed.data.bodyHtml ?? undefined,
+        templateId: parsed.data.templateId ?? undefined,
+      },
+    );
+    if (!row) {
+      res.status(404).json({ error: "Candidate not found" });
+      return;
+    }
+
+    logger.info(
+      `Ad-hoc email sent: candidateId=${id} to="${row.recipientEmail}" by user ${req.user.id}${providerMessageId ? ` resendId=${providerMessageId}` : ""}`,
+    );
+    res.status(200).json({
+      data: {
+        id: row.id,
+        sentAt: row.sentAt,
+        ...(providerMessageId ? { providerMessageId } : {}),
+      },
+    });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    logger.error(
+      `sendCandidateAdHocEmail candidateId=${req.params.id} user ${req.user?.id}: ${msg}`,
+    );
+    res.status(500).json({ error: msg || "Failed to send email" });
+  }
+};
+
+export const getCandidateEmailHistory = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid candidate ID" });
+      return;
+    }
+    const emails = await candidateService.getEmailHistory(id);
+    res.status(200).json({ data: emails });
+  } catch (error: unknown) {
+    const msg = error instanceof Error ? error.message : String(error);
+    logger.error(`getCandidateEmailHistory candidateId=${req.params.id}: ${msg}`);
+    res.status(500).json({ error: msg || "Failed to load email history" });
   }
 };
 

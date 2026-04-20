@@ -4,9 +4,12 @@ import {
   applyForJob,
   getCandidates,
   getCandidateById,
+  getCandidateResume,
+  getCandidateEmailHistory,
   moveCandidateStage,
   deleteCandidate,
   updateCandidateBasicDetails,
+  sendCandidateAdHocEmail,
 } from "../controllers/candidate.controller";
 import {
   requireAnyRole,
@@ -27,6 +30,21 @@ router.post("/jobs/:jobId/apply", applyForJob);
 
 router.get("/", requireAnyRole("super_admin", "hiring_manager"), getCandidates);
 router.get("/jobs/:jobId", requireJobReadAccess("jobId"), getCandidates);
+router.get(
+  "/:id/resume",
+  requireAnyRole("super_admin", "hiring_manager"),
+  getCandidateResume,
+);
+router.post(
+  "/:id/send-email",
+  requireAnyRole("super_admin", "hiring_manager"),
+  sendCandidateAdHocEmail,
+);
+router.get(
+  "/:id/emails",
+  requireAnyRole("super_admin", "hiring_manager"),
+  getCandidateEmailHistory,
+);
 router.get("/:id", requireAnyRole("super_admin", "hiring_manager"), getCandidateById);
 router.patch(
   "/:id",

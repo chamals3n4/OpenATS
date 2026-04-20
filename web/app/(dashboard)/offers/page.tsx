@@ -5,12 +5,14 @@ import {
   Search01Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
-  Delete02Icon,
+  Archive01Icon,
   CallIcon,
   Mail01Icon,
+  MoreVerticalIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useOffers, useDeleteOffer } from "@/hooks/use-api";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,10 +43,17 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
-import { ResumeScrollView } from "@/components/resume-scroll-view";
+import { archiveItem } from "@/lib/archive-store";
+import { CandidateDetailSheetProvider } from "@/components/candidate-detail-sheet-context";
+import { CandidatePreviewPane } from "@/components/candidate-preview-pane";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
-import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 
 type OfferStatus =
   | "Draft"
@@ -83,6 +92,32 @@ const OFFER_STATUS_STYLES: Record<OfferStatus, string> = {
   Withdrawn:
     "bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400",
 };
+
+function RowMenu({ onArchive }: { onArchive(): void }) {
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        aria-label="Offer actions"
+        className="inline-flex size-8 items-center justify-center rounded-md text-slate-400 outline-none transition-colors hover:bg-slate-100 hover:text-slate-600 dark:hover:bg-neutral-800 dark:hover:text-neutral-300 focus-visible:ring-2 focus-visible:ring-slate-400/40 dark:focus-visible:ring-neutral-600"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" sideOffset={4} className="min-w-36">
+        <DropdownMenuItem
+          className="cursor-pointer gap-2"
+          onClick={(e) => {
+            e.stopPropagation();
+            onArchive();
+          }}
+        >
+          <HugeiconsIcon icon={Archive01Icon} className="size-4" />
+          Archive
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+}
 
 export default function ManageOffersPage() {
   const { data: offersRes, isLoading: offersLoading } = useOffers();
@@ -127,7 +162,7 @@ export default function ManageOffersPage() {
   const [filterDept, setFilterDept] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
 
-  const [deleteTarget, setDeleteTarget] = useState<Offer | null>(null);
+  const [archiveTarget, setArchiveTarget] = useState<Offer | null>(null);
 
   const [selected, setSelected] = useState<Offer | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -137,10 +172,23 @@ export default function ManageOffersPage() {
     setSheetOpen(true);
   };
 
-  const confirmDelete = () => {
-    if (!deleteTarget) return;
-    deleteOfferMutation.mutate(deleteTarget.id, {
-      onSuccess: () => setDeleteTarget(null),
+  const confirmArchive = () => {
+    if (!archiveTarget) return;
+    const target = archiveTarget;
+    deleteOfferMutation.mutate(target.id, {
+      onSuccess: () => {
+        archiveItem({
+          id: String(target.id),
+          type: "offer",
+          name: target.candidateName,
+          detail: target.jobTitle,
+        });
+        setArchiveTarget(null);
+        toast.success("Offer removed");
+      },
+      onError: (e) => {
+        toast.error(e instanceof Error ? e.message : "Could not remove offer");
+      },
     });
   };
 
@@ -245,39 +293,38 @@ export default function ManageOffersPage() {
       </div>
 
       <div className="px-8 py-6">
-        <div className="border border-slate-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
-          <Table>
-            <TableHeader>
-              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
-                  Candidate Name
-                </TableHead>
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
-                  Job Title
-                </TableHead>
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
-                  Offer Status
-                </TableHead>
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
-                  Salary Offered
-                </TableHead>
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
-                  Created At
-                </TableHead>
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
-                  Expired Date
-                </TableHead>
-                <TableHead className="h-13 px-4 w-24 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
-                  Actions
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+        <div className="flex min-w-0 flex-col overflow-hidden rounded-xl border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-900">
+          <div className="min-w-0 pt-4 sm:pt-5">
+            <Table className="min-w-0">
+              <TableHeader>
+                <TableRow className="border-b border-slate-300 bg-white hover:bg-transparent dark:border-neutral-700 dark:bg-neutral-900">
+                  <TableHead className="h-13 px-8 text-left text-sm font-semibold text-slate-900 dark:text-neutral-100">
+                    Candidate Name
+                  </TableHead>
+                  <TableHead className="h-13 px-8 text-left text-sm font-semibold text-slate-900 dark:text-neutral-100">
+                    Job Title
+                  </TableHead>
+                  <TableHead className="h-13 px-8 text-left text-sm font-semibold text-slate-900 dark:text-neutral-100">
+                    Offer Status
+                  </TableHead>
+                  <TableHead className="h-13 px-8 text-left text-sm font-semibold text-slate-900 dark:text-neutral-100">
+                    Salary Offered
+                  </TableHead>
+                  <TableHead className="h-13 px-8 text-left text-sm font-semibold text-slate-900 dark:text-neutral-100">
+                    Created At
+                  </TableHead>
+                  <TableHead className="h-13 px-8 text-left text-sm font-semibold text-slate-900 dark:text-neutral-100">
+                    Expired Date
+                  </TableHead>
+                  <TableHead className="h-13 w-14 px-4 text-right sm:w-16" />
+                </TableRow>
+              </TableHeader>
+              <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={7}
-                    className="h-32 text-center text-slate-400 text-sm"
+                    className="h-32 px-8 text-center text-sm text-slate-400"
                   >
                     No offers found.
                   </TableCell>
@@ -286,54 +333,47 @@ export default function ManageOffersPage() {
                 filtered.map((o) => (
                   <TableRow
                     key={o.id}
-                    className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium hover:bg-slate-50/50 dark:hover:bg-neutral-800/50 cursor-pointer"
+                    className="cursor-pointer border-b border-slate-300 font-medium last:border-0 hover:bg-slate-50/50 dark:border-neutral-700 dark:hover:bg-neutral-800/50"
                     onClick={() => openOffer(o)}
                   >
-                    <TableCell className="h-14 px-8 py-0 text-slate-700 dark:text-neutral-200 font-medium">
+                    <TableCell className="h-14 px-8 py-0 text-sm font-medium text-slate-700 dark:text-neutral-200">
                       {o.candidateName}
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+                    <TableCell className="h-14 px-8 py-0 text-sm font-normal text-slate-600 dark:text-neutral-400">
                       {o.jobTitle}
                     </TableCell>
                     <TableCell className="h-14 px-8 py-0">
                       <Badge
-                        className={`${OFFER_STATUS_STYLES[o.status]} hover:${OFFER_STATUS_STYLES[o.status]} border-none shadow-none font-medium px-2.5 py-0.5 rounded-full text-[12px]`}
+                        className={`${OFFER_STATUS_STYLES[o.status]} hover:${OFFER_STATUS_STYLES[o.status]} rounded-full border-none px-2.5 py-0.5 text-[12px] font-medium shadow-none`}
                       >
                         {o.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+                    <TableCell className="h-14 px-8 py-0 text-sm font-normal text-slate-600 dark:text-neutral-400">
                       {o.salary ? `${o.currency} ${o.salary}` : "—"}
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+                    <TableCell className="h-14 px-8 py-0 text-sm font-normal text-slate-600 dark:text-neutral-400">
                       {o.createdAt}
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+                    <TableCell className="h-14 px-8 py-0 text-sm font-normal text-slate-600 dark:text-neutral-400">
                       {o.expiredDate}
                     </TableCell>
                     <TableCell
-                      className="h-14 px-4 py-0"
+                      className="h-14 px-4 py-0 text-right sm:px-6"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex justify-end">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="h-8 px-3 rounded-md border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400"
-                          onClick={() => setDeleteTarget(o)}
-                        >
-                          <HugeiconsIcon icon={Delete02Icon} className="size-3.5 mr-1" />
-                          Delete
-                        </Button>
+                        <RowMenu onArchive={() => setArchiveTarget(o)} />
                       </div>
                     </TableCell>
                   </TableRow>
                 ))
               )}
             </TableBody>
-          </Table>
+            </Table>
+          </div>
 
-          <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          <div className="flex items-center justify-between gap-3 border-t border-slate-300 bg-white px-8 py-4 pb-5 dark:border-neutral-700 dark:bg-neutral-900">
             <span className="text-sm font-medium text-slate-400">
               {offersLoading
                 ? "Loading..."
@@ -365,9 +405,8 @@ export default function ManageOffersPage() {
           className="w-[98vw] sm:max-w-[98vw] p-0 flex flex-row gap-0 border-l border-slate-200 dark:border-neutral-800 shadow-none overflow-hidden bg-white dark:bg-neutral-950"
         >
           {selected && (
-            <>
-              {/* Left — CV preview */}
-              <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <CandidateDetailSheetProvider key={selected.candidateId}>
+              <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
                 <div className="px-6 lg:px-8 py-4 lg:py-5 border-b border-slate-100 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-950">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0">
                     <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 tracking-tight">
@@ -383,76 +422,52 @@ export default function ManageOffersPage() {
                     {selected.jobTitle}
                   </p>
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1.5">
-                    {[
-                      [CallIcon, selected.phone],
-                      [Mail01Icon, selected.email],
-                    ].map(([icon, value], i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap"
-                      >
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        <HugeiconsIcon
-                          icon={icon as any}
-                          className="size-3.5 text-slate-400"
-                        />
-                        <span>{value as string}</span>
-                      </div>
-                    ))}
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap">
+                      <HugeiconsIcon
+                        icon={CallIcon}
+                        className="size-3.5 text-slate-400"
+                      />
+                      <span>{selected.phone ?? "—"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap">
+                      <HugeiconsIcon
+                        icon={Mail01Icon}
+                        className="size-3.5 text-slate-400"
+                      />
+                      <span>{selected.email}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                  {selected.resumeUrl ? (
-                    <ResumeScrollView resumeUrl={selected.resumeUrl} />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
-                      <svg
-                        className="size-10 opacity-30"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                      <p className="text-[13px] font-medium">
-                        No resume uploaded
-                      </p>
-                    </div>
-                  )}
-                </div>
+                <CandidatePreviewPane
+                  candidateId={selected.candidateId}
+                  open={sheetOpen}
+                />
               </div>
 
-              {/* Right — candidate side panel */}
               <CandidateSidePanel
                 candidateId={selected.candidateId}
                 open={sheetOpen}
-                defaultTab="offer"
               />
-            </>
+            </CandidateDetailSheetProvider>
           )}
         </SheetContent>
       </Sheet>
       <AlertDialog
-        open={!!deleteTarget}
-        onOpenChange={(o) => !o && setDeleteTarget(null)}
+        open={!!archiveTarget}
+        onOpenChange={(o) => !o && setArchiveTarget(null)}
       >
         <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
           <AlertDialogHeader>
             <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
-              Delete this offer?
+              Archive this offer?
             </AlertDialogTitle>
             <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
               The offer for{" "}
               <strong className="text-slate-700 dark:text-neutral-200">
-                {deleteTarget?.candidateName}
+                {archiveTarget?.candidateName}
               </strong>{" "}
-              will be permanently deleted. This cannot be undone.
+              will be deleted permanently.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
@@ -460,10 +475,11 @@ export default function ManageOffersPage() {
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={confirmDelete}
-              className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none"
+              onClick={confirmArchive}
+              className="h-9 px-5 rounded-lg text-white text-[13px] font-medium shadow-none border-none"
+              style={{ backgroundColor: "var(--theme-color)" }}
             >
-              Delete
+              Archive
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

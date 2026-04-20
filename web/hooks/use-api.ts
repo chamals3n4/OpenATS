@@ -23,6 +23,7 @@ import type {
   StageAutomationFlags,
   User,
   Template,
+  TemplateBodyBlock,
   Offer,
   AnalyticsReport,
   AnalyticsExportPayload,
@@ -30,6 +31,33 @@ import type {
   ActiveLogFilters,
   ActiveLogExportPayload,
 } from "@/types";
+
+/** Row from `job_hiring_team` returned by add/remove team member routes. */
+type HiringTeamMembership = {
+  id: number;
+  jobId: number;
+  userId: number;
+  addedAt: string;
+};
+
+/**
+ * Row from `job_assessment_attachments`.
+ * `GET /jobs/:jobId/assessments` omits `jobId`; insert/delete `.returning()` includes it.
+ */
+type JobAssessmentAttachment = {
+  id: number;
+  jobId?: number;
+  assessmentId: number;
+  triggerStageId: number;
+  createdAt: string;
+};
+
+/** Compiled template preview from `POST /templates/:id/preview`. */
+type TemplatePreviewPayload = {
+  subject: string;
+  bodyJson: TemplateBodyBlock[];
+  html: string;
+};
 
 export function useJobs() {
   return useQuery({
@@ -265,7 +293,7 @@ export function useAddHiringTeamMember(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: { userId: number; role?: string }) =>
-      serverFetch<{ data: any }>(`/jobs/${jobId}/team`, {
+      serverFetch<{ data: HiringTeamMembership }>(`/jobs/${jobId}/team`, {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -279,7 +307,7 @@ export function useRemoveHiringTeamMember(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (userId: number) =>
-      serverFetch<{ data: any }>(`/jobs/${jobId}/team/${userId}`, {
+      serverFetch<{ data: HiringTeamMembership }>(`/jobs/${jobId}/team/${userId}`, {
         method: "DELETE",
       }),
     onSuccess: () => {
@@ -463,14 +491,9 @@ export function useJobAssessments(jobId: number) {
   return useQuery({
     queryKey: ["jobs", jobId, "assessments"],
     queryFn: () =>
-      serverFetch<{
-        data: {
-          id: number;
-          assessmentId: number;
-          triggerStageId: number;
-          createdAt: string;
-        }[];
-      }>(`/jobs/${jobId}/assessments`),
+      serverFetch<{ data: JobAssessmentAttachment[] }>(
+        `/jobs/${jobId}/assessments`,
+      ),
     enabled: !!jobId,
   });
 }
@@ -479,7 +502,7 @@ export function useAttachAssessment(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: { assessmentId: number; triggerStageId: number }) =>
-      serverFetch<{ data: any }>(`/jobs/${jobId}/assessments`, {
+      serverFetch<{ data: JobAssessmentAttachment }>(`/jobs/${jobId}/assessments`, {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -495,9 +518,12 @@ export function useDetachAssessment(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (attachmentId: number) =>
-      serverFetch<{ data: any }>(`/jobs/${jobId}/assessments/${attachmentId}`, {
-        method: "DELETE",
-      }),
+      serverFetch<{ data: JobAssessmentAttachment }>(
+        `/jobs/${jobId}/assessments/${attachmentId}`,
+        {
+          method: "DELETE",
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["jobs", jobId, "assessments"],
@@ -535,7 +561,7 @@ export function useCreateAssessment() {
       timeLimit: number;
       passScore: number;
       createdBy?: number;
-      questions?: any[];
+      questions?: Partial<AssessmentQuestion>[];
     }) =>
       serverFetch<{ data: Assessment }>("/assessments", {
         method: "POST",
@@ -654,7 +680,9 @@ export function useOffers(jobId?: number) {
   return useQuery({
     queryKey: jobId ? ["offers", "job", jobId] : ["offers", "all"],
     queryFn: () =>
-      serverFetch<{ data: any[] }>(jobId ? `/offers/job/${jobId}` : `/offers`),
+      serverFetch<{ data: Offer[] }>(
+        jobId ? `/offers/job/${jobId}` : `/offers`,
+      ),
     enabled: jobId === undefined || !!jobId,
   });
 }
@@ -694,6 +722,7 @@ export function useUpdateOffer() {
       data,
     }: {
       offerId: number;
+      candidateId?: number;
       data: Partial<Offer>;
     }) =>
       serverFetch<{ data: Offer }>(`/offers/${offerId}`, {
@@ -712,6 +741,11 @@ export function useUpdateOffer() {
         });
       }
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
+      if (variables.candidateId) {
+        queryClient.invalidateQueries({
+          queryKey: ["candidates", variables.candidateId],
+        });
+      }
     },
   });
 }
@@ -720,7 +754,7 @@ export function useDeleteOffer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      serverFetch<{ data: any }>(`/offers/${id}`, {
+      serverFetch<{ data: Offer }>(`/offers/${id}`, {
         method: "DELETE",
       }),
     onSuccess: () => {
@@ -733,8 +767,15 @@ export function useDeleteOffer() {
 export function useUpdateOfferStatus() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: string }) =>
-      serverFetch<{ data: any }>(`/offers/${id}/status`, {
+    mutationFn: ({
+      id,
+      status,
+    }: {
+      id: number;
+      status: Offer["status"];
+      candidateId?: number;
+    }) =>
+      serverFetch<{ data: Offer }>(`/offers/${id}/status`, {
         method: "PATCH",
         body: JSON.stringify({ status }),
       }),
@@ -742,6 +783,11 @@ export function useUpdateOfferStatus() {
       queryClient.invalidateQueries({ queryKey: ["offers", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["offers"] });
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
+      if (variables.candidateId) {
+        queryClient.invalidateQueries({
+          queryKey: ["candidates", variables.candidateId],
+        });
+      }
     },
   });
 }
@@ -830,7 +876,7 @@ export function useCandidate(
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
-    // Seed from any cached candidates list so the sheet shows the candidate's
+    // Seed from a cached candidates list so the sheet shows the candidate's
     // basic info immediately while the full detail (cv analysis, answers,
     // history) loads in the background — same pattern as useJob.
     initialData: () => {
@@ -1091,36 +1137,76 @@ export function useDeleteTemplate() {
 
 export function usePreviewTemplate() {
   return useMutation({
-    mutationFn: ({ id, context }: { id: number; context: any }) =>
-      serverFetch<any>(`/templates/${id}/preview`, {
+    mutationFn: ({
+      id,
+      candidateId,
+      context,
+    }: {
+      id: number;
+      candidateId?: number;
+      context?: Record<string, unknown>;
+    }) =>
+      serverFetch<{ data: TemplatePreviewPayload }>(`/templates/${id}/preview`, {
         method: "POST",
-        body: JSON.stringify({ context }),
+        body: JSON.stringify({ context, candidateId }),
       }),
   });
 }
 
+export type CandidateEmailHistoryItem = {
+  id: number;
+  subject: string;
+  recipientEmail: string;
+  sentAt: string;
+  sentByName: string | null;
+  templateName: string | null;
+  templateType: string | null;
+};
+
+export function useCandidateEmailHistory(candidateId: number | undefined) {
+  return useQuery({
+    queryKey: ["candidate-emails", candidateId],
+    queryFn: () =>
+      serverFetch<{ data: CandidateEmailHistoryItem[] }>(
+        `/candidates/${candidateId}/emails`,
+      ),
+    enabled: !!candidateId,
+    staleTime: 1000 * 30,
+  });
+}
+
 export function useSendCandidateEmail() {
+  const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: {
+    mutationFn: (variables: {
       candidateId: number;
-      mode: "general" | "interview";
-      templateId?: number | null;
       subject: string;
-      body?: string;
-      interview?: {
-        date?: string;
-        time?: string;
-        timeZone?: string;
-        location?: string;
-        videoLink?: string;
-        interviewers?: string[];
-        otherInterviewers?: string;
-      };
+      bodyText: string;
+      bodyHtml?: string | null;
+      templateId?: number | null;
     }) =>
-      serverFetch<{ data: { ok: true } }>("/templates/send-email", {
-        method: "POST",
-        body: JSON.stringify(data),
-      }),
+      serverFetch<{
+        data: { id: number; sentAt: string; providerMessageId?: string };
+      }>(
+        `/candidates/${variables.candidateId}/send-email`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            subject: variables.subject,
+            bodyText: variables.bodyText,
+            bodyHtml: variables.bodyHtml ?? undefined,
+            templateId: variables.templateId ?? undefined,
+          }),
+        },
+      ),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["candidates", variables.candidateId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["candidate-emails", variables.candidateId],
+      });
+    },
   });
 }
 

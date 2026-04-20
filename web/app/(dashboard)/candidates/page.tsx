@@ -1,8 +1,7 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Search01Icon,
-  PlusSignIcon,
   CallIcon,
   Mail01Icon,
   PencilEdit01Icon,
@@ -48,6 +47,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { toast } from "sonner";
 
 import {
   useCandidates,
@@ -55,19 +55,13 @@ import {
   useJobs,
   useUpdateCandidateBasicDetails,
 } from "@/hooks/use-api";
-import { ResumeScrollView } from "@/components/resume-scroll-view";
+import { CandidateDetailSheetProvider } from "@/components/candidate-detail-sheet-context";
+import { CandidatePreviewPane } from "@/components/candidate-preview-pane";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
 import type { Candidate } from "@/types";
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
+import { formatTimeAgo } from "@/lib/date-format";
+import { cn } from "@/lib/utils";
+import { stageBadgeToneClasses } from "@/lib/offer-status-styles";
 
 export default function ManageCandidatesPage() {
   const [selectedJobId, setSelectedJobId] = useState<number | undefined>();
@@ -84,13 +78,21 @@ export default function ManageCandidatesPage() {
   const [editResumeFile, setEditResumeFile] = useState<File | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data: candidatesData, isLoading } = useCandidates(selectedJobId, {
-    search: debouncedSearch || undefined,
-  });
+  const candidateListFilters = useMemo(
+    () => ({
+      search: debouncedSearch.length > 0 ? debouncedSearch : undefined,
+    }),
+    [debouncedSearch],
+  );
+
+  const { data: candidatesData, isLoading } = useCandidates(
+    selectedJobId,
+    candidateListFilters,
+  );
   const { data: jobsData } = useJobs();
   const deleteMutation = useDeleteCandidate();
   const updateMutation = useUpdateCandidateBasicDetails();
@@ -146,6 +148,12 @@ export default function ManageCandidatesPage() {
         onSuccess: () => {
           setEditTarget(null);
           setEditResumeFile(null);
+          toast.success("Candidate updated");
+        },
+        onError: (e) => {
+          toast.error(
+            e instanceof Error ? e.message : "Failed to update candidate",
+          );
         },
       },
     );
@@ -154,7 +162,7 @@ export default function ManageCandidatesPage() {
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
       {/* Header */}
-      <div className="px-8 py-4 flex items-center justify-between">
+      <div className="px-8 py-4">
         <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Manage Candidates
         </h1>
@@ -181,18 +189,14 @@ export default function ManageCandidatesPage() {
             setSelectedJobId(v === "all" ? undefined : Number(v))
           }
         >
-          <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-62 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Job Position">
               {selectedJobId
                 ? (jobs.find((j) => j.id === selectedJobId)?.title ?? null)
                 : "All Positions"}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent
-            align="start"
-            alignOffset={0}
-            className="-ml-1 w-53 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
-          >
+          <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Positions</SelectItem>
             {jobs.map((j) => (
               <SelectItem key={j.id} value={String(j.id)}>
@@ -265,7 +269,12 @@ export default function ManageCandidatesPage() {
                     </TableCell>
                     <TableCell className="h-13 px-8 py-0">
                       {c.stageName ? (
-                        <Badge className="bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 border-none shadow-none font-medium px-2.5 py-0.5 rounded-full text-[12px]">
+                        <Badge
+                          className={cn(
+                            stageBadgeToneClasses(c.stageType, c.stageName),
+                            "border-none shadow-none font-medium px-2.5 py-0.5 rounded-full text-[12px]",
+                          )}
+                        >
                           {c.stageName}
                         </Badge>
                       ) : (
@@ -276,7 +285,7 @@ export default function ManageCandidatesPage() {
                       {c.jobTitle ?? "—"}
                     </TableCell>
                     <TableCell className="h-13 px-8 py-0 text-slate-500 dark:text-neutral-400 font-normal">
-                      {timeAgo(c.appliedAt)}
+                      {formatTimeAgo(c.appliedAt)}
                     </TableCell>
                     <TableCell
                       className="h-13 px-4 py-0"
@@ -332,16 +341,25 @@ export default function ManageCandidatesPage() {
           className="w-[98vw] sm:max-w-[98vw] p-0 flex flex-row gap-0 border-l border-slate-200 dark:border-neutral-800 shadow-none overflow-hidden bg-white dark:bg-neutral-950"
         >
           {selectedCandidate && (
-            <>
-              {/* Left — CV preview */}
-              <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <CandidateDetailSheetProvider key={selectedCandidate.id}>
+              {/* Left — resume / offer letter / email (same viewport as CV) */}
+              <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden">
                 <div className="px-6 lg:px-8 py-4 lg:py-5 border-b border-slate-100 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-950">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0">
                     <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 tracking-tight">
                       {selectedCandidate.firstName} {selectedCandidate.lastName}
                     </h2>
                     {selectedCandidate.stageName && (
-                      <Badge className="bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 border-none shadow-none font-medium px-2 py-0.5 rounded-full text-[11px] uppercase tracking-wider whitespace-nowrap">
+                      <Badge
+                        className={cn(
+                          stageBadgeToneClasses(
+                            selectedCandidate.stageType,
+                            selectedCandidate.stageName,
+                          ),
+
+                          "border-none shadow-none font-medium px-2 py-0.5 rounded-full text-[11px] uppercase tracking-wider whitespace-nowrap",
+                        )}
+                      >
                         {selectedCandidate.stageName}
                       </Badge>
                     )}
@@ -349,59 +367,37 @@ export default function ManageCandidatesPage() {
                   <p className="text-slate-500 dark:text-neutral-400 text-[13px] mt-0.5">
                     {selectedCandidate.jobTitle ?? "Unknown Job"}
                     <span className="mx-1.5 opacity-30 mt-1">•</span>
-                    Applied {timeAgo(selectedCandidate.appliedAt)}
+                    Applied {formatTimeAgo(selectedCandidate.appliedAt)}
                   </p>
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1.5">
-                    {[
-                      [CallIcon, selectedCandidate.phone ?? "—"],
-                      [Mail01Icon, selectedCandidate.email],
-                    ].map(([icon, value], i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap"
-                      >
-                        <HugeiconsIcon
-                          icon={icon as any}
-                          className="size-3.5 text-slate-400"
-                        />
-                        <span>{value as string}</span>
-                      </div>
-                    ))}
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap">
+                      <HugeiconsIcon
+                        icon={CallIcon}
+                        className="size-3.5 text-slate-400"
+                      />
+                      <span>{selectedCandidate.phone ?? "—"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap">
+                      <HugeiconsIcon
+                        icon={Mail01Icon}
+                        className="size-3.5 text-slate-400"
+                      />
+                      <span>{selectedCandidate.email}</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                  {selectedCandidate.resumeUrl ? (
-                    <ResumeScrollView resumeUrl={selectedCandidate.resumeUrl} />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
-                      <svg
-                        className="size-10 opacity-30"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                      <p className="text-[13px] font-medium">
-                        No resume uploaded
-                      </p>
-                    </div>
-                  )}
-                </div>
+                <CandidatePreviewPane
+                  candidateId={selectedCandidate.id}
+                  open={isDetailOpen}
+                />
               </div>
 
-              {/* Right — answers + history */}
               <CandidateSidePanel
                 candidateId={selectedCandidate.id}
                 open={isDetailOpen}
               />
-            </>
+            </CandidateDetailSheetProvider>
           )}
         </SheetContent>
       </Sheet>
@@ -503,6 +499,7 @@ export default function ManageCandidatesPage() {
               Cancel
             </DialogClose>
             <Button
+              type="button"
               onClick={confirmUpdate}
               disabled={updateMutation.isPending}
               className="h-9 px-5 cursor-pointer rounded-lg text-white text-[13px] font-semibold shadow-none border-none"

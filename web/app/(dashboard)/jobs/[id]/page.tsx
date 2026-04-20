@@ -3,7 +3,9 @@
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
+import { formatTimeAgo } from "@/lib/date-format";
 import type { Ref } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -55,6 +57,7 @@ import type {
   ChatMessage,
   Candidate,
   User,
+  Assessment,
 } from "@/types";
 
 const STAGE_COLORS: Record<PipelineStage["stageType"], string> = {
@@ -105,15 +108,6 @@ const STATUS_BADGE: Record<
   },
 };
 
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
 
 function formatSalary(job: JobDetail) {
   if (!job.salaryType) return null;
@@ -216,7 +210,8 @@ export default function JobDetailsPage() {
     // Assessments attached to this job
     void queryClient.prefetchQuery({
       queryKey: ["jobs", jobId, "assessments"],
-      queryFn: () => serverFetch<{ data: any[] }>(`/jobs/${jobId}/assessments`),
+      queryFn: () =>
+        serverFetch<{ data: Assessment[] }>(`/jobs/${jobId}/assessments`),
     });
 
     // Discussion / internal notes history
@@ -448,7 +443,11 @@ export default function JobDetailsPage() {
         : "none",
     );
     setConfigOfferTemplate(
-      stage.offerTemplateId ? String(stage.offerTemplateId) : "",
+      stage.stageType === "offer" &&
+        stage.offerMode === "auto_send" &&
+        stage.offerTemplateId
+        ? String(stage.offerTemplateId)
+        : "",
     );
     setConfigMode(stage.offerMode ?? "");
     setConfigExpiry(stage.offerExpiryDays ? String(stage.offerExpiryDays) : "");
@@ -883,9 +882,12 @@ export default function JobDetailsPage() {
                     >
                       <div className="flex items-center gap-4">
                         {member.avatarUrl ? (
-                          <img
+                          <Image
                             src={member.avatarUrl}
                             alt={member.firstName}
+                            width={44}
+                            height={44}
+                            unoptimized
                             className="size-11 rounded-full object-cover"
                           />
                         ) : (
@@ -1846,41 +1848,6 @@ export default function JobDetailsPage() {
             <div className="flex min-h-0 flex-1 flex-col py-6">
               {configType === "offer" && (
                 <div className="flex flex-col gap-6">
-                  <div className="space-y-2.5">
-                    <Label className="text-[13px] font-medium text-slate-700 dark:text-neutral-300 block">
-                      Select Offer Template
-                    </Label>
-                    <Select
-                      value={configOfferTemplate}
-                      onValueChange={(val) => setConfigOfferTemplate(val || "")}
-                    >
-                      <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
-                        <SelectValue placeholder="Select an offer template">
-                          {configOfferTemplate
-                            ? (offerTemplates.find(
-                                (t) => String(t.id) === configOfferTemplate,
-                              )?.name ?? null)
-                            : null}
-                        </SelectValue>
-                      </SelectTrigger>
-                      <SelectContent
-                        alignItemWithTrigger={false}
-                        className="w-(--anchor-width) max-h-60 rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
-                      >
-                        {offerTemplates.length === 0 ? (
-                          <SelectItem value="_none" disabled>
-                            No offer templates found
-                          </SelectItem>
-                        ) : (
-                          offerTemplates.map((t) => (
-                            <SelectItem key={t.id} value={String(t.id)}>
-                              {t.name}
-                            </SelectItem>
-                          ))
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
                   <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8">
                     <div className="min-w-0 space-y-2.5">
                       <Label className="text-[13px] font-medium text-slate-700 dark:text-neutral-300 block">
@@ -1888,7 +1855,11 @@ export default function JobDetailsPage() {
                       </Label>
                       <Select
                         value={configMode}
-                        onValueChange={(val) => setConfigMode(val || "")}
+                        onValueChange={(val) => {
+                          const next = val || "";
+                          setConfigMode(next);
+                          if (next !== "auto_send") setConfigOfferTemplate("");
+                        }}
                       >
                         <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
                           <SelectValue placeholder="Select mode">
@@ -1905,6 +1876,11 @@ export default function JobDetailsPage() {
                           <SelectItem value="auto_send">Auto-Send</SelectItem>
                         </SelectContent>
                       </Select>
+                      {configMode === "auto_draft" && (
+                        <p className="text-[11px] text-slate-500 dark:text-neutral-400 leading-snug">
+                          No template here — pick the offer letter template in the candidate panel when you draft the offer.
+                        </p>
+                      )}
                     </div>
                     <div className="min-w-0 space-y-2.5">
                       <Label className="text-[13px] font-medium text-slate-700 dark:text-neutral-300 block">
@@ -1918,6 +1894,49 @@ export default function JobDetailsPage() {
                       />
                     </div>
                   </div>
+                  {configMode === "auto_send" && (
+                    <div className="space-y-2.5">
+                      <Label className="text-[13px] font-medium text-slate-700 dark:text-neutral-300 block">
+                        Select Offer Template{" "}
+                        <span className="text-red-500">*</span>
+                      </Label>
+                      <Select
+                        value={configOfferTemplate}
+                        onValueChange={(val) => setConfigOfferTemplate(val || "")}
+                      >
+                        <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+                          <SelectValue placeholder="Select an offer template">
+                            {configOfferTemplate
+                              ? (offerTemplates.find(
+                                  (t) => String(t.id) === configOfferTemplate,
+                                )?.name ?? null)
+                              : null}
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent
+                          alignItemWithTrigger={false}
+                          className="w-(--anchor-width) max-h-60 rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
+                        >
+                          {offerTemplates.length === 0 ? (
+                            <SelectItem value="_none" disabled>
+                              No offer templates found
+                            </SelectItem>
+                          ) : (
+                            offerTemplates.map((t) => (
+                              <SelectItem key={t.id} value={String(t.id)}>
+                                {t.name}
+                              </SelectItem>
+                            ))
+                          )}
+                        </SelectContent>
+                      </Select>
+                      {!configOfferTemplate && (
+                        <p className="text-[11px] text-slate-500 dark:text-neutral-400 leading-snug">
+                          Auto-send needs a template — the letter is generated and emailed without someone opening the candidate panel first.
+                        </p>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -1973,7 +1992,12 @@ export default function JobDetailsPage() {
                 Cancel
               </Button>
               <Button
-                disabled={updateStageMutation.isPending}
+                disabled={
+                  updateStageMutation.isPending ||
+                  (configType === "offer" &&
+                    configMode === "auto_send" &&
+                    !configOfferTemplate)
+                }
                 onClick={() => {
                   if (!configStage) return;
                   updateStageMutation.mutate(
@@ -1982,7 +2006,9 @@ export default function JobDetailsPage() {
                       data: {
                         stageType: configType,
                         offerTemplateId:
-                          configType === "offer" && configOfferTemplate
+                          configType === "offer" &&
+                          configMode === "auto_send" &&
+                          configOfferTemplate
                             ? Number(configOfferTemplate)
                             : null,
                         offerMode:
@@ -2113,7 +2139,7 @@ export default function JobDetailsPage() {
                       </span>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-slate-400 dark:text-neutral-500 text-[12px] font-medium">
-                          {timeAgo(msg.sentAt)}
+                          {formatTimeAgo(msg.sentAt)}
                         </span>
                         {me &&
                           msg.senderId === me.id &&

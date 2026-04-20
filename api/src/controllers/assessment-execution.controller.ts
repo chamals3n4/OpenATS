@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { assessmentExecutionService } from "../services/assessment-execution.service";
-import { mailService } from "../services/mail.service";
 import logger from "../utils/logger";
 
 const inviteCandidateSchema = z.object({
@@ -235,26 +234,15 @@ export const completeAssessment = async (req: Request, res: Response) => {
       throw new Error("Failed to finalize assessment");
     }
 
-    const completionContext =
-      await assessmentExecutionService.getAttemptCompletionEmailContext(
+    void assessmentExecutionService
+      .sendAssessmentCompletionNotification(
         attempt.id,
-      );
-    if (completionContext) {
-      mailService
-        .sendAssessmentCompletionEmail(
-          completionContext.candidateEmail,
-          completionContext.candidateFirstName,
-          completionContext.assessmentTitle,
-          autoSubmitReason,
-        )
-        .catch((emailError) => {
-          logger.error("Assessment completion email failed:", emailError);
-        });
-    } else {
-      logger.warn(
-        `Assessment completion email skipped: context not found for attempt ${attempt.id}`,
-      );
-    }
+        result.candidateId,
+        autoSubmitReason,
+      )
+      .catch((emailError) => {
+        logger.error("Assessment completion email failed:", emailError);
+      });
 
     logger.info(
       `Assessment completed: attemptId=${attempt.id}, passed=${result.passed}, score=${result.scorePercentage}%${autoSubmitReason ? `, autoSubmit="${autoSubmitReason}"` : ""}`,

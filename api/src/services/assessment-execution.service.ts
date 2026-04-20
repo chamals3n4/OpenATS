@@ -12,6 +12,15 @@ import {
 } from "../db/schema";
 
 import { mailService } from "./mail.service";
+import logger from "../utils/logger";
+import { templateService } from "./template.service";
+import { templateEngineService } from "./template-engine.service";
+import { variableService } from "./variable.service";
+import {
+  buildAssessmentInviteFallbackInner,
+  wrapCompiledTemplateEmail,
+  wrapFallbackEmail,
+} from "../utils/email-fallback-layout";
 import { aiGradingService } from "./ai-grading.service";
 import {
   canTransitionAttemptStatus,
@@ -99,24 +108,43 @@ export const assessmentExecutionService = {
         const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
         const inviteUrl = `${frontendUrl}/assessment/${token}`;
 
-        const subject = `Assessment Invitation: ${assessment.title}`;
-        const html = `
-          <div style="font-family: sans-serif; line-height: 1.5; color: #333;">
-            <h2>Hello ${candidate.firstName},</h2>
-            <p>You have been invited to complete an assessment for your application.</p>
-            <p><strong>Assessment:</strong> ${assessment.title}</p>
-            <p>Please click the button below to start the assessment. This link will expire on ${expiresAt.toLocaleDateString()}.</p>
-            <div style="margin: 24px 0;">
-              <a href="${inviteUrl}" style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">
-                Start Assessment
-              </a>
-            </div>
-            <p>If the button doesn't work, you can copy and paste this link into your browser:</p>
-            <p><a href="${inviteUrl}">${inviteUrl}</a></p>
-            <hr style="border: 0; border-top: 1px solid #eee; margin: 24px 0;">
-            <p style="font-size: 14px; color: #666;">This is an automated message from OpenATS.</p>
-          </div>
-        `;
+        const context = await variableService.getContextForAssessmentInvite(
+          candidateId,
+          assessment.title,
+          inviteUrl,
+          expiresAt,
+        );
+
+        const defaultTemplateId =
+          await templateService.getDefaultTemplateIdForType(
+            "assessment_invite",
+          );
+        const template = defaultTemplateId
+          ? await templateService.getById(defaultTemplateId)
+          : null;
+
+        let subject: string;
+        let html: string;
+
+        if (template?.bodyJson?.length) {
+          const compiled = templateEngineService.compileTemplate(
+            template.subject,
+            template.bodyJson,
+            context,
+          );
+          subject = compiled.subject;
+          html = wrapCompiledTemplateEmail(compiled.html);
+        } else {
+          subject = `Assessment Invitation: ${assessment.title}`;
+          html = wrapFallbackEmail(
+            buildAssessmentInviteFallbackInner({
+              firstName: candidate.firstName,
+              assessmentTitle: assessment.title,
+              inviteUrl,
+              expiresLabel: expiresAt.toLocaleDateString(),
+            }),
+          );
+        }
 
         await mailService.sendAssessmentInviteEmail(
           candidate.email,
@@ -365,6 +393,59 @@ export const assessmentExecutionService = {
       .where(eq(candidateAssessmentAttempts.id, attemptId));
 
     return result ?? null;
+  },
+
+  /**
+   * Sends the post-submission email using the default `assessment_completion` template when set,
+   * otherwise the built-in completion notice.
+   */
+  async sendAssessmentCompletionNotification(
+    attemptId: number,
+    candidateId: number,
+    autoSubmitReason?: string,
+  ): Promise<void> {
+    const completionContext =
+      await this.getAttemptCompletionEmailContext(attemptId);
+    if (!completionContext) {
+      logger.warn(
+        `Assessment completion email skipped: context not found for attempt ${attemptId}`,
+      );
+      return;
+    }
+
+    const defaultTemplateId =
+      await templateService.getDefaultTemplateIdForType(
+        "assessment_completion",
+      );
+    const template = defaultTemplateId
+      ? await templateService.getById(defaultTemplateId)
+      : null;
+
+    const context = await variableService.getContextForAssessmentCompletion(
+      candidateId,
+      completionContext.assessmentTitle,
+    );
+
+    if (template?.bodyJson?.length) {
+      const compiled = templateEngineService.compileTemplate(
+        template.subject,
+        template.bodyJson,
+        context,
+      );
+      const html = wrapCompiledTemplateEmail(compiled.html);
+      await mailService.sendEmail({
+        to: completionContext.candidateEmail,
+        subject: compiled.subject,
+        html,
+      });
+    } else {
+      await mailService.sendAssessmentCompletionEmail(
+        completionContext.candidateEmail,
+        completionContext.candidateFirstName,
+        completionContext.assessmentTitle,
+        autoSubmitReason,
+      );
+    }
   },
 
   async startAttempt(id: number) {

@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq, ne } from "drizzle-orm";
 import { db } from "../db";
 import { templates } from "../db/schema";
 import type { ContentBlock } from "../db/schema";
@@ -8,22 +8,36 @@ export interface CreateTemplateInput {
   name: string;
   type:
     | "offer"
+    | "offer_withdrawal"
     | "rejection"
     | "assessment_invite"
+    | "assessment_completion"
+    | "interview_invite"
     | "general"
     | "application_received";
   subject: string;
   bodyJson: ContentBlock[];
+  isDefault?: boolean;
   createdBy: number;
 }
 
 export interface UpdateTemplateInput {
   name?: string | undefined;
   type?:
-    | ("offer" | "rejection" | "assessment_invite" | "general" | "application_received")
+    | (
+        | "offer"
+        | "offer_withdrawal"
+        | "rejection"
+        | "assessment_invite"
+        | "assessment_completion"
+        | "interview_invite"
+        | "general"
+        | "application_received"
+      )
     | undefined;
   subject?: string | undefined;
   bodyJson?: ContentBlock[] | undefined;
+  isDefault?: boolean | undefined;
 }
 
 
@@ -48,28 +62,77 @@ export const templateService = {
     return template ?? null;
   },
 
-  async create(input: CreateTemplateInput) {
-    const [created] = await db
-      .insert(templates)
-      .values(clean(input))
-      .returning();
+  async getDefaultByType(
+    type:
+      | "offer"
+      | "offer_withdrawal"
+      | "rejection"
+      | "assessment_invite"
+      | "assessment_completion"
+      | "interview_invite"
+      | "general"
+      | "application_received",
+  ) {
+    const [template] = await db
+      .select()
+      .from(templates)
+      .where(and(eq(templates.type, type), eq(templates.isDefault, true)));
+    return template ?? null;
+  },
 
-    if (!created) {
-      throw new Error("Failed to create template");
-    }
-    return created;
+  async create(input: CreateTemplateInput) {
+    return db.transaction(async (tx) => {
+      const [created] = await tx
+        .insert(templates)
+        .values(clean(input))
+        .returning();
+
+      if (!created) {
+        throw new Error("Failed to create template");
+      }
+
+      if (created.isDefault) {
+        await tx
+          .update(templates)
+          .set({ isDefault: false, updatedAt: new Date() })
+          .where(
+            and(eq(templates.type, created.type), ne(templates.id, created.id)),
+          );
+      }
+
+      return created;
+    });
   },
 
   async update(id: number, input: UpdateTemplateInput) {
-    const [updated] = await db
-      .update(templates)
-      .set({
-        ...clean(input),
-        updatedAt: new Date(),
-      })
-      .where(eq(templates.id, id))
-      .returning();
-    return updated ?? null;
+    return db.transaction(async (tx) => {
+      const [existing] = await tx
+        .select()
+        .from(templates)
+        .where(eq(templates.id, id));
+      if (!existing) return null;
+
+      const [updated] = await tx
+        .update(templates)
+        .set({
+          ...clean(input),
+          updatedAt: new Date(),
+        })
+        .where(eq(templates.id, id))
+        .returning();
+      if (!updated) return null;
+
+      if (input.isDefault === true) {
+        await tx
+          .update(templates)
+          .set({ isDefault: false, updatedAt: new Date() })
+          .where(
+            and(eq(templates.type, updated.type), ne(templates.id, updated.id)),
+          );
+      }
+
+      return updated;
+    });
   },
 
   async delete(id: number) {

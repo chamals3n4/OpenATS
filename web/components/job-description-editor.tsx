@@ -69,7 +69,7 @@ export function JobDescriptionEditor({
   }
 
   return (
-    <div className="border border-slate-200 dark:border-neutral-800 rounded-xl overflow-hidden shadow-none">
+    <div className="border bg-slate-50 border-slate-200 dark:border-neutral-800 rounded-xl overflow-hidden shadow-none">
       <div className="flex items-center gap-1.5 p-2 bg-[#F8FAFC]/50 dark:bg-neutral-900/50 border-b border-slate-200 dark:border-neutral-800">
         <Button
           type="button"

@@ -21,8 +21,11 @@ const contentBlockSchema = z.discriminatedUnion("type", [
 
 const templateTypeEnum = z.enum([
   "offer",
+  "offer_withdrawal",
   "rejection",
   "assessment_invite",
+  "assessment_completion",
+  "interview_invite",
   "general",
   "application_received",
 ]);
@@ -32,6 +35,7 @@ const createTemplateSchema = z.object({
   type: templateTypeEnum,
   subject: z.string().min(1, "Subject is required").max(500),
   bodyJson: z.array(contentBlockSchema).default([]),
+  isDefault: z.boolean().optional(),
 });
 
 const updateTemplateSchema = z.object({
@@ -39,6 +43,7 @@ const updateTemplateSchema = z.object({
   type: templateTypeEnum.optional(),
   subject: z.string().min(1).max(500).optional(),
   bodyJson: z.array(contentBlockSchema).optional(),
+  isDefault: z.boolean().optional(),
 });
 
 const sendCandidateEmailSchema = z.object({

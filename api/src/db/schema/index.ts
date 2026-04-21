@@ -7,6 +7,7 @@ export * from "./pipeline";
 export * from "./assessments";
 export * from "./candidates";
 export * from "./offers";
+export * from "./offer-responses";
 export * from "./communications";
 export * from "./relations";
 export * from "./active-logs";

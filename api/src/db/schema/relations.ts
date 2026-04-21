@@ -28,6 +28,7 @@ import {
   candidateCvAnalysis,
 } from "./candidates";
 import { offers } from "./offers";
+import { offerResponseAttempts } from "./offer-responses";
 import {
   emailMessages,
   jobChatMessages,
@@ -371,6 +372,20 @@ export const offersRelations = relations(offers, ({ one }) => ({
     references: [users.id],
   }),
 }));
+
+export const offerResponseAttemptsRelations = relations(
+  offerResponseAttempts,
+  ({ one }) => ({
+    offer: one(offers, {
+      fields: [offerResponseAttempts.offerId],
+      references: [offers.id],
+    }),
+    candidate: one(candidates, {
+      fields: [offerResponseAttempts.candidateId],
+      references: [candidates.id],
+    }),
+  }),
+);
 
 // communications
 export const emailMessagesRelations = relations(emailMessages, ({ one }) => ({

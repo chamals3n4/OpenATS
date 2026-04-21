@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { offerService } from "../services/offer.service";
+import { offerResponseService } from "../services/offer-response.service";
 import logger from "../utils/logger";
 
 const createOfferSchema = z.object({
@@ -29,6 +30,12 @@ const updateOfferSchema = z.object({
 
 const statusUpdateSchema = z.object({
   status: z.enum(["draft", "sent", "pending", "accepted", "declined", "withdrawn"]),
+});
+
+const manualResponseSchema = z.object({
+  decision: z.enum(["accepted", "declined", "withdrawn"]),
+  responderName: z.string().trim().max(255).optional(),
+  message: z.string().trim().max(2000).optional(),
 });
 
 export const getAllOffers = async (req: Request, res: Response) => {
@@ -184,5 +191,51 @@ export const deleteOffer = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error(`Failed to delete offer id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to delete offer" });
+  }
+};
+
+export const markOfferResponseManually = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid offer ID" });
+      return;
+    }
+
+    const parsed = manualResponseSchema.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const result = await offerResponseService.respondManuallyByOfferId(id, {
+      ...parsed.data,
+      responderName:
+        parsed.data.responderName?.trim() ||
+        `${req.user?.firstName ?? ""} ${req.user?.lastName ?? ""}`.trim() ||
+        "Recruiter",
+    });
+
+    logger.info(
+      `Offer manually marked: id=${id}, decision="${parsed.data.decision}" by user ${req.user?.id}`,
+    );
+    res.status(200).json({ data: result });
+  } catch (error) {
+    const message = (error as Error).message || "Failed to mark offer response";
+    if (
+      message.includes("acceptance period") ||
+      message.includes("already") ||
+      message.includes("No active")
+    ) {
+      res.status(400).json({ error: message });
+      return;
+    }
+    logger.error(
+      `Failed to manually mark offer response id=${req.params.id} - user ${req.user?.id}: ${(error as Error).message}`,
+    );
+    res.status(500).json({ error: "Failed to mark offer response" });
   }
 };

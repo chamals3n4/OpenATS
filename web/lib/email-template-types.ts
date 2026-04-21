@@ -6,7 +6,10 @@ export type EmailTemplateType = Template["type"];
 export const EMAIL_TEMPLATE_TYPE_PICKER_ORDER: EmailTemplateType[] = [
   "application_received",
   "assessment_invite",
+  "assessment_completion",
+  "interview_invite",
   "offer",
+  "offer_withdrawal",
   "rejection",
   "general",
 ];
@@ -33,11 +36,29 @@ export const EMAIL_TEMPLATE_TYPE_CONFIG: Record<
       "bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800",
     description: "Offer letters with salary & start date",
   },
+  offer_withdrawal: {
+    label: "Offer Withdrawal",
+    badge:
+      "bg-orange-50 text-orange-700 border border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800",
+    description: "Sent to candidates when their offer is withdrawn",
+  },
   rejection: {
     label: "Rejection",
     badge:
       "bg-red-50 text-red-600 border border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-900",
     description: "Notify candidates who weren't selected",
+  },
+  assessment_completion: {
+    label: "Assessment completion",
+    badge:
+      "bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800",
+    description: "After a candidate submits an assessment",
+  },
+  interview_invite: {
+    label: "Interview invite",
+    badge:
+      "bg-indigo-50 text-indigo-700 border border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300 dark:border-indigo-800",
+    description: "Interview time, location, and video link",
   },
   general: {
     label: "General",
@@ -70,7 +91,34 @@ export const EMAIL_TEMPLATE_VARIABLES: Record<EmailTemplateType, string[]> = {
     "expiry_date",
     "company_name",
   ],
+  offer_withdrawal: [
+    "candidate_name",
+    "job_title",
+    "salary",
+    "currency",
+    "start_date",
+    "expiry_date",
+    "company_name",
+  ],
   rejection: ["candidate_name", "job_title", "company_name"],
+  assessment_completion: [
+    "candidate_name",
+    "job_title",
+    "company_name",
+    "assessment_link",
+    "expiry_date",
+  ],
+  interview_invite: [
+    "candidate_name",
+    "job_title",
+    "interview_date",
+    "interview_time",
+    "interview_timezone",
+    "interview_location",
+    "interview_video_link",
+    "interview_interviewers",
+    "company_name",
+  ],
   general: [
     "candidate_name",
     "job_title",
@@ -97,6 +145,7 @@ export function normalizeEmailTemplateTypeParam(
 ): EmailTemplateType {
   if (!raw) return "general";
   if (raw === "assessment") return "assessment_invite";
+  if (raw === "interview") return "interview_invite";
   if (VALID.has(raw)) return raw as EmailTemplateType;
   return "general";
 }

@@ -225,12 +225,9 @@ export function SidebarUserMenu({ variant = "header" }: SidebarUserMenuProps) {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               variant="destructive"
-              onClick={() => {
-                // Clear cached data immediately so logout navigation is not blocked
-                // by invalidating/refetching every query in the app.
+              onClick={async () => {
                 queryClient.clear();
-                router.replace("/login");
-                void signOut();
+                await signOut();
               }}
             >
               Log out

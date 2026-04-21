@@ -245,7 +245,7 @@ export default function ManageOffersPage() {
       </div>
 
       <div className="px-8 py-6">
-        <div className="border border-slate-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
+        <div className="border border-slate-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
@@ -322,7 +322,10 @@ export default function ManageOffersPage() {
                           className="h-8 px-3 rounded-md border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400"
                           onClick={() => setDeleteTarget(o)}
                         >
-                          <HugeiconsIcon icon={Delete02Icon} className="size-3.5 mr-1" />
+                          <HugeiconsIcon
+                            icon={Delete02Icon}
+                            className="size-3.5 mr-1"
+                          />
                           Delete
                         </Button>
                       </div>

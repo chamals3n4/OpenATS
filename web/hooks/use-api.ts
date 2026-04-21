@@ -253,11 +253,14 @@ export function useUpdateUser() {
   });
 }
 
-export function useHiringTeam(jobId: number) {
+export function useHiringTeam(
+  jobId: number,
+  options?: { enabled?: boolean },
+) {
   return useQuery({
     queryKey: ["jobs", jobId, "team"],
     queryFn: () => serverFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
-    enabled: !!jobId,
+    enabled: !!jobId && (options?.enabled ?? true),
   });
 }
 
@@ -656,6 +659,10 @@ export function useOffers(jobId?: number) {
     queryFn: () =>
       serverFetch<{ data: any[] }>(jobId ? `/offers/job/${jobId}` : `/offers`),
     enabled: jobId === undefined || !!jobId,
+    // Offer status can change from the public review page (outside dashboard),
+    // so poll lightly to keep "Manage Offers" current without manual reload.
+    refetchInterval: 15000,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -746,6 +753,32 @@ export function useUpdateOfferStatus() {
   });
 }
 
+export function useManualOfferResponse() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      decision,
+      responderName,
+      message,
+    }: {
+      id: number;
+      decision: "accepted" | "declined" | "withdrawn";
+      responderName?: string;
+      message?: string;
+    }) =>
+      serverFetch<{ data: Offer }>(`/offers/${id}/manual-response`, {
+        method: "PATCH",
+        body: JSON.stringify({ decision, responderName, message }),
+      }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["offers", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["offers"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+  });
+}
+
 export function useCandidates(
   jobId?: number,
   filters?: { stageId?: number; search?: string },
@@ -804,6 +837,9 @@ export function useCandidates(
     staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    // Candidate stage/status may update from public flows (offer response),
+    // so keep lists fresh while users stay on the page.
+    refetchInterval: 15000,
     // Keep showing the previous list while a fresh fetch is in flight so
     // there's no blank flash when navigating to the candidates section.
     placeholderData: keepPreviousData,
@@ -818,21 +854,20 @@ export function useCandidate(
 ) {
   const queryClient = useQueryClient();
   const enabled = (options?.enabled ?? true) && !!id;
-  const pollCv =
-    options?.pollCvWhileSheetOpen !== false;
+  const pollCv = options?.pollCvWhileSheetOpen !== false;
   return useQuery({
     queryKey: ["candidates", id],
     queryFn: () => serverFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
     enabled,
-    // Candidate details must always refetch on mount; otherwise seeded list
-    // snapshots (with empty history/offer) can stay "fresh" for 5 minutes due
-    // to the app-wide default staleTime and hide real backend data.
-    staleTime: 0,
+    // 30 s keeps prefetched data alive so the panel renders instantly on click;
+    // seeds (list stubs) always have updatedAt=0 so they are always stale and
+    // trigger a background refetch for the full detail automatically.
+    staleTime: 30_000,
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    // Seed from any cached candidates list so the sheet shows the candidate's
-    // basic info immediately while the full detail (cv analysis, answers,
-    // history) loads in the background — same pattern as useJob.
+    refetchOnWindowFocus: false,
+    // Seed from the candidates list so the panel renders immediately on first
+    // open while the full detail (history, offer, assessments) loads in the
+    // background — same pattern as useJob.
     initialData: () => {
       const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
         queryKey: ["candidates"],
@@ -849,23 +884,17 @@ export function useCandidate(
               selections: [],
               history: [],
               offer: null,
+              offerResponse: null,
+              assessmentAttempts: [],
             } as CandidateDetail,
           };
         }
       }
       return undefined;
     },
-    initialDataUpdatedAt: () => {
-      const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
-        queryKey: ["candidates"],
-      });
-      for (const [key, listData] of allLists) {
-        if (!Array.isArray(listData?.data)) continue;
-        const state = queryClient.getQueryState(key);
-        if (state?.dataUpdatedAt) return state.dataUpdatedAt;
-      }
-      return undefined;
-    },
+    // Always 0 for seeds so they are immediately stale; real fetches carry
+    // their own fresh timestamp and won't re-fire within staleTime.
+    initialDataUpdatedAt: 0,
     refetchInterval: (query) =>
       enabled &&
       pollCv &&
@@ -961,6 +990,7 @@ export function useAssessmentAttemptReview(
 }
 
 export function useInviteToAssessment() {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({
       candidateId,
@@ -978,6 +1008,14 @@ export function useInviteToAssessment() {
         method: "POST",
         body: JSON.stringify({ candidateId, assessmentId, expiryDays }),
       }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["candidate-assessments", variables.candidateId],
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["candidates", variables.candidateId],
+      });
+    },
   });
 }
 

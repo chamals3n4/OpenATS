@@ -1,10 +1,11 @@
 import { eq, desc } from "drizzle-orm";
 import { db } from "../db";
-import { offers, candidates, jobs, templates, users } from "../db/schema";
+import { offers, candidates, jobs, templates, users, offerResponseAttempts } from "../db/schema";
 import { variableService } from "./variable.service";
 import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
-import { mailService } from "./mail.service";
+import { offerResponseService } from "./offer-response.service";
+import { templateService } from "./template.service";
 
 export type DbExecutor =
   | typeof db
@@ -85,9 +86,17 @@ export const offerService = {
     
     if (!job) throw new Error("Job not found");
 
+    const defaultTemplate = input.templateId
+      ? null
+      : await templateService.getDefaultByType("offer");
+    const effectiveTemplateId = input.templateId ?? defaultTemplate?.id ?? null;
+
     let renderedHtml: string | null = null;
-    if (input.templateId) {
-      renderedHtml = await this._renderOfferHtml(input);
+    if (effectiveTemplateId) {
+      renderedHtml = await this._renderOfferHtml({
+        ...input,
+        templateId: effectiveTemplateId,
+      });
     }
 
     const isSent = input.status === "sent";
@@ -97,6 +106,7 @@ export const offerService = {
       .values(clean({
         status: "draft",
         ...input,
+        templateId: effectiveTemplateId,
         renderedHtml,
         sentAt: isSent ? new Date() : null,
       }))
@@ -116,7 +126,15 @@ export const offerService = {
           subject = templateEngineService.replaceVariables(template.subject, context);
         }
       }
-      await mailService.sendOfferEmail(candidate.email, subject, newOffer.renderedHtml);
+      await offerResponseService.createOrRefreshForOffer({
+        offerId: newOffer.id,
+        candidateId: candidate.id,
+        candidateEmail: candidate.email,
+        candidateFirstName: candidate.firstName,
+        renderedHtml: newOffer.renderedHtml,
+        subject,
+        expiryDate: newOffer.expiryDate,
+      });
     }
 
     return newOffer;
@@ -128,6 +146,12 @@ export const offerService = {
 
     const updatedData = { ...clean(input), updatedAt: new Date() };
 
+    let templateIdForRender = input.templateId ?? existing.templateId;
+    if (templateIdForRender == null) {
+      const defaultTemplate = await templateService.getDefaultByType("offer");
+      templateIdForRender = defaultTemplate?.id ?? null;
+    }
+
     if (
       input.templateId !== undefined ||
       input.salary !== undefined ||
@@ -137,8 +161,11 @@ export const offerService = {
       input.expiryDate !== undefined ||
       input.benefits !== undefined
     ) {
-      const renderInput = { ...existing, ...input };
+      const renderInput = { ...existing, ...input, templateId: templateIdForRender };
       updatedData.renderedHtml = await this._renderOfferHtml(renderInput);
+      if (existing.templateId == null && input.templateId === undefined && templateIdForRender != null) {
+        updatedData.templateId = templateIdForRender;
+      }
     }
 
     const [updated] = await db
@@ -179,6 +206,13 @@ export const offerService = {
 
     if (!updated) return null;
 
+    if (status === "withdrawn") {
+      await db
+        .update(offerResponseAttempts)
+        .set({ isActive: false, updatedAt: new Date() })
+        .where(eq(offerResponseAttempts.offerId, id));
+    }
+
     if (status === "sent" && updated.renderedHtml) {
       const [candidate] = await db.select().from(candidates).where(eq(candidates.id, updated.candidateId));
       if (candidate) {
@@ -190,8 +224,15 @@ export const offerService = {
             subject = templateEngineService.replaceVariables(template.subject, context);
           }
         }
-
-        await mailService.sendOfferEmail(candidate.email, subject, updated.renderedHtml);
+        await offerResponseService.createOrRefreshForOffer({
+          offerId: updated.id,
+          candidateId: candidate.id,
+          candidateEmail: candidate.email,
+          candidateFirstName: candidate.firstName,
+          renderedHtml: updated.renderedHtml,
+          subject,
+          expiryDate: updated.expiryDate,
+        });
       }
     }
     

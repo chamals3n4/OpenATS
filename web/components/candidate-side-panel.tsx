@@ -36,10 +36,9 @@ import {
 import { Calendar } from "@/components/ui/calendar";
 import {
   useCandidate,
-  usePipeline,
   useUpdateOffer,
   useUpdateOfferStatus,
-  useCandidateAssessments,
+  useManualOfferResponse,
   useTemplates,
   useHiringTeam,
   useSendCandidateEmail,
@@ -170,9 +169,17 @@ function DatePickerField({
   );
 }
 
-function SidePanelEmailTab({ candidate }: { candidate: CandidateDetail }) {
+function SidePanelEmailTab({
+  candidate,
+  active,
+}: {
+  candidate: CandidateDetail;
+  active: boolean;
+}) {
   const { data: templatesRes } = useTemplates();
-  const { data: hiringTeamRes } = useHiringTeam(candidate.jobId);
+  const { data: hiringTeamRes } = useHiringTeam(candidate.jobId, {
+    enabled: active,
+  });
   const sendCandidateEmailMutation = useSendCandidateEmail();
   const templates = templatesRes?.data ?? [];
   const hiringTeam: User[] = hiringTeamRes?.data ?? [];
@@ -796,7 +803,7 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
 
   const updateOfferMutation = useUpdateOffer();
   const updateOfferStatusMutation = useUpdateOfferStatus();
-  const previewTemplateMutation = usePreviewTemplate();
+  const manualOfferResponseMutation = useManualOfferResponse();
 
   const [isEditing, setIsEditing] = useState(false);
 
@@ -809,8 +816,6 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
   const [expiryDate, setExpiryDate] = useState("");
   const [status, setStatus] = useState("draft");
   const [showPreview, setShowPreview] = useState(false);
-  const [previewSubject, setPreviewSubject] = useState("");
-  const [previewHtml, setPreviewHtml] = useState("");
   const [previewError, setPreviewError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -857,6 +862,18 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
   const templateDisplayName =
     offerTemplates.find((t) => t.id === offer.templateId)?.name ??
     (offer.templateId ? `Template #${offer.templateId}` : "—");
+
+  const offerResponse = candidate.offerResponse;
+  const isAcceptanceWindowOpen =
+    !!offerResponse &&
+    offerResponse.isActive &&
+    offerResponse.status === "pending";
+  const candidateAlreadyResponded =
+    !!offerResponse &&
+    (offerResponse.status === "accepted" ||
+      offerResponse.status === "declined");
+  const manualDecisionDisabled =
+    manualOfferResponseMutation.isPending || candidateAlreadyResponded;
 
   const buildPayload = (): Partial<Offer> => ({
     templateId: templateId ? Number(templateId) : null,
@@ -924,37 +941,23 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
 
   const openOfferPreview = () => {
     setPreviewError(null);
-    const activeTemplateId = templateId ? Number(templateId) : offer.templateId;
-    if (!activeTemplateId) {
-      setPreviewError("Select an offer template to preview.");
+    if (!offer.renderedHtml?.trim()) {
+      setPreviewError(
+        "No rendered offer letter available yet. Save the offer first.",
+      );
       return;
     }
-    const context = {
-      candidate_name:
-        `${candidate.firstName ?? ""} ${candidate.lastName ?? ""}`.trim(),
-      job_title: candidate.jobTitle ?? "",
-      salary: salary || (offer.salary ? String(Number(offer.salary)) : ""),
-      currency: currency || offer.currency || "",
-      start_date: startDate || offer.startDate || "",
-      expiry_date: expiryDate || offer.expiryDate || "",
-      benefits: benefits || offer.benefits || "",
-      company_name: "Company",
-    };
-    previewTemplateMutation.mutate(
-      { id: activeTemplateId, context },
-      {
-        onSuccess: (res) => {
-          setPreviewSubject(res?.data?.subject ?? "");
-          setPreviewHtml(res?.data?.html ?? "");
-          setShowPreview(true);
-        },
-        onError: (e) => {
-          setPreviewError(
-            (e as Error)?.message ?? "Failed to generate preview.",
-          );
-        },
-      },
-    );
+    setShowPreview(true);
+  };
+
+  const markManualDecision = (
+    decision: "accepted" | "declined" | "withdrawn",
+  ) => {
+    manualOfferResponseMutation.mutate({
+      id: offer.id,
+      decision,
+      responderName: "Recruiter",
+    });
   };
 
   const formFields = (
@@ -1119,7 +1122,6 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
           onClick={() =>
             showPreview ? setShowPreview(false) : openOfferPreview()
           }
-          disabled={previewTemplateMutation.isPending}
           className="text-[12px] leading-none font-medium text-[var(--theme-color)] hover:underline disabled:opacity-50 disabled:no-underline"
         >
           {showPreview ? "Back to form" : "Show email preview"}
@@ -1140,7 +1142,8 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
                 Subject
               </span>
               <span className="text-slate-900 dark:text-neutral-100 font-semibold">
-                {previewSubject || "—"}
+                {offerTemplates.find((t) => t.id === offer.templateId)
+                  ?.subject ?? "Offer Letter"}
               </span>
             </div>
           </div>
@@ -1148,7 +1151,6 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
             className="px-5 py-4 text-[14px] text-slate-700 dark:text-neutral-300 leading-relaxed min-h-[180px] max-h-[420px] overflow-y-auto thin-scrollbar-panel"
             dangerouslySetInnerHTML={{
               __html:
-                previewHtml ||
                 offer.renderedHtml ||
                 "<span class='text-slate-400 dark:text-neutral-500 italic'>No body content</span>",
             }}
@@ -1295,6 +1297,65 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
               </div>
 
               <div className="divide-y divide-slate-100 dark:divide-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-800 overflow-hidden">
+                <div className="px-4 py-3 space-y-3">
+                  <p className={offerLabelClass}>Candidate&apos;s response</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => markManualDecision("accepted")}
+                      disabled={manualDecisionDisabled}
+                      className="h-8 rounded-md border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/80 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 px-3 text-[12px] font-semibold disabled:opacity-45"
+                    >
+                      Accepted
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => markManualDecision("declined")}
+                      disabled={manualDecisionDisabled}
+                      className="h-8 rounded-md border-red-200 dark:border-red-900/60 bg-red-50/80 dark:bg-red-950/30 text-red-600 dark:text-red-300 px-3 text-[12px] font-semibold disabled:opacity-45"
+                    >
+                      Declined
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => markManualDecision("withdrawn")}
+                      disabled={
+                        manualOfferResponseMutation.isPending ||
+                        !isAcceptanceWindowOpen ||
+                        candidateAlreadyResponded
+                      }
+                      className="h-8 rounded-md border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 px-3 text-[12px] font-semibold disabled:opacity-45"
+                    >
+                      Withdraw offer
+                    </Button>
+                  </div>
+                  {candidateAlreadyResponded && (
+                    <p className="text-[12px] text-slate-500 dark:text-neutral-400">
+                      Candidate already submitted a response. Manual actions are
+                      disabled.
+                    </p>
+                  )}
+                  {!candidateAlreadyResponded && !isAcceptanceWindowOpen && (
+                    <p className="text-[12px] text-slate-500 dark:text-neutral-400">
+                      Withdraw is available only during the acceptance period.
+                    </p>
+                  )}
+                  {offerResponse?.respondedAt && (
+                    <p className="text-[12px] text-slate-500 dark:text-neutral-400">
+                      Last response: {offerResponse.status} on{" "}
+                      {new Date(offerResponse.respondedAt).toLocaleString()}
+                      {offerResponse.responderName
+                        ? ` by ${offerResponse.responderName}`
+                        : ""}
+                    </p>
+                  )}
+                </div>
                 {[
                   { label: "Letter template", value: templateDisplayName },
                   {
@@ -1354,20 +1415,7 @@ export function CandidateSidePanel({
     pollCvWhileSheetOpen: open,
   });
   const candidate = data?.data;
-
-  const { data: pipelineData } = usePipeline(candidate?.jobId ?? 0);
-
-  const {
-    data: assessmentsData,
-    isLoading: isAssessmentsLoading,
-    isError: isAssessmentsError,
-    error: assessmentsError,
-  } = useCandidateAssessments(candidateId);
-  const stageMap = useMemo(
-    () =>
-      Object.fromEntries((pipelineData?.data ?? []).map((s) => [s.id, s.name])),
-    [pipelineData],
-  );
+  const [activeTab, setActiveTab] = useState(defaultTab);
 
   const tabsScrollRef = useRef<HTMLDivElement>(null);
 
@@ -1378,16 +1426,6 @@ export function CandidateSidePanel({
     e.preventDefault();
     el.scrollLeft += e.deltaY;
   };
-
-  if (isLoading) {
-    return (
-      <div className="w-[520px] border-l border-slate-100 dark:border-neutral-800 flex items-center justify-center bg-white dark:bg-neutral-950 shrink-0">
-        <p className="text-slate-400 dark:text-neutral-500 text-sm">
-          Loading...
-        </p>
-      </div>
-    );
-  }
 
   if (isError) {
     return (
@@ -1446,6 +1484,7 @@ export function CandidateSidePanel({
 
       <Tabs
         defaultValue={defaultTab}
+        onValueChange={setActiveTab}
         className="flex-1 flex flex-col overflow-hidden m-0 min-h-0"
       >
         <div
@@ -1461,13 +1500,6 @@ export function CandidateSidePanel({
                   {value === "job-fit" && cvAnalysis?.status === "pending" && (
                     <span className="ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
                       …
-                    </span>
-                  )}
-                  {value === "offer" && offer && (
-                    <span
-                      className={`ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full ${offerStyle?.bg} dark:bg-opacity-20 ${offerStyle?.text}`}
-                    >
-                      {offer.status}
                     </span>
                   )}
                 </TabsTrigger>
@@ -1568,7 +1600,7 @@ export function CandidateSidePanel({
                     />
                     <div className="flex items-start justify-between gap-2">
                       <span className="text-[14px] font-semibold text-slate-800 dark:text-neutral-200">
-                        {stageMap[h.stageId] ?? `Stage #${h.stageId}`}
+                        {h.stageName ?? `Stage #${h.stageId}`}
                       </span>
                       <span className="text-[11px] text-slate-400 shrink-0">
                         {timeAgo(h.movedAt)}
@@ -1601,7 +1633,10 @@ export function CandidateSidePanel({
           value="email"
           className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel"
         >
-          <SidePanelEmailTab candidate={candidate} />
+          <SidePanelEmailTab
+            candidate={candidate}
+            active={activeTab === "email"}
+          />
         </TabsContent>
 
         <TabsContent
@@ -1609,22 +1644,7 @@ export function CandidateSidePanel({
           className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel"
         >
           {(() => {
-            const attempts = assessmentsData?.data ?? [];
-            if (isAssessmentsLoading) {
-              return (
-                <p className="text-slate-400 dark:text-neutral-500 text-sm italic">
-                  Loading…
-                </p>
-              );
-            }
-            if (isAssessmentsError) {
-              return (
-                <p className="text-red-500 text-sm">
-                  {(assessmentsError as Error)?.message ??
-                    "Failed to load assessments."}
-                </p>
-              );
-            }
+            const attempts = candidate.assessmentAttempts ?? [];
             if (attempts.length === 0) {
               return (
                 <div className="flex flex-col items-center justify-center h-full gap-3 text-center py-12">

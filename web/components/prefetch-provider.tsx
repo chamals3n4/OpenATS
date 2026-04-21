@@ -6,6 +6,7 @@ import { serverFetch } from "@/lib/auth-action";
 import type {
   Job,
   Candidate,
+  CandidateDetail,
   Assessment,
   Offer,
   Template,
@@ -23,11 +24,24 @@ export function PrefetchProvider() {
       staleTime: 1000 * 60 * 5,
     });
 
-    void queryClient.prefetchQuery({
-      queryKey: ["candidates", "all", { search: undefined }],
-      queryFn: () => serverFetch<{ data: Candidate[] }>("/candidates"),
-      staleTime: 0,
-    });
+    // Fetch the candidates list then immediately prefetch each candidate's
+    // detail so the side panel opens instantly without any visible loading.
+    void queryClient
+      .fetchQuery({
+        queryKey: ["candidates", "all", { search: undefined }],
+        queryFn: () => serverFetch<{ data: Candidate[] }>("/candidates"),
+        staleTime: 0,
+      })
+      .then((res) => {
+        for (const c of res.data ?? []) {
+          void queryClient.prefetchQuery({
+            queryKey: ["candidates", c.id],
+            queryFn: () =>
+              serverFetch<{ data: CandidateDetail }>(`/candidates/${c.id}`),
+            staleTime: 30_000,
+          });
+        }
+      });
 
     void queryClient.prefetchQuery({
       queryKey: ["offers", "all"],

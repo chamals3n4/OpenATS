@@ -62,8 +62,11 @@ export const questionType = pgEnum("question_type", [
 
 export const templateType = pgEnum("template_type", [
   "offer",
+  "offer_withdrawal",
   "rejection",
   "assessment_invite",
+  "assessment_completion",
+  "interview_invite",
   "general",
   "application_received",
 ]);

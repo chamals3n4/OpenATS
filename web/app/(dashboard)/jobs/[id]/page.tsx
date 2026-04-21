@@ -228,7 +228,7 @@ export default function JobDetailsPage() {
 
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [noteText, setNoteText] = useState("");
-  const [notesPanelWidth, setNotesPanelWidth] = useState(450);
+  const [notesPanelWidth, setNotesPanelWidth] = useState(350);
   const [isResizingNotes, setIsResizingNotes] = useState(false);
   const [isLgUp, setIsLgUp] = useState(false);
 
@@ -294,10 +294,11 @@ export default function JobDetailsPage() {
 
   const job = jobData?.data;
   const me = meData?.data;
-  const canManageJob = !!me && !!job && (
-    me.role === "super_admin" ||
-    (me.role === "hiring_manager" && me.id === job.createdBy)
-  );
+  const canManageJob =
+    !!me &&
+    !!job &&
+    (me.role === "super_admin" ||
+      (me.role === "hiring_manager" && me.id === job.createdBy));
   const allMessages = useMemo(() => {
     const history = chatHistoryData?.data ?? [];
     const merged = [...history, ...liveMessages];
@@ -774,96 +775,99 @@ export default function JobDetailsPage() {
                         <span>Add New Member</span>
                       </DialogTrigger>
                       <DialogContent className="sm:max-w-[425px]">
-                      <DialogHeader>
-                        <DialogTitle>Add Team Member</DialogTitle>
-                        <DialogDescription>
-                          Assign a user to this job&apos;s hiring team.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className="grid gap-4 py-4">
-                        <div className="grid gap-2">
-                          <Label>Select User</Label>
-                          <Select
-                            value={newMemberId}
-                            onValueChange={(value) =>
-                              setNewMemberId(value ?? "")
-                            }
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Select user">
-                                {newMemberId
-                                  ? (() => {
-                                      const u = allUsers.find(
-                                        (u) => u.id.toString() === newMemberId,
-                                      );
-                                      return u
-                                        ? `${u.firstName} ${u.lastName}`
-                                        : null;
-                                    })()
-                                  : null}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              {allUsers
-                                .filter((u) => !team.some((t) => t.id === u.id))
-                                .map((u) => (
-                                  <SelectItem
-                                    key={u.id}
-                                    value={u.id.toString()}
-                                  >
-                                    {u.firstName} {u.lastName} ({u.role})
-                                  </SelectItem>
-                                ))}
-                            </SelectContent>
-                          </Select>
+                        <DialogHeader>
+                          <DialogTitle>Add Team Member</DialogTitle>
+                          <DialogDescription>
+                            Assign a user to this job&apos;s hiring team.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="grid gap-4 py-4">
+                          <div className="grid gap-2">
+                            <Label>Select User</Label>
+                            <Select
+                              value={newMemberId}
+                              onValueChange={(value) =>
+                                setNewMemberId(value ?? "")
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select user">
+                                  {newMemberId
+                                    ? (() => {
+                                        const u = allUsers.find(
+                                          (u) =>
+                                            u.id.toString() === newMemberId,
+                                        );
+                                        return u
+                                          ? `${u.firstName} ${u.lastName}`
+                                          : null;
+                                      })()
+                                    : null}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                {allUsers
+                                  .filter(
+                                    (u) => !team.some((t) => t.id === u.id),
+                                  )
+                                  .map((u) => (
+                                    <SelectItem
+                                      key={u.id}
+                                      value={u.id.toString()}
+                                    >
+                                      {u.firstName} {u.lastName} ({u.role})
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="grid gap-2">
+                            <Label>Role Context</Label>
+                            <Select
+                              value={newMemberRole}
+                              onValueChange={(value) =>
+                                setNewMemberRole(value ?? "hiring_manager")
+                              }
+                            >
+                              <SelectTrigger>
+                                <SelectValue>
+                                  {MEMBER_ROLE_LABELS[newMemberRole] ??
+                                    newMemberRole}
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="hiring_manager">
+                                  Hiring Manager
+                                </SelectItem>
+                                <SelectItem value="interviewer">
+                                  Interviewer
+                                </SelectItem>
+                                <SelectItem value="recruiter">
+                                  Recruiter
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
                         </div>
-                        <div className="grid gap-2">
-                          <Label>Role Context</Label>
-                          <Select
-                            value={newMemberRole}
-                            onValueChange={(value) =>
-                              setNewMemberRole(value ?? "hiring_manager")
-                            }
+                        <DialogFooter>
+                          <Button
+                            variant="outline"
+                            onClick={() => setAddTeamMemberOpen(false)}
                           >
-                            <SelectTrigger>
-                              <SelectValue>
-                                {MEMBER_ROLE_LABELS[newMemberRole] ??
-                                  newMemberRole}
-                              </SelectValue>
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="hiring_manager">
-                                Hiring Manager
-                              </SelectItem>
-                              <SelectItem value="interviewer">
-                                Interviewer
-                              </SelectItem>
-                              <SelectItem value="recruiter">
-                                Recruiter
-                              </SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button
-                          variant="outline"
-                          onClick={() => setAddTeamMemberOpen(false)}
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          disabled={
-                            !newMemberId || addTeamMemberMutation.isPending
-                          }
-                          onClick={handleAddTeamMember}
-                          className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white"
-                        >
-                          {addTeamMemberMutation.isPending
-                            ? "Adding..."
-                            : "Add Member"}
-                        </Button>
-                      </DialogFooter>
+                            Cancel
+                          </Button>
+                          <Button
+                            disabled={
+                              !newMemberId || addTeamMemberMutation.isPending
+                            }
+                            onClick={handleAddTeamMember}
+                            className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white"
+                          >
+                            {addTeamMemberMutation.isPending
+                              ? "Adding..."
+                              : "Add Member"}
+                          </Button>
+                        </DialogFooter>
                       </DialogContent>
                     </Dialog>
                   )}
@@ -912,7 +916,10 @@ export default function JobDetailsPage() {
                           className="p-2 text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
                           title="Remove Member"
                         >
-                          <HugeiconsIcon icon={Delete02Icon} className="size-5" />
+                          <HugeiconsIcon
+                            icon={Delete02Icon}
+                            className="size-5"
+                          />
                         </button>
                       )}
                     </div>
@@ -2115,43 +2122,41 @@ export default function JobDetailsPage() {
                         <span className="text-slate-400 dark:text-neutral-500 text-[12px] font-medium">
                           {timeAgo(msg.sentAt)}
                         </span>
-                        {me &&
-                          msg.senderId === me.id &&
-                          !msg.isSystemMessage && (
-                            <>
-                              <button
-                                onClick={() => {
-                                  setEditingNoteId(msg.id);
-                                  setEditingNoteText(msg.message ?? "");
-                                }}
-                                className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
-                                title="Edit"
-                                type="button"
-                              >
-                                <HugeiconsIcon
-                                  icon={PencilEdit01Icon}
-                                  className="size-4"
-                                />
-                              </button>
-                              <button
-                                onClick={() =>
-                                  setNoteDeleteTarget({
-                                    id: msg.id,
-                                    senderName: msg.senderName,
-                                    message: msg.message,
-                                  })
-                                }
-                                className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
-                                title="Delete"
-                                type="button"
-                              >
-                                <HugeiconsIcon
-                                  icon={Delete02Icon}
-                                  className="size-4"
-                                />
-                              </button>
-                            </>
-                          )}
+                        {me && msg.senderId === me.id && (
+                          <>
+                            <button
+                              onClick={() => {
+                                setEditingNoteId(msg.id);
+                                setEditingNoteText(msg.message ?? "");
+                              }}
+                              className="p-1.5 rounded-md text-slate-400 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                              title="Edit"
+                              type="button"
+                            >
+                              <HugeiconsIcon
+                                icon={PencilEdit01Icon}
+                                className="size-4"
+                              />
+                            </button>
+                            <button
+                              onClick={() =>
+                                setNoteDeleteTarget({
+                                  id: msg.id,
+                                  senderName: msg.senderName,
+                                  message: msg.message,
+                                })
+                              }
+                              className="p-1.5 rounded-md text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                              title="Delete"
+                              type="button"
+                            >
+                              <HugeiconsIcon
+                                icon={Delete02Icon}
+                                className="size-4"
+                              />
+                            </button>
+                          </>
+                        )}
                       </div>
                     </div>
                     <div className="mt-3 pt-3 border-t border-slate-100 dark:border-neutral-800">

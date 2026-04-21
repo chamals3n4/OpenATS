@@ -14,6 +14,10 @@ import {
   submitAssessmentAnswer,
   completeAssessment,
 } from "../controllers/assessment-execution.controller";
+import {
+  getOfferForCandidate,
+  respondToOffer,
+} from "../controllers/offer-response.controller";
 
 const router: Router = Router();
 
@@ -54,5 +58,7 @@ router.get("/assessment/:token", getAssessmentForCandidate);
 router.post("/assessment/:token/start", startAssessment);
 router.post("/assessment/:token/answer", submitAssessmentAnswer);
 router.post("/assessment/:token/complete", completeAssessment);
+router.get("/offer/:token", getOfferForCandidate);
+router.post("/offer/:token/respond", respondToOffer);
 
 export default router;

@@ -43,7 +43,12 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useCurrentUser, useDeleteJob, useDepartments, useJobs } from "@/hooks/use-api";
+import {
+  useCurrentUser,
+  useDeleteJob,
+  useDepartments,
+  useJobs,
+} from "@/hooks/use-api";
 import type { Job } from "@/types";
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 
@@ -73,7 +78,8 @@ export default function ManageJobsPage() {
   const { data, isLoading } = useJobs();
   const { data: meData } = useCurrentUser();
   const me = meData?.data;
-  const canCreateJob = !!me && (me.role === "super_admin" || me.role === "hiring_manager");
+  const canCreateJob =
+    !!me && (me.role === "super_admin" || me.role === "hiring_manager");
 
   // Prefetch all per-job data when hovering a row so every tab on the
   // job detail page renders instantly by the time the user clicks.
@@ -294,7 +300,7 @@ export default function ManageJobsPage() {
       </div>
 
       <div className="px-8 py-6">
-        <div className="border border-slate-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
+        <div className="border border-slate-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
@@ -365,13 +371,17 @@ export default function ManageJobsPage() {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center justify-end gap-2">
-                        {(me?.role === "super_admin" || (me?.role === "hiring_manager" && me.id === job.createdBy)) && (
+                        {(me?.role === "super_admin" ||
+                          (me?.role === "hiring_manager" &&
+                            me.id === job.createdBy)) && (
                           <>
                             <Button
                               variant="outline"
                               size="sm"
                               className="h-8 px-3 rounded-md border-slate-300 cursor-pointer dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
-                              onClick={() => router.push(`/jobs/${job.id}/edit`)}
+                              onClick={() =>
+                                router.push(`/jobs/${job.id}/edit`)
+                              }
                             >
                               <HugeiconsIcon
                                 icon={PencilEdit01Icon}

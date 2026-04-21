@@ -1,8 +1,10 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useQueryClient } from "@tanstack/react-query";
+import { serverFetch } from "@/lib/auth-action";
+import type { CandidateDetail } from "@/types";
 import {
   Search01Icon,
-  PlusSignIcon,
   CallIcon,
   Mail01Icon,
   PencilEdit01Icon,
@@ -94,6 +96,19 @@ export default function ManageCandidatesPage() {
   const { data: jobsData } = useJobs();
   const deleteMutation = useDeleteCandidate();
   const updateMutation = useUpdateCandidateBasicDetails();
+  const queryClient = useQueryClient();
+
+  const prefetchCandidate = useCallback(
+    (id: number) => {
+      void queryClient.prefetchQuery({
+        queryKey: ["candidates", id],
+        queryFn: () =>
+          serverFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
+        staleTime: 30_000,
+      });
+    },
+    [queryClient],
+  );
 
   const candidates = candidatesData?.data ?? [];
   const jobs = jobsData?.data ?? [];
@@ -216,7 +231,7 @@ export default function ManageCandidatesPage() {
 
       {/* Table */}
       <div className="px-8 py-6">
-        <div className="border border-slate-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
+        <div className="border border-slate-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
@@ -258,6 +273,7 @@ export default function ManageCandidatesPage() {
                   <TableRow
                     key={c.id}
                     className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
+                    onMouseEnter={() => prefetchCandidate(c.id)}
                     onClick={() => handleRowClick(c)}
                   >
                     <TableCell className="h-13 px-8 py-0 font-medium text-slate-700 dark:text-neutral-200">
@@ -352,21 +368,20 @@ export default function ManageCandidatesPage() {
                     Applied {timeAgo(selectedCandidate.appliedAt)}
                   </p>
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1.5">
-                    {[
-                      [CallIcon, selectedCandidate.phone ?? "—"],
-                      [Mail01Icon, selectedCandidate.email],
-                    ].map(([icon, value], i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap"
-                      >
-                        <HugeiconsIcon
-                          icon={icon as any}
-                          className="size-3.5 text-slate-400"
-                        />
-                        <span>{value as string}</span>
-                      </div>
-                    ))}
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap">
+                      <HugeiconsIcon
+                        icon={CallIcon}
+                        className="size-3.5 text-slate-400"
+                      />
+                      <span>{selectedCandidate.phone ?? "—"}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap">
+                      <HugeiconsIcon
+                        icon={Mail01Icon}
+                        className="size-3.5 text-slate-400"
+                      />
+                      <span>{selectedCandidate.email}</span>
+                    </div>
                   </div>
                 </div>
 

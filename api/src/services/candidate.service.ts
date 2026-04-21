@@ -12,6 +12,7 @@ import {
   jobAssessmentAttachments,
   jobs,
   offers,
+  offerResponseAttempts,
   templates,
   assessments,
 } from "../db/schema";
@@ -30,6 +31,7 @@ import {
 import { variableService } from "./variable.service";
 import { templateEngineService } from "./template-engine.service";
 import { cleanObject as clean } from "../utils/object.utils";
+import { templateService } from "./template.service";
 
 /** Drizzle wraps driver errors; Postgres code 23505 is often on `cause`. */
 function isPgUniqueViolation(err: unknown): boolean {
@@ -96,12 +98,18 @@ export type MoveStageResult = {
   stageAutomation: StageAutomationFlags;
 };
 
-type JobWithRelations = NonNullable<Awaited<ReturnType<typeof jobService.getById>>>;
+type JobWithRelations = NonNullable<
+  Awaited<ReturnType<typeof jobService.getById>>
+>;
 
 function computeOfferFieldsForJobStage(
   job: JobWithRelations,
   stage: JobPipelineStage,
-): { salary: number | null; expiryDate: string | null; status: "draft" | "sent" } {
+): {
+  salary: number | null;
+  expiryDate: string | null;
+  status: "draft" | "sent";
+} {
   let salary: number | null = null;
   let blockAutoSend = false;
 
@@ -131,13 +139,13 @@ async function repairCandidatePipelineSnapshot(
   candidateId: number,
   candidate: Candidate,
   history: (typeof candidateStageHistory.$inferSelect)[],
-  offer: (typeof offers.$inferSelect) | undefined,
+  offer: typeof offers.$inferSelect | undefined,
 ): Promise<{
   history: (typeof candidateStageHistory.$inferSelect)[];
-  offer: (typeof offers.$inferSelect) | null;
+  offer: typeof offers.$inferSelect | null;
 }> {
   let historyOut = history;
-  let offerOut: (typeof offers.$inferSelect) | null = offer ?? null;
+  let offerOut: typeof offers.$inferSelect | null = offer ?? null;
 
   if (!candidate.currentStageId) {
     return { history: historyOut, offer: offerOut };
@@ -372,7 +380,7 @@ export const candidateService = {
 
     if (!candidate) return null;
 
-    const answers = await db
+    const answersPromise = db
       .select({
         id: candidateCustomAnswers.id,
         candidateId: candidateCustomAnswers.candidateId,
@@ -388,7 +396,7 @@ export const candidateService = {
       )
       .where(eq(candidateCustomAnswers.candidateId, id));
 
-    const selections = await db
+    const selectionsPromise = db
       .select({
         id: candidateCustomAnswerSelections.id,
         candidateId: candidateCustomAnswerSelections.candidateId,
@@ -412,23 +420,40 @@ export const candidateService = {
       )
       .where(eq(candidateCustomAnswerSelections.candidateId, id));
 
-    const history = await db
+    const historyPromise = db
       .select()
       .from(candidateStageHistory)
       .where(eq(candidateStageHistory.candidateId, id))
       .orderBy(asc(candidateStageHistory.movedAt));
 
-    const [offer] = await db
+    const offerPromise = db
       .select()
       .from(offers)
       .where(eq(offers.candidateId, id))
       .orderBy(desc(offers.createdAt))
       .limit(1);
 
-    const [cvRow] = await db
+    const cvPromise = db
       .select()
       .from(candidateCvAnalysis)
-      .where(eq(candidateCvAnalysis.candidateId, id));
+      .where(eq(candidateCvAnalysis.candidateId, id))
+      .limit(1);
+
+    const attemptsPromise =
+      assessmentExecutionService.getAttemptsByCandidate(id);
+
+    const [answers, selections, history, offerRows, cvRows, assessmentAttempts] =
+      await Promise.all([
+        answersPromise,
+        selectionsPromise,
+        historyPromise,
+        offerPromise,
+        cvPromise,
+        attemptsPromise,
+      ]);
+
+    const offer = offerRows[0];
+    const [cvRow] = cvRows;
 
     const cvAnalysis = cvRow
       ? {
@@ -443,18 +468,55 @@ export const candidateService = {
         }
       : null;
 
-    console.log(`[getById] candidate ${id}: history=${history.length}, offer=${offer?.id ?? 'null'}, currentStageId=${candidate.currentStageId}`);
     const { history: historyFixed, offer: offerFixed } =
       await repairCandidatePipelineSnapshot(id, candidate, history, offer);
-    console.log(`[getById] candidate ${id} after repair: history=${historyFixed.length}, offer=${offerFixed?.id ?? 'null'}`);
+
+    const [offerResponse] = offerFixed
+      ? await db
+          .select({
+            id: offerResponseAttempts.id,
+            status: offerResponseAttempts.status,
+            expiresAt: offerResponseAttempts.expiresAt,
+            respondedAt: offerResponseAttempts.respondedAt,
+            responderName: offerResponseAttempts.responderName,
+            candidateMessage: offerResponseAttempts.candidateMessage,
+            isActive: offerResponseAttempts.isActive,
+            updatedAt: offerResponseAttempts.updatedAt,
+          })
+          .from(offerResponseAttempts)
+          .where(eq(offerResponseAttempts.offerId, offerFixed.id))
+          .orderBy(desc(offerResponseAttempts.createdAt))
+          .limit(1)
+      : [null];
+
+    const stageIds = [...new Set(historyFixed.map((h) => h.stageId))];
+    let historyOut = historyFixed;
+    if (stageIds.length > 0) {
+      const stageRows = await db
+        .select({
+          id: jobPipelineStages.id,
+          name: jobPipelineStages.name,
+        })
+        .from(jobPipelineStages)
+        .where(inArray(jobPipelineStages.id, stageIds));
+      const nameById = Object.fromEntries(
+        stageRows.map((r) => [r.id, r.name]),
+      );
+      historyOut = historyFixed.map((h) => ({
+        ...h,
+        stageName: nameById[h.stageId] ?? null,
+      }));
+    }
 
     return {
       ...candidate,
       answers,
       selections,
-      history: historyFixed,
+      history: historyOut,
       offer: offerFixed,
+      offerResponse,
       cvAnalysis,
+      assessmentAttempts,
     };
   },
 
@@ -588,41 +650,43 @@ export const candidateService = {
       }
 
       if (stage.stageType === "rejection") {
-        if (stage.rejectionTemplateId) {
-          if (candidate.rejectionNoticeSentAt) {
-            stageAutomation.rejectionEmail = "skipped_already_sent";
-          } else {
-            const [template] = await tx
+        if (candidate.rejectionNoticeSentAt) {
+          stageAutomation.rejectionEmail = "skipped_already_sent";
+        } else {
+          let template = null;
+          if (stage.rejectionTemplateId) {
+            const [configuredTemplate] = await tx
               .select()
               .from(templates)
               .where(eq(templates.id, stage.rejectionTemplateId));
+            template = configuredTemplate ?? null;
+          }
 
-            if (template) {
-              const context = await variableService.getContextForCandidate(
-                candidate.id,
-              );
-              const { subject, html } = templateEngineService.compileTemplate(
-                template.subject,
-                template.bodyJson,
-                context,
-              );
+          if (!template) {
+            template = await templateService.getDefaultByType("rejection");
+          }
 
-              await mailService.sendRejectionEmail(
-                candidate.email,
-                subject,
-                html,
-              );
+          if (template) {
+            const context = await variableService.getContextForCandidate(
+              candidate.id,
+            );
+            const { subject, html } = templateEngineService.compileTemplate(
+              template.subject,
+              template.bodyJson,
+              context,
+            );
 
-              await tx
-                .update(candidates)
-                .set({
-                  rejectionNoticeSentAt: new Date(),
-                  updatedAt: new Date(),
-                })
-                .where(eq(candidates.id, candidateId));
+            await mailService.sendRejectionEmail(candidate.email, subject, html);
 
-              stageAutomation.rejectionEmail = "sent";
-            }
+            await tx
+              .update(candidates)
+              .set({
+                rejectionNoticeSentAt: new Date(),
+                updatedAt: new Date(),
+              })
+              .where(eq(candidates.id, candidateId));
+
+            stageAutomation.rejectionEmail = "sent";
           }
         }
       }

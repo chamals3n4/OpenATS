@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -8,7 +8,6 @@ import {
   PlusSignIcon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
-  MoreVerticalIcon,
   PencilEdit01Icon,
   Copy01Icon,
   Delete02Icon,
@@ -56,6 +55,7 @@ import {
   useCurrentUser,
   useDeleteTemplate,
   useCreateTemplate,
+  useUpdateTemplate,
 } from "@/hooks/use-api";
 import type { Template } from "@/types";
 import {
@@ -63,79 +63,6 @@ import {
   EMAIL_TEMPLATE_TYPE_CONFIG,
   EMAIL_TEMPLATE_TYPE_PICKER_ORDER,
 } from "@/lib/email-template-types";
-
-function RowMenu({
-  onEdit,
-  onDuplicate,
-  onDelete,
-}: {
-  onEdit(): void;
-  onDuplicate(): void;
-  onDelete(): void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const fn = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", fn);
-    return () => document.removeEventListener("mousedown", fn);
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative flex justify-end">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="p-1.5 rounded-md text-[var(--theme-color)]/50 hover:text-[var(--theme-color)] hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
-      >
-        <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-8 z-50 w-44 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-lg shadow-lg py-1 text-sm">
-          <button
-            onClick={() => {
-              setOpen(false);
-              onEdit();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800"
-          >
-            <HugeiconsIcon
-              icon={PencilEdit01Icon}
-              className="size-4 text-slate-400"
-            />{" "}
-            Edit
-          </button>
-          <button
-            onClick={() => {
-              setOpen(false);
-              onDuplicate();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800"
-          >
-            <HugeiconsIcon
-              icon={Copy01Icon}
-              className="size-4 text-slate-400"
-            />{" "}
-            Duplicate
-          </button>
-          <div className="border-t border-slate-100 dark:border-neutral-800 my-1" />
-          <button
-            onClick={() => {
-              setOpen(false);
-              onDelete();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
-          >
-            <HugeiconsIcon icon={Delete02Icon} className="size-4" /> Delete
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function TemplatesPage() {
   const router = useRouter();
@@ -145,6 +72,7 @@ export default function TemplatesPage() {
 
   const createMutation = useCreateTemplate();
   const deleteMutation = useDeleteTemplate();
+  const updateMutation = useUpdateTemplate();
 
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
@@ -168,6 +96,13 @@ export default function TemplatesPage() {
     if (deleteId === null) return;
     deleteMutation.mutate(deleteId, {
       onSuccess: () => setDeleteId(null),
+    });
+  };
+
+  const handleToggleDefault = (template: Template) => {
+    updateMutation.mutate({
+      id: template.id,
+      data: { isDefault: !template.isDefault },
     });
   };
 
@@ -257,7 +192,7 @@ export default function TemplatesPage() {
       </div>
 
       <div className="px-8 py-6">
-        <div className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-950 shadow-none overflow-hidden text-[var(--theme-color)]">
+        <div className="border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-950 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:bg-transparent">
@@ -301,7 +236,7 @@ export default function TemplatesPage() {
                     <TableCell className="h-14 px-8 py-0">
                       <Link
                         href={`/settings/templates/${t.id}/edit`}
-                        className="text-[var(--theme-color)] font-medium hover:underline decoration-1 underline-offset-4"
+                        className="text-slate-700 dark:text-neutral-200 font-medium hover:underline decoration-1 underline-offset-4"
                       >
                         {t.name}
                       </Link>
@@ -313,21 +248,64 @@ export default function TemplatesPage() {
                         {EMAIL_TEMPLATE_TYPE_CONFIG[t.type].label}
                       </span>
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-[var(--theme-color)] font-normal">
+                    <TableCell className="h-14 px-8 py-0 text-slate-600 dark:text-neutral-300 font-normal">
                       {/* You'd display the real createdBy name here, hardcoded user ID 1 for now if needed */}
                       System
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-[var(--theme-color)] font-normal">
+                    <TableCell className="h-14 px-8 py-0 text-slate-600 dark:text-neutral-300 font-normal">
                       {new Date(t.updatedAt).toLocaleDateString()}
                     </TableCell>
                     <TableCell className="h-14 px-4 py-0">
-                      <RowMenu
-                        onEdit={() =>
-                          router.push(`/settings/templates/${t.id}/edit`)
-                        }
-                        onDuplicate={() => handleDuplicate(t)}
-                        onDelete={() => setDeleteId(t.id)}
-                      />
+                      <div className="flex items-center justify-end gap-1.5">
+                        <button
+                          onClick={() =>
+                            router.push(`/settings/templates/${t.id}/edit`)
+                          }
+                          className="cursor-pointer inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 dark:border-neutral-700 text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
+                          title="Edit template"
+                        >
+                          <HugeiconsIcon
+                            icon={PencilEdit01Icon}
+                            className="size-4"
+                          />
+                        </button>
+                        <button
+                          onClick={() => handleToggleDefault(t)}
+                          disabled={updateMutation.isPending}
+                          className={`cursor-pointer inline-flex h-8 w-8 items-center justify-center rounded-md border transition-colors ${
+                            t.isDefault
+                              ? "border-amber-400 text-amber-500 bg-amber-50/40 dark:bg-amber-950/20"
+                              : "border-slate-300 dark:border-neutral-700 text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800"
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
+                          title={
+                            t.isDefault ? "Unset default" : "Set as default"
+                          }
+                          aria-label={
+                            t.isDefault
+                              ? "Unset default template"
+                              : "Set default template"
+                          }
+                        >
+                          ★
+                        </button>
+                        <button
+                          onClick={() => handleDuplicate(t)}
+                          className="cursor-pointer inline-flex h-8 w-8 items-center justify-center rounded-md border border-slate-300 dark:border-neutral-700 text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
+                          title="Duplicate template"
+                        >
+                          <HugeiconsIcon icon={Copy01Icon} className="size-4" />
+                        </button>
+                        <button
+                          onClick={() => setDeleteId(t.id)}
+                          className="cursor-pointer inline-flex h-8 w-8 items-center justify-center rounded-md border border-red-200 dark:border-red-900/70 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+                          title="Delete template"
+                        >
+                          <HugeiconsIcon
+                            icon={Delete02Icon}
+                            className="size-4"
+                          />
+                        </button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -342,14 +320,12 @@ export default function TemplatesPage() {
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                className="h-10 px-6 rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-[var(--theme-color)] font-semibold text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 shadow-none gap-2"
+                className="h-10 px-6 rounded-lg cursor-pointer  bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-[var(--theme-color)] font-semibold text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 shadow-none gap-2"
               >
-                <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />{" "}
                 Previous
               </Button>
-              <Button className="h-10 px-8 rounded-lg bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-semibold text-sm shadow-none border-none gap-2">
-                Next{" "}
-                <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
+              <Button className="h-10 px-8 rounded-lg cursor-pointer bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-semibold text-sm shadow-none border-none gap-2">
+                Next
               </Button>
             </div>
           </div>
@@ -357,7 +333,7 @@ export default function TemplatesPage() {
       </div>
 
       <Dialog open={typePickerOpen} onOpenChange={setTypePickerOpen}>
-        <DialogContent className="!top-[20%] !translate-y-0 sm:max-w-[500px] max-w-[500px] rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg p-7 duration-0 data-open:zoom-in-100 data-closed:zoom-out-100">
+        <DialogContent className="sm:max-w-[720px] max-w-[calc(100vw-2rem)] max-h-[85vh] overflow-y-auto rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg p-7 duration-0 data-open:zoom-in-100 data-closed:zoom-out-100">
           <DialogHeader>
             <DialogTitle className="text-[18px] font-semibold text-slate-900 dark:text-neutral-100">
               What type of template is this?
@@ -372,9 +348,9 @@ export default function TemplatesPage() {
               <button
                 key={t}
                 onClick={() => setPickedType(t)}
-                className={`flex flex-col items-start gap-2.5 p-4 rounded-xl border-2 text-left transition-all ${
+                className={`cursor-pointer flex flex-col items-start gap-2.5 p-4 rounded-xl border text-left transition-all ${
                   pickedType === t
-                    ? "border-[var(--theme-color)] bg-[var(--theme-color)]/5 dark:bg-[var(--theme-color)]/10"
+                    ? "border-[var(--theme-color)] bg-white dark:bg-neutral-900"
                     : "border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900"
                 }`}
               >
@@ -394,7 +370,7 @@ export default function TemplatesPage() {
             <Button
               variant="outline"
               onClick={() => setTypePickerOpen(false)}
-              className="h-10 px-6 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium shadow-none rounded-lg text-sm"
+              className="cursor-pointer h-10 px-6 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium shadow-none rounded-lg text-sm"
             >
               Cancel
             </Button>
@@ -406,9 +382,9 @@ export default function TemplatesPage() {
                   router.push(`/settings/templates/new?type=${pickedType}`);
                 }
               }}
-              className="h-10 px-6 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium shadow-none rounded-lg text-sm border-none disabled:opacity-40"
+              className="cursor-pointer h-10 px-6 bg-slate-900 hover:bg-slate-800 dark:bg-neutral-100 dark:hover:bg-neutral-200 text-white dark:text-neutral-900 font-medium shadow-none rounded-lg text-sm border-none disabled:opacity-40"
             >
-              Continue →
+              Continue
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -207,6 +207,19 @@ export type CandidateDetail = Candidate & {
     stageId: number;
     movedBy: number | null;
     movedAt: string;
+    stageName?: string | null;
+  }[];
+  assessmentAttempts: {
+    id: number;
+    assessmentId: number;
+    assessmentTitle: string;
+    token: string;
+    status: string;
+    expiresAt: string;
+    startedAt: string | null;
+    completedAt: string | null;
+    scorePercentage: number | null;
+    passed: boolean | null;
   }[];
   offer: {
     id: number;
@@ -222,6 +235,16 @@ export type CandidateDetail = Candidate & {
     renderedHtml: string | null;
     /** Present when API returns full offer row (used to sync form after save). */
     updatedAt?: string;
+  } | null;
+  offerResponse: {
+    id: number;
+    status: string;
+    expiresAt: string;
+    respondedAt: string | null;
+    responderName: string | null;
+    candidateMessage: string | null;
+    isActive: boolean;
+    updatedAt: string;
   } | null;
 };
 
@@ -247,12 +270,16 @@ export type Template = {
   name: string;
   type:
     | "offer"
+    | "offer_withdrawal"
     | "rejection"
     | "assessment_invite"
+    | "assessment_completion"
+    | "interview_invite"
     | "general"
     | "application_received";
   subject: string;
   bodyJson: TemplateBodyBlock[];
+  isDefault: boolean;
   createdAt: string;
   updatedAt: string;
 };

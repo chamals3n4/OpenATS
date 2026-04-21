@@ -150,7 +150,7 @@ export default function CreateNewJobPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Senior Software Engineer - Backend"
-              className="h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+              className="h-10! bg-slate-50 dark:bg-neutral-900 border-slate-300 dark:border-neutral-800 shadow-none rounded-lg placeholder:text-slate-300 dark:placeholder:text-neutral-600"
             />
           </div>
 
@@ -204,7 +204,7 @@ export default function CreateNewJobPage() {
             <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
               Skills
             </Label>
-            <div className="min-h-10 p-1.5 flex flex-wrap gap-2 border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 focus-within:border-theme transition-[border-color] duration-200">
+            <div className="min-h-10 p-1.5 flex flex-wrap gap-2 border border-slate-300 dark:border-neutral-800 rounded-lg bg-slate-50 dark:bg-neutral-900 focus-within:border-theme transition-[border-color] duration-200">
               {skills.map((skill) => (
                 <div
                   key={skill}
@@ -241,7 +241,7 @@ export default function CreateNewJobPage() {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Search"
-              className="h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+              className="h-10! bg-slate-50 dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg placeholder:text-slate-300 dark:placeholder:text-neutral-600"
             />
           </div>
 

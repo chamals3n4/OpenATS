@@ -54,6 +54,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Spinner } from "@/components/ui/spinner";
 
 function parseRagMeta(
   description: string | null | undefined,
@@ -614,7 +615,7 @@ export default function AssessmentsPage() {
             <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
               Delete Assessment?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+            <AlertDialogDescription className="text-[14px] text-slate-500 dark:text-neutral-400 leading-relaxed">
               <strong className="text-slate-700 dark:text-neutral-200">
                 {deleteTarget?.title}
               </strong>{" "}
@@ -622,7 +623,7 @@ export default function AssessmentsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-9 px-5 cursor-pointer rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 text-[13px] font-medium shadow-none">
+            <AlertDialogCancel className="h-10 px-6 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[14px] font-medium shadow-none cursor-pointer">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -631,12 +632,16 @@ export default function AssessmentsPage() {
                 confirmDelete();
               }}
               disabled={deleteAssessment.isPending}
-              className="h-9 px-5 rounded-lg cursor-pointer bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none disabled:opacity-70"
+              className="h-10 px-6 rounded-md bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
-              {deleteAssessment.isPending && (
-                <Loader2 className="size-3.5 mr-1.5 animate-spin" />
+              {deleteAssessment.isPending ? (
+                <>
+                  <Spinner className="size-3.5" />
+                  Deleting
+                </>
+              ) : (
+                "Delete"
               )}
-              {deleteAssessment.isPending ? "Deleting..." : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

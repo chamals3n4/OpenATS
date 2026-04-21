@@ -416,7 +416,7 @@ export default function CreateNewJobPage() {
               {createJob.isPending ? (
                 <>
                   <Loader2 className="size-4 shrink-0 animate-spin" />
-                  <span>Saving…</span>
+                  <span>Saving</span>
                 </>
               ) : (
                 "Save Job"

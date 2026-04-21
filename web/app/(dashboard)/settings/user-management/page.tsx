@@ -8,25 +8,50 @@ import {
   PencilEdit01Icon,
   Delete02Icon,
   Add01Icon,
+  Spinner,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
 import type { User as AsgardeoUser } from "@/types";
-import { deleteUser, fetchUsers, inviteUser, updateUser } from "@/lib/users-api";
-import type { CreateUserPayload as InviteUserPayload, UpdateUserPayload } from "@/lib/users-api";
+import {
+  deleteUser,
+  fetchUsers,
+  inviteUser,
+  updateUser,
+} from "@/lib/users-api";
+import type {
+  CreateUserPayload as InviteUserPayload,
+  UpdateUserPayload,
+} from "@/lib/users-api";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
 } from "@/components/ui/table";
 import {
-  Dialog, DialogClose, DialogContent, DialogFooter, DialogHeader, DialogTitle,
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -56,7 +81,7 @@ const ROLES = [
   { value: "super_admin", label: "Super Admin" },
 ] as const;
 
-type Role = typeof ROLES[number]["value"];
+type Role = (typeof ROLES)[number]["value"];
 type PasswordMethod = "invite" | "set";
 
 function getDisplayName(u: AsgardeoUser) {
@@ -112,7 +137,11 @@ async function copyToClipboard(text: string) {
 }
 
 const emptyCreate = {
-  email: "", firstName: "", lastName: "", password: "", role: "interviewer" as Role,
+  email: "",
+  firstName: "",
+  lastName: "",
+  password: "",
+  role: "interviewer" as Role,
 };
 
 export default function UserManagementPage() {
@@ -140,7 +169,8 @@ export default function UserManagementPage() {
 
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [passwordMethod, setPasswordMethod] = useState<PasswordMethod>("invite");
+  const [passwordMethod, setPasswordMethod] =
+    useState<PasswordMethod>("invite");
   const [createForm, setCreateForm] = useState(emptyCreate);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -166,7 +196,9 @@ export default function UserManagementPage() {
     }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const filteredUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -239,9 +271,15 @@ export default function UserManagementPage() {
       return;
     }
     if (passwordMethod === "set") {
-      if (!password) { toast.error("Password is required."); return; }
+      if (!password) {
+        toast.error("Password is required.");
+        return;
+      }
       const c = passwordChecks(password);
-      if (!c.length) { toast.error("Password must be between 8 and 64 characters."); return; }
+      if (!c.length) {
+        toast.error("Password must be between 8 and 64 characters.");
+        return;
+      }
       if (!c.upper || !c.lower || !c.number) {
         toast.error("Password must include uppercase, lowercase and a number.");
         return;
@@ -261,7 +299,9 @@ export default function UserManagementPage() {
     setCreating(true);
     try {
       await inviteUser(payload);
-      toast.success(passwordMethod === "invite" ? "Invitation sent" : "User created");
+      toast.success(
+        passwordMethod === "invite" ? "Invitation sent" : "User created",
+      );
       setCreateOpen(false);
       await load();
     } catch (e) {
@@ -273,8 +313,6 @@ export default function UserManagementPage() {
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
-
-
       <div className="px-8 py-4 flex items-center justify-between">
         <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
           User Management
@@ -294,12 +332,15 @@ export default function UserManagementPage() {
             style={{ backgroundColor: "var(--theme-color)" }}
             onClick={openCreate}
           >
-            <HugeiconsIcon icon={Add01Icon} className="size-4" strokeWidth={2.5} />
+            <HugeiconsIcon
+              icon={Add01Icon}
+              className="size-4"
+              strokeWidth={2.5}
+            />
             <span>Create User</span>
           </Button>
         </div>
       </div>
-
 
       <div className="border-y border-slate-200 dark:border-neutral-800 px-8 py-3.5 flex items-center gap-4">
         <div className="relative w-96">
@@ -326,9 +367,15 @@ export default function UserManagementPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-transparent">
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">Name</TableHead>
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">Email</TableHead>
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">Role</TableHead>
+                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                  Name
+                </TableHead>
+                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                  Email
+                </TableHead>
+                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                  Role
+                </TableHead>
                 <TableHead className="h-13 px-4 w-12" />
               </TableRow>
             </TableHeader>
@@ -341,7 +388,10 @@ export default function UserManagementPage() {
                 </TableRow>
               ) : filteredUsers.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={4} className="h-32 text-center text-slate-400 text-sm">
+                  <TableCell
+                    colSpan={4}
+                    className="h-32 text-center text-slate-400 text-sm"
+                  >
                     No users found.
                   </TableCell>
                 </TableRow>
@@ -367,14 +417,20 @@ export default function UserManagementPage() {
                           className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
                           title="Edit"
                         >
-                          <HugeiconsIcon icon={PencilEdit01Icon} className="size-4" />
+                          <HugeiconsIcon
+                            icon={PencilEdit01Icon}
+                            className="size-4"
+                          />
                         </button>
                         <button
                           onClick={() => setDeleteTarget(u)}
                           className="p-1.5 rounded-md text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
                           title="Delete"
                         >
-                          <HugeiconsIcon icon={Delete02Icon} className="size-4" />
+                          <HugeiconsIcon
+                            icon={Delete02Icon}
+                            className="size-4"
+                          />
                         </button>
                       </div>
                     </TableCell>
@@ -401,48 +457,62 @@ export default function UserManagementPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Email */}
               <div className="col-span-2">
-                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">Email *</Label>
+                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                  Email *
+                </Label>
                 <Input
                   type="email"
                   value={createForm.email}
-                  onChange={(e) => setCreateForm((f) => ({ ...f, email: e.target.value }))}
+                  onChange={(e) =>
+                    setCreateForm((f) => ({ ...f, email: e.target.value }))
+                  }
                   placeholder="Enter the email address"
                   className={inputCls}
                 />
               </div>
 
-
               <div>
-                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">First name *</Label>
+                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                  First name *
+                </Label>
                 <Input
                   value={createForm.firstName}
-                  onChange={(e) => setCreateForm((f) => ({ ...f, firstName: e.target.value }))}
+                  onChange={(e) =>
+                    setCreateForm((f) => ({ ...f, firstName: e.target.value }))
+                  }
                   placeholder="Enter the first name"
                   className={inputCls}
                 />
               </div>
 
               <div>
-                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">Last name</Label>
+                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                  Last name
+                </Label>
                 <Input
                   value={createForm.lastName}
-                  onChange={(e) => setCreateForm((f) => ({ ...f, lastName: e.target.value }))}
+                  onChange={(e) =>
+                    setCreateForm((f) => ({ ...f, lastName: e.target.value }))
+                  }
                   placeholder="Enter the last name"
                   className={inputCls}
                 />
               </div>
 
               <div className="col-span-2">
-                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">Role</Label>
+                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                  Role
+                </Label>
                 <Select
                   value={createForm.role}
-                  onValueChange={(v) => setCreateForm((f) => ({ ...f, role: v as Role }))}
+                  onValueChange={(v) =>
+                    setCreateForm((f) => ({ ...f, role: v as Role }))
+                  }
                 >
-                  <SelectTrigger
-                    className="w-full h-10! rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none px-3! py-0! focus-visible:ring-2 focus-visible:ring-theme focus-visible:border-theme"
-                  >
+                  <SelectTrigger className="w-full h-10! rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none px-3! py-0! focus-visible:ring-2 focus-visible:ring-theme focus-visible:border-theme">
                     <SelectValue placeholder="Select role">
-                      {ROLES.find((r) => r.value === createForm.role)?.label ?? null}
+                      {ROLES.find((r) => r.value === createForm.role)?.label ??
+                        null}
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent>
@@ -474,7 +544,6 @@ export default function UserManagementPage() {
                         Invite the user to set their own password
                       </Label>
                     </div>
-
                   </div>
 
                   <div className="space-y-1">
@@ -493,13 +562,20 @@ export default function UserManagementPage() {
 
               {passwordMethod === "set" && (
                 <div className="col-span-2">
-                  <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">Password *</Label>
+                  <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                    Password *
+                  </Label>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                     <div className="relative flex-1 w-full">
                       <Input
                         type={showPassword ? "text" : "password"}
                         value={createForm.password}
-                        onChange={(e) => setCreateForm((f) => ({ ...f, password: e.target.value }))}
+                        onChange={(e) =>
+                          setCreateForm((f) => ({
+                            ...f,
+                            password: e.target.value,
+                          }))
+                        }
                         placeholder="Enter the password"
                         className={inputCls + " pr-10"}
                       />
@@ -508,7 +584,11 @@ export default function UserManagementPage() {
                         onClick={() => setShowPassword((s) => !s)}
                         className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300"
                       >
-                        {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                        {showPassword ? (
+                          <EyeOff className="size-4" />
+                        ) : (
+                          <Eye className="size-4" />
+                        )}
                       </button>
                     </div>
                     <div className="flex gap-2 w-full sm:w-auto">
@@ -516,7 +596,12 @@ export default function UserManagementPage() {
                         type="button"
                         variant="outline"
                         className="h-10 px-4 rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 shadow-none flex-1 sm:flex-none"
-                        onClick={() => setCreateForm((f) => ({ ...f, password: generatePassword(12) }))}
+                        onClick={() =>
+                          setCreateForm((f) => ({
+                            ...f,
+                            password: generatePassword(12),
+                          }))
+                        }
                       >
                         Generate
                       </Button>
@@ -535,15 +620,36 @@ export default function UserManagementPage() {
                   {(() => {
                     const c = passwordChecks(createForm.password);
                     const item = (ok: boolean, label: string) => (
-                      <div key={label} className="flex items-center gap-2 text-[12px] mt-2">
-                        <span className={"inline-block size-2 rounded-full " + (ok ? "bg-theme" : "bg-slate-200 dark:bg-neutral-800")} />
-                        <span className={ok ? "text-slate-700 dark:text-neutral-300" : "text-slate-500 dark:text-neutral-500"}>{label}</span>
+                      <div
+                        key={label}
+                        className="flex items-center gap-2 text-[12px] mt-2"
+                      >
+                        <span
+                          className={
+                            "inline-block size-2 rounded-full " +
+                            (ok
+                              ? "bg-theme"
+                              : "bg-slate-200 dark:bg-neutral-800")
+                          }
+                        />
+                        <span
+                          className={
+                            ok
+                              ? "text-slate-700 dark:text-neutral-300"
+                              : "text-slate-500 dark:text-neutral-500"
+                          }
+                        >
+                          {label}
+                        </span>
                       </div>
                     );
                     return (
                       <div className="mt-2">
                         {item(c.length, "Must be between 8 and 64 characters")}
-                        {item(c.upper, "At least 1 uppercase and 1 lowercase letter")}
+                        {item(
+                          c.upper,
+                          "At least 1 uppercase and 1 lowercase letter",
+                        )}
                         {item(c.number, "At least 1 number")}
                       </div>
                     );
@@ -577,7 +683,10 @@ export default function UserManagementPage() {
         </SheetContent>
       </Sheet>
 
-      <Dialog open={!!editUser} onOpenChange={(open) => !open && setEditUser(null)}>
+      <Dialog
+        open={!!editUser}
+        onOpenChange={(open) => !open && setEditUser(null)}
+      >
         <DialogContent className="max-w-lg rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
           <DialogHeader>
             <DialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
@@ -587,23 +696,33 @@ export default function UserManagementPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">First name</Label>
+              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                First name
+              </Label>
               <Input
                 value={editForm.firstName ?? ""}
-                onChange={(e) => setEditForm((f) => ({ ...f, firstName: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, firstName: e.target.value }))
+                }
                 className={inputCls}
               />
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">Last name</Label>
+              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                Last name
+              </Label>
               <Input
                 value={editForm.lastName ?? ""}
-                onChange={(e) => setEditForm((f) => ({ ...f, lastName: e.target.value }))}
+                onChange={(e) =>
+                  setEditForm((f) => ({ ...f, lastName: e.target.value }))
+                }
                 className={inputCls}
               />
             </div>
             <div className="col-span-2">
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">Email</Label>
+              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                Email
+              </Label>
               <Input
                 type="email"
                 value={editUser?.email ?? ""}
@@ -612,16 +731,20 @@ export default function UserManagementPage() {
               />
             </div>
             <div className="col-span-2">
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">Role</Label>
+              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                Role
+              </Label>
               <Select
                 value={(editForm.role ?? "interviewer") as Role}
-                onValueChange={(v) => setEditForm((f) => ({ ...f, role: v as Role }))}
+                onValueChange={(v) =>
+                  setEditForm((f) => ({ ...f, role: v as Role }))
+                }
               >
-                <SelectTrigger
-                  className="w-full h-10! rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none px-3! py-0! focus-visible:ring-2 focus-visible:ring-theme focus-visible:border-theme"
-                >
+                <SelectTrigger className="w-full h-10! rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none px-3! py-0! focus-visible:ring-2 focus-visible:ring-theme focus-visible:border-theme">
                   <SelectValue placeholder="Select role">
-                    {ROLES.find((r) => r.value === (editForm.role ?? "interviewer"))?.label ?? null}
+                    {ROLES.find(
+                      (r) => r.value === (editForm.role ?? "interviewer"),
+                    )?.label ?? null}
                   </SelectValue>
                 </SelectTrigger>
                 <SelectContent>
@@ -654,13 +777,16 @@ export default function UserManagementPage() {
         </DialogContent>
       </Dialog>
 
-      <AlertDialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
-        <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
+      <AlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => !open && setDeleteTarget(null)}
+      >
+        <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+            <AlertDialogTitle className="text-[19px] font-semibold text-slate-900 dark:text-neutral-100">
               Remove user?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+            <AlertDialogDescription className="text-[14px] text-slate-500 dark:text-neutral-400 leading-relaxed">
               {deleteTarget ? (
                 <>
                   Are you sure you want to remove{" "}
@@ -669,19 +795,28 @@ export default function UserManagementPage() {
                   </strong>
                   ?
                 </>
-              ) : "Are you sure?"}
+              ) : (
+                "Are you sure?"
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-9 px-5 rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800">
+            <AlertDialogCancel className="h-10 px-6 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[14px] font-medium shadow-none cursor-pointer">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none"
+              className="h-10 px-6 rounded-md bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
-              {deleting ? "Removing…" : "Remove"}
+              {deleting ? (
+                <>
+                  <Spinner className="size-3.5" />
+                  Deleting
+                </>
+              ) : (
+                "Delete"
+              )}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

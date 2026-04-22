@@ -17,6 +17,7 @@ import { socketService } from "./socket.service";
 import { templateEngineService } from "./template-engine.service";
 import { variableService } from "./variable.service";
 import { templateService } from "./template.service";
+import logger from "../utils/logger";
 
 type OfferDecision = "accepted" | "declined";
 
@@ -249,7 +250,13 @@ export const offerResponseService = {
           </div>
         `;
 
+    logger.info(
+      `Offer email compose debug: offerId=${input.offerId}, candidateId=${input.candidateId}, to="${input.candidateEmail}", hasRenderedHtml=${Boolean(input.renderedHtml?.trim())}, subjectLength=${input.subject.length}, htmlLength=${html.length}, ctaIncluded=${html.includes("Review Offer")}, reviewUrl="${reviewUrl}", frontendUrl="${frontendUrl}"`,
+    );
     await mailService.sendOfferEmail(input.candidateEmail, input.subject, html);
+    logger.info(
+      `Offer email sent: offerId=${input.offerId}, candidateId=${input.candidateId}, to="${input.candidateEmail}"`,
+    );
     return attempt;
   },
 

@@ -333,11 +333,17 @@ export const candidateService = {
       // "application_received" template. If none is marked default,
       // fall back to the most recently created template of this type.
       try {
+        logger.info(
+          `Application received email flow started: candidateId=${candidate.id}, email="${candidate.email}"`,
+        );
         let selectedTemplate =
           await templateService.getDefaultByType("application_received");
         if (!selectedTemplate) {
           const appReceivedTemplates =
             await templateService.getByType("application_received");
+          logger.info(
+            `Application received templates found: count=${appReceivedTemplates.length}, candidateId=${candidate.id}`,
+          );
           selectedTemplate =
             appReceivedTemplates[appReceivedTemplates.length - 1] ?? null;
           if (selectedTemplate) {
@@ -357,6 +363,9 @@ export const candidateService = {
               `Skipping application received email for candidateId=${candidate.id}: candidate email missing in context`,
             );
           } else {
+            logger.info(
+              `Compiling application received template: candidateId=${candidate.id}, templateId=${selectedTemplate.id}, to="${to}"`,
+            );
             const { subject, html } = templateEngineService.compileTemplate(
               selectedTemplate.subject,
               selectedTemplate.bodyJson,
@@ -367,6 +376,9 @@ export const candidateService = {
                 `Skipping application received email for candidateId=${candidate.id}: templateId=${selectedTemplate.id} compiled subject/html is empty`,
               );
             } else {
+              logger.info(
+                `Sending application received email: candidateId=${candidate.id}, templateId=${selectedTemplate.id}, subjectLength=${subject.length}, htmlLength=${html.length}`,
+              );
               await mailService.sendEmail({ to, subject, html });
               logger.info(
                 `Application received email sent for candidateId=${candidate.id} using templateId=${selectedTemplate.id}`,

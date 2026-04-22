@@ -14,15 +14,17 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.2
 
       - name: Deploy to Azure VM via SSH
-        uses: appleboy/ssh-action@v1.0.3
+        uses: appleboy/ssh-action@v1.2.2
         with:
           host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             cd ${{ secrets.ITP_DEPLOY_PATH }}
             git pull origin itp-main
 
@@ -36,5 +38,8 @@ jobs:
 
             # RAG
             cd rag
+            python3 -m venv venv
+            source venv/bin/activate
             pip install -r requirements.txt
+            deactivate
             cd ..

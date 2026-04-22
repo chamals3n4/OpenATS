@@ -243,11 +243,22 @@ export default function EditTemplatePage() {
       setTemplateType(t.type);
 
       // Map API blocks to UI Blocks
-      const mappedBlocks: Block[] = t.bodyJson.map((b, i) => ({
-        id: `blk-${i}-${Date.now()}`,
-        kind: b.type,
-        content: b.content,
-      }));
+      const mappedBlocks: Block[] = (t.bodyJson as TemplateBodyBlock[]).map(
+        (b, i) => ({
+          id: `blk-${i}-${Date.now()}`,
+          kind: b.type,
+          content:
+            b.type === "button"
+              ? b.label
+              : b.type === "image"
+                ? b.url
+                : b.type === "spacer"
+                  ? String(b.height)
+                  : "content" in b
+                    ? b.content
+                    : "",
+        }),
+      );
       if (mappedBlocks.length > 0) {
         setBlocks(mappedBlocks);
       }
@@ -274,12 +285,21 @@ export default function EditTemplatePage() {
     if (!name.trim()) return;
 
     // Convert editor blocks to API TemplateBodyBlocks, filtering out UI-only blocks
-    const bodyJson: TemplateBodyBlock[] = blocks
-      .filter((b) => ["heading", "text", "button", "image"].includes(b.kind))
-      .map((b) => ({
-        type: b.kind as TemplateBodyBlock["type"],
-        content: b.content,
-      }));
+    const bodyJson: TemplateBodyBlock[] = blocks.map((b) => {
+      switch (b.kind) {
+        case "heading":
+        case "text":
+          return { type: b.kind, content: b.content };
+        case "button":
+          return { type: "button", label: b.content || "Click Here", url: "#" };
+        case "image":
+          return { type: "image", url: b.content || "", alt: "Image" };
+        case "divider":
+          return { type: "divider" };
+        case "spacer":
+          return { type: "spacer", height: Number(b.content) || 24 };
+      }
+    });
 
     updateMutation.mutate(
       {
@@ -342,7 +362,7 @@ export default function EditTemplatePage() {
       <div className="flex items-center justify-between px-7 py-4 border-b border-slate-200 dark:border-neutral-800 shrink-0">
         <div className="flex items-center gap-4">
           <Link
-            href="settings/templates"
+            href="/settings/templates"
             className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-neutral-200 text-[13px] font-medium transition-colors"
           >
             <HugeiconsIcon

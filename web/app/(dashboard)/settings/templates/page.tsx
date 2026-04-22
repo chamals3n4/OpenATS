@@ -52,6 +52,7 @@ import {
 import {
   useTemplates,
   useCurrentUser,
+  useUsers,
   useDeleteTemplate,
   useCreateTemplate,
   useUpdateTemplate,
@@ -68,7 +69,20 @@ export default function TemplatesPage() {
   const router = useRouter();
   const { data: meData, isLoading: meLoading } = useCurrentUser();
   const { data: templatesRes, isLoading } = useTemplates();
-  const templates = templatesRes?.data || [];
+  const { data: usersRes } = useUsers();
+  const templates = (templatesRes?.data || []) as Array<
+    Template & { createdBy?: number }
+  >;
+  const users = usersRes?.data ?? [];
+
+  const userNameById = useMemo(() => {
+    const map = new Map<number, string>();
+    for (const user of users) {
+      const fullName = `${user.firstName} ${user.lastName}`.trim();
+      map.set(user.id, fullName || user.email || `User #${user.id}`);
+    }
+    return map;
+  }, [users]);
 
   const createMutation = useCreateTemplate();
   const deleteMutation = useDeleteTemplate();
@@ -259,15 +273,15 @@ export default function TemplatesPage() {
                       </Link>
                     </TableCell>
                     <TableCell className="h-14 px-8 py-0">
-                      <span
-                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${EMAIL_TEMPLATE_TYPE_CONFIG[t.type].badge}`}
-                      >
-                        {EMAIL_TEMPLATE_TYPE_CONFIG[t.type].label}
-                      </span>
+                        <span
+                          className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${EMAIL_TEMPLATE_TYPE_CONFIG[t.type].badge}`}
+                        >
+                          {EMAIL_TEMPLATE_TYPE_CONFIG[t.type].label}
+                        </span>
                     </TableCell>
                     <TableCell className="h-14 px-8 py-0 text-slate-600 dark:text-neutral-300 font-normal">
-                      {/* You'd display the real createdBy name here, hardcoded user ID 1 for now if needed */}
-                      System
+                        {userNameById.get(t.createdBy ?? -1) ??
+                          (t.createdBy ? `User #${t.createdBy}` : "System")}
                     </TableCell>
                     <TableCell className="h-14 px-8 py-0 text-slate-600 dark:text-neutral-300 font-normal">
                       {new Date(t.updatedAt).toLocaleDateString()}

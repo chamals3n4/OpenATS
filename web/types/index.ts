@@ -260,10 +260,32 @@ export type User = {
   updatedAt: string;
 };
 
-export type TemplateBodyBlock = {
-  type: "heading" | "text" | "button" | "image";
-  content: string;
-};
+export type TemplateBodyBlock =
+  | {
+      type: "heading";
+      content: string;
+    }
+  | {
+      type: "text";
+      content: string;
+    }
+  | {
+      type: "button";
+      label: string;
+      url: string;
+    }
+  | {
+      type: "image";
+      url: string;
+      alt?: string;
+    }
+  | {
+      type: "divider";
+    }
+  | {
+      type: "spacer";
+      height: number;
+    };
 
 export type Template = {
   id: number;

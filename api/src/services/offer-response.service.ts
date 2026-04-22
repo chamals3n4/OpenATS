@@ -9,10 +9,14 @@ import {
   jobs,
   offers,
   offerResponseAttempts,
+  templates,
   users,
 } from "../db/schema";
 import { mailService } from "./mail.service";
 import { socketService } from "./socket.service";
+import { templateEngineService } from "./template-engine.service";
+import { variableService } from "./variable.service";
+import { templateService } from "./template.service";
 
 type OfferDecision = "accepted" | "declined";
 
@@ -382,6 +386,7 @@ export const offerResponseService = {
       decision: OfferDecision | "withdrawn";
       responderName?: string;
       message?: string;
+      templateId?: number | null;
     },
   ) {
     const attempt = await this.getLatestAttemptByOfferId(offerId);
@@ -427,6 +432,49 @@ export const offerResponseService = {
         if (!updatedOffer) {
           throw new Error("Offer not found");
         }
+
+        const [candidate] = await tx
+          .select({
+            id: candidates.id,
+            email: candidates.email,
+            firstName: candidates.firstName,
+          })
+          .from(candidates)
+          .where(eq(candidates.id, updatedOffer.candidateId))
+          .limit(1);
+
+        let selectedTemplate = null;
+        if (input.templateId) {
+          const [configuredTemplate] = await tx
+            .select()
+            .from(templates)
+            .where(eq(templates.id, input.templateId));
+          if (configuredTemplate?.type === "offer_withdrawal") {
+            selectedTemplate = configuredTemplate;
+          }
+        }
+
+        if (!selectedTemplate) {
+          selectedTemplate =
+            await templateService.getDefaultByType("offer_withdrawal");
+        }
+
+        if (candidate?.email && selectedTemplate) {
+          const context = await variableService.getContextForOffer(
+            candidate.id,
+            updatedOffer,
+          );
+          const { subject, html } = templateEngineService.compileTemplate(
+            selectedTemplate.subject,
+            selectedTemplate.bodyJson,
+            context,
+          );
+
+          if (subject.trim() && html.trim()) {
+            await mailService.sendOfferEmail(candidate.email, subject, html);
+          }
+        }
+
         return updatedOffer;
       });
     }

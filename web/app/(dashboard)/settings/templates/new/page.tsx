@@ -247,12 +247,21 @@ export default function NewTemplatePage() {
 
     // Convert editor blocks to API TemplateBodyBlocks, filtering out UI-only blocks
     // The API schema only supports [heading, text, button, image]
-    const bodyJson: TemplateBodyBlock[] = blocks
-      .filter((b) => ["heading", "text", "button", "image"].includes(b.kind))
-      .map((b) => ({
-        type: b.kind as TemplateBodyBlock["type"],
-        content: b.content,
-      }));
+    const bodyJson: TemplateBodyBlock[] = blocks.map((b) => {
+      switch (b.kind) {
+        case "heading":
+        case "text":
+          return { type: b.kind, content: b.content };
+        case "button":
+          return { type: "button", label: b.content || "Click Here", url: "#" };
+        case "image":
+          return { type: "image", url: b.content || "", alt: "Image" };
+        case "divider":
+          return { type: "divider" };
+        case "spacer":
+          return { type: "spacer", height: Number(b.content) || 24 };
+      }
+    });
 
     createMutation.mutate(
       {
@@ -286,7 +295,7 @@ export default function NewTemplatePage() {
       <div className="flex items-center justify-between px-7 py-4 border-b border-slate-200 dark:border-neutral-800 shrink-0">
         <div className="flex items-center gap-4">
           <Link
-            href="settings/templates"
+            href="/settings/templates"
             className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-neutral-200 text-[13px] font-medium transition-colors"
           >
             <HugeiconsIcon
@@ -302,7 +311,9 @@ export default function NewTemplatePage() {
           >
             {EMAIL_TEMPLATE_TYPE_CONFIG[templateType].label}
           </span>
-          <span className="text-[14px] text-slate-400 dark:text-neutral-500">New template</span>
+          <span className="text-[14px] text-slate-400 dark:text-neutral-500">
+            New template
+          </span>
         </div>
         <Button
           onClick={handleSave}
@@ -434,18 +445,24 @@ export default function NewTemplatePage() {
                     <span className="text-slate-400 dark:text-neutral-500 w-14 shrink-0">
                       {label}
                     </span>
-                    <span className="text-slate-700 dark:text-neutral-300 font-medium">{val}</span>
+                    <span className="text-slate-700 dark:text-neutral-300 font-medium">
+                      {val}
+                    </span>
                   </div>
                 ))}
                 <div className="flex gap-3">
-                  <span className="text-slate-400 dark:text-neutral-500 w-14 shrink-0">Subject</span>
+                  <span className="text-slate-400 dark:text-neutral-500 w-14 shrink-0">
+                    Subject
+                  </span>
                   {subject ? (
                     <span
                       className="text-slate-900 dark:text-neutral-100 font-semibold leading-snug"
                       dangerouslySetInnerHTML={{ __html: previewSubject }}
                     />
                   ) : (
-                    <span className="text-slate-300 dark:text-neutral-600 italic">No subject</span>
+                    <span className="text-slate-300 dark:text-neutral-600 italic">
+                      No subject
+                    </span>
                   )}
                 </div>
               </div>

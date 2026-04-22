@@ -44,7 +44,7 @@ import {
   useSendCandidateEmail,
   usePreviewTemplate,
 } from "@/hooks/use-api";
-import type { CandidateDetail, Offer, User } from "@/types";
+import type { CandidateDetail, Offer, TemplateBodyBlock, User } from "@/types";
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -131,6 +131,29 @@ function replacePreviewVars(text: string, context: Record<string, string>) {
   });
 }
 
+function templateBlocksToEditableText(blocks: TemplateBodyBlock[]) {
+  return blocks
+    .map((block) => {
+      switch (block.type) {
+        case "heading":
+        case "text":
+          return block.content;
+        case "button":
+          return `${block.label}\n${block.url}`;
+        case "image":
+          return block.url ? `[Image] ${block.url}` : "[Image]";
+        case "divider":
+          return "---";
+        case "spacer":
+          return "";
+        default:
+          return "";
+      }
+    })
+    .join("\n\n")
+    .trim();
+}
+
 function DatePickerField({
   value,
   onChange,
@@ -186,6 +209,7 @@ function SidePanelEmailTab({
 
   const [mode, setMode] = useState<EmailComposerMode>("general");
 
+  const [genTemplateId, setGenTemplateId] = useState<string>("");
   const [genSubject, setGenSubject] = useState("");
   const [genBody, setGenBody] = useState("");
 
@@ -217,6 +241,7 @@ function SidePanelEmailTab({
   const previewTemplateMutation = usePreviewTemplate();
 
   useEffect(() => {
+    setGenTemplateId("");
     setGenSubject("");
     setGenBody("");
     setMode("general");
@@ -258,8 +283,19 @@ function SidePanelEmailTab({
     return selected.map(userDisplayName).join(", ");
   }, [hiringTeam, selectedInterviewerIds]);
 
-  const selectedTemplate = templates.find(
+  const generalTemplates = useMemo(
+    () => templates.filter((t) => t.type === "general"),
+    [templates],
+  );
+  const interviewTemplates = useMemo(
+    () => templates.filter((t) => t.type === "interview_invite"),
+    [templates],
+  );
+  const selectedTemplate = interviewTemplates.find(
     (t) => String(t.id) === intTemplateId,
+  );
+  const selectedGeneralTemplate = generalTemplates.find(
+    (t) => String(t.id) === genTemplateId,
   );
 
   const interviewNeedsBody = intPlainText || !selectedTemplate;
@@ -288,6 +324,7 @@ function SidePanelEmailTab({
       {
         onSuccess: () => {
           setSendSuccess("General email sent.");
+          setGenTemplateId("");
           setGenSubject("");
           setGenBody("");
         },
@@ -296,6 +333,17 @@ function SidePanelEmailTab({
         },
       },
     );
+  };
+
+  const applyGeneralTemplate = (nextTemplateId: string) => {
+    setGenTemplateId(nextTemplateId);
+    const selectedGeneralTemplate = generalTemplates.find(
+      (t) => String(t.id) === nextTemplateId,
+    );
+    if (!selectedGeneralTemplate) return;
+
+    setGenSubject(selectedGeneralTemplate.subject ?? "");
+    setGenBody(templateBlocksToEditableText(selectedGeneralTemplate.bodyJson));
   };
 
   const sendInterviewEmail = () => {
@@ -470,6 +518,44 @@ function SidePanelEmailTab({
           {mode === "general" ? (
             <div className="space-y-4 h-full flex flex-col">
               <div className="space-y-1.5">
+                <Label className={labelClass}>General template</Label>
+                <Select
+                  value={genTemplateId || "__none__"}
+                  onValueChange={(v) => {
+                    const next = v ?? "__none__";
+                    if (next === "__none__") {
+                      setGenTemplateId("");
+                      return;
+                    }
+                    applyGeneralTemplate(next);
+                  }}
+                >
+                  <SelectTrigger className="h-10 min-h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
+                    <SelectValue placeholder="Choose a general template">
+                      {selectedGeneralTemplate?.name ?? undefined}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 max-h-60">
+                    <SelectItem value="__none__" className="text-[13px]">
+                      No template
+                    </SelectItem>
+                    {generalTemplates.map((t) => (
+                      <SelectItem
+                        key={t.id}
+                        value={String(t.id)}
+                        className="text-[13px]"
+                      >
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <p className="text-[11px] text-slate-400 dark:text-neutral-500 leading-relaxed">
+                  Select a general template to prefill subject and message, then
+                  edit before sending.
+                </p>
+              </div>
+              <div className="space-y-1.5">
                 <Label className={labelClass}>To</Label>
                 <Input
                   value={candidate.email}
@@ -538,14 +624,16 @@ function SidePanelEmailTab({
                     setIntPlainText(false);
                   }}
                 >
-                  <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
-                    <SelectValue placeholder="Choose a template" />
+                  <SelectTrigger className="h-10 min-h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
+                    <SelectValue placeholder="Choose a template">
+                      {selectedTemplate?.name ?? undefined}
+                    </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 max-h-60">
                     <SelectItem value="__none__" className="text-[13px]">
                       No template (plain text only)
                     </SelectItem>
-                    {templates.map((t) => (
+                    {interviewTemplates.map((t) => (
                       <SelectItem
                         key={t.id}
                         value={String(t.id)}
@@ -585,10 +673,15 @@ function SidePanelEmailTab({
                     value={intTimeZone}
                     onValueChange={(v) => setIntTimeZone(v ?? "UTC")}
                   >
-                    <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
+                    <SelectTrigger className="h-10 min-h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
                       <SelectValue />
                     </SelectTrigger>
-                    <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 max-h-56">
+                    <SelectContent
+                      side="bottom"
+                      align="start"
+                      sideOffset={6}
+                      className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 max-h-56 w-80"
+                    >
                       {timeZoneOptions.map((tz) => (
                         <SelectItem
                           key={tz}
@@ -796,9 +889,14 @@ const offerLabelClass =
 function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
   const offer = candidate.offer;
   const { data: templatesRes } = useTemplates();
+  const allTemplates = templatesRes?.data ?? [];
   const offerTemplates = useMemo(
-    () => (templatesRes?.data ?? []).filter((t) => t.type === "offer"),
-    [templatesRes],
+    () => allTemplates.filter((t) => t.type === "offer"),
+    [allTemplates],
+  );
+  const offerWithdrawalTemplates = useMemo(
+    () => allTemplates.filter((t) => t.type === "offer_withdrawal"),
+    [allTemplates],
   );
 
   const updateOfferMutation = useUpdateOffer();
@@ -808,6 +906,7 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
   const [isEditing, setIsEditing] = useState(false);
 
   const [templateId, setTemplateId] = useState("");
+  const [withdrawTemplateId, setWithdrawTemplateId] = useState("");
   const [benefits, setBenefits] = useState("");
   const [salary, setSalary] = useState("");
   const [currency, setCurrency] = useState("USD");
@@ -821,6 +920,13 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
   useEffect(() => {
     if (!offer) return;
     setTemplateId(offer.templateId != null ? String(offer.templateId) : "");
+    const defaultWithdrawTemplateId =
+      offerWithdrawalTemplates.find((t) => t.isDefault)?.id ??
+      offerWithdrawalTemplates[0]?.id ??
+      null;
+    setWithdrawTemplateId(
+      defaultWithdrawTemplateId != null ? String(defaultWithdrawTemplateId) : "",
+    );
     setBenefits(offer.benefits ?? "");
     setSalary(offer.salary ? String(Number(offer.salary)) : "");
     setCurrency(offer.currency ?? "USD");
@@ -836,7 +942,7 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
     setExpiryDate(offer.expiryDate ?? "");
     setStatus(offer.status ?? "draft");
     setIsEditing(false);
-  }, [candidate.id, offer?.id, offer?.updatedAt]);
+  }, [candidate.id, offer?.id, offer?.updatedAt, offerWithdrawalTemplates]);
 
   if (!offer) {
     return (
@@ -862,6 +968,9 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
   const templateDisplayName =
     offerTemplates.find((t) => t.id === offer.templateId)?.name ??
     (offer.templateId ? `Template #${offer.templateId}` : "—");
+  const selectedOfferTemplate = offerTemplates.find(
+    (t) => String(t.id) === templateId,
+  );
 
   const offerResponse = candidate.offerResponse;
   const isAcceptanceWindowOpen =
@@ -953,10 +1062,21 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
   const markManualDecision = (
     decision: "accepted" | "declined" | "withdrawn",
   ) => {
+    const selectedWithdrawTemplateId = withdrawTemplateId
+      ? Number(withdrawTemplateId)
+      : null;
+    const fallbackWithdrawTemplateId =
+      offerWithdrawalTemplates.find((t) => t.isDefault)?.id ??
+      offerWithdrawalTemplates[0]?.id ??
+      null;
     manualOfferResponseMutation.mutate({
       id: offer.id,
       decision,
       responderName: "Recruiter",
+      templateId:
+        decision === "withdrawn"
+          ? selectedWithdrawTemplateId ?? fallbackWithdrawTemplateId
+          : null,
     });
   };
 
@@ -972,7 +1092,9 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
           }}
         >
           <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
-            <SelectValue placeholder="Select template" />
+            <SelectValue placeholder="Select template">
+              {selectedOfferTemplate?.name ?? undefined}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 max-h-56">
             <SelectItem value="__none__" className="text-[13px]">
@@ -1299,6 +1421,40 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
               <div className="divide-y divide-slate-100 dark:divide-neutral-800 rounded-xl border border-slate-200 dark:border-neutral-800 overflow-hidden">
                 <div className="px-4 py-3 space-y-3">
                   <p className={offerLabelClass}>Candidate&apos;s response</p>
+                  {offerWithdrawalTemplates.length > 0 && (
+                    <div className="space-y-1.5">
+                      <Label className={offerLabelClass}>
+                        Withdrawal template
+                      </Label>
+                      <Select
+                        value={withdrawTemplateId || "__none__"}
+                        onValueChange={(v) => {
+                          const next = v ?? "__none__";
+                          setWithdrawTemplateId(
+                            next !== "__none__" ? next : "",
+                          );
+                        }}
+                      >
+                        <SelectTrigger className="h-10 min-h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
+                          <SelectValue placeholder="Default withdrawal template" />
+                        </SelectTrigger>
+                        <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 max-h-56">
+                          <SelectItem value="__none__" className="text-[13px]">
+                            Use default withdrawal template
+                          </SelectItem>
+                          {offerWithdrawalTemplates.map((t) => (
+                            <SelectItem
+                              key={t.id}
+                              value={String(t.id)}
+                              className="text-[13px]"
+                            >
+                              {t.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="flex flex-wrap items-center gap-2">
                     <Button
                       type="button"

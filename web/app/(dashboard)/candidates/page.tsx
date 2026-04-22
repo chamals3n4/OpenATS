@@ -1,8 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useQueryClient } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/auth-action";
-import type { CandidateDetail } from "@/types";
+import { useState, useEffect, useMemo } from "react";
 import {
   Search01Icon,
   CallIcon,
@@ -99,19 +96,6 @@ export default function ManageCandidatesPage() {
   const { data: jobsData } = useJobs();
   const deleteMutation = useDeleteCandidate();
   const updateMutation = useUpdateCandidateBasicDetails();
-  const queryClient = useQueryClient();
-
-  const prefetchCandidate = useCallback(
-    (id: number) => {
-      void queryClient.prefetchQuery({
-        queryKey: ["candidates", id],
-        queryFn: () =>
-          serverFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
-        staleTime: 30_000,
-      });
-    },
-    [queryClient],
-  );
 
   const candidates = candidatesData?.data ?? [];
   const jobs = jobsData?.data ?? [];
@@ -213,7 +197,7 @@ export default function ManageCandidatesPage() {
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-72 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Job Position">
               {selectedJobId
                 ? (jobs.find((j) => j.id === selectedJobId)?.title ?? null)
@@ -291,7 +275,6 @@ export default function ManageCandidatesPage() {
                   <TableRow
                     key={c.id}
                     className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
-                    onMouseEnter={() => prefetchCandidate(c.id)}
                     onClick={() => handleRowClick(c)}
                   >
                     <TableCell className="h-13 px-8 py-0 font-medium text-slate-700 dark:text-neutral-200">

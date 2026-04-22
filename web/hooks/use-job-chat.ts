@@ -9,6 +9,7 @@ const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 export function useJobChat(jobId: number, enabled: boolean) {
   const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([]);
   const socketRef = useRef<Socket | null>(null);
+  const localTempIdRef = useRef(-1);
 
   useEffect(() => {
     if (!enabled || !jobId) return;
@@ -21,7 +22,22 @@ export function useJobChat(jobId: number, enabled: boolean) {
     });
 
     socket.on("new_job_message", (msg: ChatMessage) => {
-      setLiveMessages((prev) => [...prev, msg]);
+      setLiveMessages((prev) => {
+        // Reconcile optimistic local messages for snappy UX.
+        const optimisticIdx = prev.findIndex(
+          (m) =>
+            m.id < 0 &&
+            m.senderId === msg.senderId &&
+            (m.message ?? "") === (msg.message ?? ""),
+        );
+        if (optimisticIdx >= 0) {
+          const next = prev.slice();
+          next[optimisticIdx] = msg;
+          return next;
+        }
+        if (prev.some((m) => m.id === msg.id)) return prev;
+        return [...prev, msg];
+      });
     });
 
     socket.on("job_message_updated", (msg: ChatMessage) => {
@@ -45,9 +61,31 @@ export function useJobChat(jobId: number, enabled: boolean) {
     };
   }, [jobId, enabled]);
 
-  const sendMessage = (senderId: number, message: string) => {
+  const sendMessage = (
+    senderId: number,
+    message: string,
+    sender?: { name?: string; avatarUrl?: string | null },
+  ) => {
     if (!message.trim() || !socketRef.current) return;
-    socketRef.current.emit("send_job_message", { jobId, senderId, message });
+    const trimmed = message.trim();
+    const tempId = localTempIdRef.current--;
+    setLiveMessages((prev) => [
+      ...prev,
+      {
+        id: tempId,
+        message: trimmed,
+        senderId,
+        sentAt: new Date().toISOString(),
+        isSystemMessage: false,
+        senderName: sender?.name ?? null,
+        senderAvatar: sender?.avatarUrl ?? null,
+      },
+    ]);
+    socketRef.current.emit("send_job_message", {
+      jobId,
+      senderId,
+      message: trimmed,
+    });
   };
 
   const editMessage = (senderId: number, messageId: number, message: string) => {

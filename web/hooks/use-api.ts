@@ -65,8 +65,10 @@ export function usePipeline(jobId: number) {
     queryKey: ["jobs", jobId, "pipeline"],
     queryFn: () =>
       serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
-
     enabled: !!jobId,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -296,6 +298,9 @@ export function useChatHistory(jobId: number, enabled: boolean) {
     queryKey: ["chat", "job", jobId],
     queryFn: () => serverFetch<{ data: ChatMessage[] }>(`/chat/job/${jobId}`),
     enabled: enabled && !!jobId,
+    staleTime: 0,
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 }
 
@@ -827,15 +832,17 @@ export function useManualOfferResponse() {
       decision,
       responderName,
       message,
+      templateId,
     }: {
       id: number;
       decision: "accepted" | "declined" | "withdrawn";
       responderName?: string;
       message?: string;
+      templateId?: number | null;
     }) =>
       serverFetch<{ data: Offer }>(`/offers/${id}/manual-response`, {
         method: "PATCH",
-        body: JSON.stringify({ decision, responderName, message }),
+        body: JSON.stringify({ decision, responderName, message, templateId }),
       }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["offers", variables.id] });

@@ -70,6 +70,21 @@ const EMPLOYMENT_LABELS: Record<string, string> = {
 
 const CARD_TYPE = "PIPELINE_CARD";
 
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(value, max));
+}
+
+function groupCandidatesByStage(candidates: Candidate[]) {
+  return candidates.reduce(
+    (acc, candidate) => {
+      const key = candidate.currentStageId ?? -1;
+      acc[key] = [...(acc[key] ?? []), candidate];
+      return acc;
+    },
+    {} as Record<number, Candidate[]>,
+  );
+}
+
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
@@ -81,13 +96,72 @@ function timeAgo(dateStr: string) {
 }
 
 function CustomDragLayer() {
-  const { isDragging, item, currentOffset } = useDragLayer((monitor) => ({
+  const { isDragging, itemType, item, currentOffset } = useDragLayer((monitor) => ({
     isDragging: monitor.isDragging(),
+    itemType: monitor.getItemType(),
     item: monitor.getItem() as { name: string; appliedAt: string } | null,
     currentOffset: monitor.getSourceClientOffset(),
   }));
 
-  if (!isDragging || !currentOffset || !item) return null;
+  const [displayOffset, setDisplayOffset] = useState<{
+    x: number;
+    y: number;
+  } | null>(null);
+  const targetOffsetRef = useRef<{ x: number; y: number } | null>(null);
+  const animatedOffsetRef = useRef<{ x: number; y: number } | null>(null);
+  const frameRef = useRef<number | null>(null);
+
+  useEffect(() => {
+    if (!isDragging || !currentOffset) return;
+    targetOffsetRef.current = { x: currentOffset.x, y: currentOffset.y };
+    if (!animatedOffsetRef.current) {
+      animatedOffsetRef.current = { x: currentOffset.x, y: currentOffset.y };
+      setDisplayOffset({ x: currentOffset.x, y: currentOffset.y });
+    }
+  }, [isDragging, currentOffset]);
+
+  useEffect(() => {
+    if (!isDragging) {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+      targetOffsetRef.current = null;
+      animatedOffsetRef.current = null;
+      setDisplayOffset(null);
+      return;
+    }
+
+    const animate = () => {
+      const target = targetOffsetRef.current;
+      const current = animatedOffsetRef.current;
+      if (target && current) {
+        const smoothing = 0.48;
+        const nextX = current.x + (target.x - current.x) * smoothing;
+        const nextY = current.y + (target.y - current.y) * smoothing;
+        const settled =
+          Math.abs(target.x - nextX) < 0.1 && Math.abs(target.y - nextY) < 0.1;
+        const next = settled ? target : { x: nextX, y: nextY };
+        animatedOffsetRef.current = next;
+        setDisplayOffset(next);
+      }
+      frameRef.current = requestAnimationFrame(animate);
+    };
+
+    frameRef.current = requestAnimationFrame(animate);
+    return () => {
+      if (frameRef.current) cancelAnimationFrame(frameRef.current);
+      frameRef.current = null;
+    };
+  }, [isDragging]);
+
+  if (
+    !isDragging ||
+    itemType !== CARD_TYPE ||
+    !displayOffset ||
+    !item ||
+    !item.name?.trim()
+  ) {
+    return null;
+  }
 
   return (
     <div
@@ -97,12 +171,12 @@ function CustomDragLayer() {
         left: 0,
         top: 0,
         zIndex: 9999,
-        transform: `translate(${currentOffset.x}px, ${currentOffset.y}px)`,
+        transform: `translate3d(${displayOffset.x}px, ${displayOffset.y}px, 0)`,
       }}
     >
       <div
-        style={{ transform: "rotate(3deg)" }}
-        className="bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-800 shadow-xl px-3 py-2.5 rounded-lg flex items-center gap-2 w-65 opacity-95"
+        style={{ transform: "rotate(2deg) scale(0.99)" }}
+        className="bg-white/95 dark:bg-neutral-900/95 border border-slate-300 dark:border-neutral-700 shadow-lg px-3 py-2.5 rounded-lg flex items-center gap-2 w-65 backdrop-blur-[1px] transition-transform duration-75 ease-linear"
       >
         <GripVertical className="size-3.5 text-slate-300 shrink-0" />
         <div className="space-y-0.5 min-w-0">
@@ -117,6 +191,7 @@ function CustomDragLayer() {
     </div>
   );
 }
+
 
 function DraggableCard({
   candidate,
@@ -365,28 +440,45 @@ export default function HiringPipelinePage() {
     toIndex: number,
   ) => {
     setLocalCandidates((prev) => {
-      const fromList = (candidatesByStage[fromStageId] ?? []).slice();
-      const card = fromList[fromIndex];
+      const grouped = groupCandidatesByStage(prev);
+      const fromList = (grouped[fromStageId] ?? []).slice();
+      const safeFromIndex = clamp(fromIndex, 0, Math.max(fromList.length - 1, 0));
+      const card = fromList[safeFromIndex];
       if (!card) return prev;
 
       if (fromStageId === toStageId) {
-        if (fromIndex === toIndex) return prev;
+        const safeToIndex = clamp(toIndex, 0, fromList.length);
+        if (
+          safeFromIndex === safeToIndex ||
+          safeFromIndex + 1 === safeToIndex
+        ) {
+          return prev;
+        }
+
         const newList = [...fromList];
-        newList.splice(fromIndex, 1);
-        newList.splice(toIndex > fromIndex ? toIndex - 1 : toIndex, 0, card);
+        newList.splice(safeFromIndex, 1);
+        newList.splice(
+          safeToIndex > safeFromIndex ? safeToIndex - 1 : safeToIndex,
+          0,
+          card,
+        );
+
         return prev
           .filter((c) => c.currentStageId !== fromStageId)
           .concat(newList);
       }
-      ArrowLeft;
-      const toList = (candidatesByStage[toStageId] ?? []).slice();
-      toList.splice(toIndex, 0, { ...card, currentStageId: toStageId });
+
+      const toList = (grouped[toStageId] ?? []).slice();
+      const safeToIndex = clamp(toIndex, 0, toList.length);
+      const nextFromList = fromList.filter((_, i) => i !== safeFromIndex);
+      toList.splice(safeToIndex, 0, { ...card, currentStageId: toStageId });
+
       return prev
         .filter(
           (c) =>
             c.currentStageId !== fromStageId && c.currentStageId !== toStageId,
         )
-        .concat(fromList.filter((_, i) => i !== fromIndex))
+        .concat(nextFromList)
         .concat(toList);
     });
   };

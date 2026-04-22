@@ -36,6 +36,7 @@ const manualResponseSchema = z.object({
   decision: z.enum(["accepted", "declined", "withdrawn"]),
   responderName: z.string().trim().max(255).optional(),
   message: z.string().trim().max(2000).optional(),
+  templateId: z.number().int().positive().optional().nullable(),
 });
 
 export const getAllOffers = async (req: Request, res: Response) => {

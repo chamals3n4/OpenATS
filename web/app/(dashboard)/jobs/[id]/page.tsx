@@ -240,7 +240,10 @@ export default function JobDetailsPage() {
     });
   const jobCandidateCount = jobCandidatesData?.data?.length ?? 0;
   const { data: meData } = useCurrentUser();
-  const { data: chatHistoryData } = useChatHistory(jobId, isNotesOpen);
+  const { data: chatHistoryData } = useChatHistory(
+    jobId,
+    Number.isFinite(jobId) && jobId > 0,
+  );
   const { liveMessages, sendMessage, editMessage, deleteMessage } = useJobChat(
     jobId,
     isNotesOpen,
@@ -311,7 +314,10 @@ export default function JobDetailsPage() {
 
   const handleSendNote = () => {
     if (!noteText.trim() || !me) return;
-    sendMessage(me.id, noteText.trim());
+    sendMessage(me.id, noteText.trim(), {
+      name: `${me.firstName ?? ""} ${me.lastName ?? ""}`.trim() || me.email,
+      avatarUrl: me.avatarUrl ?? null,
+    });
     setNoteText("");
   };
 
@@ -2214,6 +2220,7 @@ export default function JobDetailsPage() {
                   value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
                   onKeyDown={(e) => {
+                    if (e.nativeEvent.isComposing) return;
                     if (e.key === "Enter" && !e.shiftKey) {
                       e.preventDefault();
                       handleSendNote();

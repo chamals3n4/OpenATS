@@ -1,17 +1,8 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useQueryClient } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/auth-action";
-import type {
-  User,
-  PipelineStage,
-  Candidate,
-  CustomQuestion,
-  Assessment,
-} from "@/types";
 import {
   Search01Icon,
   PlusSignIcon,
@@ -80,43 +71,11 @@ function formatDate(iso: string) {
 export default function ManageJobsPage() {
   const PAGE_SIZE = 8;
   const router = useRouter();
-  const queryClient = useQueryClient();
   const { data, isLoading } = useJobs();
   const { data: meData } = useCurrentUser();
   const me = meData?.data;
   const canCreateJob =
     !!me && (me.role === "super_admin" || me.role === "hiring_manager");
-
-  const prefetchJob = useCallback(
-    (jobId: number) => {
-      void queryClient.prefetchQuery({
-        queryKey: ["jobs", jobId, "pipeline"],
-        queryFn: () =>
-          serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
-      });
-      void queryClient.prefetchQuery({
-        queryKey: ["jobs", jobId, "team"],
-        queryFn: () => serverFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
-      });
-      void queryClient.prefetchQuery({
-        queryKey: ["candidates", jobId, undefined],
-        queryFn: () =>
-          serverFetch<{ data: Candidate[] }>(`/candidates/jobs/${jobId}`),
-        staleTime: 0,
-      });
-      void queryClient.prefetchQuery({
-        queryKey: ["jobs", jobId, "questions"],
-        queryFn: () =>
-          serverFetch<{ data: CustomQuestion[] }>(`/jobs/${jobId}/questions`),
-      });
-      void queryClient.prefetchQuery({
-        queryKey: ["jobs", jobId, "assessments"],
-        queryFn: () =>
-          serverFetch<{ data: Assessment[] }>(`/jobs/${jobId}/assessments`),
-      });
-    },
-    [queryClient],
-  );
   const { data: deptData } = useDepartments();
   const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
   const deleteMutation = useDeleteJob();
@@ -370,8 +329,7 @@ export default function ManageJobsPage() {
                 paginatedJobs.map((job) => (
                   <TableRow
                     key={job.id}
-                    onClick={() => router.push(`jobs/${job.id}`)}
-                    onMouseEnter={() => prefetchJob(job.id)}
+                    onClick={() => router.push(`/jobs/${job.id}`)}
                     className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer"
                   >
                     <TableCell className="h-13 px-8 py-0">

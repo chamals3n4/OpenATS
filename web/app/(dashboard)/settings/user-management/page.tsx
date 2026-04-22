@@ -8,9 +8,10 @@ import {
   PencilEdit01Icon,
   Delete02Icon,
   Add01Icon,
-  Spinner,
+  Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Spinner } from "@/components/ui/spinner";
 
 import type { User as AsgardeoUser } from "@/types";
 import {
@@ -73,7 +74,7 @@ import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import { useCurrentUser } from "@/hooks/use-api";
 
 const inputCls =
-  "h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color,box-shadow] duration-200 ease-in-out focus-visible:ring-1 focus-visible:ring-theme focus-visible:border-theme";
+  "h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color,box-shadow] duration-200 ease-in-out focus-visible:ring-theme focus-visible:border-theme";
 
 const ROLES = [
   { value: "interviewer", label: "Interviewer" },
@@ -319,16 +320,7 @@ export default function UserManagementPage() {
         </h1>
         <div className="flex items-center gap-2">
           <Button
-            variant="outline"
-            className="h-10 px-3 rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 shadow-none"
-            onClick={load}
-            disabled={loading}
-            title="Refresh"
-          >
-            <RefreshCw className="size-4" />
-          </Button>
-          <Button
-            className="h-10 px-4 gap-2 text-sm shadow-none border-none text-white rounded-lg"
+            className="h-10 px-4 gap-2 text-sm shadow-none border-none cursor-pointer text-white rounded-lg"
             style={{ backgroundColor: "var(--theme-color)" }}
             onClick={openCreate}
           >
@@ -344,12 +336,15 @@ export default function UserManagementPage() {
 
       <div className="border-y border-slate-200 dark:border-neutral-800 px-8 py-3.5 flex items-center gap-4">
         <div className="relative w-96">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-300 pointer-events-none" />
+          <HugeiconsIcon
+            icon={Search01Icon}
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
+          />{" "}
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search"
-            className={"pl-11 h-10! " + inputCls}
+            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600"
           />
         </div>
         <Button
@@ -363,7 +358,7 @@ export default function UserManagementPage() {
       </div>
 
       <div className="px-8 py-6">
-        <div className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
+        <div className="border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-transparent">

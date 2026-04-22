@@ -260,7 +260,7 @@ export const candidateService = {
     const candidateData = { ...rest, email: normalizedEmail };
 
     try {
-      return await db.transaction(async (tx) => {
+      const candidate = await db.transaction(async (tx) => {
         const [firstStage] = await tx
           .select()
           .from(jobPipelineStages)
@@ -328,6 +328,36 @@ export const candidateService = {
 
         return candidate;
       });
+
+      // Send candidate acknowledgement email from the default
+      // "application_received" template, if configured.
+      try {
+        const defaultTemplate =
+          await templateService.getDefaultByType("application_received");
+        if (defaultTemplate) {
+          const context = await variableService.getContextForCandidate(
+            candidate.id,
+          );
+          const to = String(context.email ?? "").trim();
+          if (to) {
+            const { subject, html } = templateEngineService.compileTemplate(
+              defaultTemplate.subject,
+              defaultTemplate.bodyJson,
+              context,
+            );
+            if (subject.trim() && html.trim()) {
+              await mailService.sendEmail({ to, subject, html });
+            }
+          }
+        }
+      } catch (emailError) {
+        // Application should never fail because of email delivery issues.
+        logger.error(
+          `Failed to send application received email for candidateId=${candidate.id}: ${(emailError as Error)?.message}`,
+        );
+      }
+
+      return candidate;
     } catch (err) {
       if (isPgUniqueViolation(err)) {
         throw new DuplicateApplicationError();

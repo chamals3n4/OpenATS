@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
 import type { CandidateDetail } from "@/types";
@@ -73,6 +73,7 @@ function timeAgo(dateStr: string) {
 }
 
 export default function ManageCandidatesPage() {
+  const PAGE_SIZE = 8;
   const [selectedJobId, setSelectedJobId] = useState<number | undefined>();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -85,6 +86,7 @@ export default function ManageCandidatesPage() {
   const [editEmail, setEditEmail] = useState("");
   const [editPhone, setEditPhone] = useState("");
   const [editResumeFile, setEditResumeFile] = useState<File | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search), 300);
@@ -113,6 +115,16 @@ export default function ManageCandidatesPage() {
 
   const candidates = candidatesData?.data ?? [];
   const jobs = jobsData?.data ?? [];
+  const totalPages = Math.max(1, Math.ceil(candidates.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedCandidates = useMemo(() => {
+    const pageStart = (safeCurrentPage - 1) * PAGE_SIZE;
+    return candidates.slice(pageStart, pageStart + PAGE_SIZE);
+  }, [candidates, safeCurrentPage]);
+  const showingFrom =
+    candidates.length === 0 ? 0 : (safeCurrentPage - 1) * PAGE_SIZE + 1;
+  const showingTo =
+    showingFrom === 0 ? 0 : showingFrom + paginatedCandidates.length - 1;
 
   const selectedCandidate = candidates.find((c) => c.id === selectedId) ?? null;
 
@@ -186,16 +198,20 @@ export default function ManageCandidatesPage() {
           <Input
             placeholder="Search Candidate"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
             className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
 
         <Select
           value={selectedJobId ? String(selectedJobId) : "all"}
-          onValueChange={(v) =>
-            setSelectedJobId(v === "all" ? undefined : Number(v))
-          }
+          onValueChange={(v) => {
+            setSelectedJobId(v === "all" ? undefined : Number(v));
+            setCurrentPage(1);
+          }}
         >
           <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Job Position">
@@ -223,6 +239,7 @@ export default function ManageCandidatesPage() {
           onClick={() => {
             setSearch("");
             setSelectedJobId(undefined);
+            setCurrentPage(1);
           }}
           className="text-slate-600 cursor-pointer dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-2"
         >
@@ -270,7 +287,7 @@ export default function ManageCandidatesPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                candidates.map((c) => (
+                paginatedCandidates.map((c) => (
                   <TableRow
                     key={c.id}
                     className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
@@ -336,8 +353,28 @@ export default function ManageCandidatesPage() {
             <span className="text-sm font-medium text-slate-400 dark:text-neutral-500">
               {isLoading
                 ? "Loading..."
-                : `${candidates.length} result${candidates.length !== 1 ? "s" : ""}`}
+                : `Showing ${showingFrom}-${showingTo} of ${candidates.length} results`}
             </span>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+                disabled={safeCurrentPage <= 1 || isLoading}
+                className="h-10 px-6 cursor-pointer rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-neutral-100 shadow-none gap-2"
+              >
+                Previous
+              </Button>
+              <Button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))
+                }
+                disabled={safeCurrentPage >= totalPages || isLoading}
+                className="h-10 px-8 cursor-pointer rounded-lg text-white font-semibold text-sm shadow-none transition-all active:scale-[0.98] border-none"
+                style={{ backgroundColor: "var(--theme-color)" }}
+              >
+                Next
+              </Button>
+            </div>
           </div>
         </div>
       </div>

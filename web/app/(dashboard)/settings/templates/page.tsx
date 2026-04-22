@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -14,7 +14,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import { Button } from "@/components/ui/button";
-  PencilEdit01Icon
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -65,6 +64,7 @@ import {
 } from "@/lib/email-template-types";
 
 export default function TemplatesPage() {
+  const PAGE_SIZE = 8;
   const router = useRouter();
   const { data: meData, isLoading: meLoading } = useCurrentUser();
   const { data: templatesRes, isLoading } = useTemplates();
@@ -76,6 +76,7 @@ export default function TemplatesPage() {
 
   const [search, setSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [typePickerOpen, setTypePickerOpen] = useState(false);
   const [pickedType, setPickedType] = useState<EmailTemplateType | null>(null);
@@ -106,13 +107,22 @@ export default function TemplatesPage() {
     });
   };
 
-  const filtered = templates.filter((t) => {
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return (
-      t.name.toLowerCase().includes(q) &&
-      (filterType === "all" || t.type === filterType)
+    return templates.filter(
+      (t) =>
+        t.name.toLowerCase().includes(q) &&
+        (filterType === "all" || t.type === filterType),
     );
-  });
+  }, [templates, search, filterType]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStart = (safeCurrentPage - 1) * PAGE_SIZE;
+  const paginatedTemplates = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const showingFrom = filtered.length === 0 ? 0 : pageStart + 1;
+  const showingTo =
+    filtered.length === 0 ? 0 : pageStart + paginatedTemplates.length;
 
   useEffect(() => {
     if (meData?.data.role === "interviewer") {
@@ -135,7 +145,7 @@ export default function TemplatesPage() {
             setPickedType(null);
             setTypePickerOpen(true);
           }}
-          className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
+          className="bg-theme cursor-pointer hover:bg-theme-hover text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
         >
           <HugeiconsIcon
             icon={PlusSignIcon}
@@ -155,14 +165,20 @@ export default function TemplatesPage() {
           <Input
             placeholder="Search templates..."
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
             className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 focus-visible:border-slate-300 dark:focus-visible:border-neutral-700 focus-visible:ring-0"
           />
         </div>
 
         <Select
           value={filterType}
-          onValueChange={(val) => setFilterType(val || "")}
+          onValueChange={(val) => {
+            setFilterType(val || "all");
+            setCurrentPage(1);
+          }}
         >
           <SelectTrigger className="w-48 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="All Types" />
@@ -183,6 +199,7 @@ export default function TemplatesPage() {
             onClick={() => {
               setSearch("");
               setFilterType("all");
+              setCurrentPage(1);
             }}
             className="text-slate-600 dark:text-neutral-400 text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none"
           >
@@ -228,7 +245,7 @@ export default function TemplatesPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((t) => (
+                paginatedTemplates.map((t) => (
                   <TableRow
                     key={t.id}
                     className="border-b border-slate-200 dark:border-neutral-800 last:border-0 font-medium hover:bg-slate-50/50 dark:hover:bg-neutral-900/50"
@@ -315,16 +332,26 @@ export default function TemplatesPage() {
 
           <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
             <span className="text-sm font-medium text-slate-400 dark:text-neutral-500">
-              Showing 1–{filtered.length} of {filtered.length} results
+              {isLoading
+                ? "Loading..."
+                : `Showing ${showingFrom}-${showingTo} of ${filtered.length} results`}
             </span>
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                className="h-10 px-6 rounded-lg cursor-pointer  bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-[var(--theme-color)] font-semibold text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 shadow-none gap-2"
+                onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+                disabled={safeCurrentPage <= 1 || isLoading}
+                className="h-10 px-6 rounded-lg cursor-pointer  bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-theme font-semibold text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 shadow-none gap-2"
               >
                 Previous
               </Button>
-              <Button className="h-10 px-8 rounded-lg cursor-pointer bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-semibold text-sm shadow-none border-none gap-2">
+              <Button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))
+                }
+                disabled={safeCurrentPage >= totalPages || isLoading}
+                className="h-10 px-8 rounded-lg cursor-pointer bg-theme hover:bg-theme-hover text-white font-semibold text-sm shadow-none border-none gap-2"
+              >
                 Next
               </Button>
             </div>
@@ -350,7 +377,7 @@ export default function TemplatesPage() {
                 onClick={() => setPickedType(t)}
                 className={`cursor-pointer flex flex-col items-start gap-2.5 p-4 rounded-xl border text-left transition-all ${
                   pickedType === t
-                    ? "border-[var(--theme-color)] bg-white dark:bg-neutral-900"
+                    ? "border-theme bg-white dark:bg-neutral-900"
                     : "border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900"
                 }`}
               >

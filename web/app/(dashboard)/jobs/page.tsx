@@ -5,7 +5,13 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
-import type { User, PipelineStage, Candidate, CustomQuestion } from "@/types";
+import type {
+  User,
+  PipelineStage,
+  Candidate,
+  CustomQuestion,
+  Assessment,
+} from "@/types";
 import {
   Search01Icon,
   PlusSignIcon,
@@ -16,7 +22,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { ThemeButton } from "@/components/theme-button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -73,6 +78,7 @@ function formatDate(iso: string) {
 }
 
 export default function ManageJobsPage() {
+  const PAGE_SIZE = 8;
   const router = useRouter();
   const queryClient = useQueryClient();
   const { data, isLoading } = useJobs();
@@ -81,8 +87,6 @@ export default function ManageJobsPage() {
   const canCreateJob =
     !!me && (me.role === "super_admin" || me.role === "hiring_manager");
 
-  // Prefetch all per-job data when hovering a row so every tab on the
-  // job detail page renders instantly by the time the user clicks.
   const prefetchJob = useCallback(
     (jobId: number) => {
       void queryClient.prefetchQuery({
@@ -108,7 +112,7 @@ export default function ManageJobsPage() {
       void queryClient.prefetchQuery({
         queryKey: ["jobs", jobId, "assessments"],
         queryFn: () =>
-          serverFetch<{ data: any[] }>(`/jobs/${jobId}/assessments`),
+          serverFetch<{ data: Assessment[] }>(`/jobs/${jobId}/assessments`),
       });
     },
     [queryClient],
@@ -123,6 +127,7 @@ export default function ManageJobsPage() {
   const [filterDept, setFilterDept] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const departmentNameById = useMemo(() => {
     const map = new Map<number, string>();
@@ -164,6 +169,14 @@ export default function ManageJobsPage() {
     departmentNameById,
   ]);
 
+  const totalPages = Math.max(1, Math.ceil(filteredJobs.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStart = (safeCurrentPage - 1) * PAGE_SIZE;
+  const paginatedJobs = filteredJobs.slice(pageStart, pageStart + PAGE_SIZE);
+  const showingFrom = filteredJobs.length === 0 ? 0 : pageStart + 1;
+  const showingTo =
+    filteredJobs.length === 0 ? 0 : pageStart + paginatedJobs.length;
+
   const confirmDelete = () => {
     if (!deleteTarget) return;
 
@@ -204,13 +217,19 @@ export default function ManageJobsPage() {
           <Input
             placeholder="Search"
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => {
+              setSearchTerm(e.target.value);
+              setCurrentPage(1);
+            }}
             className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600"
           />
         </div>
         <Select
           value={filterDept}
-          onValueChange={(v) => setFilterDept(v ?? "all")}
+          onValueChange={(v) => {
+            setFilterDept(v ?? "all");
+            setCurrentPage(1);
+          }}
         >
           <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Departments">
@@ -234,7 +253,10 @@ export default function ManageJobsPage() {
         </Select>
         <Select
           value={filterType}
-          onValueChange={(v) => setFilterType(v ?? "all")}
+          onValueChange={(v) => {
+            setFilterType(v ?? "all");
+            setCurrentPage(1);
+          }}
         >
           <SelectTrigger className="w-44 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Job Types">
@@ -262,7 +284,10 @@ export default function ManageJobsPage() {
         </Select>
         <Select
           value={filterStatus}
-          onValueChange={(v) => setFilterStatus(v ?? "all")}
+          onValueChange={(v) => {
+            setFilterStatus(v ?? "all");
+            setCurrentPage(1);
+          }}
         >
           <SelectTrigger className="w-44 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Status">
@@ -292,6 +317,7 @@ export default function ManageJobsPage() {
             setFilterDept("all");
             setFilterType("all");
             setFilterStatus("all");
+            setCurrentPage(1);
           }}
           className="text-slate-600 cursor-pointer dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-4"
         >
@@ -341,7 +367,7 @@ export default function ManageJobsPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredJobs.map((job) => (
+                paginatedJobs.map((job) => (
                   <TableRow
                     key={job.id}
                     onClick={() => router.push(`jobs/${job.id}`)}
@@ -417,17 +443,23 @@ export default function ManageJobsPage() {
                 ? "Loading..."
                 : filteredJobs.length === 0
                   ? "Showing 0 of 0 results"
-                  : `Showing 1-${filteredJobs.length} of ${filteredJobs.length} results`}
+                  : `Showing ${showingFrom}-${showingTo} of ${filteredJobs.length} results`}
             </span>
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                className="h-10 px-6 rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-neutral-100 shadow-none gap-2"
+                onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+                disabled={safeCurrentPage <= 1 || isLoading}
+                className="h-10 px-6 cursor-pointer rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-neutral-100 shadow-none gap-2"
               >
                 Previous
               </Button>
               <Button
-                className="h-10 px-8 rounded-lg text-white font-semibold text-sm shadow-none transition-all active:scale-[0.98] border-none"
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))
+                }
+                disabled={safeCurrentPage >= totalPages || isLoading}
+                className="h-10 px-8 cursor-pointer rounded-lg text-white font-semibold text-sm shadow-none transition-all active:scale-[0.98] border-none"
                 style={{ backgroundColor: "var(--theme-color)" }}
                 onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
                 onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}

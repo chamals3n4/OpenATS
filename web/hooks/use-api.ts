@@ -407,7 +407,54 @@ export function useCreateJob() {
         method: "POST",
         body: JSON.stringify(data),
       }),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      const createdJob = res.data;
+      const jobId = createdJob.id;
+
+      queryClient.setQueryData<{ data: JobDetail }>(["jobs", jobId], {
+        data: { ...createdJob, pipelineStages: [], hiringTeam: [] },
+      });
+
+      queryClient.setQueryData<{ data: PipelineStage[] }>(
+        ["jobs", jobId, "pipeline"],
+        {
+          data: [],
+        },
+      );
+      queryClient.setQueryData<{ data: User[] }>(["jobs", jobId, "team"], {
+        data: [],
+      });
+      queryClient.setQueryData<{ data: CustomQuestion[] }>(
+        ["jobs", jobId, "questions"],
+        {
+          data: [],
+        },
+      );
+      queryClient.setQueryData<{ data: Assessment[] }>(
+        ["jobs", jobId, "assessments"],
+        {
+          data: [],
+        },
+      );
+      queryClient.setQueryData<{ data: ChatMessage[] }>(
+        ["chat", "job", jobId],
+        {
+          data: [],
+        },
+      );
+      queryClient.setQueryData<{ data: Candidate[] }>(
+        ["candidates", jobId, undefined],
+        {
+          data: [],
+        },
+      );
+
+      queryClient.setQueryData<{ data: Job[] }>(["jobs"], (previous) => {
+        const existing = previous?.data ?? [];
+        const withoutDuplicate = existing.filter((job) => job.id !== jobId);
+        return { data: [createdJob, ...withoutDuplicate] };
+      });
+
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
     },
   });
@@ -654,11 +701,30 @@ export function useDeleteAssessmentQuestion(assessmentId: number) {
 }
 
 export function useOffers(jobId?: number) {
+  const queryClient = useQueryClient();
   return useQuery({
     queryKey: jobId ? ["offers", "job", jobId] : ["offers", "all"],
     queryFn: () =>
-      serverFetch<{ data: any[] }>(jobId ? `/offers/job/${jobId}` : `/offers`),
+      serverFetch<{ data: Offer[] }>(jobId ? `/offers/job/${jobId}` : `/offers`),
     enabled: jobId === undefined || !!jobId,
+    staleTime: 30_000,
+    initialData:
+      jobId !== undefined
+        ? () => {
+            const all = queryClient.getQueryData<{ data: Offer[] }>([
+              "offers",
+              "all",
+            ]);
+            if (!all?.data) return undefined;
+            return {
+              data: all.data.filter((offer) => offer.jobId === jobId),
+            };
+          }
+        : undefined,
+    initialDataUpdatedAt:
+      jobId !== undefined
+        ? () => queryClient.getQueryState(["offers", "all"])?.dataUpdatedAt
+        : undefined,
     // Offer status can change from the public review page (outside dashboard),
     // so poll lightly to keep "Manage Offers" current without manual reload.
     refetchInterval: 15000,
@@ -1073,7 +1139,12 @@ export function useUpdateCandidateBasicDetails() {
 export function useTemplates() {
   return useQuery({
     queryKey: ["templates"],
-    queryFn: () => serverFetch<{ data: Template[] }>("/templates"),
+    queryFn: async () => {
+      const res = await serverFetch<{ data: Template[] | null }>("/templates");
+      return { data: Array.isArray(res?.data) ? res.data : [] };
+    },
+    staleTime: 1000 * 60 * 5,
+    placeholderData: keepPreviousData,
   });
 }
 

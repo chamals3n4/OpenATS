@@ -1,10 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Search01Icon,
-  ArrowLeft01Icon,
-  ArrowRight01Icon,
   Delete02Icon,
   CallIcon,
   Mail01Icon,
@@ -86,6 +84,7 @@ const OFFER_STATUS_STYLES: Record<OfferStatus, string> = {
 };
 
 export default function ManageOffersPage() {
+  const PAGE_SIZE = 8;
   const { data: offersRes, isLoading: offersLoading } = useOffers();
   const deleteOfferMutation = useDeleteOffer();
 
@@ -127,6 +126,7 @@ export default function ManageOffersPage() {
   const [search, setSearch] = useState("");
   const [filterDept, setFilterDept] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   const [deleteTarget, setDeleteTarget] = useState<Offer | null>(null);
 
@@ -145,15 +145,23 @@ export default function ManageOffersPage() {
     });
   };
 
-  const filtered = offers.filter((o) => {
+  const filtered = useMemo(() => {
     const q = search.toLowerCase();
-    return (
-      (o.candidateName.toLowerCase().includes(q) ||
-        o.jobTitle.toLowerCase().includes(q)) &&
-      (filterDept === "all" || o.department === filterDept) &&
-      (filterStatus === "all" || o.status.toLowerCase() === filterStatus)
+    return offers.filter(
+      (o) =>
+        (o.candidateName.toLowerCase().includes(q) ||
+          o.jobTitle.toLowerCase().includes(q)) &&
+        (filterDept === "all" || o.department === filterDept) &&
+        (filterStatus === "all" || o.status.toLowerCase() === filterStatus),
     );
-  });
+  }, [offers, search, filterDept, filterStatus]);
+
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const pageStart = (safeCurrentPage - 1) * PAGE_SIZE;
+  const paginatedOffers = filtered.slice(pageStart, pageStart + PAGE_SIZE);
+  const showingFrom = filtered.length === 0 ? 0 : pageStart + 1;
+  const showingTo = filtered.length === 0 ? 0 : pageStart + paginatedOffers.length;
 
   const hasFilters = search || filterDept !== "all" || filterStatus !== "all";
 
@@ -174,13 +182,19 @@ export default function ManageOffersPage() {
           <Input
             placeholder="Search"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setCurrentPage(1);
+            }}
             className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
         <Select
           value={filterDept}
-          onValueChange={(v) => setFilterDept(v ?? "all")}
+          onValueChange={(v) => {
+            setFilterDept(v ?? "all");
+            setCurrentPage(1);
+          }}
         >
           <SelectTrigger className="w-48 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Departments">
@@ -203,7 +217,10 @@ export default function ManageOffersPage() {
         </Select>
         <Select
           value={filterStatus}
-          onValueChange={(v) => setFilterStatus(v ?? "all")}
+          onValueChange={(v) => {
+            setFilterStatus(v ?? "all");
+            setCurrentPage(1);
+          }}
         >
           <SelectTrigger className="w-40 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Status">
@@ -237,6 +254,7 @@ export default function ManageOffersPage() {
               setSearch("");
               setFilterDept("all");
               setFilterStatus("all");
+              setCurrentPage(1);
             }}
             className="text-slate-600 dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none"
           >
@@ -274,7 +292,13 @@ export default function ManageOffersPage() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {filtered.length === 0 ? (
+              {offersLoading ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="p-0">
+                    <ListSectionSpinner />
+                  </TableCell>
+                </TableRow>
+              ) : filtered.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={7}
@@ -284,7 +308,7 @@ export default function ManageOffersPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filtered.map((o) => (
+                paginatedOffers.map((o) => (
                   <TableRow
                     key={o.id}
                     className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium hover:bg-slate-50/50 dark:hover:bg-neutral-800/50 cursor-pointer"
@@ -341,22 +365,26 @@ export default function ManageOffersPage() {
             <span className="text-sm font-medium text-slate-400">
               {offersLoading
                 ? "Loading..."
-                : `Showing 1–${filtered.length} of ${filtered.length} results`}
+                : `Showing ${showingFrom}-${showingTo} of ${filtered.length} results`}
             </span>
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
+                onClick={() => setCurrentPage(Math.max(1, safeCurrentPage - 1))}
+                disabled={safeCurrentPage <= 1 || offersLoading}
                 className="h-10 px-6 rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-neutral-100 shadow-none gap-2"
               >
-                <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" />{" "}
                 Previous
               </Button>
               <Button
+                onClick={() =>
+                  setCurrentPage(Math.min(totalPages, safeCurrentPage + 1))
+                }
+                disabled={safeCurrentPage >= totalPages || offersLoading}
                 className="h-10 px-8 rounded-lg text-white font-semibold text-sm shadow-none border-none gap-2"
                 style={{ backgroundColor: "var(--theme-color)" }}
               >
-                Next{" "}
-                <HugeiconsIcon icon={ArrowRight01Icon} className="size-4" />
+                Next
               </Button>
             </div>
           </div>
@@ -387,22 +415,20 @@ export default function ManageOffersPage() {
                     {selected.jobTitle}
                   </p>
                   <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1.5">
-                    {[
-                      [CallIcon, selected.phone],
-                      [Mail01Icon, selected.email],
-                    ].map(([icon, value], i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap"
-                      >
-                        {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
-                        <HugeiconsIcon
-                          icon={icon as any}
-                          className="size-3.5 text-slate-400"
-                        />
-                        <span>{value as string}</span>
-                      </div>
-                    ))}
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap">
+                      <HugeiconsIcon
+                        icon={CallIcon}
+                        className="size-3.5 text-slate-400"
+                      />
+                      <span>{selected.phone}</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap">
+                      <HugeiconsIcon
+                        icon={Mail01Icon}
+                        className="size-3.5 text-slate-400"
+                      />
+                      <span>{selected.email}</span>
+                    </div>
                   </div>
                 </div>
 
@@ -475,7 +501,6 @@ export default function ManageOffersPage() {
               ) : (
                 "Delete"
               )}
-              Delete
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

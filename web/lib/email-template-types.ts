@@ -21,7 +21,7 @@ export const EMAIL_TEMPLATE_TYPE_CONFIG: Record<
   application_received: {
     label: "Application received",
     badge:
-      "bg-violet-600 text-white border border-violet-600 shadow-none dark:bg-violet-600 dark:text-white dark:border-violet-500",
+      "bg-violet-50 text-violet-700 border border-violet-200 dark:bg-violet-950/40 dark:text-violet-300 dark:border-violet-800",
     description: "Confirmation when someone applies to a job",
   },
   assessment_invite: {
@@ -51,7 +51,7 @@ export const EMAIL_TEMPLATE_TYPE_CONFIG: Record<
   assessment_completion: {
     label: "Assessment completion",
     badge:
-      "bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-950/40 dark:text-teal-300 dark:border-teal-800",
+      "bg-cyan-50 text-cyan-700 border border-cyan-200 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-800",
     description: "After a candidate submits an assessment",
   },
   interview_invite: {
@@ -63,7 +63,7 @@ export const EMAIL_TEMPLATE_TYPE_CONFIG: Record<
   general: {
     label: "General",
     badge:
-      "bg-slate-100 text-slate-600 border border-slate-200 dark:bg-neutral-800 dark:text-neutral-300 dark:border-neutral-700",
+      "bg-slate-50 text-slate-700 border border-slate-200 dark:bg-slate-950/40 dark:text-slate-300 dark:border-slate-700",
     description: "Any other candidate communication",
   },
 };

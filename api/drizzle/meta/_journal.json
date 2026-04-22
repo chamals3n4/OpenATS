@@ -36,6 +36,13 @@
       "when": 1776680140247,
       "tag": "0004_bouncy_spirit",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1776862774571,
+      "tag": "0005_lyrical_pixie",
+      "breakpoints": true
     }
   ]
 }

@@ -330,25 +330,53 @@ export const candidateService = {
       });
 
       // Send candidate acknowledgement email from the default
-      // "application_received" template, if configured.
+      // "application_received" template. If none is marked default,
+      // fall back to the most recently created template of this type.
       try {
-        const defaultTemplate =
+        let selectedTemplate =
           await templateService.getDefaultByType("application_received");
-        if (defaultTemplate) {
+        if (!selectedTemplate) {
+          const appReceivedTemplates =
+            await templateService.getByType("application_received");
+          selectedTemplate =
+            appReceivedTemplates[appReceivedTemplates.length - 1] ?? null;
+          if (selectedTemplate) {
+            logger.warn(
+              `No default application_received template set; falling back to templateId=${selectedTemplate.id}`,
+            );
+          }
+        }
+
+        if (selectedTemplate) {
           const context = await variableService.getContextForCandidate(
             candidate.id,
           );
           const to = String(context.email ?? "").trim();
-          if (to) {
+          if (!to) {
+            logger.warn(
+              `Skipping application received email for candidateId=${candidate.id}: candidate email missing in context`,
+            );
+          } else {
             const { subject, html } = templateEngineService.compileTemplate(
-              defaultTemplate.subject,
-              defaultTemplate.bodyJson,
+              selectedTemplate.subject,
+              selectedTemplate.bodyJson,
               context,
             );
-            if (subject.trim() && html.trim()) {
+            if (!subject.trim() || !html.trim()) {
+              logger.warn(
+                `Skipping application received email for candidateId=${candidate.id}: templateId=${selectedTemplate.id} compiled subject/html is empty`,
+              );
+            } else {
               await mailService.sendEmail({ to, subject, html });
+              logger.info(
+                `Application received email sent for candidateId=${candidate.id} using templateId=${selectedTemplate.id}`,
+              );
             }
           }
+        } else {
+          logger.warn(
+            `Skipping application received email for candidateId=${candidate.id}: no application_received template found`,
+          );
         }
       } catch (emailError) {
         // Application should never fail because of email delivery issues.

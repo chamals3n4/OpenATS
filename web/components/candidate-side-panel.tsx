@@ -346,6 +346,26 @@ function SidePanelEmailTab({
     setGenBody(templateBlocksToEditableText(selectedGeneralTemplate.bodyJson));
   };
 
+  const applyInterviewTemplate = (nextTemplateId: string) => {
+    const normalizedTemplateId =
+      nextTemplateId && nextTemplateId !== "__none__" ? nextTemplateId : "";
+    setIntTemplateId(normalizedTemplateId);
+    setIntPlainText(false);
+
+    if (!normalizedTemplateId) {
+      setIntSubject(`Interview — ${candidate.jobTitle ?? "Position"}`);
+      return;
+    }
+
+    const template = interviewTemplates.find(
+      (t) => String(t.id) === normalizedTemplateId,
+    );
+    if (!template) return;
+
+    setIntSubject(template.subject ?? "");
+    setIntBody(templateBlocksToEditableText(template.bodyJson));
+  };
+
   const sendInterviewEmail = () => {
     setSendError(null);
     setSendSuccess(null);
@@ -618,11 +638,7 @@ function SidePanelEmailTab({
                 <Label className={labelClass}>Template</Label>
                 <Select
                   value={intTemplateId || "__none__"}
-                  onValueChange={(v) => {
-                    const next = v ?? "";
-                    setIntTemplateId(next && next !== "__none__" ? next : "");
-                    setIntPlainText(false);
-                  }}
+                  onValueChange={(v) => applyInterviewTemplate(v ?? "__none__")}
                 >
                   <SelectTrigger className="h-10 min-h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
                     <SelectValue placeholder="Choose a template">
@@ -829,7 +845,16 @@ function SidePanelEmailTab({
                       <button
                         type="button"
                         className="text-[var(--theme-color)] font-medium hover:underline"
-                        onClick={() => setIntPlainText(true)}
+                        onClick={() => {
+                          if (!intBody.trim() && selectedTemplate) {
+                            setIntBody(
+                              templateBlocksToEditableText(
+                                selectedTemplate.bodyJson,
+                              ),
+                            );
+                          }
+                          setIntPlainText(true);
+                        }}
                       >
                         Switch to plain text.
                       </button>

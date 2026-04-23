@@ -35,7 +35,7 @@ export const candidates = pgTable("candidates", {
 
   jobId: integer("job_id")
     .notNull()
-    .references(() => jobs.id, { onDelete: "restrict" }),
+    .references(() => jobs.id, { onDelete: "cascade" }),
 
   currentStageId: integer("current_stage_id").references(
     () => jobPipelineStages.id,

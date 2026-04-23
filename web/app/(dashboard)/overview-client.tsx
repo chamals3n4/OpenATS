@@ -300,7 +300,7 @@ export function OverviewClient({
           {STATS.map((s) => (
             <div
               key={s.label}
-              className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 p-6 flex flex-col gap-3 min-h-27.5"
+              className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-slate-50/60 dark:bg-neutral-900 p-6 flex flex-col gap-3 min-h-27.5"
             >
               <p className="text-sm text-slate-500 dark:text-neutral-400 font-medium">
                 {s.label}

@@ -43,6 +43,13 @@
       "when": 1776862774571,
       "tag": "0005_lyrical_pixie",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1776914123143,
+      "tag": "0006_icy_saracen",
+      "breakpoints": true
     }
   ]
 }

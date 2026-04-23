@@ -336,11 +336,13 @@ export const candidateService = {
         logger.info(
           `Application received email flow started: candidateId=${candidate.id}, email="${candidate.email}"`,
         );
-        let selectedTemplate =
-          await templateService.getDefaultByType("application_received");
+        let selectedTemplate = await templateService.getDefaultByType(
+          "application_received",
+        );
         if (!selectedTemplate) {
-          const appReceivedTemplates =
-            await templateService.getByType("application_received");
+          const appReceivedTemplates = await templateService.getByType(
+            "application_received",
+          );
           logger.info(
             `Application received templates found: count=${appReceivedTemplates.length}, candidateId=${candidate.id}`,
           );
@@ -512,15 +514,21 @@ export const candidateService = {
     const attemptsPromise =
       assessmentExecutionService.getAttemptsByCandidate(id);
 
-    const [answers, selections, history, offerRows, cvRows, assessmentAttempts] =
-      await Promise.all([
-        answersPromise,
-        selectionsPromise,
-        historyPromise,
-        offerPromise,
-        cvPromise,
-        attemptsPromise,
-      ]);
+    const [
+      answers,
+      selections,
+      history,
+      offerRows,
+      cvRows,
+      assessmentAttempts,
+    ] = await Promise.all([
+      answersPromise,
+      selectionsPromise,
+      historyPromise,
+      offerPromise,
+      cvPromise,
+      attemptsPromise,
+    ]);
 
     const offer = offerRows[0];
     const [cvRow] = cvRows;
@@ -569,9 +577,7 @@ export const candidateService = {
         })
         .from(jobPipelineStages)
         .where(inArray(jobPipelineStages.id, stageIds));
-      const nameById = Object.fromEntries(
-        stageRows.map((r) => [r.id, r.name]),
-      );
+      const nameById = Object.fromEntries(stageRows.map((r) => [r.id, r.name]));
       historyOut = historyFixed.map((h) => ({
         ...h,
         stageName: nameById[h.stageId] ?? null,
@@ -746,7 +752,11 @@ export const candidateService = {
               context,
             );
 
-            await mailService.sendRejectionEmail(candidate.email, subject, html);
+            await mailService.sendRejectionEmail(
+              candidate.email,
+              subject,
+              html,
+            );
 
             await tx
               .update(candidates)

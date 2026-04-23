@@ -186,7 +186,7 @@ export default function ManageCandidatesPage() {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
+            className="pl-11 h-10! bg-slate-50 dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
 
@@ -197,7 +197,7 @@ export default function ManageCandidatesPage() {
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-72 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-72 h-10! bg-slate-50 cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Job Position">
               {selectedJobId
                 ? (jobs.find((j) => j.id === selectedJobId)?.title ?? null)
@@ -207,7 +207,7 @@ export default function ManageCandidatesPage() {
           <SelectContent
             align="start"
             alignOffset={0}
-            className="-ml-1 w-53 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+            className="-ml-1 w-53 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900"
           >
             <SelectItem value="all">All Positions</SelectItem>
             {jobs.map((j) => (
@@ -236,7 +236,7 @@ export default function ManageCandidatesPage() {
         <div className="border border-slate-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
+              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-900 hover:bg-transparent">
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Candidate Name
                 </TableHead>

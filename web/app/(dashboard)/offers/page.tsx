@@ -186,7 +186,7 @@ export default function ManageOffersPage() {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
+            className="pl-11 h-10! bg-slate-50 dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
           />
         </div>
         <Select
@@ -196,7 +196,7 @@ export default function ManageOffersPage() {
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-48 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-48 h-10! cursor-pointer bg-slate-50 dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Departments">
               {(
                 {
@@ -208,7 +208,7 @@ export default function ManageOffersPage() {
               )[filterDept] ?? filterDept}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg w-49 shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg w-49 shadow-lg border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900">
             <SelectItem value="all">All Departments</SelectItem>
             <SelectItem value="Engineering">Engineering</SelectItem>
             <SelectItem value="Design">Design</SelectItem>
@@ -222,7 +222,7 @@ export default function ManageOffersPage() {
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-40 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-40 h-10! cursor-pointer bg-slate-50 dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Status">
               {(
                 {
@@ -237,7 +237,7 @@ export default function ManageOffersPage() {
               )[filterStatus] ?? filterStatus}
             </SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg w-41 shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg w-41 shadow-lg border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900">
             <SelectItem value="all">All Statuses</SelectItem>
             <SelectItem value="draft">Draft</SelectItem>
             <SelectItem value="sent">Sent</SelectItem>
@@ -267,7 +267,7 @@ export default function ManageOffersPage() {
         <div className="border border-slate-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
+              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-900 hover:bg-transparent">
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Candidate Name
                 </TableHead>

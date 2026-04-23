@@ -180,7 +180,7 @@ export default function ManageJobsPage() {
               setSearchTerm(e.target.value);
               setCurrentPage(1);
             }}
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+            className="pl-11 h-10! bg-slate-50 dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600"
           />
         </div>
         <Select
@@ -190,7 +190,7 @@ export default function ManageJobsPage() {
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-52 h-10! bg-slate-50 cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Departments">
               {filterDept === "all"
                 ? "All Departments"
@@ -200,7 +200,7 @@ export default function ManageJobsPage() {
           <SelectContent
             align="start"
             alignOffset={0}
-            className="-ml-1 w-53 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+            className="-ml-1 w-53 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900"
           >
             <SelectItem value="all">All Departments</SelectItem>
             {departments.map((dept) => (
@@ -217,7 +217,7 @@ export default function ManageJobsPage() {
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-44 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-44 h-10! cursor-pointer bg-slate-50 dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Job Types">
               {filterType === "all"
                 ? "All Types"
@@ -229,7 +229,7 @@ export default function ManageJobsPage() {
           <SelectContent
             align="start"
             alignOffset={0}
-            className="-ml-2  w-45 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+            className="-ml-2  w-45 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900"
           >
             <SelectItem value="all">All Types</SelectItem>
             {(
@@ -248,7 +248,7 @@ export default function ManageJobsPage() {
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-44 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-44 h-10! bg-slate-50 cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="Status">
               {filterStatus === "all"
                 ? "All Status"
@@ -259,7 +259,7 @@ export default function ManageJobsPage() {
           <SelectContent
             align="start"
             alignOffset={0}
-            className="-ml-2 w-45 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+            className="-ml-2 w-45 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900"
           >
             <SelectItem value="all">All Status</SelectItem>
             {(Object.keys(STATUS_LABELS) as Job["status"][]).map((status) => (
@@ -288,7 +288,7 @@ export default function ManageJobsPage() {
         <div className="border border-slate-300 dark:border-neutral-700 rounded-lg bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
+              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-900 hover:bg-transparent">
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Job Name
                 </TableHead>

@@ -7,8 +7,6 @@ import {
   jobPipelineStages,
   jobHiringTeam,
   jobAssessmentAttachments,
-  offers,
-  candidates,
   departments,
 } from "../db/schema";
 
@@ -288,17 +286,12 @@ export const jobService = {
   },
 
   async delete(id: number) {
-    return await db.transaction(async (tx) => {
-      await tx.delete(offers).where(eq(offers.jobId, id));
-      await tx.delete(candidates).where(eq(candidates.jobId, id));
+    const [deleted] = await db
+      .delete(jobs)
+      .where(eq(jobs.id, id))
+      .returning();
 
-      const [deleted] = await tx
-        .delete(jobs)
-        .where(eq(jobs.id, id))
-        .returning();
-
-      return deleted ?? null;
-    });
+    return deleted ?? null;
   },
 
   async getAssessments(jobId: number) {

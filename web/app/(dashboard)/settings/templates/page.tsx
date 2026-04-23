@@ -183,7 +183,7 @@ export default function TemplatesPage() {
               setSearch(e.target.value);
               setCurrentPage(1);
             }}
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 focus-visible:border-slate-300 dark:focus-visible:border-neutral-700 focus-visible:ring-0"
+            className="pl-11 h-10! bg-slate-50 dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 focus-visible:border-slate-300 dark:focus-visible:border-neutral-700 focus-visible:ring-0"
           />
         </div>
 
@@ -194,10 +194,10 @@ export default function TemplatesPage() {
             setCurrentPage(1);
           }}
         >
-          <SelectTrigger className="w-48 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-48 h-10! bg-slate-50 dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
-          <SelectContent className="rounded-lg w-49 shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-lg w-49 shadow-lg border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900">
             <SelectItem value="all">All Types</SelectItem>
             {EMAIL_TEMPLATE_TYPE_PICKER_ORDER.map((t) => (
               <SelectItem key={t} value={t}>
@@ -226,7 +226,7 @@ export default function TemplatesPage() {
         <div className="border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-950 shadow-none overflow-hidden">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:bg-transparent">
+              <TableRow className="border-b border-slate-200 dark:border-neutral-800 bg-slate-100 dark:bg-neutral-950 hover:bg-transparent">
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Template Name
                 </TableHead>

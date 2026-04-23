@@ -124,7 +124,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
 
   return (
     <Sidebar
-      className="top-(--header-height) h-[calc(100svh-var(--header-height))]! **:data-[slot=sidebar-inner]:bg-slate-50/60 dark:**:data-[slot=sidebar-inner]:bg-neutral-900/85 **:data-[slot=sidebar-inner]:border-r-[0.5px] **:data-[slot=sidebar-inner]:border-slate-200/80 dark:**:data-[slot=sidebar-inner]:border-neutral-800/80"
+      className="top-(--header-height) h-[calc(100svh-var(--header-height))]! **:data-[slot=sidebar-inner]:bg-slate-200/60 dark:**:data-[slot=sidebar-inner]:bg-neutral-900/85 **:data-[slot=sidebar-inner]:border-r-[0.5px] **:data-[slot=sidebar-inner]:border-slate-200/80 dark:**:data-[slot=sidebar-inner]:border-neutral-800/80"
       {...props}
     >
       <SidebarHeader className="h-16 shrink-0 px-6">

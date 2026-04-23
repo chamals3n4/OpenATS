@@ -108,10 +108,13 @@ export function useUpdateStage(jobId: number) {
         rejectionTemplateId?: number | null;
       };
     }) =>
-      serverFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline/${stageId}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+      serverFetch<{ data: PipelineStage }>(
+        `/jobs/${jobId}/pipeline/${stageId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(data),
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -122,9 +125,12 @@ export function useDeleteStage(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (stageId: number) =>
-      serverFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline/${stageId}`, {
-        method: "DELETE",
-      }),
+      serverFetch<{ data: PipelineStage }>(
+        `/jobs/${jobId}/pipeline/${stageId}`,
+        {
+          method: "DELETE",
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -135,10 +141,13 @@ export function useReorderStages(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (stages: Array<{ id: number; position: number }>) =>
-      serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline/reorder`, {
-        method: "POST",
-        body: JSON.stringify({ stages }),
-      }),
+      serverFetch<{ data: PipelineStage[] }>(
+        `/jobs/${jobId}/pipeline/reorder`,
+        {
+          method: "POST",
+          body: JSON.stringify({ stages }),
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -255,10 +264,7 @@ export function useUpdateUser() {
   });
 }
 
-export function useHiringTeam(
-  jobId: number,
-  options?: { enabled?: boolean },
-) {
+export function useHiringTeam(jobId: number, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["jobs", jobId, "team"],
     queryFn: () => serverFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
@@ -710,7 +716,9 @@ export function useOffers(jobId?: number) {
   return useQuery({
     queryKey: jobId ? ["offers", "job", jobId] : ["offers", "all"],
     queryFn: () =>
-      serverFetch<{ data: Offer[] }>(jobId ? `/offers/job/${jobId}` : `/offers`),
+      serverFetch<{ data: Offer[] }>(
+        jobId ? `/offers/job/${jobId}` : `/offers`,
+      ),
     enabled: jobId === undefined || !!jobId,
     staleTime: 30_000,
     initialData:
@@ -1050,8 +1058,7 @@ export function useAssessmentAttemptReview(
   attemptId: number,
   options?: { enabled?: boolean },
 ) {
-  const enabled =
-    (options?.enabled ?? true) && !!candidateId && !!attemptId;
+  const enabled = (options?.enabled ?? true) && !!candidateId && !!attemptId;
   return useQuery({
     queryKey: ["assessment-attempt-review", candidateId, attemptId],
     queryFn: () =>
@@ -1258,7 +1265,9 @@ export function useAnalyticsReport(
       );
     },
     staleTime: 1000 * 60 * 5,
-    initialData: options?.initialData ? { data: options.initialData } : undefined,
+    initialData: options?.initialData
+      ? { data: options.initialData }
+      : undefined,
     initialDataUpdatedAt: options?.initialDataUpdatedAt,
   });
 }
@@ -1344,10 +1353,13 @@ export function useUpdateSettingsAllowedOrigins() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (origins: string[]) =>
-      serverFetch<{ data: { origins: string[] } }>("/settings/allowed-origins", {
-        method: "PUT",
-        body: JSON.stringify({ origins }),
-      }),
+      serverFetch<{ data: { origins: string[] } }>(
+        "/settings/allowed-origins",
+        {
+          method: "PUT",
+          body: JSON.stringify({ origins }),
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["settings", "allowed-origins"],

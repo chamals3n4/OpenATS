@@ -82,6 +82,17 @@ const inputCls =
 const textareaCls =
   "w-full px-3.5 py-3 text-sm bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-lg shadow-none placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus:outline-none focus:border-slate-400 resize-none transition-colors";
 
+const titleRegex = /^[A-Za-z0-9][A-Za-z0-9\s&(),.'/-]{2,99}$/;
+const descriptionRegex = /^[A-Za-z0-9\s&(),.'"/:\-\n]{10,500}$/;
+const numberRegex = /^\d+$/;
+
+type MetaValidationErrors = {
+  assessmentTitle?: string;
+  assessmentDesc?: string;
+  timeLimit?: string;
+  totalPoints?: string;
+};
+
 export default function CreateAssessmentPage() {
   const router = useRouter();
   const createAssessment = useCreateAssessment();
@@ -91,32 +102,70 @@ export default function CreateAssessmentPage() {
   const [assessmentDesc, setAssessmentDesc] = useState("");
   const [timeLimit, setTimeLimit] = useState("120");
   const [totalPoints, setTotalPoints] = useState("100");
+  const [metaErrors, setMetaErrors] = useState<MetaValidationErrors>({});
   const [questions, setQuestions] = useState<Question[]>(() => [makeQuestion(0)]);
   const [selectedQ, setSelectedQ] = useState<number>(() => questions[0]?.uid || 11);
 
-  const handleSave = () => {
-    const missingMeta: string[] = [];
+  const validateMeta = (): MetaValidationErrors => {
+    const errors: MetaValidationErrors = {};
     const parsedTimeLimit = Number(timeLimit);
-    const parsedTotalPoints = Number(totalPoints);
+    const parsedPassScore = Number(totalPoints);
 
     if (!assessmentTitle.trim()) {
-      missingMeta.push("Assessment title is required.");
+      errors.assessmentTitle = "Assessment title is required.";
+    } else if (!titleRegex.test(assessmentTitle.trim())) {
+      errors.assessmentTitle =
+        "Use 3-100 chars: letters, numbers, spaces, and basic punctuation.";
     }
+
     if (!assessmentDesc.trim()) {
-      missingMeta.push("Description is required.");
+      errors.assessmentDesc = "Description is required.";
+    } else if (!descriptionRegex.test(assessmentDesc.trim())) {
+      errors.assessmentDesc =
+        "Use 10-500 chars with standard text and punctuation only.";
     }
-    if (!timeLimit.trim() || Number.isNaN(parsedTimeLimit) || parsedTimeLimit <= 0) {
-      missingMeta.push("Time limit must be greater than 0.");
+
+    if (!numberRegex.test(timeLimit.trim())) {
+      errors.timeLimit = "Time limit must be a whole number.";
+    } else if (Number.isNaN(parsedTimeLimit) || parsedTimeLimit <= 0) {
+      errors.timeLimit = "Time limit must be greater than 0.";
+    } else if (parsedTimeLimit > 300) {
+      errors.timeLimit = "Time limit cannot exceed 300 minutes.";
     }
-    if (!totalPoints.trim() || Number.isNaN(parsedTotalPoints) || parsedTotalPoints <= 0) {
-      missingMeta.push("Total points must be greater than 0.");
+
+    if (!numberRegex.test(totalPoints.trim())) {
+      errors.totalPoints = "Pass score must be a whole number.";
+    } else if (Number.isNaN(parsedPassScore) || parsedPassScore <= 0) {
+      errors.totalPoints = "Pass score must be greater than 0.";
+    } else if (parsedPassScore > 100) {
+      errors.totalPoints = "Pass score cannot exceed 100.";
     }
-    if (missingMeta.length > 0) {
-      return alert(
-        ["Please fix the following before creating the assessment:", ...missingMeta].join(
-          "\n",
-        ),
-      );
+
+    return errors;
+  };
+
+  const inputClassFor = (fieldError?: string) =>
+    `${inputCls} ${
+      fieldError
+        ? "border-red-400 dark:border-red-500 focus-visible:border-red-500 focus-visible:ring-1 focus-visible:ring-red-200"
+        : ""
+    }`;
+
+  const textareaClassFor = (fieldError?: string) =>
+    `${textareaCls} ${
+      fieldError
+        ? "border-red-400 dark:border-red-500 focus:border-red-500 focus:ring-1 focus:ring-red-200"
+        : ""
+    }`;
+
+  const handleSave = () => {
+    const validationErrors = validateMeta();
+    const parsedTimeLimit = Number(timeLimit);
+    const parsedTotalPoints = Number(totalPoints);
+    setMetaErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) {
+      setMetaOpen(true);
+      return;
     }
     const q1Title = questions[0]?.title?.trim() ?? "";
     if (!q1Title) {
@@ -381,9 +430,19 @@ export default function CreateAssessmentPage() {
               <Input
                 placeholder="e.g., Frontend Developer Assessment"
                 value={assessmentTitle}
-                onChange={(e) => setAssessmentTitle(e.target.value)}
-                className={inputCls}
+                onChange={(e) => {
+                  setAssessmentTitle(e.target.value);
+                  if (metaErrors.assessmentTitle) {
+                    setMetaErrors((prev) => ({ ...prev, assessmentTitle: undefined }));
+                  }
+                }}
+                className={inputClassFor(metaErrors.assessmentTitle)}
               />
+              {metaErrors.assessmentTitle && (
+                <p className="mt-1.5 text-[12px] text-red-500">
+                  {metaErrors.assessmentTitle}
+                </p>
+              )}
             </div>
             <div>
               <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
@@ -393,9 +452,19 @@ export default function CreateAssessmentPage() {
                 placeholder="Describe what this assessment is for ..."
                 rows={3}
                 value={assessmentDesc}
-                onChange={(e) => setAssessmentDesc(e.target.value)}
-                className={textareaCls}
+                onChange={(e) => {
+                  setAssessmentDesc(e.target.value);
+                  if (metaErrors.assessmentDesc) {
+                    setMetaErrors((prev) => ({ ...prev, assessmentDesc: undefined }));
+                  }
+                }}
+                className={textareaClassFor(metaErrors.assessmentDesc)}
               />
+              {metaErrors.assessmentDesc && (
+                <p className="mt-1.5 text-[12px] text-red-500">
+                  {metaErrors.assessmentDesc}
+                </p>
+              )}
             </div>
             <div className="grid grid-cols-2 gap-5">
               <div>
@@ -404,9 +473,20 @@ export default function CreateAssessmentPage() {
                 </Label>
                 <Input
                   value={timeLimit}
-                  onChange={(e) => setTimeLimit(e.target.value)}
-                  className={inputCls}
+                  onChange={(e) => {
+                    setTimeLimit(e.target.value);
+                    if (metaErrors.timeLimit) {
+                      setMetaErrors((prev) => ({ ...prev, timeLimit: undefined }));
+                    }
+                  }}
+                  inputMode="numeric"
+                  className={inputClassFor(metaErrors.timeLimit)}
                 />
+                {metaErrors.timeLimit && (
+                  <p className="mt-1.5 text-[12px] text-red-500">
+                    {metaErrors.timeLimit}
+                  </p>
+                )}
               </div>
               <div>
                 <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
@@ -414,9 +494,20 @@ export default function CreateAssessmentPage() {
                 </Label>
                 <Input
                   value={totalPoints}
-                  onChange={(e) => setTotalPoints(e.target.value)}
-                  className={inputCls}
+                  onChange={(e) => {
+                    setTotalPoints(e.target.value);
+                    if (metaErrors.totalPoints) {
+                      setMetaErrors((prev) => ({ ...prev, totalPoints: undefined }));
+                    }
+                  }}
+                  inputMode="numeric"
+                  className={inputClassFor(metaErrors.totalPoints)}
                 />
+                {metaErrors.totalPoints && (
+                  <p className="mt-1.5 text-[12px] text-red-500">
+                    {metaErrors.totalPoints}
+                  </p>
+                )}
               </div>
             </div>
           </div>

@@ -2,10 +2,6 @@ import { describe, it, expect } from "vitest";
 import { z } from "zod";
 
 describe("Assessments - Service/Validation Tests", () => {
-<<<<<<< HEAD
-  // Test 1: Text question answer validation
-=======
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
   it("should validate text answer payload", () => {
     const textAnswerSchema = z.object({
       questionId: z.number().int().positive(),
@@ -21,10 +17,6 @@ describe("Assessments - Service/Validation Tests", () => {
     expect(textAnswerSchema.safeParse(invalidQuestionId).success).toBe(false);
   });
 
-<<<<<<< HEAD
-  // Test 2: Multiple choice answer validation
-=======
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
   it("should validate multiple-choice answer payload", () => {
     const multipleChoiceSchema = z.object({
       questionId: z.number().int().positive(),
@@ -38,10 +30,6 @@ describe("Assessments - Service/Validation Tests", () => {
     expect(multipleChoiceSchema.safeParse(invalid).success).toBe(false);
   });
 
-<<<<<<< HEAD
-  // Test 3: Checkbox answer validation (multi-select)
-=======
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
   it("should validate checkbox (multi-select) answer payload", () => {
     const checkboxAnswerSchema = z.object({
       questionId: z.number().int().positive(),
@@ -55,10 +43,6 @@ describe("Assessments - Service/Validation Tests", () => {
     expect(checkboxAnswerSchema.safeParse(invalid).success).toBe(false);
   });
 
-<<<<<<< HEAD
-  // Test 4: CV analysis output validation
-=======
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
   it("should validate CV analysis output payload", () => {
     const cvAnalysisSchema = z.object({
       status: z.enum(["pending", "done", "failed"]),
@@ -82,10 +66,6 @@ describe("Assessments - Service/Validation Tests", () => {
     expect(cvAnalysisSchema.safeParse(invalidScore).success).toBe(false);
   });
 
-<<<<<<< HEAD
-  // Test 5: Extracted resume text size guard
-=======
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf
   it("should validate extracted resume text length", () => {
     const extractedTextSchema = z.string().max(50000);
 
@@ -95,9 +75,4 @@ describe("Assessments - Service/Validation Tests", () => {
     expect(extractedTextSchema.safeParse(small).success).toBe(true);
     expect(extractedTextSchema.safeParse(tooLarge).success).toBe(false);
   });
-<<<<<<< HEAD
 });
-=======
-});
-
->>>>>>> 926dde859e9697a2b89a2d4ffe3f324056139aaf

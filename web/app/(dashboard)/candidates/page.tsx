@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useMemo } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import {
   Search01Icon,
   CallIcon,
@@ -55,9 +56,10 @@ import {
   useJobs,
   useUpdateCandidateBasicDetails,
 } from "@/hooks/use-api";
+import { serverFetch } from "@/lib/auth-action";
 import { ResumeScrollView } from "@/components/resume-scroll-view";
 import { CandidateSidePanel } from "@/components/candidate-side-panel";
-import type { Candidate } from "@/types";
+import type { Candidate, CandidateDetail } from "@/types";
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -70,6 +72,7 @@ function timeAgo(dateStr: string) {
 }
 
 export default function ManageCandidatesPage() {
+  const queryClient = useQueryClient();
   const PAGE_SIZE = 8;
   const [selectedJobId, setSelectedJobId] = useState<number | undefined>();
   const [search, setSearch] = useState("");
@@ -112,7 +115,17 @@ export default function ManageCandidatesPage() {
 
   const selectedCandidate = candidates.find((c) => c.id === selectedId) ?? null;
 
+  const prefetchCandidateDetail = (candidateId: number) => {
+    void queryClient.prefetchQuery({
+      queryKey: ["candidates", candidateId],
+      queryFn: () =>
+        serverFetch<{ data: CandidateDetail }>(`/candidates/${candidateId}`),
+      staleTime: 30_000,
+    });
+  };
+
   const handleRowClick = (c: Candidate) => {
+    prefetchCandidateDetail(c.id);
     setSelectedId(c.id);
     setIsDetailOpen(true);
   };
@@ -275,6 +288,8 @@ export default function ManageCandidatesPage() {
                   <TableRow
                     key={c.id}
                     className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
+                    onMouseEnter={() => prefetchCandidateDetail(c.id)}
+                    onFocus={() => prefetchCandidateDetail(c.id)}
                     onClick={() => handleRowClick(c)}
                   >
                     <TableCell className="h-13 px-8 py-0 font-medium text-slate-700 dark:text-neutral-200">

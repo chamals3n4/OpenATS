@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import type { Ref } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { useDrag, useDrop, useDragLayer } from "react-dnd";
@@ -20,7 +21,13 @@ import {
   useCandidates,
   useMoveCandidateStage,
 } from "@/hooks/use-api";
-import type { Candidate, PipelineStage, StageAutomationFlags } from "@/types";
+import { serverFetch } from "@/lib/auth-action";
+import type {
+  Candidate,
+  CandidateDetail,
+  PipelineStage,
+  StageAutomationFlags,
+} from "@/types";
 
 function showStageAutomationToasts(automation: StageAutomationFlags) {
   if (automation.assessmentInvite === "skipped_active_invite") {
@@ -198,6 +205,7 @@ function DraggableCard({
   stageId,
   index,
   onReorder,
+  onPrefetch,
   onClick,
 }: {
   candidate: Candidate;
@@ -209,6 +217,7 @@ function DraggableCard({
     toStageId: number,
     toIndex: number,
   ) => void;
+  onPrefetch: (id: number) => void;
   onClick: (id: number) => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -256,6 +265,7 @@ function DraggableCard({
   return (
     <div
       ref={ref as unknown as Ref<HTMLDivElement>}
+      onMouseEnter={() => onPrefetch(candidate.id)}
       onClick={() => !isDragging && onClick(candidate.id)}
       className={`bg-white dark:bg-neutral-900 px-3 py-2.5 rounded-lg flex items-center gap-2 group select-none transition-colors ${
         isDragging
@@ -281,6 +291,7 @@ function DroppableColumn({
   candidates,
   onDropToStage,
   onReorder,
+  onPrefetch,
   onCardClick,
 }: {
   stage: PipelineStage & { color: string };
@@ -296,6 +307,7 @@ function DroppableColumn({
     toStageId: number,
     toIndex: number,
   ) => void;
+  onPrefetch: (id: number) => void;
   onCardClick: (id: number) => void;
 }) {
   const [{ isOver, canDrop }, dropRef] = useDrop<
@@ -358,6 +370,7 @@ function DroppableColumn({
             stageId={stage.id}
             index={index}
             onReorder={onReorder}
+            onPrefetch={onPrefetch}
             onClick={onCardClick}
           />
         ))}
@@ -367,6 +380,7 @@ function DroppableColumn({
 }
 
 export default function HiringPipelinePage() {
+  const queryClient = useQueryClient();
   const params = useParams();
   const jobId = Number(params.id);
 
@@ -411,6 +425,15 @@ export default function HiringPipelinePage() {
     ...s,
     color: STAGE_COLORS[s.stageType] ?? "#94a3b8",
   }));
+
+  const prefetchCandidateDetail = (candidateId: number) => {
+    void queryClient.prefetchQuery({
+      queryKey: ["candidates", candidateId],
+      queryFn: () =>
+        serverFetch<{ data: CandidateDetail }>(`/candidates/${candidateId}`),
+      staleTime: 30_000,
+    });
+  };
 
   // Move between columns — optimistic update + API
   const handleDropToStage = (
@@ -596,7 +619,9 @@ export default function HiringPipelinePage() {
                 candidates={candidatesByStage[stage.id] ?? []}
                 onDropToStage={handleDropToStage}
                 onReorder={handleReorder}
+                onPrefetch={prefetchCandidateDetail}
                 onCardClick={(id) => {
+                  prefetchCandidateDetail(id);
                   setSelectedCandidateId(id);
                   setIsDetailOpen(true);
                 }}

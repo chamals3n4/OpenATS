@@ -240,10 +240,12 @@ export default function JobDetailsPage() {
     });
   const jobCandidateCount = jobCandidatesData?.data?.length ?? 0;
   const { data: meData } = useCurrentUser();
-  const { data: chatHistoryData } = useChatHistory(
-    jobId,
-    Number.isFinite(jobId) && jobId > 0,
-  );
+  const chatHistoryEnabled = Number.isFinite(jobId) && jobId > 0;
+  const {
+    data: chatHistoryData,
+    isLoading: isChatHistoryLoading,
+    isFetching: isChatHistoryFetching,
+  } = useChatHistory(jobId, chatHistoryEnabled);
   const { liveMessages, sendMessage, editMessage, deleteMessage } = useJobChat(
     jobId,
     isNotesOpen,
@@ -311,6 +313,14 @@ export default function JobDetailsPage() {
       (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime(),
     );
   }, [chatHistoryData?.data, liveMessages]);
+
+  const prefetchJobDiscussion = () => {
+    if (!Number.isFinite(jobId) || jobId <= 0) return;
+    void queryClient.prefetchQuery({
+      queryKey: ["chat", "job", jobId],
+      queryFn: () => serverFetch<{ data: ChatMessage[] }>(`/chat/job/${jobId}`),
+    });
+  };
 
   const handleSendNote = () => {
     if (!noteText.trim() || !me) return;
@@ -655,6 +665,8 @@ export default function JobDetailsPage() {
             <div className="flex items-center gap-3 shrink-0 pt-2">
               <Button
                 variant="outline"
+                onMouseEnter={prefetchJobDiscussion}
+                onFocus={prefetchJobDiscussion}
                 onClick={() => setIsNotesOpen(!isNotesOpen)}
                 className="border-slate-200 cursor-pointer dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-neutral-100 rounded-lg h-11 px-5 font-medium gap-2.5"
               >
@@ -2110,7 +2122,12 @@ export default function JobDetailsPage() {
             </div>
 
             <div className="flex-1 min-h-0 overflow-y-auto p-5 space-y-4 bg-white dark:bg-neutral-950 scroll-smooth relative">
-              {allMessages.length === 0 ? (
+              {isChatHistoryLoading ||
+              (isChatHistoryFetching && allMessages.length === 0) ? (
+                <p className="text-slate-400 dark:text-neutral-500 text-[13px] text-center pt-8">
+                  Loading notes...
+                </p>
+              ) : allMessages.length === 0 ? (
                 <p className="text-slate-400 dark:text-neutral-500 text-[13px] text-center pt-8">
                   No notes yet. Be the first to add one.
                 </p>

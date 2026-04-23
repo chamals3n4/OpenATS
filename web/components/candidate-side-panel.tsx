@@ -1461,7 +1461,13 @@ function SidePanelOfferTab({ candidate }: { candidate: CandidateDetail }) {
                         }}
                       >
                         <SelectTrigger className="h-10 min-h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
-                          <SelectValue placeholder="Default withdrawal template" />
+                          <SelectValue placeholder="Default withdrawal template">
+                            {withdrawTemplateId
+                              ? (offerWithdrawalTemplates.find(
+                                  (t) => String(t.id) === withdrawTemplateId,
+                                )?.name ?? null)
+                              : null}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 max-h-56">
                           <SelectItem value="__none__" className="text-[13px]">

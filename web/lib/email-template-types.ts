@@ -87,6 +87,7 @@ export const EMAIL_TEMPLATE_VARIABLES: Record<EmailTemplateType, string[]> = {
     "job_title",
     "salary",
     "currency",
+    "benefits",
     "start_date",
     "expiry_date",
     "company_name",

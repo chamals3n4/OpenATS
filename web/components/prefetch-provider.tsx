@@ -1,21 +1,27 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
-import type {
-  Job,
-  Candidate,
-  Assessment,
-  Offer,
-  Template,
-  User,
-} from "@/types";
+import type { Job, Offer, Template, User } from "@/types";
 
+/**
+ * Prefetches only the most essential data once per session.
+ * Heavy / page-specific data is loaded on demand by the page itself.
+ *
+ * IMPORTANT: The global QueryClient default `staleTime` is 5 min, so
+ * prefetched data stays fresh and won't trigger redundant refetches
+ * when a page mounts a useQuery with the same key.
+ */
 export function PrefetchProvider() {
   const queryClient = useQueryClient();
+  const ranRef = useRef(false);
 
   useEffect(() => {
+    if (ranRef.current) return;
+    ranRef.current = true;
+
+    // Core reference data — used on almost every page
     void queryClient.prefetchQuery({
       queryKey: ["jobs"],
       queryFn: () => serverFetch<{ data: Job[] }>("/jobs"),
@@ -23,65 +29,24 @@ export function PrefetchProvider() {
     });
 
     void queryClient.prefetchQuery({
-      queryKey: ["candidates", "all", { search: undefined }],
-      queryFn: () => serverFetch<{ data: Candidate[] }>("/candidates"),
-      staleTime: 0,
-    });
-
-    void queryClient.prefetchQuery({
-      queryKey: ["offers", "all"],
-      queryFn: () => serverFetch<{ data: Offer[] }>("/offers"),
-      staleTime: 1000 * 60 * 5,
-    });
-
-    void queryClient.prefetchQuery({
-      queryKey: ["assessments"],
-      queryFn: () => serverFetch<{ data: Assessment[] }>("/assessments"),
-      staleTime: 1000 * 60 * 5,
-    });
-
-    void queryClient.prefetchQuery({
       queryKey: ["users"],
       queryFn: () => serverFetch<{ data: User[] }>("/users"),
+      staleTime: 1000 * 60 * 10,
     });
 
     void queryClient.prefetchQuery({
       queryKey: ["templates"],
       queryFn: () => serverFetch<{ data: Template[] }>("/templates"),
+      staleTime: 1000 * 60 * 10,
+    });
+
+    // Offers — shown on candidates sidebar, good to warm
+    void queryClient.prefetchQuery({
+      queryKey: ["offers", "all"],
+      queryFn: () => serverFetch<{ data: Offer[] }>("/offers"),
       staleTime: 1000 * 60 * 5,
     });
-
-    void queryClient.prefetchQuery({
-      queryKey: ["settings", "allowed-origins"],
-      queryFn: () =>
-        serverFetch<{ data: { origins: string[] } }>(
-          "/settings/allowed-origins",
-        ),
-      staleTime: 1000 * 30,
-    });
-
-    void queryClient.prefetchQuery({
-      queryKey: [
-        "logs",
-        "active",
-        {
-          search: "",
-          level: "all",
-          service: "all",
-          statusGroup: "all",
-          windowSize: "24h",
-          limit: 250,
-          offset: 0,
-        },
-      ],
-      queryFn: () =>
-        fetch(
-          "/api/logs?level=all&service=all&statusGroup=all&windowSize=24h&limit=250",
-          { cache: "no-store" },
-        ).then((r) => r.json()),
-      staleTime: 2000,
-    });
-  }, []);
+  }, [queryClient]);
 
   return null;
 }

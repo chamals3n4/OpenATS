@@ -31,7 +31,7 @@ import {
   useCreateDepartment,
   useDeleteDepartment,
   useUpdateDepartment,
-} from "@/hooks/use-api";
+} from "@/hooks/queries/use-company";
 
 const inputCls =
   "h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 rounded-lg shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-700 transition-colors";

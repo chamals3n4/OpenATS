@@ -19,7 +19,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-import { useCreateTemplate } from "@/hooks/use-api";
+import { useCreateTemplate } from "@/hooks/queries/use-templates";
 import type { TemplateBodyBlock } from "@/types";
 
 type TemplateType = "offer" | "rejection" | "assessment" | "general";

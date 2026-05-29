@@ -206,8 +206,26 @@ export const candidateService = {
 
   async getById(id: number) {
     const [candidate] = await db
-      .select()
+      .select({
+        id: candidates.id,
+        firstName: candidates.firstName,
+        lastName: candidates.lastName,
+        email: candidates.email,
+        phone: candidates.phone,
+        resumeUrl: candidates.resumeUrl,
+        jobId: candidates.jobId,
+        currentStageId: candidates.currentStageId,
+        appliedAt: candidates.appliedAt,
+        updatedAt: candidates.updatedAt,
+        stageName: jobPipelineStages.name,
+        jobTitle: jobs.title,
+      })
       .from(candidates)
+      .leftJoin(
+        jobPipelineStages,
+        eq(candidates.currentStageId, jobPipelineStages.id),
+      )
+      .leftJoin(jobs, eq(candidates.jobId, jobs.id))
       .where(eq(candidates.id, id));
 
     if (!candidate) return null;

@@ -169,17 +169,58 @@ export function CandidateJobFitTab({
   const missing = cv.missingSkills ?? [];
 
   return (
-    <div className="space-y-5 font-normal">
-      <SkillsAlignmentSection
-        matchedSkills={matched}
-        missingSkills={missing}
-      />
+    <div className="grid gap-5 font-normal xl:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.75fr)]">
+      <div className="space-y-5">
+        <SkillsAlignmentSection
+          matchedSkills={matched}
+          missingSkills={missing}
+        />
 
-      <div className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-gradient-to-b from-slate-50/80 to-white dark:from-neutral-900/50 dark:to-neutral-950 px-4 py-4">
+        {bd && (
+          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-900/40">
+            <h3 className="text-[12px] font-medium uppercase tracking-wider text-slate-500 dark:text-neutral-400 mb-3">
+              How the score breaks down
+            </h3>
+            <ul className="space-y-3">
+              {BREAKDOWN.map(({ key, label, max }) => {
+                const pts = bd[key];
+                const pct = max > 0 ? Math.min(100, (pts / max) * 100) : 0;
+                const color = BAR_COLORS[key];
+                return (
+                  <li key={key}>
+                    <div className="flex items-center justify-between gap-2 text-[13px] font-normal mb-1.5">
+                      <span className="text-slate-700 dark:text-neutral-300 truncate">
+                        {label}
+                      </span>
+                      <span className="tabular-nums text-slate-500 dark:text-neutral-500 shrink-0">
+                        <span className="font-medium text-slate-800 dark:text-neutral-200">
+                          {pts}
+                        </span>
+                        /{max}
+                      </span>
+                    </div>
+                    <div className="h-1.5 overflow-hidden rounded-full bg-slate-200/80 dark:bg-neutral-800">
+                      <div
+                        className="h-full rounded-full transition-all duration-500"
+                        style={{
+                          width: `${pct}%`,
+                          backgroundColor: color,
+                        }}
+                      />
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        )}
+      </div>
+
+      <div className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-gradient-to-b from-slate-50/80 to-white dark:from-neutral-900/50 dark:to-neutral-950 px-5 py-5 xl:sticky xl:top-5 xl:self-start">
         <p className="text-center text-[12px] font-medium uppercase tracking-wider text-slate-500 dark:text-neutral-400 mb-1">
           Overall match
         </p>
-        <div className="relative mx-auto w-full max-w-[220px] h-[180px]">
+        <div className="relative mx-auto h-[220px] w-full max-w-[270px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
               <Pie
@@ -231,45 +272,6 @@ export function CandidateJobFitTab({
           </span>
         </div>
       </div>
-
-      {bd && (
-        <div>
-          <h3 className="text-[12px] font-medium uppercase tracking-wider text-slate-500 dark:text-neutral-400 mb-2.5">
-            How the score breaks down
-          </h3>
-          <ul className="space-y-2.5">
-            {BREAKDOWN.map(({ key, label, max }) => {
-              const pts = bd[key];
-              const pct = max > 0 ? Math.min(100, (pts / max) * 100) : 0;
-              const color = BAR_COLORS[key];
-              return (
-                <li key={key}>
-                  <div className="flex items-center justify-between gap-2 text-[13px] font-normal mb-1">
-                    <span className="text-slate-700 dark:text-neutral-300 truncate">
-                      {label}
-                    </span>
-                    <span className="tabular-nums text-slate-500 dark:text-neutral-500 shrink-0">
-                      <span className="font-medium text-slate-800 dark:text-neutral-200">
-                        {pts}
-                      </span>
-                      /{max}
-                    </span>
-                  </div>
-                  <div className="h-1 rounded-full bg-slate-100 dark:bg-neutral-800 overflow-hidden">
-                    <div
-                      className="h-full rounded-full transition-all duration-500"
-                      style={{
-                        width: `${pct}%`,
-                        backgroundColor: color,
-                      }}
-                    />
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        </div>
-      )}
     </div>
   );
 }

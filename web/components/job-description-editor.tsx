@@ -38,7 +38,7 @@ export function JobDescriptionEditor({
     editorProps: {
       attributes: {
         class:
-          `${minHeightClassName} p-4 text-[15px] leading-[1.45] text-slate-900 dark:text-neutral-100 bg-white dark:bg-neutral-900 focus:outline-none ` +
+          `${minHeightClassName} p-4 text-[15px] leading-[1.45] text-slate-900 dark:text-neutral-100 bg-gray-100 dark:bg-neutral-800 focus:outline-none ` +
           "[&_p]:m-0 [&_p+p]:mt-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 " +
           "[&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:m-0 [&_h1+p]:mt-1.5 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:m-0 [&_h2+p]:mt-1.5 [&_h3]:text-lg [&_h3]:font-medium [&_h3]:m-0 [&_h3+p]:mt-1",
       },
@@ -61,7 +61,7 @@ export function JobDescriptionEditor({
   if (!editor) {
     return (
       <div
-        className={`${minHeightClassName} p-4 text-sm bg-white dark:bg-neutral-900 text-slate-400 dark:text-neutral-500`}
+        className={`${minHeightClassName} p-4 text-sm bg-gray-100 dark:bg-neutral-800 text-slate-400 dark:text-neutral-500`}
       >
         {placeholder}
       </div>
@@ -69,8 +69,8 @@ export function JobDescriptionEditor({
   }
 
   return (
-    <div className="border border-slate-200 dark:border-neutral-800 rounded-xl overflow-hidden shadow-none">
-      <div className="flex items-center gap-1.5 p-2 bg-[#F8FAFC]/50 dark:bg-neutral-900/50 border-b border-slate-200 dark:border-neutral-800">
+    <div className="border border-slate-300 dark:border-neutral-600 rounded-xl overflow-hidden shadow-none">
+      <div className="flex items-center gap-1.5 p-2 bg-[#F8FAFC]/50 dark:bg-neutral-900/50 border-b border-slate-300 dark:border-neutral-600">
         <Button
           type="button"
           variant="ghost"

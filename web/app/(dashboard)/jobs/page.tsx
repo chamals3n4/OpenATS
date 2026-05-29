@@ -16,7 +16,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { ThemeButton } from "@/components/theme-button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -43,7 +42,9 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { useDeleteJob, useDepartments, useJobs } from "@/hooks/use-api";
+import { useJobs } from "@/hooks/queries/use-jobs";
+import { useDeleteJob } from "@/hooks/queries/use-jobs";
+import { useDepartments } from "@/hooks/queries/use-company";
 import type { Job } from "@/types";
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 
@@ -72,34 +73,37 @@ export default function ManageJobsPage() {
   const queryClient = useQueryClient();
   const { data, isLoading } = useJobs();
 
-  // Prefetch all per-job data when hovering a row so every tab on the
-  // job detail page renders instantly by the time the user clicks.
+  // Prefetch per-job data on hover so tabs render instantly on click.
   const prefetchJob = useCallback(
     (jobId: number) => {
       void queryClient.prefetchQuery({
         queryKey: ["jobs", jobId, "pipeline"],
         queryFn: () =>
           serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
+        staleTime: 1000 * 60 * 3,
       });
       void queryClient.prefetchQuery({
         queryKey: ["jobs", jobId, "team"],
         queryFn: () => serverFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
+        staleTime: 1000 * 60 * 5,
       });
       void queryClient.prefetchQuery({
         queryKey: ["candidates", jobId, undefined],
         queryFn: () =>
           serverFetch<{ data: Candidate[] }>(`/candidates/jobs/${jobId}`),
-        staleTime: 0,
+        staleTime: 1000 * 30,
       });
       void queryClient.prefetchQuery({
         queryKey: ["jobs", jobId, "questions"],
         queryFn: () =>
           serverFetch<{ data: CustomQuestion[] }>(`/jobs/${jobId}/questions`),
+        staleTime: 1000 * 60 * 5,
       });
       void queryClient.prefetchQuery({
         queryKey: ["jobs", jobId, "assessments"],
         queryFn: () =>
           serverFetch<{ data: any[] }>(`/jobs/${jobId}/assessments`),
+        staleTime: 1000 * 60 * 5,
       });
     },
     [queryClient],
@@ -173,7 +177,7 @@ export default function ManageJobsPage() {
         </h1>
         <Button
           render={<Link href="/jobs/new" prefetch />}
-          className="bg-theme hover:bg-theme-hover text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium cursor-pointer"
+          className="h-[34px] rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] cursor-pointer"
         >
           <HugeiconsIcon
             icon={PlusSignIcon}
@@ -194,14 +198,14 @@ export default function ManageJobsPage() {
             placeholder="Search"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+            className="pl-11 h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
           />
         </div>
         <Select
           value={filterDept}
           onValueChange={(v) => setFilterDept(v ?? "all")}
         >
-          <SelectTrigger className="w-52 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-52 h-10! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
             <SelectValue placeholder="Departments">
               {filterDept === "all"
                 ? "All Departments"
@@ -225,7 +229,7 @@ export default function ManageJobsPage() {
           value={filterType}
           onValueChange={(v) => setFilterType(v ?? "all")}
         >
-          <SelectTrigger className="w-44 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-44 h-10! cursor-pointer bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
             <SelectValue placeholder="Job Types">
               {filterType === "all"
                 ? "All Types"
@@ -253,7 +257,7 @@ export default function ManageJobsPage() {
           value={filterStatus}
           onValueChange={(v) => setFilterStatus(v ?? "all")}
         >
-          <SelectTrigger className="w-44 h-10! bg-white cursor-pointer dark:bg-neutral-900 border-slate-300 dark:border-neutral-700 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-44 h-10! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
             <SelectValue placeholder="Status">
               {filterStatus === "all"
                 ? "All Status"
@@ -275,14 +279,13 @@ export default function ManageJobsPage() {
           </SelectContent>
         </Select>
         <Button
-          variant="ghost"
           onClick={() => {
             setSearchTerm("");
             setFilterDept("all");
             setFilterType("all");
             setFilterStatus("all");
           }}
-          className="text-slate-600 cursor-pointer dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-4"
+          className="ml-4 h-9 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
         >
           Clear All
         </Button>
@@ -361,21 +364,19 @@ export default function ManageJobsPage() {
                     >
                       <div className="flex items-center justify-end gap-2">
                         <Button
-                          variant="outline"
                           size="sm"
-                          className="h-8 px-3 rounded-md border-slate-300 cursor-pointer dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
+                          className="h-9 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
                           onClick={() => router.push(`/jobs/${job.id}/edit`)}
                         >
                           <HugeiconsIcon
                             icon={PencilEdit01Icon}
-                            className="size-3.5 mr-1"
+                            className="size-3.5"
                           />
                           Edit
                         </Button>
                         <Button
-                          variant="outline"
                           size="sm"
-                          className="h-8 px-3 rounded-md border-red-200 cursor-pointer dark:border-red-900/40 text-red-600 dark:text-red-400"
+                          className="h-[34px] rounded-md border-none bg-red-500 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
                           onClick={() => setDeleteTarget(job)}
                         >
                           <HugeiconsIcon
@@ -401,18 +402,10 @@ export default function ManageJobsPage() {
                   : `Showing 1-${filteredJobs.length} of ${filteredJobs.length} results`}
             </span>
             <div className="flex items-center gap-3">
-              <Button
-                variant="outline"
-                className="h-10 px-6 rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 font-semibold text-sm hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-neutral-100 shadow-none gap-2"
-              >
+              <Button className="h-9 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none">
                 Previous
               </Button>
-              <Button
-                className="h-10 px-8 rounded-lg text-white font-semibold text-sm shadow-none transition-all active:scale-[0.98] border-none"
-                style={{ backgroundColor: "var(--theme-color)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.9")}
-                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-              >
+              <Button className="h-9 rounded-md border-none bg-theme hover:bg-theme-hover px-4 text-sm font-semibold leading-none text-white shadow-none">
                 Next
               </Button>
             </div>
@@ -437,13 +430,13 @@ export default function ManageJobsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-10 px-6 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[14px] font-medium shadow-none cursor-pointer">
+            <AlertDialogCancel className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
               disabled={deleteMutation.isPending}
-              className="h-10 px-6 rounded-md bg-red-500 hover:bg-red-600 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
+              className="h-[34px] rounded-md border-none bg-red-600 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
               {deleteMutation.isPending && <Spinner className="size-3.5" />}
               {deleteMutation.isPending ? "Deleting" : "Delete"}

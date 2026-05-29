@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useCreateAssessment } from "@/hooks/use-api";
+import { useCreateAssessment } from "@/hooks/queries/use-assessments";
 import type { Ref } from "react";
 import Link from "next/link";
 import {
@@ -91,8 +91,12 @@ export default function CreateAssessmentPage() {
   const [assessmentDesc, setAssessmentDesc] = useState("");
   const [timeLimit, setTimeLimit] = useState("120");
   const [totalPoints, setTotalPoints] = useState("100");
-  const [questions, setQuestions] = useState<Question[]>(() => [makeQuestion(0)]);
-  const [selectedQ, setSelectedQ] = useState<number>(() => questions[0]?.uid || 11);
+  const [questions, setQuestions] = useState<Question[]>(() => [
+    makeQuestion(0),
+  ]);
+  const [selectedQ, setSelectedQ] = useState<number>(
+    () => questions[0]?.uid || 11,
+  );
 
   const handleSave = () => {
     if (!assessmentTitle.trim()) {
@@ -111,10 +115,10 @@ export default function CreateAssessmentPage() {
           position: idx + 1,
           options: isMultipleChoice
             ? q.options.map((opt, oIdx) => ({
-              label: opt.text || `Option ${oIdx + 1}`,
-              isCorrect: opt.isCorrect,
-              position: oIdx + 1,
-            }))
+                label: opt.text || `Option ${oIdx + 1}`,
+                isCorrect: opt.isCorrect,
+                position: oIdx + 1,
+              }))
             : undefined,
         };
       });
@@ -134,14 +138,12 @@ export default function CreateAssessmentPage() {
         },
         onError: (error: any) => {
           alert(error.message || "Failed to create assessment");
-        }
+        },
       });
-
     } catch (error: any) {
       alert(error.message || "Failed to format assessment data");
     }
   };
-
 
   function moveItem<T>(list: T[], from: number, to: number): T[] {
     const copy = [...list];
@@ -160,9 +162,9 @@ export default function CreateAssessmentPage() {
     if (questions.length === 1) return; // keep at least one
     setQuestions((prev) => prev.filter((q) => q.uid !== qId));
     if (selectedQ === qId) {
-       const idx = questions.findIndex(q => q.uid === qId);
-       const nextQ = questions[idx - 1] || questions[idx + 1];
-       if (nextQ) setSelectedQ(nextQ.uid);
+      const idx = questions.findIndex((q) => q.uid === qId);
+      const nextQ = questions[idx - 1] || questions[idx + 1];
+      if (nextQ) setSelectedQ(nextQ.uid);
     }
   };
 
@@ -197,12 +199,12 @@ export default function CreateAssessmentPage() {
       prev.map((q) =>
         q.uid === qId
           ? {
-            ...q,
-            options: [
-              ...q.options,
-              makeOption(`Option ${q.options.length + 1}`),
-            ],
-          }
+              ...q,
+              options: [
+                ...q.options,
+                makeOption(`Option ${q.options.length + 1}`),
+              ],
+            }
           : q,
       ),
     );
@@ -223,11 +225,11 @@ export default function CreateAssessmentPage() {
       prev.map((q) =>
         q.uid === qId
           ? {
-            ...q,
-            options: q.options.map((o) =>
-              o.id === optId ? { ...o, text } : o,
-            ),
-          }
+              ...q,
+              options: q.options.map((o) =>
+                o.id === optId ? { ...o, text } : o,
+              ),
+            }
           : q,
       ),
     );
@@ -279,7 +281,9 @@ export default function CreateAssessmentPage() {
             onClick={handleSave}
             disabled={createAssessment.isPending}
           >
-            {createAssessment.isPending && <Loader2 className="size-4 animate-spin mr-1" />}
+            {createAssessment.isPending && (
+              <Loader2 className="size-4 animate-spin mr-1" />
+            )}
             {createAssessment.isPending ? "Saving..." : "Save Assessment"}
           </Button>
           <Link href="/assessments">
@@ -398,14 +402,15 @@ export default function CreateAssessmentPage() {
                 return (
                   <div
                     ref={ref as Ref<HTMLDivElement>}
-                    className={`w-full text-left rounded-lg px-3.5 py-3 flex items-center gap-3 transition-all border cursor-pointer group ${isDragging
-                      ? "opacity-40 border-transparent bg-slate-100 dark:bg-neutral-800"
-                      : isOver
-                        ? "border-[var(--theme-color)]/30 bg-[var(--theme-color)]/5"
-                        : selectedQ === q.uid
-                          ? "bg-[var(--theme-color)]/5 border-[var(--theme-color)]/20"
-                          : "bg-slate-50 dark:bg-neutral-900 border-transparent text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800"
-                      }`}
+                    className={`w-full text-left rounded-lg px-3.5 py-3 flex items-center gap-3 transition-all border cursor-pointer group ${
+                      isDragging
+                        ? "opacity-40 border-transparent bg-slate-100 dark:bg-neutral-800"
+                        : isOver
+                          ? "border-[var(--theme-color)]/30 bg-[var(--theme-color)]/5"
+                          : selectedQ === q.uid
+                            ? "bg-[var(--theme-color)]/5 border-[var(--theme-color)]/20"
+                            : "bg-slate-50 dark:bg-neutral-900 border-transparent text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800"
+                    }`}
                     onClick={() => setSelectedQ(q.uid)}
                   >
                     <HugeiconsIcon
@@ -433,7 +438,7 @@ export default function CreateAssessmentPage() {
                         e.stopPropagation();
                         removeQuestion(q.uid);
                       }}
-                      className={`text-slate-400 hover:text-red-500 transition-opacity p-1 -mr-1 shrink-0 ${questions.length === 1 ? 'opacity-0 cursor-not-allowed' : 'opacity-0 group-hover:opacity-100'}`}
+                      className={`text-slate-400 hover:text-red-500 transition-opacity p-1 -mr-1 shrink-0 ${questions.length === 1 ? "opacity-0 cursor-not-allowed" : "opacity-0 group-hover:opacity-100"}`}
                       disabled={questions.length === 1}
                       title="Delete question"
                     >
@@ -481,7 +486,9 @@ export default function CreateAssessmentPage() {
               <div>
                 <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
                   Description{" "}
-                  <span className="text-slate-400 dark:text-neutral-500 font-normal">(optional)</span>
+                  <span className="text-slate-400 dark:text-neutral-500 font-normal">
+                    (optional)
+                  </span>
                 </Label>
                 <textarea
                   placeholder="Add more context for this question ..."
@@ -584,10 +591,11 @@ export default function CreateAssessmentPage() {
                   {currentQ.options.map((opt) => (
                     <div
                       key={opt.id}
-                      className={`flex items-center gap-3 border rounded-lg px-4 py-3 transition-all ${opt.isCorrect
-                        ? "border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20"
-                        : "border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
-                        }`}
+                      className={`flex items-center gap-3 border rounded-lg px-4 py-3 transition-all ${
+                        opt.isCorrect
+                          ? "border-emerald-300 dark:border-emerald-800 bg-emerald-50/40 dark:bg-emerald-950/20"
+                          : "border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
+                      }`}
                     >
                       <button
                         onClick={() => toggleCorrect(selectedQ, opt.id)}
@@ -611,10 +619,11 @@ export default function CreateAssessmentPage() {
                           updateOptionText(selectedQ, opt.id, e.target.value)
                         }
                         disabled={isTrueFalse}
-                        className={`flex-1 text-sm bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-neutral-600 ${opt.isCorrect
-                          ? "text-emerald-700 dark:text-emerald-400 font-medium"
-                          : "text-slate-700 dark:text-neutral-300"
-                          } disabled:cursor-default`}
+                        className={`flex-1 text-sm bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-neutral-600 ${
+                          opt.isCorrect
+                            ? "text-emerald-700 dark:text-emerald-400 font-medium"
+                            : "text-slate-700 dark:text-neutral-300"
+                        } disabled:cursor-default`}
                       />
 
                       {opt.isCorrect && (

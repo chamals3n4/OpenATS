@@ -11,7 +11,7 @@ import {
   Mail01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { useOffers, useDeleteOffer } from "@/hooks/use-api";
+import { useOffers, useDeleteOffer } from "@/hooks/queries/use-offers";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,8 +43,10 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-import { ResumeScrollView } from "@/components/resume-scroll-view";
-import { CandidateSidePanel } from "@/components/candidate-side-panel";
+import {
+  ResumeScrollView,
+  CandidateSidePanel,
+} from "@/components/dynamic-imports";
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 
 type OfferStatus =

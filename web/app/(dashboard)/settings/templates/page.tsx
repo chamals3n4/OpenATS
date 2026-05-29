@@ -55,7 +55,7 @@ import {
   useTemplates,
   useDeleteTemplate,
   useCreateTemplate,
-} from "@/hooks/use-api";
+} from "@/hooks/queries/use-templates";
 import type { Template } from "@/types";
 
 type TemplateType = "offer" | "rejection" | "assessment" | "general";

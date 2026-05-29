@@ -30,7 +30,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useActiveLogs } from "@/hooks/use-api";
+import { useActiveLogs } from "@/hooks/queries/use-logs";
 import type {
   ActiveLog,
   ActiveLogLevel,

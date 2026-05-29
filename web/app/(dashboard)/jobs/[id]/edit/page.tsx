@@ -19,9 +19,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useDepartments, useJob, useUpdateJob } from "@/hooks/use-api";
+import { useDepartments } from "@/hooks/queries/use-company";
+import { useJob, useUpdateJob } from "@/hooks/queries/use-jobs";
+
 import type { Department, Job, JobDetail } from "@/types";
-import { JobDescriptionEditor } from "@/components/job-description-editor";
+import { JobDescriptionEditor } from "@/components/dynamic-imports";
 
 const EMPLOYEMENT_LABELS: Record<Job["employmentType"], string> = {
   full_time: "Full Time",
@@ -128,7 +130,9 @@ function EditJobForm({
           salaryType: "fixed",
           currency,
           payFrequency,
-          salaryFixed: salaryFixed ? Number(salaryFixed.replace(/,/g, "")) : null,
+          salaryFixed: salaryFixed
+            ? Number(salaryFixed.replace(/,/g, ""))
+            : null,
           salaryMin: null,
           salaryMax: null,
         } as const;
@@ -442,8 +446,7 @@ function EditJobForm({
       <div className="pt-10 flex items-center gap-4">
         <Button
           onClick={handleSubmit}
-          className="text-white cursor-pointer rounded-lg h-10 px-10 min-w-35 font-medium shadow-none border-none"
-          style={{ backgroundColor: "var(--theme-color)" }}
+          className="h-[34px] min-w-35 rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] cursor-pointer"
           disabled={!title || !departmentId || !employmentType || isPending}
         >
           {isPending && <Loader2 className="w-4 h-4 animate-spin mr-1" />}
@@ -451,7 +454,7 @@ function EditJobForm({
         </Button>
         <Link
           href="/jobs"
-          className="flex items-center justify-center border border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 rounded-lg h-10 px-6 font-medium bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
+          className="flex h-[34px] items-center justify-center rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 transition-colors"
         >
           Cancel
         </Link>
@@ -504,7 +507,7 @@ export default function EditJobPage() {
             <p className="text-sm text-slate-500">Job not found.</p>
             <Link
               href="/jobs"
-              className="inline-flex items-center justify-center border border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 rounded-lg h-10 px-6 font-medium bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors"
+              className="inline-flex h-[34px] items-center justify-center rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 transition-colors"
             >
               Back to Jobs
             </Link>

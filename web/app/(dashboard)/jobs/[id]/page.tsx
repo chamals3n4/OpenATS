@@ -25,30 +25,42 @@ import {
 } from "@hugeicons/core-free-icons";
 import {
   useJob,
-  usePipeline,
-  useCandidates,
-  useCurrentUser,
-  useChatHistory,
-  useCreateStage,
-  useUpdateStage,
-  useDeleteStage,
-  useReorderStages,
   useCustomQuestions,
   useCreateQuestion,
   useUpdateQuestion,
   useDeleteQuestion,
+  useHiringTeam,
+  useAddHiringTeamMember,
+  useRemoveHiringTeamMember,
+} from "@/hooks/queries/use-jobs";
+import { usePipeline } from "@/hooks/queries/use-pipeline";
+import { useCandidates, useCandidate } from "@/hooks/queries/use-candidates";
+import { useChatHistory } from "@/hooks/queries/use-chat";
+import {
+  useCreateStage,
+  useUpdateStage,
+  useDeleteStage,
+  useReorderStages,
+} from "@/hooks/queries/use-pipeline";
+import {
+  useAssessment,
   useAssessments,
   useJobAssessments,
   useAttachAssessment,
   useDetachAssessment,
-  useHiringTeam,
-  useAddHiringTeamMember,
-  useRemoveHiringTeamMember,
-  useUsers,
-  useTemplates,
-} from "@/hooks/use-api";
+} from "@/hooks/queries/use-assessments";
+import { useUsers } from "@/hooks/queries/use-user";
+import { useTemplate, useTemplates } from "@/hooks/queries/use-templates";
 import { useJobChat } from "@/hooks/use-job-chat";
-import type { PipelineStage, JobDetail, CustomQuestion, ChatMessage, Candidate, User } from "@/types";
+import { useCurrentUser } from "@/hooks/queries/use-user";
+import type {
+  PipelineStage,
+  JobDetail,
+  CustomQuestion,
+  ChatMessage,
+  Candidate,
+  User,
+} from "@/types";
 
 const STAGE_COLORS: Record<PipelineStage["stageType"], string> = {
   none: "bg-slate-400",
@@ -167,58 +179,43 @@ export default function JobDetailsPage() {
   const jobId = Number(params.id);
   const queryClient = useQueryClient();
 
-  // Prefetch all per-job data on mount so every tab and the candidate count
-  // render immediately without a loading state.
+  // Prefetch core per-job data on mount so tabs render without a loading
+  // state.  Less-critical data (chat, users) loads on demand when the
+  // user opens those tabs — the global prefetch already warmed /users.
   useEffect(() => {
     if (!jobId) return;
 
-    // Hiring process (pipeline stages)
     void queryClient.prefetchQuery({
       queryKey: ["jobs", jobId, "pipeline"],
       queryFn: () =>
         serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
+      staleTime: 1000 * 60 * 3,
     });
 
-    // Candidates for this job (drives the count badge on the overview tab)
     void queryClient.prefetchQuery({
       queryKey: ["candidates", jobId, undefined],
       queryFn: () =>
         serverFetch<{ data: Candidate[] }>(`/candidates/jobs/${jobId}`),
-      staleTime: 0,
+      staleTime: 1000 * 30,
     });
 
-    // Hiring team members
     void queryClient.prefetchQuery({
       queryKey: ["jobs", jobId, "team"],
-      queryFn: () =>
-        serverFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
+      queryFn: () => serverFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
+      staleTime: 1000 * 60 * 5,
     });
 
-    // All users (needed for the "add team member" dropdown)
-    void queryClient.prefetchQuery({
-      queryKey: ["users"],
-      queryFn: () => serverFetch<{ data: User[] }>("/users"),
-    });
-
-    // Custom questions tab
     void queryClient.prefetchQuery({
       queryKey: ["jobs", jobId, "questions"],
       queryFn: () =>
         serverFetch<{ data: CustomQuestion[] }>(`/jobs/${jobId}/questions`),
+      staleTime: 1000 * 60 * 5,
     });
 
-    // Assessments attached to this job
     void queryClient.prefetchQuery({
       queryKey: ["jobs", jobId, "assessments"],
-      queryFn: () =>
-        serverFetch<{ data: any[] }>(`/jobs/${jobId}/assessments`),
-    });
-
-    // Discussion / internal notes history
-    void queryClient.prefetchQuery({
-      queryKey: ["chat", "job", jobId],
-      queryFn: () =>
-        serverFetch<{ data: ChatMessage[] }>(`/chat/job/${jobId}`),
+      queryFn: () => serverFetch<{ data: any[] }>(`/jobs/${jobId}/assessments`),
+      staleTime: 1000 * 60 * 5,
     });
   }, [jobId, queryClient]);
 
@@ -639,9 +636,8 @@ export default function JobDetailsPage() {
             {/* Right Column: Actions */}
             <div className="flex items-center gap-3 shrink-0 pt-2">
               <Button
-                variant="outline"
                 onClick={() => setIsNotesOpen(!isNotesOpen)}
-                className="border-slate-200 cursor-pointer dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-neutral-100 rounded-lg h-11 px-5 font-medium gap-2.5"
+                className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer"
               >
                 <HugeiconsIcon
                   icon={Chatting01Icon}
@@ -651,7 +647,7 @@ export default function JobDetailsPage() {
                 <span>Discussions</span>
               </Button>
               <Link href={`/jobs/${jobId}/pipeline`}>
-                <Button className="bg-theme hover:bg-theme-hover cursor-pointer text-white rounded-lg h-11 px-7 font-medium border-none gap-2">
+                <Button className="h-[34px] rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] cursor-pointer">
                   <span>Hiring Pipeline</span>
                   <HugeiconsIcon
                     icon={ArrowRight01Icon}
@@ -838,8 +834,8 @@ export default function JobDetailsPage() {
                       </div>
                       <DialogFooter>
                         <Button
-                          variant="outline"
                           onClick={() => setAddTeamMemberOpen(false)}
+                          className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600"
                         >
                           Cancel
                         </Button>
@@ -848,7 +844,7 @@ export default function JobDetailsPage() {
                             !newMemberId || addTeamMemberMutation.isPending
                           }
                           onClick={handleAddTeamMember}
-                          className="bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white"
+                          className="h-[34px] rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
                         >
                           {addTeamMemberMutation.isPending
                             ? "Adding..."
@@ -1950,9 +1946,8 @@ export default function JobDetailsPage() {
 
             <DialogFooter className="mt-auto shrink-0 gap-3 border-t border-slate-100 pt-6 dark:border-neutral-800 sm:pt-7">
               <Button
-                variant="outline"
                 onClick={() => setConfigOpen(false)}
-                className="h-10 px-6 border-slate-200 cursor-pointer dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium shadow-none rounded-md"
+                className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer"
               >
                 Cancel
               </Button>
@@ -1986,7 +1981,7 @@ export default function JobDetailsPage() {
                     { onSuccess: () => setConfigOpen(false) },
                   );
                 }}
-                className="h-10 px-6 cursor-pointer bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium shadow-none rounded-md border-none disabled:opacity-50"
+                className="h-[34px] rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] cursor-pointer disabled:opacity-50"
               >
                 {updateStageMutation.isPending ? "Saving…" : "Save"}
               </Button>

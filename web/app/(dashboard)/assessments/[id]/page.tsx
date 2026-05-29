@@ -8,7 +8,7 @@ import {
   useCreateAssessmentQuestion,
   useUpdateAssessmentQuestion,
   useDeleteAssessmentQuestion,
-} from "@/hooks/use-api";
+} from "@/hooks/queries/use-assessments";
 import type { Ref } from "react";
 import Link from "next/link";
 import {
@@ -97,7 +97,11 @@ const inputCls =
 const textareaCls =
   "w-full px-3.5 py-3 text-sm bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-lg shadow-none placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus:outline-none focus:border-slate-400 resize-none transition-colors";
 
-export default function EditAssessmentPage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditAssessmentPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
   const unwrappedParams = use(params);
   const assessmentId = parseInt(unwrappedParams.id, 10);
@@ -152,11 +156,12 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
           description: dbQ.description ?? "",
           type,
           points: normalizePoints(dbQ.points),
-          options: dbQ.options?.map((opt) => ({
-            id: opt.id ?? ++idCounter,
-            text: opt.label,
-            isCorrect: opt.isCorrect,
-          })) ?? [],
+          options:
+            dbQ.options?.map((opt) => ({
+              id: opt.id ?? ++idCounter,
+              text: opt.label,
+              isCorrect: opt.isCorrect,
+            })) ?? [],
           shortAnswerKey: "",
         };
       });
@@ -170,7 +175,7 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
       setQuestions([empty]);
       setSelectedQ(empty.uid);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assessmentData]);
 
   const handleSave = async () => {
@@ -193,8 +198,12 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
         passScore: parseInt(totalPoints) || 50,
       } as any);
 
-      const currentDbIds = new Set(savedQuestions.filter((q) => q.dbId).map((q) => q.dbId!));
-      const toDelete = originalDbIds.current.filter((id) => !currentDbIds.has(id));
+      const currentDbIds = new Set(
+        savedQuestions.filter((q) => q.dbId).map((q) => q.dbId!),
+      );
+      const toDelete = originalDbIds.current.filter(
+        (id) => !currentDbIds.has(id),
+      );
 
       for (const dbId of toDelete) {
         await deleteQuestionMutation.mutateAsync(dbId);
@@ -205,7 +214,9 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
         const questionData = {
           title: q.title || `Question ${idx + 1}`,
           description: q.description || null,
-          questionType: (isMultipleChoice ? "multiple_choice" : "short_answer") as "multiple_choice" | "short_answer",
+          questionType: (isMultipleChoice
+            ? "multiple_choice"
+            : "short_answer") as "multiple_choice" | "short_answer",
           points: parseInt(q.points) || 5,
           position: idx + 1,
           options: isMultipleChoice
@@ -218,7 +229,10 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
         };
 
         if (q.dbId) {
-          await updateQuestionMutation.mutateAsync({ questionId: q.dbId, data: questionData });
+          await updateQuestionMutation.mutateAsync({
+            questionId: q.dbId,
+            data: questionData,
+          });
         } else {
           await createQuestionMutation.mutateAsync(questionData);
         }
@@ -576,7 +590,9 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
               <div>
                 <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
                   Description{" "}
-                  <span className="text-slate-400 dark:text-neutral-500 font-normal">(optional)</span>
+                  <span className="text-slate-400 dark:text-neutral-500 font-normal">
+                    (optional)
+                  </span>
                 </Label>
                 <textarea
                   placeholder="Add more context for this question ..."
@@ -670,8 +686,8 @@ export default function EditAssessmentPage({ params }: { params: Promise<{ id: s
                     Answer Options
                   </h3>
                   <span className="text-[11px] text-slate-400">
-                    Click {isTrueFalse ? "True or False" : "the circle"} to
-                    mark correct answer
+                    Click {isTrueFalse ? "True or False" : "the circle"} to mark
+                    correct answer
                   </span>
                 </div>
 

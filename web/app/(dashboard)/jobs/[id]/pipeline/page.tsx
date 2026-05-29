@@ -10,16 +10,18 @@ import { ArrowLeft, GripVertical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
-import { ResumeScrollView } from "@/components/resume-scroll-view";
-import { CandidateSidePanel } from "@/components/candidate-side-panel";
-import { toast } from "sonner";
-
 import {
-  useJob,
-  usePipeline,
+  ResumeScrollView,
+  CandidateSidePanel,
+} from "@/components/dynamic-imports";
+import { toast } from "sonner";
+import { useJob } from "@/hooks/queries/use-jobs";
+import { usePipeline } from "@/hooks/queries/use-pipeline";
+import {
   useCandidates,
   useMoveCandidateStage,
-} from "@/hooks/use-api";
+} from "@/hooks/queries/use-candidates";
+
 import type { Candidate, PipelineStage, StageAutomationFlags } from "@/types";
 
 function showStageAutomationToasts(automation: StageAutomationFlags) {

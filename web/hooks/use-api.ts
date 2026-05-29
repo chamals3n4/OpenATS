@@ -106,10 +106,13 @@ export function useUpdateStage(jobId: number) {
         rejectionTemplateId?: number | null;
       };
     }) =>
-      serverFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline/${stageId}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      }),
+      serverFetch<{ data: PipelineStage }>(
+        `/jobs/${jobId}/pipeline/${stageId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(data),
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -120,9 +123,12 @@ export function useDeleteStage(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (stageId: number) =>
-      serverFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline/${stageId}`, {
-        method: "DELETE",
-      }),
+      serverFetch<{ data: PipelineStage }>(
+        `/jobs/${jobId}/pipeline/${stageId}`,
+        {
+          method: "DELETE",
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -133,10 +139,13 @@ export function useReorderStages(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (stages: Array<{ id: number; position: number }>) =>
-      serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline/reorder`, {
-        method: "POST",
-        body: JSON.stringify({ stages }),
-      }),
+      serverFetch<{ data: PipelineStage[] }>(
+        `/jobs/${jobId}/pipeline/reorder`,
+        {
+          method: "POST",
+          body: JSON.stringify({ stages }),
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "pipeline"] });
     },
@@ -227,6 +236,7 @@ export function useUsers() {
   return useQuery({
     queryKey: ["users"],
     queryFn: () => serverFetch<{ data: User[] }>("/users"),
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -235,6 +245,7 @@ export function useUser(id: number) {
     queryKey: ["users", id],
     queryFn: () => serverFetch<{ data: User }>(`/users/${id}`),
     enabled: !!id,
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -249,6 +260,7 @@ export function useUpdateUser() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["users"] });
       queryClient.invalidateQueries({ queryKey: ["users", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["me"] });
     },
   });
 }
@@ -309,6 +321,7 @@ export function useCompany() {
   return useQuery({
     queryKey: ["company"],
     queryFn: () => serverFetch<{ data: Company | null }>("/company"),
+    staleTime: 1000 * 60 * 10,
   });
 }
 
@@ -450,6 +463,7 @@ export function useAssessments() {
   return useQuery({
     queryKey: ["assessments"],
     queryFn: () => serverFetch<{ data: Assessment[] }>("/assessments"),
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -726,7 +740,6 @@ export function useUpdateOfferStatus() {
         body: JSON.stringify({ status }),
       }),
     onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["offers", variables.id] });
       queryClient.invalidateQueries({ queryKey: ["offers"] });
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
@@ -784,13 +797,13 @@ export function useCandidates(
     queryKey: ["candidates", jobId ?? "all", filters],
     queryFn: () => serverFetch<{ data: Candidate[] }>(path),
     enabled: options?.enabled !== false,
-    // Always treat candidates as stale so every mount triggers a background
-    // refresh. This ensures newly applied candidates (submitted via the public
-    // careers page, outside of React Query) always appear without a manual
-    // page reload.
-    staleTime: 0,
+    // Short staleTime so newly applied candidates (submitted via the public
+    // careers page, outside of React Query) appear quickly.  Refetch on mount
+    // catches any missed updates without hammering the API on every render.
+    staleTime: 1000 * 60 * 2,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    refetchIntervalInBackground: false,
     // Keep showing the previous list while a fresh fetch is in flight so
     // there's no blank flash when navigating to the candidates section.
     placeholderData: keepPreviousData,
@@ -810,25 +823,25 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
     // basic info immediately while the full detail (cv analysis, answers,
     // history) loads in the background — same pattern as useJob.
     initialData: () => {
-          const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
-            queryKey: ["candidates"],
-          });
-          for (const [, listData] of allLists) {
-            const match = listData?.data?.find((c) => c.id === id);
-            if (match) {
-              return {
-                data: {
-                  ...match,
-                  cvAnalysis: null,
-                  answers: [],
-                  selections: [],
-                  history: [],
-                  offer: null,
-                } as CandidateDetail,
-              };
-            }
-          }
-          return undefined;
+      const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
+        queryKey: ["candidates"],
+      });
+      for (const [, listData] of allLists) {
+        const match = listData?.data?.find((c) => c.id === id);
+        if (match) {
+          return {
+            data: {
+              ...match,
+              cvAnalysis: null,
+              answers: [],
+              selections: [],
+              history: [],
+              offer: null,
+            } as CandidateDetail,
+          };
+        }
+      }
+      return undefined;
     },
     initialDataUpdatedAt: () => {
       const allStates = queryClient.getQueriesData<{ data: Candidate[] }>({
@@ -840,10 +853,11 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
       }
       return undefined;
     },
-    refetchInterval: (query) =>
-      enabled && query.state.data?.data?.cvAnalysis?.status === "pending"
-        ? 2500
-        : false,
+    refetchInterval: (query) => {
+      const status = query.state.data?.data?.cvAnalysis?.status;
+      return enabled && (status === "pending" || status == null) ? 2500 : false;
+    },
+    refetchIntervalInBackground: false,
   });
 }
 
@@ -858,8 +872,8 @@ export function useMoveCandidateStage() {
         method: "PUT",
         body: JSON.stringify({ newStageId }),
       }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["candidates", variables.id] });
     },
   });
 }
@@ -962,6 +976,7 @@ export function useTemplates() {
   return useQuery({
     queryKey: ["templates"],
     queryFn: () => serverFetch<{ data: Template[] }>("/templates"),
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -970,6 +985,7 @@ export function useTemplate(id: number) {
     queryKey: ["templates", id],
     queryFn: () => serverFetch<{ data: Template }>(`/templates/${id}`),
     enabled: !!id,
+    staleTime: 1000 * 6 * 5,
   });
 }
 
@@ -1103,7 +1119,8 @@ export function useActiveLogs(
     },
     enabled: options?.enabled ?? true,
     refetchInterval: options?.live ? 4500 : false,
-    staleTime: 2000,
+    refetchIntervalInBackground: false,
+    staleTime: options?.live ? 4000 : 1000 * 60,
     // Keep showing the previous page of logs while a new filter/page fetch is
     // in flight – prevents the table from going blank between filter changes.
     placeholderData: keepPreviousData,
@@ -1123,10 +1140,13 @@ export function useUpdateSettingsAllowedOrigins() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (origins: string[]) =>
-      serverFetch<{ data: { origins: string[] } }>("/settings/allowed-origins", {
-        method: "PUT",
-        body: JSON.stringify({ origins }),
-      }),
+      serverFetch<{ data: { origins: string[] } }>(
+        "/settings/allowed-origins",
+        {
+          method: "PUT",
+          body: JSON.stringify({ origins }),
+        },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["settings", "allowed-origins"],

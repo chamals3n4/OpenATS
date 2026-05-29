@@ -19,9 +19,9 @@ import { toast } from "sonner";
 import {
   useAssessments,
   useDeleteAssessment,
-  useCandidates,
   useInviteToAssessment,
-} from "@/hooks/use-api";
+} from "@/hooks/queries/use-assessments";
+import { useCandidates } from "@/hooks/queries/use-candidates";
 import type { Assessment } from "@/types";
 
 import { Button } from "@/components/ui/button";

@@ -86,10 +86,7 @@ export default function CareersPreviewPage() {
           className="mb-4 h-10 min-h-10 px-4 gap-2 rounded-md w-full sm:w-fit justify-center text-sm font-medium border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-slate-800 dark:text-neutral-100 hover:bg-slate-50 dark:hover:bg-neutral-900 shadow-none"
           render={<Link href="/settings/careers" prefetch />}
         >
-          <HugeiconsIcon
-            icon={ArrowLeft01Icon}
-            className="size-4 shrink-0"
-          />
+          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4 shrink-0" />
           Careers settings
         </Button>
         <h1 className="text-[22px] font-semibold text-slate-900 dark:text-neutral-100 leading-none mb-2">
@@ -140,7 +137,8 @@ export default function CareersPreviewPage() {
                         icon={Briefcase01Icon}
                         className="size-3.5 text-slate-400"
                       />
-                      {EMPLOYMENT_LABELS[job.employmentType] ?? job.employmentType}
+                      {EMPLOYMENT_LABELS[job.employmentType] ??
+                        job.employmentType}
                     </span>
                     {job.location ? (
                       <span className="inline-flex items-center gap-1.5">

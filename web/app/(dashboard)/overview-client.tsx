@@ -2,33 +2,11 @@
 
 import { useMemo, useState } from "react";
 import {
-  ArrowDown01Icon,
   Download05Icon,
   ListViewIcon,
   TextIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Line,
-  LineChart,
-  Pie,
-  PieChart,
-  ReferenceLine,
-  XAxis,
-  YAxis,
-} from "recharts";
-import {
-  ChartContainer,
-  ChartLegend,
-  ChartLegendContent,
-  ChartTooltip,
-  ChartTooltipContent,
-  type ChartConfig,
-} from "@/components/ui/chart";
 import {
   Select,
   SelectContent,
@@ -38,29 +16,18 @@ import {
 } from "@/components/ui/select";
 import {
   useAnalyticsReport,
-  useDepartments,
   useExportAnalyticsReport,
-} from "@/hooks/use-api";
+} from "@/hooks/queries/use-reports";
+import { useDepartments } from "@/hooks/queries/use-company";
+
 import { Button } from "@/components/ui/button";
-
-const pipelineConfig: ChartConfig = {
-  current: { label: "This Period", color: "#D97757" },
-  previous: { label: "Previous Period", color: "#E8CFC7" },
-};
-
-const volumeConfig: ChartConfig = {
-  applications: { label: "Applications", color: "#D97757" },
-  hires: { label: "Hires", color: "#94A38B" },
-};
-
-const deptConfig: ChartConfig = {
-  days: { label: "Avg. Days", color: "#D97757" },
-};
-
-const offerConfig: ChartConfig = {
-  sent: { label: "Offers Sent", color: "#C4A381" },
-  accepted: { label: "Offers Accepted", color: "#D97757" },
-};
+import {
+  PipelineChart,
+  VolumeChart,
+  SourceChart,
+  DeptChart,
+  OfferChart,
+} from "./_overview-charts";
 
 const SOURCE_COLORS = ["#D97757", "#E8916F", "#C4A381", "#94A38B", "#E8CFC7"];
 
@@ -123,14 +90,6 @@ export function OverviewClient() {
         color: SOURCE_COLORS[i % SOURCE_COLORS.length] ?? SOURCE_COLORS[0],
       })),
     [report?.sourceOfCandidates],
-  );
-
-  const sourceConfig: ChartConfig = useMemo(
-    () =>
-      Object.fromEntries(
-        sourceData.map((s) => [s.name, { label: s.name, color: s.color }]),
-      ),
-    [sourceData],
   );
 
   const DEPT_LABELS: Record<string, string> = useMemo(() => {
@@ -202,7 +161,7 @@ export function OverviewClient() {
               setExportFormat((value as "csv" | "json") ?? "csv")
             }
           >
-            <SelectTrigger className="w-35 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-2">
+            <SelectTrigger className="w-35 h-9! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-600 dark:text-neutral-300 text-[14px] focus:ring-0 px-4">
               <SelectValue>
                 <span className="flex items-center gap-2">
                   <span className="inline-flex w-6 shrink-0 items-center justify-center">
@@ -216,7 +175,7 @@ export function OverviewClient() {
               </SelectValue>
             </SelectTrigger>
             <SelectContent
-              className="rounded-lg shadow-lg w-37 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900"
+              className="rounded-md shadow-lg w-35 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[14px]"
               sideOffset={({ side, anchor }) =>
                 side === "bottom" || side === "top" ? -anchor.height : 0
               }
@@ -242,7 +201,7 @@ export function OverviewClient() {
 
           <Button
             onClick={handleExport}
-            className="bg-theme hover:bg-theme-hover text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium cursor-pointer"
+            className="bg-theme hover:bg-theme-hover text-white rounded-md h-9 px-4 flex items-center gap-2 border border-theme shadow-none text-[14px] font-semibold cursor-pointer"
           >
             <HugeiconsIcon icon={Download05Icon} className="size-4" />
             Export Report
@@ -309,89 +268,14 @@ export function OverviewClient() {
             title="Pipeline Report"
             subtitle="Candidates By Stage (Current Vs. Previous Period)"
           >
-            <ChartContainer config={pipelineConfig} className="h-52 w-full">
-              <BarChart data={pipelineData} barGap={2} barCategoryGap="32%">
-                <CartesianGrid
-                  vertical={false}
-                  stroke="currentColor"
-                  className="text-slate-100 dark:text-neutral-800"
-                />
-                <XAxis
-                  dataKey="stage"
-                  tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={26}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar
-                  dataKey="current"
-                  fill="var(--color-current)"
-                  radius={[3, 3, 0, 0]}
-                />
-                <Bar
-                  dataKey="previous"
-                  fill="var(--color-previous)"
-                  radius={[3, 3, 0, 0]}
-                />
-                <ChartLegend content={<ChartLegendContent />} />
-              </BarChart>
-            </ChartContainer>
+            <PipelineChart data={pipelineData} />
           </ChartCard>
 
           <ChartCard
             title="Candidate Volume"
             subtitle="Applications And Hires Over Time"
           >
-            <ChartContainer config={volumeConfig} className="h-52 w-full">
-              <LineChart data={volumeData}>
-                <CartesianGrid
-                  vertical={false}
-                  stroke="currentColor"
-                  className="text-slate-100 dark:text-neutral-800"
-                />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={26}
-                />
-                <ReferenceLine
-                  x="Feb 15"
-                  stroke="#cbd5e1"
-                  strokeDasharray="3 3"
-                />
-                <ChartTooltip
-                  content={<ChartTooltipContent indicator="dot" />}
-                />
-                <Line
-                  dataKey="applications"
-                  stroke="var(--color-applications)"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-                <Line
-                  dataKey="hires"
-                  stroke="var(--color-hires)"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-                <ChartLegend content={<ChartLegendContent />} />
-              </LineChart>
-            </ChartContainer>
+            <VolumeChart data={volumeData} />
           </ChartCard>
         </div>
 
@@ -400,114 +284,18 @@ export function OverviewClient() {
             title="Source of Candidates"
             subtitle="Where applicants are coming from"
           >
-            <ChartContainer config={sourceConfig} className="h-44 w-full">
-              <PieChart>
-                <ChartTooltip
-                  content={<ChartTooltipContent nameKey="name" hideLabel />}
-                />
-                <Pie
-                  data={sourceData}
-                  dataKey="value"
-                  nameKey="name"
-                  cx="50%"
-                  cy="50%"
-                  innerRadius={44}
-                  outerRadius={68}
-                  strokeWidth={2}
-                >
-                  {sourceData.map((entry) => (
-                    <Cell key={entry.name} fill={entry.color} />
-                  ))}
-                </Pie>
-              </PieChart>
-            </ChartContainer>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1.5 px-1">
-              {sourceData.map((s) => (
-                <div key={s.name} className="flex items-center gap-1.5">
-                  <div
-                    className="w-2 h-2 rounded-full shrink-0"
-                    style={{ background: s.color }}
-                  />
-                  <span className="text-xs text-slate-500 dark:text-neutral-400">
-                    {s.name}
-                  </span>
-                  <span className="text-xs font-semibold text-slate-700 dark:text-neutral-200 ml-auto">
-                    {s.value}%
-                  </span>
-                </div>
-              ))}
-            </div>
+            <SourceChart data={sourceData} />
           </ChartCard>
 
           <ChartCard title="Time To Hire" subtitle="Average days by department">
-            <ChartContainer config={deptConfig} className="h-52 w-full">
-              <BarChart data={deptData} layout="vertical" barCategoryGap="28%">
-                <CartesianGrid
-                  horizontal={false}
-                  stroke="currentColor"
-                  className="text-slate-100 dark:text-neutral-800"
-                />
-                <XAxis
-                  type="number"
-                  tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  type="category"
-                  dataKey="dept"
-                  tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={72}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar
-                  dataKey="days"
-                  fill="var(--color-days)"
-                  radius={[0, 3, 3, 0]}
-                />
-              </BarChart>
-            </ChartContainer>
+            <DeptChart data={deptData} />
           </ChartCard>
 
           <ChartCard
             title="Offer Trends"
             subtitle="Offers sent vs. accepted (last 5 months)"
           >
-            <ChartContainer config={offerConfig} className="h-52 w-full">
-              <BarChart data={offerData} barGap={3} barCategoryGap="35%">
-                <CartesianGrid
-                  vertical={false}
-                  stroke="currentColor"
-                  className="text-slate-100 dark:text-neutral-800"
-                />
-                <XAxis
-                  dataKey="month"
-                  tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 10, fill: "#94a3b8" }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={26}
-                />
-                <ChartTooltip content={<ChartTooltipContent />} />
-                <Bar
-                  dataKey="sent"
-                  fill="var(--color-sent)"
-                  radius={[3, 3, 0, 0]}
-                />
-                <Bar
-                  dataKey="accepted"
-                  fill="var(--color-accepted)"
-                  radius={[3, 3, 0, 0]}
-                />
-                <ChartLegend content={<ChartLegendContent />} />
-              </BarChart>
-            </ChartContainer>
+            <OfferChart data={offerData} />
           </ChartCard>
         </div>
       </div>

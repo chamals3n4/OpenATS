@@ -1,10 +1,8 @@
 "use client";
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import {
   Search01Icon,
-  PlusSignIcon,
-  CallIcon,
-  Mail01Icon,
   PencilEdit01Icon,
   Delete02Icon,
 } from "@hugeicons/core-free-icons";
@@ -28,7 +26,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -52,11 +49,9 @@ import {
 import {
   useCandidates,
   useDeleteCandidate,
-  useJobs,
   useUpdateCandidateBasicDetails,
-} from "@/hooks/use-api";
-import { ResumeScrollView } from "@/components/resume-scroll-view";
-import { CandidateSidePanel } from "@/components/candidate-side-panel";
+} from "@/hooks/queries/use-candidates";
+import { useJobs } from "@/hooks/queries/use-jobs";
 import type { Candidate } from "@/types";
 
 function timeAgo(dateStr: string) {
@@ -70,11 +65,10 @@ function timeAgo(dateStr: string) {
 }
 
 export default function ManageCandidatesPage() {
+  const router = useRouter();
   const [selectedJobId, setSelectedJobId] = useState<number | undefined>();
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [selectedId, setSelectedId] = useState<number | null>(null);
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null);
   const [editTarget, setEditTarget] = useState<Candidate | null>(null);
   const [editFirstName, setEditFirstName] = useState("");
@@ -98,11 +92,8 @@ export default function ManageCandidatesPage() {
   const candidates = candidatesData?.data ?? [];
   const jobs = jobsData?.data ?? [];
 
-  const selectedCandidate = candidates.find((c) => c.id === selectedId) ?? null;
-
   const handleRowClick = (c: Candidate) => {
-    setSelectedId(c.id);
-    setIsDetailOpen(true);
+    router.push(`/candidates/${c.id}`);
   };
 
   const openEditDialog = (candidate: Candidate) => {
@@ -119,7 +110,6 @@ export default function ManageCandidatesPage() {
     deleteMutation.mutate(deleteTarget.id, {
       onSuccess: () => {
         setDeleteTarget(null);
-        if (selectedId === deleteTarget.id) setIsDetailOpen(false);
       },
     });
   };
@@ -212,7 +202,7 @@ export default function ManageCandidatesPage() {
 
       {/* Table */}
       <div className="px-8 py-6">
-        <div className="border border-slate-300 dark:border-neutral-700 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
+        <div className="overflow-hidden rounded-md border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-900">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
@@ -280,26 +270,24 @@ export default function ManageCandidatesPage() {
                     >
                       <div className="flex items-center justify-end gap-2">
                         <Button
-                          variant="outline"
                           size="sm"
-                          className="h-8 px-3 rounded-md cursor-pointer border-slate-300 dark:border-neutral-700 text-slate-700 dark:text-neutral-300"
+                          className="h-[34px] rounded-md border-none bg-neutral-700/90 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
                           onClick={() => openEditDialog(c)}
                         >
                           <HugeiconsIcon
                             icon={PencilEdit01Icon}
-                            className="size-3.5 mr-1"
+                            className="size-4"
                           />
                           Edit
                         </Button>
                         <Button
-                          variant="outline"
                           size="sm"
-                          className="h-8 px-3 rounded-md cursor-pointer border-red-200 dark:border-red-900/40 text-red-600 dark:text-red-400"
+                          className="h-[34px] rounded-md border-none bg-red-600/90 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 dark:bg-red-700/90 dark:hover:bg-red-600 cursor-pointer"
                           onClick={() => setDeleteTarget(c)}
                         >
                           <HugeiconsIcon
                             icon={Delete02Icon}
-                            className="size-3.5 mr-1"
+                            className="size-4"
                           />
                           Delete
                         </Button>
@@ -320,87 +308,6 @@ export default function ManageCandidatesPage() {
           </div>
         </div>
       </div>
-
-      {/* Detail Sheet */}
-      <Sheet open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <SheetContent
-          showCloseButton={true}
-          className="w-[98vw] sm:max-w-[98vw] p-0 flex flex-row gap-0 border-l border-slate-200 dark:border-neutral-800 shadow-none overflow-hidden bg-white dark:bg-neutral-950"
-        >
-          {selectedCandidate && (
-            <>
-              {/* Left — CV preview */}
-              <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                <div className="px-6 lg:px-8 py-4 lg:py-5 border-b border-slate-100 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-950">
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0">
-                    <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 tracking-tight">
-                      {selectedCandidate.firstName} {selectedCandidate.lastName}
-                    </h2>
-                    {selectedCandidate.stageName && (
-                      <Badge className="bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 border-none shadow-none font-medium px-2 py-0.5 rounded-full text-[11px] uppercase tracking-wider whitespace-nowrap">
-                        {selectedCandidate.stageName}
-                      </Badge>
-                    )}
-                  </div>
-                  <p className="text-slate-500 dark:text-neutral-400 text-[13px] mt-0.5">
-                    {selectedCandidate.jobTitle ?? "Unknown Job"}
-                    <span className="mx-1.5 opacity-30 mt-1">•</span>
-                    Applied {timeAgo(selectedCandidate.appliedAt)}
-                  </p>
-                  <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1.5">
-                    {[
-                      [CallIcon, selectedCandidate.phone ?? "—"],
-                      [Mail01Icon, selectedCandidate.email],
-                    ].map(([icon, value], i) => (
-                      <div
-                        key={i}
-                        className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:text-theme cursor-pointer whitespace-nowrap"
-                      >
-                        <HugeiconsIcon
-                          icon={icon as any}
-                          className="size-3.5 text-slate-400"
-                        />
-                        <span>{value as string}</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                  {selectedCandidate.resumeUrl ? (
-                    <ResumeScrollView resumeUrl={selectedCandidate.resumeUrl} />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
-                      <svg
-                        className="size-10 opacity-30"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={1.5}
-                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                        />
-                      </svg>
-                      <p className="text-[13px] font-medium">
-                        No resume uploaded
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Right — answers + history */}
-              <CandidateSidePanel
-                candidateId={selectedCandidate.id}
-                open={isDetailOpen}
-              />
-            </>
-          )}
-        </SheetContent>
-      </Sheet>
 
       <Dialog
         open={!!editTarget}

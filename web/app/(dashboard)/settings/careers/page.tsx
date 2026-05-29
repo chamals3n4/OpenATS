@@ -10,10 +10,11 @@ import { Add01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+
 import {
   useSettingsAllowedOrigins,
   useUpdateSettingsAllowedOrigins,
-} from "@/hooks/use-api";
+} from "@/hooks/queries/use-settings";
 
 const panel =
   "border border-slate-200 dark:border-neutral-800 rounded-md bg-white dark:bg-neutral-950";
@@ -85,8 +86,8 @@ export default function CareersSettingsPage() {
           Careers page
         </h1>
         <p className="text-sm text-slate-500 dark:text-neutral-400 max-w-3xl">
-          Link your careers site or a custom page to OpenATS using the public job
-          URLs or the embed snippet below—pick whichever fits your setup so
+          Link your careers site or a custom page to OpenATS using the public
+          job URLs or the embed snippet below—pick whichever fits your setup so
           visitors can browse listings and apply. Allowed origins control which
           websites those requests may come from.
         </p>
@@ -100,12 +101,17 @@ export default function CareersSettingsPage() {
               Allowed origins
             </h2>
             <p className="text-xs text-slate-500 dark:text-neutral-500 mb-4 leading-relaxed">
-              When this list is <strong className="font-medium text-slate-600 dark:text-neutral-400">non-empty</strong>
+              When this list is{" "}
+              <strong className="font-medium text-slate-600 dark:text-neutral-400">
+                non-empty
+              </strong>
               , browser requests to public job APIs (list, detail, questions,
               apply, resume upload) must send an{" "}
               <code className="text-[11px] font-mono">Origin</code> that matches
               an entry (include your careers site, e.g.{" "}
-              <code className="text-[11px] font-mono">http://localhost:3000</code>
+              <code className="text-[11px] font-mono">
+                http://localhost:3000
+              </code>
               ). Empty list = no origin check.
             </p>
             {isError && (
@@ -135,7 +141,9 @@ export default function CareersSettingsPage() {
               {!isLoading && origins.length === 0 && !isError ? (
                 <li className="text-xs text-slate-500 dark:text-neutral-500 italic py-1">
                   No origins yet. Add e.g.{" "}
-                  <code className="font-mono text-[11px]">http://localhost:3000</code>
+                  <code className="font-mono text-[11px]">
+                    http://localhost:3000
+                  </code>
                 </li>
               ) : null}
               {origins.map((o, i) => (
@@ -289,7 +297,7 @@ export default function CareersSettingsPage() {
               <p className="text-[11px] text-slate-500 dark:text-neutral-500 mt-2 font-mono">
                 Response:{" "}
                 <span className="text-slate-600 dark:text-neutral-400">
-                  {"{ \"data\": Job[] | Job }"}
+                  {'{ "data": Job[] | Job }'}
                 </span>
                 {" · "}
                 List = published only; detail uses numeric{" "}

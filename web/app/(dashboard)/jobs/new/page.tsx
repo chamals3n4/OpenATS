@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
-import { Loader2 } from "lucide-react";
+import { Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -19,8 +19,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useCreateJob, useDepartments } from "@/hooks/use-api";
-import { JobDescriptionEditor } from "@/components/job-description-editor";
+import { useCreateJob } from "@/hooks/queries/use-jobs";
+import { useDepartments } from "@/hooks/queries/use-company";
+import { JobDescriptionEditor } from "@/components/dynamic-imports";
 
 export default function CreateNewJobPage() {
   const router = useRouter();
@@ -140,7 +141,7 @@ export default function CreateNewJobPage() {
           </div>
         </div>
 
-        <div className="space-y-8">
+        <div className="space-y-5">
           <div className="space-y-3">
             <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
               Job Title
@@ -149,7 +150,7 @@ export default function CreateNewJobPage() {
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               placeholder="Senior Software Engineer - Backend"
-              className="h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+              className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
             />
           </div>
 
@@ -160,7 +161,7 @@ export default function CreateNewJobPage() {
                 Department
               </Label>
               <Select onValueChange={(val) => setDepartmentId(Number(val))}>
-                <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0">
+                <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0 focus:border-slate-300 dark:focus:border-neutral-600">
                   <SelectValue placeholder="Select">
                     {departmentId
                       ? (departments.find((d) => d.id == departmentId)?.name ??
@@ -182,7 +183,7 @@ export default function CreateNewJobPage() {
                 Employement Type
               </Label>
               <Select onValueChange={(val) => setEmploymentType(val as string)}>
-                <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0">
+                <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0 focus:border-slate-300 dark:focus:border-neutral-600">
                   <SelectValue placeholder="Select">
                     {employmentType ? EMPLOYEMENT_LABELS[employmentType] : null}
                   </SelectValue>
@@ -203,7 +204,7 @@ export default function CreateNewJobPage() {
             <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
               Skills
             </Label>
-            <div className="min-h-10 p-1.5 flex flex-wrap gap-2 border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 focus-within:border-theme transition-[border-color] duration-200">
+            <div className="min-h-10 p-1.5 flex flex-wrap gap-2 border border-slate-300 dark:border-neutral-600 rounded-lg bg-gray-100 dark:bg-neutral-800 transition-[border-color] duration-200">
               {skills.map((skill) => (
                 <div
                   key={skill}
@@ -240,7 +241,7 @@ export default function CreateNewJobPage() {
               value={location}
               onChange={(e) => setLocation(e.target.value)}
               placeholder="Search"
-              className="h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+              className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
             />
           </div>
 
@@ -262,7 +263,7 @@ export default function CreateNewJobPage() {
               Salary Information
             </h3>
 
-            <div className="space-y-7">
+            <div className="space-y-5">
               <div className="flex items-center gap-10">
                 <div className="flex items-center gap-3 shrink-0">
                   <Checkbox
@@ -310,7 +311,7 @@ export default function CreateNewJobPage() {
               </div>
 
               {isSalaryInfoIncluded && (
-                <div className="space-y-7 animate-in fade-in slide-in-from-top-2 duration-200">
+                <div className="space-y-5 animate-in fade-in slide-in-from-top-2 duration-200">
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-2.5">
                       <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
@@ -320,7 +321,7 @@ export default function CreateNewJobPage() {
                         value={currency}
                         onValueChange={(val) => setCurrency(val || "USD")}
                       >
-                        <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0">
+                        <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0 focus:border-slate-300 dark:focus:border-neutral-600">
                           <SelectValue placeholder="USD" />
                         </SelectTrigger>
                         <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
@@ -340,7 +341,7 @@ export default function CreateNewJobPage() {
                           setPayFrequency(val || "yearly")
                         }
                       >
-                        <SelectTrigger className="w-full h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0">
+                        <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0 focus:border-slate-300 dark:focus:border-neutral-600">
                           <SelectValue placeholder="Month">
                             {PAY_FREQUENCY_LABELS[payFrequency] ?? null}
                           </SelectValue>
@@ -364,7 +365,7 @@ export default function CreateNewJobPage() {
                           value={salaryMin}
                           onChange={(e) => setSalaryMin(e.target.value)}
                           placeholder="e.g. 50,000"
-                          className="h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-900 dark:text-neutral-100 placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+                          className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
                         />
                       </div>
                       <div className="space-y-2.5">
@@ -375,7 +376,7 @@ export default function CreateNewJobPage() {
                           value={salaryMax}
                           onChange={(e) => setSalaryMax(e.target.value)}
                           placeholder="e.g. 80,000"
-                          className="h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-900 dark:text-neutral-100 placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+                          className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
                         />
                       </div>
                     </div>
@@ -388,7 +389,7 @@ export default function CreateNewJobPage() {
                         value={salaryFixed}
                         onChange={(e) => setSalaryFixed(e.target.value)}
                         placeholder="e.g. 75,000"
-                        className="h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-900 dark:text-neutral-100 placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+                        className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
                       />
                     </div>
                   )}
@@ -397,11 +398,10 @@ export default function CreateNewJobPage() {
             </div>
           </div>
 
-          <div className="pt-10 flex items-center gap-4">
+          <div className="pt-10 flex items-center gap-2">
             <Button
               onClick={handleSubmit}
-              className="text-white cursor-pointer rounded-lg h-10 px-10 min-w-35 font-medium shadow-none border-none gap-2"
-              style={{ backgroundColor: "var(--theme-color)" }}
+              className="h-10! rounded-md border-none bg-theme hover:bg-theme-hover px-4 text-base font-semibold leading-none text-white shadow-none cursor-pointer gap-2 flex items-center"
               disabled={
                 !title ||
                 !departmentId ||
@@ -415,16 +415,19 @@ export default function CreateNewJobPage() {
                   <span>Saving…</span>
                 </>
               ) : (
-                "Save Job"
+                <>
+                  <Save className="size-4" />
+                  <span>Save Job</span>
+                </>
               )}
             </Button>
             <Button
               type="button"
-              variant="outline"
-              className="flex items-center cursor-pointer justify-center border border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 rounded-lg h-10 px-6 font-medium bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800"
+              className="h-10! rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-base font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer gap-2 flex items-center"
               onClick={() => router.push("/jobs")}
             >
-              Cancel
+              <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+              <span>Cancel</span>
             </Button>
           </div>
         </div>

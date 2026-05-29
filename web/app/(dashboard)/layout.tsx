@@ -1,10 +1,13 @@
+import { Suspense } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SiteHeader } from "@/components/site-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
-import { DragDropProvider } from "@/components/drag-drop-provider";
+import { DragDropProvider } from "@/components/dynamic-imports";
 import { PrefetchProvider } from "@/components/prefetch-provider";
 import { SetupCompanyGate } from "@/components/setup-company-gate";
+import { QueryProvider } from "@/components/query-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { DashboardMainLoading } from "@/components/dashboard-main-loading";
 
 export default function DashboardLayout({
   children,
@@ -12,7 +15,7 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <>
+    <QueryProvider>
       <PrefetchProvider />
       <div className="[--header-height:calc(--spacing(14))]">
         <SidebarProvider className="flex flex-col">
@@ -21,13 +24,17 @@ export default function DashboardLayout({
             <AppSidebar />
             <SidebarInset>
               <DragDropProvider>
-                <SetupCompanyGate>{children}</SetupCompanyGate>
+                <SetupCompanyGate>
+                  <Suspense fallback={<DashboardMainLoading />}>
+                    {children}
+                  </Suspense>
+                </SetupCompanyGate>
               </DragDropProvider>
             </SidebarInset>
           </div>
         </SidebarProvider>
       </div>
       <Toaster richColors closeButton />
-    </>
+    </QueryProvider>
   );
 }

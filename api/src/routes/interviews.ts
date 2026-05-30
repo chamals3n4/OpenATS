@@ -1,6 +1,16 @@
 import { Router } from "express";
 import { z } from "zod";
 import { interviewService } from "../services/interview.service";
+import { mailService } from "../services/mail.service";
+import { db } from "../db";
+import {
+  candidates,
+  jobs,
+  jobPipelineStages,
+  candidateInterviews,
+} from "../db/schema";
+import { eq } from "drizzle-orm";
+import { randomUUID } from "crypto";
 import logger from "../utils/logger";
 import type { Request, Response } from "express";
 
@@ -126,9 +136,242 @@ router.patch("/interviews/:id", async (req, res) => {
     }
     res.status(200).json({ data: interview });
   } catch (error: any) {
+    res.status(400);
     res
       .status(400)
       .json({ error: error.message || "Failed to update interview" });
+  }
+});
+
+// POST /candidates/:id/schedule — schedule interview with time slots
+const scheduleSchema = z.object({
+  eventName: z.string().min(1),
+  eventType: z.enum(["virtual", "onsite"]),
+  meetingUrl: z.string().url().optional().nullable(),
+  bodyText: z.string().optional().nullable(),
+  stageId: z.number().int().optional(),
+  timeSlots: z.array(
+    z.object({
+      datetime: z.string(),
+      selected: z.boolean().default(false),
+    }),
+  ),
+});
+
+router.post("/candidates/:id/schedule", async (req, res) => {
+  try {
+    const candidateId = parseInt((req.params.id ?? "").toString());
+    if (isNaN(candidateId)) {
+      res.status(400).json({ error: "Invalid candidate ID" });
+      return;
+    }
+
+    const parsed = scheduleSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const [candidate] = await db
+      .select({
+        id: candidates.id,
+        firstName: candidates.firstName,
+        lastName: candidates.lastName,
+        email: candidates.email,
+        jobId: candidates.jobId,
+        currentStageId: candidates.currentStageId,
+        jobTitle: jobs.title,
+      })
+      .from(candidates)
+      .leftJoin(jobs, eq(candidates.jobId, jobs.id))
+      .where(eq(candidates.id, candidateId));
+
+    if (!candidate) {
+      res.status(404).json({ error: "Candidate not found" });
+      return;
+    }
+
+    const stageId = parsed.data.stageId || candidate.currentStageId || 0;
+    const token = randomUUID();
+
+    const [interview] = await db
+      .insert(candidateInterviews)
+      .values({
+        candidateId: candidate.id,
+        stageId,
+        jobId: candidate.jobId,
+        eventName: parsed.data.eventName,
+        eventType: parsed.data.eventType,
+        meetingUrl: parsed.data.meetingUrl ?? null,
+        bodyText: parsed.data.bodyText ?? null,
+        timeSlots: parsed.data.timeSlots,
+        status: "pending_schedule",
+        publicToken: token,
+        createdBy: req.user.id,
+      })
+      .returning();
+
+    if (!interview) throw new Error("Failed to create interview");
+
+    // Send email to candidate with slot selection link
+    const publicUrl = `${process.env.OPENATS_FRONTEND_URL || "http://localhost:3000"}/interview/${token}`;
+    try {
+      await mailService.sendInterviewSlotEmail(
+        candidate.email,
+        `${candidate.firstName} ${candidate.lastName}`,
+        parsed.data.eventName,
+        candidate.jobTitle ?? "",
+        parsed.data.eventType,
+        parsed.data.meetingUrl ?? null,
+        parsed.data.bodyText ?? null,
+        publicUrl,
+      );
+    } catch (err: any) {
+      logger.error(`Failed to send interview slot email: ${err.message}`);
+    }
+
+    res.status(201).json({ data: interview });
+  } catch (error: any) {
+    logger.error(`Schedule interview failed: ${error.message}`);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// Public: GET /public/interview/:token — candidate views their slots
+router.get("/public/interview/:token", async (req, res) => {
+  try {
+    const [interview] = await db
+      .select({
+        id: candidateInterviews.id,
+        eventName: candidateInterviews.eventName,
+        eventType: candidateInterviews.eventType,
+        meetingUrl: candidateInterviews.meetingUrl,
+        bodyText: candidateInterviews.bodyText,
+        timeSlots: candidateInterviews.timeSlots,
+        status: candidateInterviews.status,
+        candidateName: {
+          first: candidates.firstName,
+          last: candidates.lastName,
+        },
+        jobTitle: jobs.title,
+      })
+      .from(candidateInterviews)
+      .leftJoin(candidates, eq(candidateInterviews.candidateId, candidates.id))
+      .leftJoin(jobs, eq(candidateInterviews.jobId, jobs.id))
+      .where(eq(candidateInterviews.publicToken, req.params.token));
+
+    if (!interview) {
+      res.status(404).json({ error: "Invalid link" });
+      return;
+    }
+
+    res.status(200).json({
+      data: {
+        ...interview,
+        candidateName: `${interview.candidateName.first} ${interview.candidateName.last}`,
+      },
+    });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to load interview" });
+  }
+});
+
+// Public: PATCH /public/interview/:token/select — candidate selects a slot
+router.patch("/public/interview/:token/select", async (req, res) => {
+  try {
+    const slotIndex = req.body?.slotIndex;
+    if (slotIndex == null) {
+      res.status(400).json({ error: "slotIndex required" });
+      return;
+    }
+
+    const [interview] = await db
+      .select()
+      .from(candidateInterviews)
+      .where(eq(candidateInterviews.publicToken, req.params.token));
+
+    if (!interview || !interview.timeSlots) {
+      res.status(404).json({ error: "Invalid link" });
+      return;
+    }
+
+    // Mark the selected slot
+    const slots = interview.timeSlots as Array<{
+      datetime: string;
+      selected: boolean;
+    }>;
+    if (slotIndex < 0 || slotIndex >= slots.length) {
+      res.status(400).json({ error: "Invalid slot index" });
+      return;
+    }
+
+    slots[slotIndex].selected = true;
+
+    await db
+      .update(candidateInterviews)
+      .set({
+        timeSlots: slots,
+        status: "scheduled",
+        scheduledAt: new Date(slots[slotIndex].datetime),
+        updatedAt: new Date(),
+      })
+      .where(eq(candidateInterviews.id, interview.id));
+
+    // Try Google Calendar sync
+    if (interview.eventName) {
+      try {
+        const [candidate] = await db
+          .select({
+            email: candidates.email,
+            firstName: candidates.firstName,
+            lastName: candidates.lastName,
+          })
+          .from(candidates)
+          .where(eq(candidates.id, interview.candidateId));
+
+        if (candidate) {
+          const gcal = await import("../services/google-calendar.service");
+          await gcal.createCalendarEvent({
+            interviewId: interview.id,
+            candidateName: `${candidate.firstName} ${candidate.lastName}`,
+            jobTitle: "",
+            stageName: "",
+            scheduledAt: new Date(slots[slotIndex].datetime),
+            durationMinutes: 60,
+            notes: interview.bodyText ?? null,
+            attendeeEmails: [candidate.email],
+          });
+        }
+      } catch {
+        /* non-fatal */
+      }
+    }
+
+    res.status(200).json({ data: { confirmed: true, slot: slots[slotIndex] } });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to confirm slot" });
+  }
+});
+
+// DELETE /interviews/:id
+router.delete("/interviews/:id", async (req, res) => {
+  try {
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid ID" });
+      return;
+    }
+    const deleted = await interviewService.delete(id);
+    if (!deleted) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.status(200).json({ data: deleted });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
   }
 });
 

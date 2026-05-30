@@ -8,6 +8,7 @@ import {
 } from "../db/schema";
 import { cleanObject as clean } from "../utils/object.utils";
 import * as gcal from "./google-calendar.service";
+import { mailService } from "./mail.service";
 import logger from "../utils/logger";
 
 export interface CreateInterviewInput {
@@ -37,6 +38,7 @@ export const interviewService = {
         jobId: candidates.jobId,
         firstName: candidates.firstName,
         lastName: candidates.lastName,
+        email: candidates.email,
         currentStageId: candidates.currentStageId,
         jobTitle: jobs.title,
         stageName: jobPipelineStages.name,
@@ -95,6 +97,22 @@ export const interviewService = {
         logger.error(
           `Failed to sync interview ${interview.id} to Google Calendar: ${err.message}`,
         );
+      }
+    }
+
+    // Send interview invitation email to the candidate
+    if (interview.scheduledAt && interview.durationMinutes) {
+      try {
+        await mailService.sendInterviewInviteEmail(
+          row.email,
+          `${row.firstName} ${row.lastName}`,
+          row.jobTitle ?? "",
+          row.stageName ?? "",
+          interview.scheduledAt.toISOString(),
+          interview.durationMinutes,
+        );
+      } catch (err: any) {
+        logger.error(`Failed to send interview email: ${err.message}`);
       }
     }
 
@@ -262,5 +280,28 @@ export const interviewService = {
     }
 
     return updated;
+  },
+
+  async delete(id: number) {
+    const [existing] = await db
+      .select()
+      .from(candidateInterviews)
+      .where(eq(candidateInterviews.id, id));
+    if (!existing) return null;
+
+    // Delete Google Calendar event if synced
+    if (existing.googleEventId) {
+      try {
+        await gcal.deleteCalendarEvent(existing.googleEventId);
+      } catch {
+        /* non-fatal */
+      }
+    }
+
+    const [deleted] = await db
+      .delete(candidateInterviews)
+      .where(eq(candidateInterviews.id, id))
+      .returning();
+    return deleted ?? null;
   },
 };

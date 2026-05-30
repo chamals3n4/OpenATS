@@ -153,6 +153,11 @@ export type CandidateInterview = {
   candidateId: number;
   stageId: number;
   jobId: number;
+  eventName: string | null;
+  eventType: string | null;
+  meetingUrl: string | null;
+  bodyText: string | null;
+  status: string | null;
   scheduledAt: string | null;
   durationMinutes: number | null;
   notes: string | null;
@@ -258,7 +263,7 @@ export type TemplateBodyBlock = {
 export type Template = {
   id: number;
   name: string;
-  type: "offer" | "rejection" | "assessment_invite" | "general";
+  type: "email" | "event";
   subject: string;
   bodyJson: TemplateBodyBlock[];
   createdAt: string;

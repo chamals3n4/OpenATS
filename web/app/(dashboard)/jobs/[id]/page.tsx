@@ -224,7 +224,7 @@ export default function JobDetailsPage() {
 
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [noteText, setNoteText] = useState("");
-  const [notesPanelWidth, setNotesPanelWidth] = useState(450);
+  const [notesPanelWidth, setNotesPanelWidth] = useState(350);
   const [isResizingNotes, setIsResizingNotes] = useState(false);
   const [isLgUp, setIsLgUp] = useState(false);
 
@@ -521,7 +521,7 @@ export default function JobDetailsPage() {
     <>
       <div className="flex flex-1 flex-col overflow-hidden bg-slate-50 dark:bg-neutral-950">
         <div className="shrink-0 border-b border-slate-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
-          <div className="px-4 py-4 sm:px-6">
+          <div className="px-4 py-4 sm:px-8">
             <div className="mb-4">
               <Link
                 href="/jobs"
@@ -652,7 +652,7 @@ export default function JobDetailsPage() {
                 <div className="px-8 pb-20 w-full">
                   <TabsContent
                     value="overview"
-                    className="pt-10 animate-in fade-in duration-300 max-w-4xl"
+                    className="pt-2 animate-in fade-in duration-300 max-w-4xl"
                   >
                     {jobLoading ? (
                       <p className="text-slate-400 dark:text-neutral-500 text-[15px]">
@@ -672,7 +672,7 @@ export default function JobDetailsPage() {
 
                   <TabsContent
                     value="hiring-team"
-                    className="pt-10 space-y-12 animate-in fade-in duration-300"
+                    className="pt-2 space-y-12 animate-in fade-in duration-300"
                   >
                     <div className="flex items-center justify-between border-b border-slate-100 dark:border-neutral-800 pb-4">
                       <div className="flex items-center gap-4">
@@ -849,7 +849,7 @@ export default function JobDetailsPage() {
 
                   <TabsContent
                     value="hiring-process"
-                    className="pt-10 space-y-6 animate-in fade-in duration-300"
+                    className="pt-2 space-y-6 animate-in fade-in duration-300"
                   >
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
@@ -1030,7 +1030,7 @@ export default function JobDetailsPage() {
 
                   <TabsContent
                     value="custom-questions"
-                    className="pt-10 space-y-8 animate-in fade-in duration-300"
+                    className="pt-2 space-y-8 animate-in fade-in duration-300"
                   >
                     <div className="flex flex-col gap-6">
                       <button
@@ -1474,7 +1474,7 @@ export default function JobDetailsPage() {
                     </div>
                   </TabsContent>
 
-                  <TabsContent value="assessments" className="pt-8 space-y-5">
+                  <TabsContent value="assessments" className="pt-2 space-y-5">
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-[18px] font-semibold text-slate-900 dark:text-neutral-100">
@@ -1815,7 +1815,7 @@ export default function JobDetailsPage() {
         <>
           <div
             className="fixed right-0 top-[var(--header-height)] h-[calc(100vh-var(--header-height))] w-full border-l border-t border-slate-200 dark:border-neutral-800 flex flex-col bg-white dark:bg-neutral-950 z-50"
-            style={{ width: isLgUp ? `${notesPanelWidth}px` : "100vw" }}
+            style={{ width: isLgUp ? `${notesPanelWidth}px` : "90vw" }}
           >
             {/* Resize handle (desktop) */}
             <div

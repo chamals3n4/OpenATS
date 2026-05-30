@@ -77,12 +77,7 @@ export const questionType = pgEnum("question_type", [
   "multiple_choice",
 ]);
 
-export const templateType = pgEnum("template_type", [
-  "offer",
-  "rejection",
-  "assessment_invite",
-  "general",
-]);
+export const templateType = pgEnum("template_type", ["email", "event"]);
 
 export const assessmentStatus = pgEnum("assessment_status", [
   "pending",

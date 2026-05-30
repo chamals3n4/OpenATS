@@ -17,12 +17,7 @@ const contentBlockSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("spacer"), height: z.number() }),
 ]);
 
-const templateTypeEnum = z.enum([
-  "offer",
-  "rejection",
-  "assessment_invite",
-  "general",
-]);
+const templateTypeEnum = z.enum(["email", "event"]);
 
 const createTemplateSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
@@ -69,7 +64,9 @@ export const getTemplateById = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch template id=${req.params.id}: ${(error as any)?.message}`);
+    logger.error(
+      `Failed to fetch template id=${req.params.id}: ${(error as any)?.message}`,
+    );
     res.status(500).json({ error: "Failed to fetch template" });
   }
 };
@@ -78,7 +75,9 @@ export const createTemplate = async (req: Request, res: Response) => {
   try {
     const parsed = createTemplateSchema.safeParse(req.body);
     if (!parsed.success) {
-      logger.warn(`Template creation validation failed - user ${req.user?.id}: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`);
+      logger.warn(
+        `Template creation validation failed - user ${req.user?.id}: ${JSON.stringify(parsed.error.flatten().fieldErrors)}`,
+      );
       res.status(400).json({
         error: "Validation failed",
         details: parsed.error.flatten().fieldErrors,
@@ -90,14 +89,18 @@ export const createTemplate = async (req: Request, res: Response) => {
       ...parsed.data,
       createdBy: req.user.id,
     });
-    logger.info(`Template created: id=${result.id}, name="${result.name}", type="${result.type}" by user ${req.user.id}`);
+    logger.info(
+      `Template created: id=${result.id}, name="${result.name}", type="${result.type}" by user ${req.user.id}`,
+    );
     res.status(201).json({ data: result });
   } catch (error: any) {
     if (error?.code === "23503") {
       res.status(400).json({ error: "User not found" });
       return;
     }
-    logger.error(`Failed to create template - user ${req.user?.id}: ${error?.message}`);
+    logger.error(
+      `Failed to create template - user ${req.user?.id}: ${error?.message}`,
+    );
     res.status(500).json({ error: "Failed to create template" });
   }
 };
@@ -125,10 +128,14 @@ export const updateTemplate = async (req: Request, res: Response) => {
       return;
     }
 
-    logger.info(`Template updated: id=${id}, name="${result.name}" by user ${req.user?.id}`);
+    logger.info(
+      `Template updated: id=${id}, name="${result.name}" by user ${req.user?.id}`,
+    );
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to update template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(
+      `Failed to update template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`,
+    );
     res.status(500).json({ error: "Failed to update template" });
   }
 };
@@ -141,17 +148,23 @@ export const deleteTemplate = async (req: Request, res: Response) => {
       return;
     }
 
-    logger.warn(`Template deletion requested: id=${id} by user ${req.user?.id}`);
+    logger.warn(
+      `Template deletion requested: id=${id} by user ${req.user?.id}`,
+    );
     const result = await templateService.delete(id);
     if (!result) {
       res.status(404).json({ error: "Template not found" });
       return;
     }
 
-    logger.info(`Template deleted: id=${id}, name="${result.name}", type="${result.type}" by user ${req.user?.id}`);
+    logger.info(
+      `Template deleted: id=${id}, name="${result.name}", type="${result.type}" by user ${req.user?.id}`,
+    );
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to delete template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(
+      `Failed to delete template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`,
+    );
     res.status(500).json({ error: "Failed to delete template" });
   }
 };
@@ -174,12 +187,14 @@ export const previewTemplate = async (req: Request, res: Response) => {
     const result = templateEngineService.compileTemplate(
       template.subject,
       template.bodyJson,
-      context
+      context,
     );
 
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to preview template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(
+      `Failed to preview template id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`,
+    );
     res.status(500).json({ error: "Failed to preview template" });
   }
 };

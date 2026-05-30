@@ -129,8 +129,8 @@ export function CandidateSidePanel({
   const updateInterviewMutation = useUpdateInterview();
   const { data: templatesData } = useTemplates();
   const allTemplates = templatesData?.data ?? [];
-  const rejectionTemplates = allTemplates.filter(
-    (t: { type: string }) => t.type === "rejection",
+  const emailTemplates = allTemplates.filter(
+    (t: { type: string }) => t.type === "email",
   );
 
   // Interview log state
@@ -1013,7 +1013,7 @@ export function CandidateSidePanel({
                       <SelectItem value="" className="text-[13px]">
                         None
                       </SelectItem>
-                      {rejectionTemplates.map((t) => (
+                      {emailTemplates.map((t) => (
                         <SelectItem
                           key={t.id}
                           value={String(t.id)}

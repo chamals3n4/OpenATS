@@ -1,8 +1,6 @@
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
-import type { CandidateInterview } from "@/types";
 
-/** Fetch all interviews with optional filters */
 export function useInterviews(filters?: {
   jobId?: number;
   from?: string;
@@ -13,22 +11,22 @@ export function useInterviews(filters?: {
   if (filters?.from) params.set("from", filters.from);
   if (filters?.to) params.set("to", filters.to);
   const qs = params.toString();
-  const path = `/interviews${qs ? `?${qs}` : ""}`;
-
   return useQuery({
     queryKey: ["interviews", filters],
     queryFn: () =>
-      serverFetch<{
-        data: Array<{
-          id: number;
-          candidateId: number;
-          scheduledAt: string | null;
-          outcome: "pending" | "pass" | "fail";
-          candidateName: string;
-          jobTitle: string | null;
-          stageName: string | null;
-        }>;
-      }>(path),
-    staleTime: 1000 * 60 * 1,
+      serverFetch<{ data: unknown[] }>(`/interviews${qs ? `?${qs}` : ""}`),
+    staleTime: 60_000,
+  });
+}
+
+export function useDeleteInterview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      serverFetch(`/interviews/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["interviews"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
   });
 }

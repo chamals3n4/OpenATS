@@ -1,5 +1,6 @@
 import {
   integer,
+  jsonb,
   pgTable,
   serial,
   text,
@@ -23,12 +24,32 @@ export const candidateInterviews = pgTable("candidate_interviews", {
   jobId: integer("job_id")
     .notNull()
     .references(() => jobs.id, { onDelete: "restrict" }),
+
+  // Scheduling
+  eventName: varchar("event_name", { length: 255 }),
+  eventType: varchar("event_type", { length: 20 }).default("virtual"),
+  meetingUrl: varchar("meeting_url", { length: 1000 }),
+  bodyText: text("body_text"),
+
+  // Time slots (array of { datetime: string, selected: boolean })
+  timeSlots:
+    jsonb("time_slots").$type<Array<{ datetime: string; selected: boolean }>>(),
+
+  // State
+  status: varchar("status", { length: 30 })
+    .notNull()
+    .default("pending_schedule"),
+  outcome: interviewOutcome("outcome").default("pending"),
+  publicToken: varchar("public_token", { length: 100 }).unique(),
+
+  // Google Calendar
+  googleEventId: varchar("google_event_id", { length: 255 }),
+
+  // Legacy
   scheduledAt: timestamp("scheduled_at"),
   durationMinutes: integer("duration_minutes"),
   notes: text("notes"),
-  outcome: interviewOutcome("outcome").default("pending"),
-  // Google Calendar event ID — set when synced to Google Calendar
-  googleEventId: varchar("google_event_id", { length: 255 }),
+
   createdBy: integer("created_by").references(() => users.id, {
     onDelete: "set null",
   }),

@@ -71,13 +71,12 @@ import {
   useUpdateOffer,
   useUpdateOfferStatus,
 } from "@/hooks/queries/use-offers";
-import {
-  useRejectCandidate,
-  useCreateInterview,
-  useUpdateInterview,
-} from "@/hooks/queries/use-candidates";
+import { useRejectCandidate } from "@/hooks/queries/use-candidates";
+import { useDeleteInterview } from "@/hooks/queries/use-interviews";
 import { useTemplates } from "@/hooks/queries/use-templates";
+import { serverFetch } from "@/lib/auth-action";
 import { CandidateJobFitTab } from "@/components/dynamic-imports";
+import { InterviewSchedulerDialog } from "@/components/interview-scheduler-dialog";
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -228,23 +227,33 @@ export default function CandidateDetailPage({
   const rejectMutation = useRejectCandidate();
   const { data: templatesData } = useTemplates();
   const allTemplates = templatesData?.data ?? [];
-  const rejectionTemplates = allTemplates.filter((t) => t.type === "rejection");
+  const emailTemplates = allTemplates.filter((t) => t.type === "email");
 
-  // Interviews
-  const [showInterviewForm, setShowInterviewForm] = useState(false);
-  const [interviewStageId, setInterviewStageId] = useState("");
-  const [interviewScheduledAt, setInterviewScheduledAt] = useState("");
-  const [interviewDuration, setInterviewDuration] = useState("");
-  const [interviewNotes, setInterviewNotes] = useState("");
-  const [editingInterviewId, setEditingInterviewId] = useState<number | null>(
+  // Rejection email preview
+  const [rejectPreviewHtml, setRejectPreviewHtml] = useState<string | null>(
     null,
   );
-  const [editInterviewNotes, setEditInterviewNotes] = useState("");
-  const [editInterviewOutcome, setEditInterviewOutcome] = useState<
-    "pending" | "pass" | "fail"
-  >("pending");
-  const createInterviewMutation = useCreateInterview();
-  const updateInterviewMutation = useUpdateInterview();
+  const [rejectPreviewLoading, setRejectPreviewLoading] = useState(false);
+
+  // Fetch template preview
+  const fetchPreview = (templateId: string) => {
+    if (!templateId) {
+      setRejectPreviewHtml(null);
+      return;
+    }
+    setRejectPreviewLoading(true);
+    serverFetch<{ data: { subject: string; html: string } }>(
+      `/templates/${templateId}/preview`,
+      { method: "POST", body: JSON.stringify({ candidateId }) },
+    )
+      .then((res) => setRejectPreviewHtml(res.data.html))
+      .catch(() => setRejectPreviewHtml(null))
+      .finally(() => setRejectPreviewLoading(false));
+  };
+
+  // Interviews
+  const [showSchedulerDialog, setShowSchedulerDialog] = useState(false);
+  const deleteInterviewMutation = useDeleteInterview();
 
   const pipelineStages = useMemo(
     () =>
@@ -1157,131 +1166,18 @@ export default function CandidateDetailPage({
                         Schedule and track interview outcomes
                       </p>
                     </div>
-                    <Button
-                      size="sm"
-                      onClick={() => {
-                        setShowInterviewForm(!showInterviewForm);
-                        setInterviewStageId("");
-                        setInterviewScheduledAt("");
-                        setInterviewDuration("");
-                        setInterviewNotes("");
-                      }}
-                      className={`h-8 rounded-md border-none px-3 text-[12px] font-semibold text-white shadow-none ${showInterviewForm ? "bg-neutral-700 hover:bg-neutral-600" : "bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)]"}`}
-                    >
-                      {showInterviewForm ? "Cancel" : "+ Log Interview"}
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        onClick={() => setShowSchedulerDialog(true)}
+                        className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                      >
+                        Schedule
+                      </Button>
+                    </div>
                   </div>
 
-                  {showInterviewForm && (
-                    <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 mb-5 space-y-4">
-                      <div className="space-y-1.5">
-                        <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
-                          Stage
-                        </Label>
-                        <Select
-                          value={interviewStageId}
-                          onValueChange={(v) => setInterviewStageId(v ?? "")}
-                        >
-                          <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
-                            <SelectValue placeholder="Select stage" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                            {(pipelineData?.data ?? []).map((s) => (
-                              <SelectItem
-                                key={s.id}
-                                value={String(s.id)}
-                                className="text-[13px]"
-                              >
-                                {s.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
-                            Scheduled Date
-                          </Label>
-                          <Input
-                            type="datetime-local"
-                            value={interviewScheduledAt}
-                            onChange={(e) =>
-                              setInterviewScheduledAt(e.target.value)
-                            }
-                            className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
-                          />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
-                            Duration (min)
-                          </Label>
-                          <Input
-                            type="number"
-                            value={interviewDuration}
-                            onChange={(e) =>
-                              setInterviewDuration(e.target.value)
-                            }
-                            placeholder="e.g. 30"
-                            className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
-                          Notes
-                        </Label>
-                        <Input
-                          value={interviewNotes}
-                          onChange={(e) => setInterviewNotes(e.target.value)}
-                          placeholder="Add notes..."
-                          className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
-                        />
-                      </div>
-                      <div className="flex justify-end">
-                        <Button
-                          size="sm"
-                          disabled={
-                            !interviewStageId ||
-                            createInterviewMutation.isPending
-                          }
-                          onClick={() => {
-                            createInterviewMutation.mutate(
-                              {
-                                candidateId,
-                                data: {
-                                  stageId: Number(interviewStageId),
-                                  scheduledAt:
-                                    interviewScheduledAt || undefined,
-                                  durationMinutes: interviewDuration
-                                    ? Number(interviewDuration)
-                                    : undefined,
-                                  notes: interviewNotes || undefined,
-                                },
-                              },
-                              {
-                                onSuccess: () => {
-                                  setShowInterviewForm(false);
-                                  setInterviewStageId("");
-                                  setInterviewScheduledAt("");
-                                  setInterviewDuration("");
-                                  setInterviewNotes("");
-                                },
-                              },
-                            );
-                          }}
-                          className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
-                        >
-                          {createInterviewMutation.isPending
-                            ? "Saving…"
-                            : "Save Interview"}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {(candidate.interviews ?? []).length === 0 &&
-                  !showInterviewForm ? (
+                  {(candidate.interviews ?? []).length === 0 ? (
                     <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
                       <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
                         <HugeiconsIcon
@@ -1290,10 +1186,10 @@ export default function CandidateDetailPage({
                         />
                       </div>
                       <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
-                        No interviews logged yet
+                        No interviews yet
                       </p>
                       <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
-                        Click "+ Log Interview" to schedule one.
+                        Click "Schedule" to invite a candidate.
                       </p>
                     </div>
                   ) : (
@@ -1303,10 +1199,12 @@ export default function CandidateDetailPage({
                           key={iv.id}
                           className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
                         >
-                          <div className="flex items-center justify-between px-5 py-4 bg-slate-50 dark:bg-neutral-800/50 border-b border-slate-100 dark:border-neutral-800">
+                          <div className="flex items-center justify-between px-5 py-4">
                             <div className="flex items-center gap-3">
                               <span className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200">
-                                {stageMap[iv.stageId] ?? `Stage #${iv.stageId}`}
+                                {iv.eventName ??
+                                  stageMap[iv.stageId] ??
+                                  `Interview #${iv.id}`}
                               </span>
                               <Badge
                                 className={`rounded-md border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-none ${
@@ -1320,100 +1218,20 @@ export default function CandidateDetailPage({
                                 {iv.outcome ?? "pending"}
                               </Badge>
                             </div>
-                            {editingInterviewId === iv.id && (
-                              <div className="flex items-center gap-3">
-                                <select
-                                  value={editInterviewOutcome}
-                                  onChange={(e) =>
-                                    setEditInterviewOutcome(
-                                      e.target.value as
-                                        | "pending"
-                                        | "pass"
-                                        | "fail",
-                                    )
-                                  }
-                                  className="h-7 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-medium text-slate-700 shadow-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
-                                >
-                                  <option value="pending">Pending</option>
-                                  <option value="pass">Pass</option>
-                                  <option value="fail">Fail</option>
-                                </select>
-                                <Input
-                                  value={editInterviewNotes}
-                                  onChange={(e) =>
-                                    setEditInterviewNotes(e.target.value)
-                                  }
-                                  placeholder="Notes"
-                                  className="h-7 w-40 rounded-md border-slate-200 bg-white text-[11px] shadow-none dark:border-neutral-700 dark:bg-neutral-900"
-                                />
-                                <Button
-                                  size="sm"
-                                  disabled={updateInterviewMutation.isPending}
-                                  onClick={() => {
-                                    updateInterviewMutation.mutate(
-                                      {
-                                        interviewId: iv.id,
-                                        candidateId,
-                                        data: {
-                                          outcome: editInterviewOutcome,
-                                          notes:
-                                            editInterviewNotes || undefined,
-                                        },
-                                      },
-                                      {
-                                        onSuccess: () =>
-                                          setEditingInterviewId(null),
-                                      },
-                                    );
-                                  }}
-                                  className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-[11px] font-semibold text-white shadow-none"
-                                >
-                                  Save
-                                </Button>
-                                <Button
-                                  size="sm"
-                                  onClick={() => setEditingInterviewId(null)}
-                                  className="h-7 rounded-md border-none bg-neutral-700 px-2.5 text-[11px] font-semibold text-white shadow-none"
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
-                            )}
-                            {editingInterviewId !== iv.id && (
-                              <Button
-                                size="sm"
-                                onClick={() => {
-                                  setEditingInterviewId(iv.id);
-                                  setEditInterviewOutcome(
-                                    (iv.outcome as
-                                      | "pending"
-                                      | "pass"
-                                      | "fail") ?? "pending",
-                                  );
-                                  setEditInterviewNotes(iv.notes ?? "");
-                                }}
-                                className="h-7 rounded-md border-none bg-neutral-700 px-2.5 text-[11px] font-semibold text-white shadow-none hover:bg-neutral-600"
-                              >
-                                Edit
-                              </Button>
-                            )}
-                          </div>
-                          <div className="px-5 py-3 space-y-1.5">
-                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-slate-500 dark:text-neutral-400">
-                              {iv.scheduledAt && (
-                                <span>
-                                  Scheduled: {formatDate(iv.scheduledAt)}
-                                </span>
-                              )}
-                              {iv.durationMinutes && (
-                                <span>{iv.durationMinutes} min</span>
-                              )}
-                            </div>
-                            {iv.notes && (
-                              <p className="text-[13px] text-slate-600 dark:text-neutral-300 leading-relaxed">
-                                {iv.notes}
-                              </p>
-                            )}
+                            <button
+                              onClick={() => {
+                                if (confirm("Delete this interview?")) {
+                                  deleteInterviewMutation.mutate(iv.id);
+                                }
+                              }}
+                              disabled={deleteInterviewMutation.isPending}
+                              className="text-slate-300 dark:text-neutral-600 hover:text-red-500 transition-colors"
+                            >
+                              <HugeiconsIcon
+                                icon={Delete02Icon}
+                                className="size-4"
+                              />
+                            </button>
                           </div>
                         </div>
                       ))}
@@ -1469,7 +1287,11 @@ export default function CandidateDetailPage({
                         </Label>
                         <Select
                           value={rejectTemplateId}
-                          onValueChange={(v) => setRejectTemplateId(v ?? "")}
+                          onValueChange={(v) => {
+                            setRejectTemplateId(v ?? "");
+                            if (rejectEmailStatus === "sent")
+                              fetchPreview(v ?? "");
+                          }}
                         >
                           <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
                             <SelectValue placeholder="Select template (optional)" />
@@ -1478,7 +1300,7 @@ export default function CandidateDetailPage({
                             <SelectItem value="" className="text-[13px]">
                               None
                             </SelectItem>
-                            {rejectionTemplates.map((t) => (
+                            {emailTemplates.map((t) => (
                               <SelectItem
                                 key={t.id}
                                 value={String(t.id)}
@@ -1519,6 +1341,32 @@ export default function CandidateDetailPage({
                           </span>
                         </label>
                       </div>
+
+                      {/* Email preview */}
+                      {rejectTemplateId && rejectEmailStatus === "sent" && (
+                        <div className="space-y-1.5">
+                          <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
+                            Email Preview
+                          </Label>
+                          {rejectPreviewLoading ? (
+                            <div className="rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-[12px] text-slate-400">
+                              Loading preview...
+                            </div>
+                          ) : rejectPreviewHtml ? (
+                            <div
+                              className="max-h-[200px] overflow-y-auto rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-[13px] leading-relaxed"
+                              dangerouslySetInnerHTML={{
+                                __html: rejectPreviewHtml,
+                              }}
+                            />
+                          ) : (
+                            <div className="rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-[12px] text-slate-400">
+                              Select a template to preview the email.
+                            </div>
+                          )}
+                        </div>
+                      )}
+
                       <div className="flex justify-end gap-2">
                         <Button
                           size="sm"
@@ -2128,6 +1976,15 @@ export default function CandidateDetailPage({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <InterviewSchedulerDialog
+        candidateId={candidateId}
+        candidateName={`${candidate.firstName} ${candidate.lastName}`}
+        open={showSchedulerDialog}
+        onOpenChange={setShowSchedulerDialog}
+        templates={allTemplates}
+        pipelineStageId={candidate.currentStageId ?? 0}
+      />
     </div>
   );
 }

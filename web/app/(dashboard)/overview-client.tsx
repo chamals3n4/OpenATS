@@ -15,6 +15,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogClose,
+} from "@/components/ui/dialog";
+import {
   useAnalyticsReport,
   useExportAnalyticsReport,
 } from "@/hooks/queries/use-reports";
@@ -64,6 +72,7 @@ const PERIOD_LABELS: Record<string, string> = {
 export function OverviewClient() {
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("7d");
   const [dept, setDept] = useState("all");
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
   const [exportFormat, setExportFormat] = useState<"csv" | "json">("csv");
 
   const selectedDepartmentId = dept === "all" ? undefined : Number(dept);
@@ -146,6 +155,7 @@ export function OverviewClient() {
     });
     a.click();
     URL.revokeObjectURL(url);
+    setExportDialogOpen(false);
   };
 
   return (
@@ -155,7 +165,7 @@ export function OverviewClient() {
           Reports And Analytics
         </h1>
         <div className="flex items-center gap-2">
-          <Select
+          {/*<Select
             value={exportFormat}
             onValueChange={(value) =>
               setExportFormat((value as "csv" | "json") ?? "csv")
@@ -197,10 +207,10 @@ export function OverviewClient() {
                 </span>
               </SelectItem>
             </SelectContent>
-          </Select>
+          </Select>*/}
 
           <Button
-            onClick={handleExport}
+            onClick={() => setExportDialogOpen(true)}
             className="bg-theme hover:bg-theme-hover text-white rounded-md h-9 px-4 flex items-center gap-2 border border-theme shadow-none text-[14px] font-semibold cursor-pointer"
           >
             <HugeiconsIcon icon={Download05Icon} className="size-4" />
@@ -299,6 +309,77 @@ export function OverviewClient() {
           </ChartCard>
         </div>
       </div>
+
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="sm:max-w-lg" showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle className="text-slate-900 dark:text-neutral-100 text-base font-semibold">
+              Export Report
+            </DialogTitle>
+            <p className="text-xs text-slate-400 dark:text-neutral-500">
+              Choose a format to download the analytics report.
+            </p>
+          </DialogHeader>
+
+          <div className="flex gap-3">
+            {(["csv", "json"] as const).map((fmt) => (
+              <button
+                key={fmt}
+                onClick={() => setExportFormat(fmt)}
+                className={`flex flex-1 items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-colors cursor-pointer
+                  ${
+                    exportFormat === fmt
+                      ? "border-theme bg-theme/5 dark:bg-theme/10"
+                      : "border-slate-200 dark:border-neutral-700 hover:border-slate-300 dark:hover:border-neutral-600"
+                  }`}
+              >
+                <span
+                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors
+                    ${exportFormat === fmt ? "border-theme" : "border-slate-300 dark:border-neutral-600"}`}
+                >
+                  {exportFormat === fmt && (
+                    <span className="h-2 w-2 rounded-full bg-theme" />
+                  )}
+                </span>
+                <HugeiconsIcon
+                  icon={fmt === "json" ? TextIcon : ListViewIcon}
+                  className={`size-4 shrink-0 ${exportFormat === fmt ? "text-theme" : "text-slate-400 dark:text-neutral-500"}`}
+                />
+                <div>
+                  <p
+                    className={`text-sm font-semibold leading-none mb-1 ${exportFormat === fmt ? "text-slate-800 dark:text-neutral-100" : "text-slate-600 dark:text-neutral-300"}`}
+                  >
+                    {fmt.toUpperCase()}
+                  </p>
+                  <p className="text-xs text-slate-400 dark:text-neutral-500">
+                    {fmt === "csv" ? "Rows & columns" : "Developer-friendly"}
+                  </p>
+                </div>
+              </button>
+            ))}
+          </div>
+
+          <DialogFooter className="gap-2">
+            <DialogClose
+              render={
+                <Button
+                  variant="outline"
+                  className="flex-1 h-9 rounded-lg border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 text-sm shadow-none cursor-pointer"
+                />
+              }
+            >
+              Cancel
+            </DialogClose>
+            <Button
+              onClick={handleExport}
+              disabled={exportReport.isPending}
+              className="flex-1 h-9 bg-theme hover:bg-theme-hover text-white rounded-lg border border-theme shadow-none text-sm font-semibold cursor-pointer"
+            >
+              {exportReport.isPending ? "Exporting..." : "Export"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

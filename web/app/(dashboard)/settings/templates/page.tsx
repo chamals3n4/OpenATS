@@ -58,24 +58,16 @@ import {
 } from "@/hooks/queries/use-templates";
 import type { Template } from "@/types";
 
-type TemplateType = "offer" | "rejection" | "assessment" | "general";
+type TemplateType = "email" | "event";
 
 const TYPE_META: Record<TemplateType, { label: string; badge: string }> = {
-  offer: {
-    label: "Offer Letter",
-    badge: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  },
-  rejection: {
-    label: "Rejection",
-    badge: "bg-red-50 text-red-600 border border-red-200",
-  },
-  assessment: {
-    label: "Assessment Invite",
+  email: {
+    label: "Email",
     badge: "bg-blue-50 text-blue-700 border border-blue-200",
   },
-  general: {
-    label: "General",
-    badge: "bg-slate-100 text-slate-600 border border-slate-200",
+  event: {
+    label: "Interview Event",
+    badge: "bg-purple-50 text-purple-700 border border-purple-200",
   },
 };
 
@@ -238,10 +230,8 @@ export default function TemplatesPage() {
           </SelectTrigger>
           <SelectContent className="rounded-lg w-49 shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="offer">Offer Letter</SelectItem>
-            <SelectItem value="rejection">Rejection</SelectItem>
-            <SelectItem value="assessment">Assessment Invite</SelectItem>
-            <SelectItem value="general">General</SelectItem>
+            <SelectItem value="email">Email</SelectItem>
+            <SelectItem value="event">Interview Event</SelectItem>
           </SelectContent>
         </Select>
 
@@ -311,9 +301,15 @@ export default function TemplatesPage() {
                     </TableCell>
                     <TableCell className="h-14 px-8 py-0">
                       <span
-                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${TYPE_META[t.type as TemplateType].badge}`}
+                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${(TYPE_META[t.type as TemplateType] ?? { badge: "bg-slate-100 text-slate-600 border border-slate-200" }).badge}`}
                       >
-                        {TYPE_META[t.type as TemplateType].label}
+                        {
+                          (
+                            TYPE_META[t.type as TemplateType] ?? {
+                              label: "Unknown",
+                            }
+                          ).label
+                        }
                       </span>
                     </TableCell>
                     <TableCell className="h-14 px-8 py-0 text-[var(--theme-color)] font-normal">
@@ -371,9 +367,7 @@ export default function TemplatesPage() {
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-3 mt-5">
-            {(
-              ["offer", "rejection", "assessment", "general"] as TemplateType[]
-            ).map((t) => (
+            {(["email", "event"] as TemplateType[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setPickedType(t)}
@@ -389,11 +383,9 @@ export default function TemplatesPage() {
                   {TYPE_META[t].label}
                 </span>
                 <span className="text-[12px] text-slate-500 dark:text-neutral-400 leading-snug">
-                  {t === "offer" && "Offer letters with salary & start date"}
-                  {t === "rejection" &&
-                    "Notify candidates who weren't selected"}
-                  {t === "assessment" && "Send quiz or assessment invitations"}
-                  {t === "general" && "Any other candidate communication"}
+                  {t === "email" && "Send emails to candidates"}
+                  {t === "event" &&
+                    "Interview scheduling with time slots & calendar sync"}
                 </span>
               </button>
             ))}

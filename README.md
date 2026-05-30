@@ -2,7 +2,7 @@
 
 OpenATS is a modern open source applicant tracking system built to make hiring transparent, customizable, and accessible for teams everywhere.
 
-Most ATS tools are expensive, bloated, or black boxes. OpenATS is built to be self-hosted, transparent, and customizable — so teams can run their own hiring pipeline without depending on a SaaS vendor.
+Most ATS tools are expensive, bloated, or black boxes. OpenATS is built to be self-hosted, transparent, and customizable - so teams can run their own hiring pipeline without depending on a SaaS vendor.
 
 ## Key Features
 

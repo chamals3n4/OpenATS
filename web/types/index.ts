@@ -29,17 +29,7 @@ export type PipelineStage = {
   jobId: number;
   name: string;
   position: number;
-  stageType:
-    | "none"
-    | "source"
-    | "assessment"
-    | "interview"
-    | "offer"
-    | "rejection";
-  offerTemplateId: number | null;
-  offerMode: "auto_draft" | "auto_send" | null;
-  offerExpiryDays: number | null;
-  rejectionTemplateId: number | null;
+  stageType: "screening" | "interview" | "offer";
   sourceTemplateId: number | null;
   createdAt: string;
   updatedAt: string;
@@ -145,6 +135,32 @@ export type Assessment = {
   questions?: AssessmentQuestion[];
 };
 
+export type CandidateRejection = {
+  id: number;
+  candidateId: number;
+  jobId: number;
+  fromStageId: number | null;
+  rejectedBy: number | null;
+  reason: string | null;
+  templateId: number | null;
+  emailStatus: "not_sent" | "draft" | "sent";
+  sentAt: string | null;
+  rejectedAt: string;
+};
+
+export type CandidateInterview = {
+  id: number;
+  candidateId: number;
+  stageId: number;
+  jobId: number;
+  scheduledAt: string | null;
+  durationMinutes: number | null;
+  notes: string | null;
+  outcome: "pending" | "pass" | "fail";
+  createdBy: number | null;
+  createdAt: string;
+};
+
 export type Candidate = {
   id: number;
   firstName: string;
@@ -154,6 +170,7 @@ export type Candidate = {
   resumeUrl: string | null;
   jobId: number;
   currentStageId: number | null;
+  status: "active" | "rejected" | "offered" | "hired" | "withdrawn";
   appliedAt: string;
   updatedAt: string;
   stageName: string | null;
@@ -163,8 +180,6 @@ export type Candidate = {
 /** Mirrors API `stageAutomation` on candidate stage move. */
 export type StageAutomationFlags = {
   assessmentInvite?: "sent" | "skipped_active_invite";
-  offer?: "created" | "skipped_open_exists";
-  rejectionEmail?: "sent" | "skipped_already_sent";
 };
 
 export type CandidateCvAnalysisPayload = {
@@ -219,6 +234,8 @@ export type CandidateDetail = Candidate & {
     sentAt: string | null;
     renderedHtml: string | null;
   } | null;
+  rejections: CandidateRejection[];
+  interviews: CandidateInterview[];
 };
 
 export type User = {

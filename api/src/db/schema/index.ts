@@ -9,5 +9,7 @@ export * from "./candidates";
 export * from "./offers";
 export * from "./communications";
 export * from "./relations";
+export * from "./rejections";
+export * from "./interviews";
 export * from "./active-logs";
 export * from "./page-settings";

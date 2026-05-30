@@ -18,6 +18,8 @@ import {
   Award01Icon,
   ChartEvaluationIcon,
   File01Icon,
+  UserRemove01Icon,
+  Calendar02Icon,
 } from "@hugeicons/core-free-icons";
 
 import { Button } from "@/components/ui/button";
@@ -70,8 +72,12 @@ import {
   useUpdateOfferStatus,
 } from "@/hooks/queries/use-offers";
 import {
-  CandidateJobFitTab,
-} from "@/components/dynamic-imports";
+  useRejectCandidate,
+  useCreateInterview,
+  useUpdateInterview,
+} from "@/hooks/queries/use-candidates";
+import { useTemplates } from "@/hooks/queries/use-templates";
+import { CandidateJobFitTab } from "@/components/dynamic-imports";
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -96,23 +102,60 @@ function getInitials(first: string, last: string) {
   return `${first.charAt(0)}${last.charAt(0)}`.toUpperCase();
 }
 
-const OFFER_STATUS_STYLES: Record<string, { bg: string; text: string; dot: string }> = {
-  draft: { bg: "bg-amber-50 dark:bg-amber-950/30", text: "text-amber-600 dark:text-amber-400", dot: "bg-amber-500" },
-  sent: { bg: "bg-blue-50 dark:bg-blue-950/30", text: "text-blue-600 dark:text-blue-400", dot: "bg-blue-500" },
-  accepted: { bg: "bg-green-50 dark:bg-green-950/30", text: "text-green-600 dark:text-green-400", dot: "bg-green-500" },
-  declined: { bg: "bg-red-50 dark:bg-red-950/30", text: "text-red-500 dark:text-red-400", dot: "bg-red-500" },
-  withdrawn: { bg: "bg-slate-50 dark:bg-neutral-800", text: "text-slate-500 dark:text-neutral-400", dot: "bg-slate-400" },
+const OFFER_STATUS_STYLES: Record<
+  string,
+  { bg: string; text: string; dot: string }
+> = {
+  draft: {
+    bg: "bg-amber-50 dark:bg-amber-950/30",
+    text: "text-amber-600 dark:text-amber-400",
+    dot: "bg-amber-500",
+  },
+  sent: {
+    bg: "bg-blue-50 dark:bg-blue-950/30",
+    text: "text-blue-600 dark:text-blue-400",
+    dot: "bg-blue-500",
+  },
+  accepted: {
+    bg: "bg-green-50 dark:bg-green-950/30",
+    text: "text-green-600 dark:text-green-400",
+    dot: "bg-green-500",
+  },
+  declined: {
+    bg: "bg-red-50 dark:bg-red-950/30",
+    text: "text-red-500 dark:text-red-400",
+    dot: "bg-red-500",
+  },
+  withdrawn: {
+    bg: "bg-slate-50 dark:bg-neutral-800",
+    text: "text-slate-500 dark:text-neutral-400",
+    dot: "bg-slate-400",
+  },
 };
 
-type SectionId = "job-fit" | "answers" | "history" | "offer" | "email" | "scores";
+type SectionId =
+  | "job-fit"
+  | "answers"
+  | "history"
+  | "offer"
+  | "interviews"
+  | "rejection"
+  | "email"
+  | "scores";
 
 const SECTIONS = [
   { id: "job-fit" as SectionId, label: "Job Fit", icon: Target01Icon },
   { id: "answers" as SectionId, label: "Answers", icon: QuestionIcon },
   { id: "history" as SectionId, label: "Stage History", icon: Clock01Icon },
   { id: "offer" as SectionId, label: "Offer", icon: Award01Icon },
+  { id: "interviews" as SectionId, label: "Interviews", icon: Calendar02Icon },
+  { id: "rejection" as SectionId, label: "Rejection", icon: UserRemove01Icon },
   { id: "email" as SectionId, label: "Send Email", icon: Mail01Icon },
-  { id: "scores" as SectionId, label: "Assessments", icon: ChartEvaluationIcon },
+  {
+    id: "scores" as SectionId,
+    label: "Assessments",
+    icon: ChartEvaluationIcon,
+  },
 ];
 
 type SentEmail = {
@@ -140,7 +183,8 @@ export default function CandidateDetailPage({
   const { data: assessmentsData } = useCandidateAssessments(candidateId);
 
   const stageMap = useMemo(
-    () => Object.fromEntries((pipelineData?.data ?? []).map((s) => [s.id, s.name])),
+    () =>
+      Object.fromEntries((pipelineData?.data ?? []).map((s) => [s.id, s.name])),
     [pipelineData],
   );
 
@@ -174,15 +218,48 @@ export default function CandidateDetailPage({
   const updateOfferStatusMutation = useUpdateOfferStatus();
   const moveStageMutation = useMoveCandidateStage();
 
+  // Rejection
+  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [rejectReason, setRejectReason] = useState("");
+  const [rejectTemplateId, setRejectTemplateId] = useState("");
+  const [rejectEmailStatus, setRejectEmailStatus] = useState<
+    "not_sent" | "sent"
+  >("not_sent");
+  const rejectMutation = useRejectCandidate();
+  const { data: templatesData } = useTemplates();
+  const allTemplates = templatesData?.data ?? [];
+  const rejectionTemplates = allTemplates.filter((t) => t.type === "rejection");
+
+  // Interviews
+  const [showInterviewForm, setShowInterviewForm] = useState(false);
+  const [interviewStageId, setInterviewStageId] = useState("");
+  const [interviewScheduledAt, setInterviewScheduledAt] = useState("");
+  const [interviewDuration, setInterviewDuration] = useState("");
+  const [interviewNotes, setInterviewNotes] = useState("");
+  const [editingInterviewId, setEditingInterviewId] = useState<number | null>(
+    null,
+  );
+  const [editInterviewNotes, setEditInterviewNotes] = useState("");
+  const [editInterviewOutcome, setEditInterviewOutcome] = useState<
+    "pending" | "pass" | "fail"
+  >("pending");
+  const createInterviewMutation = useCreateInterview();
+  const updateInterviewMutation = useUpdateInterview();
+
   const pipelineStages = useMemo(
-    () => [...(pipelineData?.data ?? [])].sort((a, b) => a.position - b.position),
+    () =>
+      [...(pipelineData?.data ?? [])].sort((a, b) => a.position - b.position),
     [pipelineData],
   );
 
-  const currentStageId = candidate?.currentStageId ? String(candidate.currentStageId) : "";
+  const currentStageId = candidate?.currentStageId
+    ? String(candidate.currentStageId)
+    : "";
   const effectiveSelectedStageId = selectedStageId || currentStageId;
   const hasStageChange =
-    !!candidate && !!effectiveSelectedStageId && Number(effectiveSelectedStageId) !== candidate.currentStageId;
+    !!candidate &&
+    !!effectiveSelectedStageId &&
+    Number(effectiveSelectedStageId) !== candidate.currentStageId;
 
   const openEditDialog = () => {
     if (!candidate) return;
@@ -212,18 +289,26 @@ export default function CandidateDetailPage({
 
     updateMutation.mutate(
       { id: candidate.id, formData },
-      { onSuccess: () => { setEditOpen(false); setEditResumeFile(null); } },
+      {
+        onSuccess: () => {
+          setEditOpen(false);
+          setEditResumeFile(null);
+        },
+      },
     );
   };
 
   const saveStageChange = () => {
     if (!candidate || !effectiveSelectedStageId || !hasStageChange) return;
-    moveStageMutation.mutate({
-      id: candidate.id,
-      newStageId: Number(effectiveSelectedStageId),
-    }, {
-      onSuccess: () => setSelectedStageId(""),
-    });
+    moveStageMutation.mutate(
+      {
+        id: candidate.id,
+        newStageId: Number(effectiveSelectedStageId),
+      },
+      {
+        onSuccess: () => setSelectedStageId(""),
+      },
+    );
   };
 
   const sendEmail = () => {
@@ -258,7 +343,13 @@ export default function CandidateDetailPage({
   const saveOffer = () => {
     if (!offer) return;
     const statusChanged = editStatus !== offer.status;
-    const newStatus = editStatus as "draft" | "sent" | "pending" | "accepted" | "declined" | "withdrawn";
+    const newStatus = editStatus as
+      | "draft"
+      | "sent"
+      | "pending"
+      | "accepted"
+      | "declined"
+      | "withdrawn";
 
     updateOfferMutation.mutate(
       {
@@ -266,7 +357,12 @@ export default function CandidateDetailPage({
         data: {
           salary: editSalary ? Number(editSalary) : null,
           currency: editCurrency || null,
-          payFrequency: editPayFreq as "hourly" | "daily" | "weekly" | "monthly" | "yearly",
+          payFrequency: editPayFreq as
+            | "hourly"
+            | "daily"
+            | "weekly"
+            | "monthly"
+            | "yearly",
           startDate: editStartDate || null,
           expiryDate: editExpiryDate || null,
         },
@@ -291,7 +387,9 @@ export default function CandidateDetailPage({
       <div className="flex flex-1 items-center justify-center bg-slate-50/50 dark:bg-neutral-950">
         <div className="flex flex-col items-center gap-3">
           <div className="size-8 border-[3px] border-slate-200 dark:border-neutral-700 border-t-[var(--theme-color)] rounded-full animate-spin" />
-          <p className="text-slate-400 dark:text-neutral-500 text-sm font-medium">Loading candidate…</p>
+          <p className="text-slate-400 dark:text-neutral-500 text-sm font-medium">
+            Loading candidate…
+          </p>
         </div>
       </div>
     );
@@ -301,9 +399,14 @@ export default function CandidateDetailPage({
     return (
       <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-slate-50/50 dark:bg-neutral-950">
         <div className="size-14 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center">
-          <HugeiconsIcon icon={QuestionIcon} className="size-6 text-slate-400 dark:text-neutral-500" />
+          <HugeiconsIcon
+            icon={QuestionIcon}
+            className="size-6 text-slate-400 dark:text-neutral-500"
+          />
         </div>
-        <p className="text-slate-500 dark:text-neutral-400 font-semibold text-[15px]">Candidate not found</p>
+        <p className="text-slate-500 dark:text-neutral-400 font-semibold text-[15px]">
+          Candidate not found
+        </p>
         <Button
           variant="outline"
           onClick={() => router.push("/candidates")}
@@ -317,11 +420,16 @@ export default function CandidateDetailPage({
   }
 
   const offer = candidate.offer;
-  const offerStyle = offer ? (OFFER_STATUS_STYLES[offer.status] ?? OFFER_STATUS_STYLES.draft) : null;
+  const offerStyle = offer
+    ? (OFFER_STATUS_STYLES[offer.status] ?? OFFER_STATUS_STYLES.draft)
+    : null;
   const cvAnalysis = candidate.cvAnalysis;
   const initials = getInitials(candidate.firstName, candidate.lastName);
-  const selectedStage = pipelineStages.find((stage) => String(stage.id) === effectiveSelectedStageId);
-  const selectedStageName = selectedStage?.name ?? candidate.stageName ?? "Select stage";
+  const selectedStage = pipelineStages.find(
+    (stage) => String(stage.id) === effectiveSelectedStageId,
+  );
+  const selectedStageName =
+    selectedStage?.name ?? candidate.stageName ?? "Select stage";
 
   return (
     <div className="flex flex-1 flex-col overflow-hidden bg-slate-50 dark:bg-neutral-950">
@@ -332,16 +440,37 @@ export default function CandidateDetailPage({
               <div className="min-w-0">
                 <div className="flex items-center gap-3">
                   <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm dark:bg-neutral-100 dark:text-neutral-950">
-                    <span className="select-none text-[15px] font-bold">{initials}</span>
+                    <span className="select-none text-[15px] font-bold">
+                      {initials}
+                    </span>
                   </div>
                   <div className="min-w-0">
                     <h1 className="truncate text-[22px] font-bold leading-tight text-slate-950 dark:text-neutral-50">
                       {candidate.firstName} {candidate.lastName}
                     </h1>
                     <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] font-medium text-slate-500 dark:text-neutral-400">
-                      <span className="truncate">{candidate.jobTitle ?? "Unknown position"}</span>
+                      <span className="truncate">
+                        {candidate.jobTitle ?? "Unknown position"}
+                      </span>
+                      <Badge
+                        className={`rounded-md border-none px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider shadow-none ${
+                          candidate.status === "active"
+                            ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
+                            : candidate.status === "rejected"
+                              ? "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400"
+                              : candidate.status === "offered"
+                                ? "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400"
+                                : candidate.status === "hired"
+                                  ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
+                                  : "bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400"
+                        }`}
+                      >
+                        {candidate.status}
+                      </Badge>
                       {offer && (
-                        <Badge className={`${offerStyle?.bg} ${offerStyle?.text} rounded-md border-none px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider shadow-none`}>
+                        <Badge
+                          className={`${offerStyle?.bg} ${offerStyle?.text} rounded-md border-none px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider shadow-none`}
+                        >
                           Offer {offer.status}
                         </Badge>
                       )}
@@ -350,57 +479,29 @@ export default function CandidateDetailPage({
                 </div>
 
                 <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-slate-600 dark:text-neutral-300">
-                  <a href={`mailto:${candidate.email}`} className="inline-flex min-w-0 items-center gap-2 font-medium hover:text-[var(--theme-color)]">
-                    <HugeiconsIcon icon={Mail01Icon} className="size-4 shrink-0 text-slate-400 dark:text-neutral-500" />
+                  <a
+                    href={`mailto:${candidate.email}`}
+                    className="inline-flex min-w-0 items-center gap-2 font-medium hover:text-[var(--theme-color)]"
+                  >
+                    <HugeiconsIcon
+                      icon={Mail01Icon}
+                      className="size-4 shrink-0 text-slate-400 dark:text-neutral-500"
+                    />
                     <span className="truncate">{candidate.email}</span>
                   </a>
                   <div className="inline-flex items-center gap-2 font-medium">
-                    <HugeiconsIcon icon={CallIcon} className="size-4 text-slate-400 dark:text-neutral-500" />
+                    <HugeiconsIcon
+                      icon={CallIcon}
+                      className="size-4 text-slate-400 dark:text-neutral-500"
+                    />
                     <span>{candidate.phone ?? "No phone"}</span>
                   </div>
                   <div className="inline-flex items-center gap-2 font-medium">
-                    <HugeiconsIcon icon={Clock01Icon} className="size-4 text-slate-400 dark:text-neutral-500" />
+                    <HugeiconsIcon
+                      icon={Clock01Icon}
+                      className="size-4 text-slate-400 dark:text-neutral-500"
+                    />
                     <span>Applied {formatDate(candidate.appliedAt)}</span>
-                  </div>
-                  <div className="inline-flex items-center gap-2">
-                    <Select
-                      value={effectiveSelectedStageId}
-                      onValueChange={(value) => setSelectedStageId(value)}
-                      disabled={pipelineStages.length === 0 || moveStageMutation.isPending}
-                    >
-                      <SelectTrigger className="h-8 w-[180px] rounded-lg border-slate-200 bg-white text-[12px] font-semibold text-slate-700 shadow-none focus:ring-0 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200">
-                        <SelectValue>{selectedStageName}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent className="rounded-xl border-slate-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
-                        {pipelineStages.map((stage) => (
-                          <SelectItem key={stage.id} value={String(stage.id)} className="text-[13px]">
-                            {stage.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {hasStageChange && (
-                      <>
-                        <Button
-                          type="button"
-                          size="sm"
-                          disabled={moveStageMutation.isPending}
-                          onClick={() => setSelectedStageId("")}
-                          className="h-8 rounded-md border-none bg-neutral-800 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          type="button"
-                          size="sm"
-                          disabled={moveStageMutation.isPending}
-                          onClick={saveStageChange}
-                          className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)]"
-                        >
-                          {moveStageMutation.isPending ? "Saving…" : "Save"}
-                        </Button>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>
@@ -416,6 +517,50 @@ export default function CandidateDetailPage({
                 <HugeiconsIcon icon={File01Icon} className="size-4" />
                 View CV
               </Button>
+              <Select
+                value={effectiveSelectedStageId}
+                onValueChange={(value) => setSelectedStageId(value ?? "")}
+                disabled={
+                  pipelineStages.length === 0 || moveStageMutation.isPending
+                }
+              >
+                <SelectTrigger className="h-[34px] rounded-md border-none bg-neutral-100 px-4 text-[14px] font-semibold leading-none text-slate-700 shadow-none hover:bg-neutral-200 focus:ring-0 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
+                  <SelectValue>{selectedStageName}</SelectValue>
+                </SelectTrigger>
+                <SelectContent className="rounded-xl border-slate-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
+                  {pipelineStages.map((stage) => (
+                    <SelectItem
+                      key={stage.id}
+                      value={String(stage.id)}
+                      className="text-[13px]"
+                    >
+                      {stage.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {hasStageChange && (
+                <>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={moveStageMutation.isPending}
+                    onClick={() => setSelectedStageId("")}
+                    className="h-[34px] rounded-md border-none bg-neutral-700 px-3 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    disabled={moveStageMutation.isPending}
+                    onClick={saveStageChange}
+                    className="h-[34px] rounded-md border-none bg-[var(--theme-color)] px-3 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                  >
+                    {moveStageMutation.isPending ? "Saving…" : "Save"}
+                  </Button>
+                </>
+              )}
               <Button
                 size="sm"
                 className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
@@ -442,7 +587,6 @@ export default function CandidateDetailPage({
               </Button>
             </div>
           </div>
-
         </div>
       </div>
 
@@ -452,7 +596,8 @@ export default function CandidateDetailPage({
             <div className="mb-5 flex w-fit max-w-full gap-1.5 overflow-x-auto rounded-lg border border-slate-300 bg-white p-1.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
               {SECTIONS.map((s) => {
                 const isActive = activeSection === s.id;
-                const hasPendingCv = s.id === "job-fit" && cvAnalysis?.status === "pending";
+                const hasPendingCv =
+                  s.id === "job-fit" && cvAnalysis?.status === "pending";
                 const hasOffer = s.id === "offer" && offer;
 
                 return (
@@ -467,476 +612,1315 @@ export default function CandidateDetailPage({
                   >
                     <HugeiconsIcon icon={s.icon} className="size-4" />
                     <span>{s.label}</span>
-                    {hasPendingCv && <span className="size-2 rounded-full bg-amber-400" />}
-                    {hasOffer && <span className={`size-2 rounded-full ${offerStyle?.dot ?? "bg-slate-400"}`} />}
+                    {hasPendingCv && (
+                      <span className="size-2 rounded-full bg-amber-400" />
+                    )}
+                    {hasOffer && (
+                      <span
+                        className={`size-2 rounded-full ${offerStyle?.dot ?? "bg-slate-400"}`}
+                      />
+                    )}
                   </button>
                 );
               })}
             </div>
 
             <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
-            {/* ─── Job Fit ─── */}
-            {activeSection === "job-fit" && (
-              <div className="p-5 sm:p-6">
-                <div className="mb-6">
-                  <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">Job Fit Analysis</h3>
-                  <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
-                    AI-powered match between the candidate&apos;s resume and job requirements
-                  </p>
-                </div>
-                <CandidateJobFitTab resumeUrl={candidate.resumeUrl} cv={cvAnalysis} />
-              </div>
-            )}
-
-            {/* ─── Answers ─── */}
-            {activeSection === "answers" && (
-              <div className="p-5 sm:p-6">
-                <div className="mb-6">
-                  <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">Candidate Answers</h3>
-                  <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
-                    Responses to custom application questions
-                  </p>
-                </div>
-                {candidate.answers.length === 0 && candidate.selections.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
-                    <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
-                      <HugeiconsIcon icon={QuestionIcon} className="size-5 text-slate-300 dark:text-neutral-600" />
-                    </div>
-                    <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">No answers submitted</p>
-                    <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">This candidate did not provide custom answers or selections.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-5">
-                    {candidate.answers.map((a) => (
-                      <div key={a.id} className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
-                        <div className="px-4 py-3 bg-slate-50 dark:bg-neutral-800/50 border-b border-slate-100 dark:border-neutral-800">
-                          <p className="text-[12px] font-semibold text-slate-600 dark:text-neutral-300">
-                            {a.questionTitle || `Question #${a.questionId}`}
-                          </p>
-                        </div>
-                        <div className="px-4 py-3">
-                          <p className="text-[14px] text-slate-700 dark:text-neutral-300 leading-relaxed">
-                            {a.answerText ?? <em className="text-slate-400 dark:text-neutral-500">No text answer</em>}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                    {candidate.selections.length > 0 && (
-                      <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
-                        {Array.from(new Set(candidate.selections.map((s) => s.questionTitle || `Question #${s.questionId}`))).map((title) => (
-                          <div key={title} className="px-4 py-3 border-b border-slate-100 dark:border-neutral-800 last:border-0">
-                            <p className="text-[12px] font-semibold text-slate-600 dark:text-neutral-300 mb-2">{title}</p>
-                            <div className="flex flex-wrap gap-2">
-                              {candidate.selections
-                                .filter((s) => (s.questionTitle || `Question #${s.questionId}`) === title)
-                                .map((s) => (
-                                  <span key={s.id} className="text-[12px] bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 px-3 py-1.5 rounded-lg font-medium border border-slate-200 dark:border-neutral-700">
-                                    {s.optionLabel || `Option #${s.optionId}`}
-                                  </span>
-                                ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ─── Stage History ─── */}
-            {activeSection === "history" && (
-              <div className="p-5 sm:p-6">
-                <div className="mb-6">
-                  <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">Stage History</h3>
-                  <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
-                    Progression through the hiring pipeline
-                  </p>
-                </div>
-                {candidate.history.length === 0 ? (
-                  <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
-                    <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
-                      <HugeiconsIcon icon={Clock01Icon} className="size-5 text-slate-300 dark:text-neutral-600" />
-                    </div>
-                    <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">No stage history yet</p>
-                    <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">Stage changes will appear here as the candidate moves through the pipeline.</p>
-                  </div>
-                ) : (
-                  <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-                    <div className="relative">
-                      <div className="absolute left-[11px] top-2 bottom-2 w-px bg-slate-200 dark:bg-neutral-800" />
-                      <div className="space-y-5 pl-8">
-                        {candidate.history.map((h, i) => (
-                          <div key={h.id} className="relative">
-                            <div
-                              className={`absolute -left-[31px] top-1.5 size-3.5 rounded-full border-[3px] border-white dark:border-neutral-900 ring-2 ${
-                                i === candidate.history.length - 1
-                                  ? "bg-[var(--theme-color)] ring-[var(--theme-color)]/30"
-                                  : "bg-slate-300 dark:bg-neutral-600 ring-slate-200 dark:ring-neutral-700"
-                              }`}
-                            />
-                            <div>
-                              <div className="flex items-center justify-between gap-2">
-                                <span className="text-[14px] font-semibold text-slate-800 dark:text-neutral-200">
-                                  {stageMap[h.stageId] ?? `Stage #${h.stageId}`}
-                                </span>
-                                <span className="text-[11px] font-medium text-slate-400 dark:text-neutral-500 bg-slate-50 dark:bg-neutral-800 px-2 py-0.5 rounded-md shrink-0">
-                                  {timeAgo(h.movedAt)}
-                                </span>
-                              </div>
-                              <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
-                                {new Date(h.movedAt).toLocaleDateString("en-US", {
-                                  month: "short", day: "numeric", year: "numeric", hour: "2-digit", minute: "2-digit",
-                                })}
-                              </p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ─── Offer ─── */}
-            {activeSection === "offer" && (
-              <div className="p-5 sm:p-6">
-                <div className="mb-6">
-                  <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">Offer Details</h3>
-                  <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
-                    Compensation package and offer letter
-                  </p>
-                </div>
-                {!offer ? (
-                  <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
-                    <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
-                      <HugeiconsIcon icon={Award01Icon} className="size-5 text-slate-300 dark:text-neutral-600" />
-                    </div>
-                    <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">No offer yet</p>
-                    <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1 max-w-[260px] mx-auto">
-                      An offer will appear here once the candidate reaches an offer stage.
+              {/* ─── Job Fit ─── */}
+              {activeSection === "job-fit" && (
+                <div className="p-5 sm:p-6">
+                  <div className="mb-6">
+                    <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+                      Job Fit Analysis
+                    </h3>
+                    <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+                      AI-powered match between the candidate&apos;s resume and
+                      job requirements
                     </p>
                   </div>
-                ) : isEditingOffer ? (
-                  <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-                    <div className="flex items-center justify-between mb-5">
-                      <div>
-                        <p className="text-[15px] font-bold text-slate-800 dark:text-neutral-200">Edit Offer</p>
-                        <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-0.5">Modify compensation and details</p>
+                  <CandidateJobFitTab
+                    resumeUrl={candidate.resumeUrl}
+                    cv={cvAnalysis}
+                  />
+                </div>
+              )}
+
+              {/* ─── Answers ─── */}
+              {activeSection === "answers" && (
+                <div className="p-5 sm:p-6">
+                  <div className="mb-6">
+                    <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+                      Candidate Answers
+                    </h3>
+                    <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+                      Responses to custom application questions
+                    </p>
+                  </div>
+                  {candidate.answers.length === 0 &&
+                  candidate.selections.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
+                      <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
+                        <HugeiconsIcon
+                          icon={QuestionIcon}
+                          className="size-5 text-slate-300 dark:text-neutral-600"
+                        />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <Button size="sm" onClick={() => setIsEditingOffer(false)} className="h-8 rounded-md border-none bg-neutral-800 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600">
-                          Cancel
-                        </Button>
-                        <Button size="sm" onClick={saveOffer} disabled={updateOfferMutation.isPending} className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60">
-                          {updateOfferMutation.isPending ? "Saving…" : "Save Changes"}
-                        </Button>
+                      <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+                        No answers submitted
+                      </p>
+                      <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
+                        This candidate did not provide custom answers or
+                        selections.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-5">
+                      {candidate.answers.map((a) => (
+                        <div
+                          key={a.id}
+                          className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
+                        >
+                          <div className="px-4 py-3 bg-slate-50 dark:bg-neutral-800/50 border-b border-slate-100 dark:border-neutral-800">
+                            <p className="text-[12px] font-semibold text-slate-600 dark:text-neutral-300">
+                              {a.questionTitle || `Question #${a.questionId}`}
+                            </p>
+                          </div>
+                          <div className="px-4 py-3">
+                            <p className="text-[14px] text-slate-700 dark:text-neutral-300 leading-relaxed">
+                              {a.answerText ?? (
+                                <em className="text-slate-400 dark:text-neutral-500">
+                                  No text answer
+                                </em>
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                      {candidate.selections.length > 0 && (
+                        <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+                          {Array.from(
+                            new Set(
+                              candidate.selections.map(
+                                (s) =>
+                                  s.questionTitle ||
+                                  `Question #${s.questionId}`,
+                              ),
+                            ),
+                          ).map((title) => (
+                            <div
+                              key={title}
+                              className="px-4 py-3 border-b border-slate-100 dark:border-neutral-800 last:border-0"
+                            >
+                              <p className="text-[12px] font-semibold text-slate-600 dark:text-neutral-300 mb-2">
+                                {title}
+                              </p>
+                              <div className="flex flex-wrap gap-2">
+                                {candidate.selections
+                                  .filter(
+                                    (s) =>
+                                      (s.questionTitle ||
+                                        `Question #${s.questionId}`) === title,
+                                  )
+                                  .map((s) => (
+                                    <span
+                                      key={s.id}
+                                      className="text-[12px] bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 px-3 py-1.5 rounded-lg font-medium border border-slate-200 dark:border-neutral-700"
+                                    >
+                                      {s.optionLabel || `Option #${s.optionId}`}
+                                    </span>
+                                  ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ─── Stage History ─── */}
+              {activeSection === "history" && (
+                <div className="p-5 sm:p-6">
+                  <div className="mb-6">
+                    <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+                      Stage History
+                    </h3>
+                    <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+                      Progression through the hiring pipeline
+                    </p>
+                  </div>
+                  {candidate.history.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
+                      <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
+                        <HugeiconsIcon
+                          icon={Clock01Icon}
+                          className="size-5 text-slate-300 dark:text-neutral-600"
+                        />
+                      </div>
+                      <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+                        No stage history yet
+                      </p>
+                      <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
+                        Stage changes will appear here as the candidate moves
+                        through the pipeline.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
+                      <div className="relative">
+                        <div className="absolute left-[11px] top-2 bottom-2 w-px bg-slate-200 dark:bg-neutral-800" />
+                        <div className="space-y-5 pl-8">
+                          {candidate.history.map((h, i) => (
+                            <div key={h.id} className="relative">
+                              <div
+                                className={`absolute -left-[31px] top-1.5 size-3.5 rounded-full border-[3px] border-white dark:border-neutral-900 ring-2 ${
+                                  i === candidate.history.length - 1
+                                    ? "bg-[var(--theme-color)] ring-[var(--theme-color)]/30"
+                                    : "bg-slate-300 dark:bg-neutral-600 ring-slate-200 dark:ring-neutral-700"
+                                }`}
+                              />
+                              <div>
+                                <div className="flex items-center justify-between gap-2">
+                                  <span className="text-[14px] font-semibold text-slate-800 dark:text-neutral-200">
+                                    {stageMap[h.stageId] ??
+                                      `Stage #${h.stageId}`}
+                                  </span>
+                                  <span className="text-[11px] font-medium text-slate-400 dark:text-neutral-500 bg-slate-50 dark:bg-neutral-800 px-2 py-0.5 rounded-md shrink-0">
+                                    {timeAgo(h.movedAt)}
+                                  </span>
+                                </div>
+                                <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
+                                  {new Date(h.movedAt).toLocaleDateString(
+                                    "en-US",
+                                    {
+                                      month: "short",
+                                      day: "numeric",
+                                      year: "numeric",
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                    },
+                                  )}
+                                </p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
+                  )}
+                </div>
+              )}
 
+              {/* ─── Offer ─── */}
+              {activeSection === "offer" && (
+                <div className="p-5 sm:p-6">
+                  <div className="mb-6">
+                    <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+                      Offer Details
+                    </h3>
+                    <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+                      Compensation package and offer letter
+                    </p>
+                  </div>
+                  {!offer ? (
+                    <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
+                      <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
+                        <HugeiconsIcon
+                          icon={Award01Icon}
+                          className="size-5 text-slate-300 dark:text-neutral-600"
+                        />
+                      </div>
+                      <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+                        No offer yet
+                      </p>
+                      <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1 max-w-[260px] mx-auto">
+                        An offer will appear here once the candidate reaches an
+                        offer stage.
+                      </p>
+                    </div>
+                  ) : isEditingOffer ? (
+                    <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
+                      <div className="flex items-center justify-between mb-5">
+                        <div>
+                          <p className="text-[15px] font-bold text-slate-800 dark:text-neutral-200">
+                            Edit Offer
+                          </p>
+                          <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-0.5">
+                            Modify compensation and details
+                          </p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="sm"
+                            onClick={() => setIsEditingOffer(false)}
+                            className="h-8 rounded-md border-none bg-neutral-800 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={saveOffer}
+                            disabled={updateOfferMutation.isPending}
+                            className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
+                          >
+                            {updateOfferMutation.isPending
+                              ? "Saving…"
+                              : "Save Changes"}
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="space-y-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                            Status
+                          </Label>
+                          <Select
+                            value={editStatus}
+                            onValueChange={(v) => setEditStatus(v ?? "")}
+                          >
+                            <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                              {[
+                                "draft",
+                                "sent",
+                                "pending",
+                                "accepted",
+                                "declined",
+                                "withdrawn",
+                              ].map((s) => (
+                                <SelectItem
+                                  key={s}
+                                  value={s}
+                                  className="text-[13px] capitalize"
+                                >
+                                  {s}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                              Currency
+                            </Label>
+                            <Select
+                              value={editCurrency}
+                              onValueChange={(v) => setEditCurrency(v ?? "")}
+                            >
+                              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                                {["USD", "EUR", "GBP", "LKR", "INR", "AUD"].map(
+                                  (c) => (
+                                    <SelectItem
+                                      key={c}
+                                      value={c}
+                                      className="text-[13px]"
+                                    >
+                                      {c}
+                                    </SelectItem>
+                                  ),
+                                )}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                              Pay Frequency
+                            </Label>
+                            <Select
+                              value={editPayFreq}
+                              onValueChange={(v) => setEditPayFreq(v ?? "")}
+                            >
+                              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                                {[
+                                  "hourly",
+                                  "daily",
+                                  "weekly",
+                                  "monthly",
+                                  "yearly",
+                                ].map((f) => (
+                                  <SelectItem
+                                    key={f}
+                                    value={f}
+                                    className="text-[13px] capitalize"
+                                  >
+                                    {f}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                            Salary
+                          </Label>
+                          <Input
+                            type="number"
+                            min={0}
+                            value={editSalary}
+                            onChange={(e) => setEditSalary(e.target.value)}
+                            placeholder="e.g. 75000"
+                            className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                              Start Date
+                            </Label>
+                            <Input
+                              type="date"
+                              value={editStartDate}
+                              onChange={(e) => setEditStartDate(e.target.value)}
+                              className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
+                            />
+                          </div>
+                          <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                              Expiry Date
+                            </Label>
+                            <Input
+                              type="date"
+                              value={editExpiryDate}
+                              onChange={(e) =>
+                                setEditExpiryDate(e.target.value)
+                              }
+                              className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
+                            />
+                          </div>
+                        </div>
+
+                        {updateOfferMutation.isError && (
+                          <p className="text-red-500 text-[12px] font-medium">
+                            {(updateOfferMutation.error as Error).message ??
+                              "Failed to save offer."}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  ) : (
                     <div className="space-y-4">
+                      <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+                        <div className="flex items-center justify-between px-5 py-4">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`size-2.5 rounded-full ${offerStyle?.dot ?? "bg-slate-400"}`}
+                            />
+                            <span className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
+                              Status
+                            </span>
+                            <Badge
+                              className={`${offerStyle?.bg} ${offerStyle?.text} hover:opacity-90 border-none shadow-none font-bold px-3 py-1 rounded-md text-[11px] uppercase tracking-wider`}
+                            >
+                              {offer.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {offer.status === "draft" && (
+                              <Button
+                                size="sm"
+                                disabled={updateOfferStatusMutation.isPending}
+                                onClick={() =>
+                                  updateOfferStatusMutation.mutate({
+                                    id: offer.id,
+                                    status: "sent",
+                                  })
+                                }
+                                className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
+                              >
+                                <HugeiconsIcon
+                                  icon={SentIcon}
+                                  className="size-3.5 rotate-[-45deg]"
+                                  strokeWidth={2.5}
+                                />
+                                {updateOfferStatusMutation.isPending
+                                  ? "Sending…"
+                                  : "Send Offer"}
+                              </Button>
+                            )}
+                            {(offer.status === "sent" ||
+                              offer.status === "pending") && (
+                              <Button
+                                size="sm"
+                                disabled={updateOfferStatusMutation.isPending}
+                                onClick={() =>
+                                  updateOfferStatusMutation.mutate({
+                                    id: offer.id,
+                                    status: "sent",
+                                  })
+                                }
+                                className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
+                              >
+                                <HugeiconsIcon
+                                  icon={SentIcon}
+                                  className="size-3.5 rotate-[-45deg]"
+                                  strokeWidth={2.5}
+                                />
+                                {updateOfferStatusMutation.isPending
+                                  ? "Resending…"
+                                  : "Resend"}
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              onClick={openOfferEdit}
+                              className="h-8 rounded-md border-none bg-neutral-800 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                            >
+                              <HugeiconsIcon
+                                icon={PencilEdit01Icon}
+                                className="size-3.5"
+                              />
+                              Edit
+                            </Button>
+                          </div>
+                        </div>
+                        <Separator />
+                        <div className="divide-y divide-slate-100 dark:divide-neutral-800">
+                          {[
+                            {
+                              label: "Salary",
+                              value: offer.salary
+                                ? `${offer.currency ?? ""} ${Number(offer.salary).toLocaleString()}${offer.payFrequency ? ` / ${offer.payFrequency}` : ""}`.trim()
+                                : "—",
+                            },
+                            {
+                              label: "Start Date",
+                              value: formatDate(offer.startDate),
+                            },
+                            {
+                              label: "Expiry Date",
+                              value: formatDate(offer.expiryDate),
+                            },
+                            {
+                              label: "Sent At",
+                              value: offer.sentAt
+                                ? timeAgo(offer.sentAt)
+                                : "Not sent yet",
+                            },
+                          ].map(({ label, value }) => (
+                            <div
+                              key={label}
+                              className="flex items-center justify-between px-5 py-3.5 gap-4"
+                            >
+                              <span className="text-[13px] text-slate-500 dark:text-neutral-400 font-medium">
+                                {label}
+                              </span>
+                              <span className="text-[13px] text-slate-800 dark:text-neutral-200 font-semibold text-right break-words">
+                                {value}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      {offer.renderedHtml && (
+                        <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
+                          <p className="text-[12px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
+                            Offer Letter Preview
+                          </p>
+                          <div
+                            className="text-[13px] text-slate-700 dark:text-neutral-300 leading-relaxed max-h-[340px] overflow-y-auto prose prose-sm w-full"
+                            dangerouslySetInnerHTML={{
+                              __html: offer.renderedHtml,
+                            }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ─── Interviews ─── */}
+              {activeSection === "interviews" && (
+                <div className="p-5 sm:p-6">
+                  <div className="mb-6 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+                        Interview Log
+                      </h3>
+                      <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+                        Schedule and track interview outcomes
+                      </p>
+                    </div>
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        setShowInterviewForm(!showInterviewForm);
+                        setInterviewStageId("");
+                        setInterviewScheduledAt("");
+                        setInterviewDuration("");
+                        setInterviewNotes("");
+                      }}
+                      className={`h-8 rounded-md border-none px-3 text-[12px] font-semibold text-white shadow-none ${showInterviewForm ? "bg-neutral-700 hover:bg-neutral-600" : "bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)]"}`}
+                    >
+                      {showInterviewForm ? "Cancel" : "+ Log Interview"}
+                    </Button>
+                  </div>
+
+                  {showInterviewForm && (
+                    <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 mb-5 space-y-4">
                       <div className="space-y-1.5">
-                        <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Status</Label>
-                        <Select value={editStatus} onValueChange={(v) => setEditStatus(v ?? "")}>
+                        <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                          Stage
+                        </Label>
+                        <Select
+                          value={interviewStageId}
+                          onValueChange={(v) => setInterviewStageId(v ?? "")}
+                        >
                           <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
-                            <SelectValue />
+                            <SelectValue placeholder="Select stage" />
                           </SelectTrigger>
                           <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                            {["draft", "sent", "pending", "accepted", "declined", "withdrawn"].map((s) => (
-                              <SelectItem key={s} value={s} className="text-[13px] capitalize">{s}</SelectItem>
+                            {(pipelineData?.data ?? []).map((s) => (
+                              <SelectItem
+                                key={s.id}
+                                value={String(s.id)}
+                                className="text-[13px]"
+                              >
+                                {s.name}
+                              </SelectItem>
                             ))}
                           </SelectContent>
                         </Select>
                       </div>
-
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-1.5">
-                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Currency</Label>
-                          <Select value={editCurrency} onValueChange={(v) => setEditCurrency(v ?? "")}>
-                            <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                              {["USD", "EUR", "GBP", "LKR", "INR", "AUD"].map((c) => (
-                                <SelectItem key={c} value={c} className="text-[13px]">{c}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                            Scheduled Date
+                          </Label>
+                          <Input
+                            type="datetime-local"
+                            value={interviewScheduledAt}
+                            onChange={(e) =>
+                              setInterviewScheduledAt(e.target.value)
+                            }
+                            className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
+                          />
                         </div>
                         <div className="space-y-1.5">
-                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Pay Frequency</Label>
-                          <Select value={editPayFreq} onValueChange={(v) => setEditPayFreq(v ?? "")}>
-                            <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                              {["hourly", "daily", "weekly", "monthly", "yearly"].map((f) => (
-                                <SelectItem key={f} value={f} className="text-[13px] capitalize">{f}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                            Duration (min)
+                          </Label>
+                          <Input
+                            type="number"
+                            value={interviewDuration}
+                            onChange={(e) =>
+                              setInterviewDuration(e.target.value)
+                            }
+                            placeholder="e.g. 30"
+                            className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
+                          />
                         </div>
-                      </div>
-
-                      <div className="space-y-1.5">
-                        <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Salary</Label>
-                        <Input type="number" min={0} value={editSalary} onChange={(e) => setEditSalary(e.target.value)} placeholder="e.g. 75000" className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg" />
-                      </div>
-
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-1.5">
-                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Start Date</Label>
-                          <Input type="date" value={editStartDate} onChange={(e) => setEditStartDate(e.target.value)} className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg" />
-                        </div>
-                        <div className="space-y-1.5">
-                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Expiry Date</Label>
-                          <Input type="date" value={editExpiryDate} onChange={(e) => setEditExpiryDate(e.target.value)} className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg" />
-                        </div>
-                      </div>
-
-                      {updateOfferMutation.isError && (
-                        <p className="text-red-500 text-[12px] font-medium">{(updateOfferMutation.error as Error).message ?? "Failed to save offer."}</p>
-                      )}
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
-                      <div className="flex items-center justify-between px-5 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className={`size-2.5 rounded-full ${offerStyle?.dot ?? "bg-slate-400"}`} />
-                          <span className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">Status</span>
-                          <Badge className={`${offerStyle?.bg} ${offerStyle?.text} hover:opacity-90 border-none shadow-none font-bold px-3 py-1 rounded-md text-[11px] uppercase tracking-wider`}>
-                            {offer.status}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          {offer.status === "draft" && (
-                            <Button size="sm" disabled={updateOfferStatusMutation.isPending} onClick={() => updateOfferStatusMutation.mutate({ id: offer.id, status: "sent" })} className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60">
-                              <HugeiconsIcon icon={SentIcon} className="size-3.5 rotate-[-45deg]" strokeWidth={2.5} />
-                              {updateOfferStatusMutation.isPending ? "Sending…" : "Send Offer"}
-                            </Button>
-                          )}
-                          {(offer.status === "sent" || offer.status === "pending") && (
-                            <Button size="sm" disabled={updateOfferStatusMutation.isPending} onClick={() => updateOfferStatusMutation.mutate({ id: offer.id, status: "sent" })} className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60">
-                              <HugeiconsIcon icon={SentIcon} className="size-3.5 rotate-[-45deg]" strokeWidth={2.5} />
-                              {updateOfferStatusMutation.isPending ? "Resending…" : "Resend"}
-                            </Button>
-                          )}
-                          <Button size="sm" onClick={openOfferEdit} className="h-8 rounded-md border-none bg-neutral-800 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600">
-                            <HugeiconsIcon icon={PencilEdit01Icon} className="size-3.5" />
-                            Edit
-                          </Button>
-                        </div>
-                      </div>
-                      <Separator />
-                      <div className="divide-y divide-slate-100 dark:divide-neutral-800">
-                        {[
-                          { label: "Salary", value: offer.salary ? `${offer.currency ?? ""} ${Number(offer.salary).toLocaleString()}${offer.payFrequency ? ` / ${offer.payFrequency}` : ""}`.trim() : "—" },
-                          { label: "Start Date", value: formatDate(offer.startDate) },
-                          { label: "Expiry Date", value: formatDate(offer.expiryDate) },
-                          { label: "Sent At", value: offer.sentAt ? timeAgo(offer.sentAt) : "Not sent yet" },
-                        ].map(({ label, value }) => (
-                          <div key={label} className="flex items-center justify-between px-5 py-3.5 gap-4">
-                            <span className="text-[13px] text-slate-500 dark:text-neutral-400 font-medium">{label}</span>
-                            <span className="text-[13px] text-slate-800 dark:text-neutral-200 font-semibold text-right break-words">{value}</span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-
-                    {offer.renderedHtml && (
-                      <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-                        <p className="text-[12px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-3">Offer Letter Preview</p>
-                        <div className="text-[13px] text-slate-700 dark:text-neutral-300 leading-relaxed max-h-[340px] overflow-y-auto prose prose-sm w-full" dangerouslySetInnerHTML={{ __html: offer.renderedHtml }} />
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* ─── Send Email ─── */}
-            {activeSection === "email" && (
-              <div className="p-5 sm:p-6">
-                <div className="mb-6">
-                  <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">Send Email</h3>
-                  <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
-                    Compose and send a message to the candidate
-                  </p>
-                </div>
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
-                  <div className="flex flex-1 flex-col rounded-xl border border-slate-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
-                    <div className="flex flex-1 flex-col space-y-4">
-                      <div className="space-y-1.5">
-                        <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">To</Label>
-                        <Input value={candidate.email} readOnly className="h-10 border-slate-200 dark:border-neutral-700 shadow-none bg-slate-50 dark:bg-neutral-950 text-slate-700 dark:text-neutral-300 text-[13px] focus-visible:ring-0 rounded-lg cursor-default" />
                       </div>
                       <div className="space-y-1.5">
-                        <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Subject</Label>
-                        <Input value={emailSubject} onChange={(e) => setEmailSubject(e.target.value)} placeholder="e.g. Interview Invitation - Software Engineer" className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg" />
+                        <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                          Notes
+                        </Label>
+                        <Input
+                          value={interviewNotes}
+                          onChange={(e) => setInterviewNotes(e.target.value)}
+                          placeholder="Add notes..."
+                          className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
+                        />
                       </div>
-                      <div className="flex min-h-0 flex-1 flex-col space-y-1.5">
-                        <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Message</Label>
-                        <textarea value={emailBody} onChange={(e) => setEmailBody(e.target.value)} placeholder="Write your message here..." className="min-h-[180px] w-full flex-1 resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-[13px] leading-relaxed text-slate-700 transition-[border-color] duration-200 focus:border-[var(--theme-color)] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300" />
-                      </div>
-                      <div className="flex shrink-0 items-center justify-between pt-2">
-                        <span className="text-[12px] text-slate-400">
-                          Sending to <strong className="text-slate-600 dark:text-neutral-300">{candidate.email}</strong>
-                        </span>
+                      <div className="flex justify-end">
                         <Button
-                          type="button"
-                          onClick={sendEmail}
-                          disabled={!emailSubject.trim() || !emailBody.trim()}
-                          className="h-9 rounded-md border-none bg-[var(--theme-color)] px-3.5 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:bg-neutral-700 disabled:text-neutral-400 disabled:opacity-70"
+                          size="sm"
+                          disabled={
+                            !interviewStageId ||
+                            createInterviewMutation.isPending
+                          }
+                          onClick={() => {
+                            createInterviewMutation.mutate(
+                              {
+                                candidateId,
+                                data: {
+                                  stageId: Number(interviewStageId),
+                                  scheduledAt:
+                                    interviewScheduledAt || undefined,
+                                  durationMinutes: interviewDuration
+                                    ? Number(interviewDuration)
+                                    : undefined,
+                                  notes: interviewNotes || undefined,
+                                },
+                              },
+                              {
+                                onSuccess: () => {
+                                  setShowInterviewForm(false);
+                                  setInterviewStageId("");
+                                  setInterviewScheduledAt("");
+                                  setInterviewDuration("");
+                                  setInterviewNotes("");
+                                },
+                              },
+                            );
+                          }}
+                          className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
                         >
-                          <HugeiconsIcon icon={SentIcon} className="size-4 rotate-[-45deg]" strokeWidth={2.5} />
-                          Send Email
+                          {createInterviewMutation.isPending
+                            ? "Saving…"
+                            : "Save Interview"}
                         </Button>
                       </div>
                     </div>
-                  </div>
+                  )}
 
-                  <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
-                    <div className="mb-4 flex items-center justify-between gap-3">
-                      <div>
-                        <h4 className="text-[14px] font-bold text-slate-900 dark:text-neutral-100">Sent Emails</h4>
-                        <p className="mt-0.5 text-[12px] text-slate-500 dark:text-neutral-400">{sentEmails.length} total</p>
+                  {(candidate.interviews ?? []).length === 0 &&
+                  !showInterviewForm ? (
+                    <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
+                      <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
+                        <HugeiconsIcon
+                          icon={Calendar02Icon}
+                          className="size-5 text-slate-300 dark:text-neutral-600"
+                        />
                       </div>
-                      <HugeiconsIcon icon={SentIcon} className="size-4 rotate-[-45deg] text-slate-400 dark:text-neutral-500" strokeWidth={2.3} />
+                      <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+                        No interviews logged yet
+                      </p>
+                      <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
+                        Click "+ Log Interview" to schedule one.
+                      </p>
                     </div>
-                    {sentEmails.length === 0 ? (
-                      <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center dark:border-neutral-700 dark:bg-neutral-950/50">
-                        <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400">No emails sent yet</p>
-                        <p className="mt-1 text-[12px] text-slate-400 dark:text-neutral-500">Sent messages will appear here.</p>
-                      </div>
-                    ) : (
-                      <div className="max-h-[430px] space-y-3 overflow-y-auto pr-1">
-                        {sentEmails.map((email) => (
-                          <div key={email.id} className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-neutral-800 dark:bg-neutral-950">
-                            <div className="flex items-start justify-between gap-3">
-                              <p className="line-clamp-2 text-[13px] font-bold text-slate-800 dark:text-neutral-200">{email.subject}</p>
-                              <span className="shrink-0 text-[11px] font-medium text-slate-400 dark:text-neutral-500">{timeAgo(email.sentAt)}</span>
+                  ) : (
+                    <div className="space-y-3">
+                      {(candidate.interviews ?? []).map((iv) => (
+                        <div
+                          key={iv.id}
+                          className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
+                        >
+                          <div className="flex items-center justify-between px-5 py-4 bg-slate-50 dark:bg-neutral-800/50 border-b border-slate-100 dark:border-neutral-800">
+                            <div className="flex items-center gap-3">
+                              <span className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200">
+                                {stageMap[iv.stageId] ?? `Stage #${iv.stageId}`}
+                              </span>
+                              <Badge
+                                className={`rounded-md border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-none ${
+                                  iv.outcome === "pass"
+                                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
+                                    : iv.outcome === "fail"
+                                      ? "bg-red-50 text-red-500 dark:bg-red-950/30 dark:text-red-400"
+                                      : "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
+                                }`}
+                              >
+                                {iv.outcome ?? "pending"}
+                              </Badge>
                             </div>
-                            <p className="mt-2 line-clamp-4 whitespace-pre-line text-[12px] leading-relaxed text-slate-500 dark:text-neutral-400">
-                              {email.body}
-                            </p>
+                            {editingInterviewId === iv.id && (
+                              <div className="flex items-center gap-3">
+                                <select
+                                  value={editInterviewOutcome}
+                                  onChange={(e) =>
+                                    setEditInterviewOutcome(
+                                      e.target.value as
+                                        | "pending"
+                                        | "pass"
+                                        | "fail",
+                                    )
+                                  }
+                                  className="h-7 rounded-md border border-slate-200 bg-white px-2 text-[11px] font-medium text-slate-700 shadow-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300"
+                                >
+                                  <option value="pending">Pending</option>
+                                  <option value="pass">Pass</option>
+                                  <option value="fail">Fail</option>
+                                </select>
+                                <Input
+                                  value={editInterviewNotes}
+                                  onChange={(e) =>
+                                    setEditInterviewNotes(e.target.value)
+                                  }
+                                  placeholder="Notes"
+                                  className="h-7 w-40 rounded-md border-slate-200 bg-white text-[11px] shadow-none dark:border-neutral-700 dark:bg-neutral-900"
+                                />
+                                <Button
+                                  size="sm"
+                                  disabled={updateInterviewMutation.isPending}
+                                  onClick={() => {
+                                    updateInterviewMutation.mutate(
+                                      {
+                                        interviewId: iv.id,
+                                        candidateId,
+                                        data: {
+                                          outcome: editInterviewOutcome,
+                                          notes:
+                                            editInterviewNotes || undefined,
+                                        },
+                                      },
+                                      {
+                                        onSuccess: () =>
+                                          setEditingInterviewId(null),
+                                      },
+                                    );
+                                  }}
+                                  className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-[11px] font-semibold text-white shadow-none"
+                                >
+                                  Save
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onClick={() => setEditingInterviewId(null)}
+                                  className="h-7 rounded-md border-none bg-neutral-700 px-2.5 text-[11px] font-semibold text-white shadow-none"
+                                >
+                                  Cancel
+                                </Button>
+                              </div>
+                            )}
+                            {editingInterviewId !== iv.id && (
+                              <Button
+                                size="sm"
+                                onClick={() => {
+                                  setEditingInterviewId(iv.id);
+                                  setEditInterviewOutcome(
+                                    (iv.outcome as
+                                      | "pending"
+                                      | "pass"
+                                      | "fail") ?? "pending",
+                                  );
+                                  setEditInterviewNotes(iv.notes ?? "");
+                                }}
+                                className="h-7 rounded-md border-none bg-neutral-700 px-2.5 text-[11px] font-semibold text-white shadow-none hover:bg-neutral-600"
+                              >
+                                Edit
+                              </Button>
+                            )}
                           </div>
-                        ))}
-                      </div>
+                          <div className="px-5 py-3 space-y-1.5">
+                            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[12px] text-slate-500 dark:text-neutral-400">
+                              {iv.scheduledAt && (
+                                <span>
+                                  Scheduled: {formatDate(iv.scheduledAt)}
+                                </span>
+                              )}
+                              {iv.durationMinutes && (
+                                <span>{iv.durationMinutes} min</span>
+                              )}
+                            </div>
+                            {iv.notes && (
+                              <p className="text-[13px] text-slate-600 dark:text-neutral-300 leading-relaxed">
+                                {iv.notes}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ─── Rejection ─── */}
+              {activeSection === "rejection" && (
+                <div className="p-5 sm:p-6">
+                  <div className="mb-6 flex items-center justify-between">
+                    <div>
+                      <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+                        Rejection
+                      </h3>
+                      <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+                        Rejection history and actions
+                      </p>
+                    </div>
+                    {candidate.status !== "rejected" && (
+                      <Button
+                        size="sm"
+                        onClick={() => setShowRejectForm(!showRejectForm)}
+                        className={`h-8 rounded-md border-none px-3 text-[12px] font-semibold text-white shadow-none ${showRejectForm ? "bg-neutral-700 hover:bg-neutral-600" : "bg-red-600 hover:bg-red-500"}`}
+                      >
+                        {showRejectForm ? "Cancel" : "Reject Candidate"}
+                      </Button>
                     )}
                   </div>
-                </div>
-              </div>
-            )}
 
-            {/* ─── Assessments ─── */}
-            {activeSection === "scores" && (
-              <div className="p-5 sm:p-6">
-                <div className="mb-6">
-                  <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">Assessments</h3>
-                  <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
-                    Test results and evaluation scores
-                  </p>
-                </div>
-                {(() => {
-                  const attempts = assessmentsData?.data ?? [];
-                  if (!assessmentsData) {
-                    return (
-                      <div className="flex items-center justify-center py-16">
-                        <div className="flex items-center gap-2.5 text-slate-400 dark:text-neutral-500">
-                          <div className="size-4 border-2 border-slate-300 dark:border-neutral-600 border-t-slate-400 rounded-full animate-spin" />
-                          <p className="text-sm font-medium">Loading…</p>
-                        </div>
-                      </div>
-                    );
-                  }
-                  if (attempts.length === 0) {
-                    return (
-                      <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
-                        <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
-                          <HugeiconsIcon icon={ChartEvaluationIcon} className="size-5 text-slate-300 dark:text-neutral-600" />
-                        </div>
-                        <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">No assessments yet</p>
-                        <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1 max-w-[280px] mx-auto">
-                          Assessment results will appear here once the candidate completes an assessment.
+                  {showRejectForm && (
+                    <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50/20 dark:bg-red-950/10 p-5 mb-5 space-y-4">
+                      <div>
+                        <p className="text-[14px] font-bold text-red-700 dark:text-red-400">
+                          Reject {candidate.firstName} {candidate.lastName}
                         </p>
                       </div>
-                    );
-                  }
-                  return (
-                    <div className="space-y-3">
-                      {attempts.map((a) => {
-                        const statusStyles: Record<string, { bg: string; text: string; label: string }> = {
-                          pending: { bg: "bg-amber-50 dark:bg-amber-950/25", text: "text-amber-600 dark:text-amber-400", label: "Pending" },
-                          started: { bg: "bg-blue-50 dark:bg-blue-950/25", text: "text-blue-600 dark:text-blue-400", label: "In Progress" },
-                          completed: { bg: "bg-green-50 dark:bg-green-950/25", text: "text-green-700 dark:text-green-400", label: "Completed" },
-                          expired: { bg: "bg-slate-100 dark:bg-neutral-800", text: "text-slate-500 dark:text-neutral-400", label: "Expired" },
-                        };
-                        const s = statusStyles[a.status] ?? statusStyles.pending;
-                        const score = a.scorePercentage != null ? Math.round(Number(a.scorePercentage)) : null;
-                        const passColor = a.passed ? "text-emerald-600 dark:text-emerald-400" : "text-rose-500 dark:text-rose-400";
-
-                        return (
-                          <div key={a.id} className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
-                            <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-neutral-800/50 border-b border-slate-100 dark:border-neutral-800">
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <HugeiconsIcon icon={ChartEvaluationIcon} className="size-4 text-slate-400 shrink-0" />
-                                <p className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 truncate">{a.assessmentTitle}</p>
-                              </div>
-                              <span className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide ${s.bg} ${s.text}`}>
-                                {s.label}
-                              </span>
-                            </div>
-                            <div className="divide-y divide-slate-100 dark:divide-neutral-800">
-                              {score != null && (
-                                <div className="px-4 py-3 flex items-center justify-between gap-4">
-                                  <span className="text-[12px] text-slate-500 dark:text-neutral-400 font-medium">Score</span>
-                                  <div className="flex items-center gap-2.5">
-                                    <div className="w-24 h-2 rounded-full bg-slate-100 dark:bg-neutral-800 overflow-hidden">
-                                      <div className={`h-full rounded-full transition-all duration-500 ${score >= 50 ? "bg-emerald-500" : "bg-rose-400"}`} style={{ width: `${score}%` }} />
-                                    </div>
-                                    <span className={`text-[13px] font-bold tabular-nums ${passColor}`}>{score}%</span>
-                                  </div>
-                                </div>
-                              )}
-                              {a.passed != null && (
-                                <div className="px-4 py-3 flex items-center justify-between gap-4">
-                                  <span className="text-[12px] text-slate-500 font-medium">Result</span>
-                                  <span className={`text-[13px] font-semibold ${passColor}`}>
-                                    {a.passed ? "Passed" : "Not Passed"}
-                                  </span>
-                                </div>
-                              )}
-                              {a.completedAt && (
-                                <div className="px-4 py-3 flex items-center justify-between gap-4">
-                                  <span className="text-[12px] text-slate-500 font-medium">Completed</span>
-                                  <span className="text-[13px] text-slate-700 dark:text-neutral-300 font-medium">{formatDate(a.completedAt)}</span>
-                                </div>
-                              )}
-                              {a.status === "pending" && (
-                                <div className="px-4 py-3 flex items-center justify-between gap-4">
-                                  <span className="text-[12px] text-slate-500 font-medium">Link expires</span>
-                                  <span className="text-[13px] text-slate-700 dark:text-neutral-300 font-medium">{formatDate(a.expiresAt)}</span>
-                                </div>
-                              )}
-                              {(a.status === "pending" || a.status === "started") && (
-                                <div className="px-4 py-3">
-                                  <button onClick={() => { const url = `${window.location.origin}/assessment/${a.token}`; navigator.clipboard.writeText(url); }} className="text-[12px] text-[var(--theme-color)] font-semibold hover:underline">
-                                    Copy assessment link
-                                  </button>
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
+                      <div className="space-y-1.5">
+                        <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
+                          Reason (optional)
+                        </Label>
+                        <Input
+                          value={rejectReason}
+                          onChange={(e) => setRejectReason(e.target.value)}
+                          placeholder="e.g. Not a good fit"
+                          className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
+                        />
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
+                          Template
+                        </Label>
+                        <Select
+                          value={rejectTemplateId}
+                          onValueChange={(v) => setRejectTemplateId(v ?? "")}
+                        >
+                          <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                            <SelectValue placeholder="Select template (optional)" />
+                          </SelectTrigger>
+                          <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                            <SelectItem value="" className="text-[13px]">
+                              None
+                            </SelectItem>
+                            {rejectionTemplates.map((t) => (
+                              <SelectItem
+                                key={t.id}
+                                value={String(t.id)}
+                                className="text-[13px]"
+                              >
+                                {t.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
+                          Email:
+                        </Label>
+                        <label className="flex cursor-pointer items-center gap-1.5">
+                          <input
+                            type="radio"
+                            name="rejectEmail"
+                            checked={rejectEmailStatus === "not_sent"}
+                            onChange={() => setRejectEmailStatus("not_sent")}
+                            className="text-[var(--theme-color)]"
+                          />
+                          <span className="text-[13px] text-slate-600 dark:text-neutral-300">
+                            Don't send
+                          </span>
+                        </label>
+                        <label className="flex cursor-pointer items-center gap-1.5">
+                          <input
+                            type="radio"
+                            name="rejectEmail"
+                            checked={rejectEmailStatus === "sent"}
+                            onChange={() => setRejectEmailStatus("sent")}
+                            className="text-[var(--theme-color)]"
+                          />
+                          <span className="text-[13px] text-slate-600 dark:text-neutral-300">
+                            Send email
+                          </span>
+                        </label>
+                      </div>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => setShowRejectForm(false)}
+                          className="h-8 rounded-md border-none bg-neutral-700 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-600"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={rejectMutation.isPending}
+                          onClick={() => {
+                            rejectMutation.mutate(
+                              {
+                                id: candidateId,
+                                data: {
+                                  reason: rejectReason || undefined,
+                                  templateId: rejectTemplateId
+                                    ? Number(rejectTemplateId)
+                                    : undefined,
+                                  emailStatus: rejectEmailStatus,
+                                },
+                              },
+                              {
+                                onSuccess: () => {
+                                  setShowRejectForm(false);
+                                  setRejectReason("");
+                                  setRejectTemplateId("");
+                                  setRejectEmailStatus("not_sent");
+                                },
+                              },
+                            );
+                          }}
+                          className="h-8 rounded-md border-none bg-red-600 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-red-500 disabled:opacity-60"
+                        >
+                          {rejectMutation.isPending
+                            ? "Rejecting…"
+                            : "Confirm Reject"}
+                        </Button>
+                      </div>
                     </div>
-                  );
-                })()}
-              </div>
-            )}
+                  )}
+
+                  {(candidate.rejections ?? []).length === 0 &&
+                  !showRejectForm ? (
+                    <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
+                      <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
+                        <HugeiconsIcon
+                          icon={UserRemove01Icon}
+                          className="size-5 text-slate-300 dark:text-neutral-600"
+                        />
+                      </div>
+                      <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+                        {candidate.status === "rejected"
+                          ? "Candidate has been rejected"
+                          : "No rejections yet"}
+                      </p>
+                      <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
+                        {candidate.status === "rejected"
+                          ? "The rejection record is shown below."
+                          : 'Click "Reject Candidate" above to reject this applicant.'}
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {(candidate.rejections ?? []).map((r) => (
+                        <div
+                          key={r.id}
+                          className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
+                        >
+                          <div className="flex items-center justify-between px-5 py-4">
+                            <div className="flex items-center gap-3">
+                              <span className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200">
+                                Rejected
+                              </span>
+                              <Badge
+                                className={`rounded-md border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-none ${
+                                  r.emailStatus === "sent"
+                                    ? "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400"
+                                    : "bg-slate-50 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400"
+                                }`}
+                              >
+                                Email: {r.emailStatus}
+                              </Badge>
+                            </div>
+                            <span className="text-[11px] font-medium text-slate-400 dark:text-neutral-500">
+                              {timeAgo(r.rejectedAt)}
+                            </span>
+                          </div>
+                          {r.reason && (
+                            <div className="px-5 pb-4">
+                              <p className="text-[13px] text-slate-600 dark:text-neutral-300">
+                                Reason: {r.reason}
+                              </p>
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* ─── Send Email ─── */}
+              {activeSection === "email" && (
+                <div className="p-5 sm:p-6">
+                  <div className="mb-6">
+                    <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+                      Send Email
+                    </h3>
+                    <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+                      Compose and send a message to the candidate
+                    </p>
+                  </div>
+                  <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_320px]">
+                    <div className="flex flex-1 flex-col rounded-xl border border-slate-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+                      <div className="flex flex-1 flex-col space-y-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                            To
+                          </Label>
+                          <Input
+                            value={candidate.email}
+                            readOnly
+                            className="h-10 border-slate-200 dark:border-neutral-700 shadow-none bg-slate-50 dark:bg-neutral-950 text-slate-700 dark:text-neutral-300 text-[13px] focus-visible:ring-0 rounded-lg cursor-default"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                            Subject
+                          </Label>
+                          <Input
+                            value={emailSubject}
+                            onChange={(e) => setEmailSubject(e.target.value)}
+                            placeholder="e.g. Interview Invitation - Software Engineer"
+                            className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
+                          />
+                        </div>
+                        <div className="flex min-h-0 flex-1 flex-col space-y-1.5">
+                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                            Message
+                          </Label>
+                          <textarea
+                            value={emailBody}
+                            onChange={(e) => setEmailBody(e.target.value)}
+                            placeholder="Write your message here..."
+                            className="min-h-[180px] w-full flex-1 resize-none rounded-lg border border-slate-200 bg-white px-4 py-3 text-[13px] leading-relaxed text-slate-700 transition-[border-color] duration-200 focus:border-[var(--theme-color)] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300"
+                          />
+                        </div>
+                        <div className="flex shrink-0 items-center justify-between pt-2">
+                          <span className="text-[12px] text-slate-400">
+                            Sending to{" "}
+                            <strong className="text-slate-600 dark:text-neutral-300">
+                              {candidate.email}
+                            </strong>
+                          </span>
+                          <Button
+                            type="button"
+                            onClick={sendEmail}
+                            disabled={!emailSubject.trim() || !emailBody.trim()}
+                            className="h-9 rounded-md border-none bg-[var(--theme-color)] px-3.5 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:bg-neutral-700 disabled:text-neutral-400 disabled:opacity-70"
+                          >
+                            <HugeiconsIcon
+                              icon={SentIcon}
+                              className="size-4 rotate-[-45deg]"
+                              strokeWidth={2.5}
+                            />
+                            Send Email
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-slate-200 bg-white p-5 dark:border-neutral-800 dark:bg-neutral-900">
+                      <div className="mb-4 flex items-center justify-between gap-3">
+                        <div>
+                          <h4 className="text-[14px] font-bold text-slate-900 dark:text-neutral-100">
+                            Sent Emails
+                          </h4>
+                          <p className="mt-0.5 text-[12px] text-slate-500 dark:text-neutral-400">
+                            {sentEmails.length} total
+                          </p>
+                        </div>
+                        <HugeiconsIcon
+                          icon={SentIcon}
+                          className="size-4 rotate-[-45deg] text-slate-400 dark:text-neutral-500"
+                          strokeWidth={2.3}
+                        />
+                      </div>
+                      {sentEmails.length === 0 ? (
+                        <div className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-4 py-10 text-center dark:border-neutral-700 dark:bg-neutral-950/50">
+                          <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400">
+                            No emails sent yet
+                          </p>
+                          <p className="mt-1 text-[12px] text-slate-400 dark:text-neutral-500">
+                            Sent messages will appear here.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="max-h-[430px] space-y-3 overflow-y-auto pr-1">
+                          {sentEmails.map((email) => (
+                            <div
+                              key={email.id}
+                              className="rounded-lg border border-slate-200 bg-slate-50 p-3 dark:border-neutral-800 dark:bg-neutral-950"
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <p className="line-clamp-2 text-[13px] font-bold text-slate-800 dark:text-neutral-200">
+                                  {email.subject}
+                                </p>
+                                <span className="shrink-0 text-[11px] font-medium text-slate-400 dark:text-neutral-500">
+                                  {timeAgo(email.sentAt)}
+                                </span>
+                              </div>
+                              <p className="mt-2 line-clamp-4 whitespace-pre-line text-[12px] leading-relaxed text-slate-500 dark:text-neutral-400">
+                                {email.body}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* ─── Assessments ─── */}
+              {activeSection === "scores" && (
+                <div className="p-5 sm:p-6">
+                  <div className="mb-6">
+                    <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+                      Assessments
+                    </h3>
+                    <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+                      Test results and evaluation scores
+                    </p>
+                  </div>
+                  {(() => {
+                    const attempts = assessmentsData?.data ?? [];
+                    if (!assessmentsData) {
+                      return (
+                        <div className="flex items-center justify-center py-16">
+                          <div className="flex items-center gap-2.5 text-slate-400 dark:text-neutral-500">
+                            <div className="size-4 border-2 border-slate-300 dark:border-neutral-600 border-t-slate-400 rounded-full animate-spin" />
+                            <p className="text-sm font-medium">Loading…</p>
+                          </div>
+                        </div>
+                      );
+                    }
+                    if (attempts.length === 0) {
+                      return (
+                        <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
+                          <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
+                            <HugeiconsIcon
+                              icon={ChartEvaluationIcon}
+                              className="size-5 text-slate-300 dark:text-neutral-600"
+                            />
+                          </div>
+                          <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+                            No assessments yet
+                          </p>
+                          <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1 max-w-[280px] mx-auto">
+                            Assessment results will appear here once the
+                            candidate completes an assessment.
+                          </p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="space-y-3">
+                        {attempts.map((a) => {
+                          const statusStyles: Record<
+                            string,
+                            { bg: string; text: string; label: string }
+                          > = {
+                            pending: {
+                              bg: "bg-amber-50 dark:bg-amber-950/25",
+                              text: "text-amber-600 dark:text-amber-400",
+                              label: "Pending",
+                            },
+                            started: {
+                              bg: "bg-blue-50 dark:bg-blue-950/25",
+                              text: "text-blue-600 dark:text-blue-400",
+                              label: "In Progress",
+                            },
+                            completed: {
+                              bg: "bg-green-50 dark:bg-green-950/25",
+                              text: "text-green-700 dark:text-green-400",
+                              label: "Completed",
+                            },
+                            expired: {
+                              bg: "bg-slate-100 dark:bg-neutral-800",
+                              text: "text-slate-500 dark:text-neutral-400",
+                              label: "Expired",
+                            },
+                          };
+                          const s =
+                            statusStyles[a.status] ?? statusStyles.pending;
+                          const score =
+                            a.scorePercentage != null
+                              ? Math.round(Number(a.scorePercentage))
+                              : null;
+                          const passColor = a.passed
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-rose-500 dark:text-rose-400";
+
+                          return (
+                            <div
+                              key={a.id}
+                              className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
+                            >
+                              <div className="flex items-center justify-between px-4 py-3 bg-slate-50 dark:bg-neutral-800/50 border-b border-slate-100 dark:border-neutral-800">
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <HugeiconsIcon
+                                    icon={ChartEvaluationIcon}
+                                    className="size-4 text-slate-400 shrink-0"
+                                  />
+                                  <p className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 truncate">
+                                    {a.assessmentTitle}
+                                  </p>
+                                </div>
+                                <span
+                                  className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide ${s.bg} ${s.text}`}
+                                >
+                                  {s.label}
+                                </span>
+                              </div>
+                              <div className="divide-y divide-slate-100 dark:divide-neutral-800">
+                                {score != null && (
+                                  <div className="px-4 py-3 flex items-center justify-between gap-4">
+                                    <span className="text-[12px] text-slate-500 dark:text-neutral-400 font-medium">
+                                      Score
+                                    </span>
+                                    <div className="flex items-center gap-2.5">
+                                      <div className="w-24 h-2 rounded-full bg-slate-100 dark:bg-neutral-800 overflow-hidden">
+                                        <div
+                                          className={`h-full rounded-full transition-all duration-500 ${score >= 50 ? "bg-emerald-500" : "bg-rose-400"}`}
+                                          style={{ width: `${score}%` }}
+                                        />
+                                      </div>
+                                      <span
+                                        className={`text-[13px] font-bold tabular-nums ${passColor}`}
+                                      >
+                                        {score}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                )}
+                                {a.passed != null && (
+                                  <div className="px-4 py-3 flex items-center justify-between gap-4">
+                                    <span className="text-[12px] text-slate-500 font-medium">
+                                      Result
+                                    </span>
+                                    <span
+                                      className={`text-[13px] font-semibold ${passColor}`}
+                                    >
+                                      {a.passed ? "Passed" : "Not Passed"}
+                                    </span>
+                                  </div>
+                                )}
+                                {a.completedAt && (
+                                  <div className="px-4 py-3 flex items-center justify-between gap-4">
+                                    <span className="text-[12px] text-slate-500 font-medium">
+                                      Completed
+                                    </span>
+                                    <span className="text-[13px] text-slate-700 dark:text-neutral-300 font-medium">
+                                      {formatDate(a.completedAt)}
+                                    </span>
+                                  </div>
+                                )}
+                                {a.status === "pending" && (
+                                  <div className="px-4 py-3 flex items-center justify-between gap-4">
+                                    <span className="text-[12px] text-slate-500 font-medium">
+                                      Link expires
+                                    </span>
+                                    <span className="text-[13px] text-slate-700 dark:text-neutral-300 font-medium">
+                                      {formatDate(a.expiresAt)}
+                                    </span>
+                                  </div>
+                                )}
+                                {(a.status === "pending" ||
+                                  a.status === "started") && (
+                                  <div className="px-4 py-3">
+                                    <button
+                                      onClick={() => {
+                                        const url = `${window.location.origin}/assessment/${a.token}`;
+                                        navigator.clipboard.writeText(url);
+                                      }}
+                                      className="text-[12px] text-[var(--theme-color)] font-semibold hover:underline"
+                                    >
+                                      Copy assessment link
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
             </div>
           </main>
         </div>
@@ -954,15 +1938,18 @@ export default function CandidateDetailPage({
             </SheetTitle>
             <div className="flex shrink-0 items-center gap-2">
               {candidate.resumeUrl && (
-              <a
-                href={candidate.resumeUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white hover:bg-[var(--theme-color-hover)]"
-              >
-                <HugeiconsIcon icon={ArrowUpRight01Icon} className="size-3.5" />
-                Open
-              </a>
+                <a
+                  href={candidate.resumeUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white hover:bg-[var(--theme-color-hover)]"
+                >
+                  <HugeiconsIcon
+                    icon={ArrowUpRight01Icon}
+                    className="size-3.5"
+                  />
+                  Open
+                </a>
               )}
               <button
                 type="button"
@@ -983,11 +1970,18 @@ export default function CandidateDetailPage({
           ) : (
             <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
               <div className="flex size-14 items-center justify-center rounded-xl bg-slate-100 dark:bg-neutral-800">
-                <HugeiconsIcon icon={File01Icon} className="size-6 text-slate-400 dark:text-neutral-600" />
+                <HugeiconsIcon
+                  icon={File01Icon}
+                  className="size-6 text-slate-400 dark:text-neutral-600"
+                />
               </div>
               <div>
-                <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">No CV uploaded</p>
-                <p className="mt-1 text-[12px] text-slate-400 dark:text-neutral-500">Upload a PDF from edit candidate.</p>
+                <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+                  No CV uploaded
+                </p>
+                <p className="mt-1 text-[12px] text-slate-400 dark:text-neutral-500">
+                  Upload a PDF from edit candidate.
+                </p>
               </div>
             </div>
           )}
@@ -998,47 +1992,100 @@ export default function CandidateDetailPage({
       <Dialog open={editOpen} onOpenChange={(o) => !o && setEditOpen(false)}>
         <DialogContent className="max-w-lg rounded-2xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-xl p-0 overflow-hidden">
           <DialogHeader className="px-6 pt-6 pb-0">
-            <DialogTitle className="text-[18px] font-bold text-slate-900 dark:text-neutral-100">Edit Candidate</DialogTitle>
+            <DialogTitle className="text-[18px] font-bold text-slate-900 dark:text-neutral-100">
+              Edit Candidate
+            </DialogTitle>
           </DialogHeader>
           <div className="px-6 py-5">
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">First name</Label>
-                <Input value={editFirstName} onChange={(e) => setEditFirstName(e.target.value)} className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]" />
+                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                  First name
+                </Label>
+                <Input
+                  value={editFirstName}
+                  onChange={(e) => setEditFirstName(e.target.value)}
+                  className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Last name</Label>
-                <Input value={editLastName} onChange={(e) => setEditLastName(e.target.value)} className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]" />
+                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Last name
+                </Label>
+                <Input
+                  value={editLastName}
+                  onChange={(e) => setEditLastName(e.target.value)}
+                  className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                />
               </div>
               <div className="col-span-2 space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Email</Label>
-                <Input type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]" />
+                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Email
+                </Label>
+                <Input
+                  type="email"
+                  value={editEmail}
+                  onChange={(e) => setEditEmail(e.target.value)}
+                  className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                />
               </div>
               <div className="col-span-2 space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Phone</Label>
-                <Input value={editPhone} onChange={(e) => setEditPhone(e.target.value)} className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]" placeholder="Optional" />
+                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                  Phone
+                </Label>
+                <Input
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                  placeholder="Optional"
+                />
               </div>
               <div className="col-span-2 space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">Upload new CV (PDF)</Label>
+                  <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                    Upload new CV (PDF)
+                  </Label>
                   {candidate.resumeUrl ? (
-                    <a href={candidate.resumeUrl} target="_blank" rel="noopener noreferrer" className="text-[12px] font-semibold text-[var(--theme-color)] hover:underline">
+                    <a
+                      href={candidate.resumeUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-[12px] font-semibold text-[var(--theme-color)] hover:underline"
+                    >
                       View current CV
                     </a>
                   ) : (
-                    <p className="text-[12px] text-slate-400">No CV uploaded yet</p>
+                    <p className="text-[12px] text-slate-400">
+                      No CV uploaded yet
+                    </p>
                   )}
                 </div>
-                <Input type="file" accept="application/pdf" onChange={(e) => setEditResumeFile(e.target.files?.[0] ?? null)} className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)] pt-2.5 file:text-[13px]" />
-                <p className="text-[12px] text-slate-400">If uploaded, the existing CV will be replaced.</p>
+                <Input
+                  type="file"
+                  accept="application/pdf"
+                  onChange={(e) =>
+                    setEditResumeFile(e.target.files?.[0] ?? null)
+                  }
+                  className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)] pt-2.5 file:text-[13px]"
+                />
+                <p className="text-[12px] text-slate-400">
+                  If uploaded, the existing CV will be replaced.
+                </p>
               </div>
             </div>
           </div>
           <DialogFooter className="px-6 pb-6 pt-0 gap-2">
-            <DialogClose disabled={updateMutation.isPending} className="h-9 rounded-md border-none bg-neutral-800 px-3.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-neutral-700 disabled:opacity-60 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer">
+            <DialogClose
+              disabled={updateMutation.isPending}
+              className="h-9 rounded-md border-none bg-neutral-800 px-3.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-neutral-700 disabled:opacity-60 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
+            >
               Cancel
             </DialogClose>
-            <Button onClick={confirmUpdate} disabled={updateMutation.isPending} className="h-9 rounded-md border-none bg-[var(--theme-color)] px-3.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-[var(--theme-color-hover)] disabled:opacity-60 cursor-pointer">
+            <Button
+              onClick={confirmUpdate}
+              disabled={updateMutation.isPending}
+              className="h-9 rounded-md border-none bg-[var(--theme-color)] px-3.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-[var(--theme-color-hover)] disabled:opacity-60 cursor-pointer"
+            >
               {updateMutation.isPending ? "Saving…" : "Save Changes"}
             </Button>
           </DialogFooter>
@@ -1046,22 +2093,36 @@ export default function CandidateDetailPage({
       </Dialog>
 
       {/* ─── Delete Dialog ─── */}
-      <AlertDialog open={deleteTarget} onOpenChange={(o) => !o && setDeleteTarget(false)}>
+      <AlertDialog
+        open={deleteTarget}
+        onOpenChange={(o) => !o && setDeleteTarget(false)}
+      >
         <AlertDialogContent className="max-w-sm rounded-2xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-lg p-0 overflow-hidden">
           <AlertDialogHeader className="px-6 pt-6 pb-4">
             <div className="size-11 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center mb-3">
-              <HugeiconsIcon icon={Delete02Icon} className="size-5 text-red-500 dark:text-red-400" />
+              <HugeiconsIcon
+                icon={Delete02Icon}
+                className="size-5 text-red-500 dark:text-red-400"
+              />
             </div>
-            <AlertDialogTitle className="text-[17px] font-bold text-slate-900 dark:text-neutral-100">Delete candidate?</AlertDialogTitle>
+            <AlertDialogTitle className="text-[17px] font-bold text-slate-900 dark:text-neutral-100">
+              Delete candidate?
+            </AlertDialogTitle>
             <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed mt-1">
-              <strong className="text-slate-700 dark:text-neutral-200">{candidate.firstName} {candidate.lastName}</strong> will be permanently deleted. This action cannot be undone.
+              <strong className="text-slate-700 dark:text-neutral-200">
+                {candidate.firstName} {candidate.lastName}
+              </strong>{" "}
+              will be permanently deleted. This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="px-6 pb-6 pt-0 gap-2">
             <AlertDialogCancel className="h-9 rounded-md border-none bg-neutral-800 px-3.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer">
               Cancel
             </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmDelete} className="h-9 rounded-md border-none bg-red-600 px-3.5 text-[13px] font-semibold text-white shadow-none hover:bg-red-500 cursor-pointer">
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="h-9 rounded-md border-none bg-red-600 px-3.5 text-[13px] font-semibold text-white shadow-none hover:bg-red-500 cursor-pointer"
+            >
               Delete Permanently
             </AlertDialogAction>
           </AlertDialogFooter>

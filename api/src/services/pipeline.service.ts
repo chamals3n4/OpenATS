@@ -5,33 +5,13 @@ import { jobPipelineStages } from "../db/schema";
 export type CreateStageInput = {
   name: string;
   position?: number;
-  stageType?:
-    | "none"
-    | "source"
-    | "assessment"
-    | "interview"
-    | "offer"
-    | "rejection"
-    | undefined;
-  offerTemplateId?: number | null | undefined;
-  offerMode?: "auto_draft" | "auto_send" | null | undefined;
+  stageType?: "screening" | "interview" | "offer" | undefined;
 };
 
 export type UpdateStageInput = {
   name?: string | undefined;
   position?: number | undefined;
-  stageType?:
-    | "none"
-    | "source"
-    | "assessment"
-    | "interview"
-    | "offer"
-    | "rejection"
-    | undefined;
-  offerTemplateId?: number | null | undefined;
-  offerMode?: "auto_draft" | "auto_send" | null | undefined;
-  offerExpiryDays?: number | null | undefined;
-  rejectionTemplateId?: number | null | undefined;
+  stageType?: "screening" | "interview" | "offer" | undefined;
 };
 
 export const pipelineService = {
@@ -69,9 +49,7 @@ export const pipelineService = {
           jobId,
           name: input.name,
           position: desiredPosition,
-          stageType: input.stageType ?? "none",
-          offerTemplateId: input.offerTemplateId ?? null,
-          offerMode: input.offerMode ?? "auto_draft",
+          stageType: input.stageType ?? "screening",
         })
         .returning();
       return created;
@@ -84,9 +62,7 @@ export const pipelineService = {
             jobId,
             name: input.name,
             position: fallbackNext,
-            stageType: input.stageType ?? "none",
-            offerTemplateId: input.offerTemplateId ?? null,
-            offerMode: input.offerMode ?? "auto_draft",
+            stageType: input.stageType ?? "screening",
           })
           .returning();
         return created;

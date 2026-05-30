@@ -12,6 +12,7 @@ import chatRoutes from "./chat.routes";
 import reportRoutes from "./report.routes";
 import activeLogRoutes from "./active-log.routes";
 import settingsRoutes from "./settings.routes";
+import interviewRoutes from "./interviews";
 
 const router: Router = Router();
 
@@ -28,5 +29,6 @@ router.use("/chat", chatRoutes);
 router.use("/reports", reportRoutes);
 router.use("/logs", activeLogRoutes);
 router.use("/settings", settingsRoutes);
+router.use("/", interviewRoutes);
 
 export default router;

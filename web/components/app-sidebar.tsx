@@ -10,6 +10,7 @@ import {
   Settings02Icon,
   Quiz02Icon,
   Agreement02Icon,
+  Calendar02Icon,
 } from "@hugeicons/core-free-icons";
 
 import { usePathname } from "next/navigation";
@@ -41,6 +42,11 @@ const navMainData = [
     title: "Candidates",
     url: "/candidates",
     icon: UserGroupIcon,
+  },
+  {
+    title: "Interviews",
+    url: "/interviews",
+    icon: Calendar02Icon,
   },
   {
     title: "Assessments",

@@ -64,6 +64,27 @@
       "when": 1775243614421,
       "tag": "0008_magenta_marten_broadcloak",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1780052974501,
+      "tag": "0009_clear_iron_lad",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1780060444478,
+      "tag": "0010_abnormal_crystal",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1780061795591,
+      "tag": "0011_small_metal_master",
+      "breakpoints": true
     }
   ]
 }

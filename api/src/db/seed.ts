@@ -8,28 +8,44 @@ const db = drizzle(process.env.DATABASE_URL!);
 async function seed() {
   console.log("Seeding pipeline stage templates...");
 
-  await db
-    .insert(pipelineStageTemplates)
-    .values([
-      { name: "Applied", position: 1, stageType: "none", isDeletable: false },
-      { name: "Screening", position: 2, stageType: "none", isDeletable: true },
-      {
-        name: "Interviewed",
-        position: 3,
-        stageType: "none",
-        isDeletable: true,
-      },
-      { name: "Offer", position: 4, stageType: "offer", isDeletable: true },
-      {
-        name: "Rejected",
-        position: 5,
-        stageType: "rejection",
-        isDeletable: false,
-      },
-    ])
-    .onConflictDoNothing();
+  await db.delete(pipelineStageTemplates);
 
-  logger.info("Pipeline stage templates seeded.");
+  await db.insert(pipelineStageTemplates).values([
+    {
+      name: "Screening",
+      position: 1,
+      stageType: "screening",
+      isDeletable: false,
+    },
+    {
+      name: "Screening Qualified",
+      position: 2,
+      stageType: "screening",
+      isDeletable: false,
+    },
+    {
+      name: "Screening Disqualified",
+      position: 3,
+      stageType: "screening",
+      isDeletable: false,
+    },
+    {
+      name: "Interviews",
+      position: 4,
+      stageType: "interview",
+      isDeletable: false,
+    },
+    {
+      name: "Shortlisted",
+      position: 5,
+      stageType: "interview",
+      isDeletable: false,
+    },
+    { name: "Offer", position: 6, stageType: "offer", isDeletable: false },
+    { name: "Hired", position: 7, stageType: "offer", isDeletable: false },
+  ]);
+
+  logger.info("Pipeline stage templates seeded (7 default stages).");
   process.exit(0);
 }
 

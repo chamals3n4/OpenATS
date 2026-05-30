@@ -11,7 +11,7 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { assessmentStatus, cvAnalysisStatus } from "./enums";
+import { assessmentStatus, candidateStatus, cvAnalysisStatus } from "./enums";
 import { jobs } from "./jobs";
 import { jobPipelineStages } from "./pipeline";
 import { users } from "./users";
@@ -42,11 +42,10 @@ export const candidates = pgTable("candidates", {
     { onDelete: "set null" },
   ),
 
+  status: candidateStatus("status").notNull().default("active"),
+
   appliedAt: timestamp("applied_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
-
-  /** Set when an automated rejection email was sent (prevents duplicate sends on stage re-entry). */
-  rejectionNoticeSentAt: timestamp("rejection_notice_sent_at"),
 },
   (t) => [unique().on(t.jobId, t.email)],
 );

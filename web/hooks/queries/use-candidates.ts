@@ -1,11 +1,16 @@
 import {
   useQuery,
-  useQueries,
   keepPreviousData,
   useQueryClient,
   useMutation,
 } from "@tanstack/react-query";
-import type { Candidate, CandidateDetail, StageAutomationFlags } from "@/types";
+import type {
+  Candidate,
+  CandidateDetail,
+  CandidateRejection,
+  CandidateInterview,
+  StageAutomationFlags,
+} from "@/types";
 import { serverFetch } from "@/lib/auth-action";
 
 export function useCandidates(
@@ -99,6 +104,8 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
               selections: [],
               history: [],
               offer: null,
+              rejections: [],
+              interviews: [],
             } as CandidateDetail,
           };
         }
@@ -185,6 +192,87 @@ export function useUpdateCandidateBasicDetails() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
       queryClient.invalidateQueries({ queryKey: ["candidates", variables.id] });
+    },
+  });
+}
+
+export function useRejectCandidate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: number;
+      data: {
+        templateId?: number | null;
+        reason?: string;
+        emailStatus: "not_sent" | "sent";
+      };
+    }) =>
+      serverFetch<{ data: CandidateRejection }>(`/candidates/${id}/reject`, {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["candidates", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+  });
+}
+
+export function useCreateInterview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      candidateId,
+      data,
+    }: {
+      candidateId: number;
+      data: {
+        stageId: number;
+        scheduledAt?: string;
+        durationMinutes?: number;
+        notes?: string;
+      };
+    }) =>
+      serverFetch<{ data: CandidateInterview }>(
+        `/candidates/${candidateId}/interviews`,
+        { method: "POST", body: JSON.stringify(data) },
+      ),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["candidates", variables.candidateId],
+      });
+    },
+  });
+}
+
+export function useUpdateInterview() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      interviewId,
+      candidateId,
+      data,
+    }: {
+      interviewId: number;
+      candidateId: number;
+      data: {
+        notes?: string;
+        outcome?: "pending" | "pass" | "fail";
+        scheduledAt?: string;
+        durationMinutes?: number;
+      };
+    }) =>
+      serverFetch<{ data: CandidateInterview }>(`/interviews/${interviewId}`, {
+        method: "PATCH",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: ["candidates", variables.candidateId],
+      });
     },
   });
 }

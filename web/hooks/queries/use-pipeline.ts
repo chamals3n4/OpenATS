@@ -1,9 +1,7 @@
 import {
   useQuery,
-  useQueries,
   useMutation,
   useQueryClient,
-  keepPreviousData,
 } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
 import type { PipelineStage } from "@/types";
@@ -48,10 +46,6 @@ export function useUpdateStage(jobId: number) {
         name?: string;
         stageType?: string;
         position?: number;
-        offerTemplateId?: number | null;
-        offerMode?: string | null;
-        offerExpiryDays?: number | null;
-        rejectionTemplateId?: number | null;
       };
     }) =>
       serverFetch<{ data: PipelineStage }>(

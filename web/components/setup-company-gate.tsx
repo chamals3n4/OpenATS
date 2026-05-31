@@ -3,21 +3,26 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-import { useCompany } from "@/hooks/use-api";
+import { useCompany, useDepartments } from "@/hooks/use-api";
 
-const ALLOWED_WITHOUT_COMPANY = /^\/settings\/general(\/|$)/;
+const ALLOWED_WITHOUT_SETUP = /^\/settings\/general(\/|$)/;
 
 export function SetupCompanyGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { data, isPending, isSuccess, isError } = useCompany();
+  const { data: companyData, isSuccess: companyReady } = useCompany();
+  const { data: deptData, isSuccess: deptReady } = useDepartments();
+
+  const hasCompany = companyData?.data != null;
+  const hasDepartments = (deptData?.data?.length ?? 0) > 0;
+  const needsSetup =
+    companyReady && deptReady && (!hasCompany || !hasDepartments);
 
   useEffect(() => {
-    if (isPending || isError || !isSuccess) return;
-    if (data?.data != null) return;
-    if (pathname && ALLOWED_WITHOUT_COMPANY.test(pathname)) return;
+    if (!needsSetup) return;
+    if (pathname && ALLOWED_WITHOUT_SETUP.test(pathname)) return;
     router.replace("/settings/general");
-  }, [data, isPending, isSuccess, isError, pathname, router]);
+  }, [needsSetup, pathname, router]);
 
   return <>{children}</>;
 }

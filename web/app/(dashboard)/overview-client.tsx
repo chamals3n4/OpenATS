@@ -32,12 +32,9 @@ import { Button } from "@/components/ui/button";
 import {
   PipelineChart,
   VolumeChart,
-  SourceChart,
   DeptChart,
   OfferChart,
 } from "./_overview-charts";
-
-const SOURCE_COLORS = ["#D97757", "#E8916F", "#C4A381", "#94A38B", "#E8CFC7"];
 
 function ChartCard({
   title,
@@ -91,15 +88,6 @@ export function OverviewClient() {
   const volumeData = report?.candidateVolume ?? [];
   const deptData = report?.timeToHireByDepartment ?? [];
   const offerData = report?.offerTrends ?? [];
-
-  const sourceData = useMemo(
-    () =>
-      (report?.sourceOfCandidates ?? []).map((s, i) => ({
-        ...s,
-        color: SOURCE_COLORS[i % SOURCE_COLORS.length] ?? SOURCE_COLORS[0],
-      })),
-    [report?.sourceOfCandidates],
-  );
 
   const DEPT_LABELS: Record<string, string> = useMemo(() => {
     const labels: Record<string, string> = { all: "All Departments" };
@@ -289,14 +277,7 @@ export function OverviewClient() {
           </ChartCard>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <ChartCard
-            title="Source of Candidates"
-            subtitle="Where applicants are coming from"
-          >
-            <SourceChart data={sourceData} />
-          </ChartCard>
-
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ChartCard title="Time To Hire" subtitle="Average days by department">
             <DeptChart data={deptData} />
           </ChartCard>

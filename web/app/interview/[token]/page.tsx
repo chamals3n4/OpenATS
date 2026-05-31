@@ -6,6 +6,8 @@ import { Calendar02Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+
 interface Slot {
   datetime: string;
   selected: boolean;
@@ -24,14 +26,26 @@ interface InterviewData {
 
 function fmtDateTime(dt: string) {
   const d = new Date(dt);
-  return d.toLocaleDateString("en-US", {
-    weekday: "long", month: "long", day: "numeric", year: "numeric",
-  }) + " at " + d.toLocaleTimeString("en-US", {
-    hour: "2-digit", minute: "2-digit",
-  });
+  return (
+    d.toLocaleDateString("en-US", {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    }) +
+    " at " +
+    d.toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    })
+  );
 }
 
-export default function PublicInterviewPage({ params }: { params: Promise<{ token: string }> }) {
+export default function PublicInterviewPage({
+  params,
+}: {
+  params: Promise<{ token: string }>;
+}) {
   const { token } = use(params);
   const [data, setData] = useState<InterviewData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -41,7 +55,7 @@ export default function PublicInterviewPage({ params }: { params: Promise<{ toke
   const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/public/interview/${token}`)
+    fetch(`${API_BASE}/public/interview/${token}`)
       .then((r) => r.json())
       .then((res) => {
         if (res.error) throw new Error(res.error);
@@ -55,7 +69,7 @@ export default function PublicInterviewPage({ params }: { params: Promise<{ toke
     if (selectedSlot === null || !data) return;
     setConfirming(true);
     try {
-      const res = await fetch(`/api/public/interview/${token}/select`, {
+      const res = await fetch(`${API_BASE}/public/interview/${token}/select`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ slotIndex: selectedSlot }),
@@ -84,7 +98,9 @@ export default function PublicInterviewPage({ params }: { params: Promise<{ toke
           <div className="size-14 rounded-full bg-red-100 flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">⚠️</span>
           </div>
-          <p className="text-[15px] font-semibold text-slate-800 dark:text-neutral-200">{error || "Invalid link"}</p>
+          <p className="text-[15px] font-semibold text-slate-800 dark:text-neutral-200">
+            {error || "Invalid link"}
+          </p>
         </div>
       </div>
     );
@@ -95,11 +111,17 @@ export default function PublicInterviewPage({ params }: { params: Promise<{ toke
       <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-neutral-950">
         <div className="text-center max-w-md px-4">
           <div className="size-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
-            <HugeiconsIcon icon={Tick02Icon} className="size-6 text-emerald-600" />
+            <HugeiconsIcon
+              icon={Tick02Icon}
+              className="size-6 text-emerald-600"
+            />
           </div>
-          <h1 className="text-[20px] font-bold text-slate-900 dark:text-neutral-100 mb-2">Time Slot Confirmed!</h1>
+          <h1 className="text-[20px] font-bold text-slate-900 dark:text-neutral-100 mb-2">
+            Time Slot Confirmed!
+          </h1>
           <p className="text-[14px] text-slate-500 dark:text-neutral-400">
-            Your interview for <strong>{data.jobTitle}</strong> has been scheduled. You&apos;ll receive a confirmation email shortly.
+            Your interview for <strong>{data.jobTitle}</strong> has been
+            scheduled. You&apos;ll receive a confirmation email shortly.
           </p>
         </div>
       </div>
@@ -111,9 +133,13 @@ export default function PublicInterviewPage({ params }: { params: Promise<{ toke
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-neutral-950">
         <div className="text-center max-w-md px-4">
-          <h1 className="text-[20px] font-bold text-slate-900 dark:text-neutral-100 mb-2">Already Scheduled</h1>
+          <h1 className="text-[20px] font-bold text-slate-900 dark:text-neutral-100 mb-2">
+            Already Scheduled
+          </h1>
           <p className="text-[14px] text-slate-500 dark:text-neutral-400">
-            {picked ? `Confirmed for ${fmtDateTime(picked.datetime)}` : "This interview has already been scheduled."}
+            {picked
+              ? `Confirmed for ${fmtDateTime(picked.datetime)}`
+              : "This interview has already been scheduled."}
           </p>
         </div>
       </div>
@@ -126,9 +152,13 @@ export default function PublicInterviewPage({ params }: { params: Promise<{ toke
         <div className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-sm overflow-hidden">
           {/* Header */}
           <div className="px-6 py-5 border-b border-slate-100 dark:border-neutral-800">
-            <h1 className="text-[20px] font-bold text-slate-900 dark:text-neutral-100">{data.eventName}</h1>
+            <h1 className="text-[20px] font-bold text-slate-900 dark:text-neutral-100">
+              {data.eventName}
+            </h1>
             <div className="flex items-center gap-2 mt-1.5">
-              <span className="text-[14px] text-slate-500 dark:text-neutral-400">{data.jobTitle}</span>
+              <span className="text-[14px] text-slate-500 dark:text-neutral-400">
+                {data.jobTitle}
+              </span>
               <Badge className="rounded-md border-none px-2 py-0.5 text-[10px] font-bold uppercase bg-blue-50 text-blue-600">
                 {data.eventType === "virtual" ? "Virtual" : "On-site"}
               </Badge>
@@ -145,8 +175,15 @@ export default function PublicInterviewPage({ params }: { params: Promise<{ toke
 
             {data.meetingUrl && (
               <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 p-3">
-                <p className="text-[12px] font-semibold text-blue-600 dark:text-blue-400 mb-1">Meeting Link</p>
-                <a href={data.meetingUrl} target="_blank" rel="noreferrer" className="text-[13px] text-blue-700 dark:text-blue-300 break-all hover:underline">
+                <p className="text-[12px] font-semibold text-blue-600 dark:text-blue-400 mb-1">
+                  Meeting Link
+                </p>
+                <a
+                  href={data.meetingUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-[13px] text-blue-700 dark:text-blue-300 break-all hover:underline"
+                >
                   {data.meetingUrl}
                 </a>
               </div>
@@ -171,8 +208,13 @@ export default function PublicInterviewPage({ params }: { params: Promise<{ toke
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <HugeiconsIcon icon={Calendar02Icon} className="size-4 text-slate-400" />
-                      <span className={`text-[14px] font-semibold ${slot.selected ? "text-emerald-700 dark:text-emerald-300" : "text-slate-700 dark:text-neutral-300"}`}>
+                      <HugeiconsIcon
+                        icon={Calendar02Icon}
+                        className="size-4 text-slate-400"
+                      />
+                      <span
+                        className={`text-[14px] font-semibold ${slot.selected ? "text-emerald-700 dark:text-emerald-300" : "text-slate-700 dark:text-neutral-300"}`}
+                      >
                         {fmtDateTime(slot.datetime)}
                       </span>
                       {slot.selected && (

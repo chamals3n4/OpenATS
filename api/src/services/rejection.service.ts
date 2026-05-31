@@ -1,6 +1,12 @@
-import { eq, desc } from "drizzle-orm";
+import { and, asc, desc, eq } from "drizzle-orm";
 import { db } from "../db";
-import { candidateRejections, candidates, templates } from "../db/schema";
+import {
+  candidateRejections,
+  candidates,
+  candidateStageHistory,
+  jobPipelineStages,
+  templates,
+} from "../db/schema";
 import { mailService } from "./mail.service";
 import { variableService } from "./variable.service";
 import { templateEngineService } from "./template-engine.service";
@@ -9,7 +15,8 @@ export interface RejectInput {
   candidateId: number;
   jobId: number;
   fromStageId?: number | null;
-  reason?: string | null;
+  reason: string;
+  internalNote?: string | null;
   templateId?: number | null;
   emailStatus: "not_sent" | "draft" | "sent";
 }
@@ -17,24 +24,34 @@ export interface RejectInput {
 export const rejectionService = {
   async reject(input: RejectInput, rejectedBy: number | null = null) {
     return await db.transaction(async (tx) => {
-      // Set candidate status to rejected
+      const [candidate] = await tx
+        .select()
+        .from(candidates)
+        .where(eq(candidates.id, input.candidateId));
+
+      if (!candidate) throw new Error("Candidate not found");
+      if (candidate.status === "rejected") {
+        throw new Error("Candidate is already rejected");
+      }
+
       await tx
         .update(candidates)
         .set({
           status: "rejected",
+          currentStageId: null,
           updatedAt: new Date(),
         })
         .where(eq(candidates.id, input.candidateId));
 
-      // Create rejection record
       const [rejection] = await tx
         .insert(candidateRejections)
         .values({
           candidateId: input.candidateId,
           jobId: input.jobId,
-          fromStageId: input.fromStageId ?? null,
+          fromStageId: input.fromStageId ?? candidate.currentStageId ?? null,
           rejectedBy,
-          reason: input.reason ?? null,
+          reason: input.reason,
+          internalNote: input.internalNote ?? null,
           templateId: input.templateId ?? null,
           emailStatus: input.emailStatus,
           sentAt: input.emailStatus === "sent" ? new Date() : null,
@@ -43,7 +60,6 @@ export const rejectionService = {
 
       if (!rejection) throw new Error("Failed to create rejection record");
 
-      // Send email if template is provided and status is "sent"
       if (input.templateId && input.emailStatus === "sent") {
         const [template] = await tx
           .select()
@@ -60,14 +76,14 @@ export const rejectionService = {
             context,
           );
 
-          const [candidate] = await tx
+          const [candidateWithEmail] = await tx
             .select({ email: candidates.email })
             .from(candidates)
             .where(eq(candidates.id, input.candidateId));
 
-          if (candidate) {
+          if (candidateWithEmail) {
             await mailService.sendRejectionEmail(
-              candidate.email,
+              candidateWithEmail.email,
               subject,
               html,
             );
@@ -76,6 +92,77 @@ export const rejectionService = {
       }
 
       return rejection;
+    });
+  },
+
+  async unreject(candidateId: number, unrejectedBy: number | null = null) {
+    return await db.transaction(async (tx) => {
+      const [candidate] = await tx
+        .select()
+        .from(candidates)
+        .where(eq(candidates.id, candidateId));
+
+      if (!candidate) throw new Error("Candidate not found");
+      if (candidate.status !== "rejected") {
+        throw new Error("Candidate is not rejected");
+      }
+
+      const [latestRejection] = await tx
+        .select()
+        .from(candidateRejections)
+        .where(eq(candidateRejections.candidateId, candidateId))
+        .orderBy(desc(candidateRejections.rejectedAt))
+        .limit(1);
+
+      let restoreStageId = latestRejection?.fromStageId ?? null;
+
+      if (!restoreStageId) {
+        const [firstStage] = await tx
+          .select({ id: jobPipelineStages.id })
+          .from(jobPipelineStages)
+          .where(eq(jobPipelineStages.jobId, candidate.jobId))
+          .orderBy(asc(jobPipelineStages.position))
+          .limit(1);
+
+        restoreStageId = firstStage?.id ?? null;
+      }
+
+      if (restoreStageId) {
+        const [validStage] = await tx
+          .select({ id: jobPipelineStages.id })
+          .from(jobPipelineStages)
+          .where(
+            and(
+              eq(jobPipelineStages.id, restoreStageId),
+              eq(jobPipelineStages.jobId, candidate.jobId),
+            ),
+          )
+          .limit(1);
+
+        restoreStageId = validStage?.id ?? null;
+      }
+
+      const [updated] = await tx
+        .update(candidates)
+        .set({
+          status: "active",
+          currentStageId: restoreStageId,
+          updatedAt: new Date(),
+        })
+        .where(eq(candidates.id, candidateId))
+        .returning();
+
+      if (!updated) throw new Error("Failed to update candidate");
+
+      if (restoreStageId) {
+        await tx.insert(candidateStageHistory).values({
+          candidateId,
+          stageId: restoreStageId,
+          movedBy: unrejectedBy,
+        });
+      }
+
+      return { candidate: updated, restoredStageId: restoreStageId };
     });
   },
 

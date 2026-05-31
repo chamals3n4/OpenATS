@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useAsgardeo } from "@asgardeo/nextjs";
 import { useQueryClient } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -34,6 +33,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
+import { useAsgardeo } from "@asgardeo/nextjs";
 
 function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -42,28 +42,36 @@ function initialsFromName(name: string) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-/** Asgardeo user fields we read in this menu (see Asgardeo user / profile shape). */
-type AsgardeoUserMenuFields = {
-  display_name?: string;
-  displayName?: string;
-  name?: {
-    givenName?: string;
-    familyName?: string;
-  };
-  username?: string;
-  userName?: string;
+function decodeJWT(token: string) {
+  try {
+    const payload = token.split(".")[1];
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
+}
+
+type Claims = {
+  given_name?: string;
+  family_name?: string;
   email?: string;
-  profilePicture?: string;
-  profileUrl?: string;
+  username?: string;
+  sub?: string;
+  profile?: string;
+  org_name?: string;
+  roles?: string[];
 };
 
 export type SidebarUserMenuProps = {
-  /** `header`: top bar — avatar only in the trigger. `sidebar`: rail next to logo (name + menu when expanded). */
   variant?: "header" | "sidebar";
+  accessToken?: string;
 };
 
-export function SidebarUserMenu({ variant = "header" }: SidebarUserMenuProps) {
-  const { user, signOut, isLoading } = useAsgardeo();
+export function SidebarUserMenu({
+  variant = "header",
+  accessToken,
+}: SidebarUserMenuProps) {
+  const { signOut, isLoading } = useAsgardeo();
   const { theme, setTheme } = useTheme();
   const { state } = useSidebar();
   const router = useRouter();
@@ -78,14 +86,14 @@ export function SidebarUserMenu({ variant = "header" }: SidebarUserMenuProps) {
   const collapsed = state === "collapsed";
   const showProfileRow = variant === "sidebar" && !collapsed;
 
-  const u = user as AsgardeoUserMenuFields | null | undefined;
-  const displayName =
-    `${u?.name?.givenName ?? ""} ${u?.name?.familyName ?? ""}`.trim() ||
-    u?.display_name?.trim() ||
-    u?.displayName?.trim() ||
-    "User";
-  const email = u?.userName || u?.username || u?.email || "";
-  const avatarSrc = u?.profilePicture ?? u?.profileUrl;
+  const claims: Claims | null = accessToken ? decodeJWT(accessToken) : null;
+
+  const displayName = claims?.given_name
+    ? `${claims.given_name} ${claims.family_name ?? ""}`.trim()
+    : (claims?.username ?? claims?.sub ?? "User");
+
+  const email = claims?.email ?? claims?.username ?? claims?.sub ?? "";
+  const avatarSrc = claims?.profile ?? undefined;
 
   return (
     <DropdownMenu>
@@ -144,14 +152,24 @@ export function SidebarUserMenu({ variant = "header" }: SidebarUserMenuProps) {
           href="/settings/profile"
           className="block cursor-pointer border-b border-border px-3 py-3 transition-colors hover:bg-accent/40"
         >
-          <p className="truncate text-[15px] font-semibold leading-snug text-popover-foreground">
-            {isLoading ? "Loading…" : displayName}
-          </p>
-          {email ? (
-            <p className="mt-1 truncate text-xs font-normal leading-5 text-muted-foreground">
-              {email}
-            </p>
-          ) : null}
+          <div className="flex items-center gap-3">
+            <Avatar className="size-8 shrink-0 border border-border">
+              {avatarSrc ? <AvatarImage src={avatarSrc} alt="" /> : null}
+              <AvatarFallback className="text-xs font-semibold bg-slate-200 text-slate-700 dark:bg-neutral-700 dark:text-neutral-100">
+                {initialsFromName(displayName)}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[15px] font-semibold leading-snug text-popover-foreground">
+                {isLoading ? "Loading…" : displayName}
+              </p>
+              {email ? (
+                <p className="mt-0.5 truncate text-xs font-normal leading-5 text-muted-foreground">
+                  {email}
+                </p>
+              ) : null}
+            </div>
+          </div>
         </Link>
 
         <div
@@ -213,6 +231,7 @@ export function SidebarUserMenu({ variant = "header" }: SidebarUserMenuProps) {
           </DropdownMenuItem>
         </div>
       </DropdownMenuContent>
+
       <AlertDialog open={confirmLogoutOpen} onOpenChange={setConfirmLogoutOpen}>
         <AlertDialogContent size="sm">
           <AlertDialogHeader>

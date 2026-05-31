@@ -181,7 +181,7 @@ export default function ActiveLogsPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search logs, endpoint, request id, actor"
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+            className="pl-11 h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
           />
         </div>
 
@@ -189,7 +189,7 @@ export default function ActiveLogsPage() {
           value={level}
           onValueChange={(v) => setLevel((v as typeof level) ?? "all")}
         >
-          <SelectTrigger className="w-36 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-36 h-10! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
             <SelectValue>{LEVEL_LABELS[level]}</SelectValue>
           </SelectTrigger>
           <SelectContent className="rounded-lg w-37 shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
@@ -205,7 +205,7 @@ export default function ActiveLogsPage() {
           value={service}
           onValueChange={(v) => setService((v as typeof service) ?? "all")}
         >
-          <SelectTrigger className="w-44 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-44 h-10! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
             <SelectValue>
               {service === "all"
                 ? "All Services"
@@ -228,7 +228,7 @@ export default function ActiveLogsPage() {
             setStatusGroup((v as typeof statusGroup) ?? "all")
           }
         >
-          <SelectTrigger className="w-32 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-32 h-10! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
             <SelectValue>{STATUS_GROUP_LABELS[statusGroup]}</SelectValue>
           </SelectTrigger>
           <SelectContent className="rounded-lg w-33 shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
@@ -245,7 +245,7 @@ export default function ActiveLogsPage() {
             setWindowSize((v as typeof windowSize) ?? "24h")
           }
         >
-          <SelectTrigger className="w-32 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-600 dark:text-neutral-300 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-32 h-10! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
             <SelectValue>{WINDOW_LABELS[windowSize]}</SelectValue>
           </SelectTrigger>
           <SelectContent className="rounded-lg w-33 shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">

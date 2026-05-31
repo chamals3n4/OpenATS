@@ -38,10 +38,9 @@ function labelFor(segment: string) {
   );
 }
 
-export function SiteHeader() {
+export function SiteHeader({ accessToken }: { accessToken?: string }) {
   const pathname = usePathname();
 
-  // Build crumbs from path segments
   const segments = pathname.split("/").filter(Boolean);
 
   const routeCrumbs =
@@ -114,7 +113,7 @@ export function SiteHeader() {
           >
             <HugeiconsIcon icon={Notification03Icon} className="size-5" />
           </Button>
-          <SidebarUserMenu variant="header" />
+          <SidebarUserMenu variant="header" accessToken={accessToken} />
         </div>
       </div>
     </header>

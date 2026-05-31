@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeader } from "@/components/site-header";
+import { SiteHeaderServer } from "@/components/site-header-server";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DragDropProvider } from "@/components/dynamic-imports";
 import { PrefetchProvider } from "@/components/prefetch-provider";
@@ -19,7 +19,7 @@ export default function DashboardLayout({
       <PrefetchProvider />
       <div className="[--header-height:calc(--spacing(14))]">
         <SidebarProvider className="flex flex-col">
-          <SiteHeader />
+          <SiteHeaderServer />
           <div className="flex flex-1 min-w-0 overflow-x-hidden w-full">
             <AppSidebar />
             <SidebarInset>

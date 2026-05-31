@@ -2,6 +2,7 @@ import {
   integer,
   pgTable,
   serial,
+  text,
   timestamp,
   varchar,
 } from "drizzle-orm/pg-core";
@@ -27,6 +28,7 @@ export const candidateRejections = pgTable("candidate_rejections", {
     onDelete: "set null",
   }),
   reason: varchar("reason", { length: 255 }),
+  internalNote: text("internal_note"),
   templateId: integer("template_id").references(() => templates.id, {
     onDelete: "set null",
   }),

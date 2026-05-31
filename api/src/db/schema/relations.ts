@@ -35,6 +35,7 @@ import {
 } from "./communications";
 import { candidateRejections } from "./rejections";
 import { candidateInterviews } from "./interviews";
+import { interviewFeedback } from "./interview-feedback";
 
 // company
 export const companyRelations = relations(company, ({ many }) => ({
@@ -449,7 +450,7 @@ export const candidateRejectionsRelations = relations(
 // interviews
 export const candidateInterviewsRelations = relations(
   candidateInterviews,
-  ({ one }) => ({
+  ({ one, many }) => ({
     candidate: one(candidates, {
       fields: [candidateInterviews.candidateId],
       references: [candidates.id],
@@ -464,6 +465,22 @@ export const candidateInterviewsRelations = relations(
     }),
     createdBy: one(users, {
       fields: [candidateInterviews.createdBy],
+      references: [users.id],
+    }),
+    feedback: many(interviewFeedback),
+  }),
+);
+
+// interview feedback
+export const interviewFeedbackRelations = relations(
+  interviewFeedback,
+  ({ one }) => ({
+    interview: one(candidateInterviews, {
+      fields: [interviewFeedback.interviewId],
+      references: [candidateInterviews.id],
+    }),
+    author: one(users, {
+      fields: [interviewFeedback.authorId],
       references: [users.id],
     }),
   }),

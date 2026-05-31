@@ -9,10 +9,12 @@ export interface InterviewForCalendar {
   id: number;
   candidateId: number;
   scheduledAt: string | null;
+  status: string | null;
   outcome: "pending" | "pass" | "fail";
   candidateName: string;
   jobTitle: string | null;
   stageName: string | null;
+  stageType?: string | null;
 }
 
 /**
@@ -83,13 +85,17 @@ export function InterviewCalendar({
   // Selected date's interviews
   const selectedInterviews = selectedDate ? (byDate[selectedDate] ?? []) : [];
 
-  // Outcome badge color
-  const outcomeColor = (o: string) =>
-    o === "pass"
-      ? "bg-emerald-500"
-      : o === "fail"
-        ? "bg-red-400"
-        : "bg-amber-400";
+  // Dot color by stage type (screening=amber, interview=blue, offer=green)
+  // Falls back to status-based color if no stageType
+  const dotColor = (iv: InterviewForCalendar) => {
+    if (iv.stageType === "screening") return "bg-amber-500";
+    if (iv.stageType === "interview") return "bg-blue-500";
+    if (iv.stageType === "offer") return "bg-emerald-500";
+    // Fallback to status-based
+    if (iv.status === "scheduled") return "bg-emerald-500";
+    if (iv.status === "pending_schedule") return "bg-amber-400";
+    return "bg-slate-300";
+  };
 
   return (
     <div className="flex gap-6">
@@ -165,7 +171,7 @@ export function InterviewCalendar({
                       {interviewsOnDay.slice(0, 3).map((iv) => (
                         <span
                           key={iv.id}
-                          className={`size-2 rounded-full ${outcomeColor(iv.outcome)}`}
+                          className={`size-2 rounded-full ${dotColor(iv)}`}
                           title={`${iv.candidateName} — ${iv.jobTitle ?? ""}`}
                         />
                       ))}
@@ -205,12 +211,12 @@ export function InterviewCalendar({
               return (
                 <a
                   key={iv.id}
-                  href={`/candidates/${iv.candidateId}`}
+                  href={`/candidates/${iv.candidateId}?from=interviews`}
                   className="block rounded-lg border border-slate-100 dark:border-neutral-800 p-3 hover:bg-slate-50 dark:hover:bg-neutral-900 transition-colors"
                 >
                   <div className="flex items-center gap-2 mb-1">
                     <span
-                      className={`size-2 rounded-full shrink-0 ${outcomeColor(iv.outcome)}`}
+                      className={`size-2 rounded-full shrink-0 ${dotColor(iv)}`}
                     />
                     <span className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 truncate">
                       {iv.candidateName}

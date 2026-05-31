@@ -15,13 +15,18 @@ import { serverFetch } from "@/lib/auth-action";
 
 export function useCandidates(
   jobId?: number,
-  filters?: { stageId?: number; search?: string },
+  filters?: {
+    stageId?: number;
+    search?: string;
+    status?: "active" | "rejected" | "offered" | "hired" | "withdrawn";
+  },
   options?: { enabled?: boolean },
 ) {
   const queryClient = useQueryClient();
   const params = new URLSearchParams();
   if (filters?.stageId) params.set("stageId", String(filters.stageId));
   if (filters?.search) params.set("search", filters.search);
+  if (filters?.status) params.set("status", filters.status);
   const query = params.toString() ? `?${params.toString()}` : "";
 
   const path = jobId
@@ -206,7 +211,8 @@ export function useRejectCandidate() {
       id: number;
       data: {
         templateId?: number | null;
-        reason?: string;
+        reason: string;
+        internalNote?: string;
         emailStatus: "not_sent" | "sent";
       };
     }) =>
@@ -216,6 +222,21 @@ export function useRejectCandidate() {
       }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["candidates", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+  });
+}
+
+export function useUnrejectCandidate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      serverFetch<{ data: { candidate: Candidate; restoredStageId: number | null } }>(
+        `/candidates/${id}/unreject`,
+        { method: "POST" },
+      ),
+    onSuccess: (_, candidateId) => {
+      queryClient.invalidateQueries({ queryKey: ["candidates", candidateId] });
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });

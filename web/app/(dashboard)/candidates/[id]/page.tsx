@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, use, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowLeft02Icon,
@@ -20,6 +21,8 @@ import {
   File01Icon,
   UserRemove01Icon,
   Calendar02Icon,
+  Message02Icon,
+  StarIcon,
 } from "@hugeicons/core-free-icons";
 
 import { Button } from "@/components/ui/button";
@@ -58,6 +61,7 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 
 import {
   useCandidate,
@@ -71,10 +75,13 @@ import {
   useUpdateOffer,
   useUpdateOfferStatus,
 } from "@/hooks/queries/use-offers";
-import { useRejectCandidate } from "@/hooks/queries/use-candidates";
+import { useRejectCandidate, useUnrejectCandidate } from "@/hooks/queries/use-candidates";
 import { useDeleteInterview } from "@/hooks/queries/use-interviews";
+import {
+  useInterviewFeedback,
+  useDeleteInterviewFeedback,
+} from "@/hooks/queries/use-interview-feedback";
 import { useTemplates } from "@/hooks/queries/use-templates";
-import { serverFetch } from "@/lib/auth-action";
 import { CandidateJobFitTab } from "@/components/dynamic-imports";
 import { InterviewSchedulerDialog } from "@/components/interview-scheduler-dialog";
 
@@ -132,6 +139,16 @@ const OFFER_STATUS_STYLES: Record<
   },
 };
 
+const REJECTION_REASONS = [
+  "Lack of required skills",
+  "Insufficient experience",
+  "Compensation mismatch",
+  "Culture/team fit concerns",
+  "Role requirements changed",
+  "Candidate withdrew",
+  "Other",
+] as const;
+
 type SectionId =
   | "job-fit"
   | "answers"
@@ -164,12 +181,190 @@ type SentEmail = {
   sentAt: string;
 };
 
+// ── Interview Card (with feedback read-only dialog) ──────────────────────────
+
+function InterviewCard({
+  interview,
+  stageMap,
+  deleteInterviewMutation,
+}: {
+  interview: any;
+  stageMap: Record<number, string>;
+  deleteInterviewMutation: any;
+}) {
+  const [showFeedback, setShowFeedback] = useState(false);
+
+  const { data: feedbackData } = useInterviewFeedback(
+    showFeedback ? interview.id : 0,
+  );
+  const feedback = feedbackData?.data ?? [];
+  const deleteFeedbackMutation = useDeleteInterviewFeedback();
+
+  const stageTypeColor = (stageType: string | null) => {
+    if (stageType === "screening") return "bg-amber-500";
+    if (stageType === "interview") return "bg-blue-500";
+    if (stageType === "offer") return "bg-emerald-500";
+    return "bg-slate-400";
+  };
+
+  return (
+    <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+      <div className="flex items-center justify-between px-5 py-4">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Stage type color dot */}
+          {interview.stageType && (
+            <span
+              className={`size-2.5 rounded-full shrink-0 ${stageTypeColor(interview.stageType)}`}
+              title={`Stage type: ${interview.stageType}`}
+            />
+          )}
+          <div className="min-w-0">
+            <span className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200">
+              {interview.eventName ??
+                stageMap[interview.stageId] ??
+                `Interview #${interview.id}`}
+            </span>
+            <div className="flex items-center gap-2 mt-1">
+              <Badge
+                className={`rounded-md border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-none ${
+                  interview.status === "scheduled"
+                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
+                    : interview.status === "pending_schedule"
+                      ? "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
+                      : "bg-slate-50 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400"
+                }`}
+              >
+                {interview.status === "scheduled"
+                  ? "Confirmed"
+                  : interview.status === "pending_schedule"
+                    ? "Awaiting Slot"
+                    : (interview.status ?? "pending")}
+              </Badge>
+              {interview.scheduledAt && (
+                <>
+                  <span className="text-[11px] text-slate-400 dark:text-neutral-500">
+                    {new Date(interview.scheduledAt).toLocaleDateString(
+                      "en-US",
+                      { month: "short", day: "numeric" },
+                    )}{" "}
+                    {new Date(interview.scheduledAt).toLocaleTimeString(
+                      "en-US",
+                      { hour: "2-digit", minute: "2-digit" },
+                    )}
+                  </span>
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="flex items-center gap-1 shrink-0">
+          <button
+            onClick={() => setShowFeedback(true)}
+            className="inline-flex items-center gap-1.5 h-7 rounded-md bg-[var(--theme-color)] px-2.5 text-[11px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] transition-colors"
+          >
+            <HugeiconsIcon icon={Message02Icon} className="size-3.5" />
+            Feedback {feedback.length > 0 ? `(${feedback.length})` : ""}
+          </button>
+          <button
+            onClick={() => {
+              if (confirm("Delete this interview?")) {
+                deleteInterviewMutation.mutate(interview.id);
+              }
+            }}
+            disabled={deleteInterviewMutation.isPending}
+            className="size-7 flex items-center justify-center rounded-md text-slate-300 dark:text-neutral-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+          >
+            <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+          </button>
+        </div>
+      </div>
+
+      {/* Feedback read-only dialog */}
+      <Dialog open={showFeedback} onOpenChange={setShowFeedback}>
+        <DialogContent className="max-w-lg rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-lg px-6 py-4">
+          <DialogHeader className="mb-3">
+            <DialogTitle className="text-[16px] font-bold text-slate-900 dark:text-neutral-100">
+              Interview Feedback
+            </DialogTitle>
+          </DialogHeader>
+          {feedback.length === 0 ? (
+            <div className="rounded-lg border border-dashed border-slate-200 dark:border-neutral-700 px-4 py-8 text-center">
+              <p className="text-[13px] text-slate-400 dark:text-neutral-500">
+                No feedback yet.
+              </p>
+              <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
+                Go to the Interviews page to add feedback.
+              </p>
+            </div>
+          ) : (
+            <div className="max-h-[400px] space-y-3 overflow-y-auto pr-1">
+              {feedback.map((fb) => (
+                <div
+                  key={fb.id}
+                  className="rounded-lg border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900 p-3"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-[12px] font-semibold text-slate-700 dark:text-neutral-300">
+                          {fb.authorName}
+                        </span>
+                        {fb.rating && (
+                          <span className="inline-flex items-center gap-0.5 text-[11px] font-medium text-amber-500">
+                            <HugeiconsIcon icon={StarIcon} className="size-3" />
+                            {fb.rating}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-slate-400 dark:text-neutral-500">
+                          {new Date(fb.createdAt).toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                          })}
+                        </span>
+                      </div>
+                      <p className="text-[12px] leading-relaxed text-slate-600 dark:text-neutral-400 whitespace-pre-line">
+                        {fb.content}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() =>
+                        deleteFeedbackMutation.mutate({
+                          interviewId: interview.id,
+                          feedbackId: fb.id,
+                        })
+                      }
+                      className="size-6 flex items-center justify-center rounded hover:bg-red-50 dark:hover:bg-red-950/30 text-slate-300 hover:text-red-500 shrink-0 transition-colors"
+                    >
+                      <HugeiconsIcon icon={Delete02Icon} className="size-3" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          <DialogFooter className="mt-4">
+            <Button
+              onClick={() => setShowFeedback(false)}
+              className="h-9 rounded-md border-none bg-neutral-700 px-4 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-600"
+            >
+              Close
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
 export default function CandidateDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const searchParams = useSearchParams();
+  const fromParam = searchParams.get("from");
   const unwrappedParams = use(params);
   const candidateId = parseInt(unwrappedParams.id, 10);
 
@@ -218,38 +413,16 @@ export default function CandidateDetailPage({
   const moveStageMutation = useMoveCandidateStage();
 
   // Rejection
-  const [showRejectForm, setShowRejectForm] = useState(false);
+  const [isRejectDialogOpen, setIsRejectDialogOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
+  const [rejectInternalNote, setRejectInternalNote] = useState("");
   const [rejectTemplateId, setRejectTemplateId] = useState("");
-  const [rejectEmailStatus, setRejectEmailStatus] = useState<
-    "not_sent" | "sent"
-  >("not_sent");
+  const [shouldSendRejectEmail, setShouldSendRejectEmail] = useState(false);
   const rejectMutation = useRejectCandidate();
+  const unrejectMutation = useUnrejectCandidate();
   const { data: templatesData } = useTemplates();
   const allTemplates = templatesData?.data ?? [];
   const emailTemplates = allTemplates.filter((t) => t.type === "email");
-
-  // Rejection email preview
-  const [rejectPreviewHtml, setRejectPreviewHtml] = useState<string | null>(
-    null,
-  );
-  const [rejectPreviewLoading, setRejectPreviewLoading] = useState(false);
-
-  // Fetch template preview
-  const fetchPreview = (templateId: string) => {
-    if (!templateId) {
-      setRejectPreviewHtml(null);
-      return;
-    }
-    setRejectPreviewLoading(true);
-    serverFetch<{ data: { subject: string; html: string } }>(
-      `/templates/${templateId}/preview`,
-      { method: "POST", body: JSON.stringify({ candidateId }) },
-    )
-      .then((res) => setRejectPreviewHtml(res.data.html))
-      .catch(() => setRejectPreviewHtml(null))
-      .finally(() => setRejectPreviewLoading(false));
-  };
 
   // Interviews
   const [showSchedulerDialog, setShowSchedulerDialog] = useState(false);
@@ -573,7 +746,15 @@ export default function CandidateDetailPage({
               <Button
                 size="sm"
                 className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
-                onClick={() => router.push("/candidates")}
+                onClick={() => {
+                  const back =
+                    fromParam === "interviews"
+                      ? "/interviews"
+                      : fromParam === "pipeline"
+                        ? `/jobs/${candidate?.jobId}/pipeline`
+                        : "/candidates";
+                  router.push(back);
+                }}
               >
                 <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
                 Close
@@ -1189,51 +1370,18 @@ export default function CandidateDetailPage({
                         No interviews yet
                       </p>
                       <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
-                        Click "Schedule" to invite a candidate.
+                        Click &quot;Schedule&quot; to invite a candidate.
                       </p>
                     </div>
                   ) : (
                     <div className="space-y-3">
                       {(candidate.interviews ?? []).map((iv) => (
-                        <div
+                        <InterviewCard
                           key={iv.id}
-                          className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
-                        >
-                          <div className="flex items-center justify-between px-5 py-4">
-                            <div className="flex items-center gap-3">
-                              <span className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200">
-                                {iv.eventName ??
-                                  stageMap[iv.stageId] ??
-                                  `Interview #${iv.id}`}
-                              </span>
-                              <Badge
-                                className={`rounded-md border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-none ${
-                                  iv.outcome === "pass"
-                                    ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
-                                    : iv.outcome === "fail"
-                                      ? "bg-red-50 text-red-500 dark:bg-red-950/30 dark:text-red-400"
-                                      : "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400"
-                                }`}
-                              >
-                                {iv.outcome ?? "pending"}
-                              </Badge>
-                            </div>
-                            <button
-                              onClick={() => {
-                                if (confirm("Delete this interview?")) {
-                                  deleteInterviewMutation.mutate(iv.id);
-                                }
-                              }}
-                              disabled={deleteInterviewMutation.isPending}
-                              className="text-slate-300 dark:text-neutral-600 hover:text-red-500 transition-colors"
-                            >
-                              <HugeiconsIcon
-                                icon={Delete02Icon}
-                                className="size-4"
-                              />
-                            </button>
-                          </div>
-                        </div>
+                          interview={iv}
+                          stageMap={stageMap}
+                          deleteInterviewMutation={deleteInterviewMutation}
+                        />
                       ))}
                     </div>
                   )}
@@ -1243,7 +1391,7 @@ export default function CandidateDetailPage({
               {/* ─── Rejection ─── */}
               {activeSection === "rejection" && (
                 <div className="p-5 sm:p-6">
-                  <div className="mb-6 flex items-center justify-between">
+                  <div className="mb-6 flex items-center justify-between gap-3">
                     <div>
                       <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
                         Rejection
@@ -1252,166 +1400,31 @@ export default function CandidateDetailPage({
                         Rejection history and actions
                       </p>
                     </div>
-                    {candidate.status !== "rejected" && (
+                    {candidate.status === "rejected" ? (
                       <Button
                         size="sm"
-                        onClick={() => setShowRejectForm(!showRejectForm)}
-                        className={`h-8 rounded-md border-none px-3 text-[12px] font-semibold text-white shadow-none ${showRejectForm ? "bg-neutral-700 hover:bg-neutral-600" : "bg-red-600 hover:bg-red-500"}`}
+                        disabled={unrejectMutation.isPending}
+                        onClick={() => {
+                          unrejectMutation.mutate(candidateId);
+                        }}
+                        className="h-8 rounded-md border-none bg-slate-700 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-slate-600 disabled:opacity-60"
                       >
-                        {showRejectForm ? "Cancel" : "Reject Candidate"}
+                        {unrejectMutation.isPending
+                          ? "Restoring…"
+                          : "Unreject Candidate"}
+                      </Button>
+                    ) : (
+                      <Button
+                        size="sm"
+                        onClick={() => setIsRejectDialogOpen(true)}
+                        className="h-8 rounded-md border-none bg-red-600 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-red-500"
+                      >
+                        Reject Candidate
                       </Button>
                     )}
                   </div>
 
-                  {showRejectForm && (
-                    <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50/20 dark:bg-red-950/10 p-5 mb-5 space-y-4">
-                      <div>
-                        <p className="text-[14px] font-bold text-red-700 dark:text-red-400">
-                          Reject {candidate.firstName} {candidate.lastName}
-                        </p>
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
-                          Reason (optional)
-                        </Label>
-                        <Input
-                          value={rejectReason}
-                          onChange={(e) => setRejectReason(e.target.value)}
-                          placeholder="e.g. Not a good fit"
-                          className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
-                          Template
-                        </Label>
-                        <Select
-                          value={rejectTemplateId}
-                          onValueChange={(v) => {
-                            setRejectTemplateId(v ?? "");
-                            if (rejectEmailStatus === "sent")
-                              fetchPreview(v ?? "");
-                          }}
-                        >
-                          <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
-                            <SelectValue placeholder="Select template (optional)" />
-                          </SelectTrigger>
-                          <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                            <SelectItem value="" className="text-[13px]">
-                              None
-                            </SelectItem>
-                            {emailTemplates.map((t) => (
-                              <SelectItem
-                                key={t.id}
-                                value={String(t.id)}
-                                className="text-[13px]"
-                              >
-                                {t.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="flex items-center gap-4">
-                        <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
-                          Email:
-                        </Label>
-                        <label className="flex cursor-pointer items-center gap-1.5">
-                          <input
-                            type="radio"
-                            name="rejectEmail"
-                            checked={rejectEmailStatus === "not_sent"}
-                            onChange={() => setRejectEmailStatus("not_sent")}
-                            className="text-[var(--theme-color)]"
-                          />
-                          <span className="text-[13px] text-slate-600 dark:text-neutral-300">
-                            Don't send
-                          </span>
-                        </label>
-                        <label className="flex cursor-pointer items-center gap-1.5">
-                          <input
-                            type="radio"
-                            name="rejectEmail"
-                            checked={rejectEmailStatus === "sent"}
-                            onChange={() => setRejectEmailStatus("sent")}
-                            className="text-[var(--theme-color)]"
-                          />
-                          <span className="text-[13px] text-slate-600 dark:text-neutral-300">
-                            Send email
-                          </span>
-                        </label>
-                      </div>
-
-                      {/* Email preview */}
-                      {rejectTemplateId && rejectEmailStatus === "sent" && (
-                        <div className="space-y-1.5">
-                          <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
-                            Email Preview
-                          </Label>
-                          {rejectPreviewLoading ? (
-                            <div className="rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-[12px] text-slate-400">
-                              Loading preview...
-                            </div>
-                          ) : rejectPreviewHtml ? (
-                            <div
-                              className="max-h-[200px] overflow-y-auto rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-[13px] leading-relaxed"
-                              dangerouslySetInnerHTML={{
-                                __html: rejectPreviewHtml,
-                              }}
-                            />
-                          ) : (
-                            <div className="rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-[12px] text-slate-400">
-                              Select a template to preview the email.
-                            </div>
-                          )}
-                        </div>
-                      )}
-
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          size="sm"
-                          onClick={() => setShowRejectForm(false)}
-                          className="h-8 rounded-md border-none bg-neutral-700 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-600"
-                        >
-                          Cancel
-                        </Button>
-                        <Button
-                          size="sm"
-                          disabled={rejectMutation.isPending}
-                          onClick={() => {
-                            rejectMutation.mutate(
-                              {
-                                id: candidateId,
-                                data: {
-                                  reason: rejectReason || undefined,
-                                  templateId: rejectTemplateId
-                                    ? Number(rejectTemplateId)
-                                    : undefined,
-                                  emailStatus: rejectEmailStatus,
-                                },
-                              },
-                              {
-                                onSuccess: () => {
-                                  setShowRejectForm(false);
-                                  setRejectReason("");
-                                  setRejectTemplateId("");
-                                  setRejectEmailStatus("not_sent");
-                                },
-                              },
-                            );
-                          }}
-                          className="h-8 rounded-md border-none bg-red-600 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-red-500 disabled:opacity-60"
-                        >
-                          {rejectMutation.isPending
-                            ? "Rejecting…"
-                            : "Confirm Reject"}
-                        </Button>
-                      </div>
-                    </div>
-                  )}
-
-                  {(candidate.rejections ?? []).length === 0 &&
-                  !showRejectForm ? (
+                  {(candidate.rejections ?? []).length === 0 ? (
                     <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
                       <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
                         <HugeiconsIcon
@@ -1423,11 +1436,6 @@ export default function CandidateDetailPage({
                         {candidate.status === "rejected"
                           ? "Candidate has been rejected"
                           : "No rejections yet"}
-                      </p>
-                      <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
-                        {candidate.status === "rejected"
-                          ? "The rejection record is shown below."
-                          : 'Click "Reject Candidate" above to reject this applicant.'}
                       </p>
                     </div>
                   ) : (
@@ -1443,11 +1451,11 @@ export default function CandidateDetailPage({
                                 Rejected
                               </span>
                               <Badge
-                                className={`rounded-md border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-none ${
+                                className={
                                   r.emailStatus === "sent"
-                                    ? "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400"
-                                    : "bg-slate-50 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400"
-                                }`}
+                                    ? "rounded-md border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-none bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400"
+                                    : "rounded-md border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-none bg-slate-50 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400"
+                                }
                               >
                                 Email: {r.emailStatus}
                               </Badge>
@@ -1456,17 +1464,150 @@ export default function CandidateDetailPage({
                               {timeAgo(r.rejectedAt)}
                             </span>
                           </div>
-                          {r.reason && (
-                            <div className="px-5 pb-4">
-                              <p className="text-[13px] text-slate-600 dark:text-neutral-300">
-                                Reason: {r.reason}
+                          <div className="px-5 pb-4 space-y-1">
+                            <p className="text-[13px] text-slate-600 dark:text-neutral-300">
+                              Reason: {r.reason}
+                            </p>
+                            {r.internalNote && (
+                              <p className="text-[12px] text-slate-500 dark:text-neutral-400">
+                                Internal note: {r.internalNote}
                               </p>
-                            </div>
-                          )}
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
                   )}
+
+                  <Dialog
+                    open={isRejectDialogOpen}
+                    onOpenChange={(open) => setIsRejectDialogOpen(open)}
+                  >
+                    <DialogContent className="max-w-lg rounded-2xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-xl">
+                      <DialogHeader>
+                        <DialogTitle className="text-[16px] font-bold text-slate-900 dark:text-neutral-100">
+                          Reject {candidate.firstName} {candidate.lastName}
+                        </DialogTitle>
+                      </DialogHeader>
+
+                      <div className="space-y-4">
+                        <div className="space-y-1.5">
+                          <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
+                            Rejection Reason
+                          </Label>
+                          <Select
+                            value={rejectReason}
+                            onValueChange={(v) => setRejectReason(v ?? "")}
+                          >
+                            <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                              <SelectValue placeholder="Select a reason" />
+                            </SelectTrigger>
+                            <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                              {REJECTION_REASONS.map((reason) => (
+                                <SelectItem key={reason} value={reason} className="text-[13px]">
+                                  {reason}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
+                            Internal Note (optional)
+                          </Label>
+                          <textarea
+                            value={rejectInternalNote}
+                            onChange={(e) => setRejectInternalNote(e.target.value)}
+                            placeholder="Visible to your team only"
+                            className="min-h-[90px] w-full rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-[13px] text-slate-700 dark:text-neutral-300 shadow-none focus:outline-none focus:border-[var(--theme-color)]"
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-neutral-700 px-3 py-2">
+                          <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
+                            Send Rejection Email
+                          </Label>
+                          <Switch
+                            checked={shouldSendRejectEmail}
+                            onCheckedChange={setShouldSendRejectEmail}
+                          />
+                        </div>
+
+                        {shouldSendRejectEmail && (
+                          <div className="space-y-1.5">
+                            <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
+                              Email Template
+                            </Label>
+                            <Select
+                              value={rejectTemplateId}
+                              onValueChange={(v) => setRejectTemplateId(v ?? "")}
+                            >
+                              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                                <SelectValue placeholder="Select template" />
+                              </SelectTrigger>
+                              <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                                {emailTemplates.map((t) => (
+                                  <SelectItem key={t.id} value={String(t.id)} className="text-[13px]">
+                                    {t.name}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
+
+                      <DialogFooter className="gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => setIsRejectDialogOpen(false)}
+                          className="h-8 rounded-md border-none bg-neutral-700 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-600"
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          disabled={
+                            rejectMutation.isPending ||
+                            !rejectReason ||
+                            (shouldSendRejectEmail && !rejectTemplateId)
+                          }
+                          onClick={() => {
+                            rejectMutation.mutate(
+                              {
+                                id: candidateId,
+                                data: {
+                                  reason: rejectReason,
+                                  internalNote: rejectInternalNote || undefined,
+                                  templateId: shouldSendRejectEmail
+                                    ? Number(rejectTemplateId)
+                                    : undefined,
+                                  emailStatus: shouldSendRejectEmail
+                                    ? "sent"
+                                    : "not_sent",
+                                },
+                              },
+                              {
+                                onSuccess: () => {
+                                  setIsRejectDialogOpen(false);
+                                  setRejectReason("");
+                                  setRejectInternalNote("");
+                                  setRejectTemplateId("");
+                                  setShouldSendRejectEmail(false);
+                                },
+                              },
+                            );
+                          }}
+                          className="h-8 rounded-md border-none bg-red-600 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-red-500 disabled:opacity-60"
+                        >
+                          {rejectMutation.isPending
+                            ? "Rejecting…"
+                            : "Confirm Reject"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </div>
               )}
 
@@ -1984,6 +2125,12 @@ export default function CandidateDetailPage({
         onOpenChange={setShowSchedulerDialog}
         templates={allTemplates}
         pipelineStageId={candidate.currentStageId ?? 0}
+        onSuccess={() => {
+          queryClient.invalidateQueries({
+            queryKey: ["candidates", candidateId],
+          });
+          queryClient.invalidateQueries({ queryKey: ["interviews"] });
+        }}
       />
     </div>
   );

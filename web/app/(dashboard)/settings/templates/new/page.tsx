@@ -98,7 +98,22 @@ export default function NewTemplatePage() {
                 type: b.kind as TemplateBodyBlock["type"],
                 content: b.content,
               }))
-            : [],
+            : [
+                // Store event config as a text block with JSON
+                {
+                  type: "text" as const,
+                  content: JSON.stringify({
+                    eventName: eventName || name,
+                    eventType: eventTypeRadio,
+                    meetingUrl:
+                      eventTypeRadio === "virtual" ? meetingUrl : null,
+                    description: eventDesc,
+                    timeSlots: timeSlots
+                      .filter((s) => s.datetime)
+                      .map((s) => s.datetime),
+                  }),
+                },
+              ],
       },
       { onSuccess: () => router.push("/settings/templates") },
     );

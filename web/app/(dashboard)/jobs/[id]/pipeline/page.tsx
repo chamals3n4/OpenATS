@@ -286,7 +286,9 @@ export default function HiringPipelinePage() {
 
   useEffect(() => {
     if (candidatesData?.data) {
-      setLocalCandidates(candidatesData.data);
+      setLocalCandidates(
+        candidatesData.data.filter((candidate) => candidate.status !== "rejected"),
+      );
     }
   }, [candidatesData]);
 
@@ -477,7 +479,7 @@ export default function HiringPipelinePage() {
                 onDropToStage={handleDropToStage}
                 onReorder={handleReorder}
                 onCardClick={(id) => {
-                  router.push(`/candidates/${id}`);
+                  router.push(`/candidates/${id}?from=pipeline`);
                 }}
               />
             ))}

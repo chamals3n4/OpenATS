@@ -1,10 +1,13 @@
-import { eq, and, desc, asc, gte, lte } from "drizzle-orm";
+import { eq, and, desc, asc, gte, lte, ilike, or } from "drizzle-orm";
 import { db } from "../db";
 import {
   candidateInterviews,
   candidates,
   jobs,
   jobPipelineStages,
+  interviewFeedback,
+  departments,
+  users,
 } from "../db/schema";
 import { cleanObject as clean } from "../utils/object.utils";
 import * as gcal from "./google-calendar.service";
@@ -26,6 +29,11 @@ export interface UpdateInterviewInput {
   durationMinutes?: number | null;
   notes?: string | null;
   outcome?: "pending" | "pass" | "fail";
+  status?: "pending_schedule" | "scheduled" | "completed" | "cancelled";
+  eventName?: string;
+  eventType?: "virtual" | "onsite";
+  meetingUrl?: string | null;
+  bodyText?: string | null;
   attendeeEmails?: string[];
 }
 
@@ -143,6 +151,8 @@ export const interviewService = {
   /** List all interviews with candidate + job + stage info. */
   async getAll(filters?: {
     jobId?: number;
+    departmentId?: number;
+    search?: string;
     fromDate?: string;
     toDate?: string;
   }) {
@@ -150,6 +160,19 @@ export const interviewService = {
 
     if (filters?.jobId) {
       conditions.push(eq(candidateInterviews.jobId, filters.jobId));
+    }
+    if (filters?.departmentId) {
+      conditions.push(eq(jobs.departmentId, filters.departmentId));
+    }
+    if (filters?.search) {
+      const term = `%${filters.search}%`;
+      conditions.push(
+        or(
+          ilike(candidates.firstName, term),
+          ilike(candidates.lastName, term),
+          ilike(jobs.title, term),
+        )!,
+      );
     }
     if (filters?.fromDate) {
       conditions.push(
@@ -172,7 +195,11 @@ export const interviewService = {
         durationMinutes: candidateInterviews.durationMinutes,
         notes: candidateInterviews.notes,
         outcome: candidateInterviews.outcome,
-        googleEventId: candidateInterviews.googleEventId,
+        status: candidateInterviews.status,
+        eventName: candidateInterviews.eventName,
+        eventType: candidateInterviews.eventType,
+        meetingUrl: candidateInterviews.meetingUrl,
+        bodyText: candidateInterviews.bodyText,
         createdBy: candidateInterviews.createdBy,
         createdAt: candidateInterviews.createdAt,
         updatedAt: candidateInterviews.updatedAt,
@@ -184,6 +211,7 @@ export const interviewService = {
         candidateEmail: candidates.email,
         jobTitle: jobs.title,
         stageName: jobPipelineStages.name,
+        stageType: jobPipelineStages.stageType,
       })
       .from(candidateInterviews)
       .leftJoin(candidates, eq(candidateInterviews.candidateId, candidates.id))
@@ -234,6 +262,11 @@ export const interviewService = {
           durationMinutes: input.durationMinutes,
           notes: input.notes,
           outcome: input.outcome,
+          status: input.status,
+          eventName: input.eventName,
+          eventType: input.eventType,
+          meetingUrl: input.meetingUrl,
+          bodyText: input.bodyText,
           updatedAt: new Date(),
         }),
       )
@@ -280,6 +313,61 @@ export const interviewService = {
     }
 
     return updated;
+  },
+
+  // ── Interview Feedback ──
+
+  async addFeedback(
+    interviewId: number,
+    authorId: number,
+    content: string,
+    rating?: number | null,
+  ) {
+    const [feedback] = await db
+      .insert(interviewFeedback)
+      .values({
+        interviewId,
+        authorId,
+        content,
+        rating: rating ?? null,
+      })
+      .returning();
+    return feedback ?? null;
+  },
+
+  async getFeedback(interviewId: number) {
+    const rows = await db
+      .select({
+        id: interviewFeedback.id,
+        interviewId: interviewFeedback.interviewId,
+        content: interviewFeedback.content,
+        rating: interviewFeedback.rating,
+        createdAt: interviewFeedback.createdAt,
+        updatedAt: interviewFeedback.updatedAt,
+        authorName: {
+          first: users.firstName,
+          last: users.lastName,
+        },
+      })
+      .from(interviewFeedback)
+      .leftJoin(users, eq(interviewFeedback.authorId, users.id))
+      .where(eq(interviewFeedback.interviewId, interviewId))
+      .orderBy(desc(interviewFeedback.createdAt));
+
+    return rows.map((r) => ({
+      ...r,
+      authorName: r.authorName
+        ? `${r.authorName.first} ${r.authorName.last}`
+        : "Unknown",
+    }));
+  },
+
+  async deleteFeedback(feedbackId: number) {
+    const [deleted] = await db
+      .delete(interviewFeedback)
+      .where(eq(interviewFeedback.id, feedbackId))
+      .returning();
+    return deleted ?? null;
   },
 
   async delete(id: number) {

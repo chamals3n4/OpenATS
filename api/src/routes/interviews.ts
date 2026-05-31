@@ -31,6 +31,13 @@ const updateInterviewSchema = z.object({
   durationMinutes: z.number().int().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
   outcome: z.enum(["pending", "pass", "fail"]).optional(),
+  status: z
+    .enum(["pending_schedule", "scheduled", "completed", "cancelled"])
+    .optional(),
+  eventName: z.string().min(1).optional(),
+  eventType: z.enum(["virtual", "onsite"]).optional(),
+  meetingUrl: z.string().url().optional().nullable(),
+  bodyText: z.string().optional().nullable(),
   attendeeEmails: z.array(z.string().email()).optional(),
 });
 
@@ -103,6 +110,10 @@ router.get("/interviews", async (req, res) => {
   try {
     const filters = {
       jobId: req.query.jobId ? Number(req.query.jobId) : undefined,
+      departmentId: req.query.departmentId
+        ? Number(req.query.departmentId)
+        : undefined,
+      search: req.query.search as string | undefined,
       fromDate: req.query.from as string | undefined,
       toDate: req.query.to as string | undefined,
     };
@@ -367,6 +378,79 @@ router.delete("/interviews/:id", async (req, res) => {
     const deleted = await interviewService.delete(id);
     if (!deleted) {
       res.status(404).json({ error: "Not found" });
+      return;
+    }
+    res.status(200).json({ data: deleted });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ── Interview Feedback routes ──────────────────────────────────────────────
+
+const feedbackSchema = z.object({
+  content: z.string().min(1, "Feedback content is required"),
+  rating: z.number().int().min(1).max(5).optional().nullable(),
+});
+
+// POST /interviews/:id/feedback
+router.post("/interviews/:id/feedback", async (req, res) => {
+  try {
+    const interviewId = parseInt((req.params.id ?? "").toString());
+    if (isNaN(interviewId)) {
+      res.status(400).json({ error: "Invalid interview ID" });
+      return;
+    }
+    const parsed = feedbackSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      });
+      return;
+    }
+    const feedback = await interviewService.addFeedback(
+      interviewId,
+      req.user.id,
+      parsed.data.content,
+      parsed.data.rating,
+    );
+    if (!feedback) {
+      res.status(500).json({ error: "Failed to create feedback" });
+      return;
+    }
+    res.status(201).json({ data: feedback });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message || "Failed to add feedback" });
+  }
+});
+
+// GET /interviews/:id/feedback
+router.get("/interviews/:id/feedback", async (req, res) => {
+  try {
+    const interviewId = parseInt((req.params.id ?? "").toString());
+    if (isNaN(interviewId)) {
+      res.status(400).json({ error: "Invalid interview ID" });
+      return;
+    }
+    const feedback = await interviewService.getFeedback(interviewId);
+    res.status(200).json({ data: feedback });
+  } catch (error: any) {
+    res.status(500).json({ error: "Failed to fetch feedback" });
+  }
+});
+
+// DELETE /interviews/:id/feedback/:feedbackId
+router.delete("/interviews/:id/feedback/:feedbackId", async (req, res) => {
+  try {
+    const feedbackId = parseInt((req.params.feedbackId ?? "").toString());
+    if (isNaN(feedbackId)) {
+      res.status(400).json({ error: "Invalid feedback ID" });
+      return;
+    }
+    const deleted = await interviewService.deleteFeedback(feedbackId);
+    if (!deleted) {
+      res.status(404).json({ error: "Feedback not found" });
       return;
     }
     res.status(200).json({ data: deleted });

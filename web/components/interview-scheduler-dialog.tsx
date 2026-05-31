@@ -37,6 +37,7 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   templates: Template[];
   pipelineStageId: number;
+  onSuccess?: () => void;
 }
 
 /** Find selected template name for display in SelectValue */
@@ -51,6 +52,7 @@ export function InterviewSchedulerDialog({
   onOpenChange,
   templates,
   pipelineStageId,
+  onSuccess,
 }: Props) {
   const eventTemplates = templates.filter((t) => t.type === "event");
 
@@ -86,12 +88,32 @@ export function InterviewSchedulerDialog({
     setEventName(tpl.name);
     setEventType("virtual");
     setMeetingUrl("");
-    setTimeSlots([{ datetime: "" }]);
     const blocks = (tpl.bodyJson as Array<{ content?: string }>) ?? [];
-    const firstText = blocks.find(
-      (b: { content?: string }) => b.content,
-    )?.content;
-    setBodyText(firstText ?? "");
+    // Read event config from bodyJson (stored as JSON text block)
+    const configBlock = blocks.find((b: { content?: string }) =>
+      b.content?.startsWith("{"),
+    );
+    if (configBlock) {
+      try {
+        const config = JSON.parse(configBlock.content!);
+        setEventType(config.eventType || "virtual");
+        setMeetingUrl(config.meetingUrl || "");
+        if (config.timeSlots?.length > 0) {
+          setTimeSlots(
+            config.timeSlots.map((dt: string) => ({ datetime: dt })),
+          );
+        } else {
+          setTimeSlots([{ datetime: "" }]);
+        }
+      } catch {
+        setTimeSlots([{ datetime: "" }]);
+      }
+    }
+    // Email body from first non-JSON text block
+    const textBlock = blocks.find(
+      (b: { content?: string }) => b.content && !b.content.startsWith("{"),
+    );
+    setBodyText(textBlock?.content ?? "");
   };
 
   const addSlot = () => setTimeSlots([...timeSlots, { datetime: "" }]);
@@ -99,9 +121,9 @@ export function InterviewSchedulerDialog({
   const handleSubmit = async () => {
     const name = eventName.trim();
     if (!name || !bodyText.trim()) return;
-    const validSlots = templateSelected
-      ? []
-      : timeSlots.filter((s) => s.datetime);
+    const validSlots = timeSlots.filter(
+      (s: { datetime: string }) => s.datetime,
+    );
     setSaving(true);
     try {
       await serverFetch(`/candidates/${candidateId}/schedule`, {
@@ -119,6 +141,7 @@ export function InterviewSchedulerDialog({
         }),
       });
       toast.success("Interview scheduled — email sent to candidate.");
+      onSuccess?.();
       onOpenChange(false);
       setEventName("");
       setBodyText("");
@@ -250,51 +273,52 @@ export function InterviewSchedulerDialog({
                   />
                 </div>
               )}
-
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
-                    Time Slots
-                  </Label>
-                  <button
-                    onClick={addSlot}
-                    className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--theme-color)] hover:underline"
-                  >
-                    <HugeiconsIcon
-                      icon={PlusSignIcon}
-                      className="size-3"
-                      strokeWidth={3}
-                    />{" "}
-                    Add Time Slot
-                  </button>
-                </div>
-                {timeSlots.map((s, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <Input
-                      type="datetime-local"
-                      value={s.datetime}
-                      onChange={(e) => {
-                        const n = [...timeSlots];
-                        n[i].datetime = e.target.value;
-                        setTimeSlots(n);
-                      }}
-                      className="h-10 flex-1 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] rounded-lg"
-                    />
-                    {timeSlots.length > 1 && (
-                      <button
-                        onClick={() =>
-                          setTimeSlots(timeSlots.filter((_, j) => j !== i))
-                        }
-                        className="size-9 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500"
-                      >
-                        <HugeiconsIcon icon={Delete02Icon} className="size-4" />
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
             </>
           )}
+
+          {/* Time slots — always visible */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                Time Slots
+              </Label>
+              <button
+                onClick={addSlot}
+                className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--theme-color)] hover:underline"
+              >
+                <HugeiconsIcon
+                  icon={PlusSignIcon}
+                  className="size-3"
+                  strokeWidth={3}
+                />{" "}
+                Add Time Slot
+              </button>
+            </div>
+            {timeSlots.map((s, i) => (
+              <div key={i} className="flex items-center gap-2">
+                <Input
+                  type="datetime-local"
+                  value={s.datetime}
+                  onChange={(e) => {
+                    const n = [...timeSlots];
+                    n[i].datetime = e.target.value;
+                    setTimeSlots(n);
+                  }}
+                  className="h-10 flex-1 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] rounded-lg"
+                />
+                {timeSlots.length > 1 && (
+                  <button
+                    onClick={() =>
+                      setTimeSlots(timeSlots.filter((_, j) => j !== i))
+                    }
+                    className="size-9 flex items-center justify-center rounded-lg hover:bg-red-50 text-slate-400 hover:text-red-500"
+                  >
+                    <HugeiconsIcon icon={Delete02Icon} className="size-4" />
+                  </button>
+                )}
+              </div>
+            ))}
+          </div>
 
           {/* Email body — always visible */}
           <div className="space-y-1.5">
@@ -319,7 +343,11 @@ export function InterviewSchedulerDialog({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={!bodyText.trim() || saving}
+            disabled={
+              !bodyText.trim() ||
+              !timeSlots.some((s: { datetime: string }) => s.datetime) ||
+              saving
+            }
             className="h-9 rounded-md border-none bg-[var(--theme-color)] px-4 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-50"
           >
             {saving ? "Sending..." : "Send to Candidate"}

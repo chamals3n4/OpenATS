@@ -12,12 +12,17 @@ const router: Router = Router();
 
 // ── Rejection routes ───────────────────────────────────────────────────────
 
-const rejectSchema = z.object({
-  reason: z.string().max(255).optional().nullable(),
-  templateId: z.number().int().positive().optional().nullable(),
-  emailStatus: z.enum(["not_sent", "draft", "sent"]).default("not_sent"),
-  emailBody: z.string().optional().nullable(),
-});
+const rejectSchema = z
+  .object({
+    reason: z.string().trim().min(1, "Reason is required").max(255),
+    internalNote: z.string().max(2000).optional().nullable(),
+    templateId: z.number().int().positive().optional().nullable(),
+    emailStatus: z.enum(["not_sent", "draft", "sent"]).default("not_sent"),
+  })
+  .refine((value) => value.emailStatus !== "sent" || !!value.templateId, {
+    path: ["templateId"],
+    message: "Template is required when sending email",
+  });
 
 // POST /candidates/:id/reject — reject a candidate
 router.post("/candidates/:id/reject", async (req, res) => {
@@ -75,7 +80,8 @@ router.post("/candidates/:id/reject", async (req, res) => {
         candidateId: id,
         jobId: candidate.jobId,
         fromStageId: candidate.currentStageId,
-        reason: parsed.data.reason ?? null,
+        reason: parsed.data.reason,
+        internalNote: parsed.data.internalNote ?? null,
         templateId: parsed.data.templateId ?? null,
         emailStatus: parsed.data.emailStatus,
       },
@@ -92,6 +98,23 @@ router.post("/candidates/:id/reject", async (req, res) => {
   } catch (error: any) {
     logger.error(`Failed to reject candidate ${req.params.id}: ${error.message}`);
     res.status(400).json({ error: error.message || "Failed to reject candidate" });
+  }
+});
+
+// POST /candidates/:id/unreject — restore a rejected candidate
+router.post("/candidates/:id/unreject", async (req, res) => {
+  try {
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid candidate ID" });
+      return;
+    }
+
+    const result = await rejectionService.unreject(id, req.user.id);
+    res.status(200).json({ data: result });
+  } catch (error: any) {
+    logger.error(`Failed to unreject candidate ${req.params.id}: ${error.message}`);
+    res.status(400).json({ error: error.message || "Failed to unreject candidate" });
   }
 });
 

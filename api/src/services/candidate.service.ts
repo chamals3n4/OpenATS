@@ -65,6 +65,7 @@ export interface CandidateApplyInput {
 export interface CandidateFilters {
   stageId?: number | undefined;
   search?: string | undefined;
+  status?: "active" | "rejected" | "offered" | "hired" | "withdrawn" | undefined;
 }
 
 export interface CandidateBasicUpdateInput {
@@ -177,6 +178,10 @@ export const candidateService = {
 
     if (filters.stageId) {
       conditions.push(eq(candidates.currentStageId, filters.stageId));
+    }
+
+    if (filters.status) {
+      conditions.push(eq(candidates.status, filters.status));
     }
 
     return db
@@ -308,8 +313,33 @@ export const candidateService = {
       .orderBy(desc(candidateRejections.rejectedAt));
 
     const interviews = await db
-      .select()
+      .select({
+        id: candidateInterviews.id,
+        candidateId: candidateInterviews.candidateId,
+        stageId: candidateInterviews.stageId,
+        jobId: candidateInterviews.jobId,
+        scheduledAt: candidateInterviews.scheduledAt,
+        durationMinutes: candidateInterviews.durationMinutes,
+        notes: candidateInterviews.notes,
+        outcome: candidateInterviews.outcome,
+        status: candidateInterviews.status,
+        eventName: candidateInterviews.eventName,
+        eventType: candidateInterviews.eventType,
+        meetingUrl: candidateInterviews.meetingUrl,
+        bodyText: candidateInterviews.bodyText,
+        timeSlots: candidateInterviews.timeSlots,
+        publicToken: candidateInterviews.publicToken,
+        googleEventId: candidateInterviews.googleEventId,
+        createdBy: candidateInterviews.createdBy,
+        createdAt: candidateInterviews.createdAt,
+        updatedAt: candidateInterviews.updatedAt,
+        stageType: jobPipelineStages.stageType,
+      })
       .from(candidateInterviews)
+      .leftJoin(
+        jobPipelineStages,
+        eq(candidateInterviews.stageId, jobPipelineStages.id),
+      )
       .where(eq(candidateInterviews.candidateId, id))
       .orderBy(desc(candidateInterviews.createdAt));
 

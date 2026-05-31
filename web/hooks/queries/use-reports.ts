@@ -1,4 +1,4 @@
-import { useQuery, useMutation } from "@tanstack/react-query";
+import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
 import { AnalyticsReport, AnalyticsExportPayload } from "@/types";
 
@@ -16,6 +16,8 @@ export function useAnalyticsReport(
       );
     },
     staleTime: 1000 * 60 * 5,
+    placeholderData: keepPreviousData,
+    refetchOnMount: false,
   });
 }
 

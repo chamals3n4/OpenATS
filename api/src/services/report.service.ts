@@ -281,7 +281,7 @@ export const reportService = {
       FROM candidates c
       INNER JOIN job_pipeline_stages s ON s.id = c.current_stage_id
       INNER JOIN jobs j ON j.id = c.job_id
-      WHERE s.stage_type = 'source'
+      WHERE 1=1
       ${deptFilter}
       GROUP BY s.name
       ORDER BY COUNT(*) DESC

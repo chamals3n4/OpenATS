@@ -142,6 +142,7 @@ export type CandidateRejection = {
   fromStageId: number | null;
   rejectedBy: number | null;
   reason: string | null;
+  internalNote: string | null;
   templateId: number | null;
   emailStatus: "not_sent" | "draft" | "sent";
   sentAt: string | null;

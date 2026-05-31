@@ -1,3 +1,5 @@
+// this is deprecated component, new version - candidates/[id]/page.tsx
+
 "use client";
 
 import { useMemo, useRef, useState } from "react";

@@ -14,6 +14,11 @@ import {
   submitAssessmentAnswer,
   completeAssessment,
 } from "../controllers/assessment-execution.controller";
+import {
+  acceptPublicOffer,
+  declinePublicOffer,
+  getPublicOfferByToken,
+} from "../controllers/offer.controller";
 import { db } from "../db";
 import { candidates, jobs, candidateInterviews } from "../db/schema";
 import { eq } from "drizzle-orm";
@@ -36,6 +41,11 @@ router.get("/assessment/:token", getAssessmentForCandidate);
 router.post("/assessment/:token/start", startAssessment);
 router.post("/assessment/:token/answer", submitAssessmentAnswer);
 router.post("/assessment/:token/complete", completeAssessment);
+
+// public offer portal (token based)
+router.get("/offers/:token", getPublicOfferByToken);
+router.post("/offers/:token/accept", acceptPublicOffer);
+router.post("/offers/:token/decline", declinePublicOffer);
 
 // Public interview slot selection (no auth)
 router.get("/interview/:token", async (req, res) => {

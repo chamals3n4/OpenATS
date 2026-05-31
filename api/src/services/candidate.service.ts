@@ -17,6 +17,7 @@ import {
 } from "../db/schema";
 import type { Candidate } from "../db/schema/candidates";
 import { assessmentExecutionService } from "./assessment-execution.service";
+import { candidateActivityService } from "./candidate-activity.service";
 import { jobService } from "./job.service";
 import { socketService } from "./socket.service";
 import { rejectionService } from "./rejection.service";
@@ -65,7 +66,13 @@ export interface CandidateApplyInput {
 export interface CandidateFilters {
   stageId?: number | undefined;
   search?: string | undefined;
-  status?: "active" | "rejected" | "offered" | "hired" | "withdrawn" | undefined;
+  status?:
+    | "active"
+    | "rejected"
+    | "offered"
+    | "hired"
+    | "withdrawn"
+    | undefined;
 }
 
 export interface CandidateBasicUpdateInput {
@@ -286,7 +293,9 @@ export const candidateService = {
     const [offer] = await db
       .select()
       .from(offers)
-      .where(eq(offers.candidateId, id));
+      .where(
+        and(eq(offers.candidateId, id), eq(offers.jobId, candidate.jobId)),
+      );
 
     const [cvRow] = await db
       .select()
@@ -343,6 +352,8 @@ export const candidateService = {
       .where(eq(candidateInterviews.candidateId, id))
       .orderBy(desc(candidateInterviews.createdAt));
 
+    const activities = await candidateActivityService.getByCandidate(id);
+
     return {
       ...candidate,
       answers,
@@ -352,6 +363,7 @@ export const candidateService = {
       cvAnalysis,
       rejections,
       interviews,
+      activities,
     };
   },
 
@@ -382,10 +394,18 @@ export const candidateService = {
 
       if (!stage) throw new Error("Invalid stage for this job");
 
+      const nextStatus =
+        candidate.status === "rejected" || candidate.status === "hired"
+          ? candidate.status
+          : stage.stageType === "offer"
+            ? "offered"
+            : "active";
+
       const [updated] = await tx
         .update(candidates)
         .set({
           currentStageId: newStageId,
+          status: nextStatus,
           updatedAt: new Date(),
         })
         .where(eq(candidates.id, candidateId))
@@ -398,6 +418,48 @@ export const candidateService = {
         stageId: newStageId,
         movedBy,
       });
+
+      if (stage.stageType === "offer") {
+        const [existingOffer] = await tx
+          .select()
+          .from(offers)
+          .where(
+            and(
+              eq(offers.candidateId, candidateId),
+              eq(offers.jobId, candidate.jobId),
+            ),
+          )
+          .limit(1);
+
+        if (!existingOffer) {
+          if (!movedBy) {
+            throw new Error("Unable to auto-create offer without an actor");
+          }
+
+          const [createdOffer] = await tx
+            .insert(offers)
+            .values({
+              candidateId,
+              jobId: candidate.jobId,
+              status: "draft",
+              createdBy: movedBy,
+            })
+            .returning();
+
+          if (createdOffer) {
+            await candidateActivityService.create(
+              {
+                candidateId,
+                jobId: candidate.jobId,
+                offerId: createdOffer.id,
+                actorId: movedBy,
+                eventType: "offer_created",
+              },
+              tx,
+            );
+          }
+        }
+      }
 
       // Assessment automation
       const [attachment] = await tx

@@ -108,6 +108,7 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
               answers: [],
               selections: [],
               history: [],
+              activities: [],
               offer: null,
               rejections: [],
               interviews: [],

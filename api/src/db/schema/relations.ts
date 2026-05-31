@@ -28,6 +28,7 @@ import {
   candidateCvAnalysis,
 } from "./candidates";
 import { offers } from "./offers";
+import { candidateActivities } from "./candidate-activities";
 import {
   emailMessages,
   jobChatMessages,
@@ -61,6 +62,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   jobChatMessages: many(jobChatMessages),
   candidateChatMessages: many(candidateChatMessages),
   stageMoves: many(candidateStageHistory),
+  candidateActivities: many(candidateActivities),
 }));
 
 // templates
@@ -93,6 +95,7 @@ export const jobsRelations = relations(jobs, ({ one, many }) => ({
   offers: many(offers),
   chatMessages: many(jobChatMessages),
   cvAnalyses: many(candidateCvAnalysis),
+  candidateActivities: many(candidateActivities),
 }));
 
 export const jobSkillsRelations = relations(jobSkills, ({ one }) => ({
@@ -126,6 +129,7 @@ export const jobPipelineStagesRelations = relations(
     assessmentAttachments: many(jobAssessmentAttachments),
     rejections: many(candidateRejections),
     interviews: many(candidateInterviews),
+    activities: many(candidateActivities),
   }),
 );
 
@@ -236,6 +240,7 @@ export const candidatesRelations = relations(candidates, ({ one, many }) => ({
   chatMessages: many(candidateChatMessages),
   rejections: many(candidateRejections),
   interviews: many(candidateInterviews),
+  activities: many(candidateActivities),
 }));
 
 export const candidateStageHistoryRelations = relations(
@@ -347,7 +352,7 @@ export const candidateCvAnalysisRelations = relations(
 );
 
 // offers
-export const offersRelations = relations(offers, ({ one }) => ({
+export const offersRelations = relations(offers, ({ one, many }) => ({
   candidate: one(candidates, {
     fields: [offers.candidateId],
     references: [candidates.id],
@@ -364,7 +369,34 @@ export const offersRelations = relations(offers, ({ one }) => ({
     fields: [offers.createdBy],
     references: [users.id],
   }),
+  activities: many(candidateActivities),
 }));
+
+export const candidateActivitiesRelations = relations(
+  candidateActivities,
+  ({ one }) => ({
+    candidate: one(candidates, {
+      fields: [candidateActivities.candidateId],
+      references: [candidates.id],
+    }),
+    job: one(jobs, {
+      fields: [candidateActivities.jobId],
+      references: [jobs.id],
+    }),
+    offer: one(offers, {
+      fields: [candidateActivities.offerId],
+      references: [offers.id],
+    }),
+    stage: one(jobPipelineStages, {
+      fields: [candidateActivities.stageId],
+      references: [jobPipelineStages.id],
+    }),
+    actor: one(users, {
+      fields: [candidateActivities.actorId],
+      references: [users.id],
+    }),
+  }),
+);
 
 // communications
 export const emailMessagesRelations = relations(emailMessages, ({ one }) => ({

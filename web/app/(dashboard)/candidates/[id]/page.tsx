@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, use, useMemo } from "react";
+import { useEffect, useMemo, useState, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -12,7 +12,7 @@ import {
   CallIcon,
   Mail01Icon,
   SentIcon,
-  ArrowUpRight01Icon,
+  ArrowUpRight02Icon,
   Target01Icon,
   QuestionIcon,
   Clock01Icon,
@@ -73,17 +73,23 @@ import { usePipeline } from "@/hooks/queries/use-pipeline";
 import { useCandidateAssessments } from "@/hooks/queries/use-assessments";
 import {
   useUpdateOffer,
-  useUpdateOfferStatus,
+  useSendOffer,
+  useMarkOfferAsHired,
 } from "@/hooks/queries/use-offers";
-import { useRejectCandidate, useUnrejectCandidate } from "@/hooks/queries/use-candidates";
+import {
+  useRejectCandidate,
+  useUnrejectCandidate,
+} from "@/hooks/queries/use-candidates";
 import { useDeleteInterview } from "@/hooks/queries/use-interviews";
 import {
   useInterviewFeedback,
   useDeleteInterviewFeedback,
 } from "@/hooks/queries/use-interview-feedback";
 import { useTemplates } from "@/hooks/queries/use-templates";
+import { serverFetch } from "@/lib/auth-action";
 import { CandidateJobFitTab } from "@/components/dynamic-imports";
 import { InterviewSchedulerDialog } from "@/components/interview-scheduler-dialog";
+import { toast } from "sonner";
 
 function timeAgo(dateStr: string) {
   const diff = Date.now() - new Date(dateStr).getTime();
@@ -122,6 +128,11 @@ const OFFER_STATUS_STYLES: Record<
     text: "text-blue-600 dark:text-blue-400",
     dot: "bg-blue-500",
   },
+  viewed: {
+    bg: "bg-cyan-50 dark:bg-cyan-950/30",
+    text: "text-cyan-600 dark:text-cyan-400",
+    dot: "bg-cyan-500",
+  },
   accepted: {
     bg: "bg-green-50 dark:bg-green-950/30",
     text: "text-green-600 dark:text-green-400",
@@ -132,10 +143,10 @@ const OFFER_STATUS_STYLES: Record<
     text: "text-red-500 dark:text-red-400",
     dot: "bg-red-500",
   },
-  withdrawn: {
-    bg: "bg-slate-50 dark:bg-neutral-800",
-    text: "text-slate-500 dark:text-neutral-400",
-    dot: "bg-slate-400",
+  expired: {
+    bg: "bg-orange-50 dark:bg-orange-950/30",
+    text: "text-orange-600 dark:text-orange-400",
+    dot: "bg-orange-500",
   },
 };
 
@@ -400,16 +411,22 @@ export default function CandidateDetailPage({
   const [selectedStageId, setSelectedStageId] = useState("");
   const [isCvExpanded, setIsCvExpanded] = useState(false);
 
-  const [isEditingOffer, setIsEditingOffer] = useState(false);
   const [editSalary, setEditSalary] = useState("");
   const [editCurrency, setEditCurrency] = useState("USD");
-  const [editPayFreq, setEditPayFreq] = useState("monthly");
+  const [editEmploymentType, setEditEmploymentType] = useState<
+    "full_time" | "part_time" | "contract" | "internship" | "freelance"
+  >("full_time");
   const [editStartDate, setEditStartDate] = useState("");
-  const [editExpiryDate, setEditExpiryDate] = useState("");
+  const [editReportingManager, setEditReportingManager] = useState("");
+  const [editBenefits, setEditBenefits] = useState("");
+  const [editOfferLetterHtml, setEditOfferLetterHtml] = useState("");
+  const [offerTemplateId, setOfferTemplateId] = useState("");
+  const [isEditingOffer, setIsEditingOffer] = useState(false);
   const [editStatus, setEditStatus] = useState("draft");
 
   const updateOfferMutation = useUpdateOffer();
-  const updateOfferStatusMutation = useUpdateOfferStatus();
+  const sendOfferMutation = useSendOffer();
+  const markOfferAsHiredMutation = useMarkOfferAsHired();
   const moveStageMutation = useMoveCandidateStage();
 
   // Rejection
@@ -511,54 +528,94 @@ export default function CandidateDetailPage({
     setEmailBody("");
   };
 
-  const openOfferEdit = () => {
+  const syncOfferForm = () => {
     if (!offer) return;
     setEditSalary(offer.salary ? String(Number(offer.salary)) : "");
     setEditCurrency(offer.currency ?? "USD");
-    setEditPayFreq(offer.payFrequency ?? "monthly");
+    setEditEmploymentType(offer.employmentType ?? "full_time");
     setEditStartDate(offer.startDate ?? "");
-    setEditExpiryDate(offer.expiryDate ?? "");
+    setEditReportingManager(offer.reportingManager ?? "");
+    setEditBenefits(offer.benefits ?? "");
+    setEditOfferLetterHtml(offer.offerLetterHtml ?? "");
+    setOfferTemplateId(offer.templateId ? String(offer.templateId) : "");
     setEditStatus(offer.status ?? "draft");
+  };
+
+  const openOfferEdit = () => {
+    syncOfferForm();
     setIsEditingOffer(true);
   };
 
-  const saveOffer = () => {
+  const saveOfferDraft = () => {
     if (!offer) return;
-    const statusChanged = editStatus !== offer.status;
-    const newStatus = editStatus as
-      | "draft"
-      | "sent"
-      | "pending"
-      | "accepted"
-      | "declined"
-      | "withdrawn";
 
     updateOfferMutation.mutate(
       {
         offerId: offer.id,
         data: {
+          templateId: offerTemplateId ? Number(offerTemplateId) : null,
           salary: editSalary ? Number(editSalary) : null,
           currency: editCurrency || null,
-          payFrequency: editPayFreq as
-            | "hourly"
-            | "daily"
-            | "weekly"
-            | "monthly"
-            | "yearly",
+          employmentType: editEmploymentType,
           startDate: editStartDate || null,
-          expiryDate: editExpiryDate || null,
+          reportingManager: editReportingManager.trim() || null,
+          benefits: editBenefits.trim() || null,
+          offerLetterHtml: editOfferLetterHtml.trim() || null,
+          status: "draft",
         },
       },
       {
         onSuccess: () => {
-          if (statusChanged) {
-            updateOfferStatusMutation.mutate(
-              { id: offer.id, status: newStatus },
-              { onSuccess: () => setIsEditingOffer(false) },
-            );
-          } else {
-            setIsEditingOffer(false);
-          }
+          toast.success("Offer draft saved.");
+        },
+        onError: (error) => {
+          toast.error((error as Error).message || "Failed to save draft.");
+        },
+      },
+    );
+  };
+
+  const handleSendOffer = () => {
+    if (!offer) return;
+
+    if (
+      !editSalary ||
+      !editCurrency ||
+      !editEmploymentType ||
+      !editStartDate ||
+      !editReportingManager.trim() ||
+      !editBenefits.trim() ||
+      !editOfferLetterHtml.trim()
+    ) {
+      toast.error("Complete all required offer fields before sending.");
+      return;
+    }
+
+    updateOfferMutation.mutate(
+      {
+        offerId: offer.id,
+        data: {
+          templateId: offerTemplateId ? Number(offerTemplateId) : null,
+          salary: Number(editSalary),
+          currency: editCurrency,
+          employmentType: editEmploymentType,
+          startDate: editStartDate,
+          reportingManager: editReportingManager.trim(),
+          benefits: editBenefits.trim(),
+          offerLetterHtml: editOfferLetterHtml.trim(),
+        },
+      },
+      {
+        onSuccess: () => {
+          sendOfferMutation.mutate(offer.id, {
+            onSuccess: () => toast.success("Offer sent to candidate."),
+            onError: (error) => {
+              toast.error((error as Error).message || "Failed to send offer.");
+            },
+          });
+        },
+        onError: (error) => {
+          toast.error((error as Error).message || "Failed to update offer.");
         },
       },
     );
@@ -693,7 +750,7 @@ export default function CandidateDetailPage({
               <Button
                 size="sm"
                 disabled={!candidate.resumeUrl}
-                className="h-[34px] rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:bg-neutral-700 disabled:text-neutral-400 disabled:opacity-70"
+                className="h-[34px] rounded-md cursor-pointer border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:bg-neutral-700 disabled:text-neutral-400 disabled:opacity-70"
                 onClick={() => setIsCvExpanded(true)}
               >
                 <HugeiconsIcon icon={File01Icon} className="size-4" />
@@ -706,7 +763,7 @@ export default function CandidateDetailPage({
                   pipelineStages.length === 0 || moveStageMutation.isPending
                 }
               >
-                <SelectTrigger className="h-[34px] rounded-md border-none bg-neutral-100 px-4 text-[14px] font-semibold leading-none text-slate-700 shadow-none hover:bg-neutral-200 focus:ring-0 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
+                <SelectTrigger className="h-[40px] rounded-md border-none bg-neutral-100 px-4 text-[14px] font-semibold leading-none text-slate-700 shadow-none hover:bg-neutral-200 focus:ring-0 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
                   <SelectValue>{selectedStageName}</SelectValue>
                 </SelectTrigger>
                 <SelectContent className="rounded-xl border-slate-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
@@ -728,7 +785,7 @@ export default function CandidateDetailPage({
                     size="sm"
                     disabled={moveStageMutation.isPending}
                     onClick={() => setSelectedStageId("")}
-                    className="h-[34px] rounded-md border-none bg-neutral-700 px-3 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600"
+                    className="h-[34px] cursor-pointer rounded-md border-none bg-neutral-700 px-3 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600"
                   >
                     Cancel
                   </Button>
@@ -737,7 +794,7 @@ export default function CandidateDetailPage({
                     size="sm"
                     disabled={moveStageMutation.isPending}
                     onClick={saveStageChange}
-                    className="h-[34px] rounded-md border-none bg-[var(--theme-color)] px-3 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                    className="h-[34px] cursor-pointer rounded-md border-none bg-[var(--theme-color)] px-3 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
                   >
                     {moveStageMutation.isPending ? "Saving…" : "Save"}
                   </Button>
@@ -745,7 +802,7 @@ export default function CandidateDetailPage({
               )}
               <Button
                 size="sm"
-                className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                className="h-[34px] cursor-pointer rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
                 onClick={() => {
                   const back =
                     fromParam === "interviews"
@@ -761,7 +818,7 @@ export default function CandidateDetailPage({
               </Button>
               <Button
                 size="sm"
-                className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                className="h-[34px] cursor-pointer rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
                 onClick={openEditDialog}
               >
                 <HugeiconsIcon icon={PencilEdit01Icon} className="size-4" />
@@ -769,7 +826,7 @@ export default function CandidateDetailPage({
               </Button>
               <Button
                 size="sm"
-                className="h-[34px] rounded-md border-none bg-red-600 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500"
+                className="h-[34px] cursor-pointer rounded-md border-none bg-red-600 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500"
                 onClick={() => setDeleteTarget(true)}
               >
                 <HugeiconsIcon icon={Delete02Icon} className="size-4" />
@@ -1028,17 +1085,53 @@ export default function CandidateDetailPage({
                         An offer will appear here once the candidate reaches an
                         offer stage.
                       </p>
+                      {(() => {
+                        const currentStage = pipelineStages.find(
+                          (s) => s.id === candidate.currentStageId,
+                        );
+                        if (currentStage?.stageType === "offer") {
+                          return (
+                            <Button
+                              size="sm"
+                              onClick={() => {
+                                serverFetch("/offers", {
+                                  method: "POST",
+                                  body: JSON.stringify({
+                                    candidateId,
+                                    jobId: candidate.jobId,
+                                  }),
+                                })
+                                  .then(() => {
+                                    queryClient.invalidateQueries({
+                                      queryKey: ["candidates", candidateId],
+                                    });
+                                    toast.success("Offer draft created");
+                                  })
+                                  .catch(() =>
+                                    toast.error("Failed to create offer"),
+                                  );
+                              }}
+                              className="mt-4 h-8 rounded-md border-none bg-[var(--theme-color)] px-4 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                            >
+                              Generate Offer
+                            </Button>
+                          );
+                        }
+                        return null;
+                      })()}
                     </div>
                   ) : isEditingOffer ? (
                     <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
                       <div className="flex items-center justify-between mb-5">
-                        <div>
+                        <div className="flex items-center gap-3">
                           <p className="text-[15px] font-bold text-slate-800 dark:text-neutral-200">
                             Edit Offer
                           </p>
-                          <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-0.5">
-                            Modify compensation and details
-                          </p>
+                          <Badge
+                            className={`${offerStyle?.bg} ${offerStyle?.text} border-none shadow-none font-bold px-2.5 py-0.5 rounded-md text-[11px] uppercase tracking-wider`}
+                          >
+                            {offer?.status ?? "draft"}
+                          </Badge>
                         </div>
                         <div className="flex items-center gap-2">
                           <Button
@@ -1050,13 +1143,13 @@ export default function CandidateDetailPage({
                           </Button>
                           <Button
                             size="sm"
-                            onClick={saveOffer}
+                            onClick={saveOfferDraft}
                             disabled={updateOfferMutation.isPending}
-                            className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
+                            className="h-8 rounded-md border-none bg-[var(--theme-color)] px-4 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
                           >
                             {updateOfferMutation.isPending
                               ? "Saving…"
-                              : "Save Changes"}
+                              : "Save Draft"}
                           </Button>
                         </div>
                       </div>
@@ -1064,30 +1157,26 @@ export default function CandidateDetailPage({
                       <div className="space-y-4">
                         <div className="space-y-1.5">
                           <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
-                            Status
+                            Template
                           </Label>
                           <Select
-                            value={editStatus}
-                            onValueChange={(v) => setEditStatus(v ?? "")}
+                            value={offerTemplateId}
+                            onValueChange={(v) => setOfferTemplateId(v ?? "")}
                           >
-                            <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
-                              <SelectValue />
+                            <SelectTrigger className="h-11 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[14px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                              <SelectValue placeholder="Select a template" />
                             </SelectTrigger>
                             <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                              {[
-                                "draft",
-                                "sent",
-                                "pending",
-                                "accepted",
-                                "declined",
-                                "withdrawn",
-                              ].map((s) => (
+                              <SelectItem value="" className="text-[13px]">
+                                No template
+                              </SelectItem>
+                              {emailTemplates.map((t) => (
                                 <SelectItem
-                                  key={s}
-                                  value={s}
-                                  className="text-[13px] capitalize"
+                                  key={t.id}
+                                  value={String(t.id)}
+                                  className="text-[13px]"
                                 >
-                                  {s}
+                                  {t.name}
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -1103,7 +1192,7 @@ export default function CandidateDetailPage({
                               value={editCurrency}
                               onValueChange={(v) => setEditCurrency(v ?? "")}
                             >
-                              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                              <SelectTrigger className="h-11 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[14px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
@@ -1123,29 +1212,33 @@ export default function CandidateDetailPage({
                           </div>
                           <div className="space-y-1.5">
                             <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
-                              Pay Frequency
+                              Employment Type
                             </Label>
                             <Select
-                              value={editPayFreq}
-                              onValueChange={(v) => setEditPayFreq(v ?? "")}
+                              value={editEmploymentType}
+                              onValueChange={(v) =>
+                                setEditEmploymentType(
+                                  v as typeof editEmploymentType,
+                                )
+                              }
                             >
-                              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                              <SelectTrigger className="h-11 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[14px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
                                 <SelectValue />
                               </SelectTrigger>
                               <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                                 {[
-                                  "hourly",
-                                  "daily",
-                                  "weekly",
-                                  "monthly",
-                                  "yearly",
-                                ].map((f) => (
+                                  "full_time",
+                                  "part_time",
+                                  "contract",
+                                  "internship",
+                                  "freelance",
+                                ].map((e) => (
                                   <SelectItem
-                                    key={f}
-                                    value={f}
+                                    key={e}
+                                    value={e}
                                     className="text-[13px] capitalize"
                                   >
-                                    {f}
+                                    {e.replace("_", "-")}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -1153,7 +1246,7 @@ export default function CandidateDetailPage({
                           </div>
                         </div>
 
-                        <div className="space-y-1.5">
+                        <div className="space-y-1.5 mt-4">
                           <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
                             Salary
                           </Label>
@@ -1163,7 +1256,7 @@ export default function CandidateDetailPage({
                             value={editSalary}
                             onChange={(e) => setEditSalary(e.target.value)}
                             placeholder="e.g. 75000"
-                            className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
+                            className="h-11 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[14px] focus:ring-0 focus:border-[var(--theme-color)] rounded-lg"
                           />
                         </div>
 
@@ -1176,22 +1269,80 @@ export default function CandidateDetailPage({
                               type="date"
                               value={editStartDate}
                               onChange={(e) => setEditStartDate(e.target.value)}
-                              className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
+                              className="h-11 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[14px] focus:ring-0 focus:border-[var(--theme-color)] rounded-lg"
                             />
                           </div>
+
                           <div className="space-y-1.5">
                             <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
-                              Expiry Date
+                              Reporting Manager
                             </Label>
                             <Input
-                              type="date"
-                              value={editExpiryDate}
+                              value={editReportingManager}
                               onChange={(e) =>
-                                setEditExpiryDate(e.target.value)
+                                setEditReportingManager(e.target.value)
                               }
-                              className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus-visible:ring-0 focus-visible:border-[var(--theme-color)] rounded-lg"
+                              placeholder="e.g. Jane Smith"
+                              className="h-11 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[14px] focus:ring-0 focus:border-[var(--theme-color)] rounded-lg"
                             />
                           </div>
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                            Benefits
+                          </Label>
+                          <textarea
+                            value={editBenefits}
+                            onChange={(e) => setEditBenefits(e.target.value)}
+                            placeholder="e.g. Health insurance, 401k matching, 20 PTO days..."
+                            className="min-h-[100px] w-full rounded-lg border border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 px-3 py-2.5 text-[14px] shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)]"
+                          />
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                              Offer Letter (HTML)
+                            </Label>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (offerTemplateId) {
+                                  serverFetch<{
+                                    data: { subject: string; html: string };
+                                  }>(`/templates/${offerTemplateId}/preview`, {
+                                    method: "POST",
+                                    body: JSON.stringify({ candidateId }),
+                                  })
+                                    .then((res) => {
+                                      setEditOfferLetterHtml(res.data.html);
+                                      toast.success(
+                                        "Template rendered into editor",
+                                      );
+                                    })
+                                    .catch(() =>
+                                      toast.error("Failed to render template"),
+                                    );
+                                } else {
+                                  toast.error(
+                                    "Select a template first to generate",
+                                  );
+                                }
+                              }}
+                              className="text-[11px] font-semibold text-[var(--theme-color)] hover:underline"
+                            >
+                              Generate from template
+                            </button>
+                          </div>
+                          <textarea
+                            value={editOfferLetterHtml}
+                            onChange={(e) =>
+                              setEditOfferLetterHtml(e.target.value)
+                            }
+                            placeholder="<p>Dear candidate...</p>"
+                            className="min-h-[180px] w-full rounded-lg border border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 px-3 py-2.5 text-[14px] font-mono shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)]"
+                          />
                         </div>
 
                         {updateOfferMutation.isError && (
@@ -1221,48 +1372,59 @@ export default function CandidateDetailPage({
                           </div>
                           <div className="flex items-center gap-2">
                             {offer.status === "draft" && (
-                              <Button
-                                size="sm"
-                                disabled={updateOfferStatusMutation.isPending}
-                                onClick={() =>
-                                  updateOfferStatusMutation.mutate({
-                                    id: offer.id,
-                                    status: "sent",
-                                  })
-                                }
-                                className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
-                              >
-                                <HugeiconsIcon
-                                  icon={SentIcon}
-                                  className="size-3.5 rotate-[-45deg]"
-                                  strokeWidth={2.5}
-                                />
-                                {updateOfferStatusMutation.isPending
-                                  ? "Sending…"
-                                  : "Send Offer"}
-                              </Button>
+                              <>
+                                <Button
+                                  size="sm"
+                                  onClick={saveOfferDraft}
+                                  disabled={updateOfferMutation.isPending}
+                                  className="h-8 rounded-md border-none bg-neutral-700 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-600"
+                                >
+                                  {updateOfferMutation.isPending
+                                    ? "Saving…"
+                                    : "Save Draft"}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  disabled={
+                                    updateOfferMutation.isPending ||
+                                    sendOfferMutation.isPending
+                                  }
+                                  onClick={handleSendOffer}
+                                  className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
+                                >
+                                  <HugeiconsIcon
+                                    icon={SentIcon}
+                                    className="size-3.5 rotate-[-45deg]"
+                                    strokeWidth={2.5}
+                                  />
+                                  {sendOfferMutation.isPending
+                                    ? "Sending…"
+                                    : "Send Offer"}
+                                </Button>
+                              </>
                             )}
-                            {(offer.status === "sent" ||
-                              offer.status === "pending") && (
+                            {offer.status === "accepted" && (
                               <Button
                                 size="sm"
-                                disabled={updateOfferStatusMutation.isPending}
+                                disabled={markOfferAsHiredMutation.isPending}
                                 onClick={() =>
-                                  updateOfferStatusMutation.mutate({
-                                    id: offer.id,
-                                    status: "sent",
+                                  markOfferAsHiredMutation.mutate(offer.id, {
+                                    onSuccess: () =>
+                                      toast.success(
+                                        "Candidate marked as hired",
+                                      ),
+                                    onError: (err) =>
+                                      toast.error(
+                                        (err as Error).message ||
+                                          "Failed to mark as hired",
+                                      ),
                                   })
                                 }
-                                className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
+                                className="h-8 rounded-md border-none bg-emerald-600 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-emerald-500"
                               >
-                                <HugeiconsIcon
-                                  icon={SentIcon}
-                                  className="size-3.5 rotate-[-45deg]"
-                                  strokeWidth={2.5}
-                                />
-                                {updateOfferStatusMutation.isPending
-                                  ? "Resending…"
-                                  : "Resend"}
+                                {markOfferAsHiredMutation.isPending
+                                  ? "Marking…"
+                                  : "Mark as Hired"}
                               </Button>
                             )}
                             <Button
@@ -1284,7 +1446,13 @@ export default function CandidateDetailPage({
                             {
                               label: "Salary",
                               value: offer.salary
-                                ? `${offer.currency ?? ""} ${Number(offer.salary).toLocaleString()}${offer.payFrequency ? ` / ${offer.payFrequency}` : ""}`.trim()
+                                ? `${offer.currency ?? ""} ${Number(offer.salary).toLocaleString()}`.trim()
+                                : "—",
+                            },
+                            {
+                              label: "Employment Type",
+                              value: offer.employmentType
+                                ? offer.employmentType.replace("_", "-")
                                 : "—",
                             },
                             {
@@ -1292,15 +1460,39 @@ export default function CandidateDetailPage({
                               value: formatDate(offer.startDate),
                             },
                             {
-                              label: "Expiry Date",
-                              value: formatDate(offer.expiryDate),
+                              label: "Reporting Manager",
+                              value: offer.reportingManager || "—",
                             },
                             {
                               label: "Sent At",
                               value: offer.sentAt
-                                ? timeAgo(offer.sentAt)
+                                ? formatDate(offer.sentAt)
                                 : "Not sent yet",
                             },
+                            ...(offer.viewedAt
+                              ? [
+                                  {
+                                    label: "Viewed At",
+                                    value: formatDate(offer.viewedAt),
+                                  },
+                                ]
+                              : []),
+                            ...(offer.acceptedAt
+                              ? [
+                                  {
+                                    label: "Accepted At",
+                                    value: formatDate(offer.acceptedAt),
+                                  },
+                                ]
+                              : []),
+                            ...(offer.declinedAt
+                              ? [
+                                  {
+                                    label: "Declined At",
+                                    value: formatDate(offer.declinedAt),
+                                  },
+                                ]
+                              : []),
                           ].map(({ label, value }) => (
                             <div
                               key={label}
@@ -1315,9 +1507,22 @@ export default function CandidateDetailPage({
                             </div>
                           ))}
                         </div>
+                        {offer.benefits && (
+                          <>
+                            <Separator />
+                            <div className="px-5 py-4">
+                              <p className="text-[12px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-2">
+                                Benefits
+                              </p>
+                              <p className="text-[13px] text-slate-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
+                                {offer.benefits}
+                              </p>
+                            </div>
+                          </>
+                        )}
                       </div>
 
-                      {offer.renderedHtml && (
+                      {offer.offerLetterHtml && (
                         <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
                           <p className="text-[12px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
                             Offer Letter Preview
@@ -1325,7 +1530,7 @@ export default function CandidateDetailPage({
                           <div
                             className="text-[13px] text-slate-700 dark:text-neutral-300 leading-relaxed max-h-[340px] overflow-y-auto prose prose-sm w-full"
                             dangerouslySetInnerHTML={{
-                              __html: offer.renderedHtml,
+                              __html: offer.offerLetterHtml,
                             }}
                           />
                         </div>
@@ -1504,7 +1709,11 @@ export default function CandidateDetailPage({
                             </SelectTrigger>
                             <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                               {REJECTION_REASONS.map((reason) => (
-                                <SelectItem key={reason} value={reason} className="text-[13px]">
+                                <SelectItem
+                                  key={reason}
+                                  value={reason}
+                                  className="text-[13px]"
+                                >
                                   {reason}
                                 </SelectItem>
                               ))}
@@ -1518,7 +1727,9 @@ export default function CandidateDetailPage({
                           </Label>
                           <textarea
                             value={rejectInternalNote}
-                            onChange={(e) => setRejectInternalNote(e.target.value)}
+                            onChange={(e) =>
+                              setRejectInternalNote(e.target.value)
+                            }
                             placeholder="Visible to your team only"
                             className="min-h-[90px] w-full rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-[13px] text-slate-700 dark:text-neutral-300 shadow-none focus:outline-none focus:border-[var(--theme-color)]"
                           />
@@ -1541,14 +1752,20 @@ export default function CandidateDetailPage({
                             </Label>
                             <Select
                               value={rejectTemplateId}
-                              onValueChange={(v) => setRejectTemplateId(v ?? "")}
+                              onValueChange={(v) =>
+                                setRejectTemplateId(v ?? "")
+                              }
                             >
                               <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
                                 <SelectValue placeholder="Select template" />
                               </SelectTrigger>
                               <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                                 {emailTemplates.map((t) => (
-                                  <SelectItem key={t.id} value={String(t.id)} className="text-[13px]">
+                                  <SelectItem
+                                    key={t.id}
+                                    value={String(t.id)}
+                                    className="text-[13px]"
+                                  >
                                     {t.name}
                                   </SelectItem>
                                 ))}
@@ -1931,13 +2148,9 @@ export default function CandidateDetailPage({
                   href={candidate.resumeUrl}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white hover:bg-[var(--theme-color-hover)]"
+                  className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--theme-color)] px-3 text-[14px] font-semibold text-white hover:bg-[var(--theme-color-hover)]"
                 >
-                  <HugeiconsIcon
-                    icon={ArrowUpRight01Icon}
-                    className="size-3.5"
-                  />
-                  Open
+                  Open in New Tab
                 </a>
               )}
               <button

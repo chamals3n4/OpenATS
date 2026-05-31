@@ -43,10 +43,20 @@ export const offerMode = pgEnum("offer_mode", ["auto_draft", "auto_send"]);
 export const offerStatus = pgEnum("offer_status", [
   "draft",
   "sent",
-  "pending",
+  "viewed",
   "accepted",
   "declined",
-  "withdrawn",
+  "expired",
+]);
+
+export const candidateActivityType = pgEnum("candidate_activity_type", [
+  "offer_created",
+  "offer_updated",
+  "offer_sent",
+  "offer_viewed",
+  "offer_accepted",
+  "offer_declined",
+  "candidate_hired",
 ]);
 
 export const rejectionEmailStatus = pgEnum("rejection_email_status", [

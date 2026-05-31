@@ -73,8 +73,8 @@ const navMainData = [
         url: "/settings/general",
       },
       {
-        title: "Theme",
-        url: "/settings/theme",
+        title: "Profile",
+        url: "/settings/profile",
       },
       {
         title: "Careers Page",
@@ -89,12 +89,8 @@ const navMainData = [
         url: "/settings/user-management",
       },
       {
-        title: "Profile",
-        url: "/settings/profile",
-      },
-      {
-        title: "Archive",
-        url: "/settings/archive",
+        title: "Theme",
+        url: "/settings/theme",
       },
     ],
   },

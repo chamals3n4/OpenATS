@@ -76,7 +76,9 @@ router.get("/interview/:token", async (req, res) => {
     res.status(200).json({
       data: {
         ...iv,
-        candidateName: `${iv.candidateName.first} ${iv.candidateName.last}`,
+        candidateName: iv.candidateName
+          ? `${iv.candidateName.first} ${iv.candidateName.last}`
+          : "Unknown",
       },
     });
   } catch (e: any) {
@@ -107,13 +109,14 @@ router.patch("/interview/:token/select", async (req, res) => {
       res.status(400).json({ error: "Invalid slot" });
       return;
     }
-    slots[idx].selected = true;
+    const selectedSlot = slots[idx]!;
+    selectedSlot.selected = true;
     await db
       .update(candidateInterviews)
       .set({
         timeSlots: slots,
         status: "scheduled",
-        scheduledAt: new Date(slots[idx].datetime),
+        scheduledAt: new Date(selectedSlot.datetime),
         updatedAt: new Date(),
       })
       .where(eq(candidateInterviews.id, iv.id));

@@ -5,6 +5,7 @@ async function getAccessToken(): Promise<string | undefined> {
   try {
     const client = await asgardeo();
     const sessionId = await client.getSessionId();
+    if (!sessionId) return undefined;
     return await client.getAccessToken(sessionId);
   } catch {
     return undefined;

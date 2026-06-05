@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
+import type { InterviewListItem } from "@/types";
 
 export function useInterviews(filters?: Record<string, string | number>) {
   const params = new URLSearchParams();
@@ -14,7 +15,9 @@ export function useInterviews(filters?: Record<string, string | number>) {
   return useQuery({
     queryKey: ["interviews", filters],
     queryFn: () =>
-      serverFetch<{ data: unknown[] }>(`/interviews${qs ? `?${qs}` : ""}`),
+      serverFetch<{ data: InterviewListItem[] }>(
+        `/interviews${qs ? `?${qs}` : ""}`,
+      ),
     staleTime: 60_000,
     refetchOnMount: true,
     refetchOnWindowFocus: true,

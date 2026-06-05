@@ -15,7 +15,7 @@ export interface RejectInput {
   candidateId: number;
   jobId: number;
   fromStageId?: number | null;
-  reason: string;
+  reason?: string | null;
   internalNote?: string | null;
   templateId?: number | null;
   emailStatus: "not_sent" | "draft" | "sent";

@@ -44,8 +44,12 @@ const offerUpdateSchema = z.object({
   status: offerStatusSchema.optional(),
 });
 
-function parseId(value: string) {
-  const parsed = parseInt((value ?? "").toString(), 10);
+function paramStr(value: string | string[] | undefined) {
+  return (value ?? "").toString();
+}
+
+function parseId(value: string | string[] | undefined) {
+  const parsed = parseInt(paramStr(value), 10);
   return Number.isNaN(parsed) ? null : parsed;
 }
 
@@ -61,7 +65,7 @@ export const getAllOffers = async (_req: Request, res: Response) => {
 
 export const getAllOffersByJob = async (req: Request, res: Response) => {
   try {
-    const jobId = parseId(req.params.jobId ?? "");
+    const jobId = parseId(req.params.jobId);
     if (!jobId) {
       res.status(400).json({ error: "Invalid job ID" });
       return;
@@ -79,7 +83,7 @@ export const getAllOffersByJob = async (req: Request, res: Response) => {
 
 export const getOfferById = async (req: Request, res: Response) => {
   try {
-    const id = parseId(req.params.id ?? "");
+    const id = parseId(req.params.id);
     if (!id) {
       res.status(400).json({ error: "Invalid offer ID" });
       return;
@@ -123,7 +127,7 @@ export const createOffer = async (req: Request, res: Response) => {
 
 export const updateOffer = async (req: Request, res: Response) => {
   try {
-    const id = parseId(req.params.id ?? "");
+    const id = parseId(req.params.id);
     if (!id) {
       res.status(400).json({ error: "Invalid offer ID" });
       return;
@@ -153,7 +157,7 @@ export const updateOffer = async (req: Request, res: Response) => {
 
 export const sendOffer = async (req: Request, res: Response) => {
   try {
-    const id = parseId(req.params.id ?? "");
+    const id = parseId(req.params.id);
     if (!id) {
       res.status(400).json({ error: "Invalid offer ID" });
       return;
@@ -174,7 +178,7 @@ export const sendOffer = async (req: Request, res: Response) => {
 
 export const acceptOffer = async (req: Request, res: Response) => {
   try {
-    const id = parseId(req.params.id ?? "");
+    const id = parseId(req.params.id);
     if (!id) {
       res.status(400).json({ error: "Invalid offer ID" });
       return;
@@ -195,7 +199,7 @@ export const acceptOffer = async (req: Request, res: Response) => {
 
 export const declineOffer = async (req: Request, res: Response) => {
   try {
-    const id = parseId(req.params.id ?? "");
+    const id = parseId(req.params.id);
     if (!id) {
       res.status(400).json({ error: "Invalid offer ID" });
       return;
@@ -216,7 +220,7 @@ export const declineOffer = async (req: Request, res: Response) => {
 
 export const markCandidateHired = async (req: Request, res: Response) => {
   try {
-    const id = parseId(req.params.id ?? "");
+    const id = parseId(req.params.id);
     if (!id) {
       res.status(400).json({ error: "Invalid offer ID" });
       return;
@@ -237,7 +241,7 @@ export const markCandidateHired = async (req: Request, res: Response) => {
 
 export const getPublicOfferByToken = async (req: Request, res: Response) => {
   try {
-    const token = (req.params.token ?? "").trim();
+    const token = paramStr(req.params.token).trim();
     if (!token) {
       res.status(400).json({ error: "Invalid token" });
       return;
@@ -258,7 +262,7 @@ export const getPublicOfferByToken = async (req: Request, res: Response) => {
 
 export const acceptPublicOffer = async (req: Request, res: Response) => {
   try {
-    const token = (req.params.token ?? "").trim();
+    const token = paramStr(req.params.token).trim();
     if (!token) {
       res.status(400).json({ error: "Invalid token" });
       return;
@@ -279,7 +283,7 @@ export const acceptPublicOffer = async (req: Request, res: Response) => {
 
 export const declinePublicOffer = async (req: Request, res: Response) => {
   try {
-    const token = (req.params.token ?? "").trim();
+    const token = paramStr(req.params.token).trim();
     if (!token) {
       res.status(400).json({ error: "Invalid token" });
       return;

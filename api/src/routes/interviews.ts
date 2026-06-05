@@ -282,7 +282,9 @@ router.get("/public/interview/:token", async (req, res) => {
     res.status(200).json({
       data: {
         ...interview,
-        candidateName: `${interview.candidateName.first} ${interview.candidateName.last}`,
+        candidateName: interview.candidateName
+          ? `${interview.candidateName.first} ${interview.candidateName.last}`
+          : "Unknown",
       },
     });
   } catch (error: any) {
@@ -319,14 +321,15 @@ router.patch("/public/interview/:token/select", async (req, res) => {
       return;
     }
 
-    slots[slotIndex].selected = true;
+    const selectedSlot = slots[slotIndex]!;
+    selectedSlot.selected = true;
 
     await db
       .update(candidateInterviews)
       .set({
         timeSlots: slots,
         status: "scheduled",
-        scheduledAt: new Date(slots[slotIndex].datetime),
+        scheduledAt: new Date(selectedSlot.datetime),
         updatedAt: new Date(),
       })
       .where(eq(candidateInterviews.id, interview.id));
@@ -350,7 +353,7 @@ router.patch("/public/interview/:token/select", async (req, res) => {
             candidateName: `${candidate.firstName} ${candidate.lastName}`,
             jobTitle: "",
             stageName: "",
-            scheduledAt: new Date(slots[slotIndex].datetime),
+            scheduledAt: new Date(selectedSlot.datetime),
             durationMinutes: 60,
             notes: interview.bodyText ?? null,
             attendeeEmails: [candidate.email],
@@ -361,7 +364,7 @@ router.patch("/public/interview/:token/select", async (req, res) => {
       }
     }
 
-    res.status(200).json({ data: { confirmed: true, slot: slots[slotIndex] } });
+    res.status(200).json({ data: { confirmed: true, slot: selectedSlot } });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to confirm slot" });
   }

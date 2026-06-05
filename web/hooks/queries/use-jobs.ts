@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
-import type { Job, JobDetail, CustomQuestion } from "@/types";
+import type { Job, JobDetail, CustomQuestion, User } from "@/types";
 
 export function useJobs() {
   return useQuery({

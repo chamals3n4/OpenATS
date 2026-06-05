@@ -212,7 +212,7 @@ export function useRejectCandidate() {
       id: number;
       data: {
         templateId?: number | null;
-        reason: string;
+        reason?: string;
         internalNote?: string;
         emailStatus: "not_sent" | "sent";
       };

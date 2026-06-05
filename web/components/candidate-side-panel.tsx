@@ -26,6 +26,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { CandidateJobFitTab } from "@/components/candidate-job-fit-tab";
+import type { Offer } from "@/types";
 import {
   useCandidate,
   useRejectCandidate,
@@ -175,13 +176,7 @@ export function CandidateSidePanel({
   const saveOffer = () => {
     if (!offer) return;
     const statusChanged = editStatus !== offer.status;
-    const newStatus = editStatus as
-      | "draft"
-      | "sent"
-      | "pending"
-      | "accepted"
-      | "declined"
-      | "withdrawn";
+    const newStatus = editStatus as Offer["status"];
 
     updateOfferMutation.mutate(
       {
@@ -657,7 +652,7 @@ export function CandidateSidePanel({
                         : "Send Offer"}
                     </Button>
                   )}
-                  {(offer.status === "sent" || offer.status === "pending") && (
+                  {(offer.status === "sent" || offer.status === "viewed") && (
                     <Button
                       size="sm"
                       variant="outline"
@@ -704,7 +699,10 @@ export function CandidateSidePanel({
                       : "—",
                   },
                   { label: "Start Date", value: formatDate(offer.startDate) },
-                  { label: "Expiry Date", value: formatDate(offer.expiryDate) },
+                  {
+                    label: "Expiry Date",
+                    value: formatDate(offer.expiryDate ?? null),
+                  },
                   {
                     label: "Sent At",
                     value: offer.sentAt

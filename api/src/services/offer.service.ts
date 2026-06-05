@@ -103,10 +103,7 @@ async function renderTemplateHtml(
     throw new Error("Template not found");
   }
 
-  const context = await variableService.getContextForOffer(candidateId, {
-    ...offerData,
-    templateId,
-  });
+  const context = await variableService.getContextForOffer(candidateId, offerData);
 
   return templateEngineService.renderHTML(template.bodyJson, context);
 }

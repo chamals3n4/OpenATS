@@ -88,7 +88,7 @@ export default function InterviewsPage() {
   }, [search, departmentFilter]);
 
   const { data } = useInterviews(activeFilters);
-  const interviews = (data?.data ?? []).filter((iv: any) => {
+  const interviews = (data?.data ?? []).filter((iv) => {
     const matchesStatus = statusFilter === "all" || iv.status === statusFilter;
     return matchesStatus;
   });

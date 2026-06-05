@@ -172,7 +172,11 @@ export async function fetchPublicOffer(
     | { error?: string };
 
   if (!response.ok || !("data" in payload)) {
-    throw new Error(payload.error ?? "Failed to fetch offer");
+    const message =
+      "error" in payload && payload.error
+        ? payload.error
+        : "Failed to fetch offer";
+    throw new Error(message);
   }
 
   return payload.data;

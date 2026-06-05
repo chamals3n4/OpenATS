@@ -839,6 +839,7 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
               offer: null,
               rejections: [],
               interviews: [],
+              activities: [],
             } as CandidateDetail,
           };
         }

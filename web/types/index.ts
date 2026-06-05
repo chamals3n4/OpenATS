@@ -270,6 +270,13 @@ export type Offer = {
   status: "draft" | "sent" | "viewed" | "accepted" | "declined" | "expired";
   salary: number | string | null;
   currency: string | null;
+  payFrequency?:
+    | "hourly"
+    | "daily"
+    | "weekly"
+    | "monthly"
+    | "yearly"
+    | null;
   employmentType:
     | "full_time"
     | "part_time"
@@ -278,15 +285,41 @@ export type Offer = {
     | "freelance"
     | null;
   startDate: string | null;
+  expiryDate?: string | null;
   reportingManager: string | null;
   benefits: string | null;
   offerLetterHtml: string | null;
+  renderedHtml?: string | null;
   sentAt: string | null;
   viewedAt: string | null;
   acceptedAt: string | null;
   declinedAt: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type InterviewListItem = {
+  id: number;
+  candidateId: number;
+  stageId: number;
+  jobId: number;
+  scheduledAt: string | null;
+  durationMinutes: number | null;
+  notes: string | null;
+  outcome: "pending" | "pass" | "fail";
+  status: string | null;
+  eventName: string | null;
+  eventType: string | null;
+  meetingUrl: string | null;
+  bodyText: string | null;
+  createdBy: number | null;
+  createdAt: string;
+  updatedAt: string;
+  candidateName: string;
+  candidateEmail: string | null;
+  jobTitle: string | null;
+  stageName: string | null;
+  stageType: string | null;
 };
 
 export type CandidateActivity = {

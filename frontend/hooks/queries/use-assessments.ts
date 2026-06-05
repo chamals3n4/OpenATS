@@ -252,3 +252,49 @@ export function useInviteToAssessment() {
       }),
   });
 }
+
+export function useAttemptResults(attemptId: number, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["attempt-results", attemptId],
+    queryFn: () =>
+      serverFetch<{
+        data: {
+          attempt: {
+            id: number;
+            candidateId: number;
+            assessmentId: number;
+            status: string;
+            startedAt: string | null;
+            completedAt: string | null;
+            scoreRaw: number | null;
+            scoreTotal: number | null;
+            scorePercentage: number | null;
+            passed: boolean | null;
+            assessmentTitle: string;
+            assessmentDescription: string | null;
+            candidateName: string;
+            candidateEmail: string;
+          };
+          questions: {
+            id: number;
+            title: string;
+            description: string | null;
+            questionType: "single_choice" | "multiple_choice" | "text";
+            points: number;
+            position: number;
+            options: {
+              id: number;
+              label: string;
+              isCorrect: boolean;
+            }[];
+            answer: {
+              answerText: string | null;
+              selectedOptionIds: number[];
+              pointsEarned: number | null;
+            } | null;
+          }[];
+        };
+      }>(`/assessment-execution/attempts/${attemptId}/results`),
+    enabled: (options?.enabled ?? true) && !!attemptId,
+  });
+}

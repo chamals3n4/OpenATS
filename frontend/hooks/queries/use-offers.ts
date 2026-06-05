@@ -10,7 +10,7 @@ export function useOffers(jobId?: number) {
         jobId ? `/offers/job/${jobId}` : "/offers",
       ),
     enabled: jobId === undefined || !!jobId,
-    refetchInterval: 15_000,
+    refetchInterval: 10_000,
     refetchOnWindowFocus: true,
   });
 }
@@ -20,6 +20,7 @@ export function useOffer(id: number) {
     queryKey: ["offers", id],
     queryFn: () => serverFetch<{ data: Offer }>(`/offers/${id}`),
     enabled: !!id,
+    refetchInterval: 10_000,
   });
 }
 

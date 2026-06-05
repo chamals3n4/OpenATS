@@ -75,6 +75,7 @@ export function useCandidates(
     staleTime: 1000 * 60 * 2,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    refetchInterval: 10_000,
     refetchIntervalInBackground: false,
     // Keep showing the previous list while a fresh fetch is in flight so
     // there's no blank flash when navigating to the candidates section.
@@ -130,7 +131,10 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
     },
     refetchInterval: (query) => {
       const status = query.state.data?.data?.cvAnalysis?.status;
-      return enabled && (status === "pending" || status == null) ? 2500 : false;
+      if (enabled && (status === "pending" || status == null)) {
+        return 2500;
+      }
+      return enabled ? 10_000 : false;
     },
     refetchIntervalInBackground: false,
   });

@@ -412,4 +412,105 @@ export const assessmentExecutionService = {
       return completed;
     });
   },
+
+  async getAttemptResults(attemptId: number) {
+    const [attempt] = await db
+      .select({
+        id: candidateAssessmentAttempts.id,
+        candidateId: candidateAssessmentAttempts.candidateId,
+        assessmentId: candidateAssessmentAttempts.assessmentId,
+        status: candidateAssessmentAttempts.status,
+        startedAt: candidateAssessmentAttempts.startedAt,
+        completedAt: candidateAssessmentAttempts.completedAt,
+        scoreRaw: candidateAssessmentAttempts.scoreRaw,
+        scoreTotal: candidateAssessmentAttempts.scoreTotal,
+        scorePercentage: candidateAssessmentAttempts.scorePercentage,
+        passed: candidateAssessmentAttempts.passed,
+        assessmentTitle: assessments.title,
+        assessmentDescription: assessments.description,
+        candidateName: sql<string>`concat(${candidates.firstName}, ' ', ${candidates.lastName})`,
+        candidateEmail: candidates.email,
+      })
+      .from(candidateAssessmentAttempts)
+      .innerJoin(assessments, eq(candidateAssessmentAttempts.assessmentId, assessments.id))
+      .innerJoin(candidates, eq(candidateAssessmentAttempts.candidateId, candidates.id))
+      .where(eq(candidateAssessmentAttempts.id, attemptId));
+
+    if (!attempt) return null;
+
+    const questions = await db
+      .select()
+      .from(assessmentQuestions)
+      .where(eq(assessmentQuestions.assessmentId, attempt.assessmentId))
+      .orderBy(assessmentQuestions.position);
+
+    const options = await db
+      .select({
+        id: assessmentQuestionOptions.id,
+        questionId: assessmentQuestionOptions.questionId,
+        label: assessmentQuestionOptions.label,
+        isCorrect: assessmentQuestionOptions.isCorrect,
+        position: assessmentQuestionOptions.position,
+      })
+      .from(assessmentQuestionOptions)
+      .innerJoin(assessmentQuestions, eq(assessmentQuestionOptions.questionId, assessmentQuestions.id))
+      .where(eq(assessmentQuestions.assessmentId, attempt.assessmentId))
+      .orderBy(assessmentQuestionOptions.position);
+
+    const answers = await db
+      .select()
+      .from(candidateAssessmentAnswers)
+      .where(eq(candidateAssessmentAnswers.attemptId, attemptId));
+
+    const selections = await db
+      .select({
+        answerId: candidateAssessmentAnswerSelections.answerId,
+        optionId: candidateAssessmentAnswerSelections.optionId,
+      })
+      .from(candidateAssessmentAnswerSelections)
+      .innerJoin(
+        candidateAssessmentAnswers,
+        eq(candidateAssessmentAnswerSelections.answerId, candidateAssessmentAnswers.id)
+      )
+      .where(eq(candidateAssessmentAnswers.attemptId, attemptId));
+
+    const formattedQuestions = questions.map((q) => {
+      const qOptions = options
+        .filter((o) => o.questionId === q.id)
+        .map((o) => ({
+          id: o.id,
+          label: o.label,
+          isCorrect: o.isCorrect,
+        }));
+
+      const candAnswer = answers.find((ans) => ans.questionId === q.id);
+      const candSelections = candAnswer
+        ? selections
+            .filter((sel) => sel.answerId === candAnswer.id)
+            .map((sel) => sel.optionId)
+        : [];
+
+      return {
+        id: q.id,
+        title: q.title,
+        description: q.description,
+        questionType: q.questionType,
+        points: q.points,
+        position: q.position,
+        options: qOptions,
+        answer: candAnswer
+          ? {
+              answerText: candAnswer.answerText,
+              selectedOptionIds: candSelections,
+              pointsEarned: candAnswer.pointsEarned,
+            }
+          : null,
+      };
+    });
+
+    return {
+      attempt,
+      questions: formattedQuestions,
+    };
+  },
 };

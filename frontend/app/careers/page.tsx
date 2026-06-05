@@ -114,16 +114,6 @@ export default async function CareersIndexPage() {
             ))}
           </ul>
         )}
-
-        <div className="mt-24 pt-8 text-center flex items-center justify-center gap-2 w-full text-slate-500 dark:text-neutral-400 text-sm border-t border-slate-100 dark:border-neutral-800">
-          <span>Powered by</span>
-          <div className="flex items-center gap-1.5 font-bold text-slate-700 dark:text-neutral-200">
-            <div className="size-5 rounded-full bg-green-500 flex items-center justify-center">
-              <div className="size-2.5 border-2 border-white rounded-full bg-transparent" />
-            </div>
-            OpenATS
-          </div>
-        </div>
       </div>
     </div>
   );

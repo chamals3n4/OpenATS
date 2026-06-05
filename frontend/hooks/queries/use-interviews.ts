@@ -21,6 +21,7 @@ export function useInterviews(filters?: Record<string, string | number>) {
     staleTime: 60_000,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
+    refetchInterval: 10_000,
   });
 }
 

@@ -30,6 +30,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { toast } from "sonner";
 
 type QuestionType = "Multiple Choice" | "Short Answer" | "True/False";
 
@@ -100,7 +101,7 @@ export default function CreateAssessmentPage() {
 
   const handleSave = () => {
     if (!assessmentTitle.trim()) {
-      return alert("Assessment title is required.");
+      return toast.warning("Assessment title is required.");
     }
 
     try {
@@ -133,15 +134,15 @@ export default function CreateAssessmentPage() {
 
       createAssessment.mutate(payload, {
         onSuccess: () => {
-          alert("Assessment successfully created!");
+          toast.success("Assessment successfully created!");
           router.push("/assessments");
         },
         onError: (error: any) => {
-          alert(error.message || "Failed to create assessment");
+          toast.error(error.message || "Failed to create assessment");
         },
       });
     } catch (error: any) {
-      alert(error.message || "Failed to format assessment data");
+      toast.error(error.message || "Failed to format assessment data");
     }
   };
 
@@ -284,7 +285,9 @@ export default function CreateAssessmentPage() {
             {createAssessment.isPending && (
               <Loader2 className="size-4 animate-spin mr-1" />
             )}
-            {createAssessment.isPending ? "Saving..." : "Save Assessment"}
+            {createAssessment.isPending
+              ? "Saving Assessment"
+              : "Save Assessment"}
           </Button>
           <Link href="/assessments">
             <Button

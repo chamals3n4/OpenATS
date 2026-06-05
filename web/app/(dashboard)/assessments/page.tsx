@@ -112,7 +112,7 @@ export default function AssessmentsPage() {
     deleteAssessment.mutate(deleteTarget.id, {
       onSuccess: () => setDeleteTarget(null),
       onError: (error: any) => {
-        alert(error.message || "Failed to delete assessment");
+        toast.error(error.message || "Failed to delete assessment");
         setDeleteTarget(null);
       },
     });
@@ -372,7 +372,7 @@ export default function AssessmentsPage() {
               {deleteAssessment.isPending && (
                 <Loader2 className="size-3.5 mr-1.5 animate-spin" />
               )}
-              {deleteAssessment.isPending ? "Deleting..." : "Delete"}
+              {deleteAssessment.isPending ? "Deleting" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

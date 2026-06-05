@@ -10,6 +10,7 @@ const isPublicRoute = createRouteMatcher([
   "/careers/*",
   "/assessment/*",
   "/interview/*",
+  "/offer/*",
   "/api/public/*",
 ]);
 

@@ -87,14 +87,14 @@ npm install -g pnpm
 Frontend:
 
 ```bash
-cd web
+cd frontend
 pnpm install
 ```
 
 Backend:
 
 ```bash
-cd api
+cd backend
 pnpm install
 ```
 
@@ -102,19 +102,19 @@ pnpm install
 
 ### 1. Setup environment variables
 
-Inside `web`, copy the example env file:
+Inside `frontend`, copy the example env file:
 
 ```bash
-cd web
+cd frontend
 cp .env.example .env
 ```
 
 Then open `.env` and fill in the required values.
 
-Inside `api`, copy the example env file:
+Inside `backend`, copy the example env file:
 
 ```bash
-cd api
+cd backend
 cp .env.example .env
 ```
 
@@ -150,7 +150,7 @@ You only need to do steps 2 and 3 **once** when setting up for the first time.
 ### Frontend
 
 ```bash
-cd web
+cd frontend
 pnpm dev
 ```
 
@@ -159,7 +159,7 @@ Open `http://localhost:3000`
 ### Backend
 
 ```bash
-cd apps/api
+cd backend
 pnpm dev
 ```
 

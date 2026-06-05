@@ -21,6 +21,7 @@
     "dotenv": "^17.2.4",
     "drizzle-orm": "^0.45.1",
     "express": "^5.2.1",
+    "googleapis": "^173.0.0",
     "helmet": "^8.1.0",
     "jose": "^6.2.0",
     "morgan": "^1.10.1",

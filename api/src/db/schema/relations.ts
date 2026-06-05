@@ -28,11 +28,15 @@ import {
   candidateCvAnalysis,
 } from "./candidates";
 import { offers } from "./offers";
+import { candidateActivities } from "./candidate-activities";
 import {
   emailMessages,
   jobChatMessages,
   candidateChatMessages,
 } from "./communications";
+import { candidateRejections } from "./rejections";
+import { candidateInterviews } from "./interviews";
+import { interviewFeedback } from "./interview-feedback";
 
 // company
 export const companyRelations = relations(company, ({ many }) => ({
@@ -58,6 +62,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   jobChatMessages: many(jobChatMessages),
   candidateChatMessages: many(candidateChatMessages),
   stageMoves: many(candidateStageHistory),
+  candidateActivities: many(candidateActivities),
 }));
 
 // templates
@@ -66,10 +71,7 @@ export const templatesRelations = relations(templates, ({ one, many }) => ({
     fields: [templates.createdBy],
     references: [users.id],
   }),
-  offerStages: many(jobPipelineStages, { relationName: "offerTemplate" }),
-  rejectionStages: many(jobPipelineStages, {
-    relationName: "rejectionTemplate",
-  }),
+  rejectionRecords: many(candidateRejections),
   offers: many(offers),
   emailMessages: many(emailMessages),
 }));
@@ -93,6 +95,7 @@ export const jobsRelations = relations(jobs, ({ one, many }) => ({
   offers: many(offers),
   chatMessages: many(jobChatMessages),
   cvAnalyses: many(candidateCvAnalysis),
+  candidateActivities: many(candidateActivities),
 }));
 
 export const jobSkillsRelations = relations(jobSkills, ({ one }) => ({
@@ -117,16 +120,6 @@ export const jobPipelineStagesRelations = relations(
       fields: [jobPipelineStages.jobId],
       references: [jobs.id],
     }),
-    offerTemplate: one(templates, {
-      fields: [jobPipelineStages.offerTemplateId],
-      references: [templates.id],
-      relationName: "offerTemplate",
-    }),
-    rejectionTemplate: one(templates, {
-      fields: [jobPipelineStages.rejectionTemplateId],
-      references: [templates.id],
-      relationName: "rejectionTemplate",
-    }),
     sourceTemplate: one(pipelineStageTemplates, {
       fields: [jobPipelineStages.sourceTemplateId],
       references: [pipelineStageTemplates.id],
@@ -134,6 +127,9 @@ export const jobPipelineStagesRelations = relations(
     candidates: many(candidates),
     stageHistory: many(candidateStageHistory),
     assessmentAttachments: many(jobAssessmentAttachments),
+    rejections: many(candidateRejections),
+    interviews: many(candidateInterviews),
+    activities: many(candidateActivities),
   }),
 );
 
@@ -242,6 +238,9 @@ export const candidatesRelations = relations(candidates, ({ one, many }) => ({
   offers: many(offers),
   emailMessages: many(emailMessages),
   chatMessages: many(candidateChatMessages),
+  rejections: many(candidateRejections),
+  interviews: many(candidateInterviews),
+  activities: many(candidateActivities),
 }));
 
 export const candidateStageHistoryRelations = relations(
@@ -353,7 +352,7 @@ export const candidateCvAnalysisRelations = relations(
 );
 
 // offers
-export const offersRelations = relations(offers, ({ one }) => ({
+export const offersRelations = relations(offers, ({ one, many }) => ({
   candidate: one(candidates, {
     fields: [offers.candidateId],
     references: [candidates.id],
@@ -370,7 +369,34 @@ export const offersRelations = relations(offers, ({ one }) => ({
     fields: [offers.createdBy],
     references: [users.id],
   }),
+  activities: many(candidateActivities),
 }));
+
+export const candidateActivitiesRelations = relations(
+  candidateActivities,
+  ({ one }) => ({
+    candidate: one(candidates, {
+      fields: [candidateActivities.candidateId],
+      references: [candidates.id],
+    }),
+    job: one(jobs, {
+      fields: [candidateActivities.jobId],
+      references: [jobs.id],
+    }),
+    offer: one(offers, {
+      fields: [candidateActivities.offerId],
+      references: [offers.id],
+    }),
+    stage: one(jobPipelineStages, {
+      fields: [candidateActivities.stageId],
+      references: [jobPipelineStages.id],
+    }),
+    actor: one(users, {
+      fields: [candidateActivities.actorId],
+      references: [users.id],
+    }),
+  }),
+);
 
 // communications
 export const emailMessagesRelations = relations(emailMessages, ({ one }) => ({
@@ -422,6 +448,72 @@ export const candidateChatMessagesRelations = relations(
       fields: [candidateChatMessages.replyToId],
       references: [candidateChatMessages.id],
       relationName: "replies",
+    }),
+  }),
+);
+
+// rejections
+export const candidateRejectionsRelations = relations(
+  candidateRejections,
+  ({ one }) => ({
+    candidate: one(candidates, {
+      fields: [candidateRejections.candidateId],
+      references: [candidates.id],
+    }),
+    job: one(jobs, {
+      fields: [candidateRejections.jobId],
+      references: [jobs.id],
+    }),
+    fromStage: one(jobPipelineStages, {
+      fields: [candidateRejections.fromStageId],
+      references: [jobPipelineStages.id],
+    }),
+    rejectedBy: one(users, {
+      fields: [candidateRejections.rejectedBy],
+      references: [users.id],
+    }),
+    template: one(templates, {
+      fields: [candidateRejections.templateId],
+      references: [templates.id],
+    }),
+  }),
+);
+
+// interviews
+export const candidateInterviewsRelations = relations(
+  candidateInterviews,
+  ({ one, many }) => ({
+    candidate: one(candidates, {
+      fields: [candidateInterviews.candidateId],
+      references: [candidates.id],
+    }),
+    stage: one(jobPipelineStages, {
+      fields: [candidateInterviews.stageId],
+      references: [jobPipelineStages.id],
+    }),
+    job: one(jobs, {
+      fields: [candidateInterviews.jobId],
+      references: [jobs.id],
+    }),
+    createdBy: one(users, {
+      fields: [candidateInterviews.createdBy],
+      references: [users.id],
+    }),
+    feedback: many(interviewFeedback),
+  }),
+);
+
+// interview feedback
+export const interviewFeedbackRelations = relations(
+  interviewFeedback,
+  ({ one }) => ({
+    interview: one(candidateInterviews, {
+      fields: [interviewFeedback.interviewId],
+      references: [candidateInterviews.id],
+    }),
+    author: one(users, {
+      fields: [interviewFeedback.authorId],
+      references: [users.id],
     }),
   }),
 );

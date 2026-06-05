@@ -1,0 +1,1 @@
+ALTER TABLE "candidate_rejections" ADD COLUMN "internal_note" text;

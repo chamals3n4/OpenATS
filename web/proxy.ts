@@ -1,7 +1,7 @@
 import {
   asgardeoMiddleware,
   createRouteMatcher,
-} from "@asgardeo/nextjs/server";
+} from "@asgardeo/nextjs/middleware";
 import { NextResponse } from "next/server";
 
 const isPublicRoute = createRouteMatcher([
@@ -9,6 +9,7 @@ const isPublicRoute = createRouteMatcher([
   "/careers",
   "/careers/*",
   "/assessment/*",
+  "/interview/*",
   "/api/public/*",
 ]);
 

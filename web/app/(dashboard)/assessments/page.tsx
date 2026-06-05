@@ -112,7 +112,7 @@ export default function AssessmentsPage() {
     deleteAssessment.mutate(deleteTarget.id, {
       onSuccess: () => setDeleteTarget(null),
       onError: (error: any) => {
-        alert(error.message || "Failed to delete assessment");
+        toast.error(error.message || "Failed to delete assessment");
         setDeleteTarget(null);
       },
     });
@@ -147,7 +147,7 @@ export default function AssessmentsPage() {
           />
           <Input
             placeholder="Search assessments…"
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color] duration-200 ease-in-out"
+            className="pl-11 h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
           />
         </div>
       </div>
@@ -372,7 +372,7 @@ export default function AssessmentsPage() {
               {deleteAssessment.isPending && (
                 <Loader2 className="size-3.5 mr-1.5 animate-spin" />
               )}
-              {deleteAssessment.isPending ? "Deleting..." : "Delete"}
+              {deleteAssessment.isPending ? "Deleting" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

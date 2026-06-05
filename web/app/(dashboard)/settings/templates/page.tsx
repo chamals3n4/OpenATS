@@ -1,17 +1,13 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import Link from "next/link";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import {
   Search01Icon,
   PlusSignIcon,
+  Delete02Icon,
   ArrowLeft01Icon,
   ArrowRight01Icon,
-  MoreVerticalIcon,
-  PencilEdit01Icon,
-  Copy01Icon,
-  Delete02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -58,99 +54,18 @@ import {
 } from "@/hooks/queries/use-templates";
 import type { Template } from "@/types";
 
-type TemplateType = "offer" | "rejection" | "assessment" | "general";
+type TemplateType = "email" | "event";
 
 const TYPE_META: Record<TemplateType, { label: string; badge: string }> = {
-  offer: {
-    label: "Offer Letter",
-    badge: "bg-emerald-50 text-emerald-700 border border-emerald-200",
-  },
-  rejection: {
-    label: "Rejection",
-    badge: "bg-red-50 text-red-600 border border-red-200",
-  },
-  assessment: {
-    label: "Assessment Invite",
+  email: {
+    label: "Email",
     badge: "bg-blue-50 text-blue-700 border border-blue-200",
   },
-  general: {
-    label: "General",
-    badge: "bg-slate-100 text-slate-600 border border-slate-200",
+  event: {
+    label: "Interview Event",
+    badge: "bg-purple-50 text-purple-700 border border-purple-200",
   },
 };
-
-function RowMenu({
-  onEdit,
-  onDuplicate,
-  onDelete,
-}: {
-  onEdit(): void;
-  onDuplicate(): void;
-  onDelete(): void;
-}) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const fn = (e: MouseEvent) => {
-      if (!ref.current?.contains(e.target as Node)) setOpen(false);
-    };
-    document.addEventListener("mousedown", fn);
-    return () => document.removeEventListener("mousedown", fn);
-  }, [open]);
-
-  return (
-    <div ref={ref} className="relative flex justify-end">
-      <button
-        onClick={() => setOpen((o) => !o)}
-        className="p-1.5 rounded-md text-[var(--theme-color)]/50 hover:text-[var(--theme-color)] hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
-      >
-        <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" />
-      </button>
-      {open && (
-        <div className="absolute right-0 top-8 z-50 w-44 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-lg shadow-lg py-1 text-sm">
-          <button
-            onClick={() => {
-              setOpen(false);
-              onEdit();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800"
-          >
-            <HugeiconsIcon
-              icon={PencilEdit01Icon}
-              className="size-4 text-slate-400"
-            />{" "}
-            Edit
-          </button>
-          <button
-            onClick={() => {
-              setOpen(false);
-              onDuplicate();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-slate-700 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800"
-          >
-            <HugeiconsIcon
-              icon={Copy01Icon}
-              className="size-4 text-slate-400"
-            />{" "}
-            Duplicate
-          </button>
-          <div className="border-t border-slate-100 dark:border-neutral-800 my-1" />
-          <button
-            onClick={() => {
-              setOpen(false);
-              onDelete();
-            }}
-            className="w-full flex items-center gap-3 px-4 py-2.5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
-          >
-            <HugeiconsIcon icon={Delete02Icon} className="size-4" /> Delete
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 export default function TemplatesPage() {
   const router = useRouter();
@@ -225,7 +140,7 @@ export default function TemplatesPage() {
             placeholder="Search templates..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-11 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 focus-visible:border-slate-300 dark:focus-visible:border-neutral-700 focus-visible:ring-0"
+            className="pl-11 h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
           />
         </div>
 
@@ -233,15 +148,13 @@ export default function TemplatesPage() {
           value={filterType}
           onValueChange={(val) => setFilterType(val || "")}
         >
-          <SelectTrigger className="w-48 h-10! bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-48 h-10! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
             <SelectValue placeholder="All Types" />
           </SelectTrigger>
           <SelectContent className="rounded-lg w-49 shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Types</SelectItem>
-            <SelectItem value="offer">Offer Letter</SelectItem>
-            <SelectItem value="rejection">Rejection</SelectItem>
-            <SelectItem value="assessment">Assessment Invite</SelectItem>
-            <SelectItem value="general">General</SelectItem>
+            <SelectItem value="email">Email</SelectItem>
+            <SelectItem value="event">Interview Event</SelectItem>
           </SelectContent>
         </Select>
 
@@ -276,7 +189,9 @@ export default function TemplatesPage() {
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Last Edited
                 </TableHead>
-                <TableHead className="h-13 px-4" />
+                <TableHead className="h-13 px-4 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -299,38 +214,59 @@ export default function TemplatesPage() {
                 filtered.map((t) => (
                   <TableRow
                     key={t.id}
-                    className="border-b border-slate-200 dark:border-neutral-800 last:border-0 font-medium hover:bg-slate-50/50 dark:hover:bg-neutral-900/50"
+                    onClick={() =>
+                      router.push(`/settings/templates/${t.id}/edit`)
+                    }
+                    className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50/50 dark:hover:bg-neutral-900/50"
                   >
-                    <TableCell className="h-14 px-8 py-0">
-                      <Link
-                        href={`/settings/templates/${t.id}/edit`}
-                        className="text-[var(--theme-color)] font-medium hover:underline decoration-1 underline-offset-4"
-                      >
+                    <TableCell className="h-13 px-8 py-0">
+                      <span className="text-slate-700 dark:text-neutral-300 font-medium">
                         {t.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell className="h-14 px-8 py-0">
-                      <span
-                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${TYPE_META[t.type as TemplateType].badge}`}
-                      >
-                        {TYPE_META[t.type as TemplateType].label}
                       </span>
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-[var(--theme-color)] font-normal">
-                      {/* You'd display the real createdBy name here, hardcoded user ID 1 for now if needed */}
+                    <TableCell className="h-13 px-8 py-0">
+                      <span
+                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${(TYPE_META[t.type as TemplateType] ?? { badge: "bg-slate-100 text-slate-600 border border-slate-200" }).badge}`}
+                      >
+                        {
+                          (
+                            TYPE_META[t.type as TemplateType] ?? {
+                              label: "Unknown",
+                            }
+                          ).label
+                        }
+                      </span>
+                    </TableCell>
+                    <TableCell className="h-13 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
                       System
                     </TableCell>
-                    <TableCell className="h-14 px-8 py-0 text-[var(--theme-color)] font-normal">
+                    <TableCell className="h-13 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
                       {new Date(t.updatedAt).toLocaleDateString()}
                     </TableCell>
-                    <TableCell className="h-14 px-4 py-0">
-                      <RowMenu
-                        onEdit={() =>
-                          router.push(`/settings/templates/${t.id}/edit`)
-                        }
-                        onDuplicate={() => handleDuplicate(t)}
-                        onDelete={() => setDeleteId(t.id)}
-                      />
+                    <TableCell
+                      className="h-13 px-4 py-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          className="h-9 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
+                          onClick={() => handleDuplicate(t)}
+                        >
+                          Duplicate
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-[34px] rounded-md border-none bg-red-500 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
+                          onClick={() => setDeleteId(t.id)}
+                        >
+                          <HugeiconsIcon
+                            icon={Delete02Icon}
+                            className="size-3.5 mr-1"
+                          />
+                          Delete
+                        </Button>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))
@@ -371,9 +307,7 @@ export default function TemplatesPage() {
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-3 mt-5">
-            {(
-              ["offer", "rejection", "assessment", "general"] as TemplateType[]
-            ).map((t) => (
+            {(["email", "event"] as TemplateType[]).map((t) => (
               <button
                 key={t}
                 onClick={() => setPickedType(t)}
@@ -389,11 +323,9 @@ export default function TemplatesPage() {
                   {TYPE_META[t].label}
                 </span>
                 <span className="text-[12px] text-slate-500 dark:text-neutral-400 leading-snug">
-                  {t === "offer" && "Offer letters with salary & start date"}
-                  {t === "rejection" &&
-                    "Notify candidates who weren't selected"}
-                  {t === "assessment" && "Send quiz or assessment invitations"}
-                  {t === "general" && "Any other candidate communication"}
+                  {t === "email" && "Send emails to candidates"}
+                  {t === "event" &&
+                    "Interview scheduling with time slots & calendar sync"}
                 </span>
               </button>
             ))}

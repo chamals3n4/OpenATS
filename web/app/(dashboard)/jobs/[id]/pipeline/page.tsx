@@ -2,18 +2,13 @@
 
 import { useState, useEffect, useRef, useMemo } from "react";
 import type { Ref } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useDrag, useDrop, useDragLayer } from "react-dnd";
 import { getEmptyImage } from "react-dnd-html5-backend";
 import { ArrowLeft, GripVertical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
-import { Sheet, SheetContent } from "@/components/ui/sheet";
-import {
-  ResumeScrollView,
-  CandidateSidePanel,
-} from "@/components/dynamic-imports";
 import { toast } from "sonner";
 import { useJob } from "@/hooks/queries/use-jobs";
 import { usePipeline } from "@/hooks/queries/use-pipeline";
@@ -33,33 +28,12 @@ function showStageAutomationToasts(automation: StageAutomationFlags) {
   } else if (automation.assessmentInvite === "sent") {
     toast.success("Assessment invite sent.");
   }
-
-  if (automation.offer === "skipped_open_exists") {
-    toast.message("Offer", {
-      description:
-        "This candidate already has an open offer — no duplicate was created.",
-    });
-  } else if (automation.offer === "created") {
-    toast.success("Offer created.");
-  }
-
-  if (automation.rejectionEmail === "skipped_already_sent") {
-    toast.message("Rejection", {
-      description:
-        "A rejection notice was already sent for this application — not sent again.",
-    });
-  } else if (automation.rejectionEmail === "sent") {
-    toast.success("Rejection email sent.");
-  }
 }
 
 const STAGE_COLORS: Record<PipelineStage["stageType"], string> = {
-  none: "#94a3b8",
-  source: "#60a5fa",
-  assessment: "#a78bfa",
+  screening: "#d97706",
   interview: "#3b82f6",
   offer: "#22c55e",
-  rejection: "#ef4444",
 };
 
 const EMPLOYMENT_LABELS: Record<string, string> = {
@@ -302,21 +276,19 @@ export default function HiringPipelinePage() {
   const { data: candidatesData, refetch } = useCandidates(jobId);
   const moveStageMutation = useMoveCandidateStage();
 
+  const router = useRouter();
+
   const job = jobData?.data;
   const pipelineStages = pipelineData?.data ?? [];
-
-  // Detail sheet state
-  const [selectedCandidateId, setSelectedCandidateId] = useState<number | null>(
-    null,
-  );
-  const [isDetailOpen, setIsDetailOpen] = useState(false);
 
   // Local copy for optimistic drag-drop updates
   const [localCandidates, setLocalCandidates] = useState<Candidate[]>([]);
 
   useEffect(() => {
     if (candidatesData?.data) {
-      setLocalCandidates(candidatesData.data);
+      setLocalCandidates(
+        candidatesData.data.filter((candidate) => candidate.status !== "rejected"),
+      );
     }
   }, [candidatesData]);
 
@@ -507,95 +479,13 @@ export default function HiringPipelinePage() {
                 onDropToStage={handleDropToStage}
                 onReorder={handleReorder}
                 onCardClick={(id) => {
-                  setSelectedCandidateId(id);
-                  setIsDetailOpen(true);
+                  router.push(`/candidates/${id}?from=pipeline`);
                 }}
               />
             ))}
           </div>
         )}
       </div>
-
-      {/* Candidate detail sheet */}
-      <Sheet open={isDetailOpen} onOpenChange={setIsDetailOpen}>
-        <SheetContent
-          showCloseButton={true}
-          className="w-[98vw] sm:max-w-[98vw] p-0 flex flex-row gap-0 border-l border-slate-200 dark:border-neutral-800 shadow-none overflow-hidden bg-white dark:bg-neutral-950"
-        >
-          {selectedCandidateId &&
-            (() => {
-              const c = localCandidates.find(
-                (x) => x.id === selectedCandidateId,
-              );
-              if (!c) return null;
-              return (
-                <>
-                  {/* Left — candidate info + CV */}
-                  <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-                    <div className="px-6 lg:px-8 py-4 lg:py-5 border-b border-slate-100 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-950">
-                      <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 min-w-0">
-                        <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 tracking-tight">
-                          {c.firstName} {c.lastName}
-                        </h2>
-                        {c.stageName && (
-                          <Badge className="bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 border-none shadow-none font-medium px-2 py-0.5 rounded-full text-[11px] uppercase tracking-wider whitespace-nowrap">
-                            {c.stageName}
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-slate-500 dark:text-neutral-400 text-[13px] mt-0.5">
-                        {job?.title ?? ""}
-                        <span className="mx-1.5 opacity-30">•</span>
-                        Applied {timeAgo(c.appliedAt)}
-                      </p>
-                      <div className="flex flex-wrap items-center gap-x-5 gap-y-1 mt-1.5">
-                        <span className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium">
-                          {c.email}
-                        </span>
-                        {c.phone && (
-                          <span className="flex items-center gap-1.5 text-slate-500 dark:text-neutral-400 text-[12px] font-medium">
-                            {c.phone}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
-                      {c.resumeUrl ? (
-                        <ResumeScrollView resumeUrl={c.resumeUrl} />
-                      ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-slate-400">
-                          <svg
-                            className="size-10 opacity-30"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth={1.5}
-                              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                            />
-                          </svg>
-                          <p className="text-[13px] font-medium">
-                            No resume uploaded
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Right — tabbed detail panel */}
-                  <CandidateSidePanel
-                    candidateId={selectedCandidateId}
-                    open={isDetailOpen}
-                  />
-                </>
-              );
-            })()}
-        </SheetContent>
-      </Sheet>
 
       <style jsx global>{`
         .pipeline-scroll-container {

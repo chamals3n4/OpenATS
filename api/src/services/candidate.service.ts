@@ -12,23 +12,26 @@ import {
   jobAssessmentAttachments,
   jobs,
   offers,
-  templates,
+  candidateRejections,
+  candidateInterviews,
 } from "../db/schema";
 import type { Candidate } from "../db/schema/candidates";
 import { assessmentExecutionService } from "./assessment-execution.service";
-import { offerService } from "./offer.service";
+import { candidateActivityService } from "./candidate-activity.service";
 import { jobService } from "./job.service";
 import { socketService } from "./socket.service";
-import { mailService } from "./mail.service";
-import { variableService } from "./variable.service";
-import { templateEngineService } from "./template-engine.service";
+import { rejectionService } from "./rejection.service";
 import { cleanObject as clean } from "../utils/object.utils";
 
 /** Drizzle wraps driver errors; Postgres code 23505 is often on `cause`. */
 function isPgUniqueViolation(err: unknown): boolean {
   let current: unknown = err;
   const seen = new Set<unknown>();
-  for (let depth = 0; depth < 12 && current && typeof current === "object"; depth++) {
+  for (
+    let depth = 0;
+    depth < 12 && current && typeof current === "object";
+    depth++
+  ) {
     if (seen.has(current)) break;
     seen.add(current);
     const code = (current as { code?: string }).code;
@@ -63,6 +66,13 @@ export interface CandidateApplyInput {
 export interface CandidateFilters {
   stageId?: number | undefined;
   search?: string | undefined;
+  status?:
+    | "active"
+    | "rejected"
+    | "offered"
+    | "hired"
+    | "withdrawn"
+    | undefined;
 }
 
 export interface CandidateBasicUpdateInput {
@@ -76,8 +86,6 @@ export interface CandidateBasicUpdateInput {
 /** Returned with move-stage so the UI can toast automation outcomes. */
 export type StageAutomationFlags = {
   assessmentInvite?: "sent" | "skipped_active_invite";
-  offer?: "created" | "skipped_open_exists";
-  rejectionEmail?: "sent" | "skipped_already_sent";
 };
 
 export type MoveStageResult = {
@@ -93,73 +101,73 @@ export const candidateService = {
 
     try {
       return await db.transaction(async (tx) => {
-      const [firstStage] = await tx
-        .select()
-        .from(jobPipelineStages)
-        .where(eq(jobPipelineStages.jobId, jobId))
-        .orderBy(asc(jobPipelineStages.position))
-        .limit(1);
+        const [firstStage] = await tx
+          .select()
+          .from(jobPipelineStages)
+          .where(eq(jobPipelineStages.jobId, jobId))
+          .orderBy(asc(jobPipelineStages.position))
+          .limit(1);
 
-      if (!firstStage) {
-        throw new Error("No pipeline stages defined for this job");
-      }
+        if (!firstStage) {
+          throw new Error("No pipeline stages defined for this job");
+        }
 
-      const [candidate] = await tx
-        .insert(candidates)
-        .values(
-          clean({
-            ...candidateData,
-            jobId,
-            currentStageId: firstStage.id,
-          }),
-        )
-        .returning();
+        const [candidate] = await tx
+          .insert(candidates)
+          .values(
+            clean({
+              ...candidateData,
+              jobId,
+              currentStageId: firstStage.id,
+            }),
+          )
+          .returning();
 
-      if (!candidate) {
-        throw new Error("Failed to create candidate");
-      }
+        if (!candidate) {
+          throw new Error("Failed to create candidate");
+        }
 
-      await tx.insert(candidateStageHistory).values({
-        candidateId: candidate.id,
-        stageId: firstStage.id,
-      });
+        await tx.insert(candidateStageHistory).values({
+          candidateId: candidate.id,
+          stageId: firstStage.id,
+        });
 
-      if (customAnswers && customAnswers.length > 0) {
-        for (const answer of customAnswers) {
-          const [question] = await tx
-            .select()
-            .from(jobCustomQuestions)
-            .where(
-              and(
-                eq(jobCustomQuestions.id, answer.questionId),
-                eq(jobCustomQuestions.jobId, jobId),
-              ),
-            );
+        if (customAnswers && customAnswers.length > 0) {
+          for (const answer of customAnswers) {
+            const [question] = await tx
+              .select()
+              .from(jobCustomQuestions)
+              .where(
+                and(
+                  eq(jobCustomQuestions.id, answer.questionId),
+                  eq(jobCustomQuestions.jobId, jobId),
+                ),
+              );
 
-          if (!question) continue;
+            if (!question) continue;
 
-          if (answer.answerText !== undefined) {
-            await tx.insert(candidateCustomAnswers).values({
-              candidateId: candidate.id,
-              questionId: answer.questionId,
-              answerText: answer.answerText,
-            });
-          }
-
-          if (answer.optionIds && answer.optionIds.length > 0) {
-            await tx.insert(candidateCustomAnswerSelections).values(
-              answer.optionIds.map((optionId) => ({
+            if (answer.answerText !== undefined) {
+              await tx.insert(candidateCustomAnswers).values({
                 candidateId: candidate.id,
                 questionId: answer.questionId,
-                optionId,
-              })),
-            );
+                answerText: answer.answerText,
+              });
+            }
+
+            if (answer.optionIds && answer.optionIds.length > 0) {
+              await tx.insert(candidateCustomAnswerSelections).values(
+                answer.optionIds.map((optionId) => ({
+                  candidateId: candidate.id,
+                  questionId: answer.questionId,
+                  optionId,
+                })),
+              );
+            }
           }
         }
-      }
 
-      return candidate;
-    });
+        return candidate;
+      });
     } catch (err) {
       if (isPgUniqueViolation(err)) {
         throw new DuplicateApplicationError();
@@ -179,6 +187,10 @@ export const candidateService = {
       conditions.push(eq(candidates.currentStageId, filters.stageId));
     }
 
+    if (filters.status) {
+      conditions.push(eq(candidates.status, filters.status));
+    }
+
     return db
       .select({
         id: candidates.id,
@@ -189,6 +201,7 @@ export const candidateService = {
         resumeUrl: candidates.resumeUrl,
         jobId: candidates.jobId,
         currentStageId: candidates.currentStageId,
+        status: candidates.status,
         appliedAt: candidates.appliedAt,
         updatedAt: candidates.updatedAt,
         stageName: jobPipelineStages.name,
@@ -215,6 +228,7 @@ export const candidateService = {
         resumeUrl: candidates.resumeUrl,
         jobId: candidates.jobId,
         currentStageId: candidates.currentStageId,
+        status: candidates.status,
         appliedAt: candidates.appliedAt,
         updatedAt: candidates.updatedAt,
         stageName: jobPipelineStages.name,
@@ -279,7 +293,9 @@ export const candidateService = {
     const [offer] = await db
       .select()
       .from(offers)
-      .where(eq(offers.candidateId, id));
+      .where(
+        and(eq(offers.candidateId, id), eq(offers.jobId, candidate.jobId)),
+      );
 
     const [cvRow] = await db
       .select()
@@ -299,6 +315,45 @@ export const candidateService = {
         }
       : null;
 
+    const rejections = await db
+      .select()
+      .from(candidateRejections)
+      .where(eq(candidateRejections.candidateId, id))
+      .orderBy(desc(candidateRejections.rejectedAt));
+
+    const interviews = await db
+      .select({
+        id: candidateInterviews.id,
+        candidateId: candidateInterviews.candidateId,
+        stageId: candidateInterviews.stageId,
+        jobId: candidateInterviews.jobId,
+        scheduledAt: candidateInterviews.scheduledAt,
+        durationMinutes: candidateInterviews.durationMinutes,
+        notes: candidateInterviews.notes,
+        outcome: candidateInterviews.outcome,
+        status: candidateInterviews.status,
+        eventName: candidateInterviews.eventName,
+        eventType: candidateInterviews.eventType,
+        meetingUrl: candidateInterviews.meetingUrl,
+        bodyText: candidateInterviews.bodyText,
+        timeSlots: candidateInterviews.timeSlots,
+        publicToken: candidateInterviews.publicToken,
+        googleEventId: candidateInterviews.googleEventId,
+        createdBy: candidateInterviews.createdBy,
+        createdAt: candidateInterviews.createdAt,
+        updatedAt: candidateInterviews.updatedAt,
+        stageType: jobPipelineStages.stageType,
+      })
+      .from(candidateInterviews)
+      .leftJoin(
+        jobPipelineStages,
+        eq(candidateInterviews.stageId, jobPipelineStages.id),
+      )
+      .where(eq(candidateInterviews.candidateId, id))
+      .orderBy(desc(candidateInterviews.createdAt));
+
+    const activities = await candidateActivityService.getByCandidate(id);
+
     return {
       ...candidate,
       answers,
@@ -306,6 +361,9 @@ export const candidateService = {
       history,
       offer: offer ?? null,
       cvAnalysis,
+      rejections,
+      interviews,
+      activities,
     };
   },
 
@@ -336,10 +394,18 @@ export const candidateService = {
 
       if (!stage) throw new Error("Invalid stage for this job");
 
+      const nextStatus =
+        candidate.status === "rejected" || candidate.status === "hired"
+          ? candidate.status
+          : stage.stageType === "offer"
+            ? "offered"
+            : "active";
+
       const [updated] = await tx
         .update(candidates)
         .set({
           currentStageId: newStageId,
+          status: nextStatus,
           updatedAt: new Date(),
         })
         .where(eq(candidates.id, candidateId))
@@ -353,6 +419,49 @@ export const candidateService = {
         movedBy,
       });
 
+      if (stage.stageType === "offer") {
+        const [existingOffer] = await tx
+          .select()
+          .from(offers)
+          .where(
+            and(
+              eq(offers.candidateId, candidateId),
+              eq(offers.jobId, candidate.jobId),
+            ),
+          )
+          .limit(1);
+
+        if (!existingOffer) {
+          if (!movedBy) {
+            throw new Error("Unable to auto-create offer without an actor");
+          }
+
+          const [createdOffer] = await tx
+            .insert(offers)
+            .values({
+              candidateId,
+              jobId: candidate.jobId,
+              status: "draft",
+              createdBy: movedBy,
+            })
+            .returning();
+
+          if (createdOffer) {
+            await candidateActivityService.create(
+              {
+                candidateId,
+                jobId: candidate.jobId,
+                offerId: createdOffer.id,
+                actorId: movedBy,
+                eventType: "offer_created",
+              },
+              tx,
+            );
+          }
+        }
+      }
+
+      // Assessment automation
       const [attachment] = await tx
         .select()
         .from(jobAssessmentAttachments)
@@ -374,111 +483,37 @@ export const candidateService = {
           : "skipped_active_invite";
       }
 
-      if (stage.stageType === "offer") {
-        const job = await jobService.getById(candidate.jobId);
-        if (job) {
-          const [existingOpenOffer] = await tx
-            .select({ id: offers.id })
-            .from(offers)
-            .where(
-              and(
-                eq(offers.candidateId, candidate.id),
-                eq(offers.jobId, job.id),
-                inArray(offers.status, [
-                  "draft",
-                  "sent",
-                  "pending",
-                  "accepted",
-                ]),
-              ),
-            )
-            .limit(1);
-
-          if (existingOpenOffer) {
-            stageAutomation.offer = "skipped_open_exists";
-          } else {
-            let salary: number | null = null;
-            let blockAutoSend = false;
-
-            if (job.salaryType === "range" && job.salaryMin && job.salaryMax) {
-              salary = (Number(job.salaryMin) + Number(job.salaryMax)) / 2;
-              blockAutoSend = true;
-            } else if (job.salaryType === "fixed" && job.salaryFixed) {
-              salary = Number(job.salaryFixed);
-            } else if (!job.salaryType) {
-              blockAutoSend = true;
-            }
-
-            const mode =
-              blockAutoSend || stage.offerMode === "auto_draft"
-                ? "draft"
-                : "sent";
-
-            let expiryDate: string | null = null;
-            if (stage.offerExpiryDays) {
-              const expiry = new Date();
-              expiry.setDate(expiry.getDate() + stage.offerExpiryDays);
-              expiryDate = expiry.toISOString();
-            }
-
-            await offerService.create({
-              candidateId: candidate.id,
-              jobId: job.id,
-              templateId: stage.offerTemplateId,
-              salary,
-              currency: job.currency,
-              payFrequency: job.payFrequency,
-              expiryDate,
-              status: mode,
-              createdBy: movedBy ?? 1,
-            });
-            stageAutomation.offer = "created";
-          }
-        }
-      }
-
-      if (stage.stageType === "rejection") {
-        if (stage.rejectionTemplateId) {
-          if (candidate.rejectionNoticeSentAt) {
-            stageAutomation.rejectionEmail = "skipped_already_sent";
-          } else {
-            const [template] = await tx
-              .select()
-              .from(templates)
-              .where(eq(templates.id, stage.rejectionTemplateId));
-
-            if (template) {
-              const context = await variableService.getContextForCandidate(
-                candidate.id,
-              );
-              const { subject, html } = templateEngineService.compileTemplate(
-                template.subject,
-                template.bodyJson,
-                context,
-              );
-
-              await mailService.sendRejectionEmail(
-                candidate.email,
-                subject,
-                html,
-              );
-
-              await tx
-                .update(candidates)
-                .set({
-                  rejectionNoticeSentAt: new Date(),
-                  updatedAt: new Date(),
-                })
-                .where(eq(candidates.id, candidateId));
-
-              stageAutomation.rejectionEmail = "sent";
-            }
-          }
-        }
-      }
-
       return { candidate: updated, stageAutomation };
     });
+  },
+
+  async rejectCandidate(
+    candidateId: number,
+    input: {
+      reason?: string | null;
+      templateId?: number | null;
+      emailStatus: "not_sent" | "draft" | "sent";
+    },
+    rejectedBy: number | null = null,
+  ) {
+    const [candidate] = await db
+      .select()
+      .from(candidates)
+      .where(eq(candidates.id, candidateId));
+
+    if (!candidate) throw new Error("Candidate not found");
+
+    return rejectionService.reject(
+      {
+        candidateId,
+        jobId: candidate.jobId,
+        fromStageId: candidate.currentStageId,
+        reason: input.reason ?? null,
+        templateId: input.templateId ?? null,
+        emailStatus: input.emailStatus,
+      },
+      rejectedBy,
+    );
   },
 
   async updateBasicDetails(id: number, data: CandidateBasicUpdateInput) {

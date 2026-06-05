@@ -104,11 +104,32 @@ export const getCandidates = async (req: Request, res: Response) => {
       return;
     }
 
+    const statusParam = req.query.status?.toString();
+    const allowedStatuses = new Set([
+      "active",
+      "rejected",
+      "offered",
+      "hired",
+      "withdrawn",
+    ]);
+
+    if (statusParam && !allowedStatuses.has(statusParam)) {
+      res.status(400).json({ error: "Invalid candidate status" });
+      return;
+    }
+
     const filters = {
       stageId: req.query.stageId
         ? parseInt(req.query.stageId.toString())
         : undefined,
       search: req.query.search?.toString(),
+      status: statusParam as
+        | "active"
+        | "rejected"
+        | "offered"
+        | "hired"
+        | "withdrawn"
+        | undefined,
     };
 
     const result = await candidateService.getAll(jobId, filters);

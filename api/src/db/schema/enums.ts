@@ -33,12 +33,9 @@ export const jobStatus = pgEnum("job_status", [
 ]);
 
 export const stageType = pgEnum("stage_type", [
-  "none",
-  "source",
-  "assessment",
+  "screening",
   "interview",
   "offer",
-  "rejection",
 ]);
 
 export const offerMode = pgEnum("offer_mode", ["auto_draft", "auto_send"]);
@@ -46,9 +43,39 @@ export const offerMode = pgEnum("offer_mode", ["auto_draft", "auto_send"]);
 export const offerStatus = pgEnum("offer_status", [
   "draft",
   "sent",
-  "pending",
+  "viewed",
   "accepted",
   "declined",
+  "expired",
+]);
+
+export const candidateActivityType = pgEnum("candidate_activity_type", [
+  "offer_created",
+  "offer_updated",
+  "offer_sent",
+  "offer_viewed",
+  "offer_accepted",
+  "offer_declined",
+  "candidate_hired",
+]);
+
+export const rejectionEmailStatus = pgEnum("rejection_email_status", [
+  "not_sent",
+  "draft",
+  "sent",
+]);
+
+export const interviewOutcome = pgEnum("interview_outcome", [
+  "pending",
+  "pass",
+  "fail",
+]);
+
+export const candidateStatus = pgEnum("candidate_status", [
+  "active",
+  "rejected",
+  "offered",
+  "hired",
   "withdrawn",
 ]);
 
@@ -60,12 +87,7 @@ export const questionType = pgEnum("question_type", [
   "multiple_choice",
 ]);
 
-export const templateType = pgEnum("template_type", [
-  "offer",
-  "rejection",
-  "assessment_invite",
-  "general",
-]);
+export const templateType = pgEnum("template_type", ["email", "event"]);
 
 export const assessmentStatus = pgEnum("assessment_status", [
   "pending",

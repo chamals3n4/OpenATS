@@ -29,17 +29,7 @@ export type PipelineStage = {
   jobId: number;
   name: string;
   position: number;
-  stageType:
-    | "none"
-    | "source"
-    | "assessment"
-    | "interview"
-    | "offer"
-    | "rejection";
-  offerTemplateId: number | null;
-  offerMode: "auto_draft" | "auto_send" | null;
-  offerExpiryDays: number | null;
-  rejectionTemplateId: number | null;
+  stageType: "screening" | "interview" | "offer";
   sourceTemplateId: number | null;
   createdAt: string;
   updatedAt: string;
@@ -145,6 +135,38 @@ export type Assessment = {
   questions?: AssessmentQuestion[];
 };
 
+export type CandidateRejection = {
+  id: number;
+  candidateId: number;
+  jobId: number;
+  fromStageId: number | null;
+  rejectedBy: number | null;
+  reason: string | null;
+  internalNote: string | null;
+  templateId: number | null;
+  emailStatus: "not_sent" | "draft" | "sent";
+  sentAt: string | null;
+  rejectedAt: string;
+};
+
+export type CandidateInterview = {
+  id: number;
+  candidateId: number;
+  stageId: number;
+  jobId: number;
+  eventName: string | null;
+  eventType: string | null;
+  meetingUrl: string | null;
+  bodyText: string | null;
+  status: string | null;
+  scheduledAt: string | null;
+  durationMinutes: number | null;
+  notes: string | null;
+  outcome: "pending" | "pass" | "fail";
+  createdBy: number | null;
+  createdAt: string;
+};
+
 export type Candidate = {
   id: number;
   firstName: string;
@@ -154,6 +176,7 @@ export type Candidate = {
   resumeUrl: string | null;
   jobId: number;
   currentStageId: number | null;
+  status: "active" | "rejected" | "offered" | "hired" | "withdrawn";
   appliedAt: string;
   updatedAt: string;
   stageName: string | null;
@@ -163,8 +186,6 @@ export type Candidate = {
 /** Mirrors API `stageAutomation` on candidate stage move. */
 export type StageAutomationFlags = {
   assessmentInvite?: "sent" | "skipped_active_invite";
-  offer?: "created" | "skipped_open_exists";
-  rejectionEmail?: "sent" | "skipped_already_sent";
 };
 
 export type CandidateCvAnalysisPayload = {
@@ -208,17 +229,10 @@ export type CandidateDetail = Candidate & {
     movedBy: number | null;
     movedAt: string;
   }[];
-  offer: {
-    id: number;
-    status: string;
-    salary: string | null;
-    currency: string | null;
-    payFrequency: string | null;
-    startDate: string | null;
-    expiryDate: string | null;
-    sentAt: string | null;
-    renderedHtml: string | null;
-  } | null;
+  activities: CandidateActivity[];
+  offer: Offer | null;
+  rejections: CandidateRejection[];
+  interviews: CandidateInterview[];
 };
 
 export type User = {
@@ -241,7 +255,7 @@ export type TemplateBodyBlock = {
 export type Template = {
   id: number;
   name: string;
-  type: "offer" | "rejection" | "assessment_invite" | "general";
+  type: "email" | "event";
   subject: string;
   bodyJson: TemplateBodyBlock[];
   createdAt: string;
@@ -253,15 +267,75 @@ export type Offer = {
   candidateId: number;
   jobId: number;
   templateId: number | null;
-  salary: number | null;
+  status: "draft" | "sent" | "viewed" | "accepted" | "declined" | "expired";
+  salary: number | string | null;
   currency: string | null;
-  payFrequency: "hourly" | "daily" | "weekly" | "monthly" | "yearly" | null;
+  employmentType:
+    | "full_time"
+    | "part_time"
+    | "contract"
+    | "internship"
+    | "freelance"
+    | null;
   startDate: string | null;
-  expiryDate: string | null;
-  status: "draft" | "sent" | "pending" | "accepted" | "declined" | "withdrawn";
-  renderedHtml: string | null;
+  reportingManager: string | null;
+  benefits: string | null;
+  offerLetterHtml: string | null;
+  sentAt: string | null;
+  viewedAt: string | null;
+  acceptedAt: string | null;
+  declinedAt: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type CandidateActivity = {
+  id: number;
+  candidateId: number;
+  jobId: number;
+  offerId: number | null;
+  stageId: number | null;
+  actorId: number | null;
+  eventType:
+    | "offer_created"
+    | "offer_updated"
+    | "offer_sent"
+    | "offer_viewed"
+    | "offer_accepted"
+    | "offer_declined"
+    | "candidate_hired";
+  metadata: Record<string, unknown> | null;
+  createdAt: string;
+  stage?: {
+    id: number;
+    name: string;
+    stageType: "screening" | "interview" | "offer";
+  } | null;
+};
+
+export type PublicOfferView = {
+  id: number;
+  status: "draft" | "sent" | "viewed" | "accepted" | "declined" | "expired";
+  salary: number | string | null;
+  currency: string | null;
+  employmentType:
+    | "full_time"
+    | "part_time"
+    | "contract"
+    | "internship"
+    | "freelance"
+    | null;
+  startDate: string | null;
+  reportingManager: string | null;
+  benefits: string | null;
+  offerLetterHtml: string | null;
+  sentAt: string | null;
+  viewedAt: string | null;
+  acceptedAt: string | null;
+  declinedAt: string | null;
+  candidateName: string;
+  candidateEmail: string;
+  jobTitle: string;
 };
 
 export type AnalyticsReport = {

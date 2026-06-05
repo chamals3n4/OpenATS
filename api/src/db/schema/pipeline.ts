@@ -8,16 +8,15 @@ import {
   varchar,
 } from "drizzle-orm/pg-core";
 
-import { offerMode, stageType } from "./enums";
+import { stageType } from "./enums";
 import { jobs } from "./jobs";
-import { templates } from "./templates";
 import { users } from "./users";
 
 export const pipelineStageTemplates = pgTable("pipeline_stage_templates", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 100 }).notNull().unique(),
   position: integer("position").notNull(),
-  stageType: stageType("stage_type").notNull().default("none"),
+  stageType: stageType("stage_type").notNull().default("screening"),
   isDeletable: boolean("is_deletable").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
@@ -35,20 +34,7 @@ export const jobPipelineStages = pgTable(
 
     position: integer("position").notNull(),
 
-    stageType: stageType("stage_type").notNull().default("none"),
-
-    offerTemplateId: integer("offer_template_id").references(
-      () => templates.id,
-      { onDelete: "set null" },
-    ),
-    offerMode: offerMode("offer_mode"),
-    offerExpiryDays: integer("offer_expiry_days"),
-
-    rejectionTemplateId: integer("rejection_template_id").references(
-      () => templates.id,
-      { onDelete: "set null" },
-    ),
-    // ──────────────────────────────────────────────────────────────
+    stageType: stageType("stage_type").notNull().default("screening"),
 
     sourceTemplateId: integer("source_template_id").references(
       () => pipelineStageTemplates.id,

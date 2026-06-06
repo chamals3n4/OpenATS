@@ -345,7 +345,7 @@ export function OverviewClient() {
               render={
                 <Button
                   variant="outline"
-                  className="flex-1 h-9 rounded-lg border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 text-sm shadow-none cursor-pointer"
+                  className="flex-1 h-9 rounded-lg border-slate-200 dark:border-neutral-700 text-white dark:text-neutral-300 text-sm shadow-none cursor-pointer"
                 />
               }
             >

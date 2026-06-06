@@ -45,6 +45,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
 
 import {
   useCandidates,
@@ -67,7 +68,9 @@ function timeAgo(dateStr: string) {
 export default function ManageCandidatesPage() {
   const router = useRouter();
   const [selectedJobId, setSelectedJobId] = useState<number | undefined>();
-  const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "rejected">("all");
+  const [selectedStatus, setSelectedStatus] = useState<
+    "all" | "active" | "rejected"
+  >("all");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null);
@@ -447,10 +450,10 @@ export default function ManageCandidatesPage() {
       >
         <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+            <AlertDialogTitle className="text-[19px] font-semibold text-slate-900 dark:text-neutral-100">
               Delete this candidate?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+            <AlertDialogDescription className="text-[14px] text-slate-500 dark:text-neutral-400 leading-relaxed">
               <strong className="text-slate-700 dark:text-neutral-200">
                 {deleteTarget?.firstName} {deleteTarget?.lastName}
               </strong>{" "}
@@ -458,14 +461,15 @@ export default function ManageCandidatesPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-9 px-5 rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors">
+            <AlertDialogCancel className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none"
+              className="h-[34px] rounded-md border-none bg-red-600 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
-              Delete
+              {deleteMutation.isPending && <Spinner className="size-3.5" />}
+              {deleteMutation.isPending ? "Deleting" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

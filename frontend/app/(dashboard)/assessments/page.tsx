@@ -52,6 +52,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Spinner } from "@/components/ui/spinner";
 
 export default function AssessmentsPage() {
   const { data, isLoading } = useAssessments();
@@ -198,30 +199,29 @@ export default function AssessmentsPage() {
                     </span>
                   </div>
                 </div>
-
                 {/* Card footer */}
                 <div className="flex items-center gap-1.5 px-4 py-3 border-t border-slate-100 dark:border-neutral-800">
-                  <ThemeButton
+                  <Button
                     asChild
                     href={`/assessments/${a.id}`}
-                    className="h-8 px-5 text-[12px] font-medium shadow-none border-none rounded-md"
+                    className=" h-[34px] rounded-md border-none  px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
                   >
                     <Link href={`/assessments/${a.id}`}>Edit</Link>
-                  </ThemeButton>
-                  <button
+                  </Button>
+                  {/* <button
                     onClick={() => openInviteDialog(a)}
                     className="inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-medium border border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-700 dark:hover:text-neutral-200"
                   >
                     <HugeiconsIcon icon={UserAdd01Icon} className="size-3.5" />
                     Invite
-                  </button>
-                  <button
+                  </button> */}
+                  <Button
                     onClick={() => setDeleteTarget(a)}
-                    className="ml-auto inline-flex items-center gap-1.5 h-8 px-3 rounded-md text-[12px] font-medium border border-red-200 dark:border-red-900/50 text-red-400 dark:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500"
+                    className=" inline-flex h-[34px] rounded-md border-none bg-red-500 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
                   >
                     <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
                     Delete
-                  </button>
+                  </Button>
                 </div>
               </div>
             ))}
@@ -347,10 +347,10 @@ export default function AssessmentsPage() {
       >
         <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+            <AlertDialogTitle className="text-[19px] font-semibold text-slate-900 dark:text-neutral-100">
               Delete Assessment?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+            <AlertDialogDescription className="text-[14px] text-slate-500 dark:text-neutral-400 leading-relaxed">
               <strong className="text-slate-700 dark:text-neutral-200">
                 {deleteTarget?.title}
               </strong>{" "}
@@ -358,7 +358,7 @@ export default function AssessmentsPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-9 px-5 cursor-pointer rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 text-[13px] font-medium shadow-none">
+            <AlertDialogCancel className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
@@ -367,11 +367,9 @@ export default function AssessmentsPage() {
                 confirmDelete();
               }}
               disabled={deleteAssessment.isPending}
-              className="h-9 px-5 rounded-lg cursor-pointer bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none disabled:opacity-70"
+              className="h-[34px] rounded-md border-none bg-red-600 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
-              {deleteAssessment.isPending && (
-                <Loader2 className="size-3.5 mr-1.5 animate-spin" />
-              )}
+              {deleteAssessment.isPending && <Spinner className="size-3.5" />}
               {deleteAssessment.isPending ? "Deleting" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>

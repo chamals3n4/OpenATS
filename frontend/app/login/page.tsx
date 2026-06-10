@@ -80,6 +80,8 @@ export default function LoginPage() {
                 size="small"
                 variant="outlined"
                 className="custom-signin"
+                onSuccess={() => {}}
+                onError={() => {}}
               />
 
               <p

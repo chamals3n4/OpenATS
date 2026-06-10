@@ -101,7 +101,7 @@ export default function JobDetailsPage() {
     const prefetch = (key: any[], url: string, staleTime: number) => {
       void queryClient.prefetchQuery({
         queryKey: key,
-        queryFn: () => serverFetch({ url }),
+        queryFn: () => serverFetch(url),
         staleTime,
       });
     };
@@ -356,7 +356,9 @@ export default function JobDetailsPage() {
     if (stageReorderTimeoutRef.current)
       clearTimeout(stageReorderTimeoutRef.current);
     stageReorderTimeoutRef.current = setTimeout(() => {
-      reorderStagesMutation.mutate(reordered.map((s) => s.id));
+      reorderStagesMutation.mutate(
+        reordered.map((s, idx) => ({ id: s.id, position: idx + 1 })),
+      );
     }, 500);
   };
 

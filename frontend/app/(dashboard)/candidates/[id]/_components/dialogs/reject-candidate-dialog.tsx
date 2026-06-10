@@ -19,7 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { REJECTION_REASONS } from "../constants.ts";
+import { REJECTION_REASONS } from "../constants";
 
 interface RejectCandidateDialogProps {
   open: boolean;

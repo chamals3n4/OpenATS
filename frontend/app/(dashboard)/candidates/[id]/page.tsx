@@ -22,12 +22,9 @@ import {
 } from "@/hooks/queries/use-candidates";
 import { useDeleteInterview } from "@/hooks/queries/use-interviews";
 import { useTemplates } from "@/hooks/queries/use-templates";
-import { InterviewSchedulerDialog } from "@/components/interview-scheduler-dialog";
+import { InterviewSchedulerDialog } from "@/app/(dashboard)/interviews/_components/interview-scheduler-dialog";
 
-import {
-  type SectionId,
-  OFFER_STATUS_STYLES,
-} from "./_components/constants.ts";
+import { type SectionId, OFFER_STATUS_STYLES } from "./_components/constants";
 import { CandidateHeader } from "./_components/candidate-header";
 import { SectionTabs } from "./_components/section-tabs";
 import { CvSheet } from "./_components/cv-sheet";

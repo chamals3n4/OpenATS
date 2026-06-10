@@ -4,7 +4,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { UserRemove01Icon } from "@hugeicons/core-free-icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { timeAgo } from "../constants.ts";
+import { timeAgo } from "../constants";
 
 interface RejectionSectionProps {
   candidate: any;

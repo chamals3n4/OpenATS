@@ -1,0 +1,142 @@
+"use client";
+
+import { useState, KeyboardEvent } from "react";
+import { useRouter } from "next/navigation";
+import { useCreateJob } from "@/hooks/queries/use-jobs";
+import { useDepartments } from "@/hooks/queries/use-company";
+import type { Job } from "@/types";
+import { JobHeader } from "./job-header";
+import { JobBasicInfo } from "./job-basic-info";
+import { SkillsInput } from "./skills-input";
+import { LocationInput } from "./location-input";
+import { JobDescriptionSection } from "./job-description";
+import { SalarySection } from "./salary";
+import { FormActions } from "./form-actions";
+import { buildJobPayload } from "@/lib/jobs-utils";
+
+export default function CreateJobPageClient() {
+  const router = useRouter();
+  const createJob = useCreateJob();
+  const { data: deptData } = useDepartments();
+  const departments = deptData?.data ?? [];
+
+  const [title, setTitle] = useState("");
+  const [departmentId, setDepartmentId] = useState<number | null>(null);
+  const [employmentType, setEmploymentType] = useState<
+    Job["employmentType"] | null
+  >(null);
+  const [skills, setSkills] = useState<string[]>([]);
+  const [skillInput, setSkillInput] = useState("");
+  const [location, setLocation] = useState("");
+  const [description, setDescription] = useState("");
+  const [isActive, setIsActive] = useState(true);
+
+  const [isSalaryInfoIncluded, setIsSalaryInfoIncluded] = useState(true);
+  const [salaryType, setSalaryType] = useState<"range" | "fixed">("range");
+  const [currency, setCurrency] = useState("USD");
+  const [payFrequency, setPayFrequency] = useState("yearly");
+  const [salaryMin, setSalaryMin] = useState("");
+  const [salaryMax, setSalaryMax] = useState("");
+  const [salaryFixed, setSalaryFixed] = useState("");
+
+  const handleAddSkill = (e: KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter" && skillInput.trim()) {
+      e.preventDefault();
+      if (!skills.includes(skillInput.trim())) {
+        setSkills((prev) => [...prev, skillInput.trim()]);
+      }
+      setSkillInput("");
+    }
+  };
+
+  const removeSkill = (skillToRemove: string) => {
+    setSkills((prev) => prev.filter((s) => s !== skillToRemove));
+  };
+
+  const handleSubmit = () => {
+    if (!title.trim() || !departmentId || !employmentType) return;
+
+    const payload = buildJobPayload({
+      title,
+      departmentId,
+      employmentType,
+      location,
+      description,
+      skills,
+      isSalaryInfoIncluded,
+      salaryType,
+      currency,
+      payFrequency,
+      salaryMin,
+      salaryMax,
+      salaryFixed,
+      isActive,
+    });
+
+    createJob.mutate(payload, {
+      onSuccess: (res) => router.push(`/jobs/${res.data.id}`),
+    });
+  };
+
+  const isSubmitDisabled =
+    !title.trim() || !departmentId || !employmentType || createJob.isPending;
+
+  return (
+    <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
+      <div className="px-14 py-10 pb-20 max-w-5xl">
+        <JobHeader isActive={isActive} onActiveChange={setIsActive} />
+
+        <div className="space-y-5">
+          <JobBasicInfo
+            title={title}
+            onTitleChange={setTitle}
+            departmentId={departmentId}
+            onDepartmentChange={setDepartmentId}
+            employmentType={employmentType}
+            onEmploymentTypeChange={setEmploymentType}
+            departments={departments}
+          />
+
+          <SkillsInput
+            skills={skills}
+            skillInput={skillInput}
+            onSkillInputChange={setSkillInput}
+            onAddSkill={handleAddSkill}
+            onRemoveSkill={removeSkill}
+          />
+
+          <LocationInput value={location} onChange={setLocation} />
+
+          <JobDescriptionSection
+            value={description}
+            onChange={setDescription}
+          />
+
+          <SalarySection
+            isIncluded={isSalaryInfoIncluded}
+            onIncludedChange={setIsSalaryInfoIncluded}
+            salaryType={salaryType}
+            onSalaryTypeChange={setSalaryType}
+            currency={currency}
+            onCurrencyChange={setCurrency}
+            payFrequency={payFrequency}
+            onPayFrequencyChange={setPayFrequency}
+            salaryMin={salaryMin}
+            onSalaryMinChange={setSalaryMin}
+            salaryMax={salaryMax}
+            onSalaryMaxChange={setSalaryMax}
+            salaryFixed={salaryFixed}
+            onSalaryFixedChange={setSalaryFixed}
+          />
+
+          <FormActions
+            onSubmit={handleSubmit}
+            onCancel={() => router.push("/jobs")}
+            isSubmitDisabled={isSubmitDisabled}
+            isPending={createJob.isPending}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -2,7 +2,7 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ChartEvaluationIcon } from "@hugeicons/core-free-icons";
-import { formatDate } from "../constants.ts";
+import { formatDate } from "../constants";
 
 interface ScoresSectionProps {
   assessmentsData: any;

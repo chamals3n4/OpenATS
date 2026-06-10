@@ -2,7 +2,7 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon } from "@hugeicons/core-free-icons";
-import { timeAgo } from "../constants.ts";
+import { timeAgo } from "../constants";
 
 export function HistorySection({
   candidate,

@@ -10,9 +10,11 @@ import dynamic from "next/dynamic";
 
 export const ResumeScrollView = dynamic(
   () =>
-    import("@/components/resume-scroll-view").then((mod) => ({
-      default: mod.ResumeScrollView,
-    })),
+    import("@/app/(dashboard)/candidates/[id]/_components/resume-scroll-view").then(
+      (mod) => ({
+        default: mod.ResumeScrollView,
+      }),
+    ),
   {
     ssr: false,
     loading: () => (
@@ -27,9 +29,11 @@ export const ResumeScrollView = dynamic(
 
 export const JobDescriptionEditor = dynamic(
   () =>
-    import("@/components/job-description-editor").then((mod) => ({
-      default: mod.JobDescriptionEditor,
-    })),
+    import("@/app/(dashboard)/jobs/_components/job-description-editor").then(
+      (mod) => ({
+        default: mod.JobDescriptionEditor,
+      }),
+    ),
   {
     ssr: false,
     loading: () => (
@@ -44,17 +48,21 @@ export const JobDescriptionEditor = dynamic(
 
 export const CandidateSidePanel = dynamic(
   () =>
-    import("@/components/candidate-side-panel").then((mod) => ({
-      default: mod.CandidateSidePanel,
-    })),
+    import("@/app/(dashboard)/candidates/[id]/_components/candidate-side-panel").then(
+      (mod) => ({
+        default: mod.CandidateSidePanel,
+      }),
+    ),
   { ssr: false },
 );
 
 export const CandidateJobFitTab = dynamic(
   () =>
-    import("@/components/candidate-job-fit-tab").then((mod) => ({
-      default: mod.CandidateJobFitTab,
-    })),
+    import("@/app/(dashboard)/candidates/[id]/_components/candidate-job-fit-tab").then(
+      (mod) => ({
+        default: mod.CandidateJobFitTab,
+      }),
+    ),
   {
     ssr: false,
     loading: () => (

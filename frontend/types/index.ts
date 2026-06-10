@@ -135,6 +135,14 @@ export type Assessment = {
   questions?: AssessmentQuestion[];
 };
 
+export type JobAssessment = {
+  id: number;
+  jobId?: number;
+  assessmentId: number;
+  triggerStageId: number | null;
+  createdAt: string;
+};
+
 export type CandidateRejection = {
   id: number;
   candidateId: number;
@@ -270,13 +278,7 @@ export type Offer = {
   status: "draft" | "sent" | "viewed" | "accepted" | "declined" | "expired";
   salary: number | string | null;
   currency: string | null;
-  payFrequency?:
-    | "hourly"
-    | "daily"
-    | "weekly"
-    | "monthly"
-    | "yearly"
-    | null;
+  payFrequency?: "hourly" | "daily" | "weekly" | "monthly" | "yearly" | null;
   employmentType:
     | "full_time"
     | "part_time"

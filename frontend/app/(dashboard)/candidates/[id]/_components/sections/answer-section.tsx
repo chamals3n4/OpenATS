@@ -54,12 +54,15 @@ export function AnswersSection({ candidate }: { candidate: any }) {
           ))}
           {candidate.selections.length > 0 && (
             <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
-              {Array.from(
-                new Set(
-                  candidate.selections.map(
-                    (s: any) => s.questionTitle || `Question #${s.questionId}`,
+              {(
+                Array.from(
+                  new Set(
+                    candidate.selections.map(
+                      (s: any) =>
+                        s.questionTitle || `Question #${s.questionId}`,
+                    ),
                   ),
-                ),
+                ) as string[]
               ).map((title) => (
                 <div
                   key={title}

@@ -6,7 +6,7 @@ import { SentIcon } from "@hugeicons/core-free-icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { timeAgo, type SentEmail } from "../constants.ts";
+import { timeAgo, type SentEmail } from "../constants";
 
 interface EmailSectionProps {
   candidate: any;

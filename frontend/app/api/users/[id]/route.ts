@@ -8,6 +8,7 @@ import {
   scimRequestHeaders,
 } from "@/lib/asgardeo-scim-token";
 import type { User } from "@/types";
+import { useAsgardeo } from "@asgardeo/nextjs";
 
 const ROUTE_LOG = "[API /users/[id]]";
 

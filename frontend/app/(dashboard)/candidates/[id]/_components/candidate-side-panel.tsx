@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { CandidateJobFitTab } from "@/components/candidate-job-fit-tab";
+import { CandidateJobFitTab } from "@/app/(dashboard)/candidates/[id]/_components/candidate-job-fit-tab";
 import type { Offer } from "@/types";
 import {
   useCandidate,

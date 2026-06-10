@@ -2,11 +2,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Copy, Eye, EyeOff, RefreshCw, Search } from "lucide-react";
+import { Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
 import {
   PencilEdit01Icon,
   Delete02Icon,
   Add01Icon,
+  Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
@@ -68,6 +69,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
+import { Spinner } from "@/components/ui/spinner";
 
 const inputCls =
   "h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color,box-shadow] duration-200 ease-in-out focus-visible:ring-1 focus-visible:ring-theme focus-visible:border-theme";
@@ -205,7 +207,7 @@ export default function UserManagementPage() {
       setEditUser(null);
       await load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to fetch users");
+      toast.error(e instanceof Error ? e.message : "Failed to update user");
     } finally {
       setSaving(false);
     }
@@ -220,7 +222,7 @@ export default function UserManagementPage() {
       setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
       setDeleteTarget(null);
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to fetch users");
+      toast.error(e instanceof Error ? e.message : "Failed to remove user");
     } finally {
       setDeleting(false);
     }
@@ -278,7 +280,7 @@ export default function UserManagementPage() {
       setCreateOpen(false);
       await load();
     } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to fetch users");
+      toast.error(e instanceof Error ? e.message : "Failed to create user");
     } finally {
       setCreating(false);
     }
@@ -286,6 +288,7 @@ export default function UserManagementPage() {
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
+      {/* Header */}
       <div className="px-8 py-4 flex items-center justify-between">
         <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
           User Management
@@ -315,31 +318,35 @@ export default function UserManagementPage() {
         </div>
       </div>
 
-      <div className="border-y border-slate-200 dark:border-neutral-800 px-8 py-3.5 flex items-center gap-4">
-        <div className="relative w-96">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 size-4 text-slate-300 pointer-events-none" />
+      {/* Filters */}
+      <div className="border-y border-slate-300 dark:border-neutral-700 px-8 py-3.5 flex items-center gap-4">
+        <div className="relative w-80">
+          <HugeiconsIcon
+            icon={Search01Icon}
+            className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
+          />
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search"
-            className={"pl-11 h-10! " + inputCls}
+            placeholder="Search User"
+            className="pl-11 h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
           />
         </div>
         <Button
           variant="ghost"
           onClick={() => setQuery("")}
-          disabled={!query.trim()}
-          className="text-slate-600 dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none"
+          className="text-slate-600 cursor-pointer dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-2"
         >
-          Clear
+          Clear All
         </Button>
       </div>
 
+      {/* Table */}
       <div className="px-8 py-6">
-        <div className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
+        <div className="overflow-hidden rounded-md border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-900">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:bg-transparent">
+              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Name
                 </TableHead>
@@ -349,7 +356,9 @@ export default function UserManagementPage() {
                 <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Role
                 </TableHead>
-                <TableHead className="h-13 px-4 w-12" />
+                <TableHead className="h-13 px-4 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                  Actions
+                </TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -372,39 +381,44 @@ export default function UserManagementPage() {
                 filteredUsers.map((u) => (
                   <TableRow
                     key={u.id}
-                    className="border-b border-slate-200 dark:border-neutral-800 last:border-0 font-medium"
+                    className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
                   >
-                    <TableCell className="h-13 px-8 py-0 text-slate-900 dark:text-neutral-100">
+                    <TableCell className="h-13 px-8 py-0 font-medium text-slate-700 dark:text-neutral-200">
                       {getDisplayName(u)}
                     </TableCell>
-                    <TableCell className="h-13 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+                    <TableCell className="h-13 px-8 py-0 text-slate-500 dark:text-neutral-400 font-normal">
                       {u.email}
                     </TableCell>
-                    <TableCell className="h-13 px-8 py-0 text-slate-600 dark:text-neutral-400 font-normal capitalize">
+                    <TableCell className="h-13 px-8 py-0 text-slate-500 dark:text-neutral-400 font-normal capitalize">
                       {u.role.replace(/_/g, " ")}
                     </TableCell>
-                    <TableCell className="h-13 px-4 py-0">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <button
+                    <TableCell
+                      className="h-13 px-4 py-0"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <div className="flex items-center justify-end gap-2">
+                        <Button
+                          size="sm"
+                          className="h-[34px] rounded-md border-none bg-neutral-700/90 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
                           onClick={() => openEdit(u)}
-                          className="p-1.5 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
-                          title="Edit"
                         >
                           <HugeiconsIcon
                             icon={PencilEdit01Icon}
                             className="size-4"
                           />
-                        </button>
-                        <button
+                          Edit
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-[34px] rounded-md border-none bg-red-600/90 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 dark:bg-red-700/90 dark:hover:bg-red-600 cursor-pointer"
                           onClick={() => setDeleteTarget(u)}
-                          className="p-1.5 rounded-md text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                          title="Delete"
                         >
                           <HugeiconsIcon
                             icon={Delete02Icon}
                             className="size-4"
                           />
-                        </button>
+                          Delete
+                        </Button>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -412,9 +426,18 @@ export default function UserManagementPage() {
               )}
             </TableBody>
           </Table>
+
+          <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+            <span className="text-sm font-medium text-slate-400 dark:text-neutral-500">
+              {loading
+                ? "Loading..."
+                : `${filteredUsers.length} result${filteredUsers.length !== 1 ? "s" : ""}`}
+            </span>
+          </div>
         </div>
       </div>
 
+      {/* Create User Sheet */}
       <Sheet open={createOpen} onOpenChange={setCreateOpen}>
         <SheetContent
           side="right"
@@ -428,7 +451,6 @@ export default function UserManagementPage() {
 
           <div className="flex-1 overflow-y-auto px-6 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Email */}
               <div className="col-span-2">
                 <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
                   Email *
@@ -507,28 +529,23 @@ export default function UserManagementPage() {
                   onValueChange={(v) => setPasswordMethod(v as PasswordMethod)}
                   className="gap-3"
                 >
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem id="pw-method-invite" value="invite" />
-                      <Label
-                        htmlFor="pw-method-invite"
-                        className="text-[14px] font-medium text-slate-800 dark:text-neutral-200 cursor-pointer"
-                      >
-                        Invite the user to set their own password
-                      </Label>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem id="pw-method-invite" value="invite" />
+                    <Label
+                      htmlFor="pw-method-invite"
+                      className="text-[14px] font-medium text-slate-800 dark:text-neutral-200 cursor-pointer"
+                    >
+                      Invite the user to set their own password
+                    </Label>
                   </div>
-
-                  <div className="space-y-1">
-                    <div className="flex items-center gap-2">
-                      <RadioGroupItem id="pw-method-set" value="set" />
-                      <Label
-                        htmlFor="pw-method-set"
-                        className="text-[14px] font-medium text-slate-800 dark:text-neutral-200 cursor-pointer"
-                      >
-                        Set a password for the user
-                      </Label>
-                    </div>
+                  <div className="flex items-center gap-2">
+                    <RadioGroupItem id="pw-method-set" value="set" />
+                    <Label
+                      htmlFor="pw-method-set"
+                      className="text-[14px] font-medium text-slate-800 dark:text-neutral-200 cursor-pointer"
+                    >
+                      Set a password for the user
+                    </Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -656,6 +673,7 @@ export default function UserManagementPage() {
         </SheetContent>
       </Sheet>
 
+      {/* Edit Dialog */}
       <Dialog
         open={!!editUser}
         onOpenChange={(open) => !open && setEditUser(null)}
@@ -736,14 +754,14 @@ export default function UserManagementPage() {
           <DialogFooter className="gap-2">
             <DialogClose
               disabled={saving}
-              className="h-9 px-5 rounded-lg border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium hover:bg-slate-50 dark:hover:bg-neutral-800"
+              className="h-9 px-5 rounded-lg border cursor-pointer border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium hover:bg-slate-50 dark:hover:bg-neutral-800"
             >
               Cancel
             </DialogClose>
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="h-9 px-5 rounded-lg text-white text-[13px] font-semibold shadow-none border-none"
+              className="h-9 px-5 cursor-pointer rounded-lg text-white text-[13px] font-semibold shadow-none border-none"
               style={{ backgroundColor: "var(--theme-color)" }}
             >
               {saving ? "Saving…" : "Save"}
@@ -752,16 +770,17 @@ export default function UserManagementPage() {
         </DialogContent>
       </Dialog>
 
+      {/* Delete Dialog */}
       <AlertDialog
         open={!!deleteTarget}
         onOpenChange={(open) => !open && setDeleteTarget(null)}
       >
-        <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
+        <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+            <AlertDialogTitle className="text-[19px] font-semibold text-slate-900 dark:text-neutral-100">
               Remove user?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+            <AlertDialogDescription className="text-[14px] text-slate-500 dark:text-neutral-400 leading-relaxed">
               {deleteTarget ? (
                 <>
                   Are you sure you want to remove{" "}
@@ -776,15 +795,16 @@ export default function UserManagementPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-9 px-5 rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800">
+            <AlertDialogCancel className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none"
+              className="h-[34px] rounded-md border-none bg-red-600 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
-              {deleting ? "Removing…" : "Remove"}
+              {deleting && <Spinner className="size-3.5" />}
+              {deleting ? "Removing" : "Remove"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

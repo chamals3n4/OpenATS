@@ -273,7 +273,9 @@ export default function HiringPipelinePage() {
 
   const { data: jobData } = useJob(jobId);
   const { data: pipelineData } = usePipeline(jobId);
-  const { data: candidatesData, refetch } = useCandidates(jobId);
+  const { data: candidatesData, refetch } = useCandidates(jobId, {
+    limit: 9999,
+  });
   const moveStageMutation = useMoveCandidateStage();
 
   const router = useRouter();
@@ -287,7 +289,9 @@ export default function HiringPipelinePage() {
   useEffect(() => {
     if (candidatesData?.data) {
       setLocalCandidates(
-        candidatesData.data.filter((candidate) => candidate.status !== "rejected"),
+        candidatesData.data.filter(
+          (candidate) => candidate.status !== "rejected",
+        ),
       );
     }
   }, [candidatesData]);

@@ -19,6 +19,8 @@ export function useCandidates(
     stageId?: number;
     search?: string;
     status?: "active" | "rejected" | "offered" | "hired" | "withdrawn";
+    page?: number;
+    limit?: number;
   },
   options?: { enabled?: boolean },
 ) {
@@ -27,15 +29,15 @@ export function useCandidates(
   if (filters?.stageId) params.set("stageId", String(filters.stageId));
   if (filters?.search) params.set("search", filters.search);
   if (filters?.status) params.set("status", filters.status);
+  if (filters?.page) params.set("page", String(filters.page));
+  if (filters?.limit) params.set("limit", String(filters.limit));
+
   const query = params.toString() ? `?${params.toString()}` : "";
 
   const path = jobId
     ? `/candidates/jobs/${jobId}${query}`
     : `/candidates${query}`;
 
-  // When fetching candidates for a specific job with no extra filters, seed
-  // the list immediately from the global all-candidates cache so the count
-  // badge on the job overview renders without waiting for the per-job fetch.
   const hasFilters = !!(filters?.stageId || filters?.search);
   const seedInitialData =
     jobId && !hasFilters
@@ -69,16 +71,11 @@ export function useCandidates(
     queryKey: ["candidates", jobId ?? "all", filters],
     queryFn: () => serverFetch<{ data: Candidate[] }>(path),
     enabled: options?.enabled !== false,
-    // Short staleTime so newly applied candidates (submitted via the public
-    // careers page, outside of React Query) appear quickly.  Refetch on mount
-    // catches any missed updates without hammering the API on every render.
     staleTime: 1000 * 60 * 2,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     refetchInterval: 10_000,
     refetchIntervalInBackground: false,
-    // Keep showing the previous list while a fresh fetch is in flight so
-    // there's no blank flash when navigating to the candidates section.
     placeholderData: keepPreviousData,
     initialData: seedInitialData,
     initialDataUpdatedAt: seedUpdatedAt,
@@ -92,9 +89,6 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
     queryKey: ["candidates", id],
     queryFn: () => serverFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
     enabled,
-    // Seed from any cached candidates list so the sheet shows the candidate's
-    // basic info immediately while the full detail (cv analysis, answers,
-    // history) loads in the background — same pattern as useJob.
     initialData: () => {
       const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
         queryKey: ["candidates"],
@@ -236,10 +230,9 @@ export function useUnrejectCandidate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      serverFetch<{ data: { candidate: Candidate; restoredStageId: number | null } }>(
-        `/candidates/${id}/unreject`,
-        { method: "POST" },
-      ),
+      serverFetch<{
+        data: { candidate: Candidate; restoredStageId: number | null };
+      }>(`/candidates/${id}/unreject`, { method: "POST" }),
     onSuccess: (_, candidateId) => {
       queryClient.invalidateQueries({ queryKey: ["candidates", candidateId] });
       queryClient.invalidateQueries({ queryKey: ["candidates"] });

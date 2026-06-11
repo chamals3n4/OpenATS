@@ -2,12 +2,6 @@
 
 import dynamic from "next/dynamic";
 
-// ---------------------------------------------------------------------------
-// Heavy components that should be code-split and loaded only when needed.
-// Each `dynamic()` call creates a separate chunk that is lazy-loaded on
-// first render — dramatically reducing the initial JS bundle size.
-// ---------------------------------------------------------------------------
-
 export const ResumeScrollView = dynamic(
   () =>
     import("@/app/(dashboard)/candidates/[id]/_components/resume-scroll-view").then(

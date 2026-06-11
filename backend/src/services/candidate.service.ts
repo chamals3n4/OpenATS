@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, ilike, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   candidates,
@@ -73,6 +73,8 @@ export interface CandidateFilters {
     | "hired"
     | "withdrawn"
     | undefined;
+  page?: number;
+  limit?: number;
 }
 
 export interface CandidateBasicUpdateInput {
@@ -177,44 +179,67 @@ export const candidateService = {
   },
 
   async getAll(jobId: number | undefined, filters: CandidateFilters = {}) {
+    const { page = 1, limit = 25, ...rest } = filters;
+    const offset = (page - 1) * limit;
+
     const conditions = [];
-
-    if (jobId) {
-      conditions.push(eq(candidates.jobId, jobId));
+    if (jobId) conditions.push(eq(candidates.jobId, jobId));
+    if (rest.stageId)
+      conditions.push(eq(candidates.currentStageId, rest.stageId));
+    if (rest.status) conditions.push(eq(candidates.status, rest.status));
+    if (rest.search) {
+      conditions.push(
+        or(
+          ilike(candidates.firstName, `%${rest.search}%`),
+          ilike(candidates.lastName, `%${rest.search}%`),
+          ilike(candidates.email, `%${rest.search}%`),
+        ),
+      );
     }
 
-    if (filters.stageId) {
-      conditions.push(eq(candidates.currentStageId, filters.stageId));
-    }
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
 
-    if (filters.status) {
-      conditions.push(eq(candidates.status, filters.status));
-    }
+    const [rows, [countRow]] = await Promise.all([
+      db
+        .select({
+          id: candidates.id,
+          firstName: candidates.firstName,
+          lastName: candidates.lastName,
+          email: candidates.email,
+          phone: candidates.phone,
+          resumeUrl: candidates.resumeUrl,
+          jobId: candidates.jobId,
+          currentStageId: candidates.currentStageId,
+          status: candidates.status,
+          appliedAt: candidates.appliedAt,
+          updatedAt: candidates.updatedAt,
+          stageName: jobPipelineStages.name,
+          jobTitle: jobs.title,
+        })
+        .from(candidates)
+        .leftJoin(
+          jobPipelineStages,
+          eq(candidates.currentStageId, jobPipelineStages.id),
+        )
+        .leftJoin(jobs, eq(candidates.jobId, jobs.id))
+        .where(where)
+        .orderBy(desc(candidates.appliedAt))
+        .limit(limit)
+        .offset(offset),
 
-    return db
-      .select({
-        id: candidates.id,
-        firstName: candidates.firstName,
-        lastName: candidates.lastName,
-        email: candidates.email,
-        phone: candidates.phone,
-        resumeUrl: candidates.resumeUrl,
-        jobId: candidates.jobId,
-        currentStageId: candidates.currentStageId,
-        status: candidates.status,
-        appliedAt: candidates.appliedAt,
-        updatedAt: candidates.updatedAt,
-        stageName: jobPipelineStages.name,
-        jobTitle: jobs.title,
-      })
-      .from(candidates)
-      .leftJoin(
-        jobPipelineStages,
-        eq(candidates.currentStageId, jobPipelineStages.id),
-      )
-      .leftJoin(jobs, eq(candidates.jobId, jobs.id))
-      .where(conditions.length > 0 ? and(...conditions) : undefined)
-      .orderBy(desc(candidates.appliedAt));
+      db
+        .select({ count: sql<number>`count(*)::int` })
+        .from(candidates)
+        .where(where),
+    ]);
+
+    return {
+      rows,
+      total: countRow?.count ?? 0,
+      page,
+      limit,
+      totalPages: Math.ceil((countRow?.count ?? 0) / limit),
+    };
   },
 
   async getById(id: number) {

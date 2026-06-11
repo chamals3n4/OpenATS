@@ -8,6 +8,7 @@ import {
   UserGroupIcon,
   SearchList02Icon,
   Settings02Icon,
+  ArtboardToolIcon,
   Quiz02Icon,
   Agreement02Icon,
   Calendar02Icon,
@@ -59,9 +60,9 @@ const navMainData = [
     icon: Agreement02Icon,
   },
   {
-    title: "Active Logs",
-    url: "/active-logs",
-    icon: SearchList02Icon,
+    title: "Templates",
+    url: "/templates",
+    icon: ArtboardToolIcon,
   },
   {
     title: "Settings",
@@ -78,11 +79,7 @@ const navMainData = [
       },
       {
         title: "Careers Page",
-        url: "/settings/careers",
-      },
-      {
-        title: "Templates",
-        url: "/settings/templates",
+        url: "/settings/careers-page",
       },
       {
         title: "User Management",

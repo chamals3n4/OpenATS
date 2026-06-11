@@ -16,8 +16,6 @@ import type { Request, Response } from "express";
 
 const router: Router = Router();
 
-// ── Interview routes ───────────────────────────────────────────────────────
-
 const createInterviewSchema = z.object({
   stageId: z.number().int().optional(),
   scheduledAt: z.string().optional().nullable(),
@@ -41,7 +39,6 @@ const updateInterviewSchema = z.object({
   attendeeEmails: z.array(z.string().email()).optional(),
 });
 
-// POST /candidates/:candidateId/interviews
 router.post("/candidates/:candidateId/interviews", async (req, res) => {
   try {
     const candidateId = parseInt((req.params.candidateId ?? "").toString());
@@ -50,7 +47,6 @@ router.post("/candidates/:candidateId/interviews", async (req, res) => {
       return;
     }
 
-    // DEBUG: log exactly what the frontend sent
     logger.info(
       `[DEBUG] POST /candidates/${candidateId}/interviews body: ${JSON.stringify(req.body)}`,
     );
@@ -90,7 +86,6 @@ router.post("/candidates/:candidateId/interviews", async (req, res) => {
   }
 });
 
-// GET /candidates/:candidateId/interviews
 router.get("/candidates/:candidateId/interviews", async (req, res) => {
   try {
     const candidateId = parseInt((req.params.candidateId ?? "").toString());
@@ -105,7 +100,6 @@ router.get("/candidates/:candidateId/interviews", async (req, res) => {
   }
 });
 
-// GET /interviews — list all with optional filters
 router.get("/interviews", async (req, res) => {
   try {
     const filters = {
@@ -124,7 +118,6 @@ router.get("/interviews", async (req, res) => {
   }
 });
 
-// PATCH /interviews/:id
 router.patch("/interviews/:id", async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
@@ -154,7 +147,6 @@ router.patch("/interviews/:id", async (req, res) => {
   }
 });
 
-// POST /candidates/:id/schedule — schedule interview with time slots
 const scheduleSchema = z.object({
   eventName: z.string().min(1),
   eventType: z.enum(["virtual", "onsite"]),
@@ -227,7 +219,6 @@ router.post("/candidates/:id/schedule", async (req, res) => {
 
     if (!interview) throw new Error("Failed to create interview");
 
-    // Send email to candidate with slot selection link
     const publicUrl = `${process.env.OPENATS_FRONTEND_URL || "http://localhost:3000"}/interview/${token}`;
     try {
       await mailService.sendInterviewSlotEmail(
@@ -251,7 +242,6 @@ router.post("/candidates/:id/schedule", async (req, res) => {
   }
 });
 
-// Public: GET /public/interview/:token — candidate views their slots
 router.get("/public/interview/:token", async (req, res) => {
   try {
     const [interview] = await db
@@ -292,7 +282,6 @@ router.get("/public/interview/:token", async (req, res) => {
   }
 });
 
-// Public: PATCH /public/interview/:token/select — candidate selects a slot
 router.patch("/public/interview/:token/select", async (req, res) => {
   try {
     const slotIndex = req.body?.slotIndex;
@@ -311,7 +300,6 @@ router.patch("/public/interview/:token/select", async (req, res) => {
       return;
     }
 
-    // Mark the selected slot
     const slots = interview.timeSlots as Array<{
       datetime: string;
       selected: boolean;
@@ -334,7 +322,6 @@ router.patch("/public/interview/:token/select", async (req, res) => {
       })
       .where(eq(candidateInterviews.id, interview.id));
 
-    // Try Google Calendar sync
     if (interview.eventName) {
       try {
         const [candidate] = await db
@@ -359,9 +346,7 @@ router.patch("/public/interview/:token/select", async (req, res) => {
             attendeeEmails: [candidate.email],
           });
         }
-      } catch {
-        /* non-fatal */
-      }
+      } catch {}
     }
 
     res.status(200).json({ data: { confirmed: true, slot: selectedSlot } });
@@ -370,7 +355,6 @@ router.patch("/public/interview/:token/select", async (req, res) => {
   }
 });
 
-// DELETE /interviews/:id
 router.delete("/interviews/:id", async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
@@ -389,14 +373,11 @@ router.delete("/interviews/:id", async (req, res) => {
   }
 });
 
-// ── Interview Feedback routes ──────────────────────────────────────────────
-
 const feedbackSchema = z.object({
   content: z.string().min(1, "Feedback content is required"),
   rating: z.number().int().min(1).max(5).optional().nullable(),
 });
 
-// POST /interviews/:id/feedback
 router.post("/interviews/:id/feedback", async (req, res) => {
   try {
     const interviewId = parseInt((req.params.id ?? "").toString());
@@ -428,7 +409,6 @@ router.post("/interviews/:id/feedback", async (req, res) => {
   }
 });
 
-// GET /interviews/:id/feedback
 router.get("/interviews/:id/feedback", async (req, res) => {
   try {
     const interviewId = parseInt((req.params.id ?? "").toString());
@@ -443,7 +423,6 @@ router.get("/interviews/:id/feedback", async (req, res) => {
   }
 });
 
-// DELETE /interviews/:id/feedback/:feedbackId
 router.delete("/interviews/:id/feedback/:feedbackId", async (req, res) => {
   try {
     const feedbackId = parseInt((req.params.feedbackId ?? "").toString());

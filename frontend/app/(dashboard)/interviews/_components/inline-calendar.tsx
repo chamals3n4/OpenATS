@@ -26,7 +26,6 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
     ...Array(firstDow).fill(null),
     ...Array.from({ length: daysInMonth }, (_, i) => i + 1),
   ];
-  // pad to complete last week
   while (cells.length % 7 !== 0) cells.push(null);
 
   const byDay = useMemo(() => {

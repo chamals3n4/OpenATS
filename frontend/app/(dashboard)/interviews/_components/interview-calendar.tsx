@@ -4,7 +4,6 @@ import { useState, useMemo } from "react";
 import { ArrowLeft02Icon, ArrowRight01Icon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
-/** An interview as returned by GET /interviews */
 export interface InterviewForCalendar {
   id: number;
   candidateId: number;
@@ -17,10 +16,6 @@ export interface InterviewForCalendar {
   stageType?: string | null;
 }
 
-/**
- * Simple month-grid calendar showing interview dots on each day.
- * Clicking a day with interviews shows a popover with details.
- */
 export function InterviewCalendar({
   interviews,
 }: {
@@ -32,19 +27,16 @@ export function InterviewCalendar({
   const month = viewDate.getMonth(); // 0-indexed
   const year = viewDate.getFullYear();
 
-  // Days in the month
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  // Day of week of the first day (0 = Sunday, shift to 0 = Monday)
   const firstDayOfWeek = new Date(year, month, 1).getDay();
   const startOffset = firstDayOfWeek === 0 ? 6 : firstDayOfWeek - 1;
 
-  // Group interviews by date string (YYYY-MM-DD)
   const byDate = useMemo(() => {
     const map: Record<string, InterviewForCalendar[]> = {};
     for (const iv of interviews) {
       if (!iv.scheduledAt) continue;
-      const key = iv.scheduledAt.slice(0, 10); // "YYYY-MM-DD"
+      const key = iv.scheduledAt.slice(0, 10);
       if (!map[key]) map[key] = [];
       map[key].push(iv);
     }
@@ -68,30 +60,23 @@ export function InterviewCalendar({
 
   const dayHeaders = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
-  // Build calendar grid cells
   const cells: Array<{ day: number | null; dateKey: string }> = [];
 
-  // Empty cells before month starts
   for (let i = 0; i < startOffset; i++) {
     cells.push({ day: null, dateKey: "" });
   }
 
-  // Day cells
   for (let d = 1; d <= daysInMonth; d++) {
     const dateKey = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
     cells.push({ day: d, dateKey });
   }
 
-  // Selected date's interviews
   const selectedInterviews = selectedDate ? (byDate[selectedDate] ?? []) : [];
 
-  // Dot color by stage type (screening=amber, interview=blue, offer=green)
-  // Falls back to status-based color if no stageType
   const dotColor = (iv: InterviewForCalendar) => {
     if (iv.stageType === "screening") return "bg-amber-500";
     if (iv.stageType === "interview") return "bg-blue-500";
     if (iv.stageType === "offer") return "bg-emerald-500";
-    // Fallback to status-based
     if (iv.status === "scheduled") return "bg-emerald-500";
     if (iv.status === "pending_schedule") return "bg-amber-400";
     return "bg-slate-300";
@@ -99,9 +84,7 @@ export function InterviewCalendar({
 
   return (
     <div className="flex gap-6">
-      {/* Calendar grid */}
       <div className="flex-1 min-w-0">
-        {/* Month navigation */}
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
             {monthLabel}
@@ -122,7 +105,6 @@ export function InterviewCalendar({
           </div>
         </div>
 
-        {/* Day headers */}
         <div className="grid grid-cols-7 mb-1">
           {dayHeaders.map((d) => (
             <div
@@ -134,7 +116,6 @@ export function InterviewCalendar({
           ))}
         </div>
 
-        {/* Day cells */}
         <div className="grid grid-cols-7 rounded-xl border border-slate-200 dark:border-neutral-800 overflow-hidden">
           {cells.map((cell, i) => {
             const interviewsOnDay = cell.dateKey
@@ -189,7 +170,6 @@ export function InterviewCalendar({
         </div>
       </div>
 
-      {/* Side panel: selected day details */}
       {selectedDate && selectedInterviews.length > 0 && (
         <div className="w-72 shrink-0 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-4">
           <h4 className="text-[13px] font-bold text-slate-800 dark:text-neutral-200 mb-3">

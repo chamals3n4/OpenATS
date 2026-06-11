@@ -26,7 +26,6 @@ export function InterviewList({
   onFeedback,
   onEdit,
 }: InterviewListProps) {
-  // Group list view by date
   const grouped = useMemo(() => {
     const m: Record<string, any[]> = {};
     interviews.forEach((iv) => {

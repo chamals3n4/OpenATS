@@ -13,6 +13,18 @@ import type {
 } from "@/types";
 import { serverFetch } from "@/lib/auth-action";
 
+export type CandidatePagination = {
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
+type CandidateListResponse = {
+  data: Candidate[];
+  pagination?: CandidatePagination;
+};
+
 export function useCandidates(
   jobId?: number,
   filters?: {
@@ -42,12 +54,15 @@ export function useCandidates(
   const seedInitialData =
     jobId && !hasFilters
       ? () => {
-          const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
+          const allLists = queryClient.getQueriesData<CandidateListResponse>({
             queryKey: ["candidates", "all"],
           });
           for (const [, listData] of allLists) {
             if (!listData?.data?.length) continue;
-            return { data: listData.data.filter((c) => c.jobId === jobId) };
+            return {
+              data: listData.data.filter((c) => c.jobId === jobId),
+              pagination: undefined,
+            };
           }
           return undefined;
         }
@@ -56,7 +71,7 @@ export function useCandidates(
   const seedUpdatedAt =
     jobId && !hasFilters
       ? () => {
-          const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
+          const allLists = queryClient.getQueriesData<CandidateListResponse>({
             queryKey: ["candidates", "all"],
           });
           for (const [key] of allLists) {
@@ -69,7 +84,7 @@ export function useCandidates(
 
   return useQuery({
     queryKey: ["candidates", jobId ?? "all", filters],
-    queryFn: () => serverFetch<{ data: Candidate[] }>(path),
+    queryFn: () => serverFetch<CandidateListResponse>(path),
     enabled: options?.enabled !== false,
     staleTime: 1000 * 60 * 2,
     refetchOnMount: true,
@@ -90,7 +105,7 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
     queryFn: () => serverFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
     enabled,
     initialData: () => {
-      const allLists = queryClient.getQueriesData<{ data: Candidate[] }>({
+      const allLists = queryClient.getQueriesData<CandidateListResponse>({
         queryKey: ["candidates"],
       });
       for (const [, listData] of allLists) {
@@ -114,7 +129,7 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
       return undefined;
     },
     initialDataUpdatedAt: () => {
-      const allStates = queryClient.getQueriesData<{ data: Candidate[] }>({
+      const allStates = queryClient.getQueriesData<CandidateListResponse>({
         queryKey: ["candidates"],
       });
       for (const [key] of allStates) {

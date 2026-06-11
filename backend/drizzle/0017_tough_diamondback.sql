@@ -1,0 +1,1 @@
+DROP TABLE "active_logs" CASCADE;

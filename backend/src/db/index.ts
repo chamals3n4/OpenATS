@@ -11,10 +11,6 @@ const pool = new Pool({
   connectionTimeoutMillis: 10000,
 });
 
-// Prevent stale/dropped idle connections from crashing the process.
-// Neon scales to zero and will silently drop idle connections; pg emits
-// an 'error' event on the pool when that happens, which Node treats as
-// an uncaught exception and terminates the process unless handled here.
 pool.on("error", (err) => {
   logger.warn("[pg pool] idle client error (connection dropped):", err.message);
 });

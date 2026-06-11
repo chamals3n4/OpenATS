@@ -8,7 +8,6 @@ import { errorMiddleware } from "./middlewares/error.middleware";
 import { swaggerUi, swaggerDocument } from "./config/swagger";
 import { authMiddleware } from "./middlewares/auth.middleware";
 import { pageSettingsService } from "./services/page-settings.service";
-// import { activeLogMiddleware } from "./middlewares/active-log.middleware";
 import logger from "./utils/logger";
 
 const app: Express = express();
@@ -49,7 +48,6 @@ app.use(
   }),
 );
 app.use(express.json());
-// app.use(activeLogMiddleware);
 
 app.use(
   morgan(

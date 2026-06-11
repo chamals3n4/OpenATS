@@ -6,15 +6,10 @@ import { Calendar02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { serverFetch } from "@/lib/auth-action";
 
-/**
- * Google Calendar Connect button + status indicator.
- * Shows the connection state and lets the admin connect/disconnect.
- */
 export function GoogleCalendarConnect() {
   const [connected, setConnected] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  // Check connection status on mount
   useEffect(() => {
     serverFetch<{ data: { connected: boolean } }>("/google/status")
       .then((res) => setConnected(res.data.connected))
@@ -23,7 +18,6 @@ export function GoogleCalendarConnect() {
   }, []);
 
   const handleConnect = () => {
-    // Redirect to Google OAuth
     window.location.href = "/api/google/auth";
   };
 
@@ -34,9 +28,7 @@ export function GoogleCalendarConnect() {
         { method: "DELETE" },
       );
       setConnected(false);
-    } catch {
-      // silently fail
-    }
+    } catch {}
   };
 
   if (loading) return null;

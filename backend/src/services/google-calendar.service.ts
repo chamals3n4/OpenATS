@@ -1,18 +1,6 @@
 import { google } from "googleapis";
 import logger from "../utils/logger";
 
-// ---------------------------------------------------------------------------
-// Google Calendar integration via Service Account
-//
-// The company admin creates a Google Cloud Service Account, downloads a JSON
-// key, and pastes the content into GOOGLE_SERVICE_ACCOUNT_JSON in .env.
-//
-// All interview events are created on the calendar specified by
-// GOOGLE_CALENDAR_ID (the email address of the shared company calendar).
-// No per-user OAuth. No token refresh. One-time setup.
-// ---------------------------------------------------------------------------
-
-/** Lazily load the service account credentials */
 function getAuth() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (!raw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON is not set in .env");
@@ -28,7 +16,6 @@ function getAuth() {
 
 let _calendarClient: ReturnType<typeof google.calendar> | null = null;
 
-/** Get or create the authenticated Calendar client (lazy, cached). */
 function getCalendarClient() {
   if (_calendarClient) return _calendarClient;
 
@@ -37,12 +24,9 @@ function getCalendarClient() {
   return _calendarClient;
 }
 
-/** The calendar ID to create events on (e.g. "company@example.com" or "primary") */
 function getCalendarId(): string {
   return process.env.GOOGLE_CALENDAR_ID || "primary";
 }
-
-// ── Event CRUD ─────────────────────────────────────────────────────────────
 
 export interface CalendarEventInput {
   interviewId: number;
@@ -55,7 +39,6 @@ export interface CalendarEventInput {
   attendeeEmails: string[];
 }
 
-/** Create a Google Calendar event and return the event ID. */
 export async function createCalendarEvent(
   input: CalendarEventInput,
 ): Promise<string> {
@@ -93,7 +76,6 @@ export async function createCalendarEvent(
   return event.data.id;
 }
 
-/** Update an existing calendar event. */
 export async function updateCalendarEvent(
   googleEventId: string,
   input: CalendarEventInput,
@@ -115,7 +97,6 @@ export async function updateCalendarEvent(
   });
 }
 
-/** Delete a calendar event. */
 export async function deleteCalendarEvent(googleEventId: string) {
   const calendar = getCalendarClient();
   await calendar.events.delete({

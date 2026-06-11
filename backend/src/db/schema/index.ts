@@ -13,5 +13,4 @@ export * from "./relations";
 export * from "./rejections";
 export * from "./interviews";
 export * from "./interview-feedback";
-export * from "./active-logs";
 export * from "./page-settings";

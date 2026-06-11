@@ -25,9 +25,6 @@ export const metadata: Metadata = {
   description: "Open Source Applicant Tracking System",
 };
 
-// AsgardeoProvider calls `headers()` / `cookies()` during initialization and
-// must run in a request context.  `force-dynamic` is required — without it the
-// build will fail with "couldn't be rendered statically because it used headers".
 export const dynamic = "force-dynamic";
 
 import { ThemeProvider } from "@/components/theme-provider";

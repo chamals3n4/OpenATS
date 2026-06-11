@@ -33,7 +33,7 @@ OpenATS is organized as a multi-app repository:
 - **Web app (`web`)**: Next.js, React, TypeScript, Tailwind CSS, shadcn/ui
 - **API (`api`)**: Express.js, TypeScript, PostgreSQL, Drizzle ORM, Socket.IO
 - **Documentation site (`docs`)**: Docusaurus
-- **Auth/Identity**: WSO2 Asgardeo
+- **Identity & Access Management**: WSO2 Identity Platform
 - **Package manager**: pnpm
 
 ## Documentation

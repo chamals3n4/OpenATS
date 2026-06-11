@@ -1,4 +1,8 @@
-import { QueryClient, HydrationBoundary, dehydrate } from "@tanstack/react-query";
+import {
+  QueryClient,
+  HydrationBoundary,
+  dehydrate,
+} from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
 import type { AnalyticsReport, Department } from "@/types";
 import { OverviewClient } from "./overview-client";

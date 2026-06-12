@@ -53,7 +53,7 @@ export function TemplatesFilters({
         <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
           <SelectValue placeholder="All Types" />
         </SelectTrigger>
-        <SelectContent className="rounded-md w-49 shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+        <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
           <SelectItem value="all">All Types</SelectItem>
           <SelectItem value="email">Email</SelectItem>
           <SelectItem value="event">Interview Event</SelectItem>

@@ -72,7 +72,7 @@ export function JobFilters({
         </SelectTrigger>
         <SelectContent
           align="start"
-          className="-ml-1 w-53 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+          className="w-60 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
         >
           <SelectItem value="all">All Departments</SelectItem>
           {departments.map((dept) => (
@@ -100,7 +100,7 @@ export function JobFilters({
         </SelectTrigger>
         <SelectContent
           align="start"
-          className="-ml-2 w-45 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+          className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
         >
           <SelectItem value="all">All Types</SelectItem>
           {(
@@ -131,7 +131,7 @@ export function JobFilters({
         </SelectTrigger>
         <SelectContent
           align="start"
-          className="-ml-2 w-45 rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+          className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900"
         >
           <SelectItem value="all">All Status</SelectItem>
           {(

@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   Table,
   TableBody,
@@ -10,27 +11,69 @@ import {
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { JobTableRow } from "./job-table-row";
+import {
+  BulkSelectHeaderCell,
+  BulkSelectionBar,
+  useBulkSelection,
+} from "@/components/table/bulk-selection";
+import { BulkDeleteDialog } from "@/components/table/bulk-delete-dialog";
 import type { Job } from "@/types";
 
 interface JobsTableProps {
   jobs: Job[];
   departmentNameById: Map<number, string>;
   onDelete: (job: Job) => void;
+  onDeleteSelected: (ids: number[]) => boolean | void | Promise<boolean | void>;
+  isDeletingSelected?: boolean;
 }
 
 export function JobsTable({
   jobs,
   departmentNameById,
   onDelete,
+  onDeleteSelected,
+  isDeletingSelected,
 }: JobsTableProps) {
   const hasJobs = jobs.length > 0;
+  const visibleJobIds = useMemo(() => jobs.map((job) => job.id), [jobs]);
+  const selection = useBulkSelection(visibleJobIds);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  const handleConfirmBulkDelete = async () => {
+    const shouldClear = await onDeleteSelected(Array.from(selection.selectedIds));
+    if (shouldClear !== false) {
+      selection.clearSelection();
+      setBulkDeleteOpen(false);
+    }
+  };
 
   return (
     <div className="px-6 py-4">
       <div className="border border-slate-300 dark:border-neutral-700 rounded-md bg-white dark:bg-neutral-900 shadow-none overflow-hidden">
+        <BulkSelectionBar
+          selectedCount={selection.selectedCount}
+          label="job"
+          onClear={selection.clearSelection}
+          onDeleteSelected={() => setBulkDeleteOpen(true)}
+          isDeleting={isDeletingSelected}
+        />
+        <BulkDeleteDialog
+          isOpen={bulkDeleteOpen}
+          label="job"
+          count={selection.selectedCount}
+          isPending={isDeletingSelected}
+          onClose={() => setBulkDeleteOpen(false)}
+          onConfirm={handleConfirmBulkDelete}
+        />
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
+              <BulkSelectHeaderCell
+                checked={selection.allVisibleSelected}
+                indeterminate={selection.someVisibleSelected}
+                disabled={!hasJobs}
+                onCheckedChange={selection.toggleVisible}
+              />
               <TableHead className="h-10 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Job Name
               </TableHead>
@@ -59,12 +102,16 @@ export function JobsTable({
                     `Department #${job.departmentId}`
                   }
                   onDelete={onDelete}
+                  isSelected={selection.selectedIds.has(job.id)}
+                  onSelectedChange={(checked) =>
+                    selection.toggleOne(job.id, checked)
+                  }
                 />
               ))
             ) : (
               <TableRow>
                 <TableCell
-                  colSpan={5}
+                  colSpan={6}
                   className="h-32 text-center text-slate-400 text-sm"
                 >
                   No jobs found.

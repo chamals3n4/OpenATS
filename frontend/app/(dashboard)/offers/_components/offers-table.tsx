@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import {
   Table,
   TableBody,
@@ -11,12 +12,20 @@ import {
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import type { Offer } from "@/types";
 import { OfferTableRow } from "./offer-table-row";
+import {
+  BulkSelectHeaderCell,
+  BulkSelectionBar,
+  useBulkSelection,
+} from "@/components/table/bulk-selection";
+import { BulkDeleteDialog } from "@/components/table/bulk-delete-dialog";
 
 interface OffersTableProps {
   offers: Offer[];
   isLoading: boolean;
   onRowClick: (offer: Offer) => void;
   onDelete: (offer: Offer) => void;
+  onDeleteSelected: (ids: number[]) => boolean | void | Promise<boolean | void>;
+  isDeletingSelected?: boolean;
 }
 
 export function OffersTable({
@@ -24,13 +33,49 @@ export function OffersTable({
   isLoading,
   onRowClick,
   onDelete,
+  onDeleteSelected,
+  isDeletingSelected,
 }: OffersTableProps) {
+  const visibleOfferIds = useMemo(() => offers.map((offer) => offer.id), [offers]);
+  const selection = useBulkSelection(visibleOfferIds);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
+
+  const handleConfirmBulkDelete = async () => {
+    const shouldClear = await onDeleteSelected(Array.from(selection.selectedIds));
+    if (shouldClear !== false) {
+      selection.clearSelection();
+      setBulkDeleteOpen(false);
+    }
+  };
+
   return (
     <div className="px-6 py-4">
       <div className="overflow-hidden rounded-md border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-900">
+        <BulkSelectionBar
+          selectedCount={selection.selectedCount}
+          label="offer"
+          onClear={selection.clearSelection}
+          onDeleteSelected={() => setBulkDeleteOpen(true)}
+          isDeleting={isDeletingSelected}
+        />
+        <BulkDeleteDialog
+          isOpen={bulkDeleteOpen}
+          label="offer"
+          count={selection.selectedCount}
+          isPending={isDeletingSelected}
+          onClose={() => setBulkDeleteOpen(false)}
+          onConfirm={handleConfirmBulkDelete}
+        />
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
+              <BulkSelectHeaderCell
+                className="h-11"
+                checked={selection.allVisibleSelected}
+                indeterminate={selection.someVisibleSelected}
+                disabled={isLoading || offers.length === 0}
+                onCheckedChange={selection.toggleVisible}
+              />
               <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Candidate Name
               </TableHead>
@@ -54,14 +99,14 @@ export function OffersTable({
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={6} className="p-0">
+                <TableCell colSpan={7} className="p-0">
                   <ListSectionSpinner />
                 </TableCell>
               </TableRow>
             ) : offers.length === 0 ? (
               <TableRow>
                 <TableCell
-                  colSpan={6}
+                  colSpan={7}
                   className="h-32 text-center text-slate-400 text-sm"
                 >
                   No offers found.
@@ -74,6 +119,10 @@ export function OffersTable({
                   offer={offer}
                   onRowClick={onRowClick}
                   onDelete={onDelete}
+                  isSelected={selection.selectedIds.has(offer.id)}
+                  onSelectedChange={(checked) =>
+                    selection.toggleOne(offer.id, checked)
+                  }
                 />
               ))
             )}

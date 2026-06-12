@@ -6,6 +6,7 @@ import {
   getCandidateById,
   moveCandidateStage,
   deleteCandidate,
+  bulkDeleteCandidates,
   updateCandidateBasicDetails,
 } from "../controllers/candidate.controller";
 
@@ -26,6 +27,7 @@ router.get("/jobs/:jobId", getCandidates);
 router.get("/:id", getCandidateById);
 router.patch("/:id", upload.single("resume"), updateCandidateBasicDetails);
 router.put("/:id/stage", moveCandidateStage);
+router.delete("/bulk", bulkDeleteCandidates);
 router.delete("/:id", deleteCandidate);
 
 export default router;

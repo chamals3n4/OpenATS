@@ -7,6 +7,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { PencilEdit01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
+import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 import { serverFetch } from "@/lib/auth-action";
 import type {
   Job,
@@ -22,12 +23,16 @@ interface JobTableRowProps {
   job: Job;
   departmentName: string;
   onDelete: (job: Job) => void;
+  isSelected: boolean;
+  onSelectedChange: (checked: boolean) => void;
 }
 
 export function JobTableRow({
   job,
   departmentName,
   onDelete,
+  isSelected,
+  onSelectedChange,
 }: JobTableRowProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
@@ -79,8 +84,13 @@ export function JobTableRow({
     <TableRow
       onClick={handleRowClick}
       onMouseEnter={prefetchJob}
+      data-state={isSelected ? "selected" : undefined}
       className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer"
     >
+      <BulkSelectRowCell
+        checked={isSelected}
+        onCheckedChange={onSelectedChange}
+      />
       <TableCell className="h-10 px-6 py-0">
         <span className="text-slate-700 dark:text-neutral-300 font-medium">
           {job.title}

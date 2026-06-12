@@ -5,6 +5,7 @@ import { Delete02Icon } from "@hugeicons/core-free-icons";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 import type { Offer } from "@/types";
 import {
   getStatusStyle,
@@ -19,20 +20,30 @@ interface OfferTableRowProps {
   offer: Offer;
   onRowClick: (offer: Offer) => void;
   onDelete: (offer: Offer) => void;
+  isSelected: boolean;
+  onSelectedChange: (checked: boolean) => void;
 }
 
 export function OfferTableRow({
   offer,
   onRowClick,
   onDelete,
+  isSelected,
+  onSelectedChange,
 }: OfferTableRowProps) {
   const { bg, text } = getStatusStyle(offer.status);
 
   return (
     <TableRow
+      data-state={isSelected ? "selected" : undefined}
       className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
       onClick={() => onRowClick(offer)}
     >
+      <BulkSelectRowCell
+        className="h-11"
+        checked={isSelected}
+        onCheckedChange={onSelectedChange}
+      />
       <TableCell className="h-11 px-6 py-0 text-[13px] font-medium text-slate-700 dark:text-neutral-200">
         {getCandidateName(offer as any)}
       </TableCell>

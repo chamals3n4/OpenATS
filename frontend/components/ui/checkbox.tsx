@@ -19,8 +19,8 @@ function Checkbox({
 }: CheckboxProps) {
   const checkedStyles =
     variant === "theme"
-      ? "data-checked:bg-theme data-checked:border-theme dark:data-checked:bg-theme dark:data-checked:border-theme data-checked:text-white dark:data-checked:text-background aria-invalid:aria-checked:border-theme"
-      : "data-checked:bg-primary data-checked:text-primary-foreground dark:data-checked:bg-primary data-checked:border-primary aria-invalid:aria-checked:border-primary"
+      ? "data-checked:bg-theme data-checked:border-theme data-indeterminate:bg-theme data-indeterminate:border-theme dark:data-checked:bg-theme dark:data-checked:border-theme dark:data-indeterminate:bg-theme dark:data-indeterminate:border-theme data-checked:text-white data-indeterminate:text-white dark:data-checked:text-background dark:data-indeterminate:text-background aria-invalid:aria-checked:border-theme"
+      : "data-checked:bg-primary data-checked:text-primary-foreground data-indeterminate:bg-primary data-indeterminate:text-primary-foreground dark:data-checked:bg-primary dark:data-indeterminate:bg-primary data-checked:border-primary data-indeterminate:border-primary aria-invalid:aria-checked:border-primary"
 
   return (
     <CheckboxPrimitive.Root

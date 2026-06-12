@@ -5,6 +5,7 @@ import { PencilEdit01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 import type { Candidate } from "@/types";
 import { timeAgo } from "../libs/candidate-utils";
 
@@ -13,6 +14,8 @@ interface CandidateTableRowProps {
   onRowClick: (candidate: Candidate) => void;
   onEdit: (candidate: Candidate) => void;
   onDelete: (candidate: Candidate) => void;
+  isSelected: boolean;
+  onSelectedChange: (checked: boolean) => void;
 }
 
 export function CandidateTableRow({
@@ -20,12 +23,20 @@ export function CandidateTableRow({
   onRowClick,
   onEdit,
   onDelete,
+  isSelected,
+  onSelectedChange,
 }: CandidateTableRowProps) {
   return (
     <TableRow
+      data-state={isSelected ? "selected" : undefined}
       className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
       onClick={() => onRowClick(candidate)}
     >
+      <BulkSelectRowCell
+        className="h-11"
+        checked={isSelected}
+        onCheckedChange={onSelectedChange}
+      />
       <TableCell className="h-11 px-6 py-0 text-[13px] font-medium text-slate-700 dark:text-neutral-200">
         {candidate.firstName} {candidate.lastName}
       </TableCell>

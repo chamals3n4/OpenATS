@@ -85,6 +85,28 @@ export interface CandidateBasicUpdateInput {
   resumeUrl?: string | null;
 }
 
+function buildCandidateWhere(
+  jobId: number | undefined,
+  filters: Omit<CandidateFilters, "page" | "limit">,
+) {
+  const conditions = [];
+  if (jobId) conditions.push(eq(candidates.jobId, jobId));
+  if (filters.stageId)
+    conditions.push(eq(candidates.currentStageId, filters.stageId));
+  if (filters.status) conditions.push(eq(candidates.status, filters.status));
+  if (filters.search) {
+    conditions.push(
+      or(
+        ilike(candidates.firstName, `%${filters.search}%`),
+        ilike(candidates.lastName, `%${filters.search}%`),
+        ilike(candidates.email, `%${filters.search}%`),
+      ),
+    );
+  }
+
+  return conditions.length > 0 ? and(...conditions) : undefined;
+}
+
 /** Returned with move-stage so the UI can toast automation outcomes. */
 export type StageAutomationFlags = {
   assessmentInvite?: "sent" | "skipped_active_invite";
@@ -182,22 +204,7 @@ export const candidateService = {
     const { page = 1, limit = 25, ...rest } = filters;
     const offset = (page - 1) * limit;
 
-    const conditions = [];
-    if (jobId) conditions.push(eq(candidates.jobId, jobId));
-    if (rest.stageId)
-      conditions.push(eq(candidates.currentStageId, rest.stageId));
-    if (rest.status) conditions.push(eq(candidates.status, rest.status));
-    if (rest.search) {
-      conditions.push(
-        or(
-          ilike(candidates.firstName, `%${rest.search}%`),
-          ilike(candidates.lastName, `%${rest.search}%`),
-          ilike(candidates.email, `%${rest.search}%`),
-        ),
-      );
-    }
-
-    const where = conditions.length > 0 ? and(...conditions) : undefined;
+    const where = buildCandidateWhere(jobId, rest);
 
     const [rows, [countRow]] = await Promise.all([
       db
@@ -574,6 +581,20 @@ export const candidateService = {
       .where(eq(candidates.id, id))
       .returning();
     return deleted ?? null;
+  },
+
+  async deleteManyByFilters(
+    jobId: number | undefined,
+    filters: Omit<CandidateFilters, "page" | "limit"> = {},
+  ) {
+    const where = buildCandidateWhere(jobId, filters);
+    const deleted = await db.delete(candidates).where(where).returning({
+      id: candidates.id,
+      email: candidates.email,
+      jobId: candidates.jobId,
+    });
+
+    return deleted;
   },
 };
 

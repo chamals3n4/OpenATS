@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback } from "react";
 import { useJobs, useDeleteJob } from "@/hooks/queries/use-jobs";
 import { useDepartments } from "@/hooks/queries/use-company";
 import type { Job } from "@/types";
@@ -68,6 +68,14 @@ export function JobsPageClient() {
     setFilterStatus("all");
   };
 
+  const handleDeleteSelected = useCallback(
+    async (ids: number[]) => {
+      if (ids.length === 0) return false;
+      await Promise.all(ids.map((id) => deleteMutation.mutateAsync(id)));
+    },
+    [deleteMutation],
+  );
+
   const handleConfirmDelete = () => {
     if (!deleteTarget) return;
     deleteMutation.mutate(deleteTarget.id, {
@@ -118,6 +126,8 @@ export function JobsPageClient() {
         jobs={filteredJobs}
         departmentNameById={departmentNameById}
         onDelete={setDeleteTarget}
+        onDeleteSelected={handleDeleteSelected}
+        isDeletingSelected={deleteMutation.isPending}
       />
 
       <JobDeleteDialog

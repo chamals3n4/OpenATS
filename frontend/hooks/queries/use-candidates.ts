@@ -25,6 +25,13 @@ type CandidateListResponse = {
   pagination?: CandidatePagination;
 };
 
+export type CandidateBulkDeleteFilters = {
+  jobId?: number;
+  stageId?: number;
+  search?: string;
+  status?: "active" | "rejected" | "offered" | "hired" | "withdrawn";
+};
+
 export function useCandidates(
   jobId?: number,
   filters?: {
@@ -175,6 +182,24 @@ export function useDeleteCandidate() {
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+  });
+}
+
+export function useBulkDeleteCandidates() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (filters: CandidateBulkDeleteFilters) =>
+      serverFetch<{ data: { count: number; ids: number[] } }>(
+        "/candidates/bulk",
+        {
+          method: "DELETE",
+          body: JSON.stringify(filters),
+        },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["offers"] });
     },
   });
 }

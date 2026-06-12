@@ -40,6 +40,15 @@ const updateCandidateBasicSchema = z.object({
   phone: z.union([z.string().max(50), z.null()]).optional(),
 });
 
+const bulkDeleteCandidatesSchema = z.object({
+  jobId: z.number().int().positive().optional(),
+  stageId: z.number().int().positive().optional(),
+  search: z.string().trim().optional(),
+  status: z
+    .enum(["active", "rejected", "offered", "hired", "withdrawn"])
+    .optional(),
+});
+
 async function getJobOrFail(res: Response, jobId: number) {
   const job = await jobService.getById(jobId);
   if (!job) {
@@ -228,6 +237,47 @@ export const moveCandidateStage = async (req: Request, res: Response) => {
     res
       .status(400)
       .json({ error: error.message || "Failed to move candidate" });
+  }
+};
+
+export const bulkDeleteCandidates = async (req: Request, res: Response) => {
+  try {
+    const parsed = bulkDeleteCandidatesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const { jobId, stageId, search, status } = parsed.data;
+
+    logger.warn(
+      `Bulk candidate deletion requested: jobId=${jobId ?? "all"}, stageId=${stageId ?? "all"}, status=${status ?? "all"}, search="${search ?? ""}" by user ${req.user?.id}`,
+    );
+
+    const deleted = await candidateService.deleteManyByFilters(jobId, {
+      stageId,
+      search: search || undefined,
+      status,
+    });
+
+    logger.info(
+      `Bulk candidate deletion completed: count=${deleted.length} by user ${req.user?.id}`,
+    );
+
+    res.status(200).json({
+      data: {
+        count: deleted.length,
+        ids: deleted.map((candidate) => candidate.id),
+      },
+    });
+  } catch (error) {
+    logger.error(
+      `Failed to bulk delete candidates - user ${req.user?.id}: ${(error as any)?.message}`,
+    );
+    res.status(500).json({ error: "Failed to delete candidates" });
   }
 };
 

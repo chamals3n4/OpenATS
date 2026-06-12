@@ -4,11 +4,13 @@ import { useState, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useOffers, useDeleteOffer } from "@/hooks/queries/use-offers";
 import { useJobs } from "@/hooks/queries/use-jobs";
-import type { Offer } from "@/types";
+import type { Job, Offer } from "@/types";
 import { OfferFilters } from "./offer-filters";
 import { OffersTable } from "./offers-table";
 import { OfferDeleteDialog } from "./delete-dialog";
 import { getCandidateName } from "../lib/offer-utils";
+
+type OfferWithJob = Offer & { job?: Pick<Job, "id"> };
 
 export default function OffersPageClient() {
   const router = useRouter();
@@ -31,17 +33,25 @@ export default function OffersPageClient() {
     const q = search.toLowerCase().trim();
 
     return offers.filter((o) => {
-      const candidateName = getCandidateName(o as any).toLowerCase();
+      const candidateName = getCandidateName(o).toLowerCase();
       const matchesSearch = !q || candidateName.includes(q);
       const matchesStatus = statusFilter === "all" || o.status === statusFilter;
       const matchesJob =
-        selectedJobId === undefined || (o as any).job?.id === selectedJobId;
+        selectedJobId === undefined || (o as OfferWithJob).job?.id === selectedJobId;
       return matchesSearch && matchesStatus && matchesJob;
     });
   }, [offers, search, statusFilter, selectedJobId]);
 
   // ── Delete ─────────────────────────────────────────────────
   const [deleteTarget, setDeleteTarget] = useState<Offer | null>(null);
+
+  const handleDeleteSelected = useCallback(
+    async (ids: number[]) => {
+      if (ids.length === 0) return false;
+      await Promise.all(ids.map((id) => deleteMutation.mutateAsync(id)));
+    },
+    [deleteMutation],
+  );
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
@@ -88,6 +98,8 @@ export default function OffersPageClient() {
         isLoading={isLoading}
         onRowClick={handleRowClick}
         onDelete={setDeleteTarget}
+        onDeleteSelected={handleDeleteSelected}
+        isDeletingSelected={deleteMutation.isPending}
       />
 
       <OfferDeleteDialog

@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
+  useBulkDeleteCandidates,
   useCandidates,
   useDeleteCandidate,
   useUpdateCandidateBasicDetails,
@@ -19,7 +20,6 @@ import {
   buildUpdateFormData,
 } from "../libs/candidate-types";
 import { CandidateStatusFilter } from "../libs/candidate-utils";
-
 const PAGE_LIMIT = 15;
 
 export default function CandidatesPageClient() {
@@ -38,11 +38,6 @@ export default function CandidatesPageClient() {
     return () => clearTimeout(t);
   }, [search]);
 
-  // Reset to page 1 whenever any filter changes
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, selectedJobId, selectedStatus]);
-
   // ── Data ───────────────────────────────────────────────────
   const { data: candidatesData, isLoading } = useCandidates(selectedJobId, {
     search: debouncedSearch || undefined,
@@ -59,6 +54,51 @@ export default function CandidatesPageClient() {
   // ── Delete ─────────────────────────────────────────────────
   const [deleteTarget, setDeleteTarget] = useState<Candidate | null>(null);
   const deleteMutation = useDeleteCandidate();
+  const bulkDeleteMutation = useBulkDeleteCandidates();
+
+  const handleDeleteSelected = useCallback(
+    async (ids: number[]) => {
+      if (ids.length === 0) return false;
+      await Promise.all(ids.map((id) => deleteMutation.mutateAsync(id)));
+    },
+    [deleteMutation],
+  );
+
+  const handleDeleteAllMatchingCandidates = useCallback(async () => {
+    const total = pagination?.total ?? 0;
+    if (total === 0) return false;
+    await bulkDeleteMutation.mutateAsync({
+      jobId: selectedJobId,
+      search: debouncedSearch || undefined,
+      status: selectedStatus === "all" ? undefined : selectedStatus,
+    });
+  }, [
+    bulkDeleteMutation,
+    debouncedSearch,
+    pagination?.total,
+    selectedJobId,
+    selectedStatus,
+  ]);
+
+  const selectionScopeKey = useMemo(
+    () => `${selectedJobId ?? "all"}|${selectedStatus}|${debouncedSearch}`,
+    [debouncedSearch, selectedJobId, selectedStatus],
+  );
+
+  const handleSearchChange = useCallback((value: string) => {
+    setSearch(value);
+    setPage(1);
+  }, []);
+
+  const handleJobChange = useCallback((jobId: number | undefined) => {
+    setSelectedJobId(jobId);
+    setPage(1);
+  }, []);
+
+  const handleStatusChange = useCallback((status: CandidateStatusFilter) => {
+    setSelectedStatus(status);
+    setPage(1);
+  }, []);
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
@@ -120,11 +160,11 @@ export default function CandidatesPageClient() {
       <div className="flex-shrink-0">
         <CandidateFilters
           search={search}
-          onSearchChange={setSearch}
+          onSearchChange={handleSearchChange}
           selectedJobId={selectedJobId}
-          onJobChange={setSelectedJobId}
+          onJobChange={handleJobChange}
           selectedStatus={selectedStatus}
-          onStatusChange={setSelectedStatus}
+          onStatusChange={handleStatusChange}
           jobs={jobs}
           onClear={handleClearFilters}
         />
@@ -133,6 +173,7 @@ export default function CandidatesPageClient() {
       {/* Scrollable table area */}
       <div className="flex-1 min-h-0 overflow-y-auto">
         <CandidatesTable
+          key={selectionScopeKey}
           candidates={candidates}
           isLoading={isLoading}
           onRowClick={handleRowClick}
@@ -140,6 +181,11 @@ export default function CandidatesPageClient() {
           onDelete={setDeleteTarget}
           pagination={pagination}
           onPageChange={setPage}
+          onDeleteSelected={handleDeleteSelected}
+          onDeleteAllMatching={handleDeleteAllMatchingCandidates}
+          isDeletingSelected={
+            deleteMutation.isPending || bulkDeleteMutation.isPending
+          }
         />
       </div>
 

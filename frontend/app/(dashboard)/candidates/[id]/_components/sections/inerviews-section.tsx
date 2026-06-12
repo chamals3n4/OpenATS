@@ -33,7 +33,7 @@ export function InterviewsSection({
           <Button
             size="sm"
             onClick={onSchedule}
-            className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+            className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)]"
           >
             Schedule
           </Button>
@@ -41,14 +41,14 @@ export function InterviewsSection({
       </div>
 
       {(candidate.interviews ?? []).length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
+        <div className="rounded-md border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
           <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
             <HugeiconsIcon
               icon={Calendar02Icon}
               className="size-5 text-slate-300 dark:text-neutral-600"
             />
           </div>
-          <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+          <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400">
             No interviews yet
           </p>
           <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">

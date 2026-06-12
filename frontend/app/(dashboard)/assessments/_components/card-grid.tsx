@@ -18,7 +18,7 @@ export function AssessmentCardGrid({
   onInvite,
 }: AssessmentCardGridProps) {
   return (
-    <div className="px-8 py-6">
+    <div className="px-6 py-4">
       {isLoading ? (
         <ListSectionSpinner />
       ) : assessments.length === 0 ? (

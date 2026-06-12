@@ -28,7 +28,7 @@ export default function FeedbackDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
+      <DialogContent className="max-w-lg rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
             Add Feedback
@@ -49,14 +49,14 @@ export default function FeedbackDialog({
             onChange={(e) => setFeedbackText(e.target.value)}
             placeholder="Add internal notes about this interview — only visible to your team…"
             rows={5}
-            className="w-full rounded-lg border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3.5 py-2.5 text-[13px] text-slate-800 dark:text-neutral-200 shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)] placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-colors"
+            className="w-full rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3.5 py-2.5 text-[13px] text-slate-800 dark:text-neutral-200 shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)] placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-colors"
           />
         </div>
 
         <DialogFooter className="gap-2 mt-2">
           <button
             onClick={() => onOpenChange(false)}
-            className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer transition-colors"
+            className="h-8 rounded-md border-none bg-neutral-700 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer transition-colors"
           >
             Cancel
           </button>
@@ -76,7 +76,7 @@ export default function FeedbackDialog({
               }
             }}
             disabled={!feedbackText.trim() || addFeedbackMutation.isPending}
-            className="h-[34px] rounded-md border-none px-4 text-[14px] font-semibold leading-none text-white shadow-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="h-8 rounded-md border-none px-4 text-sm font-semibold leading-none text-white shadow-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             style={{ backgroundColor: "var(--theme-color)" }}
           >
             {addFeedbackMutation.isPending ? "Saving…" : "Save Feedback"}

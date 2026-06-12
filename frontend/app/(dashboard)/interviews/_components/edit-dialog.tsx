@@ -50,7 +50,7 @@ export function EditDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
+      <DialogContent className="max-w-lg rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
             Edit Interview
@@ -71,7 +71,7 @@ export function EditDialog({
               value={eventName}
               onChange={(e) => onEventNameChange(e.target.value)}
               placeholder="e.g. Technical Interview"
-              className="h-10 rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm focus-visible:ring-1 focus-visible:ring-[var(--theme-color)] focus-visible:border-[var(--theme-color)]"
+              className="h-8 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm focus-visible:ring-1 focus-visible:ring-[var(--theme-color)] focus-visible:border-[var(--theme-color)]"
             />
           </div>
           <div>
@@ -82,7 +82,7 @@ export function EditDialog({
               value={meetingUrl}
               onChange={(e) => onMeetingUrlChange(e.target.value)}
               placeholder="https://meet.google.com/…"
-              className="h-10 rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm focus-visible:ring-1 focus-visible:ring-[var(--theme-color)] focus-visible:border-[var(--theme-color)]"
+              className="h-8 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm focus-visible:ring-1 focus-visible:ring-[var(--theme-color)] focus-visible:border-[var(--theme-color)]"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -94,10 +94,10 @@ export function EditDialog({
                 value={status}
                 onValueChange={(v) => onStatusChange(v || "")}
               >
-                <SelectTrigger className="h-10 w-full rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm focus:ring-0 focus-visible:ring-0">
+                <SelectTrigger className="h-8 w-full rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm focus:ring-0 focus-visible:ring-0">
                   <SelectValue placeholder="Select status" />
                 </SelectTrigger>
-                <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+                <SelectContent className="rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
                   <SelectItem value="pending_schedule">
                     Awaiting Slot
                   </SelectItem>
@@ -115,10 +115,10 @@ export function EditDialog({
                 value={outcome}
                 onValueChange={(v) => onOutcomeChange(v || "pending")}
               >
-                <SelectTrigger className="h-10 w-full rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm focus:ring-0 focus-visible:ring-0">
+                <SelectTrigger className="h-8 w-full rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm focus:ring-0 focus-visible:ring-0">
                   <SelectValue placeholder="Select outcome" />
                 </SelectTrigger>
-                <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+                <SelectContent className="rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
                   <SelectItem value="pending">Pending</SelectItem>
                   <SelectItem value="pass">Passed</SelectItem>
                   <SelectItem value="fail">Failed</SelectItem>
@@ -131,7 +131,7 @@ export function EditDialog({
         <DialogFooter className="gap-2 mt-2">
           <button
             onClick={() => onOpenChange(false)}
-            className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer transition-colors"
+            className="h-8 rounded-md border-none bg-neutral-700 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer transition-colors"
           >
             Cancel
           </button>
@@ -161,7 +161,7 @@ export function EditDialog({
               }
             }}
             disabled={updateInterviewMutation.isPending}
-            className="h-[34px] rounded-md border-none px-4 text-[14px] font-semibold leading-none text-white shadow-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="h-8 rounded-md border-none px-4 text-sm font-semibold leading-none text-white shadow-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             style={{ backgroundColor: "var(--theme-color)" }}
           >
             {updateInterviewMutation.isPending ? "Saving…" : "Save Changes"}

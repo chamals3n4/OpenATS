@@ -64,7 +64,7 @@ export function EditCandidateDialog({
               <Input
                 value={firstName}
                 onChange={(e) => onFirstNameChange(e.target.value)}
-                className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                className="h-10 rounded-md border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
               />
             </div>
             <div className="space-y-1.5">
@@ -74,7 +74,7 @@ export function EditCandidateDialog({
               <Input
                 value={lastName}
                 onChange={(e) => onLastNameChange(e.target.value)}
-                className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                className="h-10 rounded-md border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
               />
             </div>
             <div className="col-span-2 space-y-1.5">
@@ -85,7 +85,7 @@ export function EditCandidateDialog({
                 type="email"
                 value={email}
                 onChange={(e) => onEmailChange(e.target.value)}
-                className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                className="h-10 rounded-md border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
               />
             </div>
             <div className="col-span-2 space-y-1.5">
@@ -95,7 +95,7 @@ export function EditCandidateDialog({
               <Input
                 value={phone}
                 onChange={(e) => onPhoneChange(e.target.value)}
-                className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                className="h-10 rounded-md border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
                 placeholder="Optional"
               />
             </div>
@@ -125,7 +125,7 @@ export function EditCandidateDialog({
                 onChange={(e) =>
                   onResumeFileChange(e.target.files?.[0] ?? null)
                 }
-                className="h-10 rounded-lg border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)] pt-2.5 file:text-[13px]"
+                className="h-10 rounded-md border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)] pt-2.5 file:text-[13px]"
               />
               <p className="text-[12px] text-slate-400">
                 If uploaded, the existing CV will be replaced.
@@ -136,14 +136,14 @@ export function EditCandidateDialog({
         <DialogFooter className="px-6 pb-6 pt-0 gap-2">
           <DialogClose
             disabled={isPending}
-            className="h-9 rounded-md border-none bg-neutral-800 px-3.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-neutral-700 disabled:opacity-60 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
+            className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-neutral-700 disabled:opacity-60 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
           >
             Cancel
           </DialogClose>
           <Button
             onClick={onSave}
             disabled={isPending}
-            className="h-9 rounded-md border-none bg-[var(--theme-color)] px-3.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-[var(--theme-color-hover)] disabled:opacity-60 cursor-pointer"
+            className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-[var(--theme-color-hover)] disabled:opacity-60 cursor-pointer"
           >
             {isPending ? "Saving…" : "Save Changes"}
           </Button>

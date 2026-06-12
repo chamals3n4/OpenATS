@@ -43,17 +43,17 @@ export function JobFilters({
   onClear,
 }: JobFiltersProps) {
   return (
-    <div className="border-y border-slate-300 dark:border-neutral-700 px-8 py-3.5 flex items-center gap-4">
-      <div className="relative w-80">
+    <div className="border-y border-slate-300 dark:border-neutral-700 px-6 py-2.5 flex items-center gap-2">
+      <div className="relative w-64">
         <HugeiconsIcon
           icon={Search01Icon}
-          className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
+          className="pointer-events-none absolute left-3 top-1/2 z-10 size-3.5 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
         />
         <Input
           placeholder="Search"
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-11 h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
+          className="pl-9 h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
         />
       </div>
 
@@ -63,7 +63,7 @@ export function JobFilters({
           if (value !== null) onDeptChange(value);
         }}
       >
-        <SelectTrigger className="w-52 h-10! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
+        <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
           <SelectValue>
             {filterDept === "all"
               ? "All Departments"
@@ -89,7 +89,7 @@ export function JobFilters({
           if (value !== null) onTypeChange(value);
         }}
       >
-        <SelectTrigger className="w-44 h-10! cursor-pointer bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
+        <SelectTrigger className="w-40 h-8! cursor-pointer bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
           <SelectValue>
             {filterType === "all"
               ? "All Types"
@@ -121,7 +121,7 @@ export function JobFilters({
           if (value !== null) onStatusChange(value);
         }}
       >
-        <SelectTrigger className="w-44 h-10! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
+        <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
           <SelectValue>
             {filterStatus === "all"
               ? "All Status"
@@ -146,7 +146,7 @@ export function JobFilters({
 
       <Button
         onClick={onClear}
-        className="ml-4 h-9 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
+        className="ml-2 h-8 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
       >
         Clear All
       </Button>
@@ -154,7 +154,7 @@ export function JobFilters({
       <div className="ml-auto">
         <Button
           render={<Link href="/jobs/new" prefetch />}
-          className="h-[34px] rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] cursor-pointer"
+          className="h-8 rounded-md border-none bg-[var(--theme-color)] px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] cursor-pointer"
         >
           <HugeiconsIcon
             icon={PlusSignIcon}

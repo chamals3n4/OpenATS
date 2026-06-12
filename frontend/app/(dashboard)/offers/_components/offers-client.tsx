@@ -66,8 +66,8 @@ export default function OffersPageClient() {
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
-      <div className="px-8 py-4 flex items-center justify-between">
-        <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
+      <div className="px-6 py-3 flex items-center justify-between">
+        <h1 className="text-xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Manage Offers
         </h1>
       </div>

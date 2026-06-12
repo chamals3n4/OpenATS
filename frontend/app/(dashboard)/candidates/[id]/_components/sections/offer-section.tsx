@@ -172,14 +172,14 @@ export function OfferSection({
         </p>
       </div>
       {!offer ? (
-        <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
+        <div className="rounded-md border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
           <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
             <HugeiconsIcon
               icon={Award01Icon}
               className="size-5 text-slate-300 dark:text-neutral-600"
             />
           </div>
-          <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+          <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400">
             No offer yet
           </p>
           <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1 max-w-[260px] mx-auto">
@@ -209,7 +209,7 @@ export function OfferSection({
                       })
                       .catch(() => toast.error("Failed to create offer"));
                   }}
-                  className="mt-4 h-8 rounded-md border-none bg-[var(--theme-color)] px-4 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                  className="mt-4 h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)]"
                 >
                   Generate Offer
                 </Button>
@@ -219,7 +219,7 @@ export function OfferSection({
           })()}
         </div>
       ) : isEditingOffer ? (
-        <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
+        <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
               <p className="text-[15px] font-bold text-slate-800 dark:text-neutral-200">
@@ -235,7 +235,7 @@ export function OfferSection({
               <Button
                 size="sm"
                 onClick={() => setIsEditingOffer(false)}
-                className="h-8 rounded-md border-none bg-neutral-800 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
               >
                 Cancel
               </Button>
@@ -243,7 +243,7 @@ export function OfferSection({
                 size="sm"
                 onClick={saveOfferDraft}
                 disabled={updateOfferMutation.isPending}
-                className="h-8 rounded-md border-none bg-neutral-700 px-4 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-600 disabled:opacity-60"
+                className="h-7 rounded-md border-none bg-neutral-700 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-600 disabled:opacity-60"
               >
                 {updateOfferMutation.isPending ? "Saving…" : "Save Draft"}
               </Button>
@@ -253,11 +253,11 @@ export function OfferSection({
                   updateOfferMutation.isPending || sendOfferMutation.isPending
                 }
                 onClick={handleSendOffer}
-                className="h-8 rounded-md border-none bg-[var(--theme-color)] px-4 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
+                className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
               >
                 <HugeiconsIcon
                   icon={SentIcon}
-                  className="size-3.5 rotate-[-45deg] mr-1"
+                  className="size-3 rotate-[-45deg] mr-1"
                   strokeWidth={2.5}
                 />
                 {sendOfferMutation.isPending ? "Sending…" : "Send Offer"}
@@ -267,17 +267,17 @@ export function OfferSection({
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 Template
               </Label>
               <Select
                 value={offerTemplateId}
                 onValueChange={(v) => setOfferTemplateId(v ?? "")}
               >
-                <SelectTrigger className="h-11 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[14px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                <SelectTrigger className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
                   <SelectValue placeholder="Select a template" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                   <SelectItem value="" className="text-[13px]">
                     No template
                   </SelectItem>
@@ -296,17 +296,17 @@ export function OfferSection({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   Currency
                 </Label>
                 <Select
                   value={editCurrency}
                   onValueChange={(v) => setEditCurrency(v ?? "")}
                 >
-                  <SelectTrigger className="h-11 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[14px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                  <SelectTrigger className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                  <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                     {["USD", "EUR", "GBP", "LKR", "INR", "AUD"].map((c) => (
                       <SelectItem key={c} value={c} className="text-[13px]">
                         {c}
@@ -316,7 +316,7 @@ export function OfferSection({
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   Employment Type
                 </Label>
                 <Select
@@ -325,10 +325,10 @@ export function OfferSection({
                     setEditEmploymentType(v as typeof editEmploymentType)
                   }
                 >
-                  <SelectTrigger className="h-11 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[14px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                  <SelectTrigger className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
                     <SelectValue />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                  <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                     {[
                       "full_time",
                       "part_time",
@@ -350,7 +350,7 @@ export function OfferSection({
             </div>
 
             <div className="space-y-1.5 mt-4">
-              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 Salary
               </Label>
               <Input
@@ -359,50 +359,50 @@ export function OfferSection({
                 value={editSalary}
                 onChange={(e) => setEditSalary(e.target.value)}
                 placeholder="e.g. 75000"
-                className="h-11 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[14px] focus:ring-0 focus:border-[var(--theme-color)] rounded-lg"
+                className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] rounded-md"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   Start Date
                 </Label>
                 <Input
                   type="date"
                   value={editStartDate}
                   onChange={(e) => setEditStartDate(e.target.value)}
-                  className="h-11 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[14px] focus:ring-0 focus:border-[var(--theme-color)] rounded-lg"
+                  className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] rounded-md"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   Reporting Manager
                 </Label>
                 <Input
                   value={editReportingManager}
                   onChange={(e) => setEditReportingManager(e.target.value)}
                   placeholder="e.g. Jane Smith"
-                  className="h-11 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[14px] focus:ring-0 focus:border-[var(--theme-color)] rounded-lg"
+                  className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] rounded-md"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                 Benefits
               </Label>
               <textarea
                 value={editBenefits}
                 onChange={(e) => setEditBenefits(e.target.value)}
                 placeholder="e.g. Health insurance, 401k matching, 20 PTO days..."
-                className="min-h-[100px] w-full rounded-lg border border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 px-3 py-2.5 text-[14px] shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)]"
+                className="min-h-[100px] w-full rounded-md border border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 px-3 py-2.5 text-[13px] shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)]"
               />
             </div>
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
                   Offer Letter (HTML)
                 </Label>
                 <button
@@ -433,7 +433,7 @@ export function OfferSection({
                 value={editOfferLetterHtml}
                 onChange={(e) => setEditOfferLetterHtml(e.target.value)}
                 placeholder="<p>Dear candidate...</p>"
-                className="min-h-[180px] w-full rounded-lg border border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 px-3 py-2.5 text-[14px] font-mono shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)]"
+                className="min-h-[180px] w-full rounded-md border border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 px-3 py-2.5 text-[13px] font-mono shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)]"
               />
             </div>
 
@@ -447,7 +447,7 @@ export function OfferSection({
         </div>
       ) : (
         <div className="space-y-4">
-          <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+          <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
             <div className="flex items-center justify-between px-5 py-4">
               <div className="flex items-center gap-3">
                 <div
@@ -471,11 +471,11 @@ export function OfferSection({
                       sendOfferMutation.isPending
                     }
                     onClick={handleSendOffer}
-                    className="h-8 rounded-md border-none bg-[var(--theme-color)] px-3 text-[12px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
+                    className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
                   >
                     <HugeiconsIcon
                       icon={SentIcon}
-                      className="size-3.5 rotate-[-45deg]"
+                      className="size-3 rotate-[-45deg]"
                       strokeWidth={2.5}
                     />
                     {sendOfferMutation.isPending ? "Sending…" : "Send Offer"}
@@ -495,7 +495,7 @@ export function OfferSection({
                           ),
                       })
                     }
-                    className="h-8 rounded-md border-none bg-emerald-600 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-emerald-500"
+                    className="h-7 rounded-md border-none bg-emerald-600 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-emerald-500"
                   >
                     {markOfferAsHiredMutation.isPending
                       ? "Marking…"
@@ -505,9 +505,9 @@ export function OfferSection({
                 <Button
                   size="sm"
                   onClick={openOfferEdit}
-                  className="h-8 rounded-md border-none bg-neutral-800 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                  className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
                 >
-                  <HugeiconsIcon icon={PencilEdit01Icon} className="size-3.5" />
+                  <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
                   Edit
                 </Button>
               </div>
@@ -575,7 +575,7 @@ export function OfferSection({
               <>
                 <Separator />
                 <div className="px-5 py-4">
-                  <p className="text-[12px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-2">
+                  <p className="text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-2">
                     Benefits
                   </p>
                   <p className="text-[13px] text-slate-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
@@ -587,8 +587,8 @@ export function OfferSection({
           </div>
 
           {offer.offerLetterHtml && (
-            <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-              <p className="text-[12px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
+            <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
+              <p className="text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
                 Offer Letter Preview
               </p>
               <div

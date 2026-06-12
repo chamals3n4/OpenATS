@@ -47,7 +47,7 @@ function ChartCard({
 }) {
   return (
     <div className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 overflow-hidden">
-      <div className="px-5 pt-5 pb-1">
+      <div className="px-4 pt-4 pb-1">
         <p className="text-sm font-semibold text-slate-700 dark:text-neutral-200">
           {title}
         </p>
@@ -55,7 +55,7 @@ function ChartCard({
           {subtitle}
         </p>
       </div>
-      <div className="px-4 pb-4">{children}</div>
+      <div className="px-3 pb-3">{children}</div>
     </div>
   );
 }
@@ -148,74 +148,32 @@ export function OverviewClient() {
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
-      <div className="px-8 py-4 flex items-center justify-between">
-        <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
+      {/* Header */}
+      <div className="px-6 py-3 flex items-center justify-between">
+        <h1 className="text-xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Reports And Analytics
         </h1>
         <div className="flex items-center gap-2">
-          {/*<Select
-            value={exportFormat}
-            onValueChange={(value) =>
-              setExportFormat((value as "csv" | "json") ?? "csv")
-            }
-          >
-            <SelectTrigger className="w-35 h-9! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-600 dark:text-neutral-300 text-[14px] focus:ring-0 px-4">
-              <SelectValue>
-                <span className="flex items-center gap-2">
-                  <span className="inline-flex w-6 shrink-0 items-center justify-center">
-                    <HugeiconsIcon
-                      icon={exportFormat === "json" ? TextIcon : ListViewIcon}
-                      className="size-4"
-                    />
-                  </span>
-                  {exportFormat.toUpperCase()}
-                </span>
-              </SelectValue>
-            </SelectTrigger>
-            <SelectContent
-              className="rounded-md shadow-lg w-35 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-[14px]"
-              sideOffset={({ side, anchor }) =>
-                side === "bottom" || side === "top" ? -anchor.height : 0
-              }
-            >
-              <SelectItem value="csv">
-                <span className="flex items-center gap-2">
-                  <span className="inline-flex w-4 shrink-0 items-center justify-center">
-                    <HugeiconsIcon icon={ListViewIcon} className="size-4" />
-                  </span>
-                  CSV
-                </span>
-              </SelectItem>
-              <SelectItem value="json">
-                <span className="flex items-center gap-2">
-                  <span className="inline-flex w-4 shrink-0 items-center justify-center">
-                    <HugeiconsIcon icon={TextIcon} className="size-4" />
-                  </span>
-                  JSON
-                </span>
-              </SelectItem>
-            </SelectContent>
-          </Select>*/}
-
           <Button
             onClick={() => setExportDialogOpen(true)}
-            className="bg-theme hover:bg-theme-hover text-white rounded-md h-9 px-4 flex items-center gap-2 border border-theme shadow-none text-[14px] font-semibold cursor-pointer"
+            className="bg-theme hover:bg-theme-hover text-white rounded-md h-8 px-3 flex items-center gap-1.5 border border-theme shadow-none text-sm font-semibold cursor-pointer"
           >
-            <HugeiconsIcon icon={Download05Icon} className="size-4" />
+            <HugeiconsIcon icon={Download05Icon} className="size-3.5" />
             Export Report
           </Button>
         </div>
       </div>
 
-      <div className="border-y border-slate-200 dark:border-neutral-800 px-8 py-3.5 flex items-center gap-3">
+      {/* Filters */}
+      <div className="border-y border-slate-200 dark:border-neutral-800 px-6 py-2.5 flex items-center gap-2">
         <Select
           value={period}
           onValueChange={(value) => setPeriod(value ?? "7d")}
         >
-          <SelectTrigger className="w-52 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-44 h-8! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue>{PERIOD_LABELS[period]}</SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
             <SelectItem value="7d">Last 7 Days</SelectItem>
             <SelectItem value="30d">Last 30 Days</SelectItem>
             <SelectItem value="90d">Last 90 Days</SelectItem>
@@ -223,10 +181,10 @@ export function OverviewClient() {
         </Select>
 
         <Select value={dept} onValueChange={(value) => setDept(value ?? "all")}>
-          <SelectTrigger className="w-52 h-10! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+          <SelectTrigger className="w-44 h-8! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
             <SelectValue>{DEPT_LABELS[dept]}</SelectValue>
           </SelectTrigger>
-          <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+          <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Departments</SelectItem>
             {departments.map((d) => (
               <SelectItem key={d.id} value={String(d.id)}>
@@ -237,22 +195,24 @@ export function OverviewClient() {
         </Select>
       </div>
 
-      <div className="px-8 py-6 flex flex-col gap-5">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Content */}
+      <div className="px-6 py-4 flex flex-col gap-4">
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
           {STATS.map((s) => (
             <div
               key={s.label}
-              className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 p-6 flex flex-col gap-3 min-h-27.5"
+              className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 p-4 flex flex-col gap-2"
             >
-              <p className="text-sm text-slate-500 dark:text-neutral-400 font-medium">
+              <p className="text-xs text-slate-500 dark:text-neutral-400 font-medium">
                 {s.label}
               </p>
               <div className="flex items-end justify-between gap-2">
-                <p className="text-3xl font-medium text-slate-800 dark:text-neutral-100 leading-none">
+                <p className="text-2xl font-medium text-slate-800 dark:text-neutral-100 leading-none">
                   {s.value}
                 </p>
                 <span
-                  className={`text-xs font-semibold px-2 py-0.5 rounded-full mb-0.5 ${s.up ? "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30" : "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30"}`}
+                  className={`text-xs font-semibold px-1.5 py-0.5 rounded-full mb-0.5 ${s.up ? "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30" : "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30"}`}
                 >
                   {s.delta}
                 </span>
@@ -261,7 +221,8 @@ export function OverviewClient() {
           ))}
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Charts row 1 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <ChartCard
             title="Pipeline Report"
             subtitle="Candidates By Stage (Current Vs. Previous Period)"
@@ -277,7 +238,8 @@ export function OverviewClient() {
           </ChartCard>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Charts row 2 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
           <ChartCard title="Time To Hire" subtitle="Average days by department">
             <DeptChart data={deptData} />
           </ChartCard>
@@ -291,6 +253,7 @@ export function OverviewClient() {
         </div>
       </div>
 
+      {/* Export Dialog */}
       <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
         <DialogContent className="sm:max-w-lg" showCloseButton={false}>
           <DialogHeader>

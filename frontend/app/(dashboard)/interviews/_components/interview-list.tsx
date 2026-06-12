@@ -45,7 +45,7 @@ export function InterviewList({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {sortedGroupKeys.map((dateKey) => {
         const dayInterviews = grouped[dateKey];
         const isToday =
@@ -82,7 +82,7 @@ export function InterviewList({
         return (
           <div key={dateKey}>
             {/* Date group header */}
-            <div className="flex items-center gap-3 mb-3">
+            <div className="flex items-center gap-3 mb-2.5">
               <div className="flex items-center gap-2">
                 {isToday && (
                   <span className="size-2 rounded-full bg-[var(--theme-color)] animate-pulse" />
@@ -116,7 +116,7 @@ export function InterviewList({
             </div>
 
             {/* Interview cards */}
-            <div className="space-y-2.5">
+            <div className="space-y-2">
               {dayInterviews.map((iv) => {
                 const cfg =
                   STATUS_CONFIG[iv.status] ?? STATUS_CONFIG.pending_schedule;
@@ -127,25 +127,25 @@ export function InterviewList({
                 return (
                   <div
                     key={iv.id}
-                    className="group rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-5 py-4 hover:border-slate-300 dark:hover:border-neutral-700 hover:shadow-sm transition-all"
+                    className="group rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 hover:border-slate-300 dark:hover:border-neutral-700 hover:shadow-sm transition-all"
                   >
                     <div className="flex items-center justify-between gap-4">
                       {/* Left: candidate info */}
-                      <div className="min-w-0 flex-1 flex items-center gap-4">
+                      <div className="min-w-0 flex-1 flex items-center gap-3">
                         {/* Time column */}
                         {iv.scheduledAt ? (
-                          <div className="shrink-0 w-16 text-right">
+                          <div className="shrink-0 w-14 text-right">
                             <p className="text-[14px] font-bold text-slate-800 dark:text-neutral-200 tabular-nums">
                               {fmtTime(iv.scheduledAt)}
                             </p>
                           </div>
                         ) : (
-                          <div className="shrink-0 w-16" />
+                          <div className="shrink-0 w-14" />
                         )}
 
                         {/* Divider line */}
                         <div
-                          className={`shrink-0 w-0.5 h-10 rounded-full ${cfg.dot}`}
+                          className={`shrink-0 w-0.5 h-8 rounded-full ${cfg.dot}`}
                         />
 
                         {/* Info */}
@@ -192,14 +192,14 @@ export function InterviewList({
                             e.stopPropagation();
                             onFeedback(iv);
                           }}
-                          className="inline-flex items-center gap-1.5 h-[34px] rounded-md px-3.5 text-[13px] font-semibold text-white shadow-none transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1.5 h-7 rounded-md px-2.5 text-[13px] font-semibold text-white shadow-none transition-colors cursor-pointer"
                           style={{
                             backgroundColor: "var(--theme-color)",
                           }}
                         >
                           <HugeiconsIcon
                             icon={Message02Icon}
-                            className="size-3.5"
+                            className="size-3"
                           />
                           Feedback
                         </button>
@@ -208,11 +208,11 @@ export function InterviewList({
                             e.stopPropagation();
                             onEdit(iv);
                           }}
-                          className="inline-flex items-center gap-1.5 h-[34px] rounded-md bg-neutral-700/90 px-3.5 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1.5 h-7 rounded-md bg-neutral-700/90 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 transition-colors cursor-pointer"
                         >
                           <HugeiconsIcon
                             icon={PencilEdit01Icon}
-                            className="size-3.5"
+                            className="size-3"
                           />
                           Edit
                         </button>

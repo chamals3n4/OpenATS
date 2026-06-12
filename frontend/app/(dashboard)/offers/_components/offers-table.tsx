@@ -26,27 +26,27 @@ export function OffersTable({
   onDelete,
 }: OffersTableProps) {
   return (
-    <div className="px-8 py-6">
+    <div className="px-6 py-4">
       <div className="overflow-hidden rounded-md border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-900">
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
-              <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Candidate Name
               </TableHead>
-              <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Status
               </TableHead>
-              <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Applied for
               </TableHead>
-              <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Salary
               </TableHead>
-              <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Sent on
               </TableHead>
-              <TableHead className="h-13 px-4 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 w-40 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Actions
               </TableHead>
             </TableRow>
@@ -80,7 +80,7 @@ export function OffersTable({
           </TableBody>
         </Table>
 
-        <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+        <div className="flex items-center justify-between px-6 py-2.5 border-t border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
           <span className="text-sm font-medium text-slate-400 dark:text-neutral-500">
             {isLoading
               ? "Loading..."

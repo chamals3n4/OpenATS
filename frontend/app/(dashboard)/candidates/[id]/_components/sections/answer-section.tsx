@@ -15,14 +15,14 @@ export function AnswersSection({ candidate }: { candidate: any }) {
         </p>
       </div>
       {candidate.answers.length === 0 && candidate.selections.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
+        <div className="rounded-md border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
           <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
             <HugeiconsIcon
               icon={QuestionIcon}
               className="size-5 text-slate-300 dark:text-neutral-600"
             />
           </div>
-          <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+          <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400">
             No answers submitted
           </p>
           <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
@@ -34,7 +34,7 @@ export function AnswersSection({ candidate }: { candidate: any }) {
           {candidate.answers.map((a: any) => (
             <div
               key={a.id}
-              className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
+              className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
             >
               <div className="px-4 py-3 bg-slate-50 dark:bg-neutral-800/50 border-b border-slate-100 dark:border-neutral-800">
                 <p className="text-[12px] font-semibold text-slate-600 dark:text-neutral-300">
@@ -42,7 +42,7 @@ export function AnswersSection({ candidate }: { candidate: any }) {
                 </p>
               </div>
               <div className="px-4 py-3">
-                <p className="text-[14px] text-slate-700 dark:text-neutral-300 leading-relaxed">
+                <p className="text-[13px] text-slate-700 dark:text-neutral-300 leading-relaxed">
                   {a.answerText ?? (
                     <em className="text-slate-400 dark:text-neutral-500">
                       No text answer
@@ -53,7 +53,7 @@ export function AnswersSection({ candidate }: { candidate: any }) {
             </div>
           ))}
           {candidate.selections.length > 0 && (
-            <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+            <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
               {(
                 Array.from(
                   new Set(
@@ -81,7 +81,7 @@ export function AnswersSection({ candidate }: { candidate: any }) {
                       .map((s: any) => (
                         <span
                           key={s.id}
-                          className="text-[12px] bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 px-3 py-1.5 rounded-lg font-medium border border-slate-200 dark:border-neutral-700"
+                          className="text-[12px] bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 px-3 py-1.5 rounded-md font-medium border border-slate-200 dark:border-neutral-700"
                         >
                           {s.optionLabel || `Option #${s.optionId}`}
                         </span>

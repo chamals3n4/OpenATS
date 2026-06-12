@@ -61,10 +61,10 @@ export function RejectCandidateDialog({
               value={rejectReason}
               onValueChange={(v) => setRejectReason(v ?? "")}
             >
-              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+              <SelectTrigger className="h-8 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
                 <SelectValue placeholder="Select a reason" />
               </SelectTrigger>
-              <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+              <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                 {REJECTION_REASONS.map((reason) => (
                   <SelectItem
                     key={reason}
@@ -86,11 +86,11 @@ export function RejectCandidateDialog({
               value={rejectInternalNote}
               onChange={(e) => setRejectInternalNote(e.target.value)}
               placeholder="Visible to your team only"
-              className="min-h-[90px] w-full rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-[13px] text-slate-700 dark:text-neutral-300 shadow-none focus:outline-none focus:border-[var(--theme-color)]"
+              className="min-h-[90px] w-full rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-[13px] text-slate-700 dark:text-neutral-300 shadow-none focus:outline-none focus:border-[var(--theme-color)]"
             />
           </div>
 
-          <div className="flex items-center justify-between rounded-lg border border-slate-200 dark:border-neutral-700 px-3 py-2">
+          <div className="flex items-center justify-between rounded-md border border-slate-200 dark:border-neutral-700 px-3 py-2">
             <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
               Send Rejection Email
             </Label>
@@ -109,10 +109,10 @@ export function RejectCandidateDialog({
                 value={rejectTemplateId}
                 onValueChange={(v) => setRejectTemplateId(v ?? "")}
               >
-                <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-lg">
+                <SelectTrigger className="h-8 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
                   <SelectValue placeholder="Select template" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+                <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                   {emailTemplates.map((t: any) => (
                     <SelectItem
                       key={t.id}
@@ -132,7 +132,7 @@ export function RejectCandidateDialog({
           <Button
             size="sm"
             onClick={() => onOpenChange(false)}
-            className="h-8 rounded-md border-none bg-neutral-700 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-neutral-600"
+            className="h-7 rounded-md border-none bg-neutral-700 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-600"
           >
             Cancel
           </Button>
@@ -167,7 +167,7 @@ export function RejectCandidateDialog({
                 },
               );
             }}
-            className="h-8 rounded-md border-none bg-red-600 px-3 text-[12px] font-semibold text-white shadow-none hover:bg-red-500 disabled:opacity-60"
+            className="h-7 rounded-md border-none bg-red-600 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-red-500 disabled:opacity-60"
           >
             {rejectMutation.isPending ? "Rejecting…" : "Confirm Reject"}
           </Button>

@@ -196,7 +196,7 @@ export default function CandidateDetailPage({
         <Button
           variant="outline"
           onClick={() => router.push("/candidates")}
-          className="h-9 px-4 rounded-lg border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-400 font-medium"
+          className="h-7 px-2.5 rounded-md border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-400 font-medium"
         >
           <HugeiconsIcon icon={ArrowLeft02Icon} className="size-4 mr-2" />
           Back to Candidates
@@ -242,7 +242,7 @@ export default function CandidateDetailPage({
               }
             />
 
-            <div className="rounded-xl border border-slate-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+            <div className="rounded-md border border-slate-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
               {activeSection === "job-fit" && (
                 <JobFitSection
                   resumeUrl={candidate.resumeUrl}

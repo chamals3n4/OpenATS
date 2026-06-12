@@ -10,13 +10,13 @@ interface TemplatesHeaderProps {
 
 export function TemplatesHeader({ onNewTemplate }: TemplatesHeaderProps) {
   return (
-    <div className="px-8 py-4 flex items-center justify-between">
-      <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
+    <div className="px-6 py-3 flex items-center justify-between">
+      <h1 className="text-xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
         Templates
       </h1>
       <Button
         onClick={onNewTemplate}
-        className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
+        className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-md h-8 px-4 flex items-center gap-2 border-none shadow-none text-sm font-medium transition-colors"
       >
         <HugeiconsIcon
           icon={PlusSignIcon}

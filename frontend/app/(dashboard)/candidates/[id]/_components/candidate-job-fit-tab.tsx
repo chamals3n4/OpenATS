@@ -50,7 +50,7 @@ function SkillsAlignmentSection({
             {matchedSkills.map((s) => (
               <span
                 key={s}
-                className="text-[13px] font-normal px-2.5 py-1 rounded-lg bg-emerald-50 dark:bg-emerald-950/35 text-emerald-900 dark:text-emerald-200 border border-emerald-200/70 dark:border-emerald-800/50"
+                className="text-[13px] font-normal px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/35 text-emerald-900 dark:text-emerald-200 border border-emerald-200/70 dark:border-emerald-800/50"
               >
                 {s}
               </span>
@@ -67,7 +67,7 @@ function SkillsAlignmentSection({
             {missingSkills.map((s) => (
               <span
                 key={s}
-                className="text-[13px] font-normal px-2.5 py-1 rounded-lg bg-rose-50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200 border border-rose-200/70 dark:border-rose-900/45"
+                className="text-[13px] font-normal px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200 border border-rose-200/70 dark:border-rose-900/45"
               >
                 {s}
               </span>
@@ -92,7 +92,7 @@ export function CandidateJobFitTab({
 
   if (!resumeUrl) {
     return (
-      <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/40 px-4 py-8 text-center">
+      <div className="rounded-md border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/40 px-4 py-8 text-center">
         <p className="text-[13px] font-normal text-slate-600 dark:text-neutral-400 leading-relaxed">
           No resume on file. Upload a resume on apply to get an automatic job
           fit summary.
@@ -103,7 +103,7 @@ export function CandidateJobFitTab({
 
   if (!cv) {
     return (
-      <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/40 px-4 py-8 text-center">
+      <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/40 px-4 py-8 text-center">
         <p className="text-[13px] font-normal text-slate-600 dark:text-neutral-400 leading-relaxed">
           Job fit has not run for this candidate yet.
         </p>
@@ -133,7 +133,7 @@ export function CandidateJobFitTab({
 
   if (cv.status === "failed") {
     return (
-      <div className="rounded-xl border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/25 px-4 py-4">
+      <div className="rounded-md border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/25 px-4 py-4">
         <p className="text-[12px] font-medium text-red-600 dark:text-red-400 uppercase tracking-wide">
           Could not complete analysis
         </p>
@@ -177,7 +177,7 @@ export function CandidateJobFitTab({
         />
 
         {bd && (
-          <div className="rounded-xl border border-slate-200 bg-slate-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-900/40">
+          <div className="rounded-md border border-slate-200 bg-slate-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-900/40">
             <h3 className="text-[12px] font-medium uppercase tracking-wider text-slate-500 dark:text-neutral-400 mb-3">
               How the score breaks down
             </h3>

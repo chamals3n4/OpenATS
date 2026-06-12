@@ -47,14 +47,14 @@ export function ScoresSection({
             Test results and evaluation scores
           </p>
         </div>
-        <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
+        <div className="rounded-md border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
           <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
             <HugeiconsIcon
               icon={ChartEvaluationIcon}
               className="size-5 text-slate-300 dark:text-neutral-600"
             />
           </div>
-          <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+          <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400">
             No assessments yet
           </p>
           <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1 max-w-[280px] mx-auto">
@@ -179,7 +179,7 @@ export function ScoresSection({
                     <button
                       type="button"
                       onClick={() => onViewAttempt(a.id)}
-                      className="text-[14px] cursor-pointer text-[var(--theme-color)] font-semibold hover:underline"
+                      className="text-[13px] cursor-pointer text-[var(--theme-color)] font-semibold hover:underline"
                     >
                       View candidate answers
                     </button>

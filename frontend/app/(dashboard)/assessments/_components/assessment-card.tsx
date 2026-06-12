@@ -22,9 +22,9 @@ export function AssessmentCard({
   onInvite,
 }: AssessmentCardProps) {
   return (
-    <div className="flex flex-col border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 shadow-sm">
+    <div className="flex flex-col border border-slate-200 dark:border-neutral-800 rounded-md bg-white dark:bg-neutral-900 shadow-sm">
       {/* Card body */}
-      <div className="flex flex-col gap-2.5 px-5 pt-5 pb-4">
+      <div className="flex flex-col gap-2 px-4 pt-4 pb-3">
         <Link
           href={`/assessments/${assessment.id}`}
           className="text-[15px] font-semibold text-slate-800 dark:text-neutral-200 leading-snug hover:underline underline-offset-4 decoration-1 truncate"
@@ -50,16 +50,16 @@ export function AssessmentCard({
       </div>
 
       {/* Card footer */}
-      <div className="flex items-center gap-1.5 px-4 py-3 border-t border-slate-100 dark:border-neutral-800">
+      <div className="flex items-center gap-1.5 px-4 py-2.5 border-t border-slate-100 dark:border-neutral-800">
         <Button
           asChild
-          className="h-[34px] rounded-md border-none px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
+          className="h-8 rounded-md border-none px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
         >
           <Link href={`/assessments/${assessment.id}`}>Edit</Link>
         </Button>
         <Button
           onClick={() => onDelete(assessment)}
-          className="inline-flex h-[34px] rounded-md border-none bg-red-500 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
+          className="inline-flex h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
         >
           <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
           Delete

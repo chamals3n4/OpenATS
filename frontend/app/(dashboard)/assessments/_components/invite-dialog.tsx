@@ -56,7 +56,7 @@ export function AssessmentInviteDialog({
 }: AssessmentInviteDialogProps) {
   return (
     <Dialog open={!!assessment} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="max-w-md rounded-xl border-slate-200 dark:border-neutral-800 shadow-lg p-6 bg-white dark:bg-neutral-950">
+      <DialogContent className="max-w-md rounded-md border-slate-200 dark:border-neutral-800 shadow-lg p-5 bg-white dark:bg-neutral-950">
         <DialogHeader>
           <DialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
             Invite Candidate
@@ -87,7 +87,7 @@ export function AssessmentInviteDialog({
               <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
                 <SelectValue placeholder="Choose a candidate…" />
               </SelectTrigger>
-              <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+              <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
                 {candidates.map((c) => (
                   <SelectItem
                     key={c.id}
@@ -106,7 +106,7 @@ export function AssessmentInviteDialog({
             <Button
               onClick={onGenerateLink}
               disabled={!selectedCandidateId || isPending}
-              className="w-full h-10 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-lg text-[13px] font-medium gap-2"
+              className="w-full h-8 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-md text-[13px] font-medium gap-2"
             >
               {isPending ? (
                 <>
@@ -123,12 +123,12 @@ export function AssessmentInviteDialog({
                 Assessment Link
               </Label>
               <div className="flex items-center gap-2">
-                <div className="flex-1 bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-lg px-3 py-2 text-[12px] text-slate-600 dark:text-neutral-300 truncate font-mono">
+                <div className="flex-1 bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-md px-3 py-2 text-[12px] text-slate-600 dark:text-neutral-300 truncate font-mono">
                   {generatedLink}
                 </div>
                 <button
                   onClick={onCopyLink}
-                  className={`shrink-0 h-9 px-3 rounded-lg text-[12px] font-medium border inline-flex items-center gap-1.5 ${
+                  className={`shrink-0 h-8 px-3 rounded-md text-[12px] font-medium border inline-flex items-center gap-1.5 ${
                     copied
                       ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50"
                       : "border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800"

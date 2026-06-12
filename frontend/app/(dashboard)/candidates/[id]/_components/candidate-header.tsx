@@ -72,7 +72,7 @@ export function CandidateHeader({
           <div className="flex min-w-0 items-start gap-3 sm:gap-4">
             <div className="min-w-0">
               <div className="flex items-center gap-3">
-                <div className="flex size-12 shrink-0 items-center justify-center rounded-xl bg-slate-900 text-white shadow-sm dark:bg-neutral-100 dark:text-neutral-950">
+                <div className="flex size-12 shrink-0 items-center justify-center rounded-md bg-slate-900 text-white shadow-sm dark:bg-neutral-100 dark:text-neutral-950">
                   <span className="select-none text-[15px] font-bold">
                     {initials}
                   </span>
@@ -144,10 +144,10 @@ export function CandidateHeader({
             <Button
               size="sm"
               disabled={!candidate.resumeUrl}
-              className="h-[34px] rounded-md cursor-pointer border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:bg-neutral-700 disabled:text-neutral-400 disabled:opacity-70"
+              className="h-7 rounded-[6px] cursor-pointer border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:bg-neutral-700 disabled:text-neutral-400 disabled:opacity-70"
               onClick={onViewCv}
             >
-              <HugeiconsIcon icon={File01Icon} className="size-4" />
+              <HugeiconsIcon icon={File01Icon} className="size-3" />
               View CV
             </Button>
             <Select
@@ -157,10 +157,10 @@ export function CandidateHeader({
                 pipelineStages.length === 0 || moveStageMutation.isPending
               }
             >
-              <SelectTrigger className="h-[40px] rounded-md border-none bg-neutral-100 px-4 text-[14px] font-semibold leading-none text-slate-700 shadow-none hover:bg-neutral-200 focus:ring-0 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
+              <SelectTrigger className="h-8 rounded-[6px] border-none bg-neutral-100 px-2.5 text-[13px] font-semibold leading-none text-slate-700 shadow-none hover:bg-neutral-200 focus:ring-0 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
                 <SelectValue>{selectedStageName}</SelectValue>
               </SelectTrigger>
-              <SelectContent className="rounded-xl border-slate-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
+              <SelectContent className="rounded-[6px] border-slate-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
                 {pipelineStages.map((stage) => (
                   <SelectItem
                     key={stage.id}
@@ -179,7 +179,7 @@ export function CandidateHeader({
                   size="sm"
                   disabled={moveStageMutation.isPending}
                   onClick={onCancelStageChange}
-                  className="h-[34px] cursor-pointer rounded-md border-none bg-neutral-700 px-3 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600"
+                  className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600"
                 >
                   Cancel
                 </Button>
@@ -188,7 +188,7 @@ export function CandidateHeader({
                   size="sm"
                   disabled={moveStageMutation.isPending}
                   onClick={onSaveStageChange}
-                  className="h-[34px] cursor-pointer rounded-md border-none bg-[var(--theme-color)] px-3 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                  className="h-7 cursor-pointer rounded-[6px] border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
                 >
                   {moveStageMutation.isPending ? "Saving…" : "Save"}
                 </Button>
@@ -196,26 +196,26 @@ export function CandidateHeader({
             )}
             <Button
               size="sm"
-              className="h-[34px] cursor-pointer rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+              className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
               onClick={onClose}
             >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-4" />
+              <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
               Close
             </Button>
             <Button
               size="sm"
-              className="h-[34px] cursor-pointer rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+              className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
               onClick={onEdit}
             >
-              <HugeiconsIcon icon={PencilEdit01Icon} className="size-4" />
+              <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
               Edit
             </Button>
             <Button
               size="sm"
-              className="h-[34px] cursor-pointer rounded-md border-none bg-red-600 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500"
+              className="h-7 cursor-pointer rounded-[6px] border-none bg-red-600 px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-red-500"
               onClick={onDelete}
             >
-              <HugeiconsIcon icon={Delete02Icon} className="size-4" />
+              <HugeiconsIcon icon={Delete02Icon} className="size-3" />
               Delete
             </Button>
           </div>

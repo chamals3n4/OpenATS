@@ -47,12 +47,12 @@ export function DeleteCandidateDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="px-6 pb-6 pt-0 gap-2">
-          <AlertDialogCancel className="h-9 rounded-md border-none bg-neutral-800 px-3.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer">
+          <AlertDialogCancel className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer">
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className="h-9 rounded-md border-none bg-red-600 px-3.5 text-[13px] font-semibold text-white shadow-none hover:bg-red-500 cursor-pointer"
+            className="h-7 rounded-md border-none bg-red-600 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-red-500 cursor-pointer"
           >
             Delete Permanently
           </AlertDialogAction>

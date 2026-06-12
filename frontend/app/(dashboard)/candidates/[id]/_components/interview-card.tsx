@@ -46,7 +46,7 @@ export function InterviewCard({
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+    <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
       <div className="flex items-center justify-between px-5 py-4">
         <div className="flex items-center gap-3 min-w-0">
           {/* Stage type color dot */}
@@ -98,9 +98,9 @@ export function InterviewCard({
         <div className="flex items-center gap-1 shrink-0">
           <button
             onClick={() => setShowFeedback(true)}
-            className="inline-flex items-center gap-1.5 h-7 rounded-md bg-[var(--theme-color)] px-2.5 text-[11px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] transition-colors"
+            className="inline-flex items-center gap-1.5 h-7 rounded-md bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] transition-colors"
           >
-            <HugeiconsIcon icon={Message02Icon} className="size-3.5" />
+            <HugeiconsIcon icon={Message02Icon} className="size-3" />
             Feedback {feedback.length > 0 ? `(${feedback.length})` : ""}
           </button>
           <button
@@ -112,21 +112,21 @@ export function InterviewCard({
             disabled={deleteInterviewMutation.isPending}
             className="size-7 flex items-center justify-center rounded-md text-slate-300 dark:text-neutral-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
           >
-            <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+            <HugeiconsIcon icon={Delete02Icon} className="size-3" />
           </button>
         </div>
       </div>
 
       {/* Feedback read-only dialog */}
       <Dialog open={showFeedback} onOpenChange={setShowFeedback}>
-        <DialogContent className="max-w-lg rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-lg px-6 py-4">
+        <DialogContent className="max-w-lg rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-lg px-6 py-4">
           <DialogHeader className="mb-3">
             <DialogTitle className="text-[16px] font-bold text-slate-900 dark:text-neutral-100">
               Interview Feedback
             </DialogTitle>
           </DialogHeader>
           {feedback.length === 0 ? (
-            <div className="rounded-lg border border-dashed border-slate-200 dark:border-neutral-700 px-4 py-8 text-center">
+            <div className="rounded-md border border-dashed border-slate-200 dark:border-neutral-700 px-4 py-8 text-center">
               <p className="text-[13px] text-slate-400 dark:text-neutral-500">
                 No feedback yet.
               </p>
@@ -139,7 +139,7 @@ export function InterviewCard({
               {feedback.map((fb: any) => (
                 <div
                   key={fb.id}
-                  className="rounded-lg border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900 p-3"
+                  className="rounded-md border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900 p-3"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -183,7 +183,7 @@ export function InterviewCard({
           <DialogFooter className="mt-4">
             <Button
               onClick={() => setShowFeedback(false)}
-              className="h-9 rounded-md border-none bg-neutral-700 px-4 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-600"
+              className="h-9 rounded-md border-none bg-neutral-700 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-600"
             >
               Close
             </Button>

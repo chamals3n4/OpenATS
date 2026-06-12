@@ -22,14 +22,14 @@ export function HistorySection({
         </p>
       </div>
       {candidate.history.length === 0 ? (
-        <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
+        <div className="rounded-md border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/30 px-6 py-12 text-center">
           <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
             <HugeiconsIcon
               icon={Clock01Icon}
               className="size-5 text-slate-300 dark:text-neutral-600"
             />
           </div>
-          <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+          <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400">
             No stage history yet
           </p>
           <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
@@ -38,7 +38,7 @@ export function HistorySection({
           </p>
         </div>
       ) : (
-        <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
+        <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
           <div className="relative">
             <div className="absolute left-[11px] top-2 bottom-2 w-px bg-slate-200 dark:bg-neutral-800" />
             <div className="space-y-5 pl-8">
@@ -53,7 +53,7 @@ export function HistorySection({
                   />
                   <div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[14px] font-semibold text-slate-800 dark:text-neutral-200">
+                      <span className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200">
                         {stageMap[h.stageId] ?? `Stage #${h.stageId}`}
                       </span>
                       <span className="text-[11px] font-medium text-slate-400 dark:text-neutral-500 bg-slate-50 dark:bg-neutral-800 px-2 py-0.5 rounded-md shrink-0">

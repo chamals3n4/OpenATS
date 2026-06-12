@@ -33,36 +33,36 @@ export function OfferTableRow({
       className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
       onClick={() => onRowClick(offer)}
     >
-      <TableCell className="h-13 px-8 py-0 font-medium text-slate-700 dark:text-neutral-200">
+      <TableCell className="h-11 px-6 py-0 text-[13px] font-medium text-slate-700 dark:text-neutral-200">
         {getCandidateName(offer as any)}
       </TableCell>
-      <TableCell className="h-13 px-8 py-0">
+      <TableCell className="h-11 px-6 py-0 text-[13px]">
         <Badge
-          className={`${bg} ${text} hover:${bg} border-none shadow-none font-medium px-2.5 py-0.5 rounded-full text-[12px]`}
+          className={`${bg} ${text} hover:${bg} border-none shadow-none font-medium px-2 py-0.5 rounded-full text-xs`}
         >
           {capitalizeStatus(offer.status)}
         </Badge>
       </TableCell>
-      <TableCell className="h-13 px-8 py-0 text-slate-500 dark:text-neutral-400 font-normal">
+      <TableCell className="h-11 px-6 py-0 text-[13px] text-slate-500 dark:text-neutral-400 font-normal">
         {getJobTitle(offer as any)}
       </TableCell>
-      <TableCell className="h-13 px-8 py-0 text-slate-500 dark:text-neutral-400 font-normal">
+      <TableCell className="h-11 px-6 py-0 text-[13px] text-slate-500 dark:text-neutral-400 font-normal">
         {fmtSalary(offer)}
       </TableCell>
-      <TableCell className="h-13 px-8 py-0 text-slate-500 dark:text-neutral-400 font-normal">
+      <TableCell className="h-11 px-6 py-0 text-[13px] text-slate-500 dark:text-neutral-400 font-normal">
         {fmtDate(offer.sentAt)}
       </TableCell>
       <TableCell
-        className="h-13 px-4 py-0"
+        className="h-11 px-6 py-0 text-[13px]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-end gap-2">
           <Button
             size="sm"
-            className="h-[34px] rounded-md border-none bg-red-600/90 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 dark:bg-red-700/90 dark:hover:bg-red-600 cursor-pointer"
+            className="h-7 rounded-md border-none bg-red-600/90 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-red-500 dark:bg-red-700/90 dark:hover:bg-red-600 cursor-pointer"
             onClick={() => onDelete(offer)}
           >
-            <HugeiconsIcon icon={Delete02Icon} className="size-4" />
+            <HugeiconsIcon icon={Delete02Icon} className="size-3" />
             Delete
           </Button>
         </div>

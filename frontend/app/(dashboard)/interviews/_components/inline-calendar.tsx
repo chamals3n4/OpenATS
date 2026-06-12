@@ -60,14 +60,14 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
       : null;
 
   return (
-    <div className="flex flex-col lg:flex-row gap-5">
+    <div className="flex flex-col lg:flex-row gap-4">
       {/* Calendar grid */}
-      <div className="flex-1 min-w-0 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+      <div className="flex-1 min-w-0 rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
         {/* Month nav */}
-        <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-neutral-800">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100 dark:border-neutral-800">
           <button
             onClick={prevMonth}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-500 dark:text-neutral-400 transition-colors"
+            className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-500 dark:text-neutral-400 transition-colors"
           >
             <HugeiconsIcon icon={ChevronLeft} className="size-4" />
           </button>
@@ -76,7 +76,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
           </h2>
           <button
             onClick={nextMonth}
-            className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-500 dark:text-neutral-400 transition-colors"
+            className="p-1.5 rounded-md hover:bg-slate-100 dark:hover:bg-neutral-800 text-slate-500 dark:text-neutral-400 transition-colors"
           >
             <HugeiconsIcon icon={ChevronRight} className="size-4" />
           </button>
@@ -87,7 +87,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
           {dowLabels.map((d) => (
             <div
               key={d}
-              className="py-2.5 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500"
+              className="py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500"
             >
               {d}
             </div>
@@ -112,7 +112,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
                   day && setSelected(day === selected ? null : day)
                 }
                 className={`
-                  relative min-h-[72px] p-2 border-b border-r border-slate-100 dark:border-neutral-800
+                  relative min-h-16 p-2 border-b border-r border-slate-100 dark:border-neutral-800
                   ${day ? "cursor-pointer" : ""}
                   ${isWeekend && day ? "bg-slate-50/60 dark:bg-neutral-900/60" : ""}
                   ${isSelected ? "bg-[var(--theme-color)]/5 dark:bg-[var(--theme-color)]/10" : day ? "hover:bg-slate-50 dark:hover:bg-neutral-800/50" : ""}
@@ -123,7 +123,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
                   <>
                     <span
                       className={`
-                        inline-flex size-7 items-center justify-center rounded-full text-[13px] font-medium
+                        inline-flex size-6 items-center justify-center rounded-full text-[13px] font-medium
                         ${isToday ? "bg-[var(--theme-color)] text-white font-bold" : ""}
                         ${isSelected && !isToday ? "bg-slate-900 dark:bg-neutral-100 text-white dark:text-neutral-900" : ""}
                         ${!isToday && !isSelected ? "text-slate-700 dark:text-neutral-300" : ""}
@@ -172,8 +172,8 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
       {/* Side panel */}
       <div className="w-full lg:w-80 shrink-0">
         {selected ? (
-          <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
-            <div className="px-4 py-3.5 border-b border-slate-100 dark:border-neutral-800">
+          <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
+            <div className="px-4 py-3 border-b border-slate-100 dark:border-neutral-800">
               <p className="text-[13px] font-semibold text-slate-900 dark:text-neutral-100">
                 {fmtDateLong(new Date(year, month, selected).toISOString())}
               </p>
@@ -194,7 +194,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
                   const cfg =
                     STATUS_CONFIG[iv.status] ?? STATUS_CONFIG.pending_schedule;
                   return (
-                    <div key={idx} className="px-4 py-3.5">
+                    <div key={idx} className="px-4 py-3">
                       <div className="flex items-start gap-2.5">
                         <span
                           className={`mt-1.5 size-2 rounded-full shrink-0 ${cfg.dot}`}
@@ -233,7 +233,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
             )}
           </div>
         ) : (
-          <div className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-10 text-center">
+          <div className="rounded-md border border-dashed border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-8 text-center">
             <div className="size-10 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">
               <HugeiconsIcon
                 icon={Calendar02Icon}
@@ -247,7 +247,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
         )}
 
         {/* Legend */}
-        <div className="mt-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3.5">
+        <div className="mt-4 rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3">
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500 mb-2.5">
             Status Legend
           </p>

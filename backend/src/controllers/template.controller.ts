@@ -7,7 +7,7 @@ import logger from "../utils/logger";
 const contentBlockSchema = z.discriminatedUnion("type", [
   z.object({ type: z.literal("heading"), content: z.string() }),
   z.object({ type: z.literal("text"), content: z.string() }),
-  z.object({ type: z.literal("button"), label: z.string(), url: z.string() }),
+  z.object({ type: z.literal("button"), content: z.string() }),
   z.object({
     type: z.literal("image"),
     url: z.string(),

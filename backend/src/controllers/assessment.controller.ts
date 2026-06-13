@@ -35,7 +35,6 @@ const createAssessmentSchema = z.object({
     .number()
     .int()
     .positive("Time limit must be a positive number of minutes"),
-  passScore: z.number().min(0).max(100, "Pass score must be between 0 and 100"),
   createdBy: z.number().int().positive().optional(),
   questions: z.array(questionSchema).optional(),
 });
@@ -44,7 +43,6 @@ const updateAssessmentSchema = z.object({
   title: z.string().min(1).max(255).optional(),
   description: z.string().optional().nullable(),
   timeLimit: z.number().int().positive().optional(),
-  passScore: z.number().min(0).max(100).optional(),
 });
 
 const createQuestionSchema = questionSchema;

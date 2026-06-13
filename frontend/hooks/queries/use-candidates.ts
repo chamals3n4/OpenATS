@@ -145,13 +145,7 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
       }
       return undefined;
     },
-    refetchInterval: (query) => {
-      const status = query.state.data?.data?.cvAnalysis?.status;
-      if (enabled && (status === "pending" || status == null)) {
-        return 2500;
-      }
-      return enabled ? 10_000 : false;
-    },
+    refetchInterval: enabled ? 3000 : false,
     refetchIntervalInBackground: false,
   });
 }

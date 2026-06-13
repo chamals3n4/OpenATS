@@ -20,9 +20,6 @@ export const assessments = pgTable("assessments", {
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   timeLimit: integer("time_limit").notNull(),
-  passScore: numeric("pass_score", { precision: 5, scale: 2 })
-    .$type<number>()
-    .notNull(),
   createdBy: integer("created_by")
     .notNull()
     .references(() => users.id),

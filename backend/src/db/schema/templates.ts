@@ -13,7 +13,7 @@ import { users } from "./users";
 export type ContentBlock =
   | { type: "heading"; content: string }
   | { type: "text"; content: string }
-  | { type: "button"; label: string; url: string }
+  | { type: "button"; content: string }
   | { type: "image"; url: string; alt?: string | undefined }
   | { type: "divider" }
   | { type: "spacer"; height: number };

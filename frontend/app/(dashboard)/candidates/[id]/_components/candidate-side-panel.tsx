@@ -1262,9 +1262,6 @@ export function CandidateSidePanel({
                     a.scorePercentage != null
                       ? Math.round(Number(a.scorePercentage))
                       : null;
-                  const passColor = a.passed
-                    ? "text-green-600"
-                    : "text-red-500";
 
                   return (
                     <div
@@ -1297,24 +1294,10 @@ export function CandidateSidePanel({
                                   style={{ width: `${score}%` }}
                                 />
                               </div>
-                              <span
-                                className={`text-[13px] font-bold ${passColor}`}
-                              >
+                              <span className="text-[13px] font-bold text-slate-700 dark:text-neutral-200">
                                 {score}%
                               </span>
                             </div>
-                          </div>
-                        )}
-                        {a.passed != null && (
-                          <div className="px-4 py-3 flex items-center justify-between gap-4">
-                            <span className="text-[12px] text-slate-500 font-medium">
-                              Result
-                            </span>
-                            <span
-                              className={`text-[13px] font-semibold ${passColor}`}
-                            >
-                              {a.passed ? "Passed ✓" : "Not Passed ✗"}
-                            </span>
                           </div>
                         )}
                         {a.completedAt && (

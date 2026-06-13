@@ -34,8 +34,7 @@ export const templateEngineService = {
         case "button":
           return {
             ...block,
-            label: this.replaceVariables(block.label, context),
-            url: this.replaceVariables(block.url, context),
+            content: this.replaceVariables(block.content, context),
           };
         case "image":
           return {
@@ -60,8 +59,8 @@ export const templateEngineService = {
         case "button":
           return `
             <div style="margin-bottom: 16px;">
-              <a href="${block.url}" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
-                ${block.label}
+              <a href="#" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; display: inline-block;">
+                ${block.content}
               </a>
             </div>`;
         case "image":

@@ -26,7 +26,6 @@ export interface CreateAssessmentInput {
   title: string;
   description?: string | null | undefined;
   timeLimit: number;
-  passScore: number;
   createdBy: number;
   questions?: QuestionInput[] | undefined;
 }
@@ -35,7 +34,6 @@ export interface UpdateAssessmentInput {
   title?: string | undefined;
   description?: string | null | undefined;
   timeLimit?: number | undefined;
-  passScore?: number | undefined;
 }
 
 export interface CreateQuestionInput {

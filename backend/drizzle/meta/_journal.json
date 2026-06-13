@@ -127,6 +127,13 @@
       "when": 1781186451570,
       "tag": "0017_tough_diamondback",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1781341253648,
+      "tag": "0018_empty_cable",
+      "breakpoints": true
     }
   ]
 }

@@ -393,7 +393,6 @@ export const assessmentExecutionService = {
         totalPossiblePoints > 0
           ? (totalScoreRaw / totalPossiblePoints) * 100
           : 0;
-      const passed = scorePercentage >= Number(assessment.passScore ?? 0);
 
       const [completed] = await tx
         .update(candidateAssessmentAttempts)
@@ -403,7 +402,7 @@ export const assessmentExecutionService = {
           scoreRaw: totalScoreRaw,
           scoreTotal: totalPossiblePoints,
           scorePercentage,
-          passed,
+          passed: null,
           updatedAt: new Date(),
         })
         .where(eq(candidateAssessmentAttempts.id, id))

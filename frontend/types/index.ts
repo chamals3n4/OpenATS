@@ -128,7 +128,6 @@ export type Assessment = {
   title: string;
   description: string | null;
   timeLimit: number;
-  passScore: number;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

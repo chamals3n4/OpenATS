@@ -43,7 +43,6 @@ export function useCreateAssessment() {
       title: string;
       description: string | null;
       timeLimit: number;
-      passScore?: number;
       createdBy?: number;
       questions?: any[];
     }) =>
@@ -229,6 +228,8 @@ export function useCandidateAssessments(candidateId: number) {
         }[];
       }>(`/assessment-execution/candidate/${candidateId}`),
     enabled: !!candidateId,
+    refetchInterval: candidateId ? 3000 : false,
+    refetchIntervalInBackground: false,
   });
 }
 

@@ -1,12 +1,47 @@
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
 import type { Job, JobDetail, CustomQuestion, User } from "@/types";
+import type { PaginationInfo } from "@/components/table/table-footer";
+
+export type JobListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  departmentId?: number;
+};
 
 export function useJobs() {
   return useQuery({
     queryKey: ["jobs"],
     queryFn: () => serverFetch<{ data: Job[] }>("/jobs"),
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useJobsList(params: JobListParams = {}) {
+  return useQuery({
+    queryKey: ["jobs", "list", params],
+    queryFn: () => {
+      const qs = new URLSearchParams({ page: String(params.page ?? 1), limit: String(params.limit ?? 15) });
+      if (params.search) qs.set("search", params.search);
+      if (params.status) qs.set("status", params.status);
+      if (params.departmentId) qs.set("departmentId", String(params.departmentId));
+      return serverFetch<{ data: Job[]; pagination: PaginationInfo }>(`/jobs?${qs}`);
+    },
+    staleTime: 1000 * 30,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useBulkDeleteJobs() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: number[]) =>
+      serverFetch<{ count: number }>("/jobs/bulk", { method: "DELETE", body: JSON.stringify({ ids }) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs"] });
+    },
   });
 }
 

@@ -32,7 +32,7 @@ export function TemplateFormHeader({
     <div className="flex items-center justify-between px-7 py-4 border-b border-slate-200 dark:border-neutral-800 shrink-0">
       <div className="flex items-center gap-4">
         <Link
-          href="/settings/templates"
+          href="/templates"
           className="text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300"
         >
           <HugeiconsIcon icon={ArrowLeft01Icon} className="size-5" />

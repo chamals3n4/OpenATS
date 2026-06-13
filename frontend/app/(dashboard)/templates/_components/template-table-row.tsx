@@ -6,12 +6,15 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import type { Template } from "@/types";
 import { getTypeMeta, formatDate } from "../lib/templates-utils";
+import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 
 interface TemplateTableRowProps {
   template: Template;
   onRowClick: (template: Template) => void;
   onDuplicate: (template: Template) => void;
   onDelete: (id: number) => void;
+  isSelected?: boolean;
+  onSelectedChange?: (checked: boolean) => void;
 }
 
 export function TemplateTableRow({
@@ -19,6 +22,8 @@ export function TemplateTableRow({
   onRowClick,
   onDuplicate,
   onDelete,
+  isSelected = false,
+  onSelectedChange,
 }: TemplateTableRowProps) {
   const meta = getTypeMeta(template.type);
 
@@ -27,6 +32,9 @@ export function TemplateTableRow({
       onClick={() => onRowClick(template)}
       className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50/50 dark:hover:bg-neutral-900/50"
     >
+      {onSelectedChange && (
+        <BulkSelectRowCell checked={isSelected} onCheckedChange={onSelectedChange} />
+      )}
       <TableCell className="h-11 px-6 py-0 text-[13px]">
         <span className="text-slate-700 dark:text-neutral-300 font-medium">
           {template.name}

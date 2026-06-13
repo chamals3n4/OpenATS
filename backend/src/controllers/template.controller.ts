@@ -33,9 +33,27 @@ const updateTemplateSchema = z.object({
   bodyJson: z.array(contentBlockSchema).optional(),
 });
 
+const bulkDeleteTemplatesSchema = z.object({
+  ids: z.array(z.number().int().positive()).min(1),
+});
+
 export const getAllTemplates = async (req: Request, res: Response) => {
   try {
-    const { type } = req.query;
+    const { type, page, limit, search } = req.query;
+
+    if (page !== undefined) {
+      const result = await templateService.getPaginated({
+        page: parseInt(page as string) || 1,
+        limit: parseInt((limit as string) ?? "15") || 15,
+        search: (search as string) || undefined,
+        type: (type as string) || undefined,
+      });
+      res.status(200).json({
+        data: result.rows,
+        pagination: { total: result.total, page: result.page, limit: result.limit, totalPages: result.totalPages },
+      });
+      return;
+    }
 
     const result = type
       ? await templateService.getByType(type as string)
@@ -45,6 +63,22 @@ export const getAllTemplates = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error(`Failed to fetch templates: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch templates" });
+  }
+};
+
+export const bulkDeleteTemplates = async (req: Request, res: Response) => {
+  try {
+    const parsed = bulkDeleteTemplatesSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Validation failed", details: parsed.error.flatten().fieldErrors });
+      return;
+    }
+    logger.warn(`Bulk template deletion: ids=${parsed.data.ids.join(",")} by user ${req.user?.id}`);
+    const deleted = await templateService.deleteMany(parsed.data.ids);
+    res.status(200).json({ data: deleted, count: deleted.length });
+  } catch (error) {
+    logger.error(`Failed to bulk delete templates - user ${req.user?.id}: ${(error as any)?.message}`);
+    res.status(500).json({ error: "Failed to delete templates" });
   }
 };
 

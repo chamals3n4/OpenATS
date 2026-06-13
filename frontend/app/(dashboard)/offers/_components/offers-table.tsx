@@ -18,6 +18,7 @@ import {
   useBulkSelection,
 } from "@/components/table/bulk-selection";
 import { BulkDeleteDialog } from "@/components/table/bulk-delete-dialog";
+import { TableFooter, type PaginationInfo } from "@/components/table/table-footer";
 
 interface OffersTableProps {
   offers: Offer[];
@@ -26,6 +27,8 @@ interface OffersTableProps {
   onDelete: (offer: Offer) => void;
   onDeleteSelected: (ids: number[]) => boolean | void | Promise<boolean | void>;
   isDeletingSelected?: boolean;
+  pagination?: PaginationInfo;
+  onPageChange?: (page: number) => void;
 }
 
 export function OffersTable({
@@ -35,6 +38,8 @@ export function OffersTable({
   onDelete,
   onDeleteSelected,
   isDeletingSelected,
+  pagination,
+  onPageChange,
 }: OffersTableProps) {
   const visibleOfferIds = useMemo(() => offers.map((offer) => offer.id), [offers]);
   const selection = useBulkSelection(visibleOfferIds);
@@ -129,13 +134,13 @@ export function OffersTable({
           </TableBody>
         </Table>
 
-        <div className="flex items-center justify-between px-6 py-2.5 border-t border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-          <span className="text-sm font-medium text-slate-400 dark:text-neutral-500">
-            {isLoading
-              ? "Loading..."
-              : `${offers.length} result${offers.length !== 1 ? "s" : ""}`}
-          </span>
-        </div>
+        <TableFooter
+          isLoading={isLoading}
+          label="offer"
+          pagination={pagination}
+          count={offers.length}
+          onPageChange={onPageChange}
+        />
       </div>
     </div>
   );

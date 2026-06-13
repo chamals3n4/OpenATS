@@ -3,6 +3,10 @@ import { z } from "zod";
 import { offerService } from "../services/offer.service";
 import logger from "../utils/logger";
 
+const bulkDeleteOffersSchema = z.object({
+  ids: z.array(z.number().int().positive()).min(1),
+});
+
 const offerStatusSchema = z.enum([
   "draft",
   "sent",
@@ -53,13 +57,66 @@ function parseId(value: string | string[] | undefined) {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-export const getAllOffers = async (_req: Request, res: Response) => {
+export const getAllOffers = async (req: Request, res: Response) => {
   try {
+    const { page, limit, search, status, jobId } = req.query;
+
+    if (page !== undefined) {
+      const result = await offerService.getPaginated({
+        page: parseInt(page as string) || 1,
+        limit: parseInt((limit as string) ?? "15") || 15,
+        search: (search as string) || undefined,
+        status: (status as string) || undefined,
+        jobId: jobId ? parseInt(jobId as string) : undefined,
+      });
+      res.status(200).json({
+        data: result.rows,
+        pagination: { total: result.total, page: result.page, limit: result.limit, totalPages: result.totalPages },
+      });
+      return;
+    }
+
     const result = await offerService.getAllDetails();
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(`Failed to fetch all offers: ${(error as Error)?.message}`);
     res.status(500).json({ error: "Failed to fetch all offers" });
+  }
+};
+
+export const deleteOffer = async (req: Request, res: Response) => {
+  try {
+    const id = parseId(req.params.id);
+    if (!id) {
+      res.status(400).json({ error: "Invalid offer ID" });
+      return;
+    }
+    logger.warn(`Offer deletion requested: id=${id} by user ${req.user?.id}`);
+    const deleted = await offerService.deleteById(id);
+    if (!deleted) {
+      res.status(404).json({ error: "Offer not found" });
+      return;
+    }
+    res.status(200).json({ data: deleted });
+  } catch (error) {
+    logger.error(`Failed to delete offer ${req.params.id}: ${(error as Error)?.message}`);
+    res.status(500).json({ error: "Failed to delete offer" });
+  }
+};
+
+export const bulkDeleteOffers = async (req: Request, res: Response) => {
+  try {
+    const parsed = bulkDeleteOffersSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Validation failed", details: parsed.error.flatten().fieldErrors });
+      return;
+    }
+    logger.warn(`Bulk offer deletion requested: ids=${parsed.data.ids.join(",")} by user ${req.user?.id}`);
+    const deleted = await offerService.deleteMany(parsed.data.ids);
+    res.status(200).json({ data: deleted, count: deleted.length });
+  } catch (error) {
+    logger.error(`Failed to bulk delete offers - user ${req.user?.id}: ${(error as Error)?.message}`);
+    res.status(500).json({ error: "Failed to delete offers" });
   }
 };
 

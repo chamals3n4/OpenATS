@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
-  useTemplates,
+  useTemplatesList,
   useDeleteTemplate,
   useCreateTemplate,
+  useBulkDeleteTemplates,
 } from "@/hooks/queries/use-templates";
 import type { Template } from "@/types";
 import { TemplatesHeader } from "./templates-header";
@@ -14,26 +15,35 @@ import { TemplatesTable } from "./templates-table";
 import { TemplateTypePicker } from "./type-picker";
 import { TemplateDeleteDialog } from "./delete-dialog";
 
+const PAGE_LIMIT = 15;
+
 export default function TemplatesPageClient() {
   const router = useRouter();
-  const { data: templatesRes, isLoading } = useTemplates();
-  const templates = templatesRes?.data ?? [];
-
-  const createMutation = useCreateTemplate();
-  const deleteMutation = useDeleteTemplate();
 
   // ── Filter State ───────────────────────────────────────────
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterType, setFilterType] = useState("all");
+  const [page, setPage] = useState(1);
 
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase();
-    return templates.filter((t) => {
-      const matchesSearch = t.name.toLowerCase().includes(q);
-      const matchesType = filterType === "all" || t.type === filterType;
-      return matchesSearch && matchesType;
-    });
-  }, [templates, search, filterType]);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
+
+  const { data: templatesRes, isLoading } = useTemplatesList({
+    page,
+    limit: PAGE_LIMIT,
+    search: debouncedSearch || undefined,
+    type: filterType === "all" ? undefined : filterType,
+  });
+
+  const templates = templatesRes?.data ?? [];
+  const pagination = templatesRes?.pagination;
+
+  const createMutation = useCreateTemplate();
+  const deleteMutation = useDeleteTemplate();
+  const bulkDeleteMutation = useBulkDeleteTemplates();
 
   // ── Type Picker (New Template) ───────────────────────────
   const [typePickerOpen, setTypePickerOpen] = useState(false);
@@ -47,7 +57,7 @@ export default function TemplatesPageClient() {
   const handleContinue = useCallback(() => {
     if (pickedType) {
       setTypePickerOpen(false);
-      router.push(`/settings/templates/new?type=${pickedType}`);
+      router.push(`/templates/new?type=${pickedType}`);
     }
   }, [pickedType, router]);
 
@@ -64,7 +74,16 @@ export default function TemplatesPageClient() {
     [createMutation],
   );
 
-  // ── Delete ─────────────────────────────────────────────────
+  // ── Bulk Delete ────────────────────────────────────────────
+  const handleDeleteSelected = useCallback(
+    async (ids: number[]) => {
+      if (ids.length === 0) return false;
+      await bulkDeleteMutation.mutateAsync(ids);
+    },
+    [bulkDeleteMutation],
+  );
+
+  // ── Single Delete ──────────────────────────────────────────
   const [deleteId, setDeleteId] = useState<number | null>(null);
   const deleteTarget = templates.find((t) => t.id === deleteId) ?? null;
 
@@ -75,32 +94,42 @@ export default function TemplatesPageClient() {
     });
   }, [deleteId, deleteMutation]);
 
+  const handleSearchChange = useCallback((v: string) => { setSearch(v); setPage(1); }, []);
+  const handleTypeChange = useCallback((v: string) => { setFilterType(v); setPage(1); }, []);
+
   const handleClearFilters = useCallback(() => {
     setSearch("");
     setFilterType("all");
+    setPage(1);
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
+    <div className="flex flex-1 flex-col min-h-0 bg-white dark:bg-neutral-950">
       <TemplatesHeader onNewTemplate={handleOpenTypePicker} />
 
-      <TemplatesFilters
-        search={search}
-        onSearchChange={setSearch}
-        filterType={filterType}
-        onFilterTypeChange={setFilterType}
-        onClear={handleClearFilters}
-      />
+      <div className="flex-shrink-0">
+        <TemplatesFilters
+          search={search}
+          onSearchChange={handleSearchChange}
+          filterType={filterType}
+          onFilterTypeChange={handleTypeChange}
+          onClear={handleClearFilters}
+        />
+      </div>
 
-      <TemplatesTable
-        templates={filtered}
-        isLoading={isLoading}
-        onRowClick={(template) =>
-          router.push(`/settings/templates/${template.id}/edit`)
-        }
-        onDuplicate={handleDuplicate}
-        onDelete={setDeleteId}
-      />
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <TemplatesTable
+          templates={templates}
+          isLoading={isLoading}
+          onRowClick={(template) => router.push(`/templates/${template.id}/edit`)}
+          onDuplicate={handleDuplicate}
+          onDelete={setDeleteId}
+          onDeleteSelected={handleDeleteSelected}
+          isDeletingSelected={bulkDeleteMutation.isPending}
+          pagination={pagination}
+          onPageChange={setPage}
+        />
+      </div>
 
       <TemplateTypePicker
         isOpen={typePickerOpen}

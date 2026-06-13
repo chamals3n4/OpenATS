@@ -1,4 +1,4 @@
-import { eq, desc } from "drizzle-orm";
+import { eq, desc, ilike, inArray, and, sql } from "drizzle-orm";
 import { db, NewJob } from "../db";
 import {
   jobs,
@@ -11,6 +11,14 @@ import {
   candidates,
   departments,
 } from "../db/schema";
+
+export type JobListFilters = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  departmentId?: number;
+};
 
 export type CreateJobInput = {
   title: string;
@@ -107,6 +115,52 @@ export const jobService = {
     );
 
     return jobsWithSkills;
+  },
+
+  async getPaginated(filters: JobListFilters = {}) {
+    const { page = 1, limit = 15, search, status, departmentId } = filters;
+    const offset = (page - 1) * limit;
+
+    const conditions = [];
+    if (search) conditions.push(ilike(jobs.title, `%${search}%`));
+    if (status) conditions.push(eq(jobs.status, status as any));
+    if (departmentId) conditions.push(eq(jobs.departmentId, departmentId));
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [rows, [countRow]] = await Promise.all([
+      db.select().from(jobs).where(where).orderBy(desc(jobs.createdAt)).limit(limit).offset(offset),
+      db.select({ count: sql<number>`count(*)::int` }).from(jobs).where(where),
+    ]);
+
+    const skillsByJobId = new Map<number, string[]>();
+    if (rows.length > 0) {
+      const allSkills = await db
+        .select()
+        .from(jobSkills)
+        .where(inArray(jobSkills.jobId, rows.map((j) => j.id)));
+      allSkills.forEach((s) => {
+        if (!skillsByJobId.has(s.jobId)) skillsByJobId.set(s.jobId, []);
+        skillsByJobId.get(s.jobId)!.push(s.skill);
+      });
+    }
+
+    const total = countRow?.count ?? 0;
+    return {
+      rows: rows.map((j) => ({ ...j, skills: skillsByJobId.get(j.id) ?? [] })),
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
+  },
+
+  async deleteMany(ids: number[]) {
+    if (ids.length === 0) return [];
+    return db.transaction(async (tx) => {
+      await tx.delete(offers).where(inArray(offers.jobId, ids));
+      await tx.delete(candidates).where(inArray(candidates.jobId, ids));
+      return tx.delete(jobs).where(inArray(jobs.id, ids)).returning();
+    });
   },
 
   async getById(id: number) {

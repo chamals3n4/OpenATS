@@ -6,6 +6,7 @@ import {
   createJob,
   updateJob,
   deleteJob,
+  bulkDeleteJobs,
   getAssessments,
   attachAssessment,
   detachAssessment,
@@ -29,6 +30,7 @@ const router: Router = Router();
 // jobs
 router.get("/", getAllJobs);
 router.post("/", createJob);
+router.delete("/bulk", bulkDeleteJobs);
 router.get("/slug/:slug", getJobBySlug);
 router.get("/:id", getJobById);
 router.put("/:id", updateJob);

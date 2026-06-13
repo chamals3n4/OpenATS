@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, desc, eq } from "drizzle-orm";
+import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { db } from "../db";
 import {
   candidateStageHistory,
@@ -152,6 +152,14 @@ function validateSendRequirements(
   }
 }
 
+export type OfferListFilters = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  jobId?: number;
+};
+
 export const offerService = {
   async getAllDetails() {
     return await db.query.offers.findMany({
@@ -166,6 +174,54 @@ export const offerService = {
       },
       orderBy: [desc(offers.createdAt)],
     });
+  },
+
+  async getPaginated(filters: OfferListFilters = {}) {
+    const { page = 1, limit = 15, search, status, jobId } = filters;
+    const offset = (page - 1) * limit;
+
+    const conditions = [];
+    if (jobId) conditions.push(eq(offers.jobId, jobId));
+    if (status) conditions.push(eq(offers.status, status as any));
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [countRow] = await db
+      .select({ count: sql<number>`count(*)::int` })
+      .from(offers)
+      .where(where);
+
+    const total = countRow?.count ?? 0;
+
+    const rows = await db.query.offers.findMany({
+      where,
+      with: {
+        candidate: { with: { currentStage: true } },
+        job: { with: { department: true } },
+        template: true,
+      },
+      orderBy: [desc(offers.createdAt)],
+      limit,
+      offset,
+    });
+
+    const filtered = search
+      ? rows.filter((o) => {
+          const name = `${o.candidate.firstName} ${o.candidate.lastName}`.toLowerCase();
+          return name.includes(search.toLowerCase());
+        })
+      : rows;
+
+    return { rows: filtered, total, page, limit, totalPages: Math.ceil(total / limit) };
+  },
+
+  async deleteById(id: number) {
+    const [deleted] = await db.delete(offers).where(eq(offers.id, id)).returning();
+    return deleted ?? null;
+  },
+
+  async deleteMany(ids: number[]) {
+    if (ids.length === 0) return [];
+    return db.delete(offers).where(inArray(offers.id, ids)).returning();
   },
 
   async getAllByJob(jobId: number) {

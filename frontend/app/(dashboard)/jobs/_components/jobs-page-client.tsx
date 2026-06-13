@@ -1,27 +1,48 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import { useJobs, useDeleteJob } from "@/hooks/queries/use-jobs";
+import { useState, useMemo, useCallback, useEffect } from "react";
+import { useJobsList, useBulkDeleteJobs, useDeleteJob } from "@/hooks/queries/use-jobs";
 import { useDepartments } from "@/hooks/queries/use-company";
 import type { Job } from "@/types";
 import { JobFilters } from "./job-filters";
 import { JobsTable } from "./jobs-table";
 import { JobDeleteDialog } from "./job-delete-dialog";
-import { ListSectionSpinner } from "@/components/dashboard-main-loading";
+
+const PAGE_LIMIT = 15;
 
 export function JobsPageClient() {
-  const { data, isLoading } = useJobs();
   const { data: deptData } = useDepartments();
-  const deleteMutation = useDeleteJob();
-
-  const jobs = data?.data ?? [];
   const departments = deptData?.data ?? [];
 
+  // ── Filter State ───────────────────────────────────────────
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterDept, setFilterDept] = useState("all");
   const [filterType, setFilterType] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
-  const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm]);
+
+  const { data, isLoading } = useJobsList({
+    page,
+    limit: PAGE_LIMIT,
+    search: debouncedSearch || undefined,
+    status: filterStatus === "all" ? undefined : filterStatus,
+    departmentId: filterDept === "all" ? undefined : parseInt(filterDept),
+  });
+
+  const jobs = data?.data ?? [];
+  const pagination = data?.pagination;
+
+  // Client-side filter for employment type (not a DB column we search — applied on top of server results)
+  const filteredJobs = useMemo(() => {
+    if (filterType === "all") return jobs;
+    return jobs.filter((j) => j.employmentType === filterType);
+  }, [jobs, filterType]);
 
   const departmentNameById = useMemo(() => {
     const map = new Map<number, string>();
@@ -29,51 +50,17 @@ export function JobsPageClient() {
     return map;
   }, [departments]);
 
-  const filteredJobs = useMemo(() => {
-    const q = searchTerm.trim().toLowerCase();
-
-    return jobs.filter((job) => {
-      const matchesDept =
-        filterDept === "all" || String(job.departmentId) === filterDept;
-      const matchesType =
-        filterType === "all" || job.employmentType === filterType;
-      const matchesStatus =
-        filterStatus === "all" || job.status === filterStatus;
-
-      if (!q) return matchesDept && matchesType && matchesStatus;
-
-      const deptName =
-        departmentNameById.get(job.departmentId)?.toLowerCase() ?? "";
-
-      const matchesSearch =
-        job.title.toLowerCase().includes(q) ||
-        (job.location ?? "").toLowerCase().includes(q) ||
-        deptName.includes(q);
-
-      return matchesDept && matchesType && matchesStatus && matchesSearch;
-    });
-  }, [
-    jobs,
-    searchTerm,
-    filterDept,
-    filterType,
-    filterStatus,
-    departmentNameById,
-  ]);
-
-  const handleClearFilters = () => {
-    setSearchTerm("");
-    setFilterDept("all");
-    setFilterType("all");
-    setFilterStatus("all");
-  };
+  // ── Delete ─────────────────────────────────────────────────
+  const [deleteTarget, setDeleteTarget] = useState<Job | null>(null);
+  const deleteMutation = useDeleteJob();
+  const bulkDeleteMutation = useBulkDeleteJobs();
 
   const handleDeleteSelected = useCallback(
     async (ids: number[]) => {
       if (ids.length === 0) return false;
-      await Promise.all(ids.map((id) => deleteMutation.mutateAsync(id)));
+      await bulkDeleteMutation.mutateAsync(ids);
     },
-    [deleteMutation],
+    [bulkDeleteMutation],
   );
 
   const handleConfirmDelete = () => {
@@ -83,40 +70,38 @@ export function JobsPageClient() {
     });
   };
 
-  if (isLoading) {
-    return (
-      <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
-        <div className="px-6 py-3">
-          <h1 className="text-xl font-medium text-slate-900 dark:text-neutral-100">
-            Manage Jobs
-          </h1>
-        </div>
-        <div className="flex-1 flex items-center justify-center">
-          <ListSectionSpinner />
-        </div>
-      </div>
-    );
-  }
+  const resetPage = () => setPage(1);
+
+  const handleSearchChange = useCallback((v: string) => { setSearchTerm(v); resetPage(); }, []);
+  const handleDeptChange = useCallback((v: string) => { setFilterDept(v); resetPage(); }, []);
+  const handleTypeChange = useCallback((v: string) => { setFilterType(v); resetPage(); }, []);
+  const handleStatusChange = useCallback((v: string) => { setFilterStatus(v); resetPage(); }, []);
+
+  const handleClearFilters = useCallback(() => {
+    setSearchTerm("");
+    setFilterDept("all");
+    setFilterType("all");
+    setFilterStatus("all");
+    setPage(1);
+  }, []);
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
-      {/* Header */}
       <div className="px-6 py-3 flex items-center justify-between">
         <h1 className="text-xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Manage Jobs
         </h1>
-        {/* Create button stays here or move to JobFilters — your call */}
       </div>
 
       <JobFilters
         searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
+        onSearchChange={handleSearchChange}
         filterDept={filterDept}
-        onDeptChange={setFilterDept}
+        onDeptChange={handleDeptChange}
         filterType={filterType}
-        onTypeChange={setFilterType}
+        onTypeChange={handleTypeChange}
         filterStatus={filterStatus}
-        onStatusChange={setFilterStatus}
+        onStatusChange={handleStatusChange}
         departments={departments}
         departmentNameById={departmentNameById}
         onClear={handleClearFilters}
@@ -125,9 +110,12 @@ export function JobsPageClient() {
       <JobsTable
         jobs={filteredJobs}
         departmentNameById={departmentNameById}
+        isLoading={isLoading}
         onDelete={setDeleteTarget}
         onDeleteSelected={handleDeleteSelected}
-        isDeletingSelected={deleteMutation.isPending}
+        isDeletingSelected={bulkDeleteMutation.isPending}
+        pagination={pagination}
+        onPageChange={setPage}
       />
 
       <JobDeleteDialog

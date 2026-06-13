@@ -7,12 +7,45 @@ import {
 } from "@tanstack/react-query";
 import type { Template } from "@/types";
 import { serverFetch } from "@/lib/auth-action";
+import type { PaginationInfo } from "@/components/table/table-footer";
+
+export type TemplateListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  type?: string;
+};
 
 export function useTemplates() {
   return useQuery({
     queryKey: ["templates"],
     queryFn: () => serverFetch<{ data: Template[] }>("/templates"),
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useTemplatesList(params: TemplateListParams = {}) {
+  return useQuery({
+    queryKey: ["templates", "list", params],
+    queryFn: () => {
+      const qs = new URLSearchParams({ page: String(params.page ?? 1), limit: String(params.limit ?? 15) });
+      if (params.search) qs.set("search", params.search);
+      if (params.type) qs.set("type", params.type);
+      return serverFetch<{ data: Template[]; pagination: PaginationInfo }>(`/templates?${qs}`);
+    },
+    staleTime: 1000 * 60 * 5,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useBulkDeleteTemplates() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: number[]) =>
+      serverFetch<{ count: number }>("/templates/bulk", { method: "DELETE", body: JSON.stringify({ ids }) }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["templates"] });
+    },
   });
 }
 

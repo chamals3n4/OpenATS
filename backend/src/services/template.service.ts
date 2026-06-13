@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, ilike, inArray, and, sql, desc } from "drizzle-orm";
 import { db } from "../db";
 import { templates } from "../db/schema";
 import type { ContentBlock } from "../db/schema";
@@ -19,11 +19,39 @@ export interface UpdateTemplateInput {
   bodyJson?: ContentBlock[] | undefined;
 }
 
-
+export type TemplateListFilters = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  type?: string;
+};
 
 export const templateService = {
   async getAll() {
     return db.select().from(templates).orderBy(templates.createdAt);
+  },
+
+  async getPaginated(filters: TemplateListFilters = {}) {
+    const { page = 1, limit = 15, search, type } = filters;
+    const offset = (page - 1) * limit;
+
+    const conditions = [];
+    if (search) conditions.push(ilike(templates.name, `%${search}%`));
+    if (type) conditions.push(eq(templates.type, type as any));
+    const where = conditions.length > 0 ? and(...conditions) : undefined;
+
+    const [rows, [countRow]] = await Promise.all([
+      db.select().from(templates).where(where).orderBy(desc(templates.createdAt)).limit(limit).offset(offset),
+      db.select({ count: sql<number>`count(*)::int` }).from(templates).where(where),
+    ]);
+
+    const total = countRow?.count ?? 0;
+    return { rows, total, page, limit, totalPages: Math.ceil(total / limit) };
+  },
+
+  async deleteMany(ids: number[]) {
+    if (ids.length === 0) return [];
+    return db.delete(templates).where(inArray(templates.id, ids)).returning();
   },
 
   async getByType(type: string) {

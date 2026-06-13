@@ -1,6 +1,15 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import type { Offer, PublicOfferView } from "@/types";
 import { serverFetch } from "@/lib/auth-action";
+import type { PaginationInfo } from "@/components/table/table-footer";
+
+export type OfferListParams = {
+  page?: number;
+  limit?: number;
+  search?: string;
+  status?: string;
+  jobId?: number;
+};
 
 export function useOffers(jobId?: number) {
   return useQuery({
@@ -88,11 +97,40 @@ export function useUpdateOfferStatus() {
   });
 }
 
+export function useOffersList(params: OfferListParams = {}) {
+  return useQuery({
+    queryKey: ["offers", "list", params],
+    queryFn: () => {
+      const qs = new URLSearchParams({ page: String(params.page ?? 1), limit: String(params.limit ?? 15) });
+      if (params.search) qs.set("search", params.search);
+      if (params.status) qs.set("status", params.status);
+      if (params.jobId) qs.set("jobId", String(params.jobId));
+      return serverFetch<{ data: Offer[]; pagination: PaginationInfo }>(`/offers?${qs}`);
+    },
+    staleTime: 1000 * 30,
+    placeholderData: keepPreviousData,
+    refetchInterval: 10_000,
+    refetchOnWindowFocus: true,
+  });
+}
+
 export function useDeleteOffer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (offerId: number) =>
       serverFetch(`/offers/${offerId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["offers"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+  });
+}
+
+export function useBulkDeleteOffers() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (ids: number[]) =>
+      serverFetch<{ count: number }>("/offers/bulk", { method: "DELETE", body: JSON.stringify({ ids }) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["offers"] });
       queryClient.invalidateQueries({ queryKey: ["candidates"] });

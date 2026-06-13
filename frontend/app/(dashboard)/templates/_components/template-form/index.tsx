@@ -74,12 +74,12 @@ export function TemplateForm({
 
     if (mode === "new") {
       createMutation.mutate(payload, {
-        onSuccess: () => router.push("/settings/templates"),
+        onSuccess: () => router.push("/templates"),
       });
     } else if (templateId) {
       updateMutation.mutate(
         { id: templateId, data: payload },
-        { onSuccess: () => router.push("/settings/templates") },
+        { onSuccess: () => router.push("/templates") },
       );
     }
   };

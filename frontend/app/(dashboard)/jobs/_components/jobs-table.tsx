@@ -9,7 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
+import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import { JobTableRow } from "./job-table-row";
 import {
   BulkSelectHeaderCell,
@@ -17,24 +17,30 @@ import {
   useBulkSelection,
 } from "@/components/table/bulk-selection";
 import { BulkDeleteDialog } from "@/components/table/bulk-delete-dialog";
+import { TableFooter, type PaginationInfo } from "@/components/table/table-footer";
 import type { Job } from "@/types";
 
 interface JobsTableProps {
   jobs: Job[];
   departmentNameById: Map<number, string>;
+  isLoading: boolean;
   onDelete: (job: Job) => void;
   onDeleteSelected: (ids: number[]) => boolean | void | Promise<boolean | void>;
   isDeletingSelected?: boolean;
+  pagination?: PaginationInfo;
+  onPageChange?: (page: number) => void;
 }
 
 export function JobsTable({
   jobs,
   departmentNameById,
+  isLoading,
   onDelete,
   onDeleteSelected,
   isDeletingSelected,
+  pagination,
+  onPageChange,
 }: JobsTableProps) {
-  const hasJobs = jobs.length > 0;
   const visibleJobIds = useMemo(() => jobs.map((job) => job.id), [jobs]);
   const selection = useBulkSelection(visibleJobIds);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -69,74 +75,66 @@ export function JobsTable({
           <TableHeader>
             <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
               <BulkSelectHeaderCell
+                className="h-11"
                 checked={selection.allVisibleSelected}
                 indeterminate={selection.someVisibleSelected}
-                disabled={!hasJobs}
+                disabled={isLoading || jobs.length === 0}
                 onCheckedChange={selection.toggleVisible}
               />
-              <TableHead className="h-10 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Job Name
               </TableHead>
-              <TableHead className="h-10 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Job Type
               </TableHead>
-              <TableHead className="h-10 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Department Name
               </TableHead>
-              <TableHead className="h-10 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Created At
               </TableHead>
-              <TableHead className="h-10 px-6 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                 Actions
               </TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
-            {hasJobs ? (
+            {isLoading ? (
+              <TableRow>
+                <TableCell colSpan={6} className="p-0">
+                  <ListSectionSpinner />
+                </TableCell>
+              </TableRow>
+            ) : jobs.length === 0 ? (
+              <TableRow>
+                <TableCell colSpan={6} className="h-32 text-center text-slate-400 text-sm">
+                  No jobs found.
+                </TableCell>
+              </TableRow>
+            ) : (
               jobs.map((job) => (
                 <JobTableRow
                   key={job.id}
                   job={job}
                   departmentName={
-                    departmentNameById.get(job.departmentId) ??
-                    `Department #${job.departmentId}`
+                    departmentNameById.get(job.departmentId) ?? `Department #${job.departmentId}`
                   }
                   onDelete={onDelete}
                   isSelected={selection.selectedIds.has(job.id)}
-                  onSelectedChange={(checked) =>
-                    selection.toggleOne(job.id, checked)
-                  }
+                  onSelectedChange={(checked) => selection.toggleOne(job.id, checked)}
                 />
               ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={6}
-                  className="h-32 text-center text-slate-400 text-sm"
-                >
-                  No jobs found.
-                </TableCell>
-              </TableRow>
             )}
           </TableBody>
         </Table>
 
-        {/* Pagination — extract to JobsPagination component if it grows */}
-        <div className="flex items-center justify-between px-6 py-2.5 border-t border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-          <span className="text-sm font-medium text-slate-400">
-            {hasJobs
-              ? `Showing 1-${jobs.length} of ${jobs.length} results`
-              : "Showing 0 of 0 results"}
-          </span>
-          <div className="flex items-center gap-3">
-            <Button className="h-8 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none">
-              Previous
-            </Button>
-            <Button className="h-8 rounded-md border-none bg-theme hover:bg-theme-hover px-4 text-sm font-semibold leading-none text-white shadow-none">
-              Next
-            </Button>
-          </div>
-        </div>
+        <TableFooter
+          isLoading={isLoading}
+          label="job"
+          pagination={pagination}
+          count={jobs.length}
+          onPageChange={onPageChange}
+        />
       </div>
     </div>
   );

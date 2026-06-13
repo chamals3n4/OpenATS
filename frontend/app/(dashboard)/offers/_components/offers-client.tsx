@@ -1,56 +1,56 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useOffers, useDeleteOffer } from "@/hooks/queries/use-offers";
+import { useOffersList, useDeleteOffer, useBulkDeleteOffers } from "@/hooks/queries/use-offers";
 import { useJobs } from "@/hooks/queries/use-jobs";
-import type { Job, Offer } from "@/types";
+import type { Offer } from "@/types";
 import { OfferFilters } from "./offer-filters";
 import { OffersTable } from "./offers-table";
 import { OfferDeleteDialog } from "./delete-dialog";
-import { getCandidateName } from "../lib/offer-utils";
 
-type OfferWithJob = Offer & { job?: Pick<Job, "id"> };
+const PAGE_LIMIT = 15;
 
 export default function OffersPageClient() {
   const router = useRouter();
 
-  // ── Data ───────────────────────────────────────────────────
-  const { data: offersRes, isLoading } = useOffers();
-  const { data: jobsData } = useJobs();
-  const deleteMutation = useDeleteOffer();
-
-  const offers: Offer[] = offersRes?.data ?? [];
-  const jobs = jobsData?.data ?? [];
-
   // ── Filter State ───────────────────────────────────────────
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedJobId, setSelectedJobId] = useState<number | undefined>();
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [page, setPage] = useState(1);
 
-  // ── Filter Logic ───────────────────────────────────────────
-  const filtered = useMemo(() => {
-    const q = search.toLowerCase().trim();
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(t);
+  }, [search]);
 
-    return offers.filter((o) => {
-      const candidateName = getCandidateName(o).toLowerCase();
-      const matchesSearch = !q || candidateName.includes(q);
-      const matchesStatus = statusFilter === "all" || o.status === statusFilter;
-      const matchesJob =
-        selectedJobId === undefined || (o as OfferWithJob).job?.id === selectedJobId;
-      return matchesSearch && matchesStatus && matchesJob;
-    });
-  }, [offers, search, statusFilter, selectedJobId]);
+  // ── Data ───────────────────────────────────────────────────
+  const { data: offersRes, isLoading } = useOffersList({
+    page,
+    limit: PAGE_LIMIT,
+    search: debouncedSearch || undefined,
+    status: statusFilter === "all" ? undefined : statusFilter,
+    jobId: selectedJobId,
+  });
+  const { data: jobsData } = useJobs();
+
+  const offers = offersRes?.data ?? [];
+  const pagination = offersRes?.pagination;
+  const jobs = jobsData?.data ?? [];
 
   // ── Delete ─────────────────────────────────────────────────
   const [deleteTarget, setDeleteTarget] = useState<Offer | null>(null);
+  const deleteMutation = useDeleteOffer();
+  const bulkDeleteMutation = useBulkDeleteOffers();
 
   const handleDeleteSelected = useCallback(
     async (ids: number[]) => {
       if (ids.length === 0) return false;
-      await Promise.all(ids.map((id) => deleteMutation.mutateAsync(id)));
+      await bulkDeleteMutation.mutateAsync(ids);
     },
-    [deleteMutation],
+    [bulkDeleteMutation],
   );
 
   const handleConfirmDelete = useCallback(() => {
@@ -68,39 +68,50 @@ export default function OffersPageClient() {
     [router],
   );
 
+  const handleSearchChange = useCallback((v: string) => { setSearch(v); setPage(1); }, []);
+  const handleJobChange = useCallback((v: number | undefined) => { setSelectedJobId(v); setPage(1); }, []);
+  const handleStatusChange = useCallback((v: string) => { setStatusFilter(v); setPage(1); }, []);
+
   const handleClearFilters = useCallback(() => {
     setSearch("");
     setSelectedJobId(undefined);
     setStatusFilter("all");
+    setPage(1);
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
-      <div className="px-6 py-3 flex items-center justify-between">
+    <div className="flex flex-1 flex-col min-h-0 bg-white dark:bg-neutral-950">
+      <div className="flex-shrink-0 px-6 py-3 flex items-center justify-between">
         <h1 className="text-xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Manage Offers
         </h1>
       </div>
 
-      <OfferFilters
-        search={search}
-        onSearchChange={setSearch}
-        selectedJobId={selectedJobId}
-        onJobChange={setSelectedJobId}
-        statusFilter={statusFilter}
-        onStatusChange={setStatusFilter}
-        jobs={jobs}
-        onClear={handleClearFilters}
-      />
+      <div className="flex-shrink-0">
+        <OfferFilters
+          search={search}
+          onSearchChange={handleSearchChange}
+          selectedJobId={selectedJobId}
+          onJobChange={handleJobChange}
+          statusFilter={statusFilter}
+          onStatusChange={handleStatusChange}
+          jobs={jobs}
+          onClear={handleClearFilters}
+        />
+      </div>
 
-      <OffersTable
-        offers={filtered}
-        isLoading={isLoading}
-        onRowClick={handleRowClick}
-        onDelete={setDeleteTarget}
-        onDeleteSelected={handleDeleteSelected}
-        isDeletingSelected={deleteMutation.isPending}
-      />
+      <div className="flex-1 min-h-0 overflow-y-auto">
+        <OffersTable
+          offers={offers}
+          isLoading={isLoading}
+          onRowClick={handleRowClick}
+          onDelete={setDeleteTarget}
+          onDeleteSelected={handleDeleteSelected}
+          isDeletingSelected={bulkDeleteMutation.isPending}
+          pagination={pagination}
+          onPageChange={setPage}
+        />
+      </div>
 
       <OfferDeleteDialog
         offer={deleteTarget}

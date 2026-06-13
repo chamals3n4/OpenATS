@@ -110,11 +110,48 @@ export const listPublishedCareersJobs = async (
 
 export const getAllJobs = async (req: Request, res: Response) => {
   try {
+    const { page, limit, search, status, departmentId } = req.query;
+
+    if (page !== undefined) {
+      const result = await jobService.getPaginated({
+        page: parseInt(page as string) || 1,
+        limit: parseInt((limit as string) ?? "15") || 15,
+        search: (search as string) || undefined,
+        status: (status as string) || undefined,
+        departmentId: departmentId ? parseInt(departmentId as string) : undefined,
+      });
+      res.status(200).json({
+        data: result.rows,
+        pagination: { total: result.total, page: result.page, limit: result.limit, totalPages: result.totalPages },
+      });
+      return;
+    }
+
     const result = await jobService.getAll();
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(`Failed to fetch all jobs: ${(error as any)?.message}`);
     res.status(500).json({ error: "Failed to fetch jobs" });
+  }
+};
+
+const bulkDeleteJobsSchema = z.object({
+  ids: z.array(z.number().int().positive()).min(1),
+});
+
+export const bulkDeleteJobs = async (req: Request, res: Response) => {
+  try {
+    const parsed = bulkDeleteJobsSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: "Validation failed", details: parsed.error.flatten().fieldErrors });
+      return;
+    }
+    logger.warn(`Bulk job deletion requested: ids=${parsed.data.ids.join(",")} by user ${req.user?.id}`);
+    const deleted = await jobService.deleteMany(parsed.data.ids);
+    res.status(200).json({ data: deleted, count: deleted.length });
+  } catch (error) {
+    logger.error(`Failed to bulk delete jobs - user ${req.user?.id}: ${(error as any)?.message}`);
+    res.status(500).json({ error: "Failed to delete jobs" });
   }
 };
 

@@ -12,14 +12,14 @@ interface BlockEditorProps {
 
 export function BlockEditor({ block, onUpdate, onDelete }: BlockEditorProps) {
   return (
-    <div className="border border-slate-200 dark:border-neutral-700 rounded-xl overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2.5 bg-slate-50 dark:bg-neutral-800 border-b border-slate-100 dark:border-neutral-700">
-        <span className="text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase">
+    <div className="border border-slate-200 dark:border-neutral-700 rounded-md overflow-hidden">
+      <div className="flex items-center justify-between px-3 py-1.5 bg-slate-50 dark:bg-neutral-800/80 border-b border-slate-200 dark:border-neutral-700">
+        <span className="text-[10px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">
           {block.kind}
         </span>
         <button
           onClick={() => onDelete(block.id)}
-          className="text-slate-300 dark:text-neutral-600 hover:text-red-500"
+          className="text-slate-300 dark:text-neutral-600 hover:text-red-500 transition-colors"
         >
           <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
         </button>
@@ -27,8 +27,8 @@ export function BlockEditor({ block, onUpdate, onDelete }: BlockEditorProps) {
       <textarea
         value={block.content}
         onChange={(e) => onUpdate(block.id, e.target.value)}
-        rows={block.kind === "text" ? 5 : 2}
-        className="w-full px-4 py-3 text-[14px] bg-white dark:bg-neutral-950 text-slate-700 dark:text-neutral-200 leading-relaxed resize-none focus:outline-none placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+        rows={block.kind === "text" ? 4 : 2}
+        className="w-full px-3 py-2.5 text-[13px] bg-white dark:bg-neutral-950 text-slate-700 dark:text-neutral-200 leading-relaxed resize-none focus:outline-none placeholder:text-slate-300 dark:placeholder:text-neutral-600"
       />
     </div>
   );

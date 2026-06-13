@@ -1,11 +1,11 @@
 export const INPUT_CLASS =
-  "h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0";
+  "h-8 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 shadow-none rounded-md text-[13px] placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus-visible:border-slate-400 dark:focus-visible:border-neutral-500 focus-visible:ring-0";
 
 export const TEXTAREA_CLASS =
-  "w-full bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg px-4 py-3 text-[14px] text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 resize-none focus:outline-none focus-visible:border-slate-300 dark:focus-visible:border-neutral-600";
+  "w-full bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 shadow-none rounded-md px-3 py-2 text-[13px] text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 resize-none focus:outline-none focus:border-slate-400 dark:focus:border-neutral-500";
 
 export const LABEL_CLASS =
-  "text-sm font-semibold text-slate-700 dark:text-neutral-300";
+  "text-xs font-medium text-slate-500 dark:text-neutral-400";
 
 export const VARS = ["candidate_name", "job_title", "company_name"];
 

@@ -42,7 +42,7 @@ export function EventBuilder({
 }: EventBuilderProps) {
   return (
     <>
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label className={LABEL_CLASS}>Event Name</Label>
         <Input
           placeholder="e.g. Technical Interview Round 1"
@@ -52,18 +52,18 @@ export function EventBuilder({
         />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1.5">
         <Label className={LABEL_CLASS}>
           Description{" "}
           <span className="text-slate-400 dark:text-neutral-500 font-normal">
-            (for hiring team context)
+            (optional)
           </span>
         </Label>
         <textarea
           value={eventDesc}
           onChange={(e) => onEventDescChange(e.target.value)}
-          rows={3}
-          placeholder="e.g. Focus on system design and architecture"
+          rows={2}
+          placeholder="Brief context for the hiring team"
           className={TEXTAREA_CLASS}
         />
       </div>

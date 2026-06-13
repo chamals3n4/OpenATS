@@ -16,7 +16,7 @@ export function TemplateNameField({
   placeholder = "e.g. Standard Offer Letter",
 }: TemplateNameFieldProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <Label className={LABEL_CLASS}>Template Name</Label>
       <Input
         placeholder={placeholder}

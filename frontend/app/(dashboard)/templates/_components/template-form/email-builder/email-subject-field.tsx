@@ -11,7 +11,7 @@ interface EmailSubjectFieldProps {
 
 export function EmailSubjectField({ value, onChange }: EmailSubjectFieldProps) {
   return (
-    <div className="space-y-2">
+    <div className="space-y-1.5">
       <Label className={LABEL_CLASS}>Email Subject</Label>
       <Input
         placeholder="e.g. Interview Invitation — {{job_title}}"

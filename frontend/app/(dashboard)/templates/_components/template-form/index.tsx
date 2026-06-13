@@ -2,19 +2,15 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useCreateTemplate } from "@/hooks/queries/use-templates";
-import { useUpdateTemplate } from "@/hooks/queries/use-templates";
+import { useCreateTemplate, useUpdateTemplate } from "@/hooks/queries/use-templates";
 import type { Template } from "@/types";
 import type { TemplateType } from "../../lib/template-form-types";
 import { useTemplateForm } from "../../hooks/use-template-form";
-import {
-  buildEmailPayload,
-  buildEventPayload,
-} from "../../lib/template-form-utils";
+import { buildEmailPayload, buildEventPayload } from "../../lib/template-form-utils";
 import { TemplateFormHeader } from "./header";
-import { TemplateFormShell } from "./form-shell";
 import { TemplateNameField } from "./name-field";
 import { EmailBuilder } from "./email-builder";
+import { EmailPreviewPanel } from "./email-builder/email-preview";
 import { EventBuilder } from "./event-builder";
 
 interface TemplateFormProps {
@@ -36,7 +32,6 @@ export function TemplateForm({
 
   const form = useTemplateForm(templateType);
 
-  // Hydrate form when editing
   useEffect(() => {
     if (mode === "edit" && existingTemplate) {
       form.hydrate({
@@ -46,10 +41,9 @@ export function TemplateForm({
         type: existingTemplate.type as TemplateType,
       });
     }
-  }, [mode, existingTemplate, form]);
+  }, [mode, existingTemplate]);
 
-  const isPending =
-    mode === "new" ? createMutation.isPending : updateMutation.isPending;
+  const isPending = mode === "new" ? createMutation.isPending : updateMutation.isPending;
 
   const handleSave = () => {
     if (!form.name.trim()) return;
@@ -57,8 +51,7 @@ export function TemplateForm({
     const payload = {
       name: form.name.trim(),
       type: templateType,
-      subject:
-        templateType === "event" ? form.eventName || form.name : form.subject,
+      subject: templateType === "event" ? form.eventName || form.name : form.subject,
       bodyJson:
         templateType === "email"
           ? buildEmailPayload(form.blocks)
@@ -86,43 +79,69 @@ export function TemplateForm({
 
   if (mode === "edit" && !existingTemplate) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-white dark:bg-neutral-950">
-        <p className="text-slate-400">Loading...</p>
+      <div className="flex items-center justify-center flex-1 bg-white dark:bg-neutral-950">
+        <p className="text-slate-400">Loading…</p>
       </div>
     );
   }
 
+  const header = (
+    <TemplateFormHeader
+      templateType={templateType}
+      mode={mode}
+      canSave={!!form.name.trim()}
+      isPending={isPending}
+      onSave={handleSave}
+    />
+  );
+
+  // ── Email: split editor / preview ────────────────────────────────────────
+  if (templateType === "email") {
+    return (
+      <div className="flex flex-col flex-1 min-h-0 bg-white dark:bg-neutral-950">
+        {header}
+
+        <div className="flex flex-1 min-h-0">
+          {/* Left — editor */}
+          <div className="flex-1 overflow-y-auto border-r border-slate-200 dark:border-neutral-800">
+            <div className="px-8 py-6 space-y-5 max-w-xl">
+              <TemplateNameField
+                value={form.name}
+                onChange={form.setName}
+                placeholder="e.g. Standard Offer Letter"
+              />
+              <EmailBuilder
+                subject={form.subject}
+                onSubjectChange={form.setSubject}
+                blocks={form.blocks}
+                onAddBlock={form.addBlock}
+                onUpdateBlock={form.updateBlock}
+                onDeleteBlock={form.deleteBlock}
+              />
+            </div>
+          </div>
+
+          {/* Right — live preview */}
+          <div className="w-[420px] xl:w-[480px] shrink-0 overflow-y-auto bg-slate-50 dark:bg-neutral-900/40 border-l border-slate-200 dark:border-neutral-800">
+            <EmailPreviewPanel subject={form.subject} blocks={form.blocks} />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ── Event: single-column clean form ─────────────────────────────────────
   return (
-    <div className="flex flex-col bg-white dark:bg-neutral-950 min-h-screen">
-      <TemplateFormHeader
-        templateType={templateType}
-        mode={mode}
-        canSave={!!form.name.trim()}
-        isPending={isPending}
-        onSave={handleSave}
-      />
+    <div className="flex flex-col flex-1 min-h-0 bg-white dark:bg-neutral-950">
+      {header}
 
-      <TemplateFormShell>
-        <TemplateNameField
-          value={form.name}
-          onChange={form.setName}
-          placeholder={
-            templateType === "email"
-              ? "e.g. Standard Offer Letter"
-              : "e.g. Technical Interview Round 1"
-          }
-        />
-
-        {templateType === "email" ? (
-          <EmailBuilder
-            subject={form.subject}
-            onSubjectChange={form.setSubject}
-            blocks={form.blocks}
-            onAddBlock={form.addBlock}
-            onUpdateBlock={form.updateBlock}
-            onDeleteBlock={form.deleteBlock}
+      <div className="flex-1 overflow-y-auto">
+        <div className="max-w-xl mx-auto px-8 py-6 space-y-5">
+          <TemplateNameField
+            value={form.name}
+            onChange={form.setName}
+            placeholder="e.g. Technical Interview Round 1"
           />
-        ) : (
           <EventBuilder
             eventName={form.eventName}
             onEventNameChange={form.setEventName}
@@ -137,8 +156,8 @@ export function TemplateForm({
             onUpdateSlot={form.updateSlot}
             onRemoveSlot={form.removeSlot}
           />
-        )}
-      </TemplateFormShell>
+        </div>
+      </div>
     </div>
   );
 }

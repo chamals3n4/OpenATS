@@ -9,9 +9,9 @@ const BLOCK_KINDS: {
   icon: typeof Heading01Icon;
   label: string;
 }[] = [
-  { kind: "heading", icon: Heading01Icon, label: "heading" },
-  { kind: "text", icon: TextIcon, label: "text" },
-  { kind: "button", icon: EyeIcon, label: "button" },
+  { kind: "heading", icon: Heading01Icon, label: "Heading" },
+  { kind: "text", icon: TextIcon, label: "Text" },
+  { kind: "button", icon: EyeIcon, label: "Button" },
 ];
 
 interface BlockToolbarProps {
@@ -20,18 +20,18 @@ interface BlockToolbarProps {
 
 export function BlockToolbar({ onAddBlock }: BlockToolbarProps) {
   return (
-    <div className="space-y-2">
-      <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
-        Content Blocks
+    <div className="space-y-1.5">
+      <span className="text-xs font-medium text-slate-500 dark:text-neutral-400">
+        Add block
       </span>
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {BLOCK_KINDS.map(({ kind, icon, label }) => (
           <button
             key={kind}
             onClick={() => onAddBlock(kind)}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 text-[13px] font-medium hover:border-[var(--theme-color)]/40 hover:text-[var(--theme-color)] transition-all"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:border-[var(--theme-color)]/40 hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 transition-all"
           >
-            <HugeiconsIcon icon={icon} className="size-3.5" /> {label}
+            <HugeiconsIcon icon={icon} className="size-3" /> {label}
           </button>
         ))}
       </div>

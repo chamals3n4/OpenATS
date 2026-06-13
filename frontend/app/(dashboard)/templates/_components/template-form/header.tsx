@@ -29,11 +29,11 @@ export function TemplateFormHeader({
   onSave,
 }: TemplateFormHeaderProps) {
   return (
-    <div className="flex items-center justify-between px-7 py-4 border-b border-slate-200 dark:border-neutral-800 shrink-0">
+    <div className="flex items-center justify-between px-7 py-3.5 border-b border-slate-200 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-950">
       <div className="flex items-center gap-4">
         <Link
           href="/templates"
-          className="text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300"
+          className="text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300 transition-colors"
         >
           <HugeiconsIcon icon={ArrowLeft01Icon} className="size-5" />
         </Link>
@@ -47,17 +47,24 @@ export function TemplateFormHeader({
           {mode === "new" ? "New template" : "Edit template"}
         </span>
       </div>
-      <Button
-        onClick={onSave}
-        disabled={!canSave || isPending}
-        className="h-9 rounded-md border-none bg-[var(--theme-color)] px-4 text-[13px] font-semibold text-white hover:bg-[var(--theme-color-hover)] disabled:opacity-50"
-      >
-        {isPending
-          ? "Saving..."
-          : mode === "new"
-            ? "Save Template"
-            : "Save Changes"}
-      </Button>
+      <div className="flex items-center gap-2">
+        <Link href="/templates">
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-9 rounded-md px-4 text-[13px] font-semibold text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800"
+          >
+            Cancel
+          </Button>
+        </Link>
+        <Button
+          onClick={onSave}
+          disabled={!canSave || isPending}
+          className="h-9 rounded-md border-none bg-[var(--theme-color)] px-4 text-[13px] font-semibold text-white hover:bg-[var(--theme-color-hover)] disabled:opacity-50 shadow-none"
+        >
+          {isPending ? "Saving…" : mode === "new" ? "Save Template" : "Save Changes"}
+        </Button>
+      </div>
     </div>
   );
 }

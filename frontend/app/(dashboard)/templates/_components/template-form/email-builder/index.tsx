@@ -6,7 +6,6 @@ import { EmailSubjectField } from "./email-subject-field";
 import { VariableButtons } from "./variable-buttons";
 import { BlockToolbar } from "./block-toolbar";
 import { BlockEditor } from "./block-editor";
-import { EmailPreview } from "./email-preview";
 
 interface EmailBuilderProps {
   subject: string;
@@ -31,13 +30,13 @@ export function EmailBuilder({
       <VariableButtons variables={VARS} />
       <BlockToolbar onAddBlock={onAddBlock} />
       {blocks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center min-h-[120px] rounded-xl border-2 border-dashed border-slate-200 dark:border-neutral-700 text-center gap-2">
-          <p className="text-[13px] font-medium text-slate-400 dark:text-neutral-500">
-            No blocks yet
+        <div className="flex flex-col items-center justify-center min-h-[80px] rounded-md border border-dashed border-slate-200 dark:border-neutral-700 text-center">
+          <p className="text-[12px] text-slate-400 dark:text-neutral-500">
+            No blocks yet — add one above
           </p>
         </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {blocks.map((block) => (
             <BlockEditor
               key={block.id}
@@ -48,7 +47,6 @@ export function EmailBuilder({
           ))}
         </div>
       )}
-      {blocks.length > 0 && <EmailPreview blocks={blocks} />}
     </>
   );
 }

@@ -2,6 +2,23 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
 import type { Company, Department } from "@/types";
 
+export function useUploadLogo() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (file: File) => {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch("/api/upload/logo", { method: "POST", body: formData });
+      const json = await res.json().catch(() => null) as { data: { url: string } } | { error?: string } | null;
+      if (!res.ok) throw new Error((json as { error?: string } | null)?.error ?? "Upload failed");
+      return (json as { data: { url: string } }).data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["company"] });
+    },
+  });
+}
+
 export function useCompany() {
   return useQuery({
     queryKey: ["company"],

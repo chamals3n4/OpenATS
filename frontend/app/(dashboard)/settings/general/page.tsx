@@ -5,12 +5,20 @@ import {
   PencilEdit01Icon,
   Delete02Icon,
   ImageUploadIcon,
+  PlusSignIcon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,11 +30,13 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import Image from "next/image";
+import { toast } from "sonner";
 
 import type { Company } from "@/types";
 import {
   useCompany,
   useUpsertCompany,
+  useUploadLogo,
   useDepartments,
   useCreateDepartment,
   useDeleteDepartment,
@@ -34,7 +44,7 @@ import {
 } from "@/hooks/queries/use-company";
 
 const inputCls =
-  "h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 rounded-lg shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-700 transition-colors";
+  "h-9 bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 rounded-md shadow-none text-[13px] placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors";
 
 const NEW_COMPANY_PLACEHOLDER: Company = {
   id: 0,
@@ -49,173 +59,117 @@ const NEW_COMPANY_PLACEHOLDER: Company = {
   updatedAt: "",
 };
 
-function CompanyForm({
-  company,
-  isNew,
-}: {
-  company: Company;
-  isNew?: boolean;
-}) {
+function CompanyForm({ company, isNew }: { company: Company; isNew?: boolean }) {
   const upsertCompany = useUpsertCompany();
+  const uploadLogo = useUploadLogo();
   const fileRef = useRef<HTMLInputElement>(null);
 
-  const [logo, setLogo] = useState<string | null>(company.logoUrl ?? null);
+  const [preview, setPreview] = useState<string | null>(company.logoUrl ?? null);
   const [companyName, setCompanyName] = useState(company.name ?? "");
   const [email, setEmail] = useState(company.email ?? "");
   const [website, setWebsite] = useState(company.website ?? "");
   const [phone, setPhone] = useState(company.phone ?? "");
   const [address, setAddress] = useState(company.address ?? "");
 
-  const handleLogo = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
     const reader = new FileReader();
-    reader.onload = (ev) => setLogo(ev.target?.result as string);
+    reader.onload = (ev) => setPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
+    uploadLogo.mutate(file, {
+      onSuccess: () => toast.success("Logo updated"),
+      onError: (err) => toast.error(err.message ?? "Upload failed"),
+    });
+    e.target.value = "";
+  };
+
+  const handleSave = () => {
+    upsertCompany.mutate(
+      { name: companyName, email, website: website || null, phone: phone || null, address: address || null },
+      {
+        onSuccess: () => toast.success(isNew ? "Company created" : "Changes saved"),
+        onError: () => toast.error("Failed to save"),
+      },
+    );
   };
 
   return (
-    <>
-      <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6">
-        <p className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300 mb-4">
+    <div className="space-y-4">
+      {/* Logo */}
+      <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
+        <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-400 dark:text-neutral-500 mb-4">
           Company Logo
         </p>
-        <div className="flex items-start gap-5">
+        <div className="flex items-center gap-4">
           <div
-            className="w-20 h-20 border-2 border-dashed border-slate-200 dark:border-neutral-800 rounded-xl flex items-center justify-center bg-slate-50 dark:bg-neutral-900 shrink-0 overflow-hidden cursor-pointer hover:border-slate-300 dark:hover:border-neutral-700 transition-colors"
             onClick={() => fileRef.current?.click()}
+            className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 flex items-center justify-center cursor-pointer hover:border-slate-300 dark:hover:border-neutral-600 transition-colors overflow-hidden shrink-0"
           >
-            {logo ? (
-              <Image
-                src={logo}
-                alt="Logo"
-                width={80}
-                height={80}
-                className="w-full h-full object-cover"
-              />
+            {uploadLogo.isPending ? (
+              <Loader2 className="size-5 animate-spin text-slate-400" />
+            ) : preview ? (
+              <Image src={preview} alt="Logo" width={64} height={64} className="w-full h-full object-cover" />
             ) : (
-              <HugeiconsIcon
-                icon={ImageUploadIcon}
-                className="size-7 text-slate-300"
-                strokeWidth={1.5}
-              />
+              <HugeiconsIcon icon={ImageUploadIcon} className="size-6 text-slate-300" strokeWidth={1.5} />
             )}
           </div>
-
-          <div className="space-y-2.5 pt-1">
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/png,image/jpeg"
-              className="hidden"
-              onChange={handleLogo}
-            />
+          <div>
+            <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handleFile} />
             <Button
               onClick={() => fileRef.current?.click()}
-              className="h-9 px-5 rounded-lg text-white shadow-none border-none text-[13px] font-medium"
+              disabled={uploadLogo.isPending}
+              className="h-8 px-4 rounded-md text-white shadow-none border-none text-[12px] font-medium cursor-pointer"
               style={{ backgroundColor: "var(--theme-color)" }}
             >
-              Upload Logo
+              {uploadLogo.isPending ? "Uploading…" : "Upload Logo"}
             </Button>
-            <p className="text-[12px] text-slate-400 dark:text-neutral-500">
-              PNG, JPG Up To 5MB. Recommended Size: 200x200px
-            </p>
+            <p className="text-[11px] text-slate-400 dark:text-neutral-500 mt-1.5">PNG, JPG, WebP · up to 5 MB</p>
           </div>
         </div>
       </div>
 
-      <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 space-y-5">
-        <p className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">
+      {/* Info */}
+      <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 space-y-4">
+        <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-400 dark:text-neutral-500">
           Company Information
         </p>
-
-        <div className="grid grid-cols-2 gap-5">
+        <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
-              Company Name
-            </Label>
-            <Input
-              value={companyName}
-              onChange={(e) => setCompanyName(e.target.value)}
-              className={inputCls}
-            />
+            <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Company Name</Label>
+            <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
-              Email
-            </Label>
-            <Input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className={inputCls}
-            />
+            <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Email</Label>
+            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
-              Website
-            </Label>
-            <Input
-              value={website}
-              onChange={(e) => setWebsite(e.target.value)}
-              className={inputCls}
-            />
+            <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Website</Label>
+            <Input value={website} onChange={(e) => setWebsite(e.target.value)} className={inputCls} placeholder="https://" />
           </div>
           <div>
-            <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
-              Phone
-            </Label>
-            <Input
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className={inputCls}
-            />
+            <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Phone</Label>
+            <Input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} />
+          </div>
+          <div className="col-span-2">
+            <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Address</Label>
+            <Input value={address} onChange={(e) => setAddress(e.target.value)} className={inputCls} />
           </div>
         </div>
-
-        <div>
-          <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
-            Address
-          </Label>
-          <Input
-            value={address}
-            onChange={(e) => setAddress(e.target.value)}
-            className={inputCls}
-          />
-        </div>
-
         <Button
-          className="w-full h-11 text-white rounded-lg shadow-none border-none text-[14px] font-semibold transition-all active:scale-[0.99]"
-          style={{ backgroundColor: "var(--theme-color)" }}
-          onClick={() =>
-            upsertCompany.mutate({
-              name: companyName,
-              email,
-              website: website || null,
-              phone: phone || null,
-              address: address || null,
-            })
-          }
+          onClick={handleSave}
           disabled={upsertCompany.isPending}
+          className="w-full h-9 text-white rounded-md shadow-none border-none text-[13px] font-semibold cursor-pointer"
+          style={{ backgroundColor: "var(--theme-color)" }}
         >
-          {upsertCompany.isPending
-            ? "Saving…"
-            : isNew
-              ? "Create company"
-              : "Save Changes"}
+          {upsertCompany.isPending ? "Saving…" : isNew ? "Create Company" : "Save Changes"}
         </Button>
       </div>
-    </>
+    </div>
   );
 }
 
-export default function SettingsGeneralPage() {
-  const {
-    data: companyData,
-    isPending: companyLoading,
-    isError: companyError,
-  } = useCompany();
-  const company = companyData?.data;
+function DepartmentsPanel({ company }: { company: Company | null | undefined }) {
   const { data: deptData } = useDepartments({ enabled: !!company });
   const createDept = useCreateDepartment();
   const updateDept = useUpdateDepartment();
@@ -223,190 +177,207 @@ export default function SettingsGeneralPage() {
 
   const departments = deptData?.data ?? [];
 
-  const [newDept, setNewDept] = useState("");
-  const [editingId, setEditingId] = useState<number | null>(null);
-  const [editingVal, setEditingVal] = useState("");
+  const [addOpen, setAddOpen] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [editId, setEditId] = useState<number | null>(null);
+  const [editVal, setEditVal] = useState("");
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
-  const handleAddDept = () => {
-    if (!newDept.trim()) return;
-    createDept.mutate(
-      { name: newDept.trim() },
-      {
-        onSuccess: () => setNewDept(""),
-      },
-    );
+  const handleAdd = () => {
+    if (!newName.trim()) return;
+    createDept.mutate({ name: newName.trim() }, {
+      onSuccess: () => { setNewName(""); setAddOpen(false); toast.success("Department added"); },
+      onError: () => toast.error("Failed to add department"),
+    });
   };
 
-  const handleSaveDept = (id: number) => {
-    if (!editingVal.trim()) return;
-    updateDept.mutate(
-      { id, name: editingVal.trim() },
-      {
-        onSuccess: () => setEditingId(null),
-      },
-    );
+  const handleEdit = (id: number) => {
+    if (!editVal.trim()) return;
+    updateDept.mutate({ id, name: editVal.trim() }, {
+      onSuccess: () => { setEditId(null); toast.success("Department updated"); },
+      onError: () => toast.error("Failed to update"),
+    });
   };
 
-  const handleDeleteDept = (id: number) => {
-    deleteDept.mutate(id, { onSuccess: () => setDeleteId(null) });
+  const handleDelete = () => {
+    if (deleteId === null) return;
+    deleteDept.mutate(deleteId, {
+      onSuccess: () => { setDeleteId(null); toast.success("Department deleted"); },
+      onError: () => toast.error("Failed to delete"),
+    });
   };
+
+  const deleteName = deleteId !== null ? (departments.find((d) => d.id === deleteId)?.name ?? "") : "";
 
   return (
-    <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
-      <div className="px-8 py-6 border-b border-slate-100 dark:border-neutral-800">
-        <h1 className="text-[22px] font-semibold text-slate-900 dark:text-neutral-100 leading-none">
-          Company General Settings
-        </h1>
-      </div>
+    <>
+      <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
+        <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-400 dark:text-neutral-500 mb-4">
+          Departments
+        </p>
 
-      <div className="flex-1 overflow-y-auto px-8 py-8 space-y-6">
-        {companyLoading ? (
-          <>
-            <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 h-36 animate-pulse bg-slate-50 dark:bg-neutral-900" />
-            <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 h-64 animate-pulse bg-slate-50 dark:bg-neutral-900" />
-          </>
-        ) : companyError ? (
-          <p className="text-sm text-red-600 dark:text-red-400">
-            Could not load company settings. Try again later.
+        {!company ? (
+          <p className="text-[12px] text-slate-400 dark:text-neutral-500 mb-4">
+            Save company details first to manage departments.
           </p>
-        ) : company ? (
-          <CompanyForm key={company.id} company={company} />
         ) : (
-          <>
-            <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-[13px] text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/40 dark:text-amber-100">
-              Welcome—set your organization name and contact details below. You
-              can add departments after saving.
-            </div>
-            <CompanyForm
-              key="new-company"
-              company={NEW_COMPANY_PLACEHOLDER}
-              isNew
-            />
-          </>
-        )}
-
-        <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 space-y-4">
-          <p className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">
-            Departments
-          </p>
-
-          {!company && !companyLoading && !companyError ? (
-            <p className="text-[13px] text-slate-500 dark:text-neutral-500">
-              Save your company details above to manage departments.
-            </p>
-          ) : null}
-
-          <div className="flex items-center gap-3">
-            <Input
-              placeholder="Add New Department"
-              value={newDept}
-              onChange={(e) => setNewDept(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && handleAddDept()}
-              disabled={!company}
-              className="flex-1 h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 rounded-lg shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-600 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-700 transition-colors disabled:opacity-50"
-            />
-            <Button
-              onClick={handleAddDept}
-              disabled={!company || createDept.isPending}
-              className="h-10 px-5 text-white rounded-lg shadow-none border-none text-[13px] font-semibold whitespace-nowrap"
-              style={{ backgroundColor: "var(--theme-color)" }}
-            >
-              {createDept.isPending ? "Adding…" : "Add Department"}
-            </Button>
-          </div>
-
-          <div className="divide-y divide-slate-100 dark:divide-neutral-800">
+          <div className="space-y-2 mb-3">
             {departments.map((dept) => (
               <div
                 key={dept.id}
-                className="flex items-center justify-between py-3.5 first:pt-1"
+                className="group flex items-center justify-between gap-2 rounded-md bg-[var(--theme-color)]/8 dark:bg-[var(--theme-color)]/10 border border-[var(--theme-color)]/15 px-3 py-2"
               >
-                {editingId === dept.id ? (
+                {editId === dept.id ? (
                   <Input
                     autoFocus
-                    value={editingVal}
-                    onChange={(e) => setEditingVal(e.target.value)}
+                    value={editVal}
+                    onChange={(e) => setEditVal(e.target.value)}
                     onKeyDown={(e) => {
-                      if (e.key === "Enter") handleSaveDept(dept.id);
-                      if (e.key === "Escape") setEditingId(null);
+                      if (e.key === "Enter") handleEdit(dept.id);
+                      if (e.key === "Escape") setEditId(null);
                     }}
-                    onBlur={() => handleSaveDept(dept.id)}
-                    className="flex-1 mr-4 h-9 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 rounded-lg shadow-none text-sm focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-700"
+                    onBlur={() => handleEdit(dept.id)}
+                    className="flex-1 h-6 bg-white/60 dark:bg-neutral-800 border-[var(--theme-color)]/30 rounded text-[12px] shadow-none focus-visible:ring-0 px-2"
                   />
                 ) : (
-                  <span className="text-[14px] text-slate-700 dark:text-neutral-300">
-                    {dept.name}
-                  </span>
+                  <span className="text-[13px] font-medium text-[var(--theme-color)] truncate">{dept.name}</span>
                 )}
-
-                <div className="flex items-center gap-1.5 shrink-0">
+                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <button
-                    onClick={() => {
-                      setEditingId(dept.id);
-                      setEditingVal(dept.name);
-                    }}
-                    className="p-2 rounded-lg text-slate-400 dark:text-neutral-500 hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 dark:hover:bg-[var(--theme-color)]/10 transition-colors"
-                    title="Edit"
+                    onClick={() => { setEditId(dept.id); setEditVal(dept.name); }}
+                    className="size-5 rounded flex items-center justify-center text-[var(--theme-color)]/50 hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/10 transition-colors cursor-pointer"
                   >
-                    <HugeiconsIcon
-                      icon={PencilEdit01Icon}
-                      className="size-4"
-                      strokeWidth={2}
-                    />
+                    <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
                   </button>
                   <button
                     onClick={() => setDeleteId(dept.id)}
-                    className="p-2 rounded-lg text-slate-400 dark:text-neutral-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors"
-                    title="Delete"
+                    className="size-5 rounded flex items-center justify-center text-[var(--theme-color)]/50 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 transition-colors cursor-pointer"
                   >
-                    <HugeiconsIcon
-                      icon={Delete02Icon}
-                      className="size-4"
-                      strokeWidth={2}
-                    />
+                    <HugeiconsIcon icon={Delete02Icon} className="size-3" />
                   </button>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        )}
+
+        {company && (
+          <button
+            onClick={() => setAddOpen(true)}
+            className="w-full flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed border-slate-300 dark:border-neutral-700 py-2 text-[12px] font-medium text-slate-400 dark:text-neutral-500 hover:border-[var(--theme-color)]/50 hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 transition-colors"
+          >
+            <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2.5} />
+            Add Department
+          </button>
+        )}
       </div>
 
-      <AlertDialog
-        open={deleteId !== null}
-        onOpenChange={(open) => !open && setDeleteId(null)}
-      >
-        <AlertDialogContent className="max-w-sm rounded-2xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
+      {/* Add dialog */}
+      <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) setNewName(""); }}>
+        <DialogContent className="!top-[20%] !translate-y-0 max-w-[340px] rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg p-5 duration-0 data-open:zoom-in-100 data-closed:zoom-out-100">
+          <DialogHeader className="mb-3">
+            <DialogTitle className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">Add Department</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Name</Label>
+              <Input
+                autoFocus
+                placeholder="e.g. Engineering"
+                value={newName}
+                onChange={(e) => setNewName(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                className={inputCls}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setAddOpen(false)}
+                className="h-8 px-4 rounded-md border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 text-[12px] shadow-none cursor-pointer"
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={handleAdd}
+                disabled={!newName.trim() || createDept.isPending}
+                className="h-8 px-4 rounded-md text-white shadow-none border-none text-[12px] font-medium cursor-pointer"
+                style={{ backgroundColor: "var(--theme-color)" }}
+              >
+                {createDept.isPending ? "Adding…" : "Add"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete confirm */}
+      <AlertDialog open={deleteId !== null} onOpenChange={(o) => !o && setDeleteId(null)}>
+        <AlertDialogContent className="max-w-sm rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
-              Delete Department?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
-              <strong className="text-slate-700 dark:text-neutral-200">
-                {deleteId !== null
-                  ? (departments.find((d) => d.id === deleteId)?.name ?? "")
-                  : ""}
-              </strong>{" "}
-              will be permanently removed. This action cannot be undone.
+            <AlertDialogTitle className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">Delete department?</AlertDialogTitle>
+            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400">
+              <span className="font-medium text-slate-700 dark:text-neutral-200">{deleteName}</span> will be permanently removed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-9 px-5 rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800">
+            <AlertDialogCancel className="h-8 px-4 rounded-md border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[12px] shadow-none cursor-pointer">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => {
-                if (deleteId !== null) handleDeleteDept(deleteId);
-              }}
+              onClick={handleDelete}
               disabled={deleteDept.isPending}
-              className="h-9 px-5 rounded-lg bg-red-500 hover:bg-red-600 text-white text-[13px] font-medium shadow-none border-none"
+              className="h-8 px-4 rounded-md bg-red-500 hover:bg-red-600 text-white text-[12px] shadow-none border-none cursor-pointer"
             >
               {deleteDept.isPending ? "Deleting…" : "Delete"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+    </>
+  );
+}
+
+export default function SettingsGeneralPage() {
+  const { data: companyData, isPending: companyLoading, isError: companyError } = useCompany();
+  const company = companyData?.data;
+
+  return (
+    <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
+      <div className="shrink-0 px-6 py-4 border-b border-slate-100 dark:border-neutral-800">
+        <h1 className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100 leading-none">General Settings</h1>
+        <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-0.5">Manage your organization profile and departments</p>
+      </div>
+
+      <div className="flex-1 overflow-y-auto px-6 py-5">
+        {companyLoading ? (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5">
+            <div className="space-y-4">
+              <div className="h-28 rounded-md border border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 animate-pulse" />
+              <div className="h-64 rounded-md border border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 animate-pulse" />
+            </div>
+            <div className="h-48 rounded-md border border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 animate-pulse" />
+          </div>
+        ) : companyError ? (
+          <div className="rounded-md border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 px-4 py-3">
+            <p className="text-[13px] text-red-600 dark:text-red-400 font-medium">Could not load settings. Try refreshing.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5 items-start">
+            <div className="space-y-4">
+              {!company && (
+                <div className="rounded-md border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/20 px-4 py-3">
+                  <p className="text-[13px] text-amber-800 dark:text-amber-200">Set up your organization to get started.</p>
+                </div>
+              )}
+              <CompanyForm key={company?.id ?? "new"} company={company ?? NEW_COMPANY_PLACEHOLDER} isNew={!company} />
+            </div>
+            <div className="lg:sticky lg:top-5">
+              <DepartmentsPanel company={company} />
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

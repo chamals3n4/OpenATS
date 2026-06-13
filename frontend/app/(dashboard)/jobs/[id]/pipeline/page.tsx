@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import type { Ref } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useDrag, useDrop, useDragLayer } from "react-dnd";
 import { getEmptyImage } from "react-dnd-html5-backend";
+import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, GripVertical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
@@ -96,12 +97,26 @@ function CustomDragLayer() {
   );
 }
 
+type DragItem = {
+  id: number;
+  name: string;
+  appliedAt: string;
+  // The stage the drag STARTED in. Never mutated — the drop target relies on
+  // this (not the live position) to decide whether a real cross-column move
+  // must be persisted.
+  originStageId: number;
+  // Live position, mutated only during same-column hover reordering.
+  fromStageId: number;
+  fromIndex: number;
+};
+
 function DraggableCard({
   candidate,
   stageId,
   index,
   onReorder,
   onClick,
+  onDragMiss,
 }: {
   candidate: Candidate;
   stageId: number;
@@ -113,43 +128,53 @@ function DraggableCard({
     toIndex: number,
   ) => void;
   onClick: (id: number) => void;
+  onDragMiss: () => void;
 }) {
   const ref = useRef<HTMLDivElement>(null);
   const name = `${candidate.firstName} ${candidate.lastName}`;
   const appliedAtLabel = timeAgo(candidate.appliedAt);
 
-  const [{ isDragging }, dragRef, dragPreviewRef] = useDrag({
+  const [{ isDragging }, dragRef, dragPreviewRef] = useDrag<
+    DragItem,
+    unknown,
+    { isDragging: boolean }
+  >({
     type: CARD_TYPE,
     item: {
       id: candidate.id,
       name,
       appliedAt: appliedAtLabel,
+      originStageId: stageId,
       fromStageId: stageId,
       fromIndex: index,
     },
     collect: (monitor) => ({ isDragging: monitor.isDragging() }),
+    // Released outside any drop target → undo the ephemeral hover reorder.
+    end: (_item, monitor) => {
+      if (!monitor.didDrop()) onDragMiss();
+    },
   });
 
   useEffect(() => {
     dragPreviewRef(getEmptyImage(), { captureDraggingState: true });
   }, [dragPreviewRef]);
 
-  const [, dropRef] = useDrop<{
-    id: number;
-    fromStageId: number;
-    fromIndex: number;
-  }>({
+  const [, dropRef] = useDrop<DragItem>({
     accept: CARD_TYPE,
     hover(dragItem, monitor) {
       if (!ref.current || dragItem.id === candidate.id) return;
+      // Only reorder within the SAME column. Cross-column positioning is
+      // committed by the column's drop handler, which keeps the dragged DOM
+      // node in its origin column (no mid-drag re-parenting / react-dnd glitch).
+      if (dragItem.fromStageId !== stageId) return;
       const { bottom, top } = ref.current.getBoundingClientRect();
       const hoverMiddleY = (bottom - top) / 2;
       const clientOffset = monitor.getClientOffset();
       if (!clientOffset) return;
       const hoverClientY = clientOffset.y - top;
       const toIndex = hoverClientY < hoverMiddleY ? index : index + 1;
+      if (toIndex === dragItem.fromIndex) return;
       onReorder(dragItem.fromStageId, dragItem.fromIndex, stageId, toIndex);
-      dragItem.fromStageId = stageId;
       dragItem.fromIndex = toIndex > dragItem.fromIndex ? toIndex - 1 : toIndex;
     },
   });
@@ -185,14 +210,11 @@ function DroppableColumn({
   onDropToStage,
   onReorder,
   onCardClick,
+  onDragMiss,
 }: {
   stage: PipelineStage & { color: string };
   candidates: Candidate[];
-  onDropToStage: (
-    candidateId: number,
-    fromStageId: number,
-    toStageId: number,
-  ) => void;
+  onDropToStage: (candidateId: number, toStageId: number) => void;
   onReorder: (
     fromStageId: number,
     fromIndex: number,
@@ -200,16 +222,20 @@ function DroppableColumn({
     toIndex: number,
   ) => void;
   onCardClick: (id: number) => void;
+  onDragMiss: () => void;
 }) {
   const [{ isOver, canDrop }, dropRef] = useDrop<
-    { id: number; fromStageId: number; fromIndex: number },
+    DragItem,
     void,
     { isOver: boolean; canDrop: boolean }
   >({
     accept: CARD_TYPE,
-    drop: (item) => {
-      if (item.fromStageId !== stage.id) {
-        onDropToStage(item.id, item.fromStageId, stage.id);
+    // Persist only a genuine cross-column move, decided by the immutable
+    // origin stage so an intra-drag hover can never suppress the API call.
+    drop: (item, monitor) => {
+      if (monitor.didDrop()) return;
+      if (item.originStageId !== stage.id) {
+        onDropToStage(item.id, stage.id);
       }
     },
     collect: (monitor) => ({
@@ -262,6 +288,7 @@ function DroppableColumn({
             index={index}
             onReorder={onReorder}
             onClick={onCardClick}
+            onDragMiss={onDragMiss}
           />
         ))}
       </div>
@@ -274,9 +301,10 @@ export default function HiringPipelinePage() {
   const jobId = Number(params.id);
   useCandidateSocket();
 
+  const queryClient = useQueryClient();
   const { data: jobData } = useJob(jobId);
   const { data: pipelineData } = usePipeline(jobId);
-  const { data: candidatesData, refetch } = useCandidates(jobId, {
+  const { data: candidatesData } = useCandidates(jobId, {
     limit: 9999,
   });
   const moveStageMutation = useMoveCandidateStage();
@@ -286,18 +314,42 @@ export default function HiringPipelinePage() {
   const job = jobData?.data;
   const pipelineStages = pipelineData?.data ?? [];
 
-  // Local copy for optimistic drag-drop updates
+  // Local copy for optimistic drag-drop updates.
   const [localCandidates, setLocalCandidates] = useState<Candidate[]>([]);
 
+  // Latest raw server list — read inside drag callbacks without stale closures.
+  const latestServerRef = useRef<Candidate[]>([]);
+  // candidateId -> stage it was optimistically moved to, but the server hasn't
+  // confirmed yet. Lets a stale background refetch be reconciled instead of
+  // clobbering the optimistic position (the old "snap back" bug).
+  const pendingMovesRef = useRef<Map<number, number>>(new Map());
+  // candidateId -> true while a move request is in flight. Blocks a second
+  // move of the same candidate so accidental re-drops can't double-fire
+  // stage automation (offers / assessment invites).
+  const inFlightRef = useRef<Set<number>>(new Set());
+
+  // Merge the server snapshot with not-yet-confirmed optimistic moves.
+  const reconcile = useCallback((server: Candidate[]): Candidate[] => {
+    const pending = pendingMovesRef.current;
+    return server
+      .filter((c) => c.status !== "rejected")
+      .map((c) => {
+        const target = pending.get(c.id);
+        if (target === undefined) return c;
+        if (c.currentStageId === target) {
+          // Server caught up — drop the optimistic override.
+          pending.delete(c.id);
+          return c;
+        }
+        return { ...c, currentStageId: target };
+      });
+  }, []);
+
   useEffect(() => {
-    if (candidatesData?.data) {
-      setLocalCandidates(
-        candidatesData.data.filter(
-          (candidate) => candidate.status !== "rejected",
-        ),
-      );
-    }
-  }, [candidatesData]);
+    if (!candidatesData?.data) return;
+    latestServerRef.current = candidatesData.data;
+    setLocalCandidates(reconcile(candidatesData.data));
+  }, [candidatesData, reconcile]);
 
   // Group by currentStageId
   const candidatesByStage = useMemo(
@@ -318,58 +370,101 @@ export default function HiringPipelinePage() {
     color: STAGE_COLORS[s.stageType] ?? "#94a3b8",
   }));
 
-  // Move between columns — optimistic update + API
-  const handleDropToStage = (
-    candidateId: number,
-    fromStageId: number,
-    toStageId: number,
-  ) => {
-    setLocalCandidates((prev) =>
-      prev.map((c) =>
-        c.id === candidateId ? { ...c, currentStageId: toStageId } : c,
-      ),
-    );
-    moveStageMutation.mutate(
-      { id: candidateId, newStageId: toStageId },
-      {
-        onSuccess: (res) => showStageAutomationToasts(res.stageAutomation),
-        onError: () => refetch(),
-      },
-    );
-  };
+  // Reflect a confirmed stage change in every cached candidate list so other
+  // views (job tabs, candidates table) stay consistent without a refetch.
+  const writeStageToCaches = useCallback(
+    (candidateId: number, toStageId: number) => {
+      queryClient.setQueriesData<{ data?: Candidate[] }>(
+        { queryKey: ["candidates"] },
+        (old) => {
+          if (!old || !Array.isArray(old.data)) return old;
+          let changed = false;
+          const data = old.data.map((c) => {
+            if (c.id === candidateId && c.currentStageId !== toStageId) {
+              changed = true;
+              return { ...c, currentStageId: toStageId };
+            }
+            return c;
+          });
+          return changed ? { ...old, data } : old;
+        },
+      );
+    },
+    [queryClient],
+  );
 
-  // Reorder within / across columns (local visual only)
-  const handleReorder = (
-    fromStageId: number,
-    fromIndex: number,
-    toStageId: number,
-    toIndex: number,
-  ) => {
-    setLocalCandidates((prev) => {
-      const fromList = (candidatesByStage[fromStageId] ?? []).slice();
-      const card = fromList[fromIndex];
-      if (!card) return prev;
+  // Move a candidate into another column — optimistic, guarded, reconciled.
+  const handleDropToStage = useCallback(
+    (candidateId: number, toStageId: number) => {
+      // De-dupe: ignore if already moving, or already optimistically there.
+      if (inFlightRef.current.has(candidateId)) return;
+      if (pendingMovesRef.current.get(candidateId) === toStageId) return;
 
-      if (fromStageId === toStageId) {
-        if (fromIndex === toIndex) return prev;
-        const newList = [...fromList];
-        newList.splice(fromIndex, 1);
-        newList.splice(toIndex > fromIndex ? toIndex - 1 : toIndex, 0, card);
+      inFlightRef.current.add(candidateId);
+      pendingMovesRef.current.set(candidateId, toStageId);
+
+      // Optimistic: drop the card at the bottom of the target column.
+      setLocalCandidates((prev) => {
+        const moving = prev.find((c) => c.id === candidateId);
+        if (!moving) return prev;
+        return [
+          ...prev.filter((c) => c.id !== candidateId),
+          { ...moving, currentStageId: toStageId },
+        ];
+      });
+
+      // Stop any in-flight refetch from resolving with pre-move data.
+      queryClient.cancelQueries({ queryKey: ["candidates"] });
+
+      moveStageMutation.mutate(
+        { id: candidateId, newStageId: toStageId },
+        {
+          onSuccess: (res) => {
+            showStageAutomationToasts(res.stageAutomation);
+            writeStageToCaches(candidateId, toStageId);
+          },
+          onError: () => {
+            pendingMovesRef.current.delete(candidateId);
+            setLocalCandidates(reconcile(latestServerRef.current));
+            toast.error("Couldn't move candidate. Please try again.");
+          },
+          onSettled: () => {
+            inFlightRef.current.delete(candidateId);
+          },
+        },
+      );
+    },
+    [moveStageMutation, queryClient, reconcile, writeStageToCaches],
+  );
+
+  // Same-column reorder only (cross-column commits via handleDropToStage).
+  const handleReorder = useCallback(
+    (
+      fromStageId: number,
+      fromIndex: number,
+      toStageId: number,
+      toIndex: number,
+    ) => {
+      if (fromStageId !== toStageId || fromIndex === toIndex) return;
+      setLocalCandidates((prev) => {
+        const inStage = prev.filter((c) => c.currentStageId === fromStageId);
+        const card = inStage[fromIndex];
+        if (!card) return prev;
+        const reordered = [...inStage];
+        reordered.splice(fromIndex, 1);
+        reordered.splice(toIndex > fromIndex ? toIndex - 1 : toIndex, 0, card);
         return prev
           .filter((c) => c.currentStageId !== fromStageId)
-          .concat(newList);
-      }
-      const toList = (candidatesByStage[toStageId] ?? []).slice();
-      toList.splice(toIndex, 0, { ...card, currentStageId: toStageId });
-      return prev
-        .filter(
-          (c) =>
-            c.currentStageId !== fromStageId && c.currentStageId !== toStageId,
-        )
-        .concat(fromList.filter((_, i) => i !== fromIndex))
-        .concat(toList);
-    });
-  };
+          .concat(reordered);
+      });
+    },
+    [],
+  );
+
+  // Drag released outside any column — discard the ephemeral hover reorder.
+  const handleDragMiss = useCallback(() => {
+    setLocalCandidates(reconcile(latestServerRef.current));
+  }, [reconcile]);
 
   // Edge-scroll when dragging near left/right
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -480,6 +575,7 @@ export default function HiringPipelinePage() {
                 candidates={candidatesByStage[stage.id] ?? []}
                 onDropToStage={handleDropToStage}
                 onReorder={handleReorder}
+                onDragMiss={handleDragMiss}
                 onCardClick={(id) => {
                   router.push(`/candidates/${id}?from=pipeline`);
                 }}

@@ -17,13 +17,11 @@ export function makeQuestion(): Question {
     title: "",
     description: "",
     type: "Multiple Choice",
-    points: "",
     options: [
       makeOption("Option 1"),
       makeOption("Option 2"),
       makeOption("Option 3"),
     ],
-    shortAnswerKey: "",
   };
 }
 
@@ -60,7 +58,7 @@ export function formatQuestionsForApi(questions: Question[]) {
       title: q.title || `Question ${idx + 1}`,
       description: q.description || null,
       questionType: isMultipleChoice ? "multiple_choice" : "short_answer",
-      points: parseInt(q.points) || 1,
+      points: 1,
       position: idx + 1,
       options: isMultipleChoice
         ? q.options.map((opt, oIdx) => ({

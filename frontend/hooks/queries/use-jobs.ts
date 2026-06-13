@@ -29,7 +29,7 @@ export function useJobsList(params: JobListParams = {}) {
       if (params.departmentId) qs.set("departmentId", String(params.departmentId));
       return serverFetch<{ data: Job[]; pagination: PaginationInfo }>(`/jobs?${qs}`);
     },
-    staleTime: 1000 * 30,
+    staleTime: 1000 * 60 * 2,
     placeholderData: keepPreviousData,
   });
 }

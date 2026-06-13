@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
 import { COLORS } from "../../_lib/assessment-constants";
 import { CheckIcon, PlayIcon } from "../icons/assessment-icons";
-import { QuitDialog } from "../quiz/quit-dialog";
 import type { AttemptData } from "../../_lib/assessment-types";
 
 interface IntroScreenProps {
@@ -13,7 +11,6 @@ interface IntroScreenProps {
 }
 
 export function IntroScreen({ attempt, starting, onStart }: IntroScreenProps) {
-  const [policyOpen, setPolicyOpen] = useState(false);
   const timeMins = Math.floor((attempt.assessment.timeLimit ?? 0) / 60);
 
   const guidelines = [
@@ -132,7 +129,7 @@ export function IntroScreen({ attempt, starting, onStart }: IntroScreenProps) {
           </div>
 
           <button
-            onClick={() => setPolicyOpen(true)}
+            onClick={onStart}
             disabled={starting}
             style={{
               width: "100%",
@@ -155,26 +152,6 @@ export function IntroScreen({ attempt, starting, onStart }: IntroScreenProps) {
             {!starting && <PlayIcon />}
           </button>
 
-          <QuitDialog
-            open={policyOpen}
-            onOpenChange={setPolicyOpen}
-            onConfirm={onStart}
-            title="Strict Assessment Policy"
-            description={
-              <>
-                <span style={{ display: "block", marginBottom: 6 }}>
-                  1. Do not exit the full screen mode.
-                </span>
-                <span style={{ display: "block" }}>
-                  2. If you switch tabs, minimize, or move away from this
-                  assessment window, the assessment will be stopped and
-                  automatically submitted immediately.
-                </span>
-              </>
-            }
-            confirmText="I Agree, Start"
-            cancelText="Cancel"
-          />
         </div>
       </div>
     </div>

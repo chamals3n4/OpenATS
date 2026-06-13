@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   fetchAttempt,
   startAttempt,
@@ -8,7 +8,6 @@ import {
   completeAttempt,
 } from "./assessment-api";
 import { useAssessmentTimer } from "../hooks/use-assessment-timer";
-import { useAssessmentSecurity } from "../hooks/use-assessment-security";
 import { buildAnswerPayload } from "../_lib/assessment-utils";
 import type {
   Screen,
@@ -38,13 +37,7 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
-  const [submissionReason, setSubmissionReason] = useState<string | null>(null);
-  const [restrictionWarning, setRestrictionWarning] = useState<string | null>(
-    null,
-  );
-  const violationTriggeredRef = useRef(false);
 
-  // Load attempt on mount
   useEffect(() => {
     if (!token) return;
     fetchAttempt(token)
@@ -68,35 +61,14 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
       });
   }, [token]);
 
-  // Timer
   const { timeLeft } = useAssessmentTimer(screen, attempt, () => {
     void handleComplete();
   });
-
-  // Security
-  useAssessmentSecurity({
-    screen,
-    onViolation: (reason) => {
-      if (violationTriggeredRef.current) return;
-      violationTriggeredRef.current = true;
-      void handleComplete(reason);
-    },
-    onWarning: setRestrictionWarning,
-  });
-
-  // Clear restriction warning after delay
-  useEffect(() => {
-    if (!restrictionWarning) return;
-    const t = setTimeout(() => setRestrictionWarning(null), 3500);
-    return () => clearTimeout(t);
-  }, [restrictionWarning]);
 
   const handleStart = async () => {
     setStarting(true);
     try {
       await startAttempt(token);
-      violationTriggeredRef.current = false;
-      setSubmissionReason(null);
       setScreen("quiz");
     } catch (e: unknown) {
       setErrorMsg(e instanceof Error ? e.message : "Failed to start");
@@ -114,35 +86,28 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
     [token],
   );
 
-  const handleComplete = useCallback(
-    async (reason?: string) => {
-      if (submitting) return;
-      setSubmitting(true);
-      setSubmitError(null);
-      try {
-        const qs = attempt?.assessment.questions ?? [];
-        await Promise.all(
-          qs
-            .filter((q) => answers[q.id])
-            .map((q) => saveCurrentAnswer(q.id, answers[q.id]).catch(() => {})),
-        );
-
-        const res = await completeAttempt(token, reason);
-        setScoreResult(res.data);
-        if (reason) setSubmissionReason(reason);
-        setScreen("submitted");
-      } catch (e: unknown) {
-        setSubmitError(
-          e instanceof Error
-            ? e.message
-            : "Submission failed. Please try again.",
-        );
-      } finally {
-        setSubmitting(false);
-      }
-    },
-    [submitting, attempt, answers, saveCurrentAnswer, token],
-  );
+  const handleComplete = useCallback(async () => {
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      const qs = attempt?.assessment.questions ?? [];
+      await Promise.all(
+        qs
+          .filter((q) => answers[q.id])
+          .map((q) => saveCurrentAnswer(q.id, answers[q.id]).catch(() => {})),
+      );
+      const res = await completeAttempt(token);
+      setScoreResult(res.data);
+      setScreen("submitted");
+    } catch (e: unknown) {
+      setSubmitError(
+        e instanceof Error ? e.message : "Submission failed. Please try again.",
+      );
+    } finally {
+      setSubmitting(false);
+    }
+  }, [submitting, attempt, answers, saveCurrentAnswer, token]);
 
   const handleNavigate = useCallback(
     async (direction: "prev" | "next") => {
@@ -151,7 +116,6 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
       if (q && answers[q.id]) {
         await saveCurrentAnswer(q.id, answers[q.id]).catch(() => {});
       }
-
       if (direction === "next") {
         if (currentQ < attempt.assessment.questions.length - 1) {
           setCurrentQ((i) => i + 1);
@@ -159,9 +123,7 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
           await handleComplete();
         }
       } else {
-        if (currentQ > 0) {
-          setCurrentQ((i) => i - 1);
-        }
+        if (currentQ > 0) setCurrentQ((i) => i - 1);
       }
     },
     [attempt, currentQ, answers, saveCurrentAnswer, handleComplete],
@@ -186,7 +148,6 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
     [attempt, currentQ, answers, saveCurrentAnswer],
   );
 
-  // Render screens
   switch (screen) {
     case "loading":
       return <LoadingScreen />;
@@ -198,60 +159,31 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
       return <AlreadyCompletedScreen />;
     case "intro":
       return attempt ? (
-        <IntroScreen
-          attempt={attempt}
-          starting={starting}
-          onStart={handleStart}
-        />
+        <IntroScreen attempt={attempt} starting={starting} onStart={handleStart} />
       ) : null;
     case "submitted":
       return (
         <SubmittedScreen
           attempt={attempt}
           scoreResult={scoreResult}
-          submissionReason={submissionReason}
           total={attempt?.assessment.questions.length ?? 0}
           answered={Object.keys(answers).length}
         />
       );
     case "quiz":
       return attempt ? (
-        <>
-          {restrictionWarning && (
-            <div
-              role="status"
-              style={{
-                position: "fixed",
-                top: 14,
-                left: "50%",
-                transform: "translateX(-50%)",
-                zIndex: 2000,
-                backgroundColor: "#fff7ed",
-                border: "1px solid #fdba74",
-                color: "#9a3412",
-                borderRadius: 10,
-                padding: "10px 14px",
-                fontSize: 13,
-                fontWeight: 600,
-                boxShadow: "0 6px 18px rgba(0,0,0,0.12)",
-              }}
-            >
-              {restrictionWarning}
-            </div>
-          )}
-          <QuizScreen
-            attempt={attempt}
-            currentQ={currentQ}
-            answers={answers}
-            timeLeft={timeLeft}
-            submitting={submitting}
-            submitError={submitError}
-            onAnswerChange={handleAnswerChange}
-            onNavigate={handleNavigate}
-            onQuestionClick={handleQuestionClick}
-            onSubmit={handleComplete}
-          />
-        </>
+        <QuizScreen
+          attempt={attempt}
+          currentQ={currentQ}
+          answers={answers}
+          timeLeft={timeLeft}
+          submitting={submitting}
+          submitError={submitError}
+          onAnswerChange={handleAnswerChange}
+          onNavigate={handleNavigate}
+          onQuestionClick={handleQuestionClick}
+          onSubmit={handleComplete}
+        />
       ) : null;
     default:
       return null;

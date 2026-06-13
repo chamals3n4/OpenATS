@@ -171,6 +171,10 @@ export class SocketService {
   }
 
 
+  public notifyCandidateApplied(jobId: number) {
+    this.io?.emit("candidate_applied", { jobId });
+  }
+
   public async sendSystemMessageToJob(jobId: number, message: string) {
     try {
       const [newMessage] = await db

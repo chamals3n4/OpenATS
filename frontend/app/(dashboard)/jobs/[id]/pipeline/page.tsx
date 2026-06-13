@@ -9,6 +9,8 @@ import { getEmptyImage } from "react-dnd-html5-backend";
 import { ArrowLeft, GripVertical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useCandidateSocket } from "@/hooks/use-candidate-socket";
 import { toast } from "sonner";
 import { useJob } from "@/hooks/queries/use-jobs";
 import { usePipeline } from "@/hooks/queries/use-pipeline";
@@ -270,6 +272,7 @@ function DroppableColumn({
 export default function HiringPipelinePage() {
   const params = useParams();
   const jobId = Number(params.id);
+  useCandidateSocket();
 
   const { data: jobData } = useJob(jobId);
   const { data: pipelineData } = usePipeline(jobId);
@@ -356,7 +359,6 @@ export default function HiringPipelinePage() {
           .filter((c) => c.currentStageId !== fromStageId)
           .concat(newList);
       }
-      ArrowLeft;
       const toList = (candidatesByStage[toStageId] ?? []).slice();
       toList.splice(toIndex, 0, { ...card, currentStageId: toStageId });
       return prev
@@ -408,58 +410,54 @@ export default function HiringPipelinePage() {
       <CustomDragLayer />
 
       {/* Header */}
-      <div className="sticky top-0 z-10 bg-white dark:bg-neutral-950 shrink-0 w-full">
-        <div className="px-8 pt-8 pb-6 overflow-hidden">
-          <div className="mb-4 flex items-center gap-2 text-[12px]">
-            <Link
-              href={`/jobs/${jobId}`}
-              className="font-medium text-theme hover:underline"
-            >
-              <span className="inline-flex items-center gap-2 whitespace-nowrap">
-                <ArrowLeft className="size-3.5" />
-                Back to the Job
-              </span>
-            </Link>
-          </div>
-          <div className="flex items-center justify-between gap-4 max-w-full">
-            <div className="space-y-4 min-w-0">
-              <div className="flex items-center gap-4">
-                <h1 className="text-[32px] font-semibold text-slate-900 dark:text-neutral-100 leading-none truncate">
-                  {job?.title ?? "Loading..."}
+      <div className="shrink-0 border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+        <div className="px-4 py-4 sm:px-6">
+          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-3">
+                <h1 className="truncate text-[22px] font-bold leading-tight text-slate-950 dark:text-neutral-50">
+                  {job?.title ?? "Loading…"}
                 </h1>
                 {job && (
-                  <Badge className="bg-[#E6F4EA] dark:bg-emerald-950/30 text-[#1E8E3E] dark:text-emerald-400 hover:bg-[#E6F4EA] dark:hover:bg-emerald-950/40 border-none font-medium px-3 py-1 rounded-full text-xs shadow-none shrink-0">
+                  <Badge
+                    className={`rounded-md border-none px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider shadow-none shrink-0 ${
+                      job.status === "published"
+                        ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400"
+                        : "bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400"
+                    }`}
+                  >
                     {job.status === "published" ? "Active Job" : job.status}
                   </Badge>
                 )}
               </div>
               {job && (
-                <div className="flex items-center text-sm font-medium text-slate-500 dark:text-neutral-400 gap-2 truncate whitespace-nowrap opacity-80">
-                  <span className="shrink-0">
-                    {EMPLOYMENT_LABELS[job.employmentType] ??
-                      job.employmentType}
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] font-medium text-slate-500 dark:text-neutral-400">
+                  <span>
+                    {EMPLOYMENT_LABELS[job.employmentType] ?? job.employmentType}
+                    {job.location ? ` · ${job.location}` : ""}
                   </span>
-                  {job.location && (
-                    <>
-                      <span className="text-slate-300 dark:text-neutral-700 shrink-0">
-                        -
-                      </span>
-                      <span className="shrink-0 truncate">{job.location}</span>
-                    </>
-                  )}
-                  <span className="text-slate-300 dark:text-neutral-700 shrink-0">
-                    -
-                  </span>
-                  <span className="shrink-0 text-slate-400 dark:text-neutral-500">
+                  <span className="text-slate-300 dark:text-neutral-700">·</span>
+                  <span>
                     {localCandidates.length} candidate
                     {localCandidates.length !== 1 ? "s" : ""}
                   </span>
                 </div>
               )}
             </div>
+
+            <div className="flex shrink-0 items-center gap-2">
+              <Link href={`/jobs/${jobId}`}>
+                <Button
+                  size="sm"
+                  className="h-[34px] cursor-pointer rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                >
+                  <ArrowLeft className="size-4" />
+                  Back to Job
+                </Button>
+              </Link>
+            </div>
           </div>
         </div>
-        <div className="border-b border-slate-200 dark:border-neutral-800" />
       </div>
 
       {/* Kanban board */}

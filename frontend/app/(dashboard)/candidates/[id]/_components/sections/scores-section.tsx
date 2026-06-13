@@ -104,13 +104,6 @@ export function ScoresSection({
             },
           };
           const s = statusStyles[a.status] ?? statusStyles.pending;
-          const score =
-            a.scorePercentage != null
-              ? Math.round(Number(a.scorePercentage))
-              : null;
-          const passColor = a.passed
-            ? "text-emerald-600 dark:text-emerald-400"
-            : "text-rose-500 dark:text-rose-400";
 
           return (
             <div
@@ -134,36 +127,6 @@ export function ScoresSection({
                 </span>
               </div>
               <div className="divide-y divide-slate-100 dark:divide-neutral-800">
-                {score != null && (
-                  <div className="px-4 py-3 flex items-center justify-between gap-4">
-                    <span className="text-[12px] text-slate-500 dark:text-neutral-400 font-medium">
-                      Score
-                    </span>
-                    <div className="flex items-center gap-2.5">
-                      <div className="w-24 h-2 rounded-full bg-slate-100 dark:bg-neutral-800 overflow-hidden">
-                        <div
-                          className={`h-full rounded-full transition-all duration-500 ${score >= 50 ? "bg-emerald-500" : "bg-rose-400"}`}
-                          style={{ width: `${score}%` }}
-                        />
-                      </div>
-                      <span
-                        className={`text-[13px] font-bold tabular-nums ${passColor}`}
-                      >
-                        {score}%
-                      </span>
-                    </div>
-                  </div>
-                )}
-                {a.passed != null && (
-                  <div className="px-4 py-3 flex items-center justify-between gap-4">
-                    <span className="text-[12px] text-slate-500 font-medium">
-                      Result
-                    </span>
-                    <span className={`text-[13px] font-semibold ${passColor}`}>
-                      {a.passed ? "Passed" : "Not Passed"}
-                    </span>
-                  </div>
-                )}
                 {a.completedAt && (
                   <div className="px-4 py-3 flex items-center justify-between gap-4">
                     <span className="text-[12px] text-slate-500 font-medium">

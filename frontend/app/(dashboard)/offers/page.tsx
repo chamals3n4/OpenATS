@@ -9,14 +9,19 @@ import OffersPageClient from "./_components/offers-client";
 export default async function OffersPage() {
   const queryClient = new QueryClient();
 
-  await queryClient.prefetchQuery({
-    queryKey: ["offers"],
-    queryFn: () => serverFetch("/offers"),
-  });
-  await queryClient.prefetchQuery({
-    queryKey: ["jobs"],
-    queryFn: () => serverFetch("/jobs"),
-  });
+  await Promise.allSettled([
+    queryClient.prefetchQuery({
+      queryKey: ["jobs"],
+      queryFn: () => serverFetch("/jobs"),
+      staleTime: 1000 * 60 * 5,
+    }),
+    // Paginated list: matches ["offers", "list", { page: 1, limit: 15 }]
+    queryClient.prefetchQuery({
+      queryKey: ["offers", "list", { page: 1, limit: 15 }],
+      queryFn: () => serverFetch("/offers?page=1&limit=15"),
+      staleTime: 1000 * 60 * 2,
+    }),
+  ]);
 
   return (
     <HydrationBoundary state={dehydrate(queryClient)}>

@@ -15,8 +15,6 @@ interface AssessmentMetaSectionProps {
   onDescriptionChange: (value: string) => void;
   timeLimit: string;
   onTimeLimitChange: (value: string) => void;
-  totalPoints: string;
-  onTotalPointsChange: (value: string) => void;
 }
 
 export function AssessmentMetaSection({
@@ -28,8 +26,6 @@ export function AssessmentMetaSection({
   onDescriptionChange,
   timeLimit,
   onTimeLimitChange,
-  totalPoints,
-  onTotalPointsChange,
 }: AssessmentMetaSectionProps) {
   return (
     <div className="border-b border-slate-100 dark:border-neutral-800 shrink-0">
@@ -48,9 +44,9 @@ export function AssessmentMetaSection({
       </button>
 
       {isOpen && (
-        <div className="px-8 pb-8 space-y-5">
+        <div className="px-8 pb-6 space-y-4">
           <div>
-            <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+            <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
               Assessment Title
             </Label>
             <Input
@@ -61,38 +57,26 @@ export function AssessmentMetaSection({
             />
           </div>
           <div>
-            <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+            <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
               Description
             </Label>
             <textarea
               placeholder="Describe what this assessment is for ..."
-              rows={3}
+              rows={2}
               value={description}
               onChange={(e) => onDescriptionChange(e.target.value)}
               className={textareaCls}
             />
           </div>
-          <div className="grid grid-cols-2 gap-5">
-            <div>
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
-                Time Limit (Minutes)
-              </Label>
-              <Input
-                value={timeLimit}
-                onChange={(e) => onTimeLimitChange(e.target.value)}
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
-                Total Points
-              </Label>
-              <Input
-                value={totalPoints}
-                onChange={(e) => onTotalPointsChange(e.target.value)}
-                className={inputCls}
-              />
-            </div>
+          <div className="w-48">
+            <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+              Time Limit (Minutes)
+            </Label>
+            <Input
+              value={timeLimit}
+              onChange={(e) => onTimeLimitChange(e.target.value)}
+              className={inputCls}
+            />
           </div>
         </div>
       )}

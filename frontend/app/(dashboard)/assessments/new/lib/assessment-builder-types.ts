@@ -11,7 +11,5 @@ export interface Question {
   title: string;
   description: string;
   type: QuestionType;
-  points: string;
   options: AnswerOption[];
-  shortAnswerKey: string;
 }

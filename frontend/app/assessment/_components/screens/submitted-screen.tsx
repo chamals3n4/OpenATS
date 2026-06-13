@@ -3,20 +3,16 @@
 import { COLORS } from "../../_lib/assessment-constants";
 import { BigCheckIcon } from "../icons/assessment-icons";
 import type { AttemptData, ScoreResult } from "../../_lib/assessment-types";
-import { countAnswered } from "../../_lib/assessment-utils";
 
 interface SubmittedScreenProps {
   attempt: AttemptData | null;
   scoreResult: ScoreResult | null;
-  submissionReason: string | null;
   total: number;
   answered: number;
 }
 
 export function SubmittedScreen({
   attempt,
-  scoreResult,
-  submissionReason,
   total,
   answered,
 }: SubmittedScreenProps) {
@@ -71,18 +67,6 @@ export function SubmittedScreen({
             <strong>{attempt?.assessment.title}</strong>,{" "}
             {attempt?.candidate.firstName}.
           </p>
-          {submissionReason && (
-            <p
-              style={{
-                fontSize: 13,
-                color: "#b45309",
-                margin: 0,
-                lineHeight: 1.7,
-              }}
-            >
-              {submissionReason}
-            </p>
-          )}
         </div>
         <div
           style={{
@@ -109,18 +93,6 @@ export function SubmittedScreen({
               {answered} of {total}
             </span>
           </p>
-          {scoreResult?.passed && (
-            <p
-              style={{
-                fontSize: 14,
-                fontWeight: 600,
-                color: COLORS.TEXT_MAIN,
-                margin: 0,
-              }}
-            >
-              Result: <span style={{ color: "#16a34a" }}>Passed ✓</span>
-            </p>
-          )}
           <p
             style={{
               fontSize: 13,

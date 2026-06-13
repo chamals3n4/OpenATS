@@ -43,7 +43,7 @@ export function useCreateAssessment() {
       title: string;
       description: string | null;
       timeLimit: number;
-      passScore: number;
+      passScore?: number;
       createdBy?: number;
       questions?: any[];
     }) =>

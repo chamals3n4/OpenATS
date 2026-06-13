@@ -51,9 +51,7 @@ interface Question {
   title: string;
   description: string;
   type: QuestionType;
-  points: string;
   options: AnswerOption[];
-  shortAnswerKey: string;
 }
 
 let idCounter = 100;
@@ -70,13 +68,11 @@ const makeQuestion = (): Question => ({
   title: "",
   description: "",
   type: "Multiple Choice",
-  points: "5",
   options: [
     makeOption("Option 1"),
     makeOption("Option 2"),
     makeOption("Option 3"),
   ],
-  shortAnswerKey: "",
 });
 
 const TRUE_FALSE_OPTIONS: AnswerOption[] = [
@@ -84,18 +80,11 @@ const TRUE_FALSE_OPTIONS: AnswerOption[] = [
   { id: -2, text: "False", isCorrect: false },
 ];
 
-const VALID_POINTS = ["5", "10", "15", "20"];
-
-function normalizePoints(raw: string | number | null | undefined): string {
-  const n = Math.round(Number(raw ?? 5));
-  return VALID_POINTS.includes(String(n)) ? String(n) : "5";
-}
-
 const inputCls =
-  "h-11 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 rounded-lg shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus-visible:ring-0 focus-visible:border-slate-400 transition-colors";
+  "h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-[13px] placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus-visible:ring-0 focus-visible:border-slate-400 transition-colors";
 
 const textareaCls =
-  "w-full px-3.5 py-3 text-sm bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-lg shadow-none placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus:outline-none focus:border-slate-400 resize-none transition-colors";
+  "w-full px-3 py-2 text-[13px] bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 rounded-md shadow-none placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus:outline-none focus:border-slate-400 resize-none transition-colors";
 
 export default function EditAssessmentPage({
   params,
@@ -118,7 +107,6 @@ export default function EditAssessmentPage({
   const [assessmentTitle, setAssessmentTitle] = useState("");
   const [assessmentDesc, setAssessmentDesc] = useState("");
   const [timeLimit, setTimeLimit] = useState("120");
-  const [totalPoints, setTotalPoints] = useState("100");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedQ, setSelectedQ] = useState<number>(0);
   const originalDbIds = useRef<number[]>([]);
@@ -134,7 +122,6 @@ export default function EditAssessmentPage({
     setAssessmentTitle(data.title ?? "");
     setAssessmentDesc(data.description ?? "");
     setTimeLimit(String(data.timeLimit ?? 120));
-    setTotalPoints(String(data.passScore ?? 50));
 
     if (data.questions && data.questions.length > 0) {
       const loaded: Question[] = data.questions.map((dbQ) => {
@@ -155,14 +142,12 @@ export default function EditAssessmentPage({
           title: dbQ.title ?? "",
           description: dbQ.description ?? "",
           type,
-          points: normalizePoints(dbQ.points),
           options:
             dbQ.options?.map((opt) => ({
               id: opt.id ?? ++idCounter,
               text: opt.label,
               isCorrect: opt.isCorrect,
             })) ?? [],
-          shortAnswerKey: "",
         };
       });
 
@@ -195,7 +180,6 @@ export default function EditAssessmentPage({
         title: assessmentTitle,
         description: assessmentDesc || null,
         timeLimit: parseInt(timeLimit) || 120,
-        passScore: parseInt(totalPoints) || 50,
       } as any);
 
       const currentDbIds = new Set(
@@ -217,7 +201,7 @@ export default function EditAssessmentPage({
           questionType: (isMultipleChoice
             ? "multiple_choice"
             : "short_answer") as "multiple_choice" | "short_answer",
-          points: parseInt(q.points) || 5,
+          points: 1,
           position: idx + 1,
           options: isMultipleChoice
             ? q.options.map((opt, oIdx) => ({
@@ -417,9 +401,9 @@ export default function EditAssessmentPage({
         </button>
 
         {metaOpen && (
-          <div className="px-8 pb-8 space-y-5">
+          <div className="px-8 pb-6 space-y-4">
             <div>
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                 Assessment Title
               </Label>
               <Input
@@ -430,38 +414,26 @@ export default function EditAssessmentPage({
               />
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                 Description
               </Label>
               <textarea
                 placeholder="Describe what this assessment is for ..."
-                rows={3}
+                rows={2}
                 value={assessmentDesc}
                 onChange={(e) => setAssessmentDesc(e.target.value)}
                 className={textareaCls}
               />
             </div>
-            <div className="grid grid-cols-2 gap-5">
-              <div>
-                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
-                  Time Limit (Minutes)
-                </Label>
-                <Input
-                  value={timeLimit}
-                  onChange={(e) => setTimeLimit(e.target.value)}
-                  className={inputCls}
-                />
-              </div>
-              <div>
-                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
-                  Pass Score (%)
-                </Label>
-                <Input
-                  value={totalPoints}
-                  onChange={(e) => setTotalPoints(e.target.value)}
-                  className={inputCls}
-                />
-              </div>
+            <div className="w-48">
+              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+                Time Limit (Minutes)
+              </Label>
+              <Input
+                value={timeLimit}
+                onChange={(e) => setTimeLimit(e.target.value)}
+                className={inputCls}
+              />
             </div>
           </div>
         )}
@@ -491,9 +463,7 @@ export default function EditAssessmentPage({
 
           <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
             {questions.map((q, idx) => {
-              const hasCorrect =
-                q.options.some((o) => o.isCorrect) ||
-                (q.type === "Short Answer" && q.shortAnswerKey.trim());
+              const hasCorrect = q.options.some((o) => o.isCorrect);
               function DraggableQItem() {
                 const { ref, isDragging, isOver } = useDragSort({
                   id: q.uid,
@@ -574,7 +544,7 @@ export default function EditAssessmentPage({
               </div>
 
               <div>
-                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                   Question Title
                 </Label>
                 <Input
@@ -588,7 +558,7 @@ export default function EditAssessmentPage({
               </div>
 
               <div>
-                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                   Description{" "}
                   <span className="text-slate-400 dark:text-neutral-500 font-normal">
                     (optional)
@@ -605,79 +575,39 @@ export default function EditAssessmentPage({
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-5">
-                <div>
-                  <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
-                    Question Type
-                  </Label>
-                  <Select
-                    value={currentQ.type}
-                    onValueChange={(val) =>
-                      changeType(selectedQ, val as QuestionType)
-                    }
-                  >
-                    <SelectTrigger className="h-11 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 rounded-lg shadow-none text-sm focus:ring-0 focus:border-slate-400 dark:focus:border-neutral-600 gap-2 transition-colors">
-                      <div className="flex items-center gap-2">
-                        <HugeiconsIcon
-                          icon={RadioButtonIcon}
-                          className="size-4 text-slate-400 dark:text-neutral-500 shrink-0"
-                        />
-                        <SelectValue />
-                      </div>
-                    </SelectTrigger>
-                    <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-                      <SelectItem value="Multiple Choice">
-                        Multiple Choice
-                      </SelectItem>
-                      <SelectItem value="Short Answer">Short Answer</SelectItem>
-                      <SelectItem value="True/False">True / False</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
-                    Points
-                  </Label>
-                  <Select
-                    value={currentQ.points}
-                    onValueChange={(val) =>
-                      updateQuestion(selectedQ, { points: val || "5" })
-                    }
-                  >
-                    <SelectTrigger className="h-11 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 rounded-lg shadow-none text-sm focus:ring-0 focus:border-slate-400 dark:focus:border-neutral-600 transition-colors">
-                      <SelectValue placeholder="Select" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-                      <SelectItem value="5">5 pts</SelectItem>
-                      <SelectItem value="10">10 pts</SelectItem>
-                      <SelectItem value="15">15 pts</SelectItem>
-                      <SelectItem value="20">20 pts</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="w-56">
+                <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+                  Question Type
+                </Label>
+                <Select
+                  value={currentQ.type}
+                  onValueChange={(val) =>
+                    changeType(selectedQ, val as QuestionType)
+                  }
+                >
+                  <SelectTrigger className="h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-[13px] focus:ring-0 focus:border-slate-400 dark:focus:border-neutral-500 gap-2 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <HugeiconsIcon
+                        icon={RadioButtonIcon}
+                        className="size-3.5 text-slate-400 dark:text-neutral-500 shrink-0"
+                      />
+                      <SelectValue />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="rounded-md shadow-lg border-slate-300 dark:border-neutral-600 bg-white dark:bg-neutral-900">
+                    <SelectItem value="Multiple Choice">Multiple Choice</SelectItem>
+                    <SelectItem value="Short Answer">Short Answer</SelectItem>
+                    <SelectItem value="True/False">True / False</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             {isShortAnswer ? (
-              <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 space-y-4">
-                <h3 className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">
-                  Correct Answer (Key)
-                </h3>
-                <p className="text-[12px] text-slate-400 dark:text-neutral-500">
-                  Candidates' answers will be compared against this key for
-                  grading.
+              <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-5">
+                <p className="text-[13px] text-slate-500 dark:text-neutral-400">
+                  Short answer questions are reviewed manually by the hiring team.
                 </p>
-                <textarea
-                  placeholder="Type the correct answer here ..."
-                  rows={3}
-                  value={currentQ.shortAnswerKey}
-                  onChange={(e) =>
-                    updateQuestion(selectedQ, {
-                      shortAnswerKey: e.target.value,
-                    })
-                  }
-                  className={textareaCls}
-                />
               </div>
             ) : (
               <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 space-y-4">

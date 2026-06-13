@@ -107,7 +107,7 @@ export function useOffersList(params: OfferListParams = {}) {
       if (params.jobId) qs.set("jobId", String(params.jobId));
       return serverFetch<{ data: Offer[]; pagination: PaginationInfo }>(`/offers?${qs}`);
     },
-    staleTime: 1000 * 30,
+    staleTime: 1000 * 60 * 2,
     placeholderData: keepPreviousData,
     refetchInterval: 10_000,
     refetchOnWindowFocus: true,

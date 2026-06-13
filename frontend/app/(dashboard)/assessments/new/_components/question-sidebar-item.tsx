@@ -37,9 +37,7 @@ export function QuestionSidebarItem({
     onMove,
   });
 
-  const hasCorrect =
-    question.options.some((o) => o.isCorrect) ||
-    (question.type === "Short Answer" && question.shortAnswerKey.trim());
+  const hasCorrect = question.options.some((o) => o.isCorrect);
 
   return (
     <div

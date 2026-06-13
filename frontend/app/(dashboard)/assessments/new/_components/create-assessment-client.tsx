@@ -23,7 +23,6 @@ export default function CreateAssessmentPageClient() {
   const [assessmentTitle, setAssessmentTitle] = useState("");
   const [assessmentDesc, setAssessmentDesc] = useState("");
   const [timeLimit, setTimeLimit] = useState("120");
-  const [totalPoints, setTotalPoints] = useState("100");
 
   const {
     questions,
@@ -51,7 +50,6 @@ export default function CreateAssessmentPageClient() {
       title: assessmentTitle,
       description: assessmentDesc || null,
       timeLimit: parseInt(timeLimit) || 120,
-      passScore: parseInt(totalPoints) || 50,
       questions: formatQuestionsForApi(questions),
     };
 
@@ -121,8 +119,6 @@ export default function CreateAssessmentPageClient() {
         onDescriptionChange={setAssessmentDesc}
         timeLimit={timeLimit}
         onTimeLimitChange={setTimeLimit}
-        totalPoints={totalPoints}
-        onTotalPointsChange={setTotalPoints}
       />
 
       {/* Main Content: Sidebar + Editor */}

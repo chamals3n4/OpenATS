@@ -191,6 +191,9 @@ export const candidateService = {
         }
 
         return candidate;
+      }).then((candidate) => {
+        socketService.notifyCandidateApplied(jobId);
+        return candidate;
       });
     } catch (err) {
       if (isPgUniqueViolation(err)) {

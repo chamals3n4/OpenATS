@@ -8,7 +8,6 @@ import type { Question, QuestionType } from "../lib/assessment-builder-types";
 import { inputCls, textareaCls } from "../lib/assessment-builder-constants";
 import { QuestionTypeSelector } from "./question-type-selector";
 import { AnswerOptionsEditor } from "./answer-option-editor";
-import { ShortAnswerEditor } from "./short-answer-editor";
 
 interface QuestionEditorProps {
   question: Question;
@@ -88,17 +87,15 @@ export function QuestionEditor({
         <QuestionTypeSelector
           question={question}
           onChangeType={onChangeType}
-          onUpdatePoints={(points) => onUpdate(question.uid, { points })}
         />
       </div>
 
       {isShortAnswer ? (
-        <ShortAnswerEditor
-          value={question.shortAnswerKey}
-          onChange={(value) =>
-            onUpdate(question.uid, { shortAnswerKey: value })
-          }
-        />
+        <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6">
+          <p className="text-[13px] text-slate-500 dark:text-neutral-400">
+            Short answer questions are reviewed manually by the hiring team.
+          </p>
+        </div>
       ) : (
         <AnswerOptionsEditor
           question={question}

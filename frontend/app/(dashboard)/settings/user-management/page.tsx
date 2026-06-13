@@ -72,7 +72,7 @@ import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import { Spinner } from "@/components/ui/spinner";
 
 const inputCls =
-  "h-10 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-lg text-sm placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-[border-color,box-shadow] duration-200 ease-in-out focus-visible:ring-1 focus-visible:ring-theme focus-visible:border-theme";
+  "h-9 bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 rounded-md shadow-none text-[13px] placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors";
 
 const ROLES = [
   { value: "interviewer", label: "Interviewer" },
@@ -347,16 +347,16 @@ export default function UserManagementPage() {
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                <TableHead className="h-11 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Name
                 </TableHead>
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                <TableHead className="h-11 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Email
                 </TableHead>
-                <TableHead className="h-13 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                <TableHead className="h-11 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Role
                 </TableHead>
-                <TableHead className="h-13 px-4 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                <TableHead className="h-11 px-4 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Actions
                 </TableHead>
               </TableRow>
@@ -383,17 +383,17 @@ export default function UserManagementPage() {
                     key={u.id}
                     className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
                   >
-                    <TableCell className="h-13 px-8 py-0 font-medium text-slate-700 dark:text-neutral-200">
+                    <TableCell className="h-11 px-8 py-0 font-medium text-slate-700 dark:text-neutral-200">
                       {getDisplayName(u)}
                     </TableCell>
-                    <TableCell className="h-13 px-8 py-0 text-slate-500 dark:text-neutral-400 font-normal">
+                    <TableCell className="h-11 px-8 py-0 text-slate-500 dark:text-neutral-400 font-normal">
                       {u.email}
                     </TableCell>
                     <TableCell className="h-13 px-8 py-0 text-slate-500 dark:text-neutral-400 font-normal capitalize">
                       {u.role.replace(/_/g, " ")}
                     </TableCell>
                     <TableCell
-                      className="h-13 px-4 py-0"
+                      className="h-11 px-4 py-0"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center justify-end gap-2">
@@ -452,7 +452,7 @@ export default function UserManagementPage() {
           <div className="flex-1 overflow-y-auto px-6 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="col-span-2">
-                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                   Email *
                 </Label>
                 <Input
@@ -467,7 +467,7 @@ export default function UserManagementPage() {
               </div>
 
               <div>
-                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                   First name *
                 </Label>
                 <Input
@@ -481,7 +481,7 @@ export default function UserManagementPage() {
               </div>
 
               <div>
-                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                   Last name
                 </Label>
                 <Input
@@ -495,7 +495,7 @@ export default function UserManagementPage() {
               </div>
 
               <div className="col-span-2">
-                <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                   Role
                 </Label>
                 <Select
@@ -504,7 +504,7 @@ export default function UserManagementPage() {
                     setCreateForm((f) => ({ ...f, role: v as Role }))
                   }
                 >
-                  <SelectTrigger className="w-full h-10! rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none px-3! py-0! focus-visible:ring-2 focus-visible:ring-theme focus-visible:border-theme">
+                  <SelectTrigger className="w-full h-9! rounded-md bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 shadow-none px-3! py-0! text-[13px] focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors">
                     <SelectValue placeholder="Select role">
                       {ROLES.find((r) => r.value === createForm.role)?.label ??
                         null}
@@ -521,7 +521,7 @@ export default function UserManagementPage() {
               </div>
 
               <div className="col-span-2 pt-0.5">
-                <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-3">
+                <p className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-3">
                   Select the method to set the user password
                 </p>
                 <RadioGroup
@@ -552,7 +552,7 @@ export default function UserManagementPage() {
 
               {passwordMethod === "set" && (
                 <div className="col-span-2">
-                  <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+                  <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                     Password *
                   </Label>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -687,7 +687,7 @@ export default function UserManagementPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+              <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                 First name
               </Label>
               <Input
@@ -699,7 +699,7 @@ export default function UserManagementPage() {
               />
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+              <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                 Last name
               </Label>
               <Input
@@ -711,7 +711,7 @@ export default function UserManagementPage() {
               />
             </div>
             <div className="col-span-2">
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+              <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                 Email
               </Label>
               <Input
@@ -724,7 +724,7 @@ export default function UserManagementPage() {
               />
             </div>
             <div className="col-span-2">
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+              <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                 Role
               </Label>
               <Select

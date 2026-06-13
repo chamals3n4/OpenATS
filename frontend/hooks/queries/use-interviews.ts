@@ -18,10 +18,7 @@ export function useInterviews(filters?: Record<string, string | number>) {
       serverFetch<{ data: InterviewListItem[] }>(
         `/interviews${qs ? `?${qs}` : ""}`,
       ),
-    staleTime: 60_000,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 10_000,
+    staleTime: 1000 * 60 * 5,
   });
 }
 

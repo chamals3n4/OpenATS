@@ -19,12 +19,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCreateJob } from "@/hooks/queries/use-jobs";
 import { useDepartments } from "@/hooks/queries/use-company";
+import { serverFetch } from "@/lib/auth-action";
 import { JobDescriptionEditor } from "@/components/dynamic-imports";
 
 export default function CreateNewJobPage() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const { data: deptData } = useDepartments();
   const createJob = useCreateJob();
   const departments = deptData?.data ?? [];
@@ -96,7 +99,25 @@ export default function CreateNewJobPage() {
         status: isActive ? "published" : "draft",
       },
       {
-        onSuccess: (res) => router.push(`/jobs/${res.data.id}`),
+        onSuccess: (res) => {
+          const jobId = res.data.id;
+
+          queryClient.setQueryData(["jobs", jobId], {
+            data: { ...res.data, pipelineStages: [], hiringTeam: [] },
+          });
+          queryClient.setQueryData(["candidates", jobId, undefined], { data: [], pagination: undefined });
+          queryClient.setQueryData(["jobs", jobId, "team"], { data: [] });
+          queryClient.setQueryData(["jobs", jobId, "questions"], { data: [] });
+          queryClient.setQueryData(["jobs", jobId, "assessments"], { data: [] });
+
+          void queryClient.prefetchQuery({
+            queryKey: ["jobs", jobId, "pipeline"],
+            queryFn: () => serverFetch(`/jobs/${jobId}/pipeline`),
+            staleTime: 1000 * 60 * 3,
+          });
+
+          router.push(`/jobs/${jobId}`);
+        },
       },
     );
   };

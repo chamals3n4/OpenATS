@@ -228,8 +228,7 @@ export function useCandidateAssessments(candidateId: number) {
         }[];
       }>(`/assessment-execution/candidate/${candidateId}`),
     enabled: !!candidateId,
-    refetchInterval: candidateId ? 3000 : false,
-    refetchIntervalInBackground: false,
+    staleTime: 1000 * 60 * 2,
   });
 }
 

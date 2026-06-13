@@ -2,8 +2,10 @@
 
 import { useState, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useCreateJob } from "@/hooks/queries/use-jobs";
 import { useDepartments } from "@/hooks/queries/use-company";
+import { serverFetch } from "@/lib/auth-action";
 import type { Job } from "@/types";
 import { JobHeader } from "./job-header";
 import { JobBasicInfo } from "./job-basic-info";
@@ -16,6 +18,7 @@ import { buildJobPayload } from "@/lib/jobs-utils";
 
 export default function CreateJobPageClient() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const createJob = useCreateJob();
   const { data: deptData } = useDepartments();
   const departments = deptData?.data ?? [];
@@ -74,7 +77,27 @@ export default function CreateJobPageClient() {
     });
 
     createJob.mutate(payload, {
-      onSuccess: (res) => router.push(`/jobs/${res.data.id}`),
+      onSuccess: (res) => {
+        const jobId = res.data.id;
+
+        // Seed the cache so the job detail page renders instantly with no loading states
+        queryClient.setQueryData(["jobs", jobId], {
+          data: { ...res.data, pipelineStages: [], hiringTeam: [] },
+        });
+        queryClient.setQueryData(["candidates", jobId, undefined], { data: [], pagination: undefined });
+        queryClient.setQueryData(["jobs", jobId, "team"], { data: [] });
+        queryClient.setQueryData(["jobs", jobId, "questions"], { data: [] });
+        queryClient.setQueryData(["jobs", jobId, "assessments"], { data: [] });
+
+        // Background-fetch pipeline immediately (has default stages from seed)
+        void queryClient.prefetchQuery({
+          queryKey: ["jobs", jobId, "pipeline"],
+          queryFn: () => serverFetch(`/jobs/${jobId}/pipeline`),
+          staleTime: 1000 * 60 * 3,
+        });
+
+        router.push(`/jobs/${jobId}`);
+      },
     });
   };
 

@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
-import type { Job, Offer, Template, User } from "@/types";
+import type { Job, Offer, Template, User, Department } from "@/types";
 
 export function PrefetchProvider() {
   const queryClient = useQueryClient();
@@ -35,6 +35,12 @@ export function PrefetchProvider() {
       queryKey: ["offers", "all"],
       queryFn: () => serverFetch<{ data: Offer[] }>("/offers"),
       staleTime: 1000 * 60 * 5,
+    });
+
+    void queryClient.prefetchQuery({
+      queryKey: ["departments"],
+      queryFn: () => serverFetch<{ data: Department[] }>("/company/departments"),
+      staleTime: 1000 * 60 * 10,
     });
   }, [queryClient]);
 

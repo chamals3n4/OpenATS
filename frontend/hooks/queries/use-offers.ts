@@ -19,8 +19,7 @@ export function useOffers(jobId?: number) {
         jobId ? `/offers/job/${jobId}` : "/offers",
       ),
     enabled: jobId === undefined || !!jobId,
-    refetchInterval: 10_000,
-    refetchOnWindowFocus: true,
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -29,7 +28,7 @@ export function useOffer(id: number) {
     queryKey: ["offers", id],
     queryFn: () => serverFetch<{ data: Offer }>(`/offers/${id}`),
     enabled: !!id,
-    refetchInterval: 10_000,
+    staleTime: 1000 * 60 * 5,
   });
 }
 
@@ -107,10 +106,8 @@ export function useOffersList(params: OfferListParams = {}) {
       if (params.jobId) qs.set("jobId", String(params.jobId));
       return serverFetch<{ data: Offer[]; pagination: PaginationInfo }>(`/offers?${qs}`);
     },
-    staleTime: 1000 * 60 * 2,
+    staleTime: 1000 * 60 * 5,
     placeholderData: keepPreviousData,
-    refetchInterval: 10_000,
-    refetchOnWindowFocus: true,
   });
 }
 

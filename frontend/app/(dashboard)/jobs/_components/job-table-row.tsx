@@ -70,7 +70,7 @@ export function JobTableRow({
     });
   }, [queryClient, job.id]);
 
-  const handleRowClick = () => router.push(`jobs/${job.id}`);
+  const handleRowClick = () => router.push(`/jobs/${job.id}`);
   const handleEditClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     router.push(`/jobs/${job.id}/edit`);

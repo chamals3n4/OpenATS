@@ -13,8 +13,15 @@ export function useCandidateSocket() {
     const socket = io(SOCKET_URL, { transports: ["websocket"] });
 
     socket.on("candidate_applied", (data: { jobId: number }) => {
-      queryClient.invalidateQueries({ queryKey: ["candidates", data.jobId] });
-      queryClient.invalidateQueries({ queryKey: ["candidates", "all"] });
+      // Only invalidate list-type queries (3-part keys). Individual detail
+      // queries ["candidates", id] share the same prefix and must not be touched.
+      queryClient.invalidateQueries({
+        predicate: (query) => {
+          const key = query.queryKey as unknown[];
+          if (key[0] !== "candidates" || key.length < 3) return false;
+          return key[1] === data.jobId || key[1] === "all";
+        },
+      });
     });
 
     return () => {

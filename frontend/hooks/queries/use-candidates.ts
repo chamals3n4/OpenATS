@@ -93,11 +93,7 @@ export function useCandidates(
     queryKey: ["candidates", jobId ?? "all", filters],
     queryFn: () => serverFetch<CandidateListResponse>(path),
     enabled: options?.enabled !== false,
-    staleTime: 1000 * 60 * 2,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 10_000,
-    refetchIntervalInBackground: false,
+    staleTime: 1000 * 60 * 5,
     placeholderData: keepPreviousData,
     initialData: seedInitialData,
     initialDataUpdatedAt: seedUpdatedAt,
@@ -112,11 +108,16 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
     queryFn: () => serverFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
     enabled,
     initialData: () => {
+      // Only search list-type queries (3-part keys like ["candidates", jobId/all, filters]).
+      // Individual detail queries have 2-part keys ["candidates", id] and store
+      // CandidateDetail (not an array) — calling .find on them throws.
       const allLists = queryClient.getQueriesData<CandidateListResponse>({
         queryKey: ["candidates"],
       });
-      for (const [, listData] of allLists) {
-        const match = listData?.data?.find((c) => c.id === id);
+      for (const [queryKey, listData] of allLists) {
+        if ((queryKey as unknown[]).length < 3) continue;
+        if (!Array.isArray(listData?.data)) continue;
+        const match = listData.data.find((c) => c.id === id);
         if (match) {
           return {
             data: {
@@ -140,13 +141,13 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
         queryKey: ["candidates"],
       });
       for (const [key] of allStates) {
+        if ((key as unknown[]).length < 3) continue;
         const state = queryClient.getQueryState(key);
         if (state?.dataUpdatedAt) return state.dataUpdatedAt;
       }
       return undefined;
     },
-    refetchInterval: enabled ? 3000 : false,
-    refetchIntervalInBackground: false,
+    staleTime: 1000 * 60 * 2,
   });
 }
 

@@ -21,7 +21,7 @@ export class SocketService {
   public initialize(server: HttpServer) {
     this.io = new Server(server, {
       cors: {
-        origin: "*", 
+        origin: "*",
         methods: ["GET", "POST"],
       },
     });
@@ -38,40 +38,52 @@ export class SocketService {
       // candidate room
       socket.on("join_candidate", (candidateId: number) => {
         socket.join(`candidate_${candidateId}`);
-        logger.info(`Socket ${socket.id} joined candidate room: candidate_${candidateId}`);
+        logger.info(
+          `Socket ${socket.id} joined candidate room: candidate_${candidateId}`,
+        );
       });
 
-      socket.on("send_job_message", async (data: { jobId: number; senderId: number; message: string; replyToId?: number }) => {
-        try {
-          const [newMessage] = await db
-            .insert(jobChatMessages)
-            .values({
-              jobId: data.jobId,
-              senderId: data.senderId,
-              message: data.message,
-              replyToId: data.replyToId,
-            })
-            .returning();
+      socket.on(
+        "send_job_message",
+        async (data: {
+          jobId: number;
+          senderId: number;
+          message: string;
+          replyToId?: number;
+        }) => {
+          try {
+            const [newMessage] = await db
+              .insert(jobChatMessages)
+              .values({
+                jobId: data.jobId,
+                senderId: data.senderId,
+                message: data.message,
+                replyToId: data.replyToId,
+              })
+              .returning();
 
-          const [sender] = await db
-            .select({
-              firstName: users.firstName,
-              lastName: users.lastName,
-              avatarUrl: users.avatarUrl,
-            })
-            .from(users)
-            .where(eq(users.id, data.senderId))
-            .limit(1);
+            const [sender] = await db
+              .select({
+                firstName: users.firstName,
+                lastName: users.lastName,
+                avatarUrl: users.avatarUrl,
+              })
+              .from(users)
+              .where(eq(users.id, data.senderId))
+              .limit(1);
 
-          this.io?.to(`job_${data.jobId}`).emit("new_job_message", {
-            ...newMessage,
-            senderName: sender ? `${sender.firstName} ${sender.lastName}` : null,
-            senderAvatar: sender?.avatarUrl ?? null,
-          });
-        } catch (error) {
-          logger.error("Error saving job message: " + error);
-        }
-      });
+            this.io?.to(`job_${data.jobId}`).emit("new_job_message", {
+              ...newMessage,
+              senderName: sender
+                ? `${sender.firstName} ${sender.lastName}`
+                : null,
+              senderAvatar: sender?.avatarUrl ?? null,
+            });
+          } catch (error) {
+            logger.error("Error saving job message: " + error);
+          }
+        },
+      );
 
       socket.on(
         "edit_job_message",
@@ -109,7 +121,9 @@ export class SocketService {
 
             this.io?.to(`job_${data.jobId}`).emit("job_message_updated", {
               ...updated,
-              senderName: sender ? `${sender.firstName} ${sender.lastName}` : null,
+              senderName: sender
+                ? `${sender.firstName} ${sender.lastName}`
+                : null,
               senderAvatar: sender?.avatarUrl ?? null,
             });
           } catch (error) {
@@ -120,7 +134,11 @@ export class SocketService {
 
       socket.on(
         "delete_job_message",
-        async (data: { jobId: number; senderId: number; messageId: number }) => {
+        async (data: {
+          jobId: number;
+          senderId: number;
+          messageId: number;
+        }) => {
           try {
             const [deleted] = await db
               .update(jobChatMessages)
@@ -145,31 +163,40 @@ export class SocketService {
         },
       );
 
-      socket.on("send_candidate_message", async (data: { candidateId: number; senderId: number; message: string; replyToId?: number }) => {
-        try {
-          const [newMessage] = await db
-            .insert(candidateChatMessages)
-            .values({
-              candidateId: data.candidateId,
-              senderId: data.senderId,
-              message: data.message,
-              replyToId: data.replyToId,
-            })
-            .returning();
+      socket.on(
+        "send_candidate_message",
+        async (data: {
+          candidateId: number;
+          senderId: number;
+          message: string;
+          replyToId?: number;
+        }) => {
+          try {
+            const [newMessage] = await db
+              .insert(candidateChatMessages)
+              .values({
+                candidateId: data.candidateId,
+                senderId: data.senderId,
+                message: data.message,
+                replyToId: data.replyToId,
+              })
+              .returning();
 
-          // broadcast to the candidate room
-          this.io?.to(`candidate_${data.candidateId}`).emit("new_candidate_message", newMessage);
-        } catch (error) {
-          logger.error("Error saving candidate message: " + error);
-        }
-      });
+            // broadcast to the candidate room
+            this.io
+              ?.to(`candidate_${data.candidateId}`)
+              .emit("new_candidate_message", newMessage);
+          } catch (error) {
+            logger.error("Error saving candidate message: " + error);
+          }
+        },
+      );
 
       socket.on("disconnect", () => {
         logger.info(`Socket disconnected: ${socket.id}`);
       });
     });
   }
-
 
   public notifyCandidateApplied(jobId: number) {
     this.io?.emit("candidate_applied", { jobId });
@@ -191,6 +218,14 @@ export class SocketService {
     } catch (error) {
       logger.error("Error sending system job message: " + error);
     }
+  }
+  // Broadcast a CV analysis status change to all connected clients
+  public emitCvAnalysisUpdate(event: {
+    candidateId: number;
+    jobId: number;
+    status: "done" | "failed";
+  }) {
+    this.io?.emit("cv_analysis_updated", event);
   }
 }
 

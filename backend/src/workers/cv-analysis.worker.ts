@@ -2,7 +2,7 @@ import { Worker } from "bullmq";
 import {
   CV_ANALYSIS_QUEUE,
   type CvAnalysisJobData,
-} from "../queues/cv-analysis.queues";
+} from "../queues/cv-analysis.queue";
 import { createRedisConnection } from "../config/redis";
 import { cvAnalysisService } from "../services/cv-analysis.service";
 import { publishCvAnalysisEvent } from "../events/cv-analysis-events";
@@ -16,12 +16,11 @@ export function startCvAnalysisWorker(): Worker<CvAnalysisJobData> {
       logger.info(
         `[worker] processing candidate=${candidateId} attempt=${job.attemptsMade + 1}`,
       );
-      // Throws on any error → BullMQ catches it and retries with backoff.
-      await cvAnalysisService.analyze(candidateId, jobId, resumeUrl);
+      await cvAnalysisService.runAnalysis(candidateId, jobId, resumeUrl);
     },
     {
       connection: createRedisConnection(),
-      concurrency: 3, // process up to 3 CVs at once
+      concurrency: 3,
     },
   );
 
@@ -43,8 +42,6 @@ export function startCvAnalysisWorker(): Worker<CvAnalysisJobData> {
     const maxAttempts = job.opts.attempts ?? 1;
     const exhausted = job.attemptsMade >= maxAttempts;
 
-    // Only write "failed" to the DB after the LAST retry, so the UI stays
-    // "pending" (spinner) while retries are still in progress.
     if (exhausted) {
       await cvAnalysisService.markFailed(job.data.candidateId, err.message);
       await publishCvAnalysisEvent({

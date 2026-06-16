@@ -425,11 +425,8 @@ function scoreCV(parsedCv: ParsedCv, jobReqs: JobRequirements): ScoreResult {
 }
 
 export const cvAnalysisService = {
-  async analyze(
-    candidateId: number,
-    jobId: number,
-    resumeUrl: string,
-  ): Promise<void> {
+  // Marks the row pending (called by the producer before enqueueing)
+  async markPending(candidateId: number, jobId: number): Promise<void> {
     await db
       .insert(candidateCvAnalysis)
       .values({ candidateId, jobId, status: "pending" })
@@ -441,6 +438,7 @@ export const cvAnalysisService = {
           matchScore: null,
           matchedSkills: null,
           missingSkills: null,
+          scoreBreakdown: null,
           extractedText: null,
           errorMessage: null,
           updatedAt: new Date(),
@@ -448,97 +446,97 @@ export const cvAnalysisService = {
       });
 
     logger.info(
-      `[CV Analysis] Started for candidate ${candidateId}, job ${jobId}`,
+      `[CV Analysis] Marked pending for candidate ${candidateId}, job ${jobId}`,
+    );
+  },
+
+  // Marks the row failed (called by the worker after retries are exhausted)
+  async markFailed(candidateId: number, message: string): Promise<void> {
+    await db
+      .update(candidateCvAnalysis)
+      .set({
+        status: "failed",
+        errorMessage: message ?? "Unknown error during CV analysis",
+        updatedAt: new Date(),
+      })
+      .where(eq(candidateCvAnalysis.candidateId, candidateId));
+  },
+
+  // Runs inside the BullMQ worker.
+  async runAnalysis(
+    candidateId: number,
+    jobId: number,
+    resumeUrl: string,
+  ): Promise<void> {
+    logger.info(
+      `[CV Analysis] Running for candidate ${candidateId}, job ${jobId}`,
     );
 
-    try {
-      const [jobRow] = await db
-        .select({ description: jobs.description })
-        .from(jobs)
-        .where(eq(jobs.id, jobId));
+    const [jobRow] = await db
+      .select({ description: jobs.description })
+      .from(jobs)
+      .where(eq(jobs.id, jobId));
 
-      const jobSkillRows = await db
-        .select({ skill: jobSkills.skill })
-        .from(jobSkills)
-        .where(eq(jobSkills.jobId, jobId));
+    const jobSkillRows = await db
+      .select({ skill: jobSkills.skill })
+      .from(jobSkills)
+      .where(eq(jobSkills.jobId, jobId));
 
-      logger.info(
-        `[CV Analysis] Job has ${jobSkillRows.length} required skills`,
+    logger.info(`[CV Analysis] Job has ${jobSkillRows.length} required skills`);
+
+    const objectKey = extractKeyFromUrl(resumeUrl);
+    const pdfBuffer = await downloadPdfFromR2(objectKey);
+
+    logger.info(`[CV Analysis] PDF downloaded (${pdfBuffer.length} bytes)`);
+
+    const [parsedCv, parsedJd] = await Promise.all([
+      ParsedCvWithGemini(pdfBuffer),
+      jobRow?.description
+        ? parseJdWithGemini(jobRow.description)
+        : Promise.resolve<ParsedJd>({
+            minExperienceYears: 0,
+            jobLevel: null,
+            requiredCertifications: [],
+          }),
+    ]);
+
+    logger.info(
+      `[CV Analysis] CV parsed — ${parsedCv.listedSkills.length} listed skills, ${parsedCv.projectTechnologies.length} project techs, level: ${parsedCv.jobLevel}`,
+    );
+    logger.info(
+      `[CV Analysis] Document type: ${parsedCv.documentType} isCvOrResume=${parsedCv.isCvOrResume} confidence=${parsedCv.confidence}`,
+    );
+
+    if (!parsedCv.isCvOrResume || parsedCv.confidence < 0.6) {
+      throw new Error(
+        `Uploaded document doesn't look like a CV/resume (type: ${parsedCv.documentType}, confidence: ${parsedCv.confidence}). Please upload a resume/CV PDF.`,
       );
-
-      const objectKey = extractKeyFromUrl(resumeUrl);
-      const pdfBuffer = await downloadPdfFromR2(objectKey);
-
-      logger.info(`[CV Analysis] PDF downloaded (${pdfBuffer.length} bytes)`);
-
-      const [parsedCv, parsedJd] = await Promise.all([
-        ParsedCvWithGemini(pdfBuffer),
-
-        jobRow?.description
-          ? parseJdWithGemini(jobRow.description)
-          : Promise.resolve<ParsedJd>({
-              minExperienceYears: 0,
-              jobLevel: null,
-              requiredCertifications: [],
-            }),
-      ]);
-
-      logger.info(
-        `[CV Analysis] CV parsed — ${parsedCv.listedSkills.length} listed skills, ${parsedCv.projectTechnologies.length} project techs, level: ${parsedCv.jobLevel}`,
-      );
-      logger.info(
-        `[CV Analysis] Document type: ${parsedCv.documentType} isCvOrResume=${parsedCv.isCvOrResume} confidence=${parsedCv.confidence}`,
-      );
-      logger.info(
-        `[CV Analysis] JD parsed — min exp: ${parsedJd.minExperienceYears}yrs, level: ${parsedJd.jobLevel}`,
-      );
-
-      if (!parsedCv.isCvOrResume || parsedCv.confidence < 0.6) {
-        throw new Error(
-          `Uploaded document doesn't look like a CV/resume (type: ${parsedCv.documentType}, confidence: ${parsedCv.confidence}). Please upload a resume/CV PDF.`,
-        );
-      }
-
-      const jobReqs: JobRequirements = {
-        skills: jobSkillRows.map((r) => r.skill),
-        minExperienceYears: parsedJd.minExperienceYears,
-        jobLevel: parsedJd.jobLevel,
-        requiredCertifications: parsedJd.requiredCertifications,
-      };
-
-      const { matchScore, matchedSkills, missingSkills, scoreBreakdown } =
-        scoreCV(parsedCv, jobReqs);
-
-      logger.info(
-        `[CV Analysis] Score: ${matchScore}/100 — matched: [${matchedSkills}] missing: [${missingSkills}]`,
-      );
-
-      await db
-        .update(candidateCvAnalysis)
-        .set({
-          status: "done",
-          matchScore,
-          matchedSkills,
-          missingSkills,
-          scoreBreakdown,
-          updatedAt: new Date(),
-        })
-        .where(eq(candidateCvAnalysis.candidateId, candidateId));
-
-      logger.info(
-        `[CV Analysis] Done for candidate ${candidateId} — score: ${matchScore}`,
-      );
-    } catch (error: any) {
-      logger.error(`[CV Analysis] Failed for candidate ${candidateId}:`, error);
-
-      await db
-        .update(candidateCvAnalysis)
-        .set({
-          status: "failed",
-          errorMessage: error?.message ?? "Unknown error during CV analysis",
-          updatedAt: new Date(),
-        })
-        .where(eq(candidateCvAnalysis.candidateId, candidateId));
     }
+
+    const jobReqs: JobRequirements = {
+      skills: jobSkillRows.map((r) => r.skill),
+      minExperienceYears: parsedJd.minExperienceYears,
+      jobLevel: parsedJd.jobLevel,
+      requiredCertifications: parsedJd.requiredCertifications,
+    };
+
+    const { matchScore, matchedSkills, missingSkills, scoreBreakdown } =
+      scoreCV(parsedCv, jobReqs);
+
+    await db
+      .update(candidateCvAnalysis)
+      .set({
+        status: "done",
+        matchScore,
+        matchedSkills,
+        missingSkills,
+        scoreBreakdown,
+        updatedAt: new Date(),
+      })
+      .where(eq(candidateCvAnalysis.candidateId, candidateId));
+
+    logger.info(
+      `[CV Analysis] Done for candidate ${candidateId} — score: ${matchScore}`,
+    );
   },
 };

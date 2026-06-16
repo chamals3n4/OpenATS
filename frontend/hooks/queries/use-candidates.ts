@@ -107,10 +107,8 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
     queryKey: ["candidates", id],
     queryFn: () => serverFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
     enabled,
-    initialData: () => {
-      // Only search list-type queries (3-part keys like ["candidates", jobId/all, filters]).
-      // Individual detail queries have 2-part keys ["candidates", id] and store
-      // CandidateDetail (not an array) — calling .find on them throws.
+
+    placeholderData: () => {
       const allLists = queryClient.getQueriesData<CandidateListResponse>({
         queryKey: ["candidates"],
       });
@@ -133,17 +131,6 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
             } as CandidateDetail,
           };
         }
-      }
-      return undefined;
-    },
-    initialDataUpdatedAt: () => {
-      const allStates = queryClient.getQueriesData<CandidateListResponse>({
-        queryKey: ["candidates"],
-      });
-      for (const [key] of allStates) {
-        if ((key as unknown[]).length < 3) continue;
-        const state = queryClient.getQueryState(key);
-        if (state?.dataUpdatedAt) return state.dataUpdatedAt;
       }
       return undefined;
     },

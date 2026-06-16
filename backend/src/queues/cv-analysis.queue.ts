@@ -14,13 +14,13 @@ export type CvAnalysisJobData = {
 export const cvAnalysisQueue = new Queue<CvAnalysisJobData>(CV_ANALYSIS_QUEUE, {
   connection: createRedisConnection(),
   defaultJobOptions: {
-    attempts: 3, // try up to 3 times total
+    attempts: 3,
     backoff: {
-      type: "exponential", // wait 5s, then 10s, then 20s between tries
+      type: "exponential",
       delay: 5000,
     },
-    removeOnComplete: { count: 100 }, // keep last 100 succeeded jobs for inspection
-    removeOnFail: { count: 500 }, // keep last 500 failed jobs
+    removeOnComplete: { count: 100 },
+    removeOnFail: { count: 500 },
   },
 });
 

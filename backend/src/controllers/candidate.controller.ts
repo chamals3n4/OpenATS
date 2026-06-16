@@ -9,6 +9,8 @@ import { cvAnalysisService } from "../services/cv-analysis.service";
 import { r2Service } from "../services/r2.service";
 import logger from "../utils/logger";
 
+import { requestCvAnalysis } from "../queues/cv-analysis.queue";
+
 const customAnswerSchema = z.object({
   questionId: z.number().int().positive(),
   answerText: z.string().optional().nullable(),
@@ -85,13 +87,15 @@ export const applyForJob = async (req: Request, res: Response) => {
     );
 
     if (result.resumeUrl) {
-      cvAnalysisService
-        .analyze(result.id, result.jobId, result.resumeUrl)
-        .catch((err) =>
-          logger.error(
-            `CV analysis error for candidateId=${result.id}: ${err?.message}`,
-          ),
-        );
+      requestCvAnalysis({
+        candidateId: result.id,
+        jobId: result.jobId,
+        resumeUrl: result.resumeUrl,
+      }).catch((err) =>
+        logger.error(
+          `Failed to enqueue CV analysis for candidateId=${result.id}: ${err?.message}`,
+        ),
+      );
     }
 
     res.status(201).json({ data: result });
@@ -392,13 +396,15 @@ export const updateCandidateBasicDetails = async (
     }
 
     if (newResumeUrl) {
-      cvAnalysisService
-        .analyze(updated.id, updated.jobId, newResumeUrl)
-        .catch((err) =>
-          logger.error(
-            `CV analysis error for candidateId=${updated.id}: ${err?.message}`,
-          ),
-        );
+      requestCvAnalysis({
+        candidateId: updated.id,
+        jobId: updated.jobId,
+        resumeUrl: newResumeUrl,
+      }).catch((err) =>
+        logger.error(
+          `Failed to enqueue CV analysis for candidateId=${updated.id}: ${err?.message}`,
+        ),
+      );
     }
 
     logger.info(

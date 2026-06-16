@@ -18,8 +18,6 @@ export async function publishCvAnalysisEvent(
   await publisher.publish(CHANNEL, JSON.stringify(event));
 }
 
-// Subscribes to CV-analysis events. Called once in the web-server process.
-// The handler runs every time the worker finishes a job.
 export function subscribeToCvAnalysisEvents(
   handler: (event: CvAnalysisEvent) => void,
 ): IORedis {

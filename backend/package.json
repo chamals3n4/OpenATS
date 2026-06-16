@@ -5,8 +5,10 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --exec tsx src/server.ts",
+    "dev:worker": "nodemon --exec tsx src/worker.ts",
     "build": "tsc",
     "start": "node dist/src/server.js",
+    "start:worker": "node dist/src/worker.js",
     "test": "vitest",
     "test:run": "vitest run"
   },

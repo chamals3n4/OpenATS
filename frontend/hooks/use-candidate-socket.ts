@@ -24,6 +24,23 @@ export function useCandidateSocket() {
       });
     });
 
+    socket.on(
+      "cv_analysis_updated",
+      (data: { candidateId: number; jobId: number; status: string }) => {
+        queryClient.invalidateQueries({
+          queryKey: ["candidates", data.candidateId],
+        });
+
+        queryClient.invalidateQueries({
+          predicate: (query) => {
+            const key = query.queryKey as unknown[];
+            if (key[0] !== "candidates" || key.length < 3) return false;
+            return key[1] === data.jobId || key[1] === "all";
+          },
+        });
+      },
+    );
+
     return () => {
       socket.disconnect();
     };

@@ -100,21 +100,22 @@ export const jobService = {
   async getAll() {
     const allJobs = await db.select().from(jobs).orderBy(desc(jobs.createdAt));
 
-    const jobsWithSkills = await Promise.all(
-      allJobs.map(async (job) => {
-        const skills = await db
-          .select()
-          .from(jobSkills)
-          .where(eq(jobSkills.jobId, job.id));
+    const skillsByJobId = new Map<number, string[]>();
+    if (allJobs.length > 0) {
+      const allSkills = await db
+        .select()
+        .from(jobSkills)
+        .where(inArray(jobSkills.jobId, allJobs.map((j) => j.id)));
+      allSkills.forEach((s) => {
+        if (!skillsByJobId.has(s.jobId)) skillsByJobId.set(s.jobId, []);
+        skillsByJobId.get(s.jobId)!.push(s.skill);
+      });
+    }
 
-        return {
-          ...job,
-          skills: skills.map((s) => s.skill),
-        };
-      }),
-    );
-
-    return jobsWithSkills;
+    return allJobs.map((job) => ({
+      ...job,
+      skills: skillsByJobId.get(job.id) ?? [],
+    }));
   },
 
   async getPaginated(filters: JobListFilters = {}) {

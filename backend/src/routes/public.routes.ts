@@ -22,6 +22,8 @@ import {
 import { db } from "../db";
 import { candidates, jobs, candidateInterviews } from "../db/schema";
 import { eq } from "drizzle-orm";
+import rateLimit from "express-rate-limit";
+import logger from "../utils/logger";
 
 const router: Router = Router();
 
@@ -30,25 +32,55 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
+const applyLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many applications submitted. Please try again later." },
+});
+
+const publicWriteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please try again later." },
+});
+
+const publicReadLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please try again later." },
+});
+
 router.get("/jobs", checkOrigins, listPublishedCareersJobs);
 router.get("/jobs/:id", checkOrigins, getPublicJobById);
 router.get("/jobs/:jobId/questions", checkOrigins, getCustomQuestions);
-router.post("/jobs/:jobId/apply", checkOrigins, applyForJob);
-router.post("/upload/resume", checkOrigins, upload.single("file"), uploadFile);
+router.post("/jobs/:jobId/apply", checkOrigins, applyLimiter, applyForJob);
+router.post(
+  "/upload/resume",
+  checkOrigins,
+  publicWriteLimiter,
+  upload.single("file"),
+  uploadFile,
+);
 
 // assessments for candidates ( token based)
-router.get("/assessment/:token", getAssessmentForCandidate);
-router.post("/assessment/:token/start", startAssessment);
-router.post("/assessment/:token/answer", submitAssessmentAnswer);
-router.post("/assessment/:token/complete", completeAssessment);
+router.get("/assessment/:token", publicReadLimiter, getAssessmentForCandidate);
+router.post("/assessment/:token/start", publicWriteLimiter, startAssessment);
+router.post("/assessment/:token/answer", publicWriteLimiter, submitAssessmentAnswer);
+router.post("/assessment/:token/complete", publicWriteLimiter, completeAssessment);
 
 // public offer portal (token based)
-router.get("/offers/:token", getPublicOfferByToken);
-router.post("/offers/:token/accept", acceptPublicOffer);
-router.post("/offers/:token/decline", declinePublicOffer);
+router.get("/offers/:token", publicReadLimiter, getPublicOfferByToken);
+router.post("/offers/:token/accept", publicWriteLimiter, acceptPublicOffer);
+router.post("/offers/:token/decline", publicWriteLimiter, declinePublicOffer);
 
 // Public interview slot selection (no auth)
-router.get("/interview/:token", async (req, res) => {
+router.get("/interview/:token", publicReadLimiter, async (req, res) => {
   try {
     const [iv] = await db
       .select({
@@ -68,7 +100,9 @@ router.get("/interview/:token", async (req, res) => {
       .from(candidateInterviews)
       .leftJoin(candidates, eq(candidateInterviews.candidateId, candidates.id))
       .leftJoin(jobs, eq(candidateInterviews.jobId, jobs.id))
-      .where(eq(candidateInterviews.publicToken, req.params.token));
+      .where(
+        eq(candidateInterviews.publicToken, (req.params.token ?? "").toString()),
+      );
     if (!iv) {
       res.status(404).json({ error: "Invalid link" });
       return;
@@ -82,16 +116,19 @@ router.get("/interview/:token", async (req, res) => {
       },
     });
   } catch (e: any) {
-    res.status(500).json({ error: e.message });
+    logger.error(`Failed to fetch public interview by token: ${e?.message}`);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
 
-router.patch("/interview/:token/select", async (req, res) => {
+router.patch("/interview/:token/select", publicWriteLimiter, async (req, res) => {
   try {
     const [iv] = await db
       .select()
       .from(candidateInterviews)
-      .where(eq(candidateInterviews.publicToken, req.params.token));
+      .where(
+        eq(candidateInterviews.publicToken, (req.params.token ?? "").toString()),
+      );
     if (!iv?.timeSlots) {
       res.status(404).json({ error: "Invalid link" });
       return;
@@ -122,7 +159,8 @@ router.patch("/interview/:token/select", async (req, res) => {
       .where(eq(candidateInterviews.id, iv.id));
     res.status(200).json({ data: { confirmed: true } });
   } catch (e: any) {
-    res.status(500).json({ error: e.message });
+    logger.error(`Failed to select interview slot: ${e?.message}`);
+    res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
 

@@ -71,7 +71,6 @@ export const inviteCandidateToAssessment = async (
     logger.error(`Failed to generate assessment invite - candidateId=${req.body?.candidateId}, assessmentId=${req.body?.assessmentId}: ${error?.message}`);
     res.status(500).json({
       error: "Failed to generate assessment invite",
-      message: error.message || "Unknown error",
     });
   }
 };
@@ -165,7 +164,6 @@ export const submitAssessmentAnswer = async (req: Request, res: Response) => {
     logger.error(`Failed to save answer for attempt token=${req.params.token}: ${error?.message}`);
     res.status(500).json({
       error: "Failed to save answer",
-      message: error.message || "Unknown error",
     });
   }
 };
@@ -230,9 +228,7 @@ export const completeAssessment = async (req: Request, res: Response) => {
     });
   } catch (error: any) {
     logger.error(`Failed to complete assessment for token=${req.params.token}: ${error?.message}`);
-    res
-      .status(500)
-      .json({ error: error.message || "Failed to finalize assessment" });
+    res.status(500).json({ error: "Failed to finalize assessment" });
   }
 };
 

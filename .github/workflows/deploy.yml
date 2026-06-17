@@ -24,9 +24,11 @@ jobs:
           script: |
             export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            cd ${{ secrets.DEPLOY_PATH }}
+            cd /home/azureuser/OpenATS
             git pull origin main
             pnpm install --frozen-lockfile
             pnpm build
-            pm2 restart openats-backend
+            pnpm drizzle-kit migrate
+            cd ..
+            pm2 restart ecosystem.config.js --update-env
             pm2 save

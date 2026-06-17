@@ -4,7 +4,6 @@ import {
   PutObjectCommand,
 } from "@aws-sdk/client-s3";
 import crypto from "crypto";
-import path from "path";
 import logger from "../utils/logger";
 
 const r2Client = new S3Client({
@@ -17,12 +16,22 @@ const r2Client = new S3Client({
   forcePathStyle: true,
 });
 
+// Server-controlled extension per content type. We never trust the client
+// filename for the stored key (an attacker could upload a `.html`/`.svg`).
+const EXT_BY_MIME: Record<string, string> = {
+  "application/pdf": ".pdf",
+  "image/png": ".png",
+  "image/jpeg": ".jpg",
+  "image/webp": ".webp",
+  "image/svg+xml": ".svg",
+};
+
 export const r2Service = {
   async uploadFile(
     file: Express.Multer.File,
     folder: "resumes" | "logos" = "resumes",
   ): Promise<string> {
-    const fileExt = path.extname(file.originalname);
+    const fileExt = EXT_BY_MIME[file.mimetype] ?? "";
     const fileName = `${folder}/${crypto.randomUUID()}${fileExt}`;
 
     const command = new PutObjectCommand({
@@ -30,6 +39,9 @@ export const r2Service = {
       Key: fileName,
       Body: file.buffer,
       ContentType: file.mimetype,
+      // Force download instead of inline rendering so an uploaded file can
+      // never execute as HTML/SVG in the browser when its URL is opened.
+      ContentDisposition: "attachment",
     });
 
     try {

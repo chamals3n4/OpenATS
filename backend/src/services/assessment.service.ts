@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { db } from "../db";
 import {
   assessments,
@@ -75,16 +75,28 @@ export const assessmentService = {
       .where(eq(assessmentQuestions.assessmentId, id))
       .orderBy(assessmentQuestions.position);
 
-    const questionsWithOptions = await Promise.all(
-      questions.map(async (q) => {
-        const options = await db
+    const questionIds = questions.map((q) => q.id);
+
+    // Batch all option lookups into a single query (avoids N+1).
+    const allOptions = questionIds.length
+      ? await db
           .select()
           .from(assessmentQuestionOptions)
-          .where(eq(assessmentQuestionOptions.questionId, q.id))
-          .orderBy(assessmentQuestionOptions.position);
-        return { ...q, options };
-      }),
-    );
+          .where(inArray(assessmentQuestionOptions.questionId, questionIds))
+          .orderBy(assessmentQuestionOptions.position)
+      : [];
+
+    const optionsByQuestion = new Map<number, typeof allOptions>();
+    for (const option of allOptions) {
+      const list = optionsByQuestion.get(option.questionId) ?? [];
+      list.push(option);
+      optionsByQuestion.set(option.questionId, list);
+    }
+
+    const questionsWithOptions = questions.map((q) => ({
+      ...q,
+      options: optionsByQuestion.get(q.id) ?? [],
+    }));
 
     return { ...assessment, questions: questionsWithOptions };
   },

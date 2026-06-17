@@ -1,4 +1,5 @@
 import { Router } from "express";
+import type { Request, Response, NextFunction } from "express";
 import multer from "multer";
 import {
   getPublicJobById,
@@ -27,10 +28,39 @@ import logger from "../utils/logger";
 
 const router: Router = Router();
 
+// Public resume uploads are unauthenticated, so restrict to PDF only. The
+// 10MB cap stays; anything else is rejected before it reaches storage.
+const ALLOWED_RESUME_TYPES = new Set(["application/pdf"]);
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter: (_req, file, cb) => {
+    if (ALLOWED_RESUME_TYPES.has(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error("Only PDF resumes are allowed"));
+    }
+  },
 });
+
+// Wrap multer so a rejected/oversized file returns a clean 400 instead of
+// falling through to the generic error handler as a 500.
+function handleResumeUpload(
+  req: Request,
+  res: Response,
+  next: NextFunction,
+): void {
+  upload.single("file")(req, res, (err: unknown) => {
+    if (err) {
+      const message =
+        err instanceof Error ? err.message : "Invalid file upload";
+      res.status(400).json({ error: message });
+      return;
+    }
+    next();
+  });
+}
 
 const applyLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -66,7 +96,7 @@ router.post(
   "/upload/resume",
   checkOrigins,
   publicWriteLimiter,
-  upload.single("file"),
+  handleResumeUpload,
   uploadFile,
 );
 

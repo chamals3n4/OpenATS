@@ -47,15 +47,8 @@ router.post("/candidates/:candidateId/interviews", async (req, res) => {
       return;
     }
 
-    logger.info(
-      `[DEBUG] POST /candidates/${candidateId}/interviews body: ${JSON.stringify(req.body)}`,
-    );
-
     const parsed = createInterviewSchema.safeParse(req.body);
     if (!parsed.success) {
-      logger.error(
-        `[DEBUG] Interview validation failed: ${JSON.stringify(parsed.error.flatten())}`,
-      );
       res.status(400).json({
         error: "Validation failed",
         details: parsed.error.flatten().fieldErrors,
@@ -63,9 +56,6 @@ router.post("/candidates/:candidateId/interviews", async (req, res) => {
       return;
     }
 
-    logger.info(
-      `[DEBUG] Interview data parsed OK: ${JSON.stringify(parsed.data)}`,
-    );
     const interview = await interviewService.create(
       {
         candidateId,

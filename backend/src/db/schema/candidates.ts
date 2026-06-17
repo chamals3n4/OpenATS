@@ -9,6 +9,7 @@ import {
   timestamp,
   unique,
   varchar,
+  index,
 } from "drizzle-orm/pg-core";
 
 import { assessmentStatus, candidateStatus, cvAnalysisStatus } from "./enums";
@@ -23,46 +24,59 @@ import {
   jobCustomQuestionOptions,
 } from "./assessments";
 
-export const candidates = pgTable("candidates", {
-  id: serial("id").primaryKey(),
+export const candidates = pgTable(
+  "candidates",
+  {
+    id: serial("id").primaryKey(),
 
-  firstName: varchar("first_name", { length: 100 }).notNull(),
-  lastName: varchar("last_name", { length: 100 }).notNull(),
-  email: varchar("email", { length: 255 }).notNull(),
-  phone: varchar("phone", { length: 50 }),
-  // Cloudflare R2 URL
-  resumeUrl: varchar("resume_url", { length: 1000 }),
+    firstName: varchar("first_name", { length: 100 }).notNull(),
+    lastName: varchar("last_name", { length: 100 }).notNull(),
+    email: varchar("email", { length: 255 }).notNull(),
+    phone: varchar("phone", { length: 50 }),
+    // Cloudflare R2 URL
+    resumeUrl: varchar("resume_url", { length: 1000 }),
 
-  jobId: integer("job_id")
-    .notNull()
-    .references(() => jobs.id, { onDelete: "restrict" }),
+    jobId: integer("job_id")
+      .notNull()
+      .references(() => jobs.id, { onDelete: "restrict" }),
 
-  currentStageId: integer("current_stage_id").references(
-    () => jobPipelineStages.id,
-    { onDelete: "set null" },
-  ),
+    currentStageId: integer("current_stage_id").references(
+      () => jobPipelineStages.id,
+      { onDelete: "set null" },
+    ),
 
-  status: candidateStatus("status").notNull().default("active"),
+    status: candidateStatus("status").notNull().default("active"),
 
-  appliedAt: timestamp("applied_at").notNull().defaultNow(),
-  updatedAt: timestamp("updated_at").notNull().defaultNow(),
-},
-  (t) => [unique().on(t.jobId, t.email)],
+    appliedAt: timestamp("applied_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    unique().on(t.jobId, t.email),
+    index("idx_candidates_job_id").on(t.jobId),
+    index("idx_candidates_current_stage_id").on(t.currentStageId),
+  ],
 );
 
-export const candidateStageHistory = pgTable("candidate_stage_history", {
-  id: serial("id").primaryKey(),
-  candidateId: integer("candidate_id")
-    .notNull()
-    .references(() => candidates.id, { onDelete: "cascade" }),
-  stageId: integer("stage_id")
-    .notNull()
-    .references(() => jobPipelineStages.id, { onDelete: "restrict" }),
-  movedBy: integer("moved_by").references(() => users.id, {
-    onDelete: "set null",
-  }),
-  movedAt: timestamp("moved_at").notNull().defaultNow(),
-});
+export const candidateStageHistory = pgTable(
+  "candidate_stage_history",
+  {
+    id: serial("id").primaryKey(),
+    candidateId: integer("candidate_id")
+      .notNull()
+      .references(() => candidates.id, { onDelete: "cascade" }),
+    stageId: integer("stage_id")
+      .notNull()
+      .references(() => jobPipelineStages.id, { onDelete: "restrict" }),
+    movedBy: integer("moved_by").references(() => users.id, {
+      onDelete: "set null",
+    }),
+    movedAt: timestamp("moved_at").notNull().defaultNow(),
+  },
+  (t) => [
+    index("idx_candidate_stage_history_candidate_id").on(t.candidateId),
+    index("idx_candidate_stage_history_stage_id").on(t.stageId),
+  ],
+);
 
 export const candidateCustomAnswers = pgTable(
   "candidate_custom_answers",
@@ -137,6 +151,7 @@ export const candidateAssessmentAttempts = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
+  (t) => [index("idx_assessment_attempts_candidate_id").on(t.candidateId)],
 );
 
 export const candidateAssessmentAnswers = pgTable(

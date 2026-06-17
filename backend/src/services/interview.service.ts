@@ -110,17 +110,31 @@ export const interviewService = {
 
     // Send interview invitation email to the candidate
     if (interview.scheduledAt && interview.durationMinutes) {
-      try {
-        await mailService.sendInterviewInviteEmail(
-          row.email,
-          `${row.firstName} ${row.lastName}`,
-          row.jobTitle ?? "",
-          row.stageName ?? "",
-          interview.scheduledAt.toISOString(),
-          interview.durationMinutes,
-        );
-      } catch (err: any) {
-        logger.error(`Failed to send interview email: ${err.message}`);
+      // try {
+      //   await mailService.sendInterviewInviteEmail(
+      //     row.email,
+      //     `${row.firstName} ${row.lastName}`,
+      //     row.jobTitle ?? "",
+      //     row.stageName ?? "",
+      //     interview.scheduledAt.toISOString(),
+      //     interview.durationMinutes,
+      //   );
+      // } catch (err: any) {
+      //   logger.error(`Failed to send interview email: ${err.message}`);
+      // }
+      if (interview.scheduledAt && interview.durationMinutes) {
+        mailService
+          .sendInterviewInviteEmail(
+            row.email,
+            `${row.firstName} ${row.lastName}`,
+            row.jobTitle ?? "",
+            row.stageName ?? "",
+            interview.scheduledAt.toISOString(),
+            interview.durationMinutes,
+          )
+          .catch((err: any) => {
+            logger.error(`Failed to send interview email: ${err.message}`);
+          });
       }
     }
 

@@ -140,7 +140,6 @@ router.patch("/interviews/:id", async (req, res) => {
     }
     res.status(200).json({ data: interview });
   } catch (error: any) {
-    res.status(400);
     res
       .status(400)
       .json({ error: error.message || "Failed to update interview" });
@@ -221,8 +220,9 @@ router.post("/candidates/:id/schedule", async (req, res) => {
     if (!interview) throw new Error("Failed to create interview");
 
     const publicUrl = `${process.env.OPENATS_FRONTEND_URL || "http://localhost:3000"}/interview/${token}`;
-    try {
-      await mailService.sendInterviewSlotEmail(
+
+    mailService
+      .sendInterviewSlotEmail(
         candidate.email,
         `${candidate.firstName} ${candidate.lastName}`,
         parsed.data.eventName,
@@ -231,10 +231,10 @@ router.post("/candidates/:id/schedule", async (req, res) => {
         parsed.data.meetingUrl ?? null,
         parsed.data.bodyText ?? null,
         publicUrl,
-      );
-    } catch (err: any) {
-      logger.error(`Failed to send interview slot email: ${err.message}`);
-    }
+      )
+      .catch((err: any) => {
+        logger.error(`Failed to send interview slot email: ${err.message}`);
+      });
 
     res.status(201).json({ data: interview });
   } catch (error: any) {

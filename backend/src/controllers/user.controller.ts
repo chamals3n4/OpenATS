@@ -67,8 +67,6 @@ export const updateUser = async (req: Request, res: Response) => {
       return;
     }
 
-    logger.info(`[updateUser] id=${id} body=`, req.body);
-
     const parsed = updateUserSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({
@@ -78,11 +76,18 @@ export const updateUser = async (req: Request, res: Response) => {
       return;
     }
 
-    logger.info(`[updateUser] parsed=`, parsed.data);
+    // Only a super admin may change a user's role or active status.
+    // This prevents a normal user from escalating their own privileges.
+    const wantsPrivilegedChange =
+      parsed.data.role !== undefined || parsed.data.isActive !== undefined;
+    if (wantsPrivilegedChange && req.user.role !== "super_admin") {
+      res.status(403).json({
+        error: "Only a super admin can change roles or account status",
+      });
+      return;
+    }
 
     const result = await userService.update(id, parsed.data);
-
-    logger.info(`[updateUser] result=`, result);
 
     if (!result) {
       res.status(404).json({ error: "User not found" });
@@ -98,6 +103,11 @@ export const updateUser = async (req: Request, res: Response) => {
 
 export const createUser = async (req: Request, res: Response) => {
   try {
+    if (req.user.role !== "super_admin") {
+      res.status(403).json({ error: "Only a super admin can create users" });
+      return;
+    }
+
     const parsed = createUserSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({

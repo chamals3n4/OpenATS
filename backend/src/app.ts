@@ -61,7 +61,7 @@ app.use(
   ),
 );
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "hmm good :)" });
+  res.status(200).json({ status: "hmm good ..:)" });
 });
 
 app.use("/public", publicRouter);

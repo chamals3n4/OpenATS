@@ -26,6 +26,7 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             cd /home/azureuser/OpenATS
             git pull origin main
+            cd backend
             pnpm install --frozen-lockfile
             pnpm build
             pnpm drizzle-kit migrate

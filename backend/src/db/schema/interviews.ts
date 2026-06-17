@@ -41,6 +41,7 @@ export const candidateInterviews = pgTable("candidate_interviews", {
     .default("pending_schedule"),
   outcome: interviewOutcome("outcome").default("pending"),
   publicToken: varchar("public_token", { length: 100 }).unique(),
+  tokenExpiresAt: timestamp("token_expires_at"),
 
   // Google Calendar
   googleEventId: varchar("google_event_id", { length: 255 }),

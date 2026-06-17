@@ -213,6 +213,7 @@ router.post("/candidates/:id/schedule", async (req, res) => {
         timeSlots: parsed.data.timeSlots,
         status: "pending_schedule",
         publicToken: token,
+        tokenExpiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
         createdBy: req.user.id,
       })
       .returning();

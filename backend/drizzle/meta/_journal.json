@@ -134,6 +134,13 @@
       "when": 1781341253648,
       "tag": "0018_empty_cable",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1781672375474,
+      "tag": "0019_stiff_microchip",
+      "breakpoints": true
     }
   ]
 }

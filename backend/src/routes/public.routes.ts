@@ -37,7 +37,9 @@ const applyLimiter = rateLimit({
   max: 5,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: "Too many applications submitted. Please try again later." },
+  message: {
+    error: "Too many applications submitted. Please try again later.",
+  },
 });
 
 const publicWriteLimiter = rateLimit({
@@ -71,8 +73,16 @@ router.post(
 // assessments for candidates ( token based)
 router.get("/assessment/:token", publicReadLimiter, getAssessmentForCandidate);
 router.post("/assessment/:token/start", publicWriteLimiter, startAssessment);
-router.post("/assessment/:token/answer", publicWriteLimiter, submitAssessmentAnswer);
-router.post("/assessment/:token/complete", publicWriteLimiter, completeAssessment);
+router.post(
+  "/assessment/:token/answer",
+  publicWriteLimiter,
+  submitAssessmentAnswer,
+);
+router.post(
+  "/assessment/:token/complete",
+  publicWriteLimiter,
+  completeAssessment,
+);
 
 // public offer portal (token based)
 router.get("/offers/:token", publicReadLimiter, getPublicOfferByToken);
@@ -91,6 +101,7 @@ router.get("/interview/:token", publicReadLimiter, async (req, res) => {
         bodyText: candidateInterviews.bodyText,
         timeSlots: candidateInterviews.timeSlots,
         status: candidateInterviews.status,
+        tokenExpiresAt: candidateInterviews.tokenExpiresAt,
         candidateName: {
           first: candidates.firstName,
           last: candidates.lastName,
@@ -101,9 +112,18 @@ router.get("/interview/:token", publicReadLimiter, async (req, res) => {
       .leftJoin(candidates, eq(candidateInterviews.candidateId, candidates.id))
       .leftJoin(jobs, eq(candidateInterviews.jobId, jobs.id))
       .where(
-        eq(candidateInterviews.publicToken, (req.params.token ?? "").toString()),
+        eq(
+          candidateInterviews.publicToken,
+          (req.params.token ?? "").toString(),
+        ),
       );
+
     if (!iv) {
+      res.status(404).json({ error: "Invalid link" });
+      return;
+    }
+
+    if (iv.tokenExpiresAt && iv.tokenExpiresAt < new Date()) {
       res.status(404).json({ error: "Invalid link" });
       return;
     }
@@ -121,47 +141,62 @@ router.get("/interview/:token", publicReadLimiter, async (req, res) => {
   }
 });
 
-router.patch("/interview/:token/select", publicWriteLimiter, async (req, res) => {
-  try {
-    const [iv] = await db
-      .select()
-      .from(candidateInterviews)
-      .where(
-        eq(candidateInterviews.publicToken, (req.params.token ?? "").toString()),
-      );
-    if (!iv?.timeSlots) {
-      res.status(404).json({ error: "Invalid link" });
-      return;
+router.patch(
+  "/interview/:token/select",
+  publicWriteLimiter,
+  async (req, res) => {
+    try {
+      const [iv] = await db
+        .select()
+        .from(candidateInterviews)
+        .where(
+          eq(
+            candidateInterviews.publicToken,
+            (req.params.token ?? "").toString(),
+          ),
+        );
+      if (!iv?.timeSlots) {
+        res.status(404).json({ error: "Invalid link" });
+        return;
+      }
+
+      if (iv.tokenExpiresAt && iv.tokenExpiresAt < new Date()) {
+        res.status(410).json({ error: "This scheduling link has expired" });
+        return;
+      }
+
+      const idx = req.body?.slotIndex;
+      if (idx == null || idx < 0) {
+        res.status(400).json({ error: "slotIndex required" });
+        return;
+      }
+      const slots = iv.timeSlots as Array<{
+        datetime: string;
+        selected: boolean;
+      }>;
+      if (idx >= slots.length) {
+        res.status(400).json({ error: "Invalid slot" });
+        return;
+      }
+      const selectedSlot = slots[idx]!;
+      selectedSlot.selected = true;
+      await db
+        .update(candidateInterviews)
+        .set({
+          timeSlots: slots,
+          status: "scheduled",
+          scheduledAt: new Date(selectedSlot.datetime),
+          updatedAt: new Date(),
+        })
+        .where(eq(candidateInterviews.id, iv.id));
+      res.status(200).json({ data: { confirmed: true } });
+    } catch (e: any) {
+      logger.error(`Failed to select interview slot: ${e?.message}`);
+      res
+        .status(500)
+        .json({ error: "Something went wrong. Please try again." });
     }
-    const idx = req.body?.slotIndex;
-    if (idx == null || idx < 0) {
-      res.status(400).json({ error: "slotIndex required" });
-      return;
-    }
-    const slots = iv.timeSlots as Array<{
-      datetime: string;
-      selected: boolean;
-    }>;
-    if (idx >= slots.length) {
-      res.status(400).json({ error: "Invalid slot" });
-      return;
-    }
-    const selectedSlot = slots[idx]!;
-    selectedSlot.selected = true;
-    await db
-      .update(candidateInterviews)
-      .set({
-        timeSlots: slots,
-        status: "scheduled",
-        scheduledAt: new Date(selectedSlot.datetime),
-        updatedAt: new Date(),
-      })
-      .where(eq(candidateInterviews.id, iv.id));
-    res.status(200).json({ data: { confirmed: true } });
-  } catch (e: any) {
-    logger.error(`Failed to select interview slot: ${e?.message}`);
-    res.status(500).json({ error: "Something went wrong. Please try again." });
-  }
-});
+  },
+);
 
 export default router;

@@ -52,10 +52,10 @@ export function AssessmentCard({
       {/* Card footer */}
       <div className="flex items-center gap-1.5 px-4 py-2.5 border-t border-slate-100 dark:border-neutral-800">
         <Button
-          asChild
+          render={<Link href={`/assessments/${assessment.id}`} />}
           className="h-8 rounded-md border-none px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
         >
-          <Link href={`/assessments/${assessment.id}`}>Edit</Link>
+          Edit
         </Button>
         <Button
           onClick={() => onDelete(assessment)}

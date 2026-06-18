@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
 import { useQueryClient } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -74,7 +73,6 @@ export function SidebarUserMenu({
   const { signOut, isLoading } = useAsgardeo();
   const { theme, setTheme } = useTheme();
   const { state } = useSidebar();
-  const router = useRouter();
   const queryClient = useQueryClient();
   const [mounted, setMounted] = React.useState(false);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = React.useState(false);
@@ -245,8 +243,7 @@ export function SidebarUserMenu({
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                queryClient.invalidateQueries();
-                router.push("/login");
+                queryClient.clear();
                 void signOut();
               }}
             >

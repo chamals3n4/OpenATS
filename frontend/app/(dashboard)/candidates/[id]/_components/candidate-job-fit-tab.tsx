@@ -431,19 +431,21 @@ export function CandidateJobFitTab({
         {cv.aiSummary && (
           <div className="mt-4 pt-4 border-t border-slate-100 dark:border-neutral-800">
             <Dialog>
-              <DialogTrigger asChild>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="w-full gap-2 text-[13px] border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-300 hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 dark:hover:bg-violet-950/30 dark:hover:border-violet-800 dark:hover:text-violet-300 transition-colors"
-                >
-                  <HugeiconsIcon
-                    icon={AiBeautifyIcon}
-                    className="size-3.5"
-                    strokeWidth={1.5}
+              <DialogTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2 text-[13px] border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-300 hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 dark:hover:bg-violet-950/30 dark:hover:border-violet-800 dark:hover:text-violet-300 transition-colors"
                   />
-                  AI Overview
-                </Button>
+                }
+              >
+                <HugeiconsIcon
+                  icon={AiBeautifyIcon}
+                  className="size-3.5"
+                  strokeWidth={1.5}
+                />
+                AI Overview
               </DialogTrigger>
               <AiOverviewDialog aiSummary={cv.aiSummary} score={score} />
             </Dialog>

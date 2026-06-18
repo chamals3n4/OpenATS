@@ -3,9 +3,23 @@
 import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
 import { useTheme } from "next-themes";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Loading03Icon } from "@hugeicons/core-free-icons";
+import {
+  Loading03Icon,
+  AiBeautifyIcon,
+  CheckmarkBadge01Icon,
+  AlertCircleIcon,
+  InformationCircleIcon,
+} from "@hugeicons/core-free-icons";
 
-import type { CandidateCvAnalysisPayload } from "@/types";
+import type { AiSummary, CandidateCvAnalysisPayload } from "@/types";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Button } from "@/components/ui/button";
 
 const DONUT_MATCH = "#22c55e";
 const DONUT_TRACK_LIGHT = "#e2e8f0";
@@ -24,6 +38,33 @@ const BAR_COLORS: Record<(typeof BREAKDOWN)[number]["key"], string> = {
   level: "#f59e0b",
   certs: "#ec4899",
 };
+
+const VERDICT_CONFIG = {
+  strong_fit: {
+    label: "Strong Fit",
+    color: "text-emerald-700 dark:text-emerald-400",
+    bg: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50",
+    dot: "bg-emerald-500",
+  },
+  moderate_fit: {
+    label: "Moderate Fit",
+    color: "text-amber-700 dark:text-amber-400",
+    bg: "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/50",
+    dot: "bg-amber-500",
+  },
+  weak_fit: {
+    label: "Weak Fit",
+    color: "text-orange-700 dark:text-orange-400",
+    bg: "bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800/50",
+    dot: "bg-orange-500",
+  },
+  not_recommended: {
+    label: "Not Recommended",
+    color: "text-rose-700 dark:text-rose-400",
+    bg: "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/50",
+    dot: "bg-rose-500",
+  },
+} as const;
 
 function scoreTone(score: number): string {
   if (score >= 75) return "text-emerald-600 dark:text-emerald-400";
@@ -76,6 +117,121 @@ function SkillsAlignmentSection({
         </div>
       )}
     </div>
+  );
+}
+
+function AiOverviewDialog({
+  aiSummary,
+  score,
+}: {
+  aiSummary: AiSummary;
+  score: number;
+}) {
+  const verdict = VERDICT_CONFIG[aiSummary.verdict] ?? VERDICT_CONFIG.moderate_fit;
+
+  return (
+    <DialogContent
+      className="sm:max-w-[580px] gap-0 p-0 overflow-hidden"
+      showCloseButton
+    >
+      {/* Header */}
+      <div className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-neutral-800">
+        <DialogHeader>
+          <div className="flex items-center gap-2 mb-2">
+            <HugeiconsIcon
+              icon={AiBeautifyIcon}
+              className="size-4 text-violet-500"
+              strokeWidth={1.5}
+            />
+            <DialogTitle className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
+              AI Candidate Overview
+            </DialogTitle>
+          </div>
+          <p className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+            {aiSummary.quickSummary}
+          </p>
+        </DialogHeader>
+      </div>
+
+      <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto">
+        {/* Verdict badge */}
+        <div
+          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[12px] font-medium ${verdict.bg} ${verdict.color}`}
+        >
+          <span className={`size-1.5 rounded-full ${verdict.dot}`} />
+          {verdict.label} — {score}/100 match
+        </div>
+
+        {/* Strengths */}
+        {aiSummary.strengths.length > 0 && (
+          <div>
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <HugeiconsIcon
+                icon={CheckmarkBadge01Icon}
+                className="size-3.5 text-emerald-600 dark:text-emerald-400"
+                strokeWidth={2}
+              />
+              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                Strengths
+              </h4>
+            </div>
+            <ul className="space-y-1.5">
+              {aiSummary.strengths.map((s, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="mt-1.5 size-1 rounded-full bg-emerald-500 shrink-0" />
+                  <span className="text-[13px] text-slate-700 dark:text-neutral-300 leading-relaxed">
+                    {s}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Gaps */}
+        {aiSummary.gaps.length > 0 && (
+          <div>
+            <div className="flex items-center gap-1.5 mb-2.5">
+              <HugeiconsIcon
+                icon={AlertCircleIcon}
+                className="size-3.5 text-amber-600 dark:text-amber-400"
+                strokeWidth={2}
+              />
+              <h4 className="text-[11px] font-semibold uppercase tracking-wider text-amber-700 dark:text-amber-400">
+                Gaps & Considerations
+              </h4>
+            </div>
+            <ul className="space-y-1.5">
+              {aiSummary.gaps.map((g, i) => (
+                <li key={i} className="flex items-start gap-2">
+                  <span className="mt-1.5 size-1 rounded-full bg-amber-500 shrink-0" />
+                  <span className="text-[13px] text-slate-700 dark:text-neutral-300 leading-relaxed">
+                    {g}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Hiring Signal */}
+        <div className="rounded-lg bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 p-3.5">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <HugeiconsIcon
+              icon={InformationCircleIcon}
+              className="size-3.5 text-slate-500 dark:text-neutral-400"
+              strokeWidth={2}
+            />
+            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-neutral-400">
+              Hiring Signal
+            </span>
+          </div>
+          <p className="text-[13px] text-slate-700 dark:text-neutral-300 leading-relaxed">
+            {aiSummary.hiringSignal}
+          </p>
+        </div>
+      </div>
+    </DialogContent>
   );
 }
 
@@ -271,6 +427,28 @@ export function CandidateJobFitTab({
             Remaining
           </span>
         </div>
+
+        {cv.aiSummary && (
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-neutral-800">
+            <Dialog>
+              <DialogTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full gap-2 text-[13px] border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-300 hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 dark:hover:bg-violet-950/30 dark:hover:border-violet-800 dark:hover:text-violet-300 transition-colors"
+                >
+                  <HugeiconsIcon
+                    icon={AiBeautifyIcon}
+                    className="size-3.5"
+                    strokeWidth={1.5}
+                  />
+                  AI Overview
+                </Button>
+              </DialogTrigger>
+              <AiOverviewDialog aiSummary={cv.aiSummary} score={score} />
+            </Dialog>
+          </div>
+        )}
       </div>
     </div>
   );

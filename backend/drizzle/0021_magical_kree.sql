@@ -1,0 +1,1 @@
+ALTER TABLE "candidate_cv_analysis" ADD COLUMN "ai_summary" jsonb;

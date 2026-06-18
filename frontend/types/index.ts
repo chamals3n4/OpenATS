@@ -195,6 +195,14 @@ export type StageAutomationFlags = {
   assessmentInvite?: "sent" | "skipped_active_invite";
 };
 
+export type AiSummary = {
+  quickSummary: string;
+  strengths: string[];
+  gaps: string[];
+  hiringSignal: string;
+  verdict: "strong_fit" | "moderate_fit" | "weak_fit" | "not_recommended";
+};
+
 export type CandidateCvAnalysisPayload = {
   status: "pending" | "done" | "failed";
   matchScore: number | null;
@@ -206,6 +214,7 @@ export type CandidateCvAnalysisPayload = {
     level: number;
     certs: number;
   } | null;
+  aiSummary: AiSummary | null;
   errorMessage: string | null;
   updatedAt: string;
 };

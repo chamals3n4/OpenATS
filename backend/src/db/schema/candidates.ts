@@ -218,6 +218,14 @@ export const candidateCvAnalysis = pgTable(
       certs: number;
     }>(),
 
+    aiSummary: jsonb("ai_summary").$type<{
+      quickSummary: string;
+      strengths: string[];
+      gaps: string[];
+      hiringSignal: string;
+      verdict: "strong_fit" | "moderate_fit" | "weak_fit" | "not_recommended";
+    }>(),
+
     extractedText: text("extracted_text"),
 
     status: cvAnalysisStatus("status").notNull().default("pending"),

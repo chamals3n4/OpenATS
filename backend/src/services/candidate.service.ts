@@ -345,6 +345,7 @@ export const candidateService = {
           matchedSkills: cvRow.matchedSkills,
           missingSkills: cvRow.missingSkills,
           scoreBreakdown: cvRow.scoreBreakdown,
+          aiSummary: cvRow.aiSummary ?? null,
           errorMessage: cvRow.errorMessage,
           updatedAt: cvRow.updatedAt,
         }

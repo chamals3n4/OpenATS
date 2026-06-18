@@ -49,11 +49,20 @@ interface ParsedCv {
 
   listedSkills: string[];
   projectTechnologies: string[];
+  impliedSkills: string[];
 
   certifications: string[];
 
   totalExperienceYears: number;
   jobLevel: JobLevel;
+}
+
+export interface AiSummary {
+  quickSummary: string;
+  strengths: string[];
+  gaps: string[];
+  hiringSignal: string;
+  verdict: "strong_fit" | "moderate_fit" | "weak_fit" | "not_recommended";
 }
 
 interface ParsedJd {
@@ -79,6 +88,7 @@ interface ScoreResult {
     level: number;
     certs: number;
   };
+  aiSummary: AiSummary | null;
 }
 
 function extractKeyFromUrl(resumeUrl: string): string {
@@ -130,6 +140,7 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
     '  "rationale": ["short reason 1", "short reason 2"],',
     '  "listedSkills": ["skill1", "skill2"],',
     '  "projectTechnologies": ["tech1", "tech2"],',
+    '  "impliedSkills": ["Git"],',
     '  "certifications": ["cert1", "cert2"],',
     '  "totalExperienceYears": 1.5,',
     '  "jobLevel": "entry"',
@@ -151,7 +162,7 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
     "Field rules:",
     "",
     "listedSkills:",
-    "  - Extract skills/technologies mentioned ANYWHERE in the CV (skills section, experience bullets, projects, education, tools).",
+    "  - Extract skills/technologies explicitly mentioned ANYWHERE in the CV (skills section, experience bullets, projects, education, tools).",
     "  - Include programming languages, frameworks, libraries, tools, platforms, databases, cloud services, methodologies.",
     "  - Keep items short (e.g., 'React', 'PostgreSQL', 'Docker').",
     "  - Do not include generic words like 'project', 'team', 'lab', 'assignment'.",
@@ -162,6 +173,19 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
     "  - Example: 'Built a REST API using Node.js and MongoDB' → ['Node.js', 'MongoDB']",
     "  - Do NOT repeat items already in listedSkills",
     "  - Use empty array [] if no projects are mentioned",
+    "",
+    "impliedSkills:",
+    "  - Skills that can be INFERRED from strong contextual evidence, not explicitly stated.",
+    "  - RULES (apply all that match):",
+    "    * If the candidate lists github.com URLs (profile or project repos) → add 'Git'",
+    "    * If the candidate lists gitlab.com URLs → add 'Git'",
+    "    * If the candidate lists bitbucket.org URLs → add 'Git'",
+    "    * If projects are hosted on Vercel, Netlify, or Heroku → add 'CI/CD' if not already listed",
+    "    * If the candidate built and deployed a web app but did not list HTML/CSS → add 'HTML', 'CSS'",
+    "    * If they used Firebase → add 'NoSQL' if not already listed",
+    "  - Do NOT add skills already present in listedSkills or projectTechnologies.",
+    "  - Do NOT infer speculatively — only add when evidence is clear and direct.",
+    "  - Use empty array [] if no implied skills found.",
     "",
     "certifications:",
     "  - Extract formal certifications/licences/credentials the candidate HOLDS.",
@@ -191,6 +215,7 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
     "If isCvOrResume is false:",
     "  - listedSkills: []",
     "  - projectTechnologies: []",
+    "  - impliedSkills: []",
     "  - certifications: []",
     "  - totalExperienceYears: 0",
     "  - jobLevel: null",
@@ -307,7 +332,149 @@ async function parseJdWithGemini(description: string): Promise<ParsedJd> {
   return JSON.parse(raw) as ParsedJd;
 }
 
-function scoreCV(parsedCv: ParsedCv, jobReqs: JobRequirements): ScoreResult {
+// Each array is a group of equivalent skill names. Matching any one satisfies any other.
+const SKILL_GROUPS: readonly string[][] = [
+  ["git", "github", "gitlab", "bitbucket", "version control", "source control", "svn"],
+  ["javascript", "js", "es6", "es2015", "ecmascript", "vanilla js"],
+  ["typescript", "ts"],
+  ["node.js", "node", "nodejs", "node js"],
+  ["postgresql", "postgres", "psql", "pg", "postgresdb"],
+  ["mysql", "mariadb"],
+  ["react", "reactjs", "react.js", "react js"],
+  ["next.js", "nextjs", "next js"],
+  ["vue.js", "vue", "vuejs", "vue js"],
+  ["angular", "angularjs", "angular.js"],
+  ["svelte", "sveltekit"],
+  ["docker", "containerization", "containers", "dockerfile"],
+  ["kubernetes", "k8s"],
+  ["mongodb", "mongo"],
+  ["graphql", "gql", "apollo graphql", "apollo"],
+  ["python", "py"],
+  ["c#", "csharp", "c sharp"],
+  [".net", "dotnet", "asp.net", "aspnet"],
+  ["java", "java se", "java ee"],
+  ["spring boot", "spring", "springboot", "spring framework"],
+  ["redis", "ioredis", "upstash redis"],
+  ["aws", "amazon web services", "amazon aws"],
+  ["gcp", "google cloud", "google cloud platform"],
+  ["azure", "microsoft azure"],
+  ["terraform", "tf", "infrastructure as code", "iac"],
+  ["tailwind", "tailwindcss", "tailwind css"],
+  ["express", "express.js", "expressjs"],
+  ["rest api", "rest", "restful", "restful api"],
+  ["websocket", "websockets", "socket.io", "ws", "web sockets"],
+  ["jest", "vitest", "jasmine", "mocha"],
+  ["linux", "unix", "ubuntu", "debian"],
+  ["ci/cd", "github actions", "gitlab ci", "jenkins", "circleci", "devops"],
+  ["html", "html5"],
+  ["css", "css3", "scss", "sass"],
+  ["flutter", "dart"],
+  ["firebase", "firestore", "firebase functions"],
+  ["bullmq", "bull", "job queue", "message queue"],
+  ["drizzle", "drizzle orm"],
+  ["prisma", "prisma orm"],
+];
+
+const skillGroupIndex = new Map<string, number>();
+SKILL_GROUPS.forEach((group, idx) => {
+  group.forEach((s) => skillGroupIndex.set(s.toLowerCase(), idx));
+});
+
+function skillMatches(jobSkill: string, candidateSet: Set<string>): boolean {
+  const norm = jobSkill.toLowerCase().trim();
+  if (candidateSet.has(norm)) return true;
+
+  const groupIdx = skillGroupIndex.get(norm);
+  if (groupIdx === undefined) return false;
+
+  for (const member of SKILL_GROUPS[groupIdx]!) {
+    if (candidateSet.has(member.toLowerCase())) return true;
+  }
+  return false;
+}
+
+async function generateAiSummary(
+  parsedCv: ParsedCv,
+  jobReqs: JobRequirements,
+  score: Omit<ScoreResult, "aiSummary">,
+): Promise<AiSummary | null> {
+  const verdictFromScore = (s: number) => {
+    if (s >= 75) return "strong_fit";
+    if (s >= 50) return "moderate_fit";
+    if (s >= 25) return "weak_fit";
+    return "not_recommended";
+  };
+
+  const prompt = [
+    "You are a senior technical recruiter writing a concise candidate assessment for a hiring manager.",
+    "Analyze the candidate's fit based on the CV analysis data below.",
+    "Return ONLY a valid JSON object — no explanation, no markdown, no code fences.",
+    "",
+    "JSON schema to return:",
+    "{",
+    '  "quickSummary": "1-2 sentence overall assessment of the candidate",',
+    '  "strengths": ["specific strength 1", "specific strength 2", "specific strength 3"],',
+    '  "gaps": ["gap or consideration 1 with context", "gap 2"],',
+    '  "hiringSignal": "1-2 sentence hiring recommendation",',
+    `  "verdict": "${verdictFromScore(score.matchScore)}"`,
+    "}",
+    "",
+    `verdict must be exactly one of: "strong_fit" (score >= 75), "moderate_fit" (score 50-74), "weak_fit" (score 25-49), "not_recommended" (score < 25)`,
+    "",
+    "== CV DATA ==",
+    `Listed Skills: ${parsedCv.listedSkills.join(", ") || "none"}`,
+    `Project Technologies: ${parsedCv.projectTechnologies.join(", ") || "none"}`,
+    `Implied Skills (inferred from GitHub URLs, deployments, etc.): ${parsedCv.impliedSkills.join(", ") || "none"}`,
+    `Total Experience: ${parsedCv.totalExperienceYears} years`,
+    `Career Level: ${parsedCv.jobLevel ?? "unknown"}`,
+    `Certifications: ${parsedCv.certifications.join(", ") || "none"}`,
+    "",
+    "== JOB REQUIREMENTS ==",
+    `Required Skills: ${jobReqs.skills.join(", ") || "none specified"}`,
+    `Min Experience: ${jobReqs.minExperienceYears} years`,
+    `Required Level: ${jobReqs.jobLevel ?? "not specified"}`,
+    `Required Certifications: ${jobReqs.requiredCertifications.join(", ") || "none"}`,
+    "",
+    "== MATCH RESULTS ==",
+    `Overall Score: ${score.matchScore}/100`,
+    `Matched Skills: ${score.matchedSkills.join(", ") || "none"}`,
+    `Missing Skills (not found explicitly or implicitly): ${score.missingSkills.join(", ") || "none"}`,
+    `Skills Score: ${score.scoreBreakdown.skills}/55`,
+    `Experience Score: ${score.scoreBreakdown.experience}/25`,
+    `Level Score: ${score.scoreBreakdown.level}/15`,
+    `Certifications Score: ${score.scoreBreakdown.certs}/5`,
+    "",
+    "Guidelines:",
+    "- Be nuanced about gaps. If a skill appears missing but implied skills or related tools cover it, note this clearly.",
+    "- Strengths must be specific and evidence-based (reference actual skills/experience from the data).",
+    "- Keep each bullet/strength/gap under 20 words.",
+    "- quickSummary should be direct and informative (no fluff).",
+    "- hiringSignal must give a concrete recommendation.",
+    "- Include 2-4 strengths and 0-3 gaps (omit gaps array items if no real gaps exist).",
+  ].join("\n");
+
+  try {
+    const response = await ai.models.generateContent({
+      model: "gemini-3-flash-preview",
+      contents: [{ text: prompt }],
+    });
+
+    let raw = response.text?.trim() ?? "";
+    if (raw.startsWith("```")) {
+      const parts = raw.split("```");
+      raw = parts[1] ?? "";
+      if (raw.startsWith("json")) raw = raw.slice(4);
+      raw = raw.trim();
+    }
+
+    return JSON.parse(raw) as AiSummary;
+  } catch (err) {
+    logger.warn(`[CV Analysis] AI summary generation failed: ${String(err)}`);
+    return null;
+  }
+}
+
+function scoreCV(parsedCv: ParsedCv, jobReqs: JobRequirements): Omit<ScoreResult, "aiSummary"> {
   /*
     Scoring is based on four dimensions, each with a fixed weight:
    
@@ -336,19 +503,18 @@ function scoreCV(parsedCv: ParsedCv, jobReqs: JobRequirements): ScoreResult {
   const allCandidateTech = [
     ...parsedCv.listedSkills,
     ...parsedCv.projectTechnologies,
+    ...(parsedCv.impliedSkills ?? []),
   ];
 
   const cvSkillsSet = new Set(
     allCandidateTech.map((s) => s.toLowerCase().trim()),
   );
 
-  const reqSkillsNormalised = jobReqs.skills.map((s) => s.toLowerCase().trim());
-
-  const matchedSkills = jobReqs.skills.filter((_, i) =>
-    cvSkillsSet.has(reqSkillsNormalised[i]!),
+  const matchedSkills = jobReqs.skills.filter((s) =>
+    skillMatches(s, cvSkillsSet),
   );
   const missingSkills = jobReqs.skills.filter(
-    (_, i) => !cvSkillsSet.has(reqSkillsNormalised[i]!),
+    (s) => !skillMatches(s, cvSkillsSet),
   );
 
   const skillsScore =
@@ -439,6 +605,7 @@ export const cvAnalysisService = {
           matchedSkills: null,
           missingSkills: null,
           scoreBreakdown: null,
+          aiSummary: null,
           extractedText: null,
           errorMessage: null,
           updatedAt: new Date(),
@@ -520,8 +687,15 @@ export const cvAnalysisService = {
       requiredCertifications: parsedJd.requiredCertifications,
     };
 
+    const scoreResult = scoreCV(parsedCv, jobReqs);
     const { matchScore, matchedSkills, missingSkills, scoreBreakdown } =
-      scoreCV(parsedCv, jobReqs);
+      scoreResult;
+
+    logger.info(
+      `[CV Analysis] Score: ${matchScore} — implied skills: ${(parsedCv.impliedSkills ?? []).join(", ") || "none"}`,
+    );
+
+    const aiSummary = await generateAiSummary(parsedCv, jobReqs, scoreResult);
 
     await db
       .update(candidateCvAnalysis)
@@ -531,6 +705,7 @@ export const cvAnalysisService = {
         matchedSkills,
         missingSkills,
         scoreBreakdown,
+        aiSummary,
         updatedAt: new Date(),
       })
       .where(eq(candidateCvAnalysis.candidateId, candidateId));

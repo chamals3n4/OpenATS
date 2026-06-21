@@ -23,7 +23,10 @@ export function JobsPageClient() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(searchTerm), 300);
+    const t = setTimeout(() => {
+      setDebouncedSearch(searchTerm);
+      setPage(1);
+    }, 150);
     return () => clearTimeout(t);
   }, [searchTerm]);
 
@@ -72,7 +75,7 @@ export function JobsPageClient() {
 
   const resetPage = () => setPage(1);
 
-  const handleSearchChange = useCallback((v: string) => { setSearchTerm(v); resetPage(); }, []);
+  const handleSearchChange = useCallback((v: string) => { setSearchTerm(v); }, []);
   const handleDeptChange = useCallback((v: string) => { setFilterDept(v); resetPage(); }, []);
   const handleTypeChange = useCallback((v: string) => { setFilterType(v); resetPage(); }, []);
   const handleStatusChange = useCallback((v: string) => { setFilterStatus(v); resetPage(); }, []);

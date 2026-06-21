@@ -22,7 +22,10 @@ export default function OffersPageClient() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 150);
     return () => clearTimeout(t);
   }, [search]);
 
@@ -68,7 +71,7 @@ export default function OffersPageClient() {
     [router],
   );
 
-  const handleSearchChange = useCallback((v: string) => { setSearch(v); setPage(1); }, []);
+  const handleSearchChange = useCallback((v: string) => { setSearch(v); }, []);
   const handleJobChange = useCallback((v: number | undefined) => { setSelectedJobId(v); setPage(1); }, []);
   const handleStatusChange = useCallback((v: string) => { setStatusFilter(v); setPage(1); }, []);
 

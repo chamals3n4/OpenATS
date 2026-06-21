@@ -27,7 +27,10 @@ export default function TemplatesPageClient() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 150);
     return () => clearTimeout(t);
   }, [search]);
 
@@ -94,7 +97,7 @@ export default function TemplatesPageClient() {
     });
   }, [deleteId, deleteMutation]);
 
-  const handleSearchChange = useCallback((v: string) => { setSearch(v); setPage(1); }, []);
+  const handleSearchChange = useCallback((v: string) => { setSearch(v); }, []);
   const handleTypeChange = useCallback((v: string) => { setFilterType(v); setPage(1); }, []);
 
   const handleClearFilters = useCallback(() => {

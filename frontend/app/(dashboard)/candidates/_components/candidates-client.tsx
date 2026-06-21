@@ -37,7 +37,10 @@ export default function CandidatesPageClient() {
   const [page, setPage] = useState(1);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(search), 300);
+    const t = setTimeout(() => {
+      setDebouncedSearch(search);
+      setPage(1);
+    }, 150);
     return () => clearTimeout(t);
   }, [search]);
 
@@ -90,7 +93,6 @@ export default function CandidatesPageClient() {
 
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
-    setPage(1);
   }, []);
 
   const handleJobChange = useCallback((jobId: number | undefined) => {

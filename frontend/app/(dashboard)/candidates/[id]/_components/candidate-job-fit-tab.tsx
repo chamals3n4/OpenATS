@@ -131,7 +131,7 @@ function AiOverviewDialog({
 
   return (
     <DialogContent
-      className="sm:max-w-[580px] gap-0 p-0 overflow-hidden"
+      className="sm:max-w-[720px] gap-0 p-0 overflow-hidden"
       showCloseButton
     >
       {/* Header */}
@@ -153,7 +153,7 @@ function AiOverviewDialog({
         </DialogHeader>
       </div>
 
-      <div className="px-6 py-5 space-y-5 max-h-[70vh] overflow-y-auto">
+      <div className="px-6 py-5 space-y-5">
         {/* Verdict badge */}
         <div
           className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-[12px] font-medium ${verdict.bg} ${verdict.color}`}
@@ -373,9 +373,32 @@ export function CandidateJobFitTab({
       </div>
 
       <div className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-gradient-to-b from-slate-50/80 to-white dark:from-neutral-900/50 dark:to-neutral-950 px-5 py-5 xl:sticky xl:top-5 xl:self-start">
-        <p className="text-center text-[12px] font-medium uppercase tracking-wider text-slate-500 dark:text-neutral-400 mb-1">
-          Overall match
-        </p>
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-[12px] font-medium uppercase tracking-wider text-slate-500 dark:text-neutral-400">
+            Overall match
+          </p>
+          {cv.aiSummary && (
+            <Dialog>
+              <DialogTrigger
+                render={
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-[12px] cursor-pointer border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-300 hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 dark:hover:bg-violet-950/30 dark:hover:border-violet-800 dark:hover:text-violet-300 transition-colors"
+                  />
+                }
+              >
+                <HugeiconsIcon
+                  icon={AiBeautifyIcon}
+                  className="size-3.5"
+                  strokeWidth={1.5}
+                />
+                AI Overview
+              </DialogTrigger>
+              <AiOverviewDialog aiSummary={cv.aiSummary} score={score} />
+            </Dialog>
+          )}
+        </div>
         <div className="relative mx-auto h-[220px] w-full max-w-[270px]">
           <ResponsiveContainer width="100%" height="100%">
             <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
@@ -427,30 +450,6 @@ export function CandidateJobFitTab({
             Remaining
           </span>
         </div>
-
-        {cv.aiSummary && (
-          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-neutral-800">
-            <Dialog>
-              <DialogTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2 text-[13px] border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-300 hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 dark:hover:bg-violet-950/30 dark:hover:border-violet-800 dark:hover:text-violet-300 transition-colors"
-                  />
-                }
-              >
-                <HugeiconsIcon
-                  icon={AiBeautifyIcon}
-                  className="size-3.5"
-                  strokeWidth={1.5}
-                />
-                AI Overview
-              </DialogTrigger>
-              <AiOverviewDialog aiSummary={cv.aiSummary} score={score} />
-            </Dialog>
-          </div>
-        )}
       </div>
     </div>
   );

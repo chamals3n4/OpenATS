@@ -209,7 +209,7 @@ router.post("/candidates/:id/schedule", async (req, res) => {
 
     if (!interview) throw new Error("Failed to create interview");
 
-    const publicUrl = `${process.env.OPENATS_FRONTEND_URL || "http://localhost:3000"}/interview/${token}`;
+    const publicUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/interview/${token}`;
 
     mailService
       .sendInterviewSlotEmail(

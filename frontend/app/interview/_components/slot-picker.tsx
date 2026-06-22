@@ -6,6 +6,8 @@ import { Calendar02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InterviewData, Slot } from "../types";
+import ConfirmedState from "./confirmed-state";
+import ErrorState from "./error-state";
 
 function fmtDateTime(dt: string) {
   const d = new Date(dt);
@@ -25,19 +27,13 @@ interface Props {
   data: InterviewData;
   token: string;
   apiBase: string;
-  onConfirmed: () => void;
-  onError: (msg: string) => void;
 }
 
-export default function SlotPicker({
-  data,
-  token,
-  apiBase,
-  onConfirmed,
-  onError,
-}: Props) {
+export default function SlotPicker({ data, token, apiBase }: Props) {
   const [selectedSlot, setSelectedSlot] = useState<number | null>(null);
   const [confirming, setConfirming] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const handleConfirm = async () => {
     if (selectedSlot === null) return;
@@ -49,13 +45,16 @@ export default function SlotPicker({
         body: JSON.stringify({ slotIndex: selectedSlot }),
       });
       if (!res.ok) throw new Error("Failed to confirm");
-      onConfirmed();
+      setConfirmed(true);
     } catch (e: any) {
-      onError(e.message);
+      setErrorMsg(e.message ?? "Something went wrong");
     } finally {
       setConfirming(false);
     }
   };
+
+  if (confirmed) return <ConfirmedState jobTitle={data.jobTitle} />;
+  if (errorMsg) return <ErrorState message={errorMsg} />;
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-neutral-950 py-12 px-4">

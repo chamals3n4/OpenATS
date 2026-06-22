@@ -37,13 +37,5 @@ export default async function PublicInterviewPage({
     return <AlreadyScheduled timeSlots={data.timeSlots} />;
   }
 
-  return (
-    <SlotPicker
-      data={data}
-      token={token}
-      apiBase={API_BASE}
-      onConfirmed={() => {}}
-      onError={() => {}}
-    />
-  );
+  return <SlotPicker data={data} token={token} apiBase={API_BASE} />;
 }

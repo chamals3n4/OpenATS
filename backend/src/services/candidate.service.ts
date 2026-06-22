@@ -14,6 +14,7 @@ import {
   offers,
   candidateRejections,
   candidateInterviews,
+  company,
 } from "../db/schema";
 import type { Candidate } from "../db/schema/candidates";
 import { assessmentExecutionService } from "./assessment-execution.service";
@@ -21,7 +22,9 @@ import { candidateActivityService } from "./candidate-activity.service";
 import { jobService } from "./job.service";
 import { socketService } from "./socket.service";
 import { rejectionService } from "./rejection.service";
+import { mailService } from "./mail.service";
 import { cleanObject as clean } from "../utils/object.utils";
+import logger from "../utils/logger";
 
 /** Drizzle wraps driver errors; Postgres code 23505 is often on `cause`. */
 function isPgUniqueViolation(err: unknown): boolean {
@@ -117,6 +120,40 @@ export type MoveStageResult = {
   stageAutomation: StageAutomationFlags;
 };
 
+async function sendApplicationConfirmationEmail(
+  candidate: Candidate,
+  jobId: number,
+) {
+  try {
+    const [job] = await db
+      .select()
+      .from(jobs)
+      .where(eq(jobs.id, jobId))
+      .limit(1);
+
+    if (!job) return;
+
+    const [comp] = await db.select().from(company).limit(1);
+    const companyName = comp?.name ?? "Talent Acquisition Team";
+
+    const candidateName = `${candidate.firstName} ${candidate.lastName}`;
+    const subject = `${job.title} - Thank you for your application`;
+    const html = `
+      <div style="font-family:sans-serif;line-height:1.8;color:#333;max-width:600px">
+        <p>Dear ${candidateName},</p>
+        <p>We have successfully received your application and will review it carefully.</p>
+        <p>If your qualifications align with our requirements, we'll be in touch regarding the next steps. We appreciate your interest in joining our team.</p>
+        <br>
+        <p>Regards,<br>${companyName} Talent Acquisition Team</p>
+      </div>
+    `;
+
+    await mailService.sendEmail({ to: candidate.email, subject, html });
+  } catch (err) {
+    logger.error("Failed to send application confirmation email:", err);
+  }
+}
+
 export const candidateService = {
   async apply(jobId: number, input: CandidateApplyInput) {
     const { customAnswers, ...rest } = input;
@@ -193,6 +230,7 @@ export const candidateService = {
         return candidate;
       }).then((candidate) => {
         socketService.notifyCandidateApplied(jobId);
+        void sendApplicationConfirmationEmail(candidate, jobId);
         return candidate;
       });
     } catch (err) {

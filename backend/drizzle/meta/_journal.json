@@ -155,6 +155,13 @@
       "when": 1781760523697,
       "tag": "0021_magical_kree",
       "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1782122928379,
+      "tag": "0022_mysterious_scarlet_witch",
+      "breakpoints": true
     }
   ]
 }

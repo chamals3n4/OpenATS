@@ -14,6 +14,7 @@ import { sql } from "drizzle-orm";
 import { employmentType, jobStatus, payFrequency, salaryType } from "./enums";
 import { departments } from "./company";
 import { users } from "./users";
+import { templates } from "./templates";
 
 export const jobs = pgTable(
   "jobs",
@@ -49,6 +50,11 @@ export const jobs = pgTable(
     // ────────────────────────────────────────────────────────────────
 
     status: jobStatus("status").notNull().default("draft"),
+
+    applicationEmailTemplateId: integer("application_email_template_id").references(
+      () => templates.id,
+      { onDelete: "set null" },
+    ),
 
     createdBy: integer("created_by")
       .notNull()

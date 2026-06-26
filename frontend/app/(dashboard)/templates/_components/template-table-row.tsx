@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import type { Template } from "@/types";
 import { getTypeMeta, formatDate } from "../lib/templates-utils";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
+import { useIsManager } from "@/hooks/use-role";
 
 interface TemplateTableRowProps {
   template: Template;
@@ -25,6 +26,7 @@ export function TemplateTableRow({
   isSelected = false,
   onSelectedChange,
 }: TemplateTableRowProps) {
+  const isManager = useIsManager();
   const meta = getTypeMeta(template.type);
 
   return (
@@ -57,23 +59,25 @@ export function TemplateTableRow({
         className="h-11 px-6 py-0 text-[13px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            size="sm"
-            className="h-7 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
-            onClick={() => onDuplicate(template)}
-          >
-            Duplicate
-          </Button>
-          <Button
-            size="sm"
-            className="h-7 rounded-md border-none bg-red-500 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
-            onClick={() => onDelete(template.id)}
-          >
-            <HugeiconsIcon icon={Delete02Icon} className="size-3" />
-            Delete
-          </Button>
-        </div>
+        {isManager && (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              size="sm"
+              className="h-7 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
+              onClick={() => onDuplicate(template)}
+            >
+              Duplicate
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 rounded-md border-none bg-red-500 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
+              onClick={() => onDelete(template.id)}
+            >
+              <HugeiconsIcon icon={Delete02Icon} className="size-3" />
+              Delete
+            </Button>
+          </div>
+        )}
       </TableCell>
     </TableRow>
   );

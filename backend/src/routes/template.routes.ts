@@ -9,14 +9,16 @@ import {
   previewTemplate,
 } from "../controllers/template.controller";
 
+import { requireManager } from "../middlewares/role.middleware";
+
 const router: Router = Router();
 
 router.get("/", getAllTemplates);
-router.post("/", createTemplate);
-router.delete("/bulk", bulkDeleteTemplates);
+router.post("/", requireManager, createTemplate);
+router.delete("/bulk", requireManager, bulkDeleteTemplates);
 router.get("/:id", getTemplateById);
-router.put("/:id", updateTemplate);
-router.delete("/:id", deleteTemplate);
+router.put("/:id", requireManager, updateTemplate);
+router.delete("/:id", requireManager, deleteTemplate);
 router.post("/:id/preview", previewTemplate);
 
 export default router;

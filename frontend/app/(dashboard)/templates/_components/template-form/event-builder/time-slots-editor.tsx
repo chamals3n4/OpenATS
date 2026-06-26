@@ -12,6 +12,7 @@ interface TimeSlotsEditorProps {
   onAdd: () => void;
   onUpdate: (index: number, datetime: string) => void;
   onRemove: (index: number) => void;
+  readOnly?: boolean;
 }
 
 /** Split "2025-06-15T14:30" into { date: "2025-06-15", time: "14:30" } */
@@ -34,21 +35,24 @@ export function TimeSlotsEditor({
   onAdd,
   onUpdate,
   onRemove,
+  readOnly = false,
 }: TimeSlotsEditorProps) {
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between">
         <Label className={LABEL_CLASS}>Time Slots</Label>
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={onAdd}
-          className="h-7 px-2.5 text-[12px] font-semibold text-[var(--theme-color)] hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/8 gap-1 shadow-none"
-        >
-          <HugeiconsIcon icon={PlusSignIcon} className="size-3" />
-          Add slot
-        </Button>
+        {!readOnly && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={onAdd}
+            className="h-7 px-2.5 text-[12px] font-semibold text-[var(--theme-color)] hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/8 gap-1 shadow-none"
+          >
+            <HugeiconsIcon icon={PlusSignIcon} className="size-3" />
+            Add slot
+          </Button>
+        )}
       </div>
 
       {slots.length === 0 ? (
@@ -71,27 +75,31 @@ export function TimeSlotsEditor({
           {slots.map((slot, i) => {
             const { date, time } = splitDatetime(slot.datetime);
             return (
-              <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-center">
+              <div key={i} className={`grid gap-2 items-center ${readOnly ? "grid-cols-2" : "grid-cols-[1fr_1fr_auto]"}`}>
                 <Input
                   type="date"
                   value={date}
                   onChange={(e) => onUpdate(i, mergeDatetime(e.target.value, time))}
+                  readOnly={readOnly}
                   className={inputCls}
                 />
                 <Input
                   type="time"
                   value={time}
                   onChange={(e) => onUpdate(i, mergeDatetime(date, e.target.value))}
+                  readOnly={readOnly}
                   className={inputCls}
                 />
-                <button
-                  type="button"
-                  onClick={() => onRemove(i)}
-                  disabled={slots.length === 1}
-                  className="size-8 flex items-center justify-center rounded-md text-slate-300 dark:text-neutral-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                >
-                  <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
-                </button>
+                {!readOnly && (
+                  <button
+                    type="button"
+                    onClick={() => onRemove(i)}
+                    disabled={slots.length === 1}
+                    className="size-8 flex items-center justify-center rounded-md text-slate-300 dark:text-neutral-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+                  </button>
+                )}
               </div>
             );
           })}

@@ -111,6 +111,7 @@ export const listPublishedCareersJobs = async (
 export const getAllJobs = async (req: Request, res: Response) => {
   try {
     const { page, limit, search, status, departmentId } = req.query;
+    const teamUserId = req.user.role === "interviewer" ? req.user.id : undefined;
 
     if (page !== undefined) {
       const result = await jobService.getPaginated({
@@ -119,6 +120,7 @@ export const getAllJobs = async (req: Request, res: Response) => {
         search: (search as string) || undefined,
         status: (status as string) || undefined,
         departmentId: departmentId ? parseInt(departmentId as string) : undefined,
+        userId: teamUserId,
       });
       res.status(200).json({
         data: result.rows,
@@ -127,7 +129,7 @@ export const getAllJobs = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await jobService.getAll();
+    const result = await jobService.getAll(teamUserId);
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(`Failed to fetch all jobs: ${(error as any)?.message}`);
@@ -167,6 +169,14 @@ export const getJobById = async (req: Request, res: Response) => {
     if (!result) {
       res.status(404).json({ error: "Job not found" });
       return;
+    }
+
+    if (req.user.role === "interviewer") {
+      const onTeam = result.hiringTeam?.some((m: any) => m.userId === req.user.id);
+      if (!onTeam) {
+        res.status(403).json({ error: "Access restricted to assigned jobs" });
+        return;
+      }
     }
 
     res.status(200).json({ data: result });

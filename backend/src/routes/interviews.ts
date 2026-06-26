@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { requireManager } from "../middlewares/role.middleware";
 import { interviewService } from "../services/interview.service";
 import { mailService } from "../services/mail.service";
 import { db } from "../db";
@@ -39,7 +40,7 @@ const updateInterviewSchema = z.object({
   attendeeEmails: z.array(z.string().email()).optional(),
 });
 
-router.post("/candidates/:candidateId/interviews", async (req, res) => {
+router.post("/candidates/:candidateId/interviews", requireManager, async (req, res) => {
   try {
     const candidateId = parseInt((req.params.candidateId ?? "").toString());
     if (isNaN(candidateId)) {
@@ -108,7 +109,7 @@ router.get("/interviews", async (req, res) => {
   }
 });
 
-router.patch("/interviews/:id", async (req, res) => {
+router.patch("/interviews/:id", requireManager, async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
     if (isNaN(id)) {
@@ -150,7 +151,7 @@ const scheduleSchema = z.object({
   ),
 });
 
-router.post("/candidates/:id/schedule", async (req, res) => {
+router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
   try {
     const candidateId = parseInt((req.params.id ?? "").toString());
     if (isNaN(candidateId)) {
@@ -346,7 +347,7 @@ router.patch("/public/interview/:token/select", async (req, res) => {
   }
 });
 
-router.delete("/interviews/:id", async (req, res) => {
+router.delete("/interviews/:id", requireManager, async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
     if (isNaN(id)) {
@@ -414,7 +415,7 @@ router.get("/interviews/:id/feedback", async (req, res) => {
   }
 });
 
-router.delete("/interviews/:id/feedback/:feedbackId", async (req, res) => {
+router.delete("/interviews/:id/feedback/:feedbackId", requireManager, async (req, res) => {
   try {
     const feedbackId = parseInt((req.params.feedbackId ?? "").toString());
     if (isNaN(feedbackId)) {

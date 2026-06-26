@@ -25,8 +25,6 @@ interface JobTabsProps {
   setAddTeamMemberOpen: (open: boolean) => void;
   newMemberId: string;
   setNewMemberId: (id: string) => void;
-  newMemberRole: string;
-  setNewMemberRole: (role: string) => void;
   handleAddTeamMember: () => void;
   addTeamMemberMutationPending: boolean;
   removeTeamMemberMutation: any;
@@ -85,8 +83,6 @@ export function JobTabs({
   setAddTeamMemberOpen,
   newMemberId,
   setNewMemberId,
-  newMemberRole,
-  setNewMemberRole,
   handleAddTeamMember,
   addTeamMemberMutationPending,
   removeTeamMemberMutation,
@@ -154,8 +150,6 @@ export function JobTabs({
           setAddTeamMemberOpen={setAddTeamMemberOpen}
           newMemberId={newMemberId}
           setNewMemberId={setNewMemberId}
-          newMemberRole={newMemberRole}
-          setNewMemberRole={setNewMemberRole}
           handleAddTeamMember={handleAddTeamMember}
           addTeamMemberMutationPending={addTeamMemberMutationPending}
           removeTeamMemberMutation={removeTeamMemberMutation}

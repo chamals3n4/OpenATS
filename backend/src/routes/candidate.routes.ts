@@ -10,6 +10,8 @@ import {
   updateCandidateBasicDetails,
 } from "../controllers/candidate.controller";
 
+import { requireManager } from "../middlewares/role.middleware";
+
 const router: Router = Router();
 
 const storage = multer.memoryStorage();
@@ -25,9 +27,9 @@ router.post("/jobs/:jobId/apply", applyForJob);
 router.get("/", getCandidates);
 router.get("/jobs/:jobId", getCandidates);
 router.get("/:id", getCandidateById);
-router.patch("/:id", upload.single("resume"), updateCandidateBasicDetails);
-router.put("/:id/stage", moveCandidateStage);
-router.delete("/bulk", bulkDeleteCandidates);
-router.delete("/:id", deleteCandidate);
+router.patch("/:id", requireManager, upload.single("resume"), updateCandidateBasicDetails);
+router.put("/:id/stage", requireManager, moveCandidateStage);
+router.delete("/bulk", requireManager, bulkDeleteCandidates);
+router.delete("/:id", requireManager, deleteCandidate);
 
 export default router;

@@ -17,7 +17,8 @@ import type {
   CustomQuestion,
 } from "@/types";
 import { EMPLOYMENT_TYPE_LABELS } from "@/lib/job-labels";
-import { formatDate } from "@/lib/utils"; // move to shared utils
+import { formatDate } from "@/lib/utils";
+import { useIsManager } from "@/hooks/use-role";
 
 interface JobTableRowProps {
   job: Job;
@@ -36,6 +37,7 @@ export function JobTableRow({
 }: JobTableRowProps) {
   const router = useRouter();
   const queryClient = useQueryClient();
+  const isManager = useIsManager();
 
   const prefetchJob = useCallback(() => {
     const jobId = job.id;
@@ -109,24 +111,26 @@ export function JobTableRow({
         className="h-10 px-6 py-0"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            size="sm"
-            className="h-8 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
-            onClick={handleEditClick}
-          >
-            <HugeiconsIcon icon={PencilEdit01Icon} className="size-3.5" />
-            Edit
-          </Button>
-          <Button
-            size="sm"
-            className="h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
-            onClick={handleDeleteClick}
-          >
-            <HugeiconsIcon icon={Delete02Icon} className="size-3.5 mr-1" />
-            Delete
-          </Button>
-        </div>
+        {isManager && (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              size="sm"
+              className="h-8 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
+              onClick={handleEditClick}
+            >
+              <HugeiconsIcon icon={PencilEdit01Icon} className="size-3.5" />
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              className="h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
+              onClick={handleDeleteClick}
+            >
+              <HugeiconsIcon icon={Delete02Icon} className="size-3.5 mr-1" />
+              Delete
+            </Button>
+          </div>
+        )}
       </TableCell>
     </TableRow>
   );

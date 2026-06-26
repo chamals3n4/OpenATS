@@ -19,6 +19,7 @@ import {
 import { BulkDeleteDialog } from "@/components/table/bulk-delete-dialog";
 import { TableFooter, type PaginationInfo } from "@/components/table/table-footer";
 import type { Job } from "@/types";
+import { useIsManager } from "@/hooks/use-role";
 
 interface JobsTableProps {
   jobs: Job[];
@@ -41,6 +42,7 @@ export function JobsTable({
   pagination,
   onPageChange,
 }: JobsTableProps) {
+  const isManager = useIsManager();
   const visibleJobIds = useMemo(() => jobs.map((job) => job.id), [jobs]);
   const selection = useBulkSelection(visibleJobIds);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -60,7 +62,7 @@ export function JobsTable({
           selectedCount={selection.selectedCount}
           label="job"
           onClear={selection.clearSelection}
-          onDeleteSelected={() => setBulkDeleteOpen(true)}
+          onDeleteSelected={isManager ? () => setBulkDeleteOpen(true) : undefined}
           isDeleting={isDeletingSelected}
         />
         <BulkDeleteDialog

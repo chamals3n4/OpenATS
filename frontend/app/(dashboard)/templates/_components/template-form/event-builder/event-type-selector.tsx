@@ -7,15 +7,17 @@ import { LABEL_CLASS } from "../../../lib/template-form-constants";
 interface EventTypeSelectorProps {
   value: "virtual" | "onsite";
   onChange: (type: "virtual" | "onsite") => void;
+  readOnly?: boolean;
 }
 
-export function EventTypeSelector({ value, onChange }: EventTypeSelectorProps) {
+export function EventTypeSelector({ value, onChange, readOnly = false }: EventTypeSelectorProps) {
   return (
     <div className="space-y-1.5">
       <Label className={LABEL_CLASS}>Event Type</Label>
       <RadioGroup
         value={value}
         onValueChange={(v) => onChange(v as "virtual" | "onsite")}
+        disabled={readOnly}
         className="flex gap-2"
       >
         {(["virtual", "onsite"] as const).map((opt) => (

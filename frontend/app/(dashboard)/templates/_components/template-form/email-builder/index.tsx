@@ -14,6 +14,7 @@ interface EmailBuilderProps {
   onAddBlock: (kind: Block["kind"]) => void;
   onUpdateBlock: (id: string, content: string) => void;
   onDeleteBlock: (id: string) => void;
+  readOnly?: boolean;
 }
 
 export function EmailBuilder({
@@ -23,12 +24,13 @@ export function EmailBuilder({
   onAddBlock,
   onUpdateBlock,
   onDeleteBlock,
+  readOnly = false,
 }: EmailBuilderProps) {
   return (
     <>
-      <EmailSubjectField value={subject} onChange={onSubjectChange} />
-      <VariableButtons variables={VARS} />
-      <BlockToolbar onAddBlock={onAddBlock} />
+      <EmailSubjectField value={subject} onChange={onSubjectChange} readOnly={readOnly} />
+      {!readOnly && <VariableButtons variables={VARS} />}
+      {!readOnly && <BlockToolbar onAddBlock={onAddBlock} />}
       {blocks.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[80px] rounded-md border border-dashed border-slate-200 dark:border-neutral-700 text-center">
           <p className="text-[12px] text-slate-400 dark:text-neutral-500">
@@ -43,6 +45,7 @@ export function EmailBuilder({
               block={block}
               onUpdate={onUpdateBlock}
               onDelete={onDeleteBlock}
+              readOnly={readOnly}
             />
           ))}
         </div>

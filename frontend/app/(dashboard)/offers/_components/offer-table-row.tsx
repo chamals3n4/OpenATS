@@ -15,6 +15,7 @@ import {
   getCandidateName,
   getJobTitle,
 } from "../lib/offer-utils";
+import { useIsManager } from "@/hooks/use-role";
 
 interface OfferTableRowProps {
   offer: Offer;
@@ -31,6 +32,7 @@ export function OfferTableRow({
   isSelected,
   onSelectedChange,
 }: OfferTableRowProps) {
+  const isManager = useIsManager();
   const { bg, text } = getStatusStyle(offer.status);
 
   return (
@@ -67,16 +69,18 @@ export function OfferTableRow({
         className="h-11 px-6 py-0 text-[13px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            size="sm"
-            className="h-7 rounded-md border-none bg-red-600/90 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-red-500 dark:bg-red-700/90 dark:hover:bg-red-600 cursor-pointer"
-            onClick={() => onDelete(offer)}
-          >
-            <HugeiconsIcon icon={Delete02Icon} className="size-3" />
-            Delete
-          </Button>
-        </div>
+        {isManager && (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              size="sm"
+              className="h-7 rounded-md border-none bg-red-600/90 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-red-500 dark:bg-red-700/90 dark:hover:bg-red-600 cursor-pointer"
+              onClick={() => onDelete(offer)}
+            >
+              <HugeiconsIcon icon={Delete02Icon} className="size-3" />
+              Delete
+            </Button>
+          </div>
+        )}
       </TableCell>
     </TableRow>
   );

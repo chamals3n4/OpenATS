@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { Assessment, JobAssessment, PipelineStage } from "@/types";
+import { useIsManager } from "@/hooks/use-role";
 
 interface AssessmentsTabProps {
   isAssessmentDialogOpen: boolean;
@@ -48,6 +49,7 @@ export function AssessmentsTab({
   triggerStageSelectId,
   setTriggerStageSelectId,
 }: AssessmentsTabProps) {
+  const isManager = useIsManager();
   return (
     <>
       <div className="flex items-center justify-between">
@@ -59,7 +61,7 @@ export function AssessmentsTab({
             Sent automatically when a candidate reaches the trigger stage.
           </p>
         </div>
-        <Dialog
+        {isManager && <Dialog
           open={isAssessmentDialogOpen}
           onOpenChange={(open) => {
             setIsAssessmentDialogOpen(open);
@@ -184,7 +186,7 @@ export function AssessmentsTab({
               </div>
             </form>
           </DialogContent>
-        </Dialog>
+        </Dialog>}
       </div>
 
       {attachedAssessments.length > 0 ? (
@@ -220,13 +222,15 @@ export function AssessmentsTab({
                     </p>
                   </div>
                 </div>
-                <Button
-                  onClick={() => setDetachTarget(attachment.id)}
-                  className="shrink-0 ml-4 cursor-pointer bg-red inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium border border-red-200 dark:border-red-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-800 transition-colors"
-                >
-                  <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
-                  Remove
-                </Button>
+                {isManager && (
+                  <Button
+                    onClick={() => setDetachTarget(attachment.id)}
+                    className="shrink-0 ml-4 cursor-pointer bg-red inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium border border-red-200 dark:border-red-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-800 transition-colors"
+                  >
+                    <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+                    Remove
+                  </Button>
+                )}
               </div>
             );
           })}
@@ -236,12 +240,14 @@ export function AssessmentsTab({
           <p className="text-[13px] text-slate-400 dark:text-neutral-500">
             No assessments attached yet.
           </p>
-          <button
-            onClick={() => setIsAssessmentDialogOpen(true)}
-            className="mt-2 cursor-pointer text-[12px] font-medium text-[var(--theme-color)] hover:underline"
-          >
-            Attach one
-          </button>
+          {isManager && (
+            <button
+              onClick={() => setIsAssessmentDialogOpen(true)}
+              className="mt-2 cursor-pointer text-[12px] font-medium text-[var(--theme-color)] hover:underline"
+            >
+              Attach one
+            </button>
+          )}
         </div>
       )}
     </>

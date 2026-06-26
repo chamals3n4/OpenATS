@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 import type { Candidate } from "@/types";
 import { timeAgo } from "../libs/candidate-utils";
+import { useIsManager } from "@/hooks/use-role";
 
 interface CandidateTableRowProps {
   candidate: Candidate;
@@ -26,6 +27,7 @@ export function CandidateTableRow({
   isSelected,
   onSelectedChange,
 }: CandidateTableRowProps) {
+  const isManager = useIsManager();
   return (
     <TableRow
       data-state={isSelected ? "selected" : undefined}
@@ -63,24 +65,26 @@ export function CandidateTableRow({
         className="h-11 px-6 py-0 text-[13px]"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-end gap-2">
-          <Button
-            size="sm"
-            className="h-7 rounded-md border-none bg-neutral-700/90 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
-            onClick={() => onEdit(candidate)}
-          >
-            <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
-            Edit
-          </Button>
-          <Button
-            size="sm"
-            className="h-7 rounded-md border-none bg-red-600/90 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-red-500 dark:bg-red-700/90 dark:hover:bg-red-600 cursor-pointer"
-            onClick={() => onDelete(candidate)}
-          >
-            <HugeiconsIcon icon={Delete02Icon} className="size-3" />
-            Delete
-          </Button>
-        </div>
+        {isManager && (
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              size="sm"
+              className="h-7 rounded-md border-none bg-neutral-700/90 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
+              onClick={() => onEdit(candidate)}
+            >
+              <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
+              Edit
+            </Button>
+            <Button
+              size="sm"
+              className="h-7 rounded-md border-none bg-red-600/90 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-red-500 dark:bg-red-700/90 dark:hover:bg-red-600 cursor-pointer"
+              onClick={() => onDelete(candidate)}
+            >
+              <HugeiconsIcon icon={Delete02Icon} className="size-3" />
+              Delete
+            </Button>
+          </div>
+        )}
       </TableCell>
     </TableRow>
   );

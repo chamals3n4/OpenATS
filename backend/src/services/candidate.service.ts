@@ -10,6 +10,7 @@ import {
   jobCustomQuestions,
   jobCustomQuestionOptions,
   jobAssessmentAttachments,
+  jobHiringTeam,
   jobs,
   offers,
   candidateRejections,
@@ -78,6 +79,7 @@ export interface CandidateFilters {
     | undefined;
   page?: number;
   limit?: number;
+  teamUserId?: number;
 }
 
 export interface CandidateBasicUpdateInput {
@@ -103,6 +105,14 @@ function buildCandidateWhere(
         ilike(candidates.firstName, `%${filters.search}%`),
         ilike(candidates.lastName, `%${filters.search}%`),
         ilike(candidates.email, `%${filters.search}%`),
+      ),
+    );
+  }
+  if (filters.teamUserId) {
+    conditions.push(
+      inArray(
+        candidates.jobId,
+        db.select({ id: jobHiringTeam.jobId }).from(jobHiringTeam).where(eq(jobHiringTeam.userId, filters.teamUserId)),
       ),
     );
   }

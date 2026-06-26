@@ -9,6 +9,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import type { Assessment } from "@/types";
+import { useIsManager } from "@/hooks/use-role";
 
 interface AssessmentCardProps {
   assessment: Assessment;
@@ -21,6 +22,7 @@ export function AssessmentCard({
   onDelete,
   onInvite,
 }: AssessmentCardProps) {
+  const isManager = useIsManager();
   return (
     <div className="flex flex-col border border-slate-200 dark:border-neutral-800 rounded-md bg-white dark:bg-neutral-900 shadow-sm">
       {/* Card body */}
@@ -50,21 +52,23 @@ export function AssessmentCard({
       </div>
 
       {/* Card footer */}
-      <div className="flex items-center gap-1.5 px-4 py-2.5 border-t border-slate-100 dark:border-neutral-800">
-        <Button
-          render={<Link href={`/assessments/${assessment.id}`} />}
-          className="h-8 rounded-md border-none px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
-        >
-          Edit
-        </Button>
-        <Button
-          onClick={() => onDelete(assessment)}
-          className="inline-flex h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
-        >
-          <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
-          Delete
-        </Button>
-      </div>
+      {isManager && (
+        <div className="flex items-center gap-1.5 px-4 py-2.5 border-t border-slate-100 dark:border-neutral-800">
+          <Button
+            render={<Link href={`/assessments/${assessment.id}`} />}
+            className="h-8 rounded-md border-none px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
+          >
+            Edit
+          </Button>
+          <Button
+            onClick={() => onDelete(assessment)}
+            className="inline-flex h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
+          >
+            <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
+            Delete
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

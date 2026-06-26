@@ -13,7 +13,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Department } from "@/types";
-import { EMPLOYMENT_TYPE_LABELS, STATUS_LABELS } from "@/lib/job-labels"; // move constants to lib
+import { EMPLOYMENT_TYPE_LABELS, STATUS_LABELS } from "@/lib/job-labels";
+import { useIsManager } from "@/hooks/use-role";
 
 interface JobFiltersProps {
   searchTerm: string;
@@ -42,6 +43,7 @@ export function JobFilters({
   departmentNameById,
   onClear,
 }: JobFiltersProps) {
+  const isManager = useIsManager();
   return (
     <div className="border-y border-slate-300 dark:border-neutral-700 px-6 py-2.5 flex items-center gap-2">
       <div className="relative w-64">
@@ -151,19 +153,21 @@ export function JobFilters({
         Clear All
       </Button>
 
-      <div className="ml-auto">
-        <Button
-          render={<Link href="/jobs/new" prefetch />}
-          className="h-8 rounded-md border-none bg-[var(--theme-color)] px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] cursor-pointer"
-        >
-          <HugeiconsIcon
-            icon={PlusSignIcon}
-            className="size-4"
-            strokeWidth={2.5}
-          />
-          <span>Create New Job</span>
-        </Button>
-      </div>
+      {isManager && (
+        <div className="ml-auto">
+          <Button
+            render={<Link href="/jobs/new" prefetch />}
+            className="h-8 rounded-md border-none bg-[var(--theme-color)] px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] cursor-pointer"
+          >
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              className="size-4"
+              strokeWidth={2.5}
+            />
+            <span>Create New Job</span>
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

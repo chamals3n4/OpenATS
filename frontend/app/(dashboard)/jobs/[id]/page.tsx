@@ -172,13 +172,12 @@ export default function JobDetailsPage() {
   const removeTeamMemberMutation = useRemoveHiringTeamMember(jobId);
 
   const [addTeamMemberOpen, setAddTeamMemberOpen] = useState(false);
-  const [newMemberRole, setNewMemberRole] = useState("hiring_manager");
   const [newMemberId, setNewMemberId] = useState("");
 
   const handleAddTeamMember = () => {
     if (!newMemberId) return;
     addTeamMemberMutation.mutate(
-      { userId: Number(newMemberId), role: newMemberRole },
+      { userId: Number(newMemberId) },
       {
         onSuccess: () => {
           setAddTeamMemberOpen(false);
@@ -435,8 +434,6 @@ export default function JobDetailsPage() {
                 setAddTeamMemberOpen={setAddTeamMemberOpen}
                 newMemberId={newMemberId}
                 setNewMemberId={setNewMemberId}
-                newMemberRole={newMemberRole}
-                setNewMemberRole={setNewMemberRole}
                 handleAddTeamMember={handleAddTeamMember}
                 addTeamMemberMutationPending={addTeamMemberMutation.isPending}
                 removeTeamMemberMutation={removeTeamMemberMutation}

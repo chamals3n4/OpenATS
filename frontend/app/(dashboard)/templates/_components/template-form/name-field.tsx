@@ -8,12 +8,14 @@ interface TemplateNameFieldProps {
   value: string;
   onChange: (value: string) => void;
   placeholder?: string;
+  readOnly?: boolean;
 }
 
 export function TemplateNameField({
   value,
   onChange,
   placeholder = "e.g. Standard Offer Letter",
+  readOnly = false,
 }: TemplateNameFieldProps) {
   return (
     <div className="space-y-1.5">
@@ -22,6 +24,7 @@ export function TemplateNameField({
         placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        readOnly={readOnly}
         className={INPUT_CLASS}
       />
     </div>

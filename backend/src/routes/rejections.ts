@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireManager } from "../middlewares/role.middleware";
 import { z } from "zod";
 import { rejectionService } from "../services/rejection.service";
 import { templateEngineService } from "../services/template-engine.service";
@@ -25,7 +26,7 @@ const rejectSchema = z
   });
 
 // POST /candidates/:id/reject — reject a candidate
-router.post("/candidates/:id/reject", async (req, res) => {
+router.post("/candidates/:id/reject", requireManager, async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
     if (isNaN(id)) {
@@ -102,7 +103,7 @@ router.post("/candidates/:id/reject", async (req, res) => {
 });
 
 // POST /candidates/:id/unreject — restore a rejected candidate
-router.post("/candidates/:id/unreject", async (req, res) => {
+router.post("/candidates/:id/unreject", requireManager, async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
     if (isNaN(id)) {

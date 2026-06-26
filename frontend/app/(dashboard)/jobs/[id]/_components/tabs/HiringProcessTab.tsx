@@ -11,6 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDragSort } from "@/hooks/use-drag-sort";
+import { useIsManager } from "@/hooks/use-role";
 import type { PipelineStage } from "@/types";
 
 interface HiringProcessTabProps {
@@ -38,6 +39,7 @@ export function HiringProcessTab({
   setStageDeleteTarget,
   handleStageReorder,
 }: HiringProcessTabProps) {
+  const isManager = useIsManager();
   return (
     <>
       <div className="flex items-start justify-between">
@@ -46,20 +48,24 @@ export function HiringProcessTab({
             Hiring Pipeline Stages
           </h3>
           <p className="text-slate-500 dark:text-neutral-400 text-[13px]">
-            Drag To Reorder Stages. Click To Edit Or Remove.
+            {isManager
+              ? "Drag To Reorder Stages. Click To Edit Or Remove."
+              : "View only — contact a hiring manager to modify stages."}
           </p>
         </div>
-        <Button
-          onClick={() => setAddStageOpen(true)}
-          className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 font-medium shadow-none border-none gap-2 text-sm"
-        >
-          <HugeiconsIcon
-            icon={PlusSignIcon}
-            className="size-4"
-            strokeWidth={3}
-          />
-          <span>Add New Stage</span>
-        </Button>
+        {isManager && (
+          <Button
+            onClick={() => setAddStageOpen(true)}
+            className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-4 font-medium shadow-none border-none gap-2 text-sm"
+          >
+            <HugeiconsIcon
+              icon={PlusSignIcon}
+              className="size-4"
+              strokeWidth={3}
+            />
+            <span>Add New Stage</span>
+          </Button>
+        )}
       </div>
 
       <div className="space-y-2 pt-4">
@@ -122,7 +128,7 @@ export function HiringProcessTab({
                     </span>
                   )}
                 </div>
-                {editingStageId !== stage.id && (
+                {editingStageId !== stage.id && isManager && (
                   <div className="flex items-center gap-4">
                     <button
                       onClick={() => {

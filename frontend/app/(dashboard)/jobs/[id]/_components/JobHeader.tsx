@@ -12,6 +12,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { JobDetail } from "@/types";
+import { useIsManager } from "@/hooks/use-role";
 
 interface JobHeaderProps {
   job: JobDetail | undefined;
@@ -73,6 +74,8 @@ export function JobHeader({
   setIsNotesOpen,
   jobId,
 }: JobHeaderProps) {
+  const isManager = useIsManager();
+
   return (
     <div className="shrink-0 border-b border-slate-200 bg-white dark:border-neutral-800 dark:bg-neutral-950">
       <div className="px-4 py-4 sm:px-6">
@@ -161,10 +164,25 @@ export function JobHeader({
               />
               Discussions
             </Button>
-            <Link href={`/jobs/${jobId}/pipeline`}>
+            {isManager ? (
+              <Link href={`/jobs/${jobId}/pipeline`}>
+                <Button
+                  size="sm"
+                  className="h-[34px] cursor-pointer rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                >
+                  Hiring Pipeline
+                  <HugeiconsIcon
+                    icon={ArrowRight01Icon}
+                    className="size-4"
+                    strokeWidth={3}
+                  />
+                </Button>
+              </Link>
+            ) : (
               <Button
                 size="sm"
-                className="h-[34px] cursor-pointer rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                disabled
+                className="h-[34px] rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Hiring Pipeline
                 <HugeiconsIcon
@@ -173,7 +191,7 @@ export function JobHeader({
                   strokeWidth={3}
                 />
               </Button>
-            </Link>
+            )}
             <Link href="/jobs">
               <Button
                 size="sm"

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useState, useEffect, KeyboardEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { useCurrentUser } from "@/hooks/queries/use-user";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
@@ -468,12 +469,22 @@ export default function EditJobPage() {
   const params = useParams<{ id: string }>();
   const jobId = Number(params.id);
 
+  const { data: currentUserRes, isLoading: isLoadingUser } = useCurrentUser();
+  const role = currentUserRes?.data?.role;
+  const isManager = role === "super_admin" || role === "hiring_manager";
+
+  useEffect(() => {
+    if (role && !isManager) router.replace(`/jobs/${jobId}`);
+  }, [role, isManager, router, jobId]);
+
   const { data: deptData } = useDepartments();
   const { data: jobData, isLoading: isJobLoading } = useJob(jobId);
   const updateJob = useUpdateJob(jobId);
 
   const departments = deptData?.data ?? [];
   const job = jobData?.data;
+
+  if (isLoadingUser || !role || !isManager) return null;
 
   if (!Number.isFinite(jobId)) {
     return (

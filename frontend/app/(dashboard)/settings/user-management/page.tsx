@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/queries/use-user";
 import { toast } from "sonner";
 import { Copy, Eye, EyeOff } from "lucide-react";
 import {
@@ -145,6 +147,15 @@ const emptyCreate = {
 };
 
 export default function UserManagementPage() {
+  const router = useRouter();
+  const { data: currentUserRes } = useCurrentUser();
+
+  useEffect(() => {
+    if (currentUserRes?.data && currentUserRes.data.role !== "super_admin") {
+      router.replace("/settings/general");
+    }
+  }, [currentUserRes, router]);
+
   const [users, setUsers] = useState<AsgardeoUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");

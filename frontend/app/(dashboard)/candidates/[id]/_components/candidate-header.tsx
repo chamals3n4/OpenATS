@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { getInitials, formatDate, OFFER_STATUS_STYLES } from "./constants";
-// import { getInitials } from "./constants";
+import { useIsManager } from "@/hooks/use-role";
 
 interface CandidateHeaderProps {
   candidate: any;
@@ -55,6 +55,7 @@ export function CandidateHeader({
   onEdit,
   onDelete,
 }: CandidateHeaderProps) {
+  const isManager = useIsManager();
   const offerStyle = offer
     ? (OFFER_STATUS_STYLES[offer.status] ?? OFFER_STATUS_STYLES.draft)
     : null;
@@ -154,7 +155,7 @@ export function CandidateHeader({
               value={effectiveSelectedStageId}
               onValueChange={(value) => onStageChange(value ?? "")}
               disabled={
-                pipelineStages.length === 0 || moveStageMutation.isPending
+                !isManager || pipelineStages.length === 0 || moveStageMutation.isPending
               }
             >
               <SelectTrigger className="h-8 rounded-[6px] border-none bg-neutral-100 px-2.5 text-[13px] font-semibold leading-none text-slate-700 shadow-none hover:bg-neutral-200 focus:ring-0 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
@@ -204,7 +205,8 @@ export function CandidateHeader({
             </Button>
             <Button
               size="sm"
-              className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+              disabled={!isManager}
+              className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={onEdit}
             >
               <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
@@ -212,7 +214,8 @@ export function CandidateHeader({
             </Button>
             <Button
               size="sm"
-              className="h-7 cursor-pointer rounded-[6px] border-none bg-red-600 px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-red-500"
+              disabled={!isManager}
+              className="h-7 cursor-pointer rounded-[6px] border-none bg-red-600 px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={onDelete}
             >
               <HugeiconsIcon icon={Delete02Icon} className="size-3" />

@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { useCandidateSocket } from "@/hooks/use-candidate-socket";
 import { toast } from "sonner";
 import { useJob } from "@/hooks/queries/use-jobs";
+import { useCurrentUser } from "@/hooks/queries/use-user";
 import { usePipeline } from "@/hooks/queries/use-pipeline";
 import {
   useCandidates,
@@ -302,7 +303,8 @@ export default function HiringPipelinePage() {
   useCandidateSocket();
 
   const queryClient = useQueryClient();
-  const { data: jobData } = useJob(jobId);
+  const { data: currentUserRes, isLoading: isLoadingUser } = useCurrentUser();
+  const { data: jobData, isLoading: isLoadingJob } = useJob(jobId);
   const { data: pipelineData } = usePipeline(jobId);
   const { data: candidatesData } = useCandidates(jobId, {
     limit: 9999,
@@ -312,6 +314,17 @@ export default function HiringPipelinePage() {
   const router = useRouter();
 
   const job = jobData?.data;
+  const role = currentUserRes?.data?.role;
+  const isManager = role === "super_admin" || role === "hiring_manager";
+
+  useEffect(() => {
+    if (role && !isManager) router.replace(`/jobs/${jobId}`);
+  }, [role, isManager, router, jobId]);
+
+  useEffect(() => {
+    if (!isLoadingJob && !job) router.replace("/jobs");
+  }, [isLoadingJob, job, router]);
+
   const pipelineStages = pipelineData?.data ?? [];
 
   // Local copy for optimistic drag-drop updates.
@@ -499,6 +512,8 @@ export default function HiringPipelinePage() {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
   }, [isDragging]);
+
+  if (isLoadingUser || !role || !isManager) return null;
 
   return (
     <div className="flex flex-col h-[calc(100vh-var(--header-height))] bg-white dark:bg-neutral-950 overflow-hidden w-full min-w-0">

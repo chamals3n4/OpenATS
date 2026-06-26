@@ -13,6 +13,7 @@ import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import { Button } from "@/components/ui/button";
 import type { Candidate } from "@/types";
 import { TableFooter, type PaginationInfo } from "@/components/table/table-footer";
+import { useIsManager } from "@/hooks/use-role";
 import { CandidateTableRow } from "./candidate-table-row";
 import {
   BulkSelectHeaderCell,
@@ -46,6 +47,7 @@ export function CandidatesTable({
   onDeleteAllMatching,
   isDeletingSelected,
 }: CandidatesTableProps) {
+  const isManager = useIsManager();
   const visibleCandidateIds = useMemo(
     () => candidates.map((candidate) => candidate.id),
     [candidates],
@@ -127,7 +129,7 @@ export function CandidatesTable({
           selectedCount={selectedCount}
           label="candidate"
           onClear={handleClearSelection}
-          onDeleteSelected={() => setBulkDeleteOpen(true)}
+          onDeleteSelected={isManager ? () => setBulkDeleteOpen(true) : undefined}
           isDeleting={isDeletingSelected}
         >
           {canSelectAllMatching ? (

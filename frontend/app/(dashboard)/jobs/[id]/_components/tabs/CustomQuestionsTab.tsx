@@ -34,6 +34,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useDragSort } from "@/hooks/use-drag-sort";
+import { useIsManager } from "@/hooks/use-role";
 import type { CustomQuestion } from "@/types";
 
 interface CustomQuestionsTabProps {
@@ -94,15 +95,18 @@ export function CustomQuestionsTab({
   setNewQuestionRequired,
   createQuestionMutation,
 }: CustomQuestionsTabProps) {
+  const isManager = useIsManager();
   return (
     <div className="flex flex-col gap-6">
-      <button
-        onClick={() => setIsAddingMode(true)}
-        className="flex items-center cursor-pointer gap-2 text-[var(--theme-color)] hover:underline font-medium text-[15px] w-fit"
-      >
-        <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={3} />
-        <span>Add Custom Question</span>
-      </button>
+      {isManager && (
+        <button
+          onClick={() => setIsAddingMode(true)}
+          className="flex items-center cursor-pointer gap-2 text-[var(--theme-color)] hover:underline font-medium text-[15px] w-fit"
+        >
+          <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={3} />
+          <span>Add Custom Question</span>
+        </button>
+      )}
 
       <div className="space-y-3">
         {questions.map((q, index) => {
@@ -255,33 +259,35 @@ export function CustomQuestionsTab({
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <button
-                        onClick={() => openEditQuestion(q)}
-                        className="p-1.5 text-slate-400 hover:text-[var(--theme-color)] transition-colors"
-                      >
-                        <HugeiconsIcon
-                          icon={PencilEdit01Icon}
-                          className="size-[18px]"
-                        />
-                      </button>
-                      <button
-                        onClick={() => deleteQuestionMutation.mutate(q.id)}
-                        disabled={deleteQuestionMutation.isPending}
-                        className="p-1.5 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50"
-                      >
-                        <HugeiconsIcon
-                          icon={Delete02Icon}
-                          className="size-[18px]"
-                        />
-                      </button>
-                      <button className="p-1.5 text-slate-300 cursor-grab active:cursor-grabbing">
-                        <HugeiconsIcon
-                          icon={DragDropVerticalIcon}
-                          className="size-[18px]"
-                        />
-                      </button>
-                    </div>
+                    {isManager && (
+                      <div className="flex items-center gap-3">
+                        <button
+                          onClick={() => openEditQuestion(q)}
+                          className="p-1.5 text-slate-400 hover:text-[var(--theme-color)] transition-colors"
+                        >
+                          <HugeiconsIcon
+                            icon={PencilEdit01Icon}
+                            className="size-[18px]"
+                          />
+                        </button>
+                        <button
+                          onClick={() => deleteQuestionMutation.mutate(q.id)}
+                          disabled={deleteQuestionMutation.isPending}
+                          className="p-1.5 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                        >
+                          <HugeiconsIcon
+                            icon={Delete02Icon}
+                            className="size-[18px]"
+                          />
+                        </button>
+                        <button className="p-1.5 text-slate-300 cursor-grab active:cursor-grabbing">
+                          <HugeiconsIcon
+                            icon={DragDropVerticalIcon}
+                            className="size-[18px]"
+                          />
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -290,7 +296,7 @@ export function CustomQuestionsTab({
           return <QuestionDraggable key={q.id} />;
         })}
 
-        {isAddingMode && (
+        {isAddingMode && isManager && (
           <div className="p-3 border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 space-y-4 animate-in slide-in-from-top-2 duration-200">
             <div className="flex flex-wrap items-center gap-4">
               <Select
@@ -463,11 +469,13 @@ export function CustomQuestionsTab({
         )}
       </div>
 
-      <div className="pt-4">
-        <Button className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-6 font-medium shadow-none">
-          Save Changes
-        </Button>
-      </div>
+      {isManager && (
+        <div className="pt-4">
+          <Button className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-6 font-medium shadow-none">
+            Save Changes
+          </Button>
+        </div>
+      )}
     </div>
   );
 }

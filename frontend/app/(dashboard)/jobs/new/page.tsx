@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, KeyboardEvent } from "react";
+import { useState, useEffect, KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/queries/use-user";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon } from "@hugeicons/core-free-icons";
@@ -27,6 +28,14 @@ import { JobDescriptionEditor } from "@/components/dynamic-imports";
 
 export default function CreateNewJobPage() {
   const router = useRouter();
+  const { data: currentUserRes, isLoading: isLoadingUser } = useCurrentUser();
+  const role = currentUserRes?.data?.role;
+  const isManager = role === "super_admin" || role === "hiring_manager";
+
+  useEffect(() => {
+    if (role && !isManager) router.replace("/jobs");
+  }, [role, isManager, router]);
+
   const queryClient = useQueryClient();
   const { data: deptData } = useDepartments();
   const createJob = useCreateJob();
@@ -135,6 +144,8 @@ export default function CreateNewJobPage() {
     monthly: "Monthly",
     yearly: "Yearly",
   };
+
+  if (isLoadingUser || !role || !isManager) return null;
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">

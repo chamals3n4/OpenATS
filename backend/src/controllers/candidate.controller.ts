@@ -162,6 +162,7 @@ export const getCandidates = async (req: Request, res: Response) => {
         | undefined,
       page,
       limit,
+      teamUserId: req.user.role === "interviewer" ? req.user.id : undefined,
     };
 
     const result = await candidateService.getAll(jobId, filters);

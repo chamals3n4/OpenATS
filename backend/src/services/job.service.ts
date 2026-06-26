@@ -18,6 +18,7 @@ export type JobListFilters = {
   search?: string;
   status?: string;
   departmentId?: number;
+  userId?: number;
 };
 
 export type CreateJobInput = {
@@ -97,8 +98,11 @@ export const jobService = {
     return rows;
   },
 
-  async getAll() {
-    const allJobs = await db.select().from(jobs).orderBy(desc(jobs.createdAt));
+  async getAll(userId?: number) {
+    const teamFilter = userId
+      ? inArray(jobs.id, db.select({ id: jobHiringTeam.jobId }).from(jobHiringTeam).where(eq(jobHiringTeam.userId, userId)))
+      : undefined;
+    const allJobs = await db.select().from(jobs).where(teamFilter).orderBy(desc(jobs.createdAt));
 
     const skillsByJobId = new Map<number, string[]>();
     if (allJobs.length > 0) {
@@ -119,13 +123,16 @@ export const jobService = {
   },
 
   async getPaginated(filters: JobListFilters = {}) {
-    const { page = 1, limit = 15, search, status, departmentId } = filters;
+    const { page = 1, limit = 15, search, status, departmentId, userId } = filters;
     const offset = (page - 1) * limit;
 
     const conditions = [];
     if (search) conditions.push(ilike(jobs.title, `%${search}%`));
     if (status) conditions.push(eq(jobs.status, status as any));
     if (departmentId) conditions.push(eq(jobs.departmentId, departmentId));
+    if (userId) conditions.push(
+      inArray(jobs.id, db.select({ id: jobHiringTeam.jobId }).from(jobHiringTeam).where(eq(jobHiringTeam.userId, userId)))
+    );
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [rows, [countRow]] = await Promise.all([

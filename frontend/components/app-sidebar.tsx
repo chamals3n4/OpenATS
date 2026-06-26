@@ -22,6 +22,7 @@ import {
   SidebarContent,
   SidebarHeader,
 } from "@/components/ui/sidebar";
+import { useCurrentUser } from "@/hooks/queries/use-user";
 
 const publicSans = Public_Sans({
   subsets: ["latin"],
@@ -95,14 +96,36 @@ const navMainData = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
+  const { data: currentUserRes } = useCurrentUser();
+  const role = currentUserRes?.data?.role;
+  const isSuperAdmin = role === "super_admin";
+  const isManager = role === "super_admin" || role === "hiring_manager";
 
-  const items = navMainData.map((item) => ({
-    ...item,
-    isActive:
-      item.url === "/"
-        ? pathname === "/"
-        : pathname === item.url || pathname.startsWith(item.url + "/"),
-  }));
+  const items = navMainData
+    .filter((item) => {
+      if (item.url === "/offers") return isManager;
+      return true;
+    })
+    .map((item) => {
+      if (item.items) {
+        return {
+          ...item,
+          items: item.items.filter((sub) => {
+            if (sub.url === "/settings/user-management") return isSuperAdmin;
+            if (sub.url === "/settings/careers-page") return isManager;
+            return true;
+          }),
+        };
+      }
+      return item;
+    })
+    .map((item) => ({
+      ...item,
+      isActive:
+        item.url === "/"
+          ? pathname === "/"
+          : pathname === item.url || pathname.startsWith(item.url + "/"),
+    }));
 
   return (
     <Sidebar

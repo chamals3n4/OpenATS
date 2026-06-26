@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/queries/use-user";
 import {
   ArrowLeft01Icon,
   Mail01Icon,
@@ -176,6 +177,15 @@ const STAGE_STYLES: Record<string, string> = {
 type Tab = "Notes" | "Messages" | "Assessments Score" | "Offer";
 
 export default function OfferDetailPage() {
+  const router = useRouter();
+  const { data: currentUserRes, isLoading: isLoadingUser } = useCurrentUser();
+  const role = currentUserRes?.data?.role;
+  const isManager = role === "super_admin" || role === "hiring_manager";
+
+  useEffect(() => {
+    if (role && !isManager) router.replace("/");
+  }, [role, isManager, router]);
+
   const params = useParams();
   const id = Number(params.id);
   const offer = OFFER_DATA[id];
@@ -213,6 +223,8 @@ export default function OfferDetailPage() {
   };
 
   const TABS: Tab[] = ["Notes", "Messages", "Assessments Score", "Offer"];
+
+  if (isLoadingUser || !role || !isManager) return null;
 
   return (
     <div className="flex flex-1 flex-col bg-white overflow-hidden">

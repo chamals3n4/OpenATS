@@ -20,7 +20,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+
 import type { User } from "@/types";
+import { useIsManager } from "@/hooks/use-role";
 
 interface HiringTeamTabProps {
   team: User[];
@@ -29,18 +31,10 @@ interface HiringTeamTabProps {
   setAddTeamMemberOpen: (open: boolean) => void;
   newMemberId: string;
   setNewMemberId: (id: string) => void;
-  newMemberRole: string;
-  setNewMemberRole: (role: string) => void;
   handleAddTeamMember: () => void;
   addTeamMemberMutationPending: boolean;
   removeTeamMemberMutation: any;
 }
-
-const MEMBER_ROLE_LABELS: Record<string, string> = {
-  hiring_manager: "Hiring Manager",
-  interviewer: "Interviewer",
-  recruiter: "Recruiter",
-};
 
 export function HiringTeamTab({
   team,
@@ -49,12 +43,11 @@ export function HiringTeamTab({
   setAddTeamMemberOpen,
   newMemberId,
   setNewMemberId,
-  newMemberRole,
-  setNewMemberRole,
   handleAddTeamMember,
   addTeamMemberMutationPending,
   removeTeamMemberMutation,
 }: HiringTeamTabProps) {
+  const isManager = useIsManager();
   return (
     <>
       <div className="flex items-center justify-between border-b border-slate-100 dark:border-neutral-800 pb-4">
@@ -62,6 +55,7 @@ export function HiringTeamTab({
           <span className="text-slate-500 dark:text-neutral-400 font-medium text-[15px]">
             Team Members
           </span>
+          {isManager && (
           <Dialog open={addTeamMemberOpen} onOpenChange={setAddTeamMemberOpen}>
             <DialogTrigger
               render={
@@ -75,22 +69,24 @@ export function HiringTeamTab({
               />
               <span>Add New Member</span>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-[425px]">
+            <DialogContent className="sm:max-w-[480px]">
               <DialogHeader>
                 <DialogTitle>Add Team Member</DialogTitle>
                 <DialogDescription>
                   Assign a user to this job&apos;s hiring team.
                 </DialogDescription>
               </DialogHeader>
-              <div className="grid gap-4 py-4">
-                <div className="grid gap-2">
-                  <Label>Select User</Label>
+              <div className="flex flex-col gap-5 py-2">
+                <div className="flex flex-col gap-1.5">
+                  <Label className="text-sm font-medium text-slate-700 dark:text-neutral-300">
+                    Select User
+                  </Label>
                   <Select
                     value={newMemberId}
                     onValueChange={(value) => setNewMemberId(value ?? "")}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select user">
+                    <SelectTrigger className="w-full h-10 rounded-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-none focus:ring-0 text-sm">
+                      <SelectValue placeholder="Select a user…">
                         {newMemberId
                           ? (() => {
                               const u = allUsers.find(
@@ -101,57 +97,39 @@ export function HiringTeamTab({
                           : null}
                       </SelectValue>
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="rounded-lg border-slate-200 dark:border-neutral-700">
                       {allUsers
                         .filter((u) => !team.some((t) => t.id === u.id))
                         .map((u) => (
-                          <SelectItem key={u.id} value={u.id.toString()}>
-                            {u.firstName} {u.lastName} ({u.role})
+                          <SelectItem key={u.id} value={u.id.toString()} className="text-sm">
+                            {u.firstName} {u.lastName}
+                            <span className="ml-1.5 text-slate-400 dark:text-neutral-500 capitalize text-xs">
+                              · {u.role?.replace(/_/g, " ")}
+                            </span>
                           </SelectItem>
                         ))}
                     </SelectContent>
                   </Select>
                 </div>
-                <div className="grid gap-2">
-                  <Label>Role Context</Label>
-                  <Select
-                    value={newMemberRole}
-                    onValueChange={(value) =>
-                      setNewMemberRole(value ?? "hiring_manager")
-                    }
-                  >
-                    <SelectTrigger>
-                      <SelectValue>
-                        {MEMBER_ROLE_LABELS[newMemberRole] ?? newMemberRole}
-                      </SelectValue>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="hiring_manager">
-                        Hiring Manager
-                      </SelectItem>
-                      <SelectItem value="interviewer">Interviewer</SelectItem>
-                      <SelectItem value="recruiter">Recruiter</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
               </div>
-              <DialogFooter>
+              <DialogFooter className="mt-2 gap-2">
                 <Button
                   onClick={() => setAddTeamMemberOpen(false)}
-                  className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600"
+                  className="h-9 rounded-lg border-none bg-neutral-100 dark:bg-neutral-800 px-5 text-[13px] font-semibold text-slate-700 dark:text-neutral-300 shadow-none hover:bg-neutral-200 dark:hover:bg-neutral-700"
                 >
                   Cancel
                 </Button>
                 <Button
-                  disabled={addTeamMemberMutationPending}
+                  disabled={addTeamMemberMutationPending || !newMemberId}
                   onClick={handleAddTeamMember}
-                  className="h-[34px] rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                  className="h-9 rounded-lg border-none bg-[var(--theme-color)] px-5 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-50"
                 >
-                  {addTeamMemberMutationPending ? "Adding..." : "Add Member"}
+                  {addTeamMemberMutationPending ? "Adding…" : "Add Member"}
                 </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
+          )}
         </div>
       </div>
 
@@ -188,14 +166,16 @@ export function HiringTeamTab({
                   </span>
                 </div>
               </div>
-              <button
-                onClick={() => removeTeamMemberMutation.mutate(member.id)}
-                disabled={removeTeamMemberMutation.isPending}
-                className="p-2 text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
-                title="Remove Member"
-              >
-                <HugeiconsIcon icon={Delete02Icon} className="size-5" />
-              </button>
+              {isManager && (
+                <button
+                  onClick={() => removeTeamMemberMutation.mutate(member.id)}
+                  disabled={removeTeamMemberMutation.isPending}
+                  className="p-2 text-slate-400 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-50"
+                  title="Remove Member"
+                >
+                  <HugeiconsIcon icon={Delete02Icon} className="size-5" />
+                </button>
+              )}
             </div>
           ))
         )}

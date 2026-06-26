@@ -41,6 +41,7 @@ import { EditCandidateDialog } from "./_components/dialogs/edit-candidate-dialog
 import { DeleteCandidateDialog } from "./_components/dialogs/delete-candidate-dialog";
 import { RejectCandidateDialog } from "./_components/dialogs/reject-candidate-dialog";
 import { useCandidateSocket } from "@/hooks/use-candidate-socket";
+import { useIsManager } from "@/hooks/use-role";
 
 export default function CandidateDetailPage({
   params,
@@ -49,6 +50,7 @@ export default function CandidateDetailPage({
 }) {
   useCandidateSocket();
   const router = useRouter();
+  const isManager = useIsManager();
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const fromParam = searchParams.get("from");
@@ -164,7 +166,7 @@ export default function CandidateDetailPage({
     const back =
       fromParam === "interviews"
         ? "/interviews"
-        : fromParam === "pipeline"
+        : fromParam === "pipeline" && isManager
           ? `/jobs/${candidate?.jobId}/pipeline`
           : "/candidates";
     router.push(back);

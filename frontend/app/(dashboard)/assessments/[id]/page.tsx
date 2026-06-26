@@ -23,6 +23,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useDragSort } from "@/hooks/use-drag-sort";
+import { useCurrentUser } from "@/hooks/queries/use-user";
 import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,9 @@ export default function EditAssessmentPage({
   params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
+  const { data: currentUserRes } = useCurrentUser();
+  const role = currentUserRes?.data?.role;
+  const isManager = role === "super_admin" || role === "hiring_manager";
   const unwrappedParams = use(params);
   const assessmentId = parseInt(unwrappedParams.id, 10);
 
@@ -350,38 +354,53 @@ export default function EditAssessmentPage({
       <div className="px-8 py-5 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between shrink-0 gap-4">
         <div className="flex items-center gap-5 min-w-0">
           <h1 className="text-[22px] font-semibold text-slate-900 dark:text-neutral-100 leading-none whitespace-nowrap">
-            Edit Assessment
+            {isManager ? "Edit Assessment" : "View Assessment"}
           </h1>
-          <div className="flex items-center gap-2.5">
-            <Switch
-              checked={isActive}
-              onCheckedChange={setIsActive}
-              className="data-[state=checked]:bg-[var(--theme-color)] scale-110"
-            />
-            <span className="text-sm text-slate-600 dark:text-neutral-400 font-medium whitespace-nowrap">
-              Make this Active
-            </span>
-          </div>
+          {isManager && (
+            <div className="flex items-center gap-2.5">
+              <Switch
+                checked={isActive}
+                onCheckedChange={setIsActive}
+                className="data-[state=checked]:bg-[var(--theme-color)] scale-110"
+              />
+              <span className="text-sm text-slate-600 dark:text-neutral-400 font-medium whitespace-nowrap">
+                Make this Active
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="flex items-center gap-3 shrink-0">
-          <Button
-            className="text-white cursor-pointer rounded-lg h-10 px-6 font-medium shadow-none border-none transition-all active:scale-[0.98] disabled:opacity-70 gap-2"
-            style={{ backgroundColor: "var(--theme-color)" }}
-            onClick={handleSave}
-            disabled={isSaving}
-          >
-            {isSaving && <Loader2 className="size-4 animate-spin mr-1" />}
-            {isSaving ? "Updating..." : "Update Assessment"}
-          </Button>
-          <Link href="/assessments">
-            <Button
-              variant="outline"
-              className="h-10 px-6 rounded-lg border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 shadow-none font-medium text-sm"
-            >
-              Cancel
-            </Button>
-          </Link>
+          {isManager ? (
+            <>
+              <Button
+                className="text-white cursor-pointer rounded-lg h-10 px-6 font-medium shadow-none border-none transition-all active:scale-[0.98] disabled:opacity-70 gap-2"
+                style={{ backgroundColor: "var(--theme-color)" }}
+                onClick={handleSave}
+                disabled={isSaving}
+              >
+                {isSaving && <Loader2 className="size-4 animate-spin mr-1" />}
+                {isSaving ? "Updating..." : "Update Assessment"}
+              </Button>
+              <Link href="/assessments">
+                <Button
+                  variant="outline"
+                  className="h-10 px-6 rounded-lg border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 shadow-none font-medium text-sm"
+                >
+                  Cancel
+                </Button>
+              </Link>
+            </>
+          ) : (
+            <Link href="/assessments">
+              <Button
+                variant="outline"
+                className="h-10 px-6 rounded-lg border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 shadow-none font-medium text-sm"
+              >
+                Back to Assessments
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -410,6 +429,7 @@ export default function EditAssessmentPage({
                 placeholder="e.g., Frontend Developer Assessment"
                 value={assessmentTitle}
                 onChange={(e) => setAssessmentTitle(e.target.value)}
+                readOnly={!isManager}
                 className={inputCls}
               />
             </div>
@@ -422,6 +442,7 @@ export default function EditAssessmentPage({
                 rows={2}
                 value={assessmentDesc}
                 onChange={(e) => setAssessmentDesc(e.target.value)}
+                readOnly={!isManager}
                 className={textareaCls}
               />
             </div>
@@ -432,6 +453,7 @@ export default function EditAssessmentPage({
               <Input
                 value={timeLimit}
                 onChange={(e) => setTimeLimit(e.target.value)}
+                readOnly={!isManager}
                 className={inputCls}
               />
             </div>
@@ -447,19 +469,21 @@ export default function EditAssessmentPage({
             </span>
           </div>
 
-          <div className="p-4">
-            <Button
-              onClick={addQuestion}
-              className="w-full bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white h-10 rounded-lg shadow-none border-none font-medium text-sm gap-2 transition-all active:scale-[0.98]"
-            >
-              <HugeiconsIcon
-                icon={PlusSignIcon}
-                className="size-4"
-                strokeWidth={2.5}
-              />
-              Add Question
-            </Button>
-          </div>
+          {isManager && (
+            <div className="p-4">
+              <Button
+                onClick={addQuestion}
+                className="w-full bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white h-10 rounded-lg shadow-none border-none font-medium text-sm gap-2 transition-all active:scale-[0.98]"
+              >
+                <HugeiconsIcon
+                  icon={PlusSignIcon}
+                  className="size-4"
+                  strokeWidth={2.5}
+                />
+                Add Question
+              </Button>
+            </div>
+          )}
 
           <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
             {questions.map((q, idx) => {
@@ -507,17 +531,19 @@ export default function EditAssessmentPage({
                         className="size-4 text-emerald-500 shrink-0 mr-1"
                       />
                     )}
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        removeQuestion(q.uid);
-                      }}
-                      className={`text-slate-400 hover:text-red-500 transition-opacity p-1 -mr-1 shrink-0 ${questions.length === 1 ? "opacity-0 cursor-not-allowed" : "opacity-0 group-hover:opacity-100"}`}
-                      disabled={questions.length === 1}
-                      title="Delete question"
-                    >
-                      <HugeiconsIcon icon={Delete02Icon} className="size-4" />
-                    </button>
+                    {isManager && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          removeQuestion(q.uid);
+                        }}
+                        className={`text-slate-400 hover:text-red-500 transition-opacity p-1 -mr-1 shrink-0 ${questions.length === 1 ? "opacity-0 cursor-not-allowed" : "opacity-0 group-hover:opacity-100"}`}
+                        disabled={questions.length === 1}
+                        title="Delete question"
+                      >
+                        <HugeiconsIcon icon={Delete02Icon} className="size-4" />
+                      </button>
+                    )}
                   </div>
                 );
               }
@@ -533,14 +559,16 @@ export default function EditAssessmentPage({
                 <span className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">
                   Question Details
                 </span>
-                <button
-                  onClick={() => removeQuestion(selectedQ)}
-                  disabled={questions.length === 1}
-                  className="text-slate-300 dark:text-neutral-600 hover:text-red-400 transition-colors p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-30 disabled:cursor-not-allowed"
-                  title="Remove question"
-                >
-                  <HugeiconsIcon icon={Delete02Icon} className="size-4" />
-                </button>
+                {isManager && (
+                  <button
+                    onClick={() => removeQuestion(selectedQ)}
+                    disabled={questions.length === 1}
+                    className="text-slate-300 dark:text-neutral-600 hover:text-red-400 transition-colors p-1 rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 disabled:opacity-30 disabled:cursor-not-allowed"
+                    title="Remove question"
+                  >
+                    <HugeiconsIcon icon={Delete02Icon} className="size-4" />
+                  </button>
+                )}
               </div>
 
               <div>
@@ -553,6 +581,7 @@ export default function EditAssessmentPage({
                   onChange={(e) =>
                     updateQuestion(selectedQ, { title: e.target.value })
                   }
+                  readOnly={!isManager}
                   className={inputCls}
                 />
               </div>
@@ -571,6 +600,7 @@ export default function EditAssessmentPage({
                   onChange={(e) =>
                     updateQuestion(selectedQ, { description: e.target.value })
                   }
+                  readOnly={!isManager}
                   className={textareaCls}
                 />
               </div>
@@ -584,6 +614,7 @@ export default function EditAssessmentPage({
                   onValueChange={(val) =>
                     changeType(selectedQ, val as QuestionType)
                   }
+                  disabled={!isManager}
                 >
                   <SelectTrigger className="h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-[13px] focus:ring-0 focus:border-slate-400 dark:focus:border-neutral-500 gap-2 transition-colors">
                     <div className="flex items-center gap-2">
@@ -632,9 +663,10 @@ export default function EditAssessmentPage({
                       }`}
                     >
                       <button
-                        onClick={() => toggleCorrect(selectedQ, opt.id)}
+                        onClick={() => isManager && toggleCorrect(selectedQ, opt.id)}
                         title="Mark as correct answer"
-                        className="shrink-0 transition-colors"
+                        disabled={!isManager}
+                        className="shrink-0 transition-colors disabled:cursor-default"
                       >
                         <HugeiconsIcon
                           icon={
@@ -652,7 +684,7 @@ export default function EditAssessmentPage({
                         onChange={(e) =>
                           updateOptionText(selectedQ, opt.id, e.target.value)
                         }
-                        disabled={isTrueFalse}
+                        disabled={isTrueFalse || !isManager}
                         className={`flex-1 text-sm bg-transparent outline-none placeholder:text-slate-400 dark:placeholder:text-neutral-600 ${
                           opt.isCorrect
                             ? "text-emerald-700 dark:text-emerald-400 font-medium"
@@ -666,7 +698,7 @@ export default function EditAssessmentPage({
                         </span>
                       )}
 
-                      {!isTrueFalse && (
+                      {!isTrueFalse && isManager && (
                         <button
                           onClick={() => removeOption(selectedQ, opt.id)}
                           disabled={currentQ.options.length <= 2}
@@ -682,7 +714,7 @@ export default function EditAssessmentPage({
                   ))}
                 </div>
 
-                {!isTrueFalse && (
+                {!isTrueFalse && isManager && (
                   <Button
                     onClick={() => addOption(selectedQ)}
                     variant="outline"

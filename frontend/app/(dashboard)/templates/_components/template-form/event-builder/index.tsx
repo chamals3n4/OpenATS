@@ -24,6 +24,7 @@ interface EventBuilderProps {
   onAddSlot: () => void;
   onUpdateSlot: (index: number, datetime: string) => void;
   onRemoveSlot: (index: number) => void;
+  readOnly?: boolean;
 }
 
 export function EventBuilder({
@@ -39,6 +40,7 @@ export function EventBuilder({
   onAddSlot,
   onUpdateSlot,
   onRemoveSlot,
+  readOnly = false,
 }: EventBuilderProps) {
   return (
     <>
@@ -48,6 +50,7 @@ export function EventBuilder({
           placeholder="e.g. Technical Interview Round 1"
           value={eventName}
           onChange={(e) => onEventNameChange(e.target.value)}
+          readOnly={readOnly}
           className={INPUT_CLASS}
         />
       </div>
@@ -62,16 +65,17 @@ export function EventBuilder({
         <textarea
           value={eventDesc}
           onChange={(e) => onEventDescChange(e.target.value)}
+          readOnly={readOnly}
           rows={2}
           placeholder="Brief context for the hiring team"
           className={TEXTAREA_CLASS}
         />
       </div>
 
-      <EventTypeSelector value={eventTypeRadio} onChange={onEventTypeChange} />
+      <EventTypeSelector value={eventTypeRadio} onChange={onEventTypeChange} readOnly={readOnly} />
 
       {eventTypeRadio === "virtual" && (
-        <MeetingUrlField value={meetingUrl} onChange={onMeetingUrlChange} />
+        <MeetingUrlField value={meetingUrl} onChange={onMeetingUrlChange} readOnly={readOnly} />
       )}
 
       <TimeSlotsEditor
@@ -79,6 +83,7 @@ export function EventBuilder({
         onAdd={onAddSlot}
         onUpdate={onUpdateSlot}
         onRemove={onRemoveSlot}
+        readOnly={readOnly}
       />
     </>
   );

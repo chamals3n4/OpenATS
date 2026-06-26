@@ -27,6 +27,7 @@ import {
   useExportAnalyticsReport,
 } from "@/hooks/queries/use-reports";
 import { useDepartments } from "@/hooks/queries/use-company";
+import { useIsManager } from "@/hooks/use-role";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -67,6 +68,7 @@ const PERIOD_LABELS: Record<string, string> = {
 };
 
 export function OverviewClient() {
+  const isManager = useIsManager();
   const [period, setPeriod] = useState<"7d" | "30d" | "90d">("7d");
   const [dept, setDept] = useState("all");
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
@@ -104,27 +106,31 @@ export function OverviewClient() {
         value: String(report?.summary.totalCandidates ?? 0),
         delta: `${(report?.summary.totalCandidatesDeltaPct ?? 0) >= 0 ? "+" : ""}${(report?.summary.totalCandidatesDeltaPct ?? 0).toFixed(1)}%`,
         up: (report?.summary.totalCandidatesDeltaPct ?? 0) >= 0,
+        managerOnly: false,
       },
       {
         label: "Open Positions",
         value: String(report?.summary.openPositions ?? 0),
         delta: `${(report?.summary.openPositionsDelta ?? 0) >= 0 ? "+" : ""}${report?.summary.openPositionsDelta ?? 0}`,
         up: (report?.summary.openPositionsDelta ?? 0) >= 0,
+        managerOnly: false,
       },
       {
         label: "Avg. Time To Hire",
         value: String(report?.summary.avgTimeToHireDays ?? 0),
         delta: `${(report?.summary.avgTimeToHireDeltaDays ?? 0) >= 0 ? "-" : "+"}${Math.abs(report?.summary.avgTimeToHireDeltaDays ?? 0).toFixed(1)} days`,
         up: (report?.summary.avgTimeToHireDeltaDays ?? 0) >= 0,
+        managerOnly: false,
       },
       {
         label: "Offer Acceptance Rate",
         value: `${(report?.summary.offerAcceptanceRate ?? 0).toFixed(1)}%`,
         delta: `${(report?.summary.offerAcceptanceRateDeltaPct ?? 0) >= 0 ? "+" : ""}${(report?.summary.offerAcceptanceRateDeltaPct ?? 0).toFixed(1)}%`,
         up: (report?.summary.offerAcceptanceRateDeltaPct ?? 0) >= 0,
+        managerOnly: true,
       },
-    ],
-    [report],
+    ].filter((s) => isManager || !s.managerOnly),
+    [report, isManager],
   );
 
   const handleExport = async () => {
@@ -153,15 +159,17 @@ export function OverviewClient() {
         <h1 className="text-xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Reports And Analytics
         </h1>
-        <div className="flex items-center gap-2">
-          <Button
-            onClick={() => setExportDialogOpen(true)}
-            className="bg-theme hover:bg-theme-hover text-white rounded-md h-8 px-3 flex items-center gap-1.5 border border-theme shadow-none text-sm font-semibold cursor-pointer"
-          >
-            <HugeiconsIcon icon={Download05Icon} className="size-3.5" />
-            Export Report
-          </Button>
-        </div>
+        {isManager && (
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={() => setExportDialogOpen(true)}
+              className="bg-theme hover:bg-theme-hover text-white rounded-md h-8 px-3 flex items-center gap-1.5 border border-theme shadow-none text-sm font-semibold cursor-pointer"
+            >
+              <HugeiconsIcon icon={Download05Icon} className="size-3.5" />
+              Export Report
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -239,17 +247,19 @@ export function OverviewClient() {
         </div>
 
         {/* Charts row 2 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        <div className={`grid grid-cols-1 gap-3 ${isManager ? "lg:grid-cols-2" : ""}`}>
           <ChartCard title="Time To Hire" subtitle="Average days by department">
             <DeptChart data={deptData} />
           </ChartCard>
 
-          <ChartCard
-            title="Offer Trends"
-            subtitle="Offers sent vs. accepted (last 5 months)"
-          >
-            <OfferChart data={offerData} />
-          </ChartCard>
+          {isManager && (
+            <ChartCard
+              title="Offer Trends"
+              subtitle="Offers sent vs. accepted (last 5 months)"
+            >
+              <OfferChart data={offerData} />
+            </ChartCard>
+          )}
         </div>
       </div>
 

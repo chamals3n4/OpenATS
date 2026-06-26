@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import type { Offer } from "@/types";
+import { useIsManager } from "@/hooks/use-role";
 import { OfferTableRow } from "./offer-table-row";
 import {
   BulkSelectHeaderCell,
@@ -41,6 +42,7 @@ export function OffersTable({
   pagination,
   onPageChange,
 }: OffersTableProps) {
+  const isManager = useIsManager();
   const visibleOfferIds = useMemo(() => offers.map((offer) => offer.id), [offers]);
   const selection = useBulkSelection(visibleOfferIds);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -60,7 +62,7 @@ export function OffersTable({
           selectedCount={selection.selectedCount}
           label="offer"
           onClear={selection.clearSelection}
-          onDeleteSelected={() => setBulkDeleteOpen(true)}
+          onDeleteSelected={isManager ? () => setBulkDeleteOpen(true) : undefined}
           isDeleting={isDeletingSelected}
         />
         <BulkDeleteDialog

@@ -8,19 +8,20 @@ import {
   attachAssessment,
   detachAssessment,
 } from "../controllers/custom-question.controller";
+import { requireManager } from "../middlewares/role.middleware";
 
 
 const router:Router = Router({ mergeParams: true });
 
 
 router.get("/", getCustomQuestions);
-router.post("/", createCustomQuestion);
-router.put("/:questionId", updateCustomQuestion);
-router.delete("/:questionId", deleteCustomQuestion);
+router.post("/", requireManager, createCustomQuestion);
+router.put("/:questionId", requireManager, updateCustomQuestion);
+router.delete("/:questionId", requireManager, deleteCustomQuestion);
 
 
 router.get("/assessment-attachment", getAssessmentAttachment);
-router.post("/assessment-attachment", attachAssessment);
-router.delete("/assessment-attachment/:stageId", detachAssessment);
+router.post("/assessment-attachment", requireManager, attachAssessment);
+router.delete("/assessment-attachment/:stageId", requireManager, detachAssessment);
 
 export default router;

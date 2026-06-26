@@ -18,6 +18,7 @@ interface TemplateFormProps {
   templateType: TemplateType;
   templateId?: number;
   existingTemplate?: Template;
+  readOnly?: boolean;
 }
 
 export function TemplateForm({
@@ -25,6 +26,7 @@ export function TemplateForm({
   templateType,
   templateId,
   existingTemplate,
+  readOnly = false,
 }: TemplateFormProps) {
   const router = useRouter();
   const createMutation = useCreateTemplate();
@@ -92,6 +94,7 @@ export function TemplateForm({
       canSave={!!form.name.trim()}
       isPending={isPending}
       onSave={handleSave}
+      readOnly={readOnly}
     />
   );
 
@@ -109,6 +112,7 @@ export function TemplateForm({
                 value={form.name}
                 onChange={form.setName}
                 placeholder="e.g. Standard Offer Letter"
+                readOnly={readOnly}
               />
               <EmailBuilder
                 subject={form.subject}
@@ -117,6 +121,7 @@ export function TemplateForm({
                 onAddBlock={form.addBlock}
                 onUpdateBlock={form.updateBlock}
                 onDeleteBlock={form.deleteBlock}
+                readOnly={readOnly}
               />
             </div>
           </div>
@@ -141,6 +146,7 @@ export function TemplateForm({
             value={form.name}
             onChange={form.setName}
             placeholder="e.g. Technical Interview Round 1"
+            readOnly={readOnly}
           />
           <EventBuilder
             eventName={form.eventName}
@@ -155,6 +161,7 @@ export function TemplateForm({
             onAddSlot={form.addSlot}
             onUpdateSlot={form.updateSlot}
             onRemoveSlot={form.removeSlot}
+            readOnly={readOnly}
           />
         </div>
       </div>

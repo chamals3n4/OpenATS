@@ -8,14 +8,16 @@ import {
   deleteDepartment,
 } from "../controllers/company.controller";
 
+import { requireAdmin, requireManager } from "../middlewares/role.middleware";
+
 const router: Router = Router();
 
 router.get("/", getCompany);
-router.put("/", upsertCompany);
+router.put("/", requireAdmin, upsertCompany);
 
 router.get("/departments", getDepartments);
-router.post("/departments", createDepartment);
-router.put("/departments/:id", updateDepartment);
-router.delete("/departments/:id", deleteDepartment);
+router.post("/departments", requireManager, createDepartment);
+router.put("/departments/:id", requireManager, updateDepartment);
+router.delete("/departments/:id", requireManager, deleteDepartment);
 
 export default router;

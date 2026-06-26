@@ -1,5 +1,10 @@
+import { ManagerGuard } from "@/components/manager-guard";
 import OffersPageClient from "./_components/offers-client";
 
 export default function OffersPage() {
-  return <OffersPageClient />;
+  return (
+    <ManagerGuard redirectTo="/">
+      <OffersPageClient />
+    </ManagerGuard>
+  );
 }

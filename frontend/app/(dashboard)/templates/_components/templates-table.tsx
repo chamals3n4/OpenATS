@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/table";
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import type { Template } from "@/types";
+import { useIsManager } from "@/hooks/use-role";
 import { TemplateTableRow } from "./template-table-row";
 import {
   BulkSelectHeaderCell,
@@ -43,6 +44,7 @@ export function TemplatesTable({
   pagination,
   onPageChange,
 }: TemplatesTableProps) {
+  const isManager = useIsManager();
   const visibleIds = useMemo(() => templates.map((t) => t.id), [templates]);
   const selection = useBulkSelection(visibleIds);
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
@@ -62,7 +64,7 @@ export function TemplatesTable({
           selectedCount={selection.selectedCount}
           label="template"
           onClear={selection.clearSelection}
-          onDeleteSelected={() => setBulkDeleteOpen(true)}
+          onDeleteSelected={isManager ? () => setBulkDeleteOpen(true) : undefined}
           isDeleting={isDeletingSelected}
         />
         <BulkDeleteDialog

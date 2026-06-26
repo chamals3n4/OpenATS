@@ -10,18 +10,18 @@ import {
   deleteQuestion,
 } from "../controllers/assessment.controller";
 
-const router:Router = Router();
+import { requireManager } from "../middlewares/role.middleware";
 
-// assessments
+const router: Router = Router();
+
 router.get("/", getAllAssessments);
-router.post("/", createAssessment);
+router.post("/", requireManager, createAssessment);
 router.get("/:id", getAssessmentById);
-router.put("/:id", updateAssessment);
-router.delete("/:id", deleteAssessment);
+router.put("/:id", requireManager, updateAssessment);
+router.delete("/:id", requireManager, deleteAssessment);
 
-// questions
-router.post("/:id/questions", createQuestion);
-router.put("/:id/questions/:questionId", updateQuestion);
-router.delete("/:id/questions/:questionId", deleteQuestion);
+router.post("/:id/questions", requireManager, createQuestion);
+router.put("/:id/questions/:questionId", requireManager, updateQuestion);
+router.delete("/:id/questions/:questionId", requireManager, deleteQuestion);
 
 export default router;

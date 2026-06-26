@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/queries/use-user";
 import Link from "next/link";
 import { toast } from "sonner";
 import { Copy } from "lucide-react";
@@ -22,6 +24,15 @@ const inputCls =
   "h-9 rounded-md shadow-none bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 text-sm";
 
 export default function CareersSettingsPage() {
+  const router = useRouter();
+  const { data: currentUserRes, isLoading: isLoadingUser } = useCurrentUser();
+  const role = currentUserRes?.data?.role;
+  const isManager = role === "super_admin" || role === "hiring_manager";
+
+  useEffect(() => {
+    if (role && !isManager) router.replace("/settings/general");
+  }, [role, isManager, router]);
+
   const { data, isLoading, isError, error, refetch } =
     useSettingsAllowedOrigins();
   const updateOrigins = useUpdateSettingsAllowedOrigins();
@@ -78,6 +89,8 @@ export default function CareersSettingsPage() {
   const removeOrigin = (idx: number) => {
     setOrigins((o) => o.filter((_, i) => i !== idx));
   };
+
+  if (isLoadingUser || !role || !isManager) return null;
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 min-w-0">

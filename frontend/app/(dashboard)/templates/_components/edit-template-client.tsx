@@ -3,12 +3,14 @@
 import { useTemplate } from "@/hooks/queries/use-templates";
 import { TemplateForm } from "./template-form";
 import { TemplateType } from "../lib/templates-utils";
+import { useIsManager } from "@/hooks/use-role";
 
 interface EditTemplateClientProps {
   templateId: number;
 }
 
 export function EditTemplateClient({ templateId }: EditTemplateClientProps) {
+  const isManager = useIsManager();
   const { data: tplData } = useTemplate(templateId);
   const template = tplData?.data;
 
@@ -26,6 +28,7 @@ export function EditTemplateClient({ templateId }: EditTemplateClientProps) {
       templateType={template.type as TemplateType}
       templateId={templateId}
       existingTemplate={template}
+      readOnly={!isManager}
     />
   );
 }

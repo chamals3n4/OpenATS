@@ -24,36 +24,32 @@ import {
   removeTeamMember,
 } from "../controllers/hiring-team.controller";
 import customQuestionRoutes from "./custom-question.routes";
+import { requireManager } from "../middlewares/role.middleware";
 
 const router: Router = Router();
 
-// jobs
 router.get("/", getAllJobs);
-router.post("/", createJob);
-router.delete("/bulk", bulkDeleteJobs);
+router.post("/", requireManager, createJob);
+router.delete("/bulk", requireManager, bulkDeleteJobs);
 router.get("/slug/:slug", getJobBySlug);
 router.get("/:id", getJobById);
-router.put("/:id", updateJob);
-router.delete("/:id", deleteJob);
+router.put("/:id", requireManager, updateJob);
+router.delete("/:id", requireManager, deleteJob);
 
-// pipeline stages
 router.get("/:jobId/pipeline", getPipeline);
-router.post("/:jobId/pipeline", createStage);
-router.post("/:jobId/pipeline/reorder", reorderStages);
-router.put("/:jobId/pipeline/:stageId", updateStage);
-router.delete("/:jobId/pipeline/:stageId", deleteStage);
+router.post("/:jobId/pipeline", requireManager, createStage);
+router.post("/:jobId/pipeline/reorder", requireManager, reorderStages);
+router.put("/:jobId/pipeline/:stageId", requireManager, updateStage);
+router.delete("/:jobId/pipeline/:stageId", requireManager, deleteStage);
 
-// hiring team
 router.get("/:jobId/team", getHiringTeam);
-router.post("/:jobId/team", addTeamMember);
-router.delete("/:jobId/team/:userId", removeTeamMember);
+router.post("/:jobId/team", requireManager, addTeamMember);
+router.delete("/:jobId/team/:userId", requireManager, removeTeamMember);
 
-// assessments tab
 router.get("/:id/assessments", getAssessments);
-router.post("/:id/assessments", attachAssessment);
-router.delete("/:id/assessments/:attachmentId", detachAssessment);
+router.post("/:id/assessments", requireManager, attachAssessment);
+router.delete("/:id/assessments/:attachmentId", requireManager, detachAssessment);
 
-// custom question + assessment attachment
 router.use("/:jobId/questions", customQuestionRoutes);
 
 export default router;

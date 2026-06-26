@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { toast } from "sonner";
-import { Copy, Eye, EyeOff, RefreshCw } from "lucide-react";
+import { Copy, Eye, EyeOff } from "lucide-react";
 import {
   PencilEdit01Icon,
   Delete02Icon,
@@ -70,6 +70,7 @@ import {
 } from "@/components/ui/select";
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import { Spinner } from "@/components/ui/spinner";
+import { TableFooter } from "@/components/table/table-footer";
 
 const inputCls =
   "h-9 bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 rounded-md shadow-none text-[13px] placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors";
@@ -202,7 +203,7 @@ export default function UserManagementPage() {
     if (!editUser) return;
     setSaving(true);
     try {
-      await updateUser(editUser.id, editForm);
+      await updateUser(editUser.id, { ...editForm, oldRole: editUser.role });
       toast.success("User updated");
       setEditUser(null);
       await load();
@@ -289,23 +290,35 @@ export default function UserManagementPage() {
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
       {/* Header */}
-      <div className="px-8 py-4 flex items-center justify-between">
-        <h1 className="text-[28px] font-medium text-slate-900 dark:text-neutral-100 leading-none">
+      <div className="px-6 py-3 flex items-center justify-between">
+        <h1 className="text-xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
           User Management
         </h1>
-        <div className="flex items-center gap-2">
+      </div>
+
+      {/* Filters */}
+      <div className="border-y border-slate-300 dark:border-neutral-700 px-6 py-2.5 flex items-center gap-2">
+        <div className="relative w-64">
+          <HugeiconsIcon
+            icon={Search01Icon}
+            className="pointer-events-none absolute left-3 top-1/2 z-10 size-3.5 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
+          />
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Search User"
+            className="pl-9 h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
+          />
+        </div>
+        <Button
+          onClick={() => setQuery("")}
+          className="ml-2 h-8 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
+        >
+          Clear All
+        </Button>
+        <div className="ml-auto">
           <Button
-            variant="outline"
-            className="h-10 px-3 rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 shadow-none"
-            onClick={load}
-            disabled={loading}
-            title="Refresh"
-          >
-            <RefreshCw className="size-4" />
-          </Button>
-          <Button
-            className="h-10 px-4 gap-2 text-sm shadow-none border-none text-white rounded-lg"
-            style={{ backgroundColor: "var(--theme-color)" }}
+            className="h-8 rounded-md border-none bg-[var(--theme-color)] px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] cursor-pointer"
             onClick={openCreate}
           >
             <HugeiconsIcon
@@ -318,45 +331,22 @@ export default function UserManagementPage() {
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="border-y border-slate-300 dark:border-neutral-700 px-8 py-3.5 flex items-center gap-4">
-        <div className="relative w-80">
-          <HugeiconsIcon
-            icon={Search01Icon}
-            className="pointer-events-none absolute left-3.5 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"
-          />
-          <Input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search User"
-            className="pl-11 h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
-          />
-        </div>
-        <Button
-          variant="ghost"
-          onClick={() => setQuery("")}
-          className="text-slate-600 cursor-pointer dark:text-neutral-400 font-medium text-sm h-10 px-4 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 border-none ml-2"
-        >
-          Clear All
-        </Button>
-      </div>
-
       {/* Table */}
-      <div className="px-8 py-6">
+      <div className="px-6 py-4">
         <div className="overflow-hidden rounded-md border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-900">
           <Table>
             <TableHeader>
               <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
-                <TableHead className="h-11 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Name
                 </TableHead>
-                <TableHead className="h-11 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Email
                 </TableHead>
-                <TableHead className="h-11 px-8 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Role
                 </TableHead>
-                <TableHead className="h-11 px-4 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                <TableHead className="h-11 px-6 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
                   Actions
                 </TableHead>
               </TableRow>
@@ -383,39 +373,39 @@ export default function UserManagementPage() {
                     key={u.id}
                     className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
                   >
-                    <TableCell className="h-11 px-8 py-0 font-medium text-slate-700 dark:text-neutral-200">
+                    <TableCell className="h-10 px-6 py-0 font-medium text-slate-700 dark:text-neutral-200">
                       {getDisplayName(u)}
                     </TableCell>
-                    <TableCell className="h-11 px-8 py-0 text-slate-500 dark:text-neutral-400 font-normal">
+                    <TableCell className="h-10 px-6 py-0 text-slate-500 dark:text-neutral-400 font-normal">
                       {u.email}
                     </TableCell>
-                    <TableCell className="h-13 px-8 py-0 text-slate-500 dark:text-neutral-400 font-normal capitalize">
+                    <TableCell className="h-10 px-6 py-0 text-slate-500 dark:text-neutral-400 font-normal capitalize">
                       {u.role.replace(/_/g, " ")}
                     </TableCell>
                     <TableCell
-                      className="h-11 px-4 py-0"
+                      className="h-10 px-6 py-0"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center justify-end gap-2">
                         <Button
                           size="sm"
-                          className="h-[34px] rounded-md border-none bg-neutral-700/90 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
+                          className="h-8 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
                           onClick={() => openEdit(u)}
                         >
                           <HugeiconsIcon
                             icon={PencilEdit01Icon}
-                            className="size-4"
+                            className="size-3.5"
                           />
                           Edit
                         </Button>
                         <Button
                           size="sm"
-                          className="h-[34px] rounded-md border-none bg-red-600/90 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 dark:bg-red-700/90 dark:hover:bg-red-600 cursor-pointer"
+                          className="h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
                           onClick={() => setDeleteTarget(u)}
                         >
                           <HugeiconsIcon
                             icon={Delete02Icon}
-                            className="size-4"
+                            className="size-3.5 mr-1"
                           />
                           Delete
                         </Button>
@@ -427,13 +417,11 @@ export default function UserManagementPage() {
             </TableBody>
           </Table>
 
-          <div className="flex items-center justify-between px-8 py-3.5 border-t border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-            <span className="text-sm font-medium text-slate-400 dark:text-neutral-500">
-              {loading
-                ? "Loading..."
-                : `${filteredUsers.length} result${filteredUsers.length !== 1 ? "s" : ""}`}
-            </span>
-          </div>
+          <TableFooter
+            isLoading={loading}
+            label="user"
+            count={filteredUsers.length}
+          />
         </div>
       </div>
 

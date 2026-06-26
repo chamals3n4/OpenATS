@@ -1,11 +1,5 @@
 import { pgEnum } from "drizzle-orm/pg-core";
 
-export const userRole = pgEnum("user_role", [
-  "super_admin",
-  "hiring_manager",
-  "interviewer",
-]);
-
 export const employmentType = pgEnum("employment_type", [
   "full_time",
   "part_time",

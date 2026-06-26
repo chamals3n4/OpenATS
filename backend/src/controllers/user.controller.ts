@@ -12,7 +12,6 @@ const updateUserSchema = z.object({
     .max(1000)
     .optional()
     .nullable(),
-  role: z.enum(["super_admin", "hiring_manager", "interviewer"]).optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -21,9 +20,6 @@ const createUserSchema = z.object({
   firstName: z.string().min(1).max(100),
   lastName: z.string().min(1).max(100),
   email: z.string().email().max(255),
-  role: z
-    .enum(["super_admin", "hiring_manager", "interviewer"])
-    .default("interviewer"),
 });
 
 export const getCurrentUser = async (req: Request, res: Response) => {
@@ -67,6 +63,14 @@ export const updateUser = async (req: Request, res: Response) => {
       return;
     }
 
+    const isSelf = req.user.id === id;
+    const isSuperAdmin = req.user.role === "super_admin";
+
+    if (!isSelf && !isSuperAdmin) {
+      res.status(403).json({ error: "Only a super admin can edit other users" });
+      return;
+    }
+
     const parsed = updateUserSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({
@@ -76,14 +80,10 @@ export const updateUser = async (req: Request, res: Response) => {
       return;
     }
 
-    // Only a super admin may change a user's role or active status.
-    // This prevents a normal user from escalating their own privileges.
-    const wantsPrivilegedChange =
-      parsed.data.role !== undefined || parsed.data.isActive !== undefined;
-    if (wantsPrivilegedChange && req.user.role !== "super_admin") {
-      res.status(403).json({
-        error: "Only a super admin can change roles or account status",
-      });
+    if (parsed.data.isActive !== undefined && !isSuperAdmin) {
+      res
+        .status(403)
+        .json({ error: "Only a super admin can change account status" });
       return;
     }
 
@@ -120,5 +120,36 @@ export const createUser = async (req: Request, res: Response) => {
     res.status(201).json({ data: result });
   } catch (error) {
     res.status(500).json({ error: "Failed to create user" });
+  }
+};
+
+export const deactivateUser = async (req: Request, res: Response) => {
+  try {
+    if (req.user.role !== "super_admin") {
+      res.status(403).json({ error: "Only a super admin can remove users" });
+      return;
+    }
+
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid user ID" });
+      return;
+    }
+
+    if (req.user.id === id) {
+      res.status(400).json({ error: "You cannot remove your own account" });
+      return;
+    }
+
+    const result = await userService.deactivate(id);
+    if (!result) {
+      res.status(404).json({ error: "User not found" });
+      return;
+    }
+
+    res.status(200).json({ data: result });
+  } catch (error) {
+    logger.error(`[deactivateUser] error:`, error);
+    res.status(500).json({ error: "Failed to remove user" });
   }
 };

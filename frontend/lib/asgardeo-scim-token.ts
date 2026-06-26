@@ -8,11 +8,17 @@ const DEFAULT_SCIM_SCOPES = [
   "internal_user_mgt_list",
   "internal_user_mgt_update",
   "internal_user_mgt_view",
+  "internal_user_credential_mgt_create",
+  "internal_user_credential_mgt_delete",
+  "internal_user_credential_mgt_view",
   "internal_role_mgt_create",
   "internal_role_mgt_delete",
+  "internal_role_mgt_groups_update",
+  "internal_role_mgt_meta_create",
+  "internal_role_mgt_meta_update",
+  "internal_role_mgt_update",
   "internal_role_mgt_users_update",
   "internal_role_mgt_view",
-  "internal_role_mgt_update",
 ].join(" ");
 
 export function getAsgardeoApiBase(): string {

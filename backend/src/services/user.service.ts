@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
 import { db } from "../db";
 import { users, NewUser } from "../db/schema";
 import { cleanObject as clean } from "../utils/object.utils";
@@ -7,7 +7,6 @@ export interface UpdateUserInput {
   firstName?: string | undefined;
   lastName?: string | undefined;
   avatarUrl?: string | null | undefined;
-  role?: "super_admin" | "hiring_manager" | "interviewer" | undefined;
   isActive?: boolean | undefined;
 }
 
@@ -16,7 +15,6 @@ export interface CreateUserInput {
   firstName: string;
   lastName: string;
   email: string;
-  role?: "super_admin" | "hiring_manager" | "interviewer";
 }
 
 export const userService = {
@@ -42,10 +40,35 @@ export const userService = {
   },
 
   async create(input: CreateUserInput) {
-    const [created] = await db
-      .insert(users)
-      .values({ ...input, role: input.role ?? "interviewer" })
-      .returning();
+    // Reactivate soft-deleted row on re-creation rather than inserting a duplicate.
+    const [existing] = await db
+      .select()
+      .from(users)
+      .where(
+        or(
+          eq(users.email, input.email),
+          eq(users.asgardeoUserId, input.asgardeoUserId),
+        ),
+      )
+      .limit(1);
+
+    if (existing) {
+      const [reactivated] = await db
+        .update(users)
+        .set({
+          asgardeoUserId: input.asgardeoUserId,
+          firstName: input.firstName,
+          lastName: input.lastName,
+          email: input.email,
+          isActive: true,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, existing.id))
+        .returning();
+      return reactivated;
+    }
+
+    const [created] = await db.insert(users).values(input).returning();
     return created;
   },
 

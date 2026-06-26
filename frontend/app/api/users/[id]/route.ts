@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { asgardeo } from "@asgardeo/nextjs/server";
 import { serverFetch } from "@/lib/auth-action";
+import { requireRole } from "@/lib/require-role";
 import { assignAsgardeoRole, removeAsgardeoRole } from "@/lib/asgardeo-roles";
 import {
   getAsgardeoApiBase,
@@ -8,16 +8,8 @@ import {
   scimRequestHeaders,
 } from "@/lib/asgardeo-scim-token";
 import type { User } from "@/types";
-import { useAsgardeo } from "@asgardeo/nextjs";
 
 const ROUTE_LOG = "[API /users/[id]]";
-
-async function requireSignedInAndScimToken() {
-  const client = await asgardeo();
-  const sessionId = await client.getSessionId();
-  if (!sessionId) throw new Error("Unauthorized");
-  return getScimAccessToken();
-}
 
 type RouteContext = {
   params: Promise<{ id: string }>;
@@ -40,19 +32,21 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
   const { id } = await context.params;
   console.log(`${ROUTE_LOG} PATCH /api/users/${id}`);
   try {
-    const scimToken = await requireSignedInAndScimToken();
+    await requireRole("super_admin");
+    const scimToken = await getScimAccessToken();
     const body = await req.json();
     const base = getAsgardeoApiBase();
 
     const existing = await serverFetch<{
       data: User & { asgardeoUserId: string };
     }>(`/users/${id}`);
-    const { asgardeoUserId, role: oldRole } = existing.data;
+    const { asgardeoUserId } = existing.data;
+    const oldRole = body.oldRole as string | undefined;
     console.log(
       `${ROUTE_LOG} updating asgardeoUserId=${asgardeoUserId}, oldRole=${oldRole}`,
     );
 
-    const operations: { op: string; path: string; value: string }[] = [];
+    const operations: { op: string; path: string; value: unknown }[] = [];
     if (body.firstName !== undefined)
       operations.push({
         op: "replace",
@@ -68,8 +62,8 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
     if (body.email !== undefined)
       operations.push({
         op: "replace",
-        path: "emails[primary eq true].value",
-        value: body.email,
+        path: "emails",
+        value: [{ primary: true, value: body.email }],
       });
 
     if (operations.length > 0) {
@@ -106,7 +100,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       console.log(
         `${ROUTE_LOG} role changed from "${oldRole}" → "${body.role}"`,
       );
-      await removeAsgardeoRole(scimToken, asgardeoUserId, oldRole);
+      if (oldRole) await removeAsgardeoRole(scimToken, asgardeoUserId, oldRole);
       await assignAsgardeoRole(scimToken, asgardeoUserId, body.role);
     }
 
@@ -115,7 +109,6 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       body: JSON.stringify({
         ...(body.firstName !== undefined && { firstName: body.firstName }),
         ...(body.lastName !== undefined && { lastName: body.lastName }),
-        ...(body.role !== undefined && { role: body.role }),
       }),
     });
 
@@ -133,7 +126,8 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
   const { id } = await context.params;
   console.log(`${ROUTE_LOG} DELETE /api/users/${id}`);
   try {
-    const scimToken = await requireSignedInAndScimToken();
+    await requireRole("super_admin");
+    const scimToken = await getScimAccessToken();
     const base = getAsgardeoApiBase();
 
     const existing = await serverFetch<{
@@ -160,10 +154,7 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
 
     console.log(`${ROUTE_LOG} Asgardeo user deleted (HTTP 204)`);
 
-    await serverFetch(`/users/${id}`, {
-      method: "PUT",
-      body: JSON.stringify({ isActive: false }),
-    });
+    await serverFetch(`/users/${id}`, { method: "DELETE" });
 
     console.log(`${ROUTE_LOG} user ${id} soft-deleted in DB`);
     return NextResponse.json({ success: true });

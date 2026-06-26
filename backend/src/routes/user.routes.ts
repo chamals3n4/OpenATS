@@ -5,6 +5,7 @@ import {
   getCurrentUser,
   updateUser,
   createUser,
+  deactivateUser,
 } from "../controllers/user.controller";
 
 const router: Router = Router();
@@ -14,5 +15,6 @@ router.get("/me", getCurrentUser);
 router.get("/:id", getUserById);
 router.post("/", createUser);
 router.put("/:id", updateUser);
+router.delete("/:id", deactivateUser);
 
 export default router;

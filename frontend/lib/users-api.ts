@@ -15,6 +15,7 @@ export interface UpdateUserPayload {
   lastName?: string;
   email?: string;
   role?: "super_admin" | "hiring_manager" | "interviewer";
+  oldRole?: "super_admin" | "hiring_manager" | "interviewer";
 }
 
 export async function fetchUsers(): Promise<User[]> {

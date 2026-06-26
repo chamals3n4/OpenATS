@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { asgardeo } from "@asgardeo/nextjs/server";
 import { serverFetch } from "@/lib/auth-action";
+import { requireRole } from "@/lib/require-role";
 import { assignAsgardeoRole } from "@/lib/asgardeo-roles";
 import {
   getAsgardeoApiBase,
@@ -11,29 +11,69 @@ import type { User } from "@/types";
 
 const ROUTE_LOG = "[API /users]";
 
-async function requireSignedIn() {
-  const client = await asgardeo();
-  const sessionId = await client.getSessionId();
-  if (!sessionId) throw new Error("Unauthorized");
+type AppRole = "super_admin" | "hiring_manager" | "interviewer";
+type DbUser = Omit<User, "role"> & { asgardeoUserId: string };
+
+async function buildRoleMap(token: string): Promise<Map<string, AppRole>> {
+  const base = getAsgardeoApiBase();
+  const map = new Map<string, AppRole>();
+
+  const roleDefs: [string | undefined, AppRole][] = [
+    [process.env.ASGARDEO_SUPER_ADMIN_ROLE_ID, "super_admin"],
+    [process.env.ASGARDEO_HIRING_MANAGER_ROLE_ID, "hiring_manager"],
+    [process.env.ASGARDEO_INTERVIEWER_ROLE_ID, "interviewer"],
+  ];
+
+  await Promise.all(
+    roleDefs.map(async ([roleId, appRole]) => {
+      if (!roleId) return;
+      try {
+        const res = await fetch(`${base}/scim2/v2/Roles/${roleId}`, {
+          headers: scimRequestHeaders(token, false),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        for (const u of data.users ?? []) {
+          if (u.value) map.set(u.value, appRole);
+        }
+      } catch {
+        // non-fatal — user will just have no role shown
+      }
+    }),
+  );
+
+  return map;
 }
 
 export async function GET() {
   console.log(`${ROUTE_LOG} GET /api/users`);
   try {
-    const data = await serverFetch<{ data: User[] }>("/users");
-    console.log(`${ROUTE_LOG} fetched ${data.data.length} users`);
-    return NextResponse.json(data.data);
+    const [dbData, scimToken] = await Promise.all([
+      serverFetch<{ data: DbUser[] }>("/users"),
+      getScimAccessToken(),
+    ]);
+
+    const roleMap = await buildRoleMap(scimToken);
+
+    const users: User[] = dbData.data.map(({ asgardeoUserId, ...u }) => ({
+      ...u,
+      role: roleMap.get(asgardeoUserId) ?? "interviewer",
+    }));
+
+    console.log(`${ROUTE_LOG} fetched ${users.length} users`);
+    return NextResponse.json(users);
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error(`${ROUTE_LOG} GET error:`, msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    const status = msg === "Unauthorized" ? 401 : 500;
+    return NextResponse.json({ error: msg }, { status });
   }
 }
 
 export async function POST(req: Request) {
   console.log(`${ROUTE_LOG} POST /api/users`);
   try {
-    await requireSignedIn();
+    await requireRole("super_admin");
     const scimToken = await getScimAccessToken();
     const body = await req.json();
     const role = body.role ?? "interviewer";
@@ -91,7 +131,6 @@ export async function POST(req: Request) {
         firstName: body.firstName,
         lastName: body.lastName,
         email: body.email,
-        role,
       }),
     });
 
@@ -100,6 +139,7 @@ export async function POST(req: Request) {
   } catch (e: unknown) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error(`${ROUTE_LOG} POST error:`, msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    const status = msg === "Unauthorized" ? 401 : msg === "Forbidden" ? 403 : 500;
+    return NextResponse.json({ error: msg }, { status });
   }
 }

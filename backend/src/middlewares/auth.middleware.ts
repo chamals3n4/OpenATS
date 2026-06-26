@@ -36,13 +36,10 @@ function collectRolesFromPayload(payload: Record<string, unknown>): string[] {
   return out;
 }
 
-function normalizeRoleLabel(s: string): string {
-  return s.trim().toLowerCase().replace(/_/g, " ").replace(/\s+/g, " ");
-}
-
-function mapAsgardeoRoleNamesToAppRole(names: string[]): AppRole | null {
-  const normalized = names.map(normalizeRoleLabel);
-
+function mapToAppRole(names: string[]): AppRole | null {
+  const normalized = names.map((s) =>
+    s.trim().toLowerCase().replace(/_/g, " ").replace(/\s+/g, " "),
+  );
   const has = (pred: (n: string) => boolean) => normalized.some(pred);
 
   if (
@@ -52,15 +49,12 @@ function mapAsgardeoRoleNamesToAppRole(names: string[]): AppRole | null {
         n.endsWith("/super admin") ||
         n.includes("super admin"),
     )
-  ) {
+  )
     return "super_admin";
-  }
-  if (has((n) => n === "hiring manager" || n.endsWith("/hiring manager"))) {
+  if (has((n) => n === "hiring manager" || n.endsWith("/hiring manager")))
     return "hiring_manager";
-  }
-  if (has((n) => n === "interviewer" || n.endsWith("/interviewer"))) {
+  if (has((n) => n === "interviewer" || n.endsWith("/interviewer")))
     return "interviewer";
-  }
 
   return null;
 }
@@ -90,10 +84,17 @@ export const authMiddleware = async (
       return;
     }
 
-    const tokenRoleNames = collectRolesFromPayload(
-      payload as Record<string, unknown>,
+    // Role is the single source of truth from the JWT — never stored in DB.
+    const role = mapToAppRole(
+      collectRolesFromPayload(payload as Record<string, unknown>),
     );
-    const roleFromToken = mapAsgardeoRoleNamesToAppRole(tokenRoleNames);
+
+    if (!role) {
+      res
+        .status(403)
+        .json({ error: "No role assigned. Contact your administrator." });
+      return;
+    }
 
     const email = payload["email"] as string | undefined;
     const firstName =
@@ -112,37 +113,16 @@ export const authMiddleware = async (
       .limit(1);
 
     if (!user) {
-      // first login — provision; default interviewer if token has no mappable roles
-      const role = roleFromToken ?? "interviewer";
+      // JIT provision — insert once on first login, never update after
       [user] = await db
         .insert(users)
-        .values({ asgardeoUserId: sub, firstName, lastName, email, role })
+        .values({ asgardeoUserId: sub, firstName, lastName, email })
         .returning();
 
       if (!user) {
         res.status(500).json({ error: "Failed to provision user" });
         return;
       }
-    } else {
-      // existing user
-      const [updated] = await db
-        .update(users)
-        .set({
-          ...(roleFromToken !== null ? { role: roleFromToken } : {}),
-          firstName,
-          lastName,
-          email,
-          updatedAt: new Date(),
-        })
-        .where(eq(users.asgardeoUserId, sub))
-        .returning();
-
-      if (!updated) {
-        res.status(500).json({ error: "Failed to sync user" });
-        return;
-      }
-
-      user = updated;
     }
 
     if (!user.isActive) {
@@ -150,7 +130,8 @@ export const authMiddleware = async (
       return;
     }
 
-    req.user = user;
+    // Role comes from JWT — DB row has no role column
+    req.user = { ...user, role };
     next();
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : String(err);

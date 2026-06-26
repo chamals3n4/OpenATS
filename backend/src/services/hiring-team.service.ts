@@ -14,7 +14,6 @@ export const hiringTeamService = {
         lastName: users.lastName,
         email: users.email,
         avatarUrl: users.avatarUrl,
-        role: users.role,
       })
       .from(jobHiringTeam)
       .innerJoin(users, eq(jobHiringTeam.userId, users.id))

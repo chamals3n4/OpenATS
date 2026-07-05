@@ -15,6 +15,7 @@
 - [Running the Project](#running-the-project)
   - [Frontend](#frontend)
   - [Backend](#backend)
+  - [Backend Worker](#backend-worker)
 - [Working on a Task](#working-on-a-task)
   - [Before you start ANYTHING](#before-you-start-anything)
   - [Create a new branch for your task](#create-a-new-branch-for-your-task)
@@ -209,7 +210,16 @@ pnpm dev
 
 Open `http://localhost:5000`
 
-Run both in separate terminals.
+### Backend Worker
+
+CV analysis runs as a background job queue and needs its own process, separate from the API server:
+
+```bash
+cd backend
+pnpm dev:worker
+```
+
+Run the frontend, backend, and backend worker each in their own terminal.
 
 ## Working on a Task
 

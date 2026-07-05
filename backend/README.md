@@ -26,6 +26,54 @@ OpenATS backend was written using Express.js.
 pnpm install
 ```
 
+### Start Postgres and Redis with Docker
+
+A `docker-compose.yml` is provided so you don't need to install or configure either manually:
+
+```bash
+docker compose up -d
+```
+
+This starts:
+
+- **Postgres** on `localhost:5432` (user: `openats`, password: `openats`, db: `openats`)
+- **Redis** on `localhost:6379`
+
+Check they're running:
+
+```bash
+docker compose ps
+```
+
+Stop them when you're done for the day (data is preserved):
+
+```bash
+docker compose stop
+```
+
+### Environment variables
+
+Copy the example env file and fill in the values:
+
+```bash
+cp .env.example .env
+```
+
+If you're using the Docker containers above, `DATABASE_URL` and `REDIS_URL` are:
+
+```bash
+DATABASE_URL=postgresql://openats:openats@localhost:5432/openats
+REDIS_URL=redis://localhost:6379
+```
+
+The remaining variables are for external/cloud services and are only needed if you're working on the feature that depends on them:
+
+- `ASGARDEO_*` - WSO2 Asgardeo auth. Required for almost everything - most routes are gated behind the auth middleware.
+- `R2_*` - Cloudflare R2 object storage, used for file uploads (e.g. resumes).
+- `RESEND_*` - Resend API, used for sending emails (e.g. application confirmations).
+- `GEMINI_API_KEY` - Used by the CV analysis service.
+- `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_CALENDAR_ID` - used for Google Calendar integration (interview scheduling). The backend authenticates as a service account, so these are the only Google-related variables needed.
+
 ### First-time setup
 
 Run database migrations and seed the default pipeline stages (required for the app to function):
@@ -74,4 +122,4 @@ Whenever you modify a Drizzle schema file under `src/db/schema/`, generate and c
 pnpm drizzle-kit generate
 ```
 
-See the root `CONTRIBUTING.md` for the full local setup flow, including Docker instructions for Postgres and Redis.
+See the root `CONTRIBUTING.md` for the full contribution workflow (branching, PRs, etc).

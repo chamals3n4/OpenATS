@@ -59,8 +59,8 @@
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.68 0.16 40);
-  --primary-foreground: oklch(0.98 0.02 166);
+  --primary: oklch(0.38 0.06 200);
+  --primary-foreground: oklch(0.98 0.02 200);
   --secondary: oklch(0.967 0.001 286.375);
   --secondary-foreground: oklch(0.21 0.006 285.885);
   --muted: oklch(0.97 0 0);
@@ -77,18 +77,17 @@
   --chart-4: oklch(0.6 0.13 163);
   --chart-5: oklch(0.51 0.1 166);
   --radius: 0.625rem;
-  --sidebar: #fafafa;
+  --sidebar: #ffffff;
   --sidebar-foreground: #5c5c5c;
-  /* Navigation uses neutral greys only — theme color applies elsewhere (buttons, primary, etc.) */
   --sidebar-primary: oklch(0.93 0 0);
   --sidebar-primary-foreground: oklch(0.22 0 0);
-  --sidebar-accent: oklch(0.92 0 0);
+  --sidebar-accent: #d1e2e3;
   --sidebar-hover: oklch(0 0 0 / 0.055);
   --sidebar-accent-foreground: oklch(0.2 0 0);
-  --sidebar-border: #f0f0f0;
+  --sidebar-border: #ececec;
   --sidebar-ring: oklch(0.55 0 0);
-  --theme-color: #d97757;
-  --theme-color-hover: rgba(217, 119, 87, 0.9);
+  --theme-color: #145962;
+  --theme-color-hover: rgba(20, 89, 98, 0.9);
   --assessment-dark: #2d4a60;
   --assessment-bg: #f0f2f5;
   --assessment-white: #ffffff;

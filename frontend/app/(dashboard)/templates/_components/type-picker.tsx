@@ -1,5 +1,11 @@
 "use client";
 
+import { HugeiconsIcon } from "@hugeicons/react";
+import {
+  Mail01Icon,
+  Calendar02Icon,
+  CheckmarkCircle02Icon,
+} from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -11,6 +17,11 @@ import {
 import { TYPE_META, type TemplateType } from "../lib/templates-utils";
 
 const TEMPLATE_TYPES: TemplateType[] = ["email", "event"];
+
+const TYPE_ICONS: Record<TemplateType, typeof Mail01Icon> = {
+  email: Mail01Icon,
+  event: Calendar02Icon,
+};
 
 const TYPE_DESCRIPTIONS: Record<TemplateType, string> = {
   email: "Send emails to candidates",
@@ -34,9 +45,9 @@ export function TemplateTypePicker({
 }: TemplateTypePickerProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="!top-[20%] !translate-y-0 sm:max-w-[500px] max-w-[500px] rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg p-7 duration-0 data-open:zoom-in-100 data-closed:zoom-out-100">
+      <DialogContent className="sm:max-w-[480px] rounded-2xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-xl">
         <DialogHeader>
-          <DialogTitle className="text-[18px] font-semibold text-slate-900 dark:text-neutral-100">
+          <DialogTitle className="text-[16px] font-bold text-slate-900 dark:text-neutral-100">
             What type of template is this?
           </DialogTitle>
           <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-1">
@@ -44,43 +55,54 @@ export function TemplateTypePicker({
           </p>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-3 mt-5">
-          {TEMPLATE_TYPES.map((type) => (
-            <button
-              key={type}
-              onClick={() => onPickType(type)}
-              className={`flex flex-col items-start gap-2.5 p-4 rounded-md border-2 text-left transition-all ${
-                pickedType === type
-                  ? "border-[var(--theme-color)] bg-[var(--theme-color)]/5 dark:bg-[var(--theme-color)]/10"
-                  : "border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900"
-              }`}
-            >
-              <span
-                className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${TYPE_META[type].badge}`}
+        <div className="grid grid-cols-2 gap-3 mt-2">
+          {TEMPLATE_TYPES.map((type) => {
+            const isSelected = pickedType === type;
+            return (
+              <button
+                key={type}
+                type="button"
+                onClick={() => onPickType(type)}
+                className={`relative flex flex-col items-start gap-3 rounded-xl border p-4 text-left transition-colors cursor-pointer ${
+                  isSelected
+                    ? "border-theme bg-theme/5 dark:bg-theme/10"
+                    : "border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700"
+                }`}
               >
-                {TYPE_META[type].label}
-              </span>
-              <span className="text-[12px] text-slate-500 dark:text-neutral-400 leading-snug">
-                {TYPE_DESCRIPTIONS[type]}
-              </span>
-            </button>
-          ))}
+                {isSelected && (
+                  <HugeiconsIcon
+                    icon={CheckmarkCircle02Icon}
+                    className="absolute top-3 right-3 size-4 text-theme"
+                  />
+                )}
+                <div
+                  className={`flex size-9 items-center justify-center rounded-full ${TYPE_META[type].badge}`}
+                >
+                  <HugeiconsIcon icon={TYPE_ICONS[type]} className="size-4" />
+                </div>
+                <div>
+                  <p className="text-[13.5px] font-semibold text-slate-900 dark:text-neutral-100">
+                    {TYPE_META[type].label}
+                  </p>
+                  <p className="mt-0.5 text-[12px] text-slate-500 dark:text-neutral-400 leading-snug">
+                    {TYPE_DESCRIPTIONS[type]}
+                  </p>
+                </div>
+              </button>
+            );
+          })}
         </div>
 
-        <DialogFooter className="mt-6 gap-2">
-          <Button
-            variant="outline"
-            onClick={onClose}
-            className="h-10 px-6 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium shadow-none rounded-md text-sm"
-          >
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button
             disabled={!pickedType}
             onClick={onContinue}
-            className="h-10 px-6 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-medium shadow-none rounded-md text-sm border-none disabled:opacity-40"
+            className="bg-theme hover:bg-theme-hover text-white disabled:opacity-40"
           >
-            Continue →
+            Continue
           </Button>
         </DialogFooter>
       </DialogContent>

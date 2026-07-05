@@ -1,7 +1,6 @@
 "use client";
 
 import * as React from "react";
-import { Public_Sans } from "next/font/google";
 import {
   Home01Icon,
   Briefcase01Icon,
@@ -17,17 +16,8 @@ import {
 import { usePathname } from "next/navigation";
 
 import { NavMain } from "@/components/nav-main";
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarHeader,
-} from "@/components/ui/sidebar";
+import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import { useCurrentUser } from "@/hooks/queries/use-user";
-
-const publicSans = Public_Sans({
-  subsets: ["latin"],
-  weight: "700",
-});
 
 const navMainData = [
   {
@@ -86,10 +76,6 @@ const navMainData = [
         title: "User Management",
         url: "/settings/user-management",
       },
-      {
-        title: "Theme",
-        url: "/settings/theme",
-      },
     ],
   },
 ];
@@ -132,16 +118,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       className="top-(--header-height) h-[calc(100svh-var(--header-height))]!"
       {...props}
     >
-      <SidebarHeader className="h-16 shrink-0 px-6">
-        <div className="flex h-full w-full items-center justify-start">
-          <span
-            className={`${publicSans.className} font-bold text-[2rem] leading-none tracking-tight text-black dark:text-white select-none`}
-          >
-            OpenATS
-          </span>
-        </div>
-      </SidebarHeader>
-      <SidebarContent>
+      <SidebarContent className="pt-4">
         <NavMain items={items} />
       </SidebarContent>
     </Sidebar>

@@ -158,7 +158,7 @@ export function InterviewSchedulerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="!max-w-2xl sm:!max-w-2xl rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-lg px-6 py-4">
         <DialogHeader className="mb-3">
-          <DialogTitle className="text-[18px] font-bold text-slate-900 dark:text-neutral-100">
+          <DialogTitle className="text-base font-bold text-slate-900 dark:text-neutral-100">
             Schedule Interview - {candidateName}
           </DialogTitle>
         </DialogHeader>
@@ -166,12 +166,12 @@ export function InterviewSchedulerDialog({
         <div className="space-y-4">
           {/* Template selector */}
           <div className="space-y-1.5">
-            <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Use Template (optional)
             </Label>
             {eventTemplates.length > 0 ? (
               <Select value={useTemplate} onValueChange={handleTemplateSelect}>
-                <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] w-full rounded-lg">
+                <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-sm w-full rounded-lg">
                   <SelectValue placeholder="Select event template or create custom">
                     {useTemplate
                       ? findTemplateName(eventTemplates, useTemplate)
@@ -184,7 +184,7 @@ export function InterviewSchedulerDialog({
                     <SelectItem
                       key={t.id}
                       value={String(t.id)}
-                      className="text-[13px]"
+                      className="text-sm"
                     >
                       {t.name}
                     </SelectItem>
@@ -192,7 +192,7 @@ export function InterviewSchedulerDialog({
                 </SelectContent>
               </Select>
             ) : (
-              <p className="text-[12px] text-slate-400 dark:text-neutral-500">
+              <p className="text-xs text-slate-400 dark:text-neutral-500">
                 No event templates yet. Create one in Settings → Templates.
               </p>
             )}
@@ -200,7 +200,7 @@ export function InterviewSchedulerDialog({
 
           {/* Template info summary when selected */}
           {templateSelected && selectedTpl && (
-            <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-4 text-[13px] space-y-1">
+            <div className="rounded-lg border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 p-4 text-sm space-y-1">
               <p className="font-semibold text-slate-700 dark:text-neutral-300">
                 Using template: {selectedTpl.name}
               </p>
@@ -215,19 +215,19 @@ export function InterviewSchedulerDialog({
           {!templateSelected && (
             <>
               <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Event Name
                 </Label>
                 <Input
                   value={eventName}
                   onChange={(e) => setEventName(e.target.value)}
                   placeholder="e.g. Technical Interview Round 1"
-                  className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] rounded-lg"
+                  className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-sm rounded-lg"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Event Type
                 </Label>
                 <div className="flex items-center gap-4">
@@ -240,7 +240,7 @@ export function InterviewSchedulerDialog({
                       onChange={() => setEventType("virtual")}
                       className="text-[var(--theme-color)]"
                     />
-                    <span className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
                       Virtual
                     </span>
                   </label>
@@ -253,7 +253,7 @@ export function InterviewSchedulerDialog({
                       onChange={() => setEventType("onsite")}
                       className="text-[var(--theme-color)]"
                     />
-                    <span className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">
+                    <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
                       On-site
                     </span>
                   </label>
@@ -262,14 +262,14 @@ export function InterviewSchedulerDialog({
 
               {eventType === "virtual" && (
                 <div className="space-y-1.5">
-                  <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                  <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                     Meeting URL
                   </Label>
                   <Input
                     value={meetingUrl}
                     onChange={(e) => setMeetingUrl(e.target.value)}
                     placeholder="Zoom / Teams / Meet link"
-                    className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] rounded-lg"
+                    className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-sm rounded-lg"
                   />
                 </div>
               )}
@@ -279,12 +279,12 @@ export function InterviewSchedulerDialog({
           {/* Time slots — always visible */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Time Slots
               </Label>
               <button
                 onClick={addSlot}
-                className="inline-flex items-center gap-1 text-[12px] font-semibold text-[var(--theme-color)] hover:underline"
+                className="inline-flex items-center gap-1 text-xs font-semibold text-[var(--theme-color)] hover:underline"
               >
                 <HugeiconsIcon
                   icon={PlusSignIcon}
@@ -304,7 +304,7 @@ export function InterviewSchedulerDialog({
                     n[i].datetime = e.target.value;
                     setTimeSlots(n);
                   }}
-                  className="h-10 flex-1 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] rounded-lg"
+                  className="h-10 flex-1 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-sm rounded-lg"
                 />
                 {timeSlots.length > 1 && (
                   <button
@@ -322,14 +322,14 @@ export function InterviewSchedulerDialog({
 
           {/* Email body — always visible */}
           <div className="space-y-1.5">
-            <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+            <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
               Email Body
             </Label>
             <textarea
               value={bodyText}
               onChange={(e) => setBodyText(e.target.value)}
               placeholder="Write the message the candidate will receive..."
-              className="min-h-[80px] w-full rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2.5 text-[13px] shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)]"
+              className="min-h-[80px] w-full rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2.5 text-sm shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)]"
             />
           </div>
         </div>
@@ -337,7 +337,7 @@ export function InterviewSchedulerDialog({
         <DialogFooter className="mt-4 gap-2">
           <Button
             onClick={() => onOpenChange(false)}
-            className="h-9 rounded-md border-none bg-neutral-700 px-4 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-600"
+            className="h-9 rounded-md border-none bg-neutral-700 px-4 text-sm font-semibold text-white shadow-none hover:bg-neutral-600"
           >
             Cancel
           </Button>
@@ -348,7 +348,7 @@ export function InterviewSchedulerDialog({
               !timeSlots.some((s: { datetime: string }) => s.datetime) ||
               saving
             }
-            className="h-9 rounded-md border-none bg-[var(--theme-color)] px-4 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-50"
+            className="h-9 rounded-md border-none bg-[var(--theme-color)] px-4 text-sm font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-50"
           >
             {saving ? "Sending..." : "Send to Candidate"}
           </Button>

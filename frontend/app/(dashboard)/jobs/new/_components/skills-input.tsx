@@ -29,13 +29,13 @@ export function SkillsInput({
         {skills.map((skill) => (
           <div
             key={skill}
-            className="inline-flex items-center bg-[#F1F5F9] dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 font-medium px-2.5 py-1 gap-2 rounded-md transition-all hover:bg-slate-200 dark:hover:bg-neutral-700"
+            className="inline-flex items-center bg-primary text-primary-foreground font-medium px-2.5 py-1 gap-2 rounded-md transition-all"
           >
-            <span className="text-[13px] leading-none">{skill}</span>
+            <span className="text-sm leading-none">{skill}</span>
             <button
               type="button"
               onClick={() => onRemoveSkill(skill)}
-              className="flex items-center justify-center size-4.5 -mr-1 rounded-md text-slate-400 dark:text-neutral-500 hover:text-slate-600 dark:hover:text-neutral-300 hover:bg-slate-300/50 dark:hover:bg-neutral-700/50 transition-all"
+              className="flex items-center justify-center size-4.5 -mr-1 rounded-md text-primary-foreground transition-all"
             >
               <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
             </button>

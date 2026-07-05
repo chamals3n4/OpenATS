@@ -7,6 +7,7 @@ import {
 import { jobService } from "../services/job.service";
 import { cvAnalysisService } from "../services/cv-analysis.service";
 import { r2Service } from "../services/r2.service";
+import { socketService } from "../services/socket.service";
 import logger from "../utils/logger";
 
 import { requestCvAnalysis } from "../queues/cv-analysis/queue";
@@ -231,6 +232,11 @@ export const moveCandidateStage = async (req: Request, res: Response) => {
     logger.info(
       `Candidate stage moved: candidateId=${id}, newStageId=${parsed.data.newStageId}, movedBy=${req.user.id}${result.stageAutomation ? `, automation="${result.stageAutomation}"` : ""}`,
     );
+    socketService.notifyStageChanged({
+      candidateId: id,
+      jobId: result.candidate.jobId,
+      stageId: parsed.data.newStageId,
+    });
     res.status(200).json({
       data: result.candidate,
       stageAutomation: result.stageAutomation,

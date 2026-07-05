@@ -75,7 +75,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { TableFooter } from "@/components/table/table-footer";
 
 const inputCls =
-  "h-9 bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 rounded-md shadow-none text-[13px] placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors";
+  "h-9 bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 rounded-md shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors";
 
 const ROLES = [
   { value: "interviewer", label: "Interviewer" },
@@ -384,13 +384,13 @@ export default function UserManagementPage() {
                     key={u.id}
                     className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
                   >
-                    <TableCell className="h-10 px-6 py-0 font-medium text-slate-700 dark:text-neutral-200">
+                    <TableCell className="h-10 px-6 py-0 font-medium text-slate-700 dark:text-neutral-300">
                       {getDisplayName(u)}
                     </TableCell>
-                    <TableCell className="h-10 px-6 py-0 text-slate-500 dark:text-neutral-400 font-normal">
+                    <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
                       {u.email}
                     </TableCell>
-                    <TableCell className="h-10 px-6 py-0 text-slate-500 dark:text-neutral-400 font-normal capitalize">
+                    <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal capitalize">
                       {u.role.replace(/_/g, " ")}
                     </TableCell>
                     <TableCell
@@ -443,7 +443,7 @@ export default function UserManagementPage() {
           className="w-[calc(100vw-2rem)] max-w-[480px] sm:w-[460px] md:w-[520px] p-0 bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800"
         >
           <SheetHeader className="px-6 py-4 border-b border-slate-200 dark:border-neutral-800">
-            <SheetTitle className="text-[18px] font-semibold text-slate-900 dark:text-neutral-100">
+            <SheetTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
               Create User
             </SheetTitle>
           </SheetHeader>
@@ -451,7 +451,7 @@ export default function UserManagementPage() {
           <div className="flex-1 overflow-y-auto px-6 py-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="col-span-2">
-                <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+                <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                   Email *
                 </Label>
                 <Input
@@ -466,7 +466,7 @@ export default function UserManagementPage() {
               </div>
 
               <div>
-                <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+                <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                   First name *
                 </Label>
                 <Input
@@ -480,7 +480,7 @@ export default function UserManagementPage() {
               </div>
 
               <div>
-                <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+                <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                   Last name
                 </Label>
                 <Input
@@ -494,7 +494,7 @@ export default function UserManagementPage() {
               </div>
 
               <div className="col-span-2">
-                <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+                <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                   Role
                 </Label>
                 <Select
@@ -503,7 +503,7 @@ export default function UserManagementPage() {
                     setCreateForm((f) => ({ ...f, role: v as Role }))
                   }
                 >
-                  <SelectTrigger className="w-full h-9! rounded-md bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 shadow-none px-3! py-0! text-[13px] focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors">
+                  <SelectTrigger className="w-full h-9! rounded-md bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 shadow-none px-3! py-0! text-sm focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors">
                     <SelectValue placeholder="Select role">
                       {ROLES.find((r) => r.value === createForm.role)?.label ??
                         null}
@@ -520,7 +520,7 @@ export default function UserManagementPage() {
               </div>
 
               <div className="col-span-2 pt-0.5">
-                <p className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-3">
+                <p className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-3">
                   Select the method to set the user password
                 </p>
                 <RadioGroup
@@ -532,7 +532,7 @@ export default function UserManagementPage() {
                     <RadioGroupItem id="pw-method-invite" value="invite" />
                     <Label
                       htmlFor="pw-method-invite"
-                      className="text-[14px] font-medium text-slate-800 dark:text-neutral-200 cursor-pointer"
+                      className="text-sm font-medium text-slate-800 dark:text-neutral-200 cursor-pointer"
                     >
                       Invite the user to set their own password
                     </Label>
@@ -541,7 +541,7 @@ export default function UserManagementPage() {
                     <RadioGroupItem id="pw-method-set" value="set" />
                     <Label
                       htmlFor="pw-method-set"
-                      className="text-[14px] font-medium text-slate-800 dark:text-neutral-200 cursor-pointer"
+                      className="text-sm font-medium text-slate-800 dark:text-neutral-200 cursor-pointer"
                     >
                       Set a password for the user
                     </Label>
@@ -551,7 +551,7 @@ export default function UserManagementPage() {
 
               {passwordMethod === "set" && (
                 <div className="col-span-2">
-                  <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+                  <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                     Password *
                   </Label>
                   <div className="flex flex-col sm:flex-row sm:items-center gap-2">
@@ -611,7 +611,7 @@ export default function UserManagementPage() {
                     const item = (ok: boolean, label: string) => (
                       <div
                         key={label}
-                        className="flex items-center gap-2 text-[12px] mt-2"
+                        className="flex items-center gap-2 text-xs mt-2"
                       >
                         <span
                           className={
@@ -679,14 +679,14 @@ export default function UserManagementPage() {
       >
         <DialogContent className="max-w-lg rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
           <DialogHeader>
-            <DialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+            <DialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
               Edit user
             </DialogTitle>
           </DialogHeader>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                 First name
               </Label>
               <Input
@@ -698,7 +698,7 @@ export default function UserManagementPage() {
               />
             </div>
             <div>
-              <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                 Last name
               </Label>
               <Input
@@ -710,7 +710,7 @@ export default function UserManagementPage() {
               />
             </div>
             <div className="col-span-2">
-              <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                 Email
               </Label>
               <Input
@@ -723,7 +723,7 @@ export default function UserManagementPage() {
               />
             </div>
             <div className="col-span-2">
-              <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
                 Role
               </Label>
               <Select
@@ -753,14 +753,14 @@ export default function UserManagementPage() {
           <DialogFooter className="gap-2">
             <DialogClose
               disabled={saving}
-              className="h-9 px-5 rounded-lg border cursor-pointer border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium hover:bg-slate-50 dark:hover:bg-neutral-800"
+              className="h-9 px-5 rounded-lg border cursor-pointer border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-sm font-medium hover:bg-slate-50 dark:hover:bg-neutral-800"
             >
               Cancel
             </DialogClose>
             <Button
               onClick={handleSave}
               disabled={saving}
-              className="h-9 px-5 cursor-pointer rounded-lg text-white text-[13px] font-semibold shadow-none border-none"
+              className="h-9 px-5 cursor-pointer rounded-lg text-white text-sm font-semibold shadow-none border-none"
               style={{ backgroundColor: "var(--theme-color)" }}
             >
               {saving ? "Saving…" : "Save"}
@@ -776,10 +776,10 @@ export default function UserManagementPage() {
       >
         <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[19px] font-semibold text-slate-900 dark:text-neutral-100">
+            <AlertDialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
               Remove user?
             </AlertDialogTitle>
-            <AlertDialogDescription className="text-[14px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+            <AlertDialogDescription className="text-sm text-slate-500 dark:text-neutral-400 leading-relaxed">
               {deleteTarget ? (
                 <>
                   Are you sure you want to remove{" "}
@@ -794,13 +794,13 @@ export default function UserManagementPage() {
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer">
+            <AlertDialogCancel className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleting}
-              className="h-[34px] rounded-md border-none bg-red-600 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
+              className="h-[34px] rounded-md border-none bg-red-600 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
             >
               {deleting && <Spinner className="size-3.5" />}
               {deleting ? "Removing" : "Remove"}

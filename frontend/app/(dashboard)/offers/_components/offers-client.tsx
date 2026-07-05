@@ -4,6 +4,7 @@ import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useOffersList, useDeleteOffer, useBulkDeleteOffers } from "@/hooks/queries/use-offers";
 import { useJobs } from "@/hooks/queries/use-jobs";
+import { useCandidateSocket } from "@/hooks/use-candidate-socket";
 import type { Offer } from "@/types";
 import { OfferFilters } from "./offer-filters";
 import { OffersTable } from "./offers-table";
@@ -12,6 +13,7 @@ import { OfferDeleteDialog } from "./delete-dialog";
 const PAGE_LIMIT = 15;
 
 export default function OffersPageClient() {
+  useCandidateSocket();
   const router = useRouter();
 
   // ── Filter State ───────────────────────────────────────────

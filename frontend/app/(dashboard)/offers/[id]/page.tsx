@@ -204,7 +204,7 @@ export default function OfferDetailPage() {
     return (
       <div className="flex flex-1 items-center justify-center bg-white">
         <div className="text-center space-y-3">
-          <p className="text-slate-500 text-[15px]">Offer not found.</p>
+          <p className="text-slate-500 text-sm">Offer not found.</p>
           <Link
             href="offers"
             className="text-[var(--theme-color)] font-medium hover:underline text-sm"
@@ -231,7 +231,7 @@ export default function OfferDetailPage() {
       <div className="px-6 py-3 border-b border-slate-100 flex items-center gap-3">
         <Link
           href="offers"
-          className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 text-[13px] font-medium transition-colors"
+          className="flex items-center gap-1.5 text-slate-500 hover:text-slate-800 text-sm font-medium transition-colors"
         >
           <HugeiconsIcon
             icon={ArrowLeft01Icon}
@@ -246,7 +246,7 @@ export default function OfferDetailPage() {
         <div className="w-[340px] shrink-0 border-r border-slate-200 flex flex-col overflow-y-auto bg-white">
           <div className="px-6 pt-6 pb-4 border-b border-slate-100">
             <div className="flex items-start gap-3 mb-3">
-              <div className="size-10 rounded-full bg-[var(--theme-color)]/10 flex items-center justify-center text-[14px] font-bold text-[var(--theme-color)] shrink-0">
+              <div className="size-10 rounded-full bg-[var(--theme-color)]/10 flex items-center justify-center text-sm font-bold text-[var(--theme-color)] shrink-0">
                 {offer.candidateName
                   .split(" ")
                   .map((w) => w[0])
@@ -255,37 +255,37 @@ export default function OfferDetailPage() {
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h2 className="text-[17px] font-semibold text-slate-900 leading-tight">
+                  <h2 className="text-base font-semibold text-slate-900 leading-tight">
                     {offer.candidateName}
                   </h2>
                   <span
-                    className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${STAGE_STYLES[offer.stage] ?? "bg-slate-100 text-slate-500"}`}
+                    className={`text-xs font-semibold px-2 py-0.5 rounded-full ${STAGE_STYLES[offer.stage] ?? "bg-slate-100 text-slate-500"}`}
                   >
                     {offer.stage}
                   </span>
                 </div>
-                <p className="text-[13px] text-slate-500 mt-0.5">
+                <p className="text-sm text-slate-500 mt-0.5">
                   {offer.jobTitle} · Applied {offer.appliedDaysAgo} days ago
                 </p>
               </div>
             </div>
 
             <div className="space-y-2 mt-3">
-              <div className="flex items-center gap-2 text-[13px] text-slate-600">
+              <div className="flex items-center gap-2 text-sm text-slate-600">
                 <HugeiconsIcon
                   icon={Call02Icon}
                   className="size-3.5 text-slate-400 shrink-0"
                 />
                 {offer.phone}
               </div>
-              <div className="flex items-center gap-2 text-[13px] text-slate-600">
+              <div className="flex items-center gap-2 text-sm text-slate-600">
                 <HugeiconsIcon
                   icon={Mail01Icon}
                   className="size-3.5 text-slate-400 shrink-0"
                 />
                 {offer.email}
               </div>
-              <div className="flex items-center gap-2 text-[13px] text-slate-600">
+              <div className="flex items-center gap-2 text-sm text-slate-600">
                 <HugeiconsIcon
                   icon={Linkedin01Icon}
                   className="size-3.5 text-slate-400 shrink-0"
@@ -299,7 +299,7 @@ export default function OfferDetailPage() {
             <div className="size-10 rounded-xl bg-slate-200 flex items-center justify-center">
               <HugeiconsIcon icon={EyeIcon} className="size-5 text-slate-400" />
             </div>
-            <span className="text-[13px] font-semibold text-slate-400 tracking-wide uppercase">
+            <span className="text-sm font-semibold text-slate-400 tracking-wide uppercase">
               CV Preview (PDF)
             </span>
           </div>
@@ -311,7 +311,7 @@ export default function OfferDetailPage() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-5 py-2.5 text-[13px] font-medium rounded-t-lg border border-b-0 transition-colors ${
+                className={`px-5 py-2.5 text-sm font-medium rounded-t-lg border border-b-0 transition-colors ${
                   activeTab === tab
                     ? "bg-white border-slate-200 text-slate-900 -mb-px"
                     : "border-transparent text-slate-500 hover:text-slate-700"
@@ -324,7 +324,7 @@ export default function OfferDetailPage() {
 
           <div className="flex-1 overflow-y-auto p-6">
             {activeTab !== "Offer" ? (
-              <div className="flex items-center justify-center h-40 text-slate-400 text-[13px]">
+              <div className="flex items-center justify-center h-40 text-slate-400 text-sm">
                 No content yet for {activeTab}.
               </div>
             ) : (
@@ -332,18 +332,18 @@ export default function OfferDetailPage() {
                 <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
                   <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <span className="text-[15px] font-semibold text-slate-800">
+                      <span className="text-sm font-semibold text-slate-800">
                         {offer.templateName}
                       </span>
                       <span
-                        className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${STATUS_STYLES[offerStatus]}`}
+                        className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${STATUS_STYLES[offerStatus]}`}
                       >
                         {offerStatus}
                       </span>
                     </div>
                     <Button
                       variant="outline"
-                      className="h-8 px-4 text-[13px] font-medium border-slate-200 text-slate-600 hover:bg-slate-50 shadow-none rounded-lg gap-1.5"
+                      className="h-8 px-4 text-sm font-medium border-slate-200 text-slate-600 hover:bg-slate-50 shadow-none rounded-lg gap-1.5"
                     >
                       <HugeiconsIcon icon={EyeIcon} className="size-3.5" />
                       Preview Offer
@@ -353,7 +353,7 @@ export default function OfferDetailPage() {
                   <div className="p-6 space-y-5">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-[13px] text-slate-700 font-medium mb-1.5 block">
+                        <Label className="text-sm text-slate-700 font-medium mb-1.5 block">
                           Salary
                         </Label>
                         <Input
@@ -365,7 +365,7 @@ export default function OfferDetailPage() {
                         />
                       </div>
                       <div>
-                        <Label className="text-[13px] text-slate-700 font-medium mb-1.5 block">
+                        <Label className="text-sm text-slate-700 font-medium mb-1.5 block">
                           Currency
                         </Label>
                         <Input
@@ -377,14 +377,14 @@ export default function OfferDetailPage() {
                       </div>
                     </div>
 
-                    <p className="text-[12px] text-slate-500">
+                    <p className="text-xs text-slate-500">
                       *Budget Range For This Role: USD {offer.budgetMin} –{" "}
                       {offer.budgetMax}
                     </p>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <Label className="text-[13px] text-slate-700 font-medium mb-1.5 block">
+                        <Label className="text-sm text-slate-700 font-medium mb-1.5 block">
                           Start Date
                         </Label>
                         <Input
@@ -395,7 +395,7 @@ export default function OfferDetailPage() {
                         />
                       </div>
                       <div>
-                        <Label className="text-[13px] text-slate-700 font-medium mb-1.5 block">
+                        <Label className="text-sm text-slate-700 font-medium mb-1.5 block">
                           Expiry Date
                         </Label>
                         <Input
@@ -408,7 +408,7 @@ export default function OfferDetailPage() {
                     </div>
 
                     {sendSuccess ? (
-                      <div className="w-full h-11 rounded-lg bg-emerald-500 flex items-center justify-center gap-2 text-white font-semibold text-[14px]">
+                      <div className="w-full h-11 rounded-lg bg-emerald-500 flex items-center justify-center gap-2 text-white font-semibold text-sm">
                         <HugeiconsIcon icon={SentIcon} className="size-4" />
                         Offer Sent Successfully!
                       </div>
@@ -420,7 +420,7 @@ export default function OfferDetailPage() {
                           offerStatus === "Accepted" ||
                           offerStatus === "Declined"
                         }
-                        className="w-full h-11 rounded-lg bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-semibold text-[14px] transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="w-full h-11 rounded-lg bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white font-semibold text-sm transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
                         <HugeiconsIcon icon={SentIcon} className="size-4" />
                         {offerStatus === "Sent"

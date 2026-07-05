@@ -28,7 +28,7 @@ function mergeDatetime(date: string, time: string) {
 }
 
 const inputCls =
-  "h-8 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 shadow-none rounded-md placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 text-[13px] focus-visible:border-slate-400 dark:focus-visible:border-neutral-500 focus-visible:ring-0";
+  "h-8 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-700 shadow-none rounded-md placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 text-sm focus-visible:border-slate-400 dark:focus-visible:border-neutral-500 focus-visible:ring-0";
 
 export function TimeSlotsEditor({
   slots,
@@ -47,7 +47,7 @@ export function TimeSlotsEditor({
             variant="ghost"
             size="sm"
             onClick={onAdd}
-            className="h-7 px-2.5 text-[12px] font-semibold text-[var(--theme-color)] hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/8 gap-1 shadow-none"
+            className="h-7 px-2.5 text-xs font-semibold text-[var(--theme-color)] hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/8 gap-1 shadow-none"
           >
             <HugeiconsIcon icon={PlusSignIcon} className="size-3" />
             Add slot
@@ -56,17 +56,17 @@ export function TimeSlotsEditor({
       </div>
 
       {slots.length === 0 ? (
-        <p className="text-[13px] text-slate-400 dark:text-neutral-500 py-2">
+        <p className="text-sm text-slate-400 dark:text-neutral-500 py-2">
           No time slots yet.
         </p>
       ) : (
         <div className="space-y-2">
           {/* Column headers */}
           <div className="grid grid-cols-[1fr_1fr_auto] gap-2 px-0">
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500 pl-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500 pl-1">
               Date
             </span>
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500 pl-1">
+            <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500 pl-1">
               Time
             </span>
             <span className="w-8" />

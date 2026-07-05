@@ -74,20 +74,20 @@ export function CandidateHeader({
             <div className="min-w-0">
               <div className="flex items-center gap-3">
                 <div className="flex size-12 shrink-0 items-center justify-center rounded-md bg-slate-900 text-white shadow-sm dark:bg-neutral-100 dark:text-neutral-950">
-                  <span className="select-none text-[15px] font-bold">
+                  <span className="select-none text-sm font-bold">
                     {initials}
                   </span>
                 </div>
                 <div className="min-w-0">
-                  <h1 className="truncate text-[22px] font-bold leading-tight text-slate-950 dark:text-neutral-50">
+                  <h1 className="truncate text-xl font-bold leading-tight text-slate-950 dark:text-neutral-50">
                     {candidate.firstName} {candidate.lastName}
                   </h1>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] font-medium text-slate-500 dark:text-neutral-400">
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-500 dark:text-neutral-400">
                     <span className="truncate">
                       {candidate.jobTitle ?? "Unknown position"}
                     </span>
                     <Badge
-                      className={`rounded-md border-none px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider shadow-none ${
+                      className={`rounded-md border-none px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider shadow-none ${
                         candidate.status === "active"
                           ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400"
                           : candidate.status === "rejected"
@@ -103,7 +103,7 @@ export function CandidateHeader({
                     </Badge>
                     {offer && (
                       <Badge
-                        className={`${offerStyle?.bg} ${offerStyle?.text} rounded-md border-none px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider shadow-none`}
+                        className={`${offerStyle?.bg} ${offerStyle?.text} rounded-md border-none px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider shadow-none`}
                       >
                         Offer {offer.status}
                       </Badge>
@@ -112,7 +112,7 @@ export function CandidateHeader({
                 </div>
               </div>
 
-              <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-slate-600 dark:text-neutral-300">
+              <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600 dark:text-neutral-300">
                 <a
                   href={`mailto:${candidate.email}`}
                   className="inline-flex min-w-0 items-center gap-2 font-medium hover:text-[var(--theme-color)]"
@@ -145,7 +145,7 @@ export function CandidateHeader({
             <Button
               size="sm"
               disabled={!candidate.resumeUrl}
-              className="h-7 rounded-[6px] cursor-pointer border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:bg-neutral-700 disabled:text-neutral-400 disabled:opacity-70"
+              className="h-7 rounded-[6px] cursor-pointer border-none bg-[var(--theme-color)] px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:bg-neutral-700 disabled:text-neutral-400 disabled:opacity-70"
               onClick={onViewCv}
             >
               <HugeiconsIcon icon={File01Icon} className="size-3" />
@@ -158,7 +158,7 @@ export function CandidateHeader({
                 !isManager || pipelineStages.length === 0 || moveStageMutation.isPending
               }
             >
-              <SelectTrigger className="h-8 rounded-[6px] border-none bg-neutral-100 px-2.5 text-[13px] font-semibold leading-none text-slate-700 shadow-none hover:bg-neutral-200 focus:ring-0 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
+              <SelectTrigger className="h-8 rounded-[6px] border-none bg-neutral-100 px-2.5 text-sm font-semibold leading-none text-slate-700 shadow-none hover:bg-neutral-200 focus:ring-0 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
                 <SelectValue>{selectedStageName}</SelectValue>
               </SelectTrigger>
               <SelectContent className="rounded-[6px] border-slate-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
@@ -166,7 +166,7 @@ export function CandidateHeader({
                   <SelectItem
                     key={stage.id}
                     value={String(stage.id)}
-                    className="text-[13px]"
+                    className="text-sm"
                   >
                     {stage.name}
                   </SelectItem>
@@ -180,7 +180,7 @@ export function CandidateHeader({
                   size="sm"
                   disabled={moveStageMutation.isPending}
                   onClick={onCancelStageChange}
-                  className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600"
+                  className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600"
                 >
                   Cancel
                 </Button>
@@ -189,7 +189,7 @@ export function CandidateHeader({
                   size="sm"
                   disabled={moveStageMutation.isPending}
                   onClick={onSaveStageChange}
-                  className="h-7 cursor-pointer rounded-[6px] border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                  className="h-7 cursor-pointer rounded-[6px] border-none bg-[var(--theme-color)] px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
                 >
                   {moveStageMutation.isPending ? "Saving…" : "Save"}
                 </Button>
@@ -197,7 +197,7 @@ export function CandidateHeader({
             )}
             <Button
               size="sm"
-              className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+              className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
               onClick={onClose}
             >
               <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
@@ -206,7 +206,7 @@ export function CandidateHeader({
             <Button
               size="sm"
               disabled={!isManager}
-              className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={onEdit}
             >
               <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
@@ -215,7 +215,7 @@ export function CandidateHeader({
             <Button
               size="sm"
               disabled={!isManager}
-              className="h-7 cursor-pointer rounded-[6px] border-none bg-red-600 px-2.5 text-[13px] font-semibold leading-none text-white shadow-none hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-7 cursor-pointer rounded-[6px] border-none bg-red-600 px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
               onClick={onDelete}
             >
               <HugeiconsIcon icon={Delete02Icon} className="size-3" />

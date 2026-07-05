@@ -164,10 +164,10 @@ export function OfferSection({
   return (
     <div className="p-5 sm:p-6">
       <div className="mb-6">
-        <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+        <h3 className="text-sm font-bold text-slate-900 dark:text-neutral-100">
           Offer Details
         </h3>
-        <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+        <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5">
           Compensation package and offer letter
         </p>
       </div>
@@ -179,10 +179,10 @@ export function OfferSection({
               className="size-5 text-slate-300 dark:text-neutral-600"
             />
           </div>
-          <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400">
+          <p className="text-sm font-semibold text-slate-500 dark:text-neutral-400">
             No offer yet
           </p>
-          <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1 max-w-[260px] mx-auto">
+          <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1 max-w-[260px] mx-auto">
             An offer will appear here once the candidate reaches an offer stage.
           </p>
           {(() => {
@@ -209,7 +209,7 @@ export function OfferSection({
                       })
                       .catch(() => toast.error("Failed to create offer"));
                   }}
-                  className="mt-4 h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                  className="mt-4 h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-sm font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)]"
                 >
                   Generate Offer
                 </Button>
@@ -222,11 +222,11 @@ export function OfferSection({
         <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <p className="text-[15px] font-bold text-slate-800 dark:text-neutral-200">
+              <p className="text-sm font-bold text-slate-800 dark:text-neutral-200">
                 Edit Offer
               </p>
               <Badge
-                className={`${offerStyle?.bg} ${offerStyle?.text} border-none shadow-none font-bold px-2.5 py-0.5 rounded-md text-[11px] uppercase tracking-wider`}
+                className={`${offerStyle?.bg} ${offerStyle?.text} border-none shadow-none font-bold px-2.5 py-0.5 rounded-md text-xs uppercase tracking-wider`}
               >
                 {offer?.status ?? "draft"}
               </Badge>
@@ -235,7 +235,7 @@ export function OfferSection({
               <Button
                 size="sm"
                 onClick={() => setIsEditingOffer(false)}
-                className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-sm font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
               >
                 Cancel
               </Button>
@@ -243,7 +243,7 @@ export function OfferSection({
                 size="sm"
                 onClick={saveOfferDraft}
                 disabled={updateOfferMutation.isPending}
-                className="h-7 rounded-md border-none bg-neutral-700 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-600 disabled:opacity-60"
+                className="h-7 rounded-md border-none bg-neutral-700 px-2.5 text-sm font-semibold text-white shadow-none hover:bg-neutral-600 disabled:opacity-60"
               >
                 {updateOfferMutation.isPending ? "Saving…" : "Save Draft"}
               </Button>
@@ -253,7 +253,7 @@ export function OfferSection({
                   updateOfferMutation.isPending || sendOfferMutation.isPending
                 }
                 onClick={handleSendOffer}
-                className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
+                className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-sm font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
               >
                 <HugeiconsIcon
                   icon={SentIcon}
@@ -267,25 +267,25 @@ export function OfferSection({
 
           <div className="space-y-4">
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Template
               </Label>
               <Select
                 value={offerTemplateId}
                 onValueChange={(v) => setOfferTemplateId(v ?? "")}
               >
-                <SelectTrigger className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
+                <SelectTrigger className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-sm focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
                   <SelectValue placeholder="Select a template" />
                 </SelectTrigger>
                 <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                  <SelectItem value="" className="text-[13px]">
+                  <SelectItem value="" className="text-sm">
                     No template
                   </SelectItem>
                   {emailTemplates.map((t: any) => (
                     <SelectItem
                       key={t.id}
                       value={String(t.id)}
-                      className="text-[13px]"
+                      className="text-sm"
                     >
                       {t.name}
                     </SelectItem>
@@ -296,19 +296,19 @@ export function OfferSection({
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Currency
                 </Label>
                 <Select
                   value={editCurrency}
                   onValueChange={(v) => setEditCurrency(v ?? "")}
                 >
-                  <SelectTrigger className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
+                  <SelectTrigger className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-sm focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
                     {["USD", "EUR", "GBP", "LKR", "INR", "AUD"].map((c) => (
-                      <SelectItem key={c} value={c} className="text-[13px]">
+                      <SelectItem key={c} value={c} className="text-sm">
                         {c}
                       </SelectItem>
                     ))}
@@ -316,7 +316,7 @@ export function OfferSection({
                 </Select>
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Employment Type
                 </Label>
                 <Select
@@ -325,7 +325,7 @@ export function OfferSection({
                     setEditEmploymentType(v as typeof editEmploymentType)
                   }
                 >
-                  <SelectTrigger className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
+                  <SelectTrigger className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-sm focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
@@ -339,7 +339,7 @@ export function OfferSection({
                       <SelectItem
                         key={e}
                         value={e}
-                        className="text-[13px] capitalize"
+                        className="text-sm capitalize"
                       >
                         {e.replace("_", "-")}
                       </SelectItem>
@@ -350,7 +350,7 @@ export function OfferSection({
             </div>
 
             <div className="space-y-1.5 mt-4">
-              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Salary
               </Label>
               <Input
@@ -359,50 +359,50 @@ export function OfferSection({
                 value={editSalary}
                 onChange={(e) => setEditSalary(e.target.value)}
                 placeholder="e.g. 75000"
-                className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] rounded-md"
+                className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-sm focus:ring-0 focus:border-[var(--theme-color)] rounded-md"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Start Date
                 </Label>
                 <Input
                   type="date"
                   value={editStartDate}
                   onChange={(e) => setEditStartDate(e.target.value)}
-                  className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] rounded-md"
+                  className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-sm focus:ring-0 focus:border-[var(--theme-color)] rounded-md"
                 />
               </div>
               <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Reporting Manager
                 </Label>
                 <Input
                   value={editReportingManager}
                   onChange={(e) => setEditReportingManager(e.target.value)}
                   placeholder="e.g. Jane Smith"
-                  className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] rounded-md"
+                  className="h-8 border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 shadow-none text-sm focus:ring-0 focus:border-[var(--theme-color)] rounded-md"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Benefits
               </Label>
               <textarea
                 value={editBenefits}
                 onChange={(e) => setEditBenefits(e.target.value)}
                 placeholder="e.g. Health insurance, 401k matching, 20 PTO days..."
-                className="min-h-[100px] w-full rounded-md border border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 px-3 py-2.5 text-[13px] shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)]"
+                className="min-h-[100px] w-full rounded-md border border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 px-3 py-2.5 text-sm shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)]"
               />
             </div>
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Offer Letter (HTML)
                 </Label>
                 <button
@@ -424,7 +424,7 @@ export function OfferSection({
                       toast.error("Select a template first to generate");
                     }
                   }}
-                  className="text-[11px] font-semibold text-[var(--theme-color)] hover:underline"
+                  className="text-xs font-semibold text-[var(--theme-color)] hover:underline"
                 >
                   Generate from template
                 </button>
@@ -433,12 +433,12 @@ export function OfferSection({
                 value={editOfferLetterHtml}
                 onChange={(e) => setEditOfferLetterHtml(e.target.value)}
                 placeholder="<p>Dear candidate...</p>"
-                className="min-h-[180px] w-full rounded-md border border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 px-3 py-2.5 text-[13px] font-mono shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)]"
+                className="min-h-[180px] w-full rounded-md border border-gray-300 dark:border-neutral-600 bg-gray-100 dark:bg-neutral-800 px-3 py-2.5 text-sm font-mono shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)]"
               />
             </div>
 
             {updateOfferMutation.isError && (
-              <p className="text-red-500 text-[12px] font-medium">
+              <p className="text-red-500 text-xs font-medium">
                 {(updateOfferMutation.error as Error).message ??
                   "Failed to save offer."}
               </p>
@@ -453,11 +453,11 @@ export function OfferSection({
                 <div
                   className={`size-2.5 rounded-full ${offerStyle?.dot ?? "bg-slate-400"}`}
                 />
-                <span className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
+                <span className="text-sm font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
                   Status
                 </span>
                 <Badge
-                  className={`${offerStyle?.bg} ${offerStyle?.text} hover:opacity-90 border-none shadow-none font-bold px-3 py-1 rounded-md text-[11px] uppercase tracking-wider`}
+                  className={`${offerStyle?.bg} ${offerStyle?.text} hover:opacity-90 border-none shadow-none font-bold px-3 py-1 rounded-md text-xs uppercase tracking-wider`}
                 >
                   {offer.status}
                 </Badge>
@@ -471,7 +471,7 @@ export function OfferSection({
                       sendOfferMutation.isPending
                     }
                     onClick={handleSendOffer}
-                    className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
+                    className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-sm font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
                   >
                     <HugeiconsIcon
                       icon={SentIcon}
@@ -495,7 +495,7 @@ export function OfferSection({
                           ),
                       })
                     }
-                    className="h-7 rounded-md border-none bg-emerald-600 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-emerald-500"
+                    className="h-7 rounded-md border-none bg-emerald-600 px-2.5 text-sm font-semibold text-white shadow-none hover:bg-emerald-500"
                   >
                     {markOfferAsHiredMutation.isPending
                       ? "Marking…"
@@ -505,7 +505,7 @@ export function OfferSection({
                 <Button
                   size="sm"
                   onClick={openOfferEdit}
-                  className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                  className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-sm font-semibold text-white shadow-none hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600"
                 >
                   <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
                   Edit
@@ -562,10 +562,10 @@ export function OfferSection({
                   key={label}
                   className="flex items-center justify-between px-5 py-3.5 gap-4"
                 >
-                  <span className="text-[13px] text-slate-500 dark:text-neutral-400 font-medium">
+                  <span className="text-sm text-slate-500 dark:text-neutral-400 font-medium">
                     {label}
                   </span>
-                  <span className="text-[13px] text-slate-800 dark:text-neutral-200 font-semibold text-right break-words">
+                  <span className="text-sm text-slate-800 dark:text-neutral-200 font-semibold text-right break-words">
                     {value}
                   </span>
                 </div>
@@ -575,10 +575,10 @@ export function OfferSection({
               <>
                 <Separator />
                 <div className="px-5 py-4">
-                  <p className="text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-2">
+                  <p className="text-xs font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-2">
                     Benefits
                   </p>
-                  <p className="text-[13px] text-slate-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
+                  <p className="text-sm text-slate-600 dark:text-neutral-400 whitespace-pre-line leading-relaxed">
                     {offer.benefits}
                   </p>
                 </div>
@@ -588,11 +588,11 @@ export function OfferSection({
 
           {offer.offerLetterHtml && (
             <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-              <p className="text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
+              <p className="text-xs font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-3">
                 Offer Letter Preview
               </p>
               <div
-                className="text-[13px] text-slate-700 dark:text-neutral-300 leading-relaxed max-h-[340px] overflow-y-auto prose prose-sm w-full"
+                className="text-sm text-slate-700 dark:text-neutral-300 leading-relaxed max-h-[340px] overflow-y-auto prose prose-sm w-full"
                 dangerouslySetInnerHTML={{
                   __html: offer.offerLetterHtml,
                 }}

@@ -29,21 +29,21 @@ export function AssessmentCard({
       <div className="flex flex-col gap-2 px-4 pt-4 pb-3">
         <Link
           href={`/assessments/${assessment.id}`}
-          className="text-[15px] font-semibold text-slate-800 dark:text-neutral-200 leading-snug hover:underline underline-offset-4 decoration-1 truncate"
+          className="text-sm font-semibold text-slate-800 dark:text-neutral-200 leading-snug hover:underline underline-offset-4 decoration-1 truncate"
         >
           {assessment.title}
         </Link>
 
         <div className="flex items-center gap-2">
-          <span className="inline-flex items-center text-[12px] font-medium px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400">
+          <span className="inline-flex items-center text-xs font-medium px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400">
             Active
           </span>
           <span className="ml-auto flex items-center gap-3">
-            <span className="flex items-center gap-1 text-[12px] text-slate-400">
+            <span className="flex items-center gap-1 text-xs text-slate-400">
               <HugeiconsIcon icon={QuestionIcon} className="size-3.5" />
               {assessment.questions?.length || 0}
             </span>
-            <span className="flex items-center gap-1 text-[12px] text-slate-400">
+            <span className="flex items-center gap-1 text-xs text-slate-400">
               <HugeiconsIcon icon={Time01Icon} className="size-3.5" />
               {assessment.timeLimit}m
             </span>

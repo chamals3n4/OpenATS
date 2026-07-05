@@ -33,7 +33,7 @@ export function AssessmentMetaSection({
         onClick={onToggle}
         className="w-full flex items-center justify-between px-8 py-4 hover:bg-slate-50/60 dark:hover:bg-neutral-900 transition-colors group"
       >
-        <span className="text-[12px] font-semibold text-slate-500 dark:text-neutral-400 tracking-widest uppercase">
+        <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400 tracking-widest uppercase">
           Assessment Details
         </span>
         <HugeiconsIcon

@@ -23,10 +23,10 @@ export function RejectionSection({
     <div className="p-5 sm:p-6">
       <div className="mb-6 flex items-center justify-between gap-3">
         <div>
-          <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-neutral-100">
             Rejection
           </h3>
-          <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5">
             Rejection history and actions
           </p>
         </div>
@@ -35,7 +35,7 @@ export function RejectionSection({
             size="sm"
             disabled={unrejectMutation.isPending}
             onClick={() => unrejectMutation.mutate(candidateId)}
-            className="h-7 rounded-md border-none bg-slate-700 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-slate-600 disabled:opacity-60"
+            className="h-7 rounded-md border-none bg-slate-700 px-2.5 text-sm font-semibold text-white shadow-none hover:bg-slate-600 disabled:opacity-60"
           >
             {unrejectMutation.isPending ? "Restoring…" : "Unreject Candidate"}
           </Button>
@@ -43,7 +43,7 @@ export function RejectionSection({
           <Button
             size="sm"
             onClick={onReject}
-            className="h-7 rounded-md border-none bg-red-600 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-red-500"
+            className="h-7 rounded-md border-none bg-red-600 px-2.5 text-sm font-semibold text-white shadow-none hover:bg-red-500"
           >
             Reject Candidate
           </Button>
@@ -58,7 +58,7 @@ export function RejectionSection({
               className="size-5 text-slate-300 dark:text-neutral-600"
             />
           </div>
-          <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400">
+          <p className="text-sm font-semibold text-slate-500 dark:text-neutral-400">
             {candidate.status === "rejected"
               ? "Candidate has been rejected"
               : "No rejections yet"}
@@ -73,29 +73,29 @@ export function RejectionSection({
             >
               <div className="flex items-center justify-between px-5 py-4">
                 <div className="flex items-center gap-3">
-                  <span className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200">
+                  <span className="text-sm font-semibold text-slate-800 dark:text-neutral-200">
                     Rejected
                   </span>
                   <Badge
                     className={
                       r.emailStatus === "sent"
-                        ? "rounded-md border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-none bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400"
-                        : "rounded-md border-none px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider shadow-none bg-slate-50 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400"
+                        ? "rounded-md border-none px-2 py-0.5 text-xs font-bold uppercase tracking-wider shadow-none bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400"
+                        : "rounded-md border-none px-2 py-0.5 text-xs font-bold uppercase tracking-wider shadow-none bg-slate-50 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400"
                     }
                   >
                     Email: {r.emailStatus}
                   </Badge>
                 </div>
-                <span className="text-[11px] font-medium text-slate-400 dark:text-neutral-500">
+                <span className="text-xs font-medium text-slate-400 dark:text-neutral-500">
                   {timeAgo(r.rejectedAt)}
                 </span>
               </div>
               <div className="px-5 pb-4 space-y-1">
-                <p className="text-[13px] text-slate-600 dark:text-neutral-300">
+                <p className="text-sm text-slate-600 dark:text-neutral-300">
                   Reason: {r.reason}
                 </p>
                 {r.internalNote && (
-                  <p className="text-[11px] text-slate-500 dark:text-neutral-400">
+                  <p className="text-xs text-slate-500 dark:text-neutral-400">
                     Internal note: {r.internalNote}
                   </p>
                 )}

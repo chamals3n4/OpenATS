@@ -14,10 +14,10 @@ export function HistorySection({
   return (
     <div className="p-5 sm:p-6">
       <div className="mb-6">
-        <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+        <h3 className="text-sm font-bold text-slate-900 dark:text-neutral-100">
           Stage History
         </h3>
-        <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+        <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5">
           Progression through the hiring pipeline
         </p>
       </div>
@@ -29,10 +29,10 @@ export function HistorySection({
               className="size-5 text-slate-300 dark:text-neutral-600"
             />
           </div>
-          <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400">
+          <p className="text-sm font-semibold text-slate-500 dark:text-neutral-400">
             No stage history yet
           </p>
-          <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
+          <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1">
             Stage changes will appear here as the candidate moves through the
             pipeline.
           </p>
@@ -53,14 +53,14 @@ export function HistorySection({
                   />
                   <div>
                     <div className="flex items-center justify-between gap-2">
-                      <span className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200">
+                      <span className="text-sm font-semibold text-slate-800 dark:text-neutral-200">
                         {stageMap[h.stageId] ?? `Stage #${h.stageId}`}
                       </span>
-                      <span className="text-[11px] font-medium text-slate-400 dark:text-neutral-500 bg-slate-50 dark:bg-neutral-800 px-2 py-0.5 rounded-md shrink-0">
+                      <span className="text-xs font-medium text-slate-400 dark:text-neutral-500 bg-slate-50 dark:bg-neutral-800 px-2 py-0.5 rounded-md shrink-0">
                         {timeAgo(h.movedAt)}
                       </span>
                     </div>
-                    <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
+                    <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1">
                       {new Date(h.movedAt).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",

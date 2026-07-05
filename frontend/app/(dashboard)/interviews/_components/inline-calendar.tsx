@@ -71,7 +71,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
           >
             <HugeiconsIcon icon={ChevronLeft} className="size-4" />
           </button>
-          <h2 className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
+          <h2 className="text-sm font-semibold text-slate-900 dark:text-neutral-100">
             {monthLabel}
           </h2>
           <button
@@ -87,7 +87,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
           {dowLabels.map((d) => (
             <div
               key={d}
-              className="py-2 text-center text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500"
+              className="py-2 text-center text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500"
             >
               {d}
             </div>
@@ -123,7 +123,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
                   <>
                     <span
                       className={`
-                        inline-flex size-6 items-center justify-center rounded-full text-[13px] font-medium
+                        inline-flex size-6 items-center justify-center rounded-full text-sm font-medium
                         ${isToday ? "bg-[var(--theme-color)] text-white font-bold" : ""}
                         ${isSelected && !isToday ? "bg-slate-900 dark:bg-neutral-100 text-white dark:text-neutral-900" : ""}
                         ${!isToday && !isSelected ? "text-slate-700 dark:text-neutral-300" : ""}
@@ -140,7 +140,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
                           return (
                             <div
                               key={idx}
-                              className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-[10px] font-medium truncate ${cfg.badge}`}
+                              className={`flex items-center gap-1 rounded px-1.5 py-0.5 text-xs font-medium truncate ${cfg.badge}`}
                             >
                               <span
                                 className={`size-1.5 rounded-full shrink-0 ${cfg.dot}`}
@@ -155,7 +155,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
                           );
                         })}
                         {eventCount > 2 && (
-                          <div className="text-[10px] font-semibold text-slate-400 dark:text-neutral-500 px-1.5">
+                          <div className="text-xs font-semibold text-slate-400 dark:text-neutral-500 px-1.5">
                             +{eventCount - 2} more
                           </div>
                         )}
@@ -174,17 +174,17 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
         {selected ? (
           <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
             <div className="px-4 py-3 border-b border-slate-100 dark:border-neutral-800">
-              <p className="text-[13px] font-semibold text-slate-900 dark:text-neutral-100">
+              <p className="text-sm font-semibold text-slate-900 dark:text-neutral-100">
                 {fmtDateLong(new Date(year, month, selected).toISOString())}
               </p>
-              <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-0.5">
+              <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">
                 {selectedInterviews.length} interview
                 {selectedInterviews.length !== 1 ? "s" : ""}
               </p>
             </div>
             {selectedInterviews.length === 0 ? (
               <div className="px-4 py-8 text-center">
-                <p className="text-[13px] text-slate-400">
+                <p className="text-sm text-slate-400">
                   No interviews this day.
                 </p>
               </div>
@@ -202,16 +202,16 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
                         <div className="min-w-0 flex-1">
                           <Link
                             href={`/candidates/${iv.candidateId}?from=interviews`}
-                            className="text-[13px] font-semibold text-slate-900 dark:text-neutral-100 hover:text-[var(--theme-color)] block truncate"
+                            className="text-sm font-semibold text-slate-900 dark:text-neutral-100 hover:text-[var(--theme-color)] block truncate"
                           >
                             {iv.candidateName}
                           </Link>
-                          <p className="text-[12px] text-slate-500 dark:text-neutral-400 mt-0.5 truncate">
+                          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5 truncate">
                             {iv.jobTitle}
                             {iv.stageName ? ` · ${iv.stageName}` : ""}
                           </p>
                           <div className="flex items-center gap-1.5 mt-1.5">
-                            <span className="flex items-center gap-1 text-[11px] font-medium text-slate-500 dark:text-neutral-400">
+                            <span className="flex items-center gap-1 text-xs font-medium text-slate-500 dark:text-neutral-400">
                               <HugeiconsIcon
                                 icon={Clock01Icon}
                                 className="size-3"
@@ -219,7 +219,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
                               {fmtTime(iv.scheduledAt)}
                             </span>
                             <span
-                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold border-none ${cfg.badge}`}
+                              className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold border-none ${cfg.badge}`}
                             >
                               {cfg.label}
                             </span>
@@ -240,7 +240,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
                 className="size-5 text-slate-300 dark:text-neutral-600"
               />
             </div>
-            <p className="text-[13px] font-medium text-slate-500 dark:text-neutral-400">
+            <p className="text-sm font-medium text-slate-500 dark:text-neutral-400">
               Select a day to see interviews
             </p>
           </div>
@@ -248,14 +248,14 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
 
         {/* Legend */}
         <div className="mt-4 rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3">
-          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500 mb-2.5">
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-neutral-500 mb-2.5">
             Status Legend
           </p>
           <div className="space-y-2">
             {Object.entries(STATUS_CONFIG).map(([, cfg]) => (
               <div key={cfg.label} className="flex items-center gap-2">
                 <span className={`size-2 rounded-full ${cfg.dot}`} />
-                <span className="text-[12px] font-medium text-slate-600 dark:text-neutral-400">
+                <span className="text-xs font-medium text-slate-600 dark:text-neutral-400">
                   {cfg.label}
                 </span>
               </div>

@@ -35,7 +35,7 @@ export function EventTypeSelector({ value, onChange, readOnly = false }: EventTy
               id={`event-type-${opt}`}
               className="border-slate-300 dark:border-neutral-600 size-3.5"
             />
-            <span className="text-[13px] text-slate-700 dark:text-neutral-300">
+            <span className="text-sm text-slate-700 dark:text-neutral-300">
               {opt === "virtual" ? "Virtual" : "On-site"}
             </span>
           </label>

@@ -58,33 +58,33 @@ export function AssessmentInviteDialog({
     <Dialog open={!!assessment} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="max-w-md rounded-md border-slate-200 dark:border-neutral-800 shadow-lg p-5 bg-white dark:bg-neutral-950">
         <DialogHeader>
-          <DialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+          <DialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
             Invite Candidate
           </DialogTitle>
-          <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-1">
+          <p className="text-sm text-slate-500 dark:text-neutral-400 mt-1">
             Generates a unique assessment link for the selected candidate.
           </p>
         </DialogHeader>
 
         <div className="space-y-4 mt-2">
           <div className="space-y-1.5">
-            <Label className="text-[12px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
+            <Label className="text-xs font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
               Assessment
             </Label>
-            <p className="text-[14px] font-medium text-slate-700 dark:text-neutral-300">
+            <p className="text-sm font-medium text-slate-700 dark:text-neutral-300">
               {assessment?.title}
             </p>
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-[12px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
+            <Label className="text-xs font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
               Select Candidate
             </Label>
             <Select
               value={selectedCandidateId}
               onValueChange={(v) => onCandidateChange(v ?? "")}
             >
-              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-[13px] focus:ring-0 w-full">
+              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-none text-sm focus:ring-0 w-full">
                 <SelectValue placeholder="Choose a candidate…" />
               </SelectTrigger>
               <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
@@ -92,7 +92,7 @@ export function AssessmentInviteDialog({
                   <SelectItem
                     key={c.id}
                     value={String(c.id)}
-                    className="text-[13px]"
+                    className="text-sm"
                   >
                     {c.firstName} {c.lastName}
                     {c.jobTitle ? ` — ${c.jobTitle}` : ""}
@@ -106,7 +106,7 @@ export function AssessmentInviteDialog({
             <Button
               onClick={onGenerateLink}
               disabled={!selectedCandidateId || isPending}
-              className="w-full h-8 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-md text-[13px] font-medium gap-2"
+              className="w-full h-8 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-md text-sm font-medium gap-2"
             >
               {isPending ? (
                 <>
@@ -119,16 +119,16 @@ export function AssessmentInviteDialog({
             </Button>
           ) : (
             <div className="space-y-2">
-              <Label className="text-[12px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
+              <Label className="text-xs font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
                 Assessment Link
               </Label>
               <div className="flex items-center gap-2">
-                <div className="flex-1 bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-md px-3 py-2 text-[12px] text-slate-600 dark:text-neutral-300 truncate font-mono">
+                <div className="flex-1 bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-md px-3 py-2 text-xs text-slate-600 dark:text-neutral-300 truncate font-mono">
                   {generatedLink}
                 </div>
                 <button
                   onClick={onCopyLink}
-                  className={`shrink-0 h-8 px-3 rounded-md text-[12px] font-medium border inline-flex items-center gap-1.5 ${
+                  className={`shrink-0 h-8 px-3 rounded-md text-xs font-medium border inline-flex items-center gap-1.5 ${
                     copied
                       ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-900/50"
                       : "border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 hover:bg-slate-50 dark:hover:bg-neutral-800"
@@ -145,7 +145,7 @@ export function AssessmentInviteDialog({
                 href={generatedLink}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex items-center gap-1.5 text-[12px] text-[var(--theme-color)] font-medium hover:underline"
+                className="inline-flex items-center gap-1.5 text-xs text-[var(--theme-color)] font-medium hover:underline"
               >
                 <HugeiconsIcon icon={LinkSquare01Icon} className="size-3.5" />
                 Open in new tab
@@ -154,7 +154,7 @@ export function AssessmentInviteDialog({
           )}
 
           {isError && (
-            <p className="text-red-500 text-[12px]">
+            <p className="text-red-500 text-xs">
               {error?.message ?? "Failed to generate invite."}
             </p>
           )}

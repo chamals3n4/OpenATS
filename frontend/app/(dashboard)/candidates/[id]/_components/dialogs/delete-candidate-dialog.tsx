@@ -36,10 +36,10 @@ export function DeleteCandidateDialog({
               className="size-5 text-red-500 dark:text-red-400"
             />
           </div>
-          <AlertDialogTitle className="text-[17px] font-bold text-slate-900 dark:text-neutral-100">
+          <AlertDialogTitle className="text-base font-bold text-slate-900 dark:text-neutral-100">
             Delete candidate?
           </AlertDialogTitle>
-          <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed mt-1">
+          <AlertDialogDescription className="text-sm text-slate-500 dark:text-neutral-400 leading-relaxed mt-1">
             <strong className="text-slate-700 dark:text-neutral-200">
               {candidate?.firstName} {candidate?.lastName}
             </strong>{" "}
@@ -47,12 +47,12 @@ export function DeleteCandidateDialog({
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter className="px-6 pb-6 pt-0 gap-2">
-          <AlertDialogCancel className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer">
+          <AlertDialogCancel className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-sm font-semibold text-white shadow-none transition-colors hover:bg-neutral-700 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer">
             Cancel
           </AlertDialogCancel>
           <AlertDialogAction
             onClick={onConfirm}
-            className="h-7 rounded-md border-none bg-red-600 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-red-500 cursor-pointer"
+            className="h-7 rounded-md border-none bg-red-600 px-2.5 text-sm font-semibold text-white shadow-none hover:bg-red-500 cursor-pointer"
           >
             Delete Permanently
           </AlertDialogAction>

@@ -35,14 +35,13 @@ export function CandidateTableRow({
       onClick={() => onRowClick(candidate)}
     >
       <BulkSelectRowCell
-        className="h-11"
         checked={isSelected}
         onCheckedChange={onSelectedChange}
       />
-      <TableCell className="h-11 px-6 py-0 text-[13px] font-medium text-slate-700 dark:text-neutral-200">
+      <TableCell className="h-10 px-6 py-0 text-slate-700 dark:text-neutral-300 font-medium">
         {candidate.firstName} {candidate.lastName}
       </TableCell>
-      <TableCell className="h-11 px-6 py-0 text-[13px]">
+      <TableCell className="h-10 px-6 py-0">
         {candidate.status === "rejected" ? (
           <Badge className="bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 border-none shadow-none font-medium px-2 py-0.5 rounded-full text-xs">
             Rejected
@@ -52,35 +51,35 @@ export function CandidateTableRow({
             {candidate.stageName}
           </Badge>
         ) : (
-          <span className="text-slate-400 text-[13px]">—</span>
+          <span className="text-slate-400">—</span>
         )}
       </TableCell>
-      <TableCell className="h-11 px-6 py-0 text-[13px] text-slate-500 dark:text-neutral-400 font-normal">
+      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
         {candidate.jobTitle ?? "—"}
       </TableCell>
-      <TableCell className="h-11 px-6 py-0 text-[13px] text-slate-500 dark:text-neutral-400 font-normal">
+      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
         {timeAgo(candidate.appliedAt)}
       </TableCell>
       <TableCell
-        className="h-11 px-6 py-0 text-[13px]"
+        className="h-10 px-6 py-0"
         onClick={(e) => e.stopPropagation()}
       >
         {isManager && (
           <div className="flex items-center justify-end gap-2">
             <Button
               size="sm"
-              className="h-7 rounded-md border-none bg-neutral-700/90 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
+              className="h-8 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
               onClick={() => onEdit(candidate)}
             >
-              <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
+              <HugeiconsIcon icon={PencilEdit01Icon} className="size-3.5" />
               Edit
             </Button>
             <Button
               size="sm"
-              className="h-7 rounded-md border-none bg-red-600/90 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-red-500 dark:bg-red-700/90 dark:hover:bg-red-600 cursor-pointer"
+              className="h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
               onClick={() => onDelete(candidate)}
             >
-              <HugeiconsIcon icon={Delete02Icon} className="size-3" />
+              <HugeiconsIcon icon={Delete02Icon} className="size-3.5 mr-1" />
               Delete
             </Button>
           </div>

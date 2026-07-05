@@ -39,6 +39,24 @@ export const getCompany = async (req: Request, res: Response) => {
   }
 };
 
+export const getPublicCompany = async (_req: Request, res: Response) => {
+  try {
+    const result = await companyService.get();
+    res.status(200).json({
+      data: result
+        ? {
+            name: result.name,
+            logoUrl: result.logoUrl,
+            description: result.description,
+          }
+        : null,
+    });
+  } catch (error) {
+    logger.error(`Failed to fetch public company: ${(error as any)?.message}`);
+    res.status(500).json({ error: "Failed to fetch company" });
+  }
+};
+
 export const upsertCompany = async (req: Request, res: Response) => {
   try {
     const parsed = upsertCompanySchema.safeParse(req.body);

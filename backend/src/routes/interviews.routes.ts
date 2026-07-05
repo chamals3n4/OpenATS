@@ -3,6 +3,7 @@ import { z } from "zod";
 import { requireManager } from "../middlewares/role.middleware";
 import { interviewService } from "../services/interview.service";
 import { mailService } from "../services/mail.service";
+import { socketService } from "../services/socket.service";
 import { db } from "../db";
 import {
   candidates,
@@ -68,6 +69,10 @@ router.post("/candidates/:candidateId/interviews", requireManager, async (req, r
       },
       req.user.id,
     );
+    socketService.notifyInterviewChanged({
+      interviewId: interview.id,
+      candidateId,
+    });
     res.status(201).json({ data: interview });
   } catch (error: any) {
     logger.error(`Failed to create interview: ${error.message}`);
@@ -129,6 +134,10 @@ router.patch("/interviews/:id", requireManager, async (req, res) => {
       res.status(404).json({ error: "Interview not found" });
       return;
     }
+    socketService.notifyInterviewChanged({
+      interviewId: interview.id,
+      candidateId: interview.candidateId,
+    });
     res.status(200).json({ data: interview });
   } catch (error: any) {
     res
@@ -209,6 +218,11 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
       .returning();
 
     if (!interview) throw new Error("Failed to create interview");
+
+    socketService.notifyInterviewChanged({
+      interviewId: interview.id,
+      candidateId: candidate.id,
+    });
 
     const publicUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/interview/${token}`;
 
@@ -341,6 +355,11 @@ router.patch("/public/interview/:token/select", async (req, res) => {
       } catch {}
     }
 
+    socketService.notifyInterviewChanged({
+      interviewId: interview.id,
+      candidateId: interview.candidateId,
+    });
+
     res.status(200).json({ data: { confirmed: true, slot: selectedSlot } });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to confirm slot" });
@@ -359,6 +378,10 @@ router.delete("/interviews/:id", requireManager, async (req, res) => {
       res.status(404).json({ error: "Not found" });
       return;
     }
+    socketService.notifyInterviewChanged({
+      interviewId: deleted.id,
+      candidateId: deleted.candidateId,
+    });
     res.status(200).json({ data: deleted });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
@@ -395,6 +418,16 @@ router.post("/interviews/:id/feedback", async (req, res) => {
       res.status(500).json({ error: "Failed to create feedback" });
       return;
     }
+    const [interview] = await db
+      .select({ candidateId: candidateInterviews.candidateId })
+      .from(candidateInterviews)
+      .where(eq(candidateInterviews.id, interviewId));
+    if (interview) {
+      socketService.notifyInterviewChanged({
+        interviewId,
+        candidateId: interview.candidateId,
+      });
+    }
     res.status(201).json({ data: feedback });
   } catch (error: any) {
     res.status(500).json({ error: error.message || "Failed to add feedback" });
@@ -426,6 +459,16 @@ router.delete("/interviews/:id/feedback/:feedbackId", requireManager, async (req
     if (!deleted) {
       res.status(404).json({ error: "Feedback not found" });
       return;
+    }
+    const [interview] = await db
+      .select({ candidateId: candidateInterviews.candidateId })
+      .from(candidateInterviews)
+      .where(eq(candidateInterviews.id, deleted.interviewId));
+    if (interview) {
+      socketService.notifyInterviewChanged({
+        interviewId: deleted.interviewId,
+        candidateId: interview.candidateId,
+      });
     }
     res.status(200).json({ data: deleted });
   } catch (error: any) {

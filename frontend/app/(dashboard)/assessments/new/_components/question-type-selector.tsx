@@ -38,7 +38,7 @@ export function QuestionTypeSelector({
           onChangeType(question.uid, val as QuestionType)
         }
       >
-        <SelectTrigger className="h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-[13px] focus:ring-0 focus:border-slate-400 dark:focus:border-neutral-500 gap-2 transition-colors">
+        <SelectTrigger className="h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-sm focus:ring-0 focus:border-slate-400 dark:focus:border-neutral-500 gap-2 transition-colors">
           <div className="flex items-center gap-2">
             <HugeiconsIcon
               icon={RadioButtonIcon}

@@ -59,11 +59,11 @@ export function QuestionSidebarItem({
       />
       <div className="min-w-0 flex-1">
         <p
-          className={`text-[13px] font-semibold truncate ${isSelected ? "text-[var(--theme-color)]" : ""}`}
+          className={`text-sm font-semibold truncate ${isSelected ? "text-[var(--theme-color)]" : ""}`}
         >
           Q{index + 1}: {question.title || "Question Title"}
         </p>
-        <p className="text-[11px] text-slate-400 dark:text-neutral-500 mt-0.5">
+        <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">
           {question.type}
         </p>
       </div>

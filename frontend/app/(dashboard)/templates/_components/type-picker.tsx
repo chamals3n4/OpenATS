@@ -47,10 +47,10 @@ export function TemplateTypePicker({
     <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
       <DialogContent className="sm:max-w-[480px] rounded-2xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-xl">
         <DialogHeader>
-          <DialogTitle className="text-[16px] font-bold text-slate-900 dark:text-neutral-100">
+          <DialogTitle className="text-sm font-bold text-slate-900 dark:text-neutral-100">
             What type of template is this?
           </DialogTitle>
-          <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-1">
+          <p className="text-sm text-slate-500 dark:text-neutral-400 mt-1">
             The type sets which variables are available in the builder.
           </p>
         </DialogHeader>
@@ -84,7 +84,7 @@ export function TemplateTypePicker({
                   <p className="text-[13.5px] font-semibold text-slate-900 dark:text-neutral-100">
                     {TYPE_META[type].label}
                   </p>
-                  <p className="mt-0.5 text-[12px] text-slate-500 dark:text-neutral-400 leading-snug">
+                  <p className="mt-0.5 text-xs text-slate-500 dark:text-neutral-400 leading-snug">
                     {TYPE_DESCRIPTIONS[type]}
                   </p>
                 </div>

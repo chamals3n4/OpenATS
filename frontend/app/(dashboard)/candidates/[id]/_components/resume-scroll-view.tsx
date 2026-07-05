@@ -82,7 +82,7 @@ export function ResumeScrollView({ resumeUrl }: ResumeScrollViewProps) {
   if (useIframe) {
     return (
       <div className="flex flex-col flex-1 min-h-0 w-full">
-        <p className="shrink-0 px-2 py-1.5 text-center text-[11px] text-slate-500 dark:text-neutral-500 border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
+        <p className="shrink-0 px-2 py-1.5 text-center text-xs text-slate-500 dark:text-neutral-500 border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
           Embedded viewer — use browser PDF controls to zoom, or open “View CV” for a new tab.
         </p>
         <iframe
@@ -112,7 +112,7 @@ export function ResumeScrollView({ resumeUrl }: ResumeScrollViewProps) {
           <ZoomOut className="size-3.5" strokeWidth={2} />
         </Button>
         <span
-          className="min-w-[3.25rem] text-center text-[12px] font-medium tabular-nums text-slate-700 dark:text-neutral-300"
+          className="min-w-[3.25rem] text-center text-xs font-medium tabular-nums text-slate-700 dark:text-neutral-300"
           title="Zoom level"
         >
           {pct}%
@@ -134,13 +134,13 @@ export function ResumeScrollView({ resumeUrl }: ResumeScrollViewProps) {
           type="button"
           variant="ghost"
           size="sm"
-          className="h-8 px-2 text-[11px] font-medium text-slate-600 dark:text-neutral-400"
+          className="h-8 px-2 text-xs font-medium text-slate-600 dark:text-neutral-400"
           title="Reset zoom (100%) — Ctrl+0"
           onClick={resetZoom}
         >
           Reset
         </Button>
-        <span className="hidden sm:inline text-[10px] text-slate-400 dark:text-neutral-500 ml-0.5">
+        <span className="hidden sm:inline text-xs text-slate-400 dark:text-neutral-500 ml-0.5">
           Ctrl±
         </span>
       </div>
@@ -155,7 +155,7 @@ export function ResumeScrollView({ resumeUrl }: ResumeScrollViewProps) {
             onLoadSuccess={onLoadSuccess}
             onLoadError={() => setUseIframe(true)}
             loading={
-              <p className="py-8 text-[13px] font-normal text-slate-500 dark:text-neutral-500">
+              <p className="py-8 text-sm font-normal text-slate-500 dark:text-neutral-500">
                 Loading resume…
               </p>
             }

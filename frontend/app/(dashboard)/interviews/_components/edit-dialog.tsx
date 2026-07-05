@@ -52,11 +52,11 @@ export function EditDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
         <DialogHeader>
-          <DialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
+          <DialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
             Edit Interview
           </DialogTitle>
           {target && (
-            <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+            <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5">
               {target.candidateName} · {target.jobTitle}
             </p>
           )}
@@ -64,7 +64,7 @@ export function EditDialog({
 
         <div className="space-y-4 mt-1">
           <div>
-            <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+            <Label className="text-sm font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
               Event name
             </Label>
             <Input
@@ -75,7 +75,7 @@ export function EditDialog({
             />
           </div>
           <div>
-            <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+            <Label className="text-sm font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
               Meeting URL
             </Label>
             <Input
@@ -87,7 +87,7 @@ export function EditDialog({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+              <Label className="text-sm font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
                 Status
               </Label>
               <Select
@@ -108,7 +108,7 @@ export function EditDialog({
               </Select>
             </div>
             <div>
-              <Label className="text-[13px] font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
+              <Label className="text-sm font-medium text-slate-600 dark:text-neutral-400 mb-1.5 block">
                 Outcome
               </Label>
               <Select

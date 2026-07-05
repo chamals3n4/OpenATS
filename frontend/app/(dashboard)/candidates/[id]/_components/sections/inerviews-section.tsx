@@ -22,10 +22,10 @@ export function InterviewsSection({
     <div className="p-5 sm:p-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-neutral-100">
             Interview Log
           </h3>
-          <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5">
             Schedule and track interview outcomes
           </p>
         </div>
@@ -33,7 +33,7 @@ export function InterviewsSection({
           <Button
             size="sm"
             onClick={onSchedule}
-            className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+            className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-sm font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)]"
           >
             Schedule
           </Button>
@@ -48,10 +48,10 @@ export function InterviewsSection({
               className="size-5 text-slate-300 dark:text-neutral-600"
             />
           </div>
-          <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400">
+          <p className="text-sm font-semibold text-slate-500 dark:text-neutral-400">
             No interviews yet
           </p>
-          <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
+          <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1">
             Click &quot;Schedule&quot; to invite a candidate.
           </p>
         </div>

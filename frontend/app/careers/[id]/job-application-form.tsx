@@ -15,13 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 
 import type { JobDetail, CustomQuestion } from "@/types";
 
@@ -81,7 +74,6 @@ export function JobApplicationForm({
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [email, setEmail] = useState("");
-  const [phoneCode, setPhoneCode] = useState("+94");
   const [phoneNumber, setPhoneNumber] = useState("");
   const [answers, setAnswers] = useState<Record<number, Answer>>({});
 
@@ -162,7 +154,7 @@ export function JobApplicationForm({
           firstName,
           lastName,
           email,
-          phone: phoneNumber ? `${phoneCode} ${phoneNumber}` : undefined,
+          phone: phoneNumber ? phoneNumber : undefined,
           resumeUrl: resumeUrl ?? undefined,
           customAnswers,
         }),
@@ -211,7 +203,7 @@ export function JobApplicationForm({
         </h1>
 
         {metaParts.length > 0 && (
-          <p className="mt-2 text-[14px] text-slate-500 dark:text-neutral-400">
+          <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
             {metaParts.join(" · ")}
           </p>
         )}
@@ -223,7 +215,7 @@ export function JobApplicationForm({
               .getElementById("apply-form")
               ?.scrollIntoView({ behavior: "smooth" })
           }
-          className="mt-6 inline-flex items-center gap-2 rounded-full bg-neutral-900 hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 text-white px-5 h-10 shadow-none font-medium text-[14px] w-fit"
+          className="mt-6 inline-flex items-center gap-2 rounded-full bg-neutral-900 hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 text-white px-5 h-10 shadow-none font-medium text-sm w-fit"
         >
           Apply
           <HugeiconsIcon icon={ArrowDown02Icon} className="size-4" />
@@ -231,7 +223,7 @@ export function JobApplicationForm({
 
         {job.description && (
           <div
-            className="mt-10 text-slate-600 dark:text-neutral-300 text-[15px] leading-[1.45] [&_p]:m-0 [&_p+p]:mt-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:text-slate-900 dark:[&_h1]:text-neutral-100 [&_h1]:m-0 [&_h1+p]:mt-1.5 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-slate-900 dark:[&_h2]:text-neutral-100 [&_h2]:m-0 [&_h2+p]:mt-1.5 [&_h3]:text-lg [&_h3]:font-medium [&_h3]:text-slate-800 dark:[&_h3]:text-neutral-200 [&_h3]:m-0 [&_h3+p]:mt-1"
+            className="mt-10 text-slate-600 dark:text-neutral-300 text-sm leading-[1.45] [&_p]:m-0 [&_p+p]:mt-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:text-slate-900 dark:[&_h1]:text-neutral-100 [&_h1]:m-0 [&_h1+p]:mt-1.5 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-slate-900 dark:[&_h2]:text-neutral-100 [&_h2]:m-0 [&_h2+p]:mt-1.5 [&_h3]:text-lg [&_h3]:font-medium [&_h3]:text-slate-800 dark:[&_h3]:text-neutral-200 [&_h3]:m-0 [&_h3+p]:mt-1"
             dangerouslySetInnerHTML={{ __html: job.description }}
           />
         )}
@@ -242,13 +234,13 @@ export function JobApplicationForm({
           </h2>
 
           {submitted ? (
-            <p className="rounded-md bg-slate-100 dark:bg-neutral-800/60 px-4 py-3 text-[14px] text-slate-700 dark:text-neutral-300">
+            <p className="rounded-md bg-slate-100 dark:bg-neutral-800/60 px-4 py-3 text-sm text-slate-700 dark:text-neutral-300">
               Application submitted successfully.
             </p>
           ) : (
             <form className="space-y-6" onSubmit={handleSubmit}>
               <div className="space-y-2">
-                <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">
+                <Label className="text-slate-700 dark:text-neutral-300 text-sm">
                   Name <span className="text-red-500">*</span>
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
@@ -269,35 +261,49 @@ export function JobApplicationForm({
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">
-                  Email <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  type="email"
-                  required
-                  placeholder="hello@world.com"
-                  value={email}
-                  onChange={(e) => {
-                    setEmail(e.target.value);
-                    setEmailError(null);
-                  }}
-                  aria-invalid={!!emailError}
-                  className={`${fieldInput} ${
-                    emailError
-                      ? "border border-red-500 focus-visible:border-red-500"
-                      : ""
-                  }`}
-                />
-                {emailError && (
-                  <p className="text-sm text-red-600 dark:text-red-400">
-                    {emailError}
-                  </p>
-                )}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-neutral-300 text-sm">
+                    Email <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    type="email"
+                    required
+                    placeholder="example@gmail.com"
+                    value={email}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setEmailError(null);
+                    }}
+                    aria-invalid={!!emailError}
+                    className={`${fieldInput} ${
+                      emailError
+                        ? "border border-red-500 focus-visible:border-red-500"
+                        : ""
+                    }`}
+                  />
+                  {emailError && (
+                    <p className="text-sm text-red-600 dark:text-red-400">
+                      {emailError}
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-slate-700 dark:text-neutral-300 text-sm">
+                    Phone
+                  </Label>
+                  <Input
+                    value={phoneNumber}
+                    onChange={(e) => setPhoneNumber(e.target.value)}
+                    placeholder="Add country code eg :+94"
+                    className={fieldInput}
+                  />
+                </div>
               </div>
 
               <div className="space-y-2">
-                <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">
+                <Label className="text-slate-700 dark:text-neutral-300 text-sm">
                   Resume
                 </Label>
                 <input
@@ -329,43 +335,15 @@ export function JobApplicationForm({
                   )}
                 </button>
                 {resumeError && (
-                  <p className="text-red-500 text-[12px]">{resumeError}</p>
+                  <p className="text-red-500 text-xs">{resumeError}</p>
                 )}
-              </div>
-
-              <div className="space-y-2">
-                <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">
-                  Phone
-                </Label>
-                <div className="flex gap-3">
-                  <Select
-                    value={phoneCode}
-                    onValueChange={(val) => setPhoneCode(val || "+94")}
-                  >
-                    <SelectTrigger className="w-[100px] h-11! bg-slate-100 dark:bg-neutral-800/60 border border-slate-300 dark:border-neutral-700 shadow-none rounded-md focus:ring-0 text-slate-900 dark:text-neutral-100">
-                      <SelectValue placeholder="+94" />
-                    </SelectTrigger>
-                    <SelectContent className="rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-md min-w-[100px]">
-                      <SelectItem value="+94">+94</SelectItem>
-                      <SelectItem value="+1">+1</SelectItem>
-                      <SelectItem value="+44">+44</SelectItem>
-                      <SelectItem value="+91">+91</SelectItem>
-                      <SelectItem value="+61">+61</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <Input
-                    value={phoneNumber}
-                    onChange={(e) => setPhoneNumber(e.target.value)}
-                    className={`flex-1 ${fieldInput}`}
-                  />
-                </div>
               </div>
 
               {questions.length > 0 && (
                 <div className="space-y-6">
                   {questions.map((q) => (
                     <div key={q.id} className="space-y-2">
-                      <Label className="text-slate-700 dark:text-neutral-300 text-[14px]">
+                      <Label className="text-slate-700 dark:text-neutral-300 text-sm">
                         {q.title}
                         {q.isRequired && (
                           <span className="text-red-500 ml-1">*</span>
@@ -413,7 +391,7 @@ export function JobApplicationForm({
                                 />
                                 <Label
                                   htmlFor={`q${q.id}-opt${opt.id}`}
-                                  className="text-slate-600 text-[14px] cursor-pointer font-normal"
+                                  className="text-slate-600 text-sm cursor-pointer font-normal"
                                 >
                                   {opt.label}
                                 </Label>
@@ -440,7 +418,7 @@ export function JobApplicationForm({
                               />
                               <Label
                                 htmlFor={`q${q.id}-opt${opt.id}`}
-                                className="text-slate-600 dark:text-neutral-400 text-[14px] cursor-pointer font-normal"
+                                className="text-slate-600 dark:text-neutral-400 text-sm cursor-pointer font-normal"
                               >
                                 {opt.label}
                               </Label>
@@ -461,7 +439,7 @@ export function JobApplicationForm({
                 <Button
                   type="submit"
                   disabled={submitting || resumeUploading}
-                  className="inline-flex items-center gap-2 rounded-full bg-neutral-900 hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 text-white px-6 h-11 shadow-none font-medium text-[14px] disabled:opacity-60"
+                  className="inline-flex items-center gap-2 rounded-full bg-neutral-900 hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 text-white px-6 h-11 shadow-none font-medium text-sm disabled:opacity-60"
                 >
                   {submitting ? (
                     <>

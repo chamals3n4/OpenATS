@@ -34,14 +34,20 @@ export const r2Service = {
     const fileExt = EXT_BY_MIME[file.mimetype] ?? "";
     const fileName = `${folder}/${crypto.randomUUID()}${fileExt}`;
 
+    // Logos are raster images (png/jpeg/webp — never svg) meant to render
+    // inline in the UI. Everything else (resumes, and any svg) is forced to
+    // download so an uploaded file can never execute as HTML/SVG when its
+    // URL is opened directly in a browser.
+    const isInlineableLogo =
+      folder === "logos" &&
+      ["image/png", "image/jpeg", "image/webp"].includes(file.mimetype);
+
     const command = new PutObjectCommand({
       Bucket: process.env.R2_BUCKET_NAME!,
       Key: fileName,
       Body: file.buffer,
       ContentType: file.mimetype,
-      // Force download instead of inline rendering so an uploaded file can
-      // never execute as HTML/SVG in the browser when its URL is opened.
-      ContentDisposition: "attachment",
+      ContentDisposition: isInlineableLogo ? "inline" : "attachment",
     });
 
     try {

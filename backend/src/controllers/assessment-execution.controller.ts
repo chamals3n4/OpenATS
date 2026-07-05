@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { assessmentExecutionService } from "../services/assessment-execution.service";
 import { mailService } from "../services/mail.service";
+import { socketService } from "../services/socket.service";
 import logger from "../utils/logger";
 
 const inviteCandidateSchema = z.object({
@@ -159,6 +160,10 @@ export const submitAssessmentAnswer = async (req: Request, res: Response) => {
       attempt.id,
       parsed.data,
     );
+    socketService.notifyAssessmentProgress({
+      candidateId: attempt.candidate.id,
+      attemptId: attempt.id,
+    });
     res.status(200).json({ data: result });
   } catch (error: any) {
     logger.error(`Failed to save answer for attempt token=${req.params.token}: ${error?.message}`);
@@ -196,6 +201,11 @@ export const completeAssessment = async (req: Request, res: Response) => {
     if (!result) {
       throw new Error("Failed to finalize assessment");
     }
+
+    socketService.notifyAssessmentProgress({
+      candidateId: attempt.candidate.id,
+      attemptId: attempt.id,
+    });
 
     const completionContext =
       await assessmentExecutionService.getAttemptCompletionEmailContext(

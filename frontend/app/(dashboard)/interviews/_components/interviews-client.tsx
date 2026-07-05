@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useInterviews } from "@/hooks/queries/use-interviews";
 import { useDepartments } from "@/hooks/queries/use-company";
+import { useCandidateSocket } from "@/hooks/use-candidate-socket";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Calendar02Icon,
@@ -26,6 +27,7 @@ import FeedbackDialog from "./feedback-dialog";
 import { EditDialog } from "./edit-dialog";
 
 export default function InterviewsClient() {
+  useCandidateSocket();
   const [view, setView] = useState<"list" | "calendar">("calendar");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -89,7 +91,7 @@ export default function InterviewsClient() {
         <div className="flex items-center rounded-md border border-slate-300 dark:border-neutral-700 bg-gray-100 dark:bg-neutral-800 p-0.5 gap-0.5">
           <button
             onClick={() => setView("list")}
-            className={`inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md px-3 text-[13px] font-semibold leading-none transition-all ${
+            className={`inline-flex h-7 cursor-pointer items-center gap-1.5 rounded-md px-3 text-sm font-semibold leading-none transition-all ${
               view === "list"
                 ? "bg-white dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 shadow-sm"
                 : "text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-300"
@@ -100,7 +102,7 @@ export default function InterviewsClient() {
           </button>
           <button
             onClick={() => setView("calendar")}
-            className={`inline-flex h-7 items-center cursor-pointer gap-1.5 rounded-md px-3 text-[13px] font-semibold leading-none transition-all ${
+            className={`inline-flex h-7 items-center cursor-pointer gap-1.5 rounded-md px-3 text-sm font-semibold leading-none transition-all ${
               view === "calendar"
                 ? "bg-white dark:bg-neutral-900 text-slate-900 dark:text-neutral-100 shadow-sm"
                 : "text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-300"
@@ -187,10 +189,10 @@ export default function InterviewsClient() {
                 className="size-5 text-slate-300 dark:text-neutral-600"
               />
             </div>
-            <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+            <p className="text-sm font-semibold text-slate-500 dark:text-neutral-400">
               No interviews found
             </p>
-            <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1">
+            <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1">
               Schedule interviews from a candidate&apos;s detail page.
             </p>
           </div>

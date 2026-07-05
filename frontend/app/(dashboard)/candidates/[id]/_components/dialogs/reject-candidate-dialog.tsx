@@ -47,21 +47,21 @@ export function RejectCandidateDialog({
     <Dialog open={open} onOpenChange={(open) => onOpenChange(open)}>
       <DialogContent className="max-w-lg rounded-2xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-xl">
         <DialogHeader>
-          <DialogTitle className="text-[16px] font-bold text-slate-900 dark:text-neutral-100">
+          <DialogTitle className="text-sm font-bold text-slate-900 dark:text-neutral-100">
             Reject {candidate?.firstName} {candidate?.lastName}
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-1.5">
-            <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
+            <Label className="text-xs font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
               Rejection Reason
             </Label>
             <Select
               value={rejectReason}
               onValueChange={(v) => setRejectReason(v ?? "")}
             >
-              <SelectTrigger className="h-8 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
+              <SelectTrigger className="h-8 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-sm focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
                 <SelectValue placeholder="Select a reason" />
               </SelectTrigger>
               <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
@@ -69,7 +69,7 @@ export function RejectCandidateDialog({
                   <SelectItem
                     key={reason}
                     value={reason}
-                    className="text-[13px]"
+                    className="text-sm"
                   >
                     {reason}
                   </SelectItem>
@@ -79,19 +79,19 @@ export function RejectCandidateDialog({
           </div>
 
           <div className="space-y-1.5">
-            <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
+            <Label className="text-xs font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
               Internal Note (optional)
             </Label>
             <textarea
               value={rejectInternalNote}
               onChange={(e) => setRejectInternalNote(e.target.value)}
               placeholder="Visible to your team only"
-              className="min-h-[90px] w-full rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-[13px] text-slate-700 dark:text-neutral-300 shadow-none focus:outline-none focus:border-[var(--theme-color)]"
+              className="min-h-[90px] w-full rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2 text-sm text-slate-700 dark:text-neutral-300 shadow-none focus:outline-none focus:border-[var(--theme-color)]"
             />
           </div>
 
           <div className="flex items-center justify-between rounded-md border border-slate-200 dark:border-neutral-700 px-3 py-2">
-            <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
+            <Label className="text-xs font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
               Send Rejection Email
             </Label>
             <Switch
@@ -102,14 +102,14 @@ export function RejectCandidateDialog({
 
           {shouldSendRejectEmail && (
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
+              <Label className="text-xs font-semibold text-slate-600 dark:text-neutral-400 uppercase tracking-wider">
                 Email Template
               </Label>
               <Select
                 value={rejectTemplateId}
                 onValueChange={(v) => setRejectTemplateId(v ?? "")}
               >
-                <SelectTrigger className="h-8 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-[13px] focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
+                <SelectTrigger className="h-8 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-sm focus:ring-0 focus:border-[var(--theme-color)] w-full rounded-md">
                   <SelectValue placeholder="Select template" />
                 </SelectTrigger>
                 <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
@@ -117,7 +117,7 @@ export function RejectCandidateDialog({
                     <SelectItem
                       key={t.id}
                       value={String(t.id)}
-                      className="text-[13px]"
+                      className="text-sm"
                     >
                       {t.name}
                     </SelectItem>
@@ -132,7 +132,7 @@ export function RejectCandidateDialog({
           <Button
             size="sm"
             onClick={() => onOpenChange(false)}
-            className="h-7 rounded-md border-none bg-neutral-700 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-600"
+            className="h-7 rounded-md border-none bg-neutral-700 px-2.5 text-sm font-semibold text-white shadow-none hover:bg-neutral-600"
           >
             Cancel
           </Button>
@@ -167,7 +167,7 @@ export function RejectCandidateDialog({
                 },
               );
             }}
-            className="h-7 rounded-md border-none bg-red-600 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-red-500 disabled:opacity-60"
+            className="h-7 rounded-md border-none bg-red-600 px-2.5 text-sm font-semibold text-white shadow-none hover:bg-red-500 disabled:opacity-60"
           >
             {rejectMutation.isPending ? "Rejecting…" : "Confirm Reject"}
           </Button>

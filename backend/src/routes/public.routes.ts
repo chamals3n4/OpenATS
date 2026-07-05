@@ -5,6 +5,7 @@ import {
   getPublicJobById,
   listPublishedCareersJobs,
 } from "../controllers/job.controller";
+import { getPublicCompany } from "../controllers/company.controller";
 import { checkOrigins } from "../middlewares/allowedOrigins.middleware";
 import { getCustomQuestions } from "../controllers/custom-question.controller";
 import { applyForJob } from "../controllers/candidate.controller";
@@ -88,6 +89,7 @@ const publicReadLimiter = rateLimit({
   message: { error: "Too many requests. Please try again later." },
 });
 
+router.get("/company", checkOrigins, getPublicCompany);
 router.get("/jobs", checkOrigins, listPublishedCareersJobs);
 router.get("/jobs/:id", checkOrigins, getPublicJobById);
 router.get("/jobs/:jobId/questions", checkOrigins, getCustomQuestions);

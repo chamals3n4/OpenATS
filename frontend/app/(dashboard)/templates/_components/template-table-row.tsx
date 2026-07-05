@@ -37,43 +37,43 @@ export function TemplateTableRow({
       {onSelectedChange && (
         <BulkSelectRowCell checked={isSelected} onCheckedChange={onSelectedChange} />
       )}
-      <TableCell className="h-11 px-6 py-0 text-[13px]">
+      <TableCell className="h-10 px-6 py-0">
         <span className="text-slate-700 dark:text-neutral-300 font-medium">
           {template.name}
         </span>
       </TableCell>
-      <TableCell className="h-11 px-6 py-0 text-[13px]">
+      <TableCell className="h-10 px-6 py-0">
         <span
-          className={`text-[11px] font-semibold px-2.5 py-0.5 rounded-full ${meta.badge}`}
+          className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${meta.badge}`}
         >
           {meta.label}
         </span>
       </TableCell>
-      <TableCell className="h-11 px-6 py-0 text-[13px] text-slate-600 dark:text-neutral-400 font-normal">
+      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
         System
       </TableCell>
-      <TableCell className="h-11 px-6 py-0 text-[13px] text-slate-600 dark:text-neutral-400 font-normal">
+      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
         {formatDate(template.updatedAt)}
       </TableCell>
       <TableCell
-        className="h-11 px-6 py-0 text-[13px]"
+        className="h-10 px-6 py-0"
         onClick={(e) => e.stopPropagation()}
       >
         {isManager && (
           <div className="flex items-center justify-end gap-2">
             <Button
               size="sm"
-              className="h-7 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
+              className="h-8 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
               onClick={() => onDuplicate(template)}
             >
               Duplicate
             </Button>
             <Button
               size="sm"
-              className="h-7 rounded-md border-none bg-red-500 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
+              className="h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
               onClick={() => onDelete(template.id)}
             >
-              <HugeiconsIcon icon={Delete02Icon} className="size-3" />
+              <HugeiconsIcon icon={Delete02Icon} className="size-3.5 mr-1" />
               Delete
             </Button>
           </div>

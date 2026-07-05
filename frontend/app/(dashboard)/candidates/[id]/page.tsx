@@ -194,7 +194,7 @@ export default function CandidateDetailPage({
             className="size-6 text-slate-400 dark:text-neutral-500"
           />
         </div>
-        <p className="text-slate-500 dark:text-neutral-400 font-semibold text-[15px]">
+        <p className="text-slate-500 dark:text-neutral-400 font-semibold text-sm">
           Candidate not found
         </p>
         <Button

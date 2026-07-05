@@ -30,7 +30,7 @@ export function SectionTabs({
           <button
             key={s.id}
             onClick={() => onSectionChange(s.id)}
-            className={`inline-flex h-7 shrink-0 cursor-pointer items-center gap-2 rounded-[6px] border px-2.5 text-[13px] font-semibold leading-none transition-colors ${
+            className={`inline-flex h-7 shrink-0 cursor-pointer items-center gap-2 rounded-[6px] border px-2.5 text-sm font-semibold leading-none transition-colors ${
               isActive
                 ? "border-none bg-[var(--theme-color)] text-white shadow-none hover:bg-[var(--theme-color-hover)]"
                 : "border-none bg-neutral-100 text-slate-700 hover:bg-neutral-200 hover:text-slate-950 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-white"

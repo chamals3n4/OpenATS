@@ -15,7 +15,7 @@ export function BlockEditor({ block, onUpdate, onDelete, readOnly = false }: Blo
   return (
     <div className="border border-slate-200 dark:border-neutral-700 rounded-md overflow-hidden">
       <div className="flex items-center justify-between px-3 py-1.5 bg-slate-50 dark:bg-neutral-800/80 border-b border-slate-200 dark:border-neutral-700">
-        <span className="text-[10px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">
+        <span className="text-xs font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wider">
           {block.kind}
         </span>
         {!readOnly && (
@@ -32,7 +32,7 @@ export function BlockEditor({ block, onUpdate, onDelete, readOnly = false }: Blo
         onChange={(e) => onUpdate(block.id, e.target.value)}
         readOnly={readOnly}
         rows={block.kind === "text" ? 4 : 2}
-        className="w-full px-3 py-2.5 text-[13px] bg-white dark:bg-neutral-950 text-slate-700 dark:text-neutral-200 leading-relaxed resize-none focus:outline-none placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+        className="w-full px-3 py-2.5 text-sm bg-white dark:bg-neutral-950 text-slate-700 dark:text-neutral-200 leading-relaxed resize-none focus:outline-none placeholder:text-slate-300 dark:placeholder:text-neutral-600"
       />
     </div>
   );

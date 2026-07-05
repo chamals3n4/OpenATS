@@ -95,7 +95,7 @@ export default function CareersSettingsPage() {
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 min-w-0">
       <div className="px-8 py-6 border-b border-slate-100 dark:border-neutral-800 shrink-0">
-        <h1 className="text-[22px] font-semibold text-slate-900 dark:text-neutral-100 leading-none mb-2">
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-neutral-100 leading-none mb-2">
           Careers page
         </h1>
         <p className="text-sm text-slate-500 dark:text-neutral-400 max-w-3xl">
@@ -110,7 +110,7 @@ export default function CareersSettingsPage() {
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 w-full">
           {/* Origins */}
           <section className={`xl:col-span-5 ${panel} p-5`}>
-            <h2 className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 uppercase tracking-wide mb-1">
+            <h2 className="text-sm font-semibold text-slate-800 dark:text-neutral-200 uppercase tracking-wide mb-1">
               Allowed origins
             </h2>
             <p className="text-xs text-slate-500 dark:text-neutral-500 mb-4 leading-relaxed">
@@ -120,9 +120,9 @@ export default function CareersSettingsPage() {
               </strong>
               , browser requests to public job APIs (list, detail, questions,
               apply, resume upload) must send an{" "}
-              <code className="text-[11px] font-mono">Origin</code> that matches
+              <code className="text-xs font-mono">Origin</code> that matches
               an entry (include your careers site, e.g.{" "}
-              <code className="text-[11px] font-mono">
+              <code className="text-xs font-mono">
                 http://localhost:3000
               </code>
               ). Empty list = no origin check.
@@ -154,7 +154,7 @@ export default function CareersSettingsPage() {
               {!isLoading && origins.length === 0 && !isError ? (
                 <li className="text-xs text-slate-500 dark:text-neutral-500 italic py-1">
                   No origins yet. Add e.g.{" "}
-                  <code className="font-mono text-[11px]">
+                  <code className="font-mono text-xs">
                     http://localhost:3000
                   </code>
                 </li>
@@ -164,7 +164,7 @@ export default function CareersSettingsPage() {
                   key={`${o}-${i}`}
                   className="flex items-center gap-2 border border-slate-200 dark:border-neutral-800 rounded-md bg-slate-50/80 dark:bg-neutral-900/60 px-2.5 py-1.5"
                 >
-                  <code className="text-[12px] text-slate-800 dark:text-neutral-200 flex-1 truncate font-mono">
+                  <code className="text-xs text-slate-800 dark:text-neutral-200 flex-1 truncate font-mono">
                     {o}
                   </code>
                   <Button
@@ -213,7 +213,7 @@ export default function CareersSettingsPage() {
             <Button
               type="button"
               size="sm"
-              className="h-9 rounded-md text-white shadow-none border-none text-[13px] disabled:opacity-60"
+              className="h-9 rounded-md text-white shadow-none border-none text-sm disabled:opacity-60"
               style={{ backgroundColor: "var(--theme-color)" }}
               onClick={saveOrigins}
               disabled={isLoading || updateOrigins.isPending || isError}
@@ -227,25 +227,25 @@ export default function CareersSettingsPage() {
             <section className={`${panel} p-5`}>
               <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                 <div>
-                  <h2 className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 uppercase tracking-wide mb-1">
+                  <h2 className="text-sm font-semibold text-slate-800 dark:text-neutral-200 uppercase tracking-wide mb-1">
                     Public HTTP API
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-neutral-500">
                     Proxied by Next.js. No Asgardeo session required. Base below
                     uses{" "}
-                    <code className="text-[11px] px-1 py-0.5 rounded bg-slate-100 dark:bg-neutral-800 font-mono">
+                    <code className="text-xs px-1 py-0.5 rounded bg-slate-100 dark:bg-neutral-800 font-mono">
                       NEXT_PUBLIC_APP_URL
                     </code>{" "}
                     or localhost fallback.
                   </p>
                 </div>
-                <code className="text-[11px] text-slate-600 dark:text-neutral-400 font-mono px-2 py-1 rounded-md border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900 truncate max-w-full">
+                <code className="text-xs text-slate-600 dark:text-neutral-400 font-mono px-2 py-1 rounded-md border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900 truncate max-w-full">
                   {appBase}
                 </code>
               </div>
 
               <div className="rounded-md border border-slate-200 dark:border-neutral-800 overflow-hidden">
-                <table className="w-full text-left text-[13px]">
+                <table className="w-full text-left text-sm">
                   <thead>
                     <tr className="border-b border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/80">
                       <th className="px-3 py-2 font-medium text-slate-600 dark:text-neutral-400 w-16">
@@ -259,7 +259,7 @@ export default function CareersSettingsPage() {
                       </th>
                     </tr>
                   </thead>
-                  <tbody className="font-mono text-[12px]">
+                  <tbody className="font-mono text-xs">
                     <tr className="border-b border-slate-100 dark:border-neutral-800/80">
                       <td className="px-3 py-2.5 text-emerald-600 dark:text-emerald-400 whitespace-nowrap">
                         GET
@@ -285,7 +285,7 @@ export default function CareersSettingsPage() {
                       </td>
                       <td className="px-3 py-2.5 text-slate-800 dark:text-neutral-200 break-all">
                         {jobDetailExampleUrl}
-                        <span className="text-slate-400 dark:text-neutral-500 font-sans text-[11px] block mt-0.5">
+                        <span className="text-slate-400 dark:text-neutral-500 font-sans text-xs block mt-0.5">
                           Replace <code className="font-mono">42</code> with a
                           published job id.
                         </span>
@@ -307,7 +307,7 @@ export default function CareersSettingsPage() {
                   </tbody>
                 </table>
               </div>
-              <p className="text-[11px] text-slate-500 dark:text-neutral-500 mt-2 font-mono">
+              <p className="text-xs text-slate-500 dark:text-neutral-500 mt-2 font-mono">
                 Response:{" "}
                 <span className="text-slate-600 dark:text-neutral-400">
                   {'{ "data": Job[] | Job }'}
@@ -320,16 +320,16 @@ export default function CareersSettingsPage() {
             </section>
 
             <section className={`${panel} p-5`}>
-              <h2 className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 uppercase tracking-wide mb-1">
+              <h2 className="text-sm font-semibold text-slate-800 dark:text-neutral-200 uppercase tracking-wide mb-1">
                 Embed snippet
               </h2>
               <p className="text-xs text-slate-500 dark:text-neutral-500 mb-3">
                 Drop on any site that can load your app’s{" "}
-                <code className="text-[11px] font-mono">/embed.js</code> (same
+                <code className="text-xs font-mono">/embed.js</code> (same
                 origin or CORS as you configure).
               </p>
               <div className="relative rounded-md border border-slate-200 dark:border-neutral-800 bg-slate-950 dark:bg-black">
-                <pre className="p-4 pr-24 text-[12px] text-slate-100 overflow-x-auto whitespace-pre-wrap break-all font-mono leading-relaxed">
+                <pre className="p-4 pr-24 text-xs text-slate-100 overflow-x-auto whitespace-pre-wrap break-all font-mono leading-relaxed">
                   {embedSnippet.trim()}
                 </pre>
                 <Button

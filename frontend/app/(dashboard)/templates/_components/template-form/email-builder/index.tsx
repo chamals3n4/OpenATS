@@ -33,7 +33,7 @@ export function EmailBuilder({
       {!readOnly && <BlockToolbar onAddBlock={onAddBlock} />}
       {blocks.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[80px] rounded-md border border-dashed border-slate-200 dark:border-neutral-700 text-center">
-          <p className="text-[12px] text-slate-400 dark:text-neutral-500">
+          <p className="text-xs text-slate-400 dark:text-neutral-500">
             No blocks yet — add one above
           </p>
         </div>

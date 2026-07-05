@@ -26,7 +26,7 @@ export function QuestionSidebar({
   return (
     <div className="w-[280px] border-r border-slate-100 dark:border-neutral-800 flex flex-col shrink-0 bg-white dark:bg-neutral-950">
       <div className="px-5 py-4 border-b border-slate-100 dark:border-neutral-800">
-        <span className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">
+        <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
           Questions ({questions.length})
         </span>
       </div>

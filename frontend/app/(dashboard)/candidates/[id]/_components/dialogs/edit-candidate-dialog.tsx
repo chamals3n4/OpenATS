@@ -51,14 +51,14 @@ export function EditCandidateDialog({
     <Dialog open={open} onOpenChange={(o) => !o && onOpenChange(false)}>
       <DialogContent className="max-w-lg rounded-2xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-xl p-0 overflow-hidden">
         <DialogHeader className="px-6 pt-6 pb-0">
-          <DialogTitle className="text-[18px] font-bold text-slate-900 dark:text-neutral-100">
+          <DialogTitle className="text-base font-bold text-slate-900 dark:text-neutral-100">
             Edit Candidate
           </DialogTitle>
         </DialogHeader>
         <div className="px-6 py-5">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 First name
               </Label>
               <Input
@@ -68,7 +68,7 @@ export function EditCandidateDialog({
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Last name
               </Label>
               <Input
@@ -78,7 +78,7 @@ export function EditCandidateDialog({
               />
             </div>
             <div className="col-span-2 space-y-1.5">
-              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Email
               </Label>
               <Input
@@ -89,7 +89,7 @@ export function EditCandidateDialog({
               />
             </div>
             <div className="col-span-2 space-y-1.5">
-              <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+              <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                 Phone
               </Label>
               <Input
@@ -101,7 +101,7 @@ export function EditCandidateDialog({
             </div>
             <div className="col-span-2 space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label className="text-[12px] font-semibold text-slate-500 uppercase tracking-wider">
+                <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
                   Upload new CV (PDF)
                 </Label>
                 {candidate?.resumeUrl ? (
@@ -109,12 +109,12 @@ export function EditCandidateDialog({
                     href={candidate.resumeUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-[12px] font-semibold text-[var(--theme-color)] hover:underline"
+                    className="text-xs font-semibold text-[var(--theme-color)] hover:underline"
                   >
                     View current CV
                   </a>
                 ) : (
-                  <p className="text-[12px] text-slate-400">
+                  <p className="text-xs text-slate-400">
                     No CV uploaded yet
                   </p>
                 )}
@@ -125,9 +125,9 @@ export function EditCandidateDialog({
                 onChange={(e) =>
                   onResumeFileChange(e.target.files?.[0] ?? null)
                 }
-                className="h-10 rounded-md border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)] pt-2.5 file:text-[13px]"
+                className="h-10 rounded-md border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)] pt-2.5 file:text-sm"
               />
-              <p className="text-[12px] text-slate-400">
+              <p className="text-xs text-slate-400">
                 If uploaded, the existing CV will be replaced.
               </p>
             </div>
@@ -136,14 +136,14 @@ export function EditCandidateDialog({
         <DialogFooter className="px-6 pb-6 pt-0 gap-2">
           <DialogClose
             disabled={isPending}
-            className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-neutral-700 disabled:opacity-60 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
+            className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-sm font-semibold text-white shadow-none transition-colors hover:bg-neutral-700 disabled:opacity-60 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
           >
             Cancel
           </DialogClose>
           <Button
             onClick={onSave}
             disabled={isPending}
-            className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-[13px] font-semibold text-white shadow-none transition-colors hover:bg-[var(--theme-color-hover)] disabled:opacity-60 cursor-pointer"
+            className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-sm font-semibold text-white shadow-none transition-colors hover:bg-[var(--theme-color-hover)] disabled:opacity-60 cursor-pointer"
           >
             {isPending ? "Saving…" : "Save Changes"}
           </Button>

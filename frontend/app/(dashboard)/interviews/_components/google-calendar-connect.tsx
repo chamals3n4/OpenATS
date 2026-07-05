@@ -36,7 +36,7 @@ export function GoogleCalendarConnect() {
   if (connected) {
     return (
       <div className="flex items-center gap-3">
-        <span className="flex items-center gap-2 text-[13px] font-medium text-slate-600 dark:text-neutral-400">
+        <span className="flex items-center gap-2 text-sm font-medium text-slate-600 dark:text-neutral-400">
           <span className="size-2 rounded-full bg-emerald-500" />
           Google Calendar connected
         </span>
@@ -44,7 +44,7 @@ export function GoogleCalendarConnect() {
           size="sm"
           variant="outline"
           onClick={handleDisconnect}
-          className="h-[34px] rounded-md border-slate-200 px-3 text-[13px] font-semibold text-slate-600 shadow-none hover:bg-slate-50 dark:border-neutral-700 dark:text-neutral-400"
+          className="h-[34px] rounded-md border-slate-200 px-3 text-sm font-semibold text-slate-600 shadow-none hover:bg-slate-50 dark:border-neutral-700 dark:text-neutral-400"
         >
           Disconnect
         </Button>
@@ -56,7 +56,7 @@ export function GoogleCalendarConnect() {
     <Button
       size="sm"
       onClick={handleConnect}
-      className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600"
+      className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600"
     >
       <HugeiconsIcon icon={Calendar02Icon} className="size-4" />
       Connect Google Calendar

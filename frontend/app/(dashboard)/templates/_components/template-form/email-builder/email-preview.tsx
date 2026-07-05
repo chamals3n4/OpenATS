@@ -17,7 +17,7 @@ export function EmailPreviewPanel({ subject, blocks }: EmailPreviewPanelProps) {
       {/* Panel header */}
       <div className="px-8 pt-7 pb-4 shrink-0">
         <div className="flex items-center gap-2">
-          <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
             Live Preview
           </span>
           <span className="size-1.5 rounded-full bg-green-400" />
@@ -37,11 +37,11 @@ export function EmailPreviewPanel({ subject, blocks }: EmailPreviewPanelProps) {
             {/* Subject */}
             {subject && (
               <div className="mb-6">
-                <span className="text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500 block mb-1">
+                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500 block mb-1">
                   Subject
                 </span>
                 <p
-                  className="text-[15px] font-semibold text-slate-800 dark:text-neutral-100 leading-snug"
+                  className="text-sm font-semibold text-slate-800 dark:text-neutral-100 leading-snug"
                   dangerouslySetInnerHTML={{
                     __html: renderPreview(subject, VARS),
                   }}
@@ -62,7 +62,7 @@ export function EmailPreviewPanel({ subject, blocks }: EmailPreviewPanelProps) {
                     return (
                       <h2
                         key={block.id}
-                        className="text-[20px] font-bold text-slate-900 dark:text-neutral-100 leading-snug m-0"
+                        className="text-base font-bold text-slate-900 dark:text-neutral-100 leading-snug m-0"
                         dangerouslySetInnerHTML={{
                           __html: renderPreview(block.content, VARS),
                         }}
@@ -72,7 +72,7 @@ export function EmailPreviewPanel({ subject, blocks }: EmailPreviewPanelProps) {
                     return (
                       <p
                         key={block.id}
-                        className="text-[14px] text-slate-600 dark:text-neutral-300 leading-relaxed m-0 whitespace-pre-wrap"
+                        className="text-sm text-slate-600 dark:text-neutral-300 leading-relaxed m-0 whitespace-pre-wrap"
                         dangerouslySetInnerHTML={{
                           __html: renderPreview(block.content, VARS).replace(
                             /\n/g,

@@ -13,6 +13,7 @@ import { Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -29,7 +30,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import Image from "next/image";
 import { toast } from "sonner";
 
 import type { Company } from "@/types";
@@ -44,7 +44,7 @@ import {
 } from "@/hooks/queries/use-company";
 
 const inputCls =
-  "h-9 bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 rounded-md shadow-none text-[13px] placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors";
+  "h-9 bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 rounded-md shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors";
 
 const NEW_COMPANY_PLACEHOLDER: Company = {
   id: 0,
@@ -70,6 +70,7 @@ function CompanyForm({ company, isNew }: { company: Company; isNew?: boolean }) 
   const [website, setWebsite] = useState(company.website ?? "");
   const [phone, setPhone] = useState(company.phone ?? "");
   const [address, setAddress] = useState(company.address ?? "");
+  const [description, setDescription] = useState(company.description ?? "");
 
   const handleFile = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -86,7 +87,14 @@ function CompanyForm({ company, isNew }: { company: Company; isNew?: boolean }) 
 
   const handleSave = () => {
     upsertCompany.mutate(
-      { name: companyName, email, website: website || null, phone: phone || null, address: address || null },
+      {
+        name: companyName,
+        email,
+        website: website || null,
+        phone: phone || null,
+        address: address || null,
+        description: description || null,
+      },
       {
         onSuccess: () => toast.success(isNew ? "Company created" : "Changes saved"),
         onError: () => toast.error("Failed to save"),
@@ -98,18 +106,19 @@ function CompanyForm({ company, isNew }: { company: Company; isNew?: boolean }) 
     <div className="space-y-4">
       {/* Logo */}
       <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-        <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-400 dark:text-neutral-500 mb-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-neutral-500 mb-4">
           Company Logo
         </p>
         <div className="flex items-center gap-4">
           <div
             onClick={() => fileRef.current?.click()}
-            className="w-16 h-16 rounded-xl border-2 border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 flex items-center justify-center cursor-pointer hover:border-slate-300 dark:hover:border-neutral-600 transition-colors overflow-hidden shrink-0"
+            className="h-16 w-auto max-w-[200px] min-w-16 px-2 rounded-xl border-2 border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-800 flex items-center justify-center cursor-pointer hover:border-slate-300 dark:hover:border-neutral-600 transition-colors overflow-hidden shrink-0"
           >
             {uploadLogo.isPending ? (
               <Loader2 className="size-5 animate-spin text-slate-400" />
             ) : preview ? (
-              <Image src={preview} alt="Logo" width={64} height={64} className="w-full h-full object-cover" />
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={preview} alt="Logo" className="max-h-full max-w-full object-contain" />
             ) : (
               <HugeiconsIcon icon={ImageUploadIcon} className="size-6 text-slate-300" strokeWidth={1.5} />
             )}
@@ -119,47 +128,57 @@ function CompanyForm({ company, isNew }: { company: Company; isNew?: boolean }) 
             <Button
               onClick={() => fileRef.current?.click()}
               disabled={uploadLogo.isPending}
-              className="h-8 px-4 rounded-md text-white shadow-none border-none text-[12px] font-medium cursor-pointer"
+              className="h-8 px-4 rounded-md text-white shadow-none border-none text-xs font-medium cursor-pointer"
               style={{ backgroundColor: "var(--theme-color)" }}
             >
               {uploadLogo.isPending ? "Uploading…" : "Upload Logo"}
             </Button>
-            <p className="text-[11px] text-slate-400 dark:text-neutral-500 mt-1.5">PNG, JPG, WebP · up to 5 MB</p>
+            <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1.5">PNG, JPG, WebP · up to 5 MB</p>
           </div>
         </div>
       </div>
 
       {/* Info */}
       <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5 space-y-4">
-        <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-400 dark:text-neutral-500">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-neutral-500">
           Company Information
         </p>
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Company Name</Label>
+            <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Company Name</Label>
             <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Email</Label>
+            <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Email</Label>
             <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} className={inputCls} />
           </div>
           <div>
-            <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Website</Label>
+            <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Website</Label>
             <Input value={website} onChange={(e) => setWebsite(e.target.value)} className={inputCls} placeholder="https://" />
           </div>
           <div>
-            <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Phone</Label>
+            <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Phone</Label>
             <Input value={phone} onChange={(e) => setPhone(e.target.value)} className={inputCls} />
           </div>
           <div className="col-span-2">
-            <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Address</Label>
+            <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Address</Label>
             <Input value={address} onChange={(e) => setAddress(e.target.value)} className={inputCls} />
+          </div>
+          <div className="col-span-2">
+            <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Description</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="A short description of your company shown on the careers page"
+              rows={4}
+              className={`${inputCls} h-auto resize-none`}
+            />
           </div>
         </div>
         <Button
           onClick={handleSave}
           disabled={upsertCompany.isPending}
-          className="w-full h-9 text-white rounded-md shadow-none border-none text-[13px] font-semibold cursor-pointer"
+          className="w-full h-9 text-white rounded-md shadow-none border-none text-sm font-semibold cursor-pointer"
           style={{ backgroundColor: "var(--theme-color)" }}
         >
           {upsertCompany.isPending ? "Saving…" : isNew ? "Create Company" : "Save Changes"}
@@ -212,12 +231,12 @@ function DepartmentsPanel({ company }: { company: Company | null | undefined }) 
   return (
     <>
       <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 p-5">
-        <p className="text-[12px] font-semibold uppercase tracking-wide text-slate-400 dark:text-neutral-500 mb-4">
+        <p className="text-xs font-semibold uppercase tracking-wide text-slate-400 dark:text-neutral-500 mb-4">
           Departments
         </p>
 
         {!company ? (
-          <p className="text-[12px] text-slate-400 dark:text-neutral-500 mb-4">
+          <p className="text-xs text-slate-400 dark:text-neutral-500 mb-4">
             Save company details first to manage departments.
           </p>
         ) : (
@@ -237,10 +256,10 @@ function DepartmentsPanel({ company }: { company: Company | null | undefined }) 
                       if (e.key === "Escape") setEditId(null);
                     }}
                     onBlur={() => handleEdit(dept.id)}
-                    className="flex-1 h-6 bg-white/60 dark:bg-neutral-800 border-[var(--theme-color)]/30 rounded text-[12px] shadow-none focus-visible:ring-0 px-2"
+                    className="flex-1 h-6 bg-white/60 dark:bg-neutral-800 border-[var(--theme-color)]/30 rounded text-xs shadow-none focus-visible:ring-0 px-2"
                   />
                 ) : (
-                  <span className="text-[13px] font-medium text-[var(--theme-color)] truncate">{dept.name}</span>
+                  <span className="text-sm font-medium text-[var(--theme-color)] truncate">{dept.name}</span>
                 )}
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0">
                   <button
@@ -264,7 +283,7 @@ function DepartmentsPanel({ company }: { company: Company | null | undefined }) 
         {company && (
           <button
             onClick={() => setAddOpen(true)}
-            className="w-full flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed border-slate-300 dark:border-neutral-700 py-2 text-[12px] font-medium text-slate-400 dark:text-neutral-500 hover:border-[var(--theme-color)]/50 hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 transition-colors"
+            className="w-full flex cursor-pointer items-center justify-center gap-1.5 rounded-md border border-dashed border-slate-300 dark:border-neutral-700 py-2 text-xs font-medium text-slate-400 dark:text-neutral-500 hover:border-[var(--theme-color)]/50 hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 transition-colors"
           >
             <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={2.5} />
             Add Department
@@ -276,11 +295,11 @@ function DepartmentsPanel({ company }: { company: Company | null | undefined }) 
       <Dialog open={addOpen} onOpenChange={(o) => { setAddOpen(o); if (!o) setNewName(""); }}>
         <DialogContent className="!top-[20%] !translate-y-0 max-w-[340px] rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg p-5 duration-0 data-open:zoom-in-100 data-closed:zoom-out-100">
           <DialogHeader className="mb-3">
-            <DialogTitle className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">Add Department</DialogTitle>
+            <DialogTitle className="text-sm font-semibold text-slate-900 dark:text-neutral-100">Add Department</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-[12px] font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Name</Label>
+              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">Name</Label>
               <Input
                 autoFocus
                 placeholder="e.g. Engineering"
@@ -294,14 +313,14 @@ function DepartmentsPanel({ company }: { company: Company | null | undefined }) 
               <Button
                 variant="outline"
                 onClick={() => setAddOpen(false)}
-                className="h-8 px-4 rounded-md border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 text-[12px] shadow-none cursor-pointer"
+                className="h-8 px-4 rounded-md border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-300 text-xs shadow-none cursor-pointer"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleAdd}
                 disabled={!newName.trim() || createDept.isPending}
-                className="h-8 px-4 rounded-md text-white shadow-none border-none text-[12px] font-medium cursor-pointer"
+                className="h-8 px-4 rounded-md text-white shadow-none border-none text-xs font-medium cursor-pointer"
                 style={{ backgroundColor: "var(--theme-color)" }}
               >
                 {createDept.isPending ? "Adding…" : "Add"}
@@ -315,19 +334,19 @@ function DepartmentsPanel({ company }: { company: Company | null | undefined }) 
       <AlertDialog open={deleteId !== null} onOpenChange={(o) => !o && setDeleteId(null)}>
         <AlertDialogContent className="max-w-sm rounded-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
           <AlertDialogHeader>
-            <AlertDialogTitle className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">Delete department?</AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400">
+            <AlertDialogTitle className="text-sm font-semibold text-slate-900 dark:text-neutral-100">Delete department?</AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 dark:text-neutral-400">
               <span className="font-medium text-slate-700 dark:text-neutral-200">{deleteName}</span> will be permanently removed.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-8 px-4 rounded-md border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[12px] shadow-none cursor-pointer">
+            <AlertDialogCancel className="h-8 px-4 rounded-md border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-xs shadow-none cursor-pointer">
               Cancel
             </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={deleteDept.isPending}
-              className="h-8 px-4 rounded-md bg-red-500 hover:bg-red-600 text-white text-[12px] shadow-none border-none cursor-pointer"
+              className="h-8 px-4 rounded-md bg-red-500 hover:bg-red-600 text-white text-xs shadow-none border-none cursor-pointer"
             >
               {deleteDept.isPending ? "Deleting…" : "Delete"}
             </AlertDialogAction>
@@ -345,8 +364,8 @@ export default function SettingsGeneralPage() {
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
       <div className="shrink-0 px-6 py-4 border-b border-slate-100 dark:border-neutral-800">
-        <h1 className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100 leading-none">General Settings</h1>
-        <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-0.5">Manage your organization profile and departments</p>
+        <h1 className="text-base font-semibold text-slate-900 dark:text-neutral-100 leading-none">General Settings</h1>
+        <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">Manage your organization profile and departments</p>
       </div>
 
       <div className="flex-1 overflow-y-auto px-6 py-5">
@@ -360,14 +379,14 @@ export default function SettingsGeneralPage() {
           </div>
         ) : companyError ? (
           <div className="rounded-md border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 px-4 py-3">
-            <p className="text-[13px] text-red-600 dark:text-red-400 font-medium">Could not load settings. Try refreshing.</p>
+            <p className="text-sm text-red-600 dark:text-red-400 font-medium">Could not load settings. Try refreshing.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-5 items-start">
             <div className="space-y-4">
               {!company && (
                 <div className="rounded-md border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/20 px-4 py-3">
-                  <p className="text-[13px] text-amber-800 dark:text-amber-200">Set up your organization to get started.</p>
+                  <p className="text-sm text-amber-800 dark:text-amber-200">Set up your organization to get started.</p>
                 </div>
               )}
               <CompanyForm key={company?.id ?? "new"} company={company ?? NEW_COMPANY_PLACEHOLDER} isNew={!company} />

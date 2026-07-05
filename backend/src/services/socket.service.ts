@@ -202,6 +202,40 @@ export class SocketService {
     this.io?.emit("candidate_applied", { jobId });
   }
 
+  // Broadcast a candidate pipeline stage change to all connected clients
+  public notifyStageChanged(event: {
+    candidateId: number;
+    jobId: number;
+    stageId: number;
+  }) {
+    this.io?.emit("candidate_stage_changed", event);
+  }
+
+  // Broadcast an offer create/update/status change to all connected clients
+  public notifyOfferChanged(event: {
+    offerId: number;
+    candidateId: number;
+    jobId: number;
+  }) {
+    this.io?.emit("offer_changed", event);
+  }
+
+  // Broadcast an interview create/update/delete/feedback change
+  public notifyInterviewChanged(event: {
+    interviewId: number;
+    candidateId: number;
+  }) {
+    this.io?.emit("interview_changed", event);
+  }
+
+  // Broadcast assessment attempt progress (answer saved / attempt completed)
+  public notifyAssessmentProgress(event: {
+    candidateId: number;
+    attemptId: number;
+  }) {
+    this.io?.emit("assessment_progress_updated", event);
+  }
+
   public async sendSystemMessageToJob(jobId: number, message: string) {
     try {
       const [newMessage] = await db

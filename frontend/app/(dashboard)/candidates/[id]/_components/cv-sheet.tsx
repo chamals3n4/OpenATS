@@ -24,7 +24,7 @@ export function CvSheet({ open, onOpenChange, candidate }: CvSheetProps) {
         className="w-full gap-0 border-slate-200 p-0 dark:border-neutral-800 sm:max-w-none lg:w-[min(920px,72vw)]"
       >
         <SheetHeader className="flex-row items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-neutral-800">
-          <SheetTitle className="truncate text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
+          <SheetTitle className="truncate text-sm font-semibold text-slate-900 dark:text-neutral-100">
             {candidate.firstName} {candidate.lastName} CV
           </SheetTitle>
           <div className="flex shrink-0 items-center gap-2">
@@ -33,7 +33,7 @@ export function CvSheet({ open, onOpenChange, candidate }: CvSheetProps) {
                 href={candidate.resumeUrl}
                 target="_blank"
                 rel="noreferrer"
-                className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--theme-color)] px-3 text-[14px] font-semibold text-white hover:bg-[var(--theme-color-hover)]"
+                className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--theme-color)] px-3 text-sm font-semibold text-white hover:bg-[var(--theme-color-hover)]"
               >
                 Open in New Tab
               </a>
@@ -63,10 +63,10 @@ export function CvSheet({ open, onOpenChange, candidate }: CvSheetProps) {
               />
             </div>
             <div>
-              <p className="text-[14px] font-semibold text-slate-500 dark:text-neutral-400">
+              <p className="text-sm font-semibold text-slate-500 dark:text-neutral-400">
                 No CV uploaded
               </p>
-              <p className="mt-1 text-[12px] text-slate-400 dark:text-neutral-500">
+              <p className="mt-1 text-xs text-slate-400 dark:text-neutral-500">
                 Upload a PDF from edit candidate.
               </p>
             </div>

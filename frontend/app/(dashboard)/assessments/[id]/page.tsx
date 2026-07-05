@@ -82,10 +82,10 @@ const TRUE_FALSE_OPTIONS: AnswerOption[] = [
 ];
 
 const inputCls =
-  "h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-[13px] placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus-visible:ring-0 focus-visible:border-slate-400 transition-colors";
+  "h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus-visible:ring-0 focus-visible:border-slate-400 transition-colors";
 
 const textareaCls =
-  "w-full px-3 py-2 text-[13px] bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 rounded-md shadow-none placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus:outline-none focus:border-slate-400 resize-none transition-colors";
+  "w-full px-3 py-2 text-sm bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 rounded-md shadow-none placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus:outline-none focus:border-slate-400 resize-none transition-colors";
 
 export default function EditAssessmentPage({
   params,
@@ -353,7 +353,7 @@ export default function EditAssessmentPage({
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 overflow-hidden">
       <div className="px-8 py-5 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between shrink-0 gap-4">
         <div className="flex items-center gap-5 min-w-0">
-          <h1 className="text-[22px] font-semibold text-slate-900 dark:text-neutral-100 leading-none whitespace-nowrap">
+          <h1 className="text-xl font-semibold text-slate-900 dark:text-neutral-100 leading-none whitespace-nowrap">
             {isManager ? "Edit Assessment" : "View Assessment"}
           </h1>
           {isManager && (
@@ -409,7 +409,7 @@ export default function EditAssessmentPage({
           onClick={() => setMetaOpen((o) => !o)}
           className="w-full flex items-center justify-between px-8 py-4 hover:bg-slate-50/60 dark:hover:bg-neutral-900 transition-colors group"
         >
-          <span className="text-[12px] font-semibold text-slate-500 dark:text-neutral-400 tracking-widest uppercase">
+          <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400 tracking-widest uppercase">
             Assessment Details
           </span>
           <HugeiconsIcon
@@ -464,7 +464,7 @@ export default function EditAssessmentPage({
       <div className="flex flex-1 overflow-hidden">
         <div className="w-[280px] border-r border-slate-100 dark:border-neutral-800 flex flex-col shrink-0 bg-white dark:bg-neutral-950">
           <div className="px-5 py-4 border-b border-slate-100 dark:border-neutral-800">
-            <span className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">
+            <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
               Questions ({questions.length})
             </span>
           </div>
@@ -517,11 +517,11 @@ export default function EditAssessmentPage({
                     />
                     <div className="min-w-0 flex-1">
                       <p
-                        className={`text-[13px] font-semibold truncate ${selectedQ === q.uid ? "text-[var(--theme-color)]" : ""}`}
+                        className={`text-sm font-semibold truncate ${selectedQ === q.uid ? "text-[var(--theme-color)]" : ""}`}
                       >
                         Q{idx + 1}: {q.title || "Question Title"}
                       </p>
-                      <p className="text-[11px] text-slate-400 dark:text-neutral-500 mt-0.5">
+                      <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">
                         {q.type}
                       </p>
                     </div>
@@ -556,7 +556,7 @@ export default function EditAssessmentPage({
           <div className="flex-1 overflow-y-auto p-8 space-y-5 bg-white dark:bg-neutral-950">
             <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 space-y-5">
               <div className="flex items-center justify-between">
-                <span className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">
+                <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
                   Question Details
                 </span>
                 {isManager && (
@@ -616,7 +616,7 @@ export default function EditAssessmentPage({
                   }
                   disabled={!isManager}
                 >
-                  <SelectTrigger className="h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-[13px] focus:ring-0 focus:border-slate-400 dark:focus:border-neutral-500 gap-2 transition-colors">
+                  <SelectTrigger className="h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-sm focus:ring-0 focus:border-slate-400 dark:focus:border-neutral-500 gap-2 transition-colors">
                     <div className="flex items-center gap-2">
                       <HugeiconsIcon
                         icon={RadioButtonIcon}
@@ -636,17 +636,17 @@ export default function EditAssessmentPage({
 
             {isShortAnswer ? (
               <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-5">
-                <p className="text-[13px] text-slate-500 dark:text-neutral-400">
+                <p className="text-sm text-slate-500 dark:text-neutral-400">
                   Short answer questions are reviewed manually by the hiring team.
                 </p>
               </div>
             ) : (
               <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">
+                  <h3 className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
                     Answer Options
                   </h3>
-                  <span className="text-[11px] text-slate-400">
+                  <span className="text-xs text-slate-400">
                     Click {isTrueFalse ? "True or False" : "the circle"} to mark
                     correct answer
                   </span>
@@ -693,7 +693,7 @@ export default function EditAssessmentPage({
                       />
 
                       {opt.isCorrect && (
-                        <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full shrink-0">
+                        <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full shrink-0">
                           Correct
                         </span>
                       )}
@@ -718,7 +718,7 @@ export default function EditAssessmentPage({
                   <Button
                     onClick={() => addOption(selectedQ)}
                     variant="outline"
-                    className="h-9 px-4 border-[var(--theme-color)] text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 rounded-lg shadow-none text-[13px] font-medium transition-all"
+                    className="h-9 px-4 border-[var(--theme-color)] text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 rounded-lg shadow-none text-sm font-medium transition-all"
                   >
                     <HugeiconsIcon
                       icon={PlusSignIcon}
@@ -735,7 +735,7 @@ export default function EditAssessmentPage({
                       icon={TickDouble01Icon}
                       className="size-4 text-emerald-500"
                     />
-                    <span className="text-[12px] text-emerald-600 font-medium">
+                    <span className="text-xs text-emerald-600 font-medium">
                       Correct answer set to: <strong>{correctLabel}</strong>
                     </span>
                   </div>

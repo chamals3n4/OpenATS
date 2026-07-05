@@ -35,7 +35,7 @@ export function OfferDeleteDialog({
     <AlertDialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
       <AlertDialogContent className="max-w-sm rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
         <AlertDialogHeader>
-          <AlertDialogTitle className="text-[19px] font-semibold text-slate-900 dark:text-neutral-100">
+          <AlertDialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
             Delete this offer?
           </AlertDialogTitle>
           <AlertDialogDescription className="text-sm text-slate-500 dark:text-neutral-400 leading-relaxed">

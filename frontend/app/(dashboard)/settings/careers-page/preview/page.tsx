@@ -89,12 +89,12 @@ export default function CareersPreviewPage() {
           <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4 shrink-0" />
           Careers settings
         </Button>
-        <h1 className="text-[22px] font-semibold text-slate-900 dark:text-neutral-100 leading-none mb-2">
+        <h1 className="text-xl font-semibold text-slate-900 dark:text-neutral-100 leading-none mb-2">
           Careers preview
         </h1>
         <p className="text-sm text-slate-500 dark:text-neutral-400 max-w-3xl">
           Read-only preview of{" "}
-          <code className="text-[11px] font-mono px-1 py-0.5 rounded bg-slate-100 dark:bg-neutral-800">
+          <code className="text-xs font-mono px-1 py-0.5 rounded bg-slate-100 dark:bg-neutral-800">
             GET /api/public/jobs
           </code>
           — published jobs only, same shape as the public listing.
@@ -103,7 +103,7 @@ export default function CareersPreviewPage() {
 
       <div className="flex-1 overflow-y-auto px-8 py-8 min-w-0">
         <section className={`${panel} p-5`}>
-          <h2 className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 uppercase tracking-wide mb-4">
+          <h2 className="text-sm font-semibold text-slate-800 dark:text-neutral-200 uppercase tracking-wide mb-4">
             Job cards
           </h2>
           {loading && (
@@ -128,10 +128,10 @@ export default function CareersPreviewPage() {
                   key={job.id}
                   className="rounded-md border border-slate-200 dark:border-neutral-800 bg-slate-50/60 dark:bg-neutral-900/50 px-4 py-3"
                 >
-                  <p className="font-semibold text-slate-900 dark:text-neutral-100 mb-1.5 text-[15px]">
+                  <p className="font-semibold text-slate-900 dark:text-neutral-100 mb-1.5 text-sm">
                     {job.title}
                   </p>
-                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-[13px] text-slate-600 dark:text-neutral-400">
+                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-600 dark:text-neutral-400">
                     <span className="inline-flex items-center gap-1.5">
                       <HugeiconsIcon
                         icon={Briefcase01Icon}

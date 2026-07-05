@@ -19,10 +19,10 @@ export function ScoresSection({
     return (
       <div className="p-5 sm:p-6">
         <div className="mb-6">
-          <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-neutral-100">
             Assessments
           </h3>
-          <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5">
             Test results and evaluation scores
           </p>
         </div>
@@ -40,10 +40,10 @@ export function ScoresSection({
     return (
       <div className="p-5 sm:p-6">
         <div className="mb-6">
-          <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-neutral-100">
             Assessments
           </h3>
-          <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+          <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5">
             Test results and evaluation scores
           </p>
         </div>
@@ -54,10 +54,10 @@ export function ScoresSection({
               className="size-5 text-slate-300 dark:text-neutral-600"
             />
           </div>
-          <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400">
+          <p className="text-sm font-semibold text-slate-500 dark:text-neutral-400">
             No assessments yet
           </p>
-          <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-1 max-w-[280px] mx-auto">
+          <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1 max-w-[280px] mx-auto">
             Assessment results will appear here once the candidate completes an
             assessment.
           </p>
@@ -69,10 +69,10 @@ export function ScoresSection({
   return (
     <div className="p-5 sm:p-6">
       <div className="mb-6">
-        <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+        <h3 className="text-sm font-bold text-slate-900 dark:text-neutral-100">
           Assessments
         </h3>
-        <p className="text-[13px] text-slate-500 dark:text-neutral-400 mt-0.5">
+        <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5">
           Test results and evaluation scores
         </p>
       </div>
@@ -116,12 +116,12 @@ export function ScoresSection({
                     icon={ChartEvaluationIcon}
                     className="size-4 text-slate-400 shrink-0"
                   />
-                  <p className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 truncate">
+                  <p className="text-sm font-semibold text-slate-800 dark:text-neutral-200 truncate">
                     {a.assessmentTitle}
                   </p>
                 </div>
                 <span
-                  className={`shrink-0 text-[11px] font-bold px-2.5 py-1 rounded-full uppercase tracking-wide ${s.bg} ${s.text}`}
+                  className={`shrink-0 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wide ${s.bg} ${s.text}`}
                 >
                   {s.label}
                 </span>
@@ -129,10 +129,10 @@ export function ScoresSection({
               <div className="divide-y divide-slate-100 dark:divide-neutral-800">
                 {a.completedAt && (
                   <div className="px-4 py-3 flex items-center justify-between gap-4">
-                    <span className="text-[12px] text-slate-500 font-medium">
+                    <span className="text-xs text-slate-500 font-medium">
                       Completed
                     </span>
-                    <span className="text-[13px] text-slate-700 dark:text-neutral-300 font-medium">
+                    <span className="text-sm text-slate-700 dark:text-neutral-300 font-medium">
                       {formatDate(a.completedAt)}
                     </span>
                   </div>
@@ -142,7 +142,7 @@ export function ScoresSection({
                     <button
                       type="button"
                       onClick={() => onViewAttempt(a.id)}
-                      className="text-[13px] cursor-pointer text-[var(--theme-color)] font-semibold hover:underline"
+                      className="text-sm cursor-pointer text-[var(--theme-color)] font-semibold hover:underline"
                     >
                       View candidate answers
                     </button>
@@ -150,10 +150,10 @@ export function ScoresSection({
                 )}
                 {a.status === "pending" && (
                   <div className="px-4 py-3 flex items-center justify-between gap-4">
-                    <span className="text-[12px] text-slate-500 font-medium">
+                    <span className="text-xs text-slate-500 font-medium">
                       Link expires
                     </span>
-                    <span className="text-[13px] text-slate-700 dark:text-neutral-300 font-medium">
+                    <span className="text-sm text-slate-700 dark:text-neutral-300 font-medium">
                       {formatDate(a.expiresAt)}
                     </span>
                   </div>
@@ -165,7 +165,7 @@ export function ScoresSection({
                         const url = `${window.location.origin}/assessment/${a.token}`;
                         navigator.clipboard.writeText(url);
                       }}
-                      className="text-[12px] text-[var(--theme-color)] font-semibold hover:underline"
+                      className="text-xs text-[var(--theme-color)] font-semibold hover:underline"
                     >
                       Copy assessment link
                     </button>

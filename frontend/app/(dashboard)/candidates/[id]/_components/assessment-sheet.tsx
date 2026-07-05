@@ -27,7 +27,7 @@ export function AssessmentSheet({ attemptId, onClose }: AssessmentSheetProps) {
         className="w-full gap-0 border-slate-200 p-0 dark:border-neutral-800 sm:max-w-none lg:w-[min(640px,50vw)] flex flex-col h-full bg-white dark:bg-neutral-900"
       >
         <SheetHeader className="flex-row items-center justify-between gap-3 border-b border-slate-200 px-4 py-4 dark:border-neutral-800 shrink-0">
-          <SheetTitle className="truncate text-[16px] font-bold text-slate-900 dark:text-neutral-100">
+          <SheetTitle className="truncate text-sm font-bold text-slate-900 dark:text-neutral-100">
             Assessment Results
           </SheetTitle>
           <button

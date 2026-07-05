@@ -33,10 +33,10 @@ export function AnswerOptionsEditor({
   return (
     <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-[13px] font-semibold text-slate-700 dark:text-neutral-300">
+        <h3 className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
           Answer Options
         </h3>
-        <span className="text-[11px] text-slate-400">
+        <span className="text-xs text-slate-400">
           Click {isTrueFalse ? "True or False" : "the circle"} to mark correct
           answer
         </span>
@@ -80,7 +80,7 @@ export function AnswerOptionsEditor({
             />
 
             {opt.isCorrect && (
-              <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full shrink-0">
+              <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full shrink-0">
                 Correct
               </span>
             )}
@@ -102,7 +102,7 @@ export function AnswerOptionsEditor({
         <Button
           onClick={onAddOption}
           variant="outline"
-          className="h-9 px-4 border-[var(--theme-color)] text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 rounded-lg shadow-none text-[13px] font-medium transition-all"
+          className="h-9 px-4 border-[var(--theme-color)] text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 rounded-lg shadow-none text-sm font-medium transition-all"
         >
           <HugeiconsIcon
             icon={PlusSignIcon}
@@ -119,7 +119,7 @@ export function AnswerOptionsEditor({
             icon={TickDouble01Icon}
             className="size-4 text-emerald-500"
           />
-          <span className="text-[12px] text-emerald-600 font-medium">
+          <span className="text-xs text-emerald-600 font-medium">
             Correct answer set to: <strong>{correctLabel}</strong>
           </span>
         </div>

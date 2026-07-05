@@ -88,28 +88,28 @@ export function InterviewList({
                   <span className="size-2 rounded-full bg-[var(--theme-color)] animate-pulse" />
                 )}
                 <span
-                  className={`text-[13px] font-bold ${isToday ? "text-[var(--theme-color)]" : "text-slate-500 dark:text-neutral-400"}`}
+                  className={`text-sm font-bold ${isToday ? "text-[var(--theme-color)]" : "text-slate-500 dark:text-neutral-400"}`}
                 >
                   {dayLabel}
                 </span>
                 {dateSubLabel && !isToday && !isTomorrow && (
-                  <span className="text-[13px] text-slate-400 dark:text-neutral-500">
+                  <span className="text-sm text-slate-400 dark:text-neutral-500">
                     ·
                   </span>
                 )}
                 {dateSubLabel && !isToday && !isTomorrow && (
-                  <span className="text-[12px] text-slate-400 dark:text-neutral-500">
+                  <span className="text-xs text-slate-400 dark:text-neutral-500">
                     {dateSubLabel}
                   </span>
                 )}
                 {(isToday || isTomorrow) && dateSubLabel && (
-                  <span className="text-[12px] text-slate-400 dark:text-neutral-500">
+                  <span className="text-xs text-slate-400 dark:text-neutral-500">
                     {dateSubLabel}
                   </span>
                 )}
               </div>
               <div className="flex-1 h-px bg-slate-100 dark:bg-neutral-800" />
-              <span className="text-[12px] font-medium text-slate-400 dark:text-neutral-500">
+              <span className="text-xs font-medium text-slate-400 dark:text-neutral-500">
                 {dayInterviews.length} interview
                 {dayInterviews.length !== 1 ? "s" : ""}
               </span>
@@ -135,7 +135,7 @@ export function InterviewList({
                         {/* Time column */}
                         {iv.scheduledAt ? (
                           <div className="shrink-0 w-14 text-right">
-                            <p className="text-[14px] font-bold text-slate-800 dark:text-neutral-200 tabular-nums">
+                            <p className="text-sm font-bold text-slate-800 dark:text-neutral-200 tabular-nums">
                               {fmtTime(iv.scheduledAt)}
                             </p>
                           </div>
@@ -153,24 +153,24 @@ export function InterviewList({
                           <div className="flex items-center gap-2 flex-wrap">
                             <Link
                               href={`/candidates/${iv.candidateId}?from=interviews`}
-                              className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100 hover:text-[var(--theme-color)] transition-colors"
+                              className="text-sm font-semibold text-slate-900 dark:text-neutral-100 hover:text-[var(--theme-color)] transition-colors"
                             >
                               {iv.candidateName}
                             </Link>
                             <span
-                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold border-none shadow-none ${cfg.badge}`}
+                              className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border-none shadow-none ${cfg.badge}`}
                             >
                               {cfg.label}
                             </span>
                             {outcomeCfg && (
                               <span
-                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold border-none shadow-none ${outcomeCfg.badge}`}
+                                className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border-none shadow-none ${outcomeCfg.badge}`}
                               >
                                 {outcomeCfg.label}
                               </span>
                             )}
                           </div>
-                          <p className="mt-0.5 text-[12px] text-slate-500 dark:text-neutral-400 truncate">
+                          <p className="mt-0.5 text-xs text-slate-500 dark:text-neutral-400 truncate">
                             {iv.jobTitle}
                             {iv.stageName ? (
                               <>
@@ -192,7 +192,7 @@ export function InterviewList({
                             e.stopPropagation();
                             onFeedback(iv);
                           }}
-                          className="inline-flex items-center gap-1.5 h-7 rounded-md px-2.5 text-[13px] font-semibold text-white shadow-none transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1.5 h-7 rounded-md px-2.5 text-sm font-semibold text-white shadow-none transition-colors cursor-pointer"
                           style={{
                             backgroundColor: "var(--theme-color)",
                           }}
@@ -208,7 +208,7 @@ export function InterviewList({
                             e.stopPropagation();
                             onEdit(iv);
                           }}
-                          className="inline-flex items-center gap-1.5 h-7 rounded-md bg-neutral-700/90 px-2.5 text-[13px] font-semibold text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 transition-colors cursor-pointer"
+                          className="inline-flex items-center gap-1.5 h-7 rounded-md bg-neutral-700/90 px-2.5 text-sm font-semibold text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 transition-colors cursor-pointer"
                         >
                           <HugeiconsIcon
                             icon={PencilEdit01Icon}

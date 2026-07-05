@@ -42,41 +42,40 @@ export function OfferTableRow({
       onClick={() => onRowClick(offer)}
     >
       <BulkSelectRowCell
-        className="h-11"
         checked={isSelected}
         onCheckedChange={onSelectedChange}
       />
-      <TableCell className="h-11 px-6 py-0 text-[13px] font-medium text-slate-700 dark:text-neutral-200">
+      <TableCell className="h-10 px-6 py-0 text-slate-700 dark:text-neutral-300 font-medium">
         {getCandidateName(offer as any)}
       </TableCell>
-      <TableCell className="h-11 px-6 py-0 text-[13px]">
+      <TableCell className="h-10 px-6 py-0">
         <Badge
           className={`${bg} ${text} hover:${bg} border-none shadow-none font-medium px-2 py-0.5 rounded-full text-xs`}
         >
           {capitalizeStatus(offer.status)}
         </Badge>
       </TableCell>
-      <TableCell className="h-11 px-6 py-0 text-[13px] text-slate-500 dark:text-neutral-400 font-normal">
+      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
         {getJobTitle(offer as any)}
       </TableCell>
-      <TableCell className="h-11 px-6 py-0 text-[13px] text-slate-500 dark:text-neutral-400 font-normal">
+      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
         {fmtSalary(offer)}
       </TableCell>
-      <TableCell className="h-11 px-6 py-0 text-[13px] text-slate-500 dark:text-neutral-400 font-normal">
+      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
         {fmtDate(offer.sentAt)}
       </TableCell>
       <TableCell
-        className="h-11 px-6 py-0 text-[13px]"
+        className="h-10 px-6 py-0"
         onClick={(e) => e.stopPropagation()}
       >
         {isManager && (
           <div className="flex items-center justify-end gap-2">
             <Button
               size="sm"
-              className="h-7 rounded-md border-none bg-red-600/90 px-2.5 text-[13px] gap-1.5 font-semibold leading-none text-white shadow-none hover:bg-red-500 dark:bg-red-700/90 dark:hover:bg-red-600 cursor-pointer"
+              className="h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
               onClick={() => onDelete(offer)}
             >
-              <HugeiconsIcon icon={Delete02Icon} className="size-3" />
+              <HugeiconsIcon icon={Delete02Icon} className="size-3.5 mr-1" />
               Delete
             </Button>
           </div>

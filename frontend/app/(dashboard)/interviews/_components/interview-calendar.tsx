@@ -86,7 +86,7 @@ export function InterviewCalendar({
     <div className="flex gap-6">
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between mb-4">
-          <h3 className="text-[15px] font-bold text-slate-900 dark:text-neutral-100">
+          <h3 className="text-sm font-bold text-slate-900 dark:text-neutral-100">
             {monthLabel}
           </h3>
           <div className="flex items-center gap-1">
@@ -109,7 +109,7 @@ export function InterviewCalendar({
           {dayHeaders.map((d) => (
             <div
               key={d}
-              className="text-center text-[11px] font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500 py-2"
+              className="text-center text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500 py-2"
             >
               {d}
             </div>
@@ -139,7 +139,7 @@ export function InterviewCalendar({
                 {cell.day && (
                   <>
                     <span
-                      className={`absolute top-1.5 left-2 text-[13px] font-semibold ${
+                      className={`absolute top-1.5 left-2 text-sm font-semibold ${
                         isToday
                           ? "flex size-6 items-center justify-center rounded-full bg-[var(--theme-color)] text-white"
                           : "text-slate-600 dark:text-neutral-400"
@@ -157,7 +157,7 @@ export function InterviewCalendar({
                         />
                       ))}
                       {interviewsOnDay.length > 3 && (
-                        <span className="text-[10px] font-medium text-slate-400">
+                        <span className="text-xs font-medium text-slate-400">
                           +{interviewsOnDay.length - 3}
                         </span>
                       )}
@@ -172,7 +172,7 @@ export function InterviewCalendar({
 
       {selectedDate && selectedInterviews.length > 0 && (
         <div className="w-72 shrink-0 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-4">
-          <h4 className="text-[13px] font-bold text-slate-800 dark:text-neutral-200 mb-3">
+          <h4 className="text-sm font-bold text-slate-800 dark:text-neutral-200 mb-3">
             {new Date(selectedDate + "T00:00:00").toLocaleDateString("en-US", {
               weekday: "long",
               month: "short",
@@ -198,17 +198,17 @@ export function InterviewCalendar({
                     <span
                       className={`size-2 rounded-full shrink-0 ${dotColor(iv)}`}
                     />
-                    <span className="text-[13px] font-semibold text-slate-800 dark:text-neutral-200 truncate">
+                    <span className="text-sm font-semibold text-slate-800 dark:text-neutral-200 truncate">
                       {iv.candidateName}
                     </span>
                   </div>
                   {iv.jobTitle && (
-                    <p className="text-[12px] text-slate-500 dark:text-neutral-400 truncate">
+                    <p className="text-xs text-slate-500 dark:text-neutral-400 truncate">
                       {iv.jobTitle}
                     </p>
                   )}
                   {time && (
-                    <p className="text-[12px] text-slate-400 dark:text-neutral-500 mt-0.5">
+                    <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">
                       {time}
                     </p>
                   )}

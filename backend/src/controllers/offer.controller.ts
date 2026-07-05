@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { offerService } from "../services/offer.service";
+import { socketService } from "../services/socket.service";
 import logger from "../utils/logger";
 
 const bulkDeleteOffersSchema = z.object({
@@ -97,6 +98,11 @@ export const deleteOffer = async (req: Request, res: Response) => {
       res.status(404).json({ error: "Offer not found" });
       return;
     }
+    socketService.notifyOfferChanged({
+      offerId: deleted.id,
+      candidateId: deleted.candidateId,
+      jobId: deleted.jobId,
+    });
     res.status(200).json({ data: deleted });
   } catch (error) {
     logger.error(`Failed to delete offer ${req.params.id}: ${(error as Error)?.message}`);
@@ -113,6 +119,13 @@ export const bulkDeleteOffers = async (req: Request, res: Response) => {
     }
     logger.warn(`Bulk offer deletion requested: ids=${parsed.data.ids.join(",")} by user ${req.user?.id}`);
     const deleted = await offerService.deleteMany(parsed.data.ids);
+    for (const offer of deleted) {
+      socketService.notifyOfferChanged({
+        offerId: offer.id,
+        candidateId: offer.candidateId,
+        jobId: offer.jobId,
+      });
+    }
     res.status(200).json({ data: deleted, count: deleted.length });
   } catch (error) {
     logger.error(`Failed to bulk delete offers - user ${req.user?.id}: ${(error as Error)?.message}`);
@@ -175,6 +188,12 @@ export const createOffer = async (req: Request, res: Response) => {
       createdBy: req.user.id,
     });
 
+    socketService.notifyOfferChanged({
+      offerId: created.id,
+      candidateId: created.candidateId,
+      jobId: created.jobId,
+    });
+
     res.status(201).json({ data: created });
   } catch (error) {
     logger.error(`Failed to create offer: ${(error as Error)?.message}`);
@@ -205,6 +224,12 @@ export const updateOffer = async (req: Request, res: Response) => {
       return;
     }
 
+    socketService.notifyOfferChanged({
+      offerId: updated.id,
+      candidateId: updated.candidateId,
+      jobId: updated.jobId,
+    });
+
     res.status(200).json({ data: updated });
   } catch (error) {
     logger.error(`Failed to update offer ${req.params.id}: ${(error as Error)?.message}`);
@@ -225,6 +250,12 @@ export const sendOffer = async (req: Request, res: Response) => {
       res.status(404).json({ error: "Offer not found" });
       return;
     }
+
+    socketService.notifyOfferChanged({
+      offerId: sent.id,
+      candidateId: sent.candidateId,
+      jobId: sent.jobId,
+    });
 
     res.status(200).json({ data: sent });
   } catch (error) {
@@ -247,6 +278,12 @@ export const acceptOffer = async (req: Request, res: Response) => {
       return;
     }
 
+    socketService.notifyOfferChanged({
+      offerId: accepted.id,
+      candidateId: accepted.candidateId,
+      jobId: accepted.jobId,
+    });
+
     res.status(200).json({ data: accepted });
   } catch (error) {
     logger.error(`Failed to accept offer ${req.params.id}: ${(error as Error)?.message}`);
@@ -268,6 +305,12 @@ export const declineOffer = async (req: Request, res: Response) => {
       return;
     }
 
+    socketService.notifyOfferChanged({
+      offerId: declined.id,
+      candidateId: declined.candidateId,
+      jobId: declined.jobId,
+    });
+
     res.status(200).json({ data: declined });
   } catch (error) {
     logger.error(`Failed to decline offer ${req.params.id}: ${(error as Error)?.message}`);
@@ -288,6 +331,17 @@ export const markCandidateHired = async (req: Request, res: Response) => {
       res.status(404).json({ error: "Offer not found" });
       return;
     }
+
+    socketService.notifyOfferChanged({
+      offerId: id,
+      candidateId: result.candidate.id,
+      jobId: result.candidate.jobId,
+    });
+    socketService.notifyStageChanged({
+      candidateId: result.candidate.id,
+      jobId: result.candidate.jobId,
+      stageId: result.hiredStage.id,
+    });
 
     res.status(200).json({ data: result });
   } catch (error) {
@@ -331,6 +385,12 @@ export const acceptPublicOffer = async (req: Request, res: Response) => {
       return;
     }
 
+    socketService.notifyOfferChanged({
+      offerId: result.id,
+      candidateId: result.candidateId,
+      jobId: result.jobId,
+    });
+
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(`Failed to accept public offer: ${(error as Error)?.message}`);
@@ -351,6 +411,12 @@ export const declinePublicOffer = async (req: Request, res: Response) => {
       res.status(404).json({ error: "Offer link is invalid" });
       return;
     }
+
+    socketService.notifyOfferChanged({
+      offerId: result.id,
+      candidateId: result.candidateId,
+      jobId: result.jobId,
+    });
 
     res.status(200).json({ data: result });
   } catch (error) {

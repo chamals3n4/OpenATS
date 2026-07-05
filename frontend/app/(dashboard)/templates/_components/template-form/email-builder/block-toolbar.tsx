@@ -29,7 +29,7 @@ export function BlockToolbar({ onAddBlock }: BlockToolbarProps) {
           <button
             key={kind}
             onClick={() => onAddBlock(kind)}
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-500 dark:text-neutral-400 text-[12px] font-medium hover:border-[var(--theme-color)]/40 hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 transition-all"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-500 dark:text-neutral-400 text-xs font-medium hover:border-[var(--theme-color)]/40 hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 transition-all"
           >
             <HugeiconsIcon icon={icon} className="size-3" /> {label}
           </button>

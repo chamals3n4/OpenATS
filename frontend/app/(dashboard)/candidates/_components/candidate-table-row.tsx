@@ -7,7 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 import type { Candidate } from "@/types";
-import { timeAgo } from "../libs/candidate-utils";
+import { timeAgo } from "../lib/candidate-utils";
 import { useIsManager } from "@/hooks/use-role";
 
 interface CandidateTableRowProps {

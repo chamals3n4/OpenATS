@@ -11,8 +11,8 @@ import uploadRoutes from "./upload.routes";
 import chatRoutes from "./chat.routes";
 import reportRoutes from "./report.routes";
 import settingsRoutes from "./settings.routes";
-import interviewRoutes from "./interviews";
-import rejectionRoutes from "./rejections";
+import interviewRoutes from "./interviews.routes";
+import rejectionRoutes from "./rejections.routes";
 
 const router: Router = Router();
 

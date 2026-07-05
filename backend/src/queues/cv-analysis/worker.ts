@@ -2,11 +2,11 @@ import { Worker } from "bullmq";
 import {
   CV_ANALYSIS_QUEUE,
   type CvAnalysisJobData,
-} from "../queues/cv-analysis.queue";
-import { createRedisConnection } from "../config/redis";
-import { cvAnalysisService } from "../services/cv-analysis.service";
-import { publishCvAnalysisEvent } from "../events/cv-analysis-events";
-import logger from "../utils/logger";
+} from "./queue";
+import { createRedisConnection } from "../../config/redis";
+import { cvAnalysisService } from "../../services/cv-analysis.service";
+import { publishCvAnalysisEvent } from "./events";
+import logger from "../../utils/logger";
 
 export function startCvAnalysisWorker(): Worker<CvAnalysisJobData> {
   const worker = new Worker<CvAnalysisJobData>(

@@ -1,6 +1,6 @@
 import type IORedis from "ioredis";
-import { createRedisConnection } from "../config/redis";
-import logger from "../utils/logger";
+import { createRedisConnection } from "../../config/redis";
+import logger from "../../utils/logger";
 
 const CHANNEL = "cv-analysis:events";
 

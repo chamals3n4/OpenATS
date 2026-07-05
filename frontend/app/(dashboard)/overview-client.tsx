@@ -35,7 +35,7 @@ import {
   VolumeChart,
   DeptChart,
   OfferChart,
-} from "./_overview-charts";
+} from "./_components/charts";
 
 function ChartCard({
   title,

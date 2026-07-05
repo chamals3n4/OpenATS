@@ -9,7 +9,7 @@ import { cvAnalysisService } from "../services/cv-analysis.service";
 import { r2Service } from "../services/r2.service";
 import logger from "../utils/logger";
 
-import { requestCvAnalysis } from "../queues/cv-analysis.queue";
+import { requestCvAnalysis } from "../queues/cv-analysis/queue";
 
 const customAnswerSchema = z.object({
   questionId: z.number().int().positive(),

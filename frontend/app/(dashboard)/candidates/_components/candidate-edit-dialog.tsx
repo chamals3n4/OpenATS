@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { Candidate } from "@/types";
-import type { CandidateFormData } from "../libs/candidate-types";
+import type { CandidateFormData } from "../lib/candidate-types";
 
 interface CandidateEditDialogProps {
   candidate: Candidate | null;

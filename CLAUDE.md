@@ -21,6 +21,7 @@ pnpm vitest run tests/candidates/candidate.service.test.ts
 pnpm drizzle-kit generate   # generate migration SQL (always commit output)
 pnpm drizzle-kit migrate    # apply migrations to DB
 pnpm tsx src/db/seed.ts     # seed pipeline stages (required on first setup)
+docker compose up -d        # local Postgres (5432) + Redis (6379), see backend/docker-compose.yml
 ```
 
 ### Frontend (`frontend/`)
@@ -43,13 +44,15 @@ pnpm lint     # eslint
 - Socket.IO runs on the same HTTP server with CORS set to `*`.
 - Logger is winston with console transport only (file transports commented out).
 - `exactOptionalPropertyTypes: false` in tsconfig — deliberate.
+- **Redis + BullMQ**: CV analysis runs as a background job queue, colocated under `backend/src/queues/cv-analysis/` (`queue.ts`, `worker.ts`, `events.ts`); shared Redis connection factory is `backend/src/config/redis.ts`. Connection is read from `REDIS_URL` (defaults to `redis://localhost:6379`). A dedicated connection is created per Queue/Worker (BullMQ best practice), not a shared singleton.
 
 ### Database
 
 - PostgreSQL via **Drizzle ORM**. Schema files live in `backend/src/db/schema/` (one file per domain + `relations.ts`).
-- DB connection: `backend/src/db/index.ts` — pg Pool with Neon scale-to-zero handling.
+- DB connection: `backend/src/db/index.ts` — pg Pool with Neon scale-to-zero handling (production uses Neon; local dev can point `DATABASE_URL` at any Postgres, including the local Docker container).
 - When changing the schema: run `pnpm drizzle-kit generate` in `backend/`, then **commit the generated `drizzle/*.sql` files**.
-- The seed (`backend/src/db/seed.ts`) creates 5 default pipeline stages (Applied, Screening, Interviewed, Offer, Rejected) — required for the app to function.
+- The seed (`backend/src/db/seed.ts`) creates 5 default pipeline stages (Applied, Screening, Interviewed, Offer, Rejected) - required for the app to function.
+- **Local Postgres + Redis**: `backend/docker-compose.yml` runs both as containers (`openats`/`openats`/`openats` for user/password/db on Postgres; Redis with no auth). Not required — Neon/hosted Redis work too — but this is the fastest path for local dev. See `CONTRIBUTING.md` for the full setup flow.
 
 ### Frontend
 
@@ -60,6 +63,7 @@ pnpm lint     # eslint
 - Path alias: `@/*` → `./*` (configured in both `tsconfig.json` and Next.js config).
 - **Server-side data fetching**: `serverFetch` in `frontend/lib/auth-action.ts` using `React.cache()` for auth context.
 - **Client-side data fetching**: `useApi` hook + React Query hooks in `frontend/hooks/queries/`.
+- **Component placement convention**: components/hooks/utils scoped to one route live colocated under that route using Next.js's underscore-prefixed folders (excluded from routing) — `_components/` (nest further for large features, e.g. `templates/_components/template-form/email-builder/`), `lib/` (singular — not `libs/`), `hooks/`. Only truly shared code goes in the top-level `frontend/components/` (shadcn primitives in `components/ui`, shared `components/table`), `frontend/lib/`, and `frontend/hooks/queries/`.
 
 ## Testing
 
@@ -73,7 +77,7 @@ pnpm lint     # eslint
 
 Two separate `.env` files are required (copy from `.env.example` in each directory):
 
-- `backend/.env` — `DATABASE_URL`, `R2_*`, `RESEND_*`, `ASGARDEO_*`, `GEMINI_API_KEY`
+- `backend/.env` — `DATABASE_URL`, `REDIS_URL`, `R2_*`, `RESEND_*`, `ASGARDEO_*`, `GEMINI_API_KEY`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_CALENDAR_ID`
 - `frontend/.env` — `NEXT_PUBLIC_ASGARDEO_*`, `ASGARDEO_*`, `OPENATS_API_URL`, `NEXT_PUBLIC_API_URL`
 
 ## CI/CD

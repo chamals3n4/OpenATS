@@ -1,7 +1,7 @@
 import { Queue } from "bullmq";
-import { createRedisConnection } from "../config/redis";
-import { cvAnalysisService } from "../services/cv-analysis.service";
-import logger from "../utils/logger";
+import { createRedisConnection } from "../../config/redis";
+import { cvAnalysisService } from "../../services/cv-analysis.service";
+import logger from "../../utils/logger";
 
 export const CV_ANALYSIS_QUEUE = "cv-analysis";
 

@@ -8,9 +8,10 @@
   - [Install pnpm](#3-install-pnpm)
   - [Install Dependencies](#4-install-dependencies)
 - [Database Setup](#database-setup)
-  - [Setup environment variables](#1-setup-environment-variables)
-  - [Run database migrations](#2-run-database-migrations)
-  - [Seed the database](#3-seed-the-database)
+  - [Start Postgres and Redis with Docker](#1-start-postgres-and-redis-with-docker)
+  - [Setup environment variables](#2-setup-environment-variables)
+  - [Run database migrations](#3-run-database-migrations)
+  - [Seed the database](#4-seed-the-database)
 - [Running the Project](#running-the-project)
   - [Frontend](#frontend)
   - [Backend](#backend)
@@ -28,7 +29,7 @@ Before you start, make sure you have these installed:
 
 - Node.js (version 18 or higher) - [Download here](https://nodejs.org/)
 - Git - [Download here](https://git-scm.com/)
-- A PostgreSQL database (we recommend [Neon](https://neon.tech) — free tier, no local install needed)
+- Docker - [Download here](https://docs.docker.com/get-docker/) (runs Postgres and Redis locally - no manual DB install needed)
 - A code editor (VS Code recommended)
 
 Check if you have them:
@@ -36,6 +37,7 @@ Check if you have them:
 ```bash
 node --version
 git --version
+docker --version
 ```
 
 ## Tech Stack
@@ -45,7 +47,7 @@ git --version
 - Next.js
 - TypeScript
 - Tailwind CSS
-- shadcn/ui
+- shadcn/ui ( for ui componenents)
 
 **Backend (api)**
 
@@ -53,6 +55,7 @@ git --version
 - TypeScript
 - Node.js
 - PostgreSQL (Database)
+- Redis (Job queue, via BullMQ)
 - Drizzle ORM (Database ORM)
 - WSO2 Asgardeo (Authentication)
 
@@ -100,7 +103,39 @@ pnpm install
 
 ## Database Setup
 
-### 1. Setup environment variables
+### 1. Start Postgres and Redis with Docker
+
+The backend needs a PostgreSQL database and a Redis instance (used for the CV analysis job queue via BullMQ). A `docker-compose.yml` is provided in `backend/` so you don't need to install or configure either manually:
+
+```bash
+cd backend
+docker compose up -d
+```
+
+This starts:
+
+- **Postgres** on `localhost:5432` (user: `openats`, password: `openats`, db: `openats`)
+- **Redis** on `localhost:6379`
+
+Check they're running:
+
+```bash
+docker compose ps
+```
+
+Stop them when you're done for the day (data is preserved):
+
+```bash
+docker compose stop
+```
+
+Remove the containers (data volume is preserved unless you add `-v`):
+
+```bash
+docker compose down
+```
+
+### 2. Setup environment variables
 
 Inside `frontend`, copy the example env file:
 
@@ -118,13 +153,22 @@ cd backend
 cp .env.example .env
 ```
 
-Then open `.env` and fill in your database URL:
+Then open `.env` and fill in the values. If you're using the Docker containers from step 1, `DATABASE_URL` and `REDIS_URL` are:
 
 ```bash
-DATABASE_URL=your_postgresql_connection_string_here
+DATABASE_URL=postgresql://openats:openats@localhost:5432/openats
+REDIS_URL=redis://localhost:6379
 ```
 
-### 2. Run database migrations
+The remaining variables are for external/cloud services and are only needed if you're working on the feature that depends on them:
+
+- `ASGARDEO_*` - WSO2 Asgardeo auth. Required for almost everything - most routes are gated behind the auth middleware.
+- `R2_*` - Cloudflare R2 object storage, used for file uploads (e.g. resumes).
+- `RESEND_*` - Resend API, used for sending emails (e.g. application confirmations).
+- `GEMINI_API_KEY` - Used by the CV analysis service.
+- `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_CALENDAR_ID` - used for Google Calendar integration (interview scheduling). The backend authenticates as a service account, so these are the only Google-related variables needed.
+
+### 3. Run database migrations
 
 This creates all the tables in your database:
 
@@ -133,7 +177,7 @@ pnpm drizzle-kit generate
 pnpm drizzle-kit migrate
 ```
 
-### 3. Seed the database
+### 4. Seed the database
 
 This inserts the default hiring pipeline stages required for the app to work:
 
@@ -141,7 +185,7 @@ This inserts the default hiring pipeline stages required for the app to work:
 pnpm tsx src/db/seed.ts
 ```
 
-You only need to do steps 2 and 3 **once** when setting up for the first time.
+You only need to do steps 3 and 4 **once** when setting up for the first time.
 
 > ⚠️ If you ever pull changes that include schema changes, run `pnpm drizzle-kit generate` and `pnpm drizzle-kit migrate` again to keep your database in sync.
 

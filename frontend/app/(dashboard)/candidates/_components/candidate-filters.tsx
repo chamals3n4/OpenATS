@@ -12,7 +12,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Job } from "@/types";
-import { CandidateStatusFilter, getStatusLabel } from "../libs/candidate-utils";
+import { CandidateStatusFilter, getStatusLabel } from "../lib/candidate-utils";
 
 interface CandidateFiltersProps {
   search: string;

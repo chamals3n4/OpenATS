@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { startCvAnalysisWorker } from "./workers/cv-analysis.worker";
+import { startCvAnalysisWorker } from "./queues/cv-analysis/worker";
 import logger from "./utils/logger";
 
 const worker = startCvAnalysisWorker();

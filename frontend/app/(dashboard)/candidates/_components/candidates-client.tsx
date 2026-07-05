@@ -18,8 +18,8 @@ import {
   createEmptyFormData,
   candidateToFormData,
   buildUpdateFormData,
-} from "../libs/candidate-types";
-import { CandidateStatusFilter } from "../libs/candidate-utils";
+} from "../lib/candidate-types";
+import { CandidateStatusFilter } from "../lib/candidate-utils";
 import { useCandidateSocket } from "@/hooks/use-candidate-socket";
 
 const PAGE_LIMIT = 15;

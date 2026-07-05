@@ -1,7 +1,7 @@
 import http from "http";
 import app from "./app";
 import { socketService } from "./services/socket.service";
-import { subscribeToCvAnalysisEvents } from "./events/cv-analysis-events";
+import { subscribeToCvAnalysisEvents } from "./queues/cv-analysis/events";
 import logger from "./utils/logger";
 
 const PORT = process.env.PORT || 8080;

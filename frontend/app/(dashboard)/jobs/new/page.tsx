@@ -10,7 +10,6 @@ import { Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
@@ -55,7 +54,6 @@ export default function CreateNewJobPage() {
   const [salaryMin, setSalaryMin] = useState("");
   const [salaryMax, setSalaryMax] = useState("");
   const [salaryFixed, setSalaryFixed] = useState("");
-  const [isActive, setIsActive] = useState(true);
 
   const handleAddSkill = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && skillInput.trim()) {
@@ -105,7 +103,7 @@ export default function CreateNewJobPage() {
         description: description || undefined,
         skills: skills.length > 0 ? skills : undefined,
         ...salaryPayload,
-        status: isActive ? "published" : "draft",
+        status: "draft",
       },
       {
         onSuccess: (res) => {
@@ -114,10 +112,15 @@ export default function CreateNewJobPage() {
           queryClient.setQueryData(["jobs", jobId], {
             data: { ...res.data, pipelineStages: [], hiringTeam: [] },
           });
-          queryClient.setQueryData(["candidates", jobId, undefined], { data: [], pagination: undefined });
+          queryClient.setQueryData(["candidates", jobId, undefined], {
+            data: [],
+            pagination: undefined,
+          });
           queryClient.setQueryData(["jobs", jobId, "team"], { data: [] });
           queryClient.setQueryData(["jobs", jobId, "questions"], { data: [] });
-          queryClient.setQueryData(["jobs", jobId, "assessments"], { data: [] });
+          queryClient.setQueryData(["jobs", jobId, "assessments"], {
+            data: [],
+          });
 
           void queryClient.prefetchQuery({
             queryKey: ["jobs", jobId, "pipeline"],
@@ -156,21 +159,10 @@ export default function CreateNewJobPage() {
               Create New Job
             </h1>
           </div>
-          <div className="flex items-center gap-3">
-            <Switch
-              id="job-active"
-              defaultChecked
-              checked={isActive}
-              onCheckedChange={setIsActive}
-              className="data-checked:bg-theme scale-110"
-            />
-            <Label
-              htmlFor="job-active"
-              className="text-sm font-medium text-slate-600 dark:text-neutral-400 cursor-pointer pl-1"
-            >
-              Make This Job Active
-            </Label>
-          </div>
+          <p className="text-sm font-medium text-slate-500 dark:text-neutral-400">
+            Saved as a draft - publish it from the job page when you&apos;re
+            ready.
+          </p>
         </div>
 
         <div className="space-y-5">

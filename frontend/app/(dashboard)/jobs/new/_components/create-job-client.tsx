@@ -32,7 +32,6 @@ export default function CreateJobPageClient() {
   const [skillInput, setSkillInput] = useState("");
   const [location, setLocation] = useState("");
   const [description, setDescription] = useState("");
-  const [isActive, setIsActive] = useState(true);
 
   const [isSalaryInfoIncluded, setIsSalaryInfoIncluded] = useState(true);
   const [salaryType, setSalaryType] = useState<"range" | "fixed">("range");
@@ -73,7 +72,6 @@ export default function CreateJobPageClient() {
       salaryMin,
       salaryMax,
       salaryFixed,
-      isActive,
     });
 
     createJob.mutate(payload, {
@@ -107,7 +105,7 @@ export default function CreateJobPageClient() {
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
       <div className="px-14 py-10 pb-20 max-w-5xl">
-        <JobHeader isActive={isActive} onActiveChange={setIsActive} />
+        <JobHeader />
 
         <div className="space-y-5">
           <JobBasicInfo

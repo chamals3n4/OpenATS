@@ -84,12 +84,12 @@ function DialogContent({
             render={
               <Button
                 variant="ghost"
-                className="absolute top-4 right-4 cursor-pointer"
+                className="absolute top-4 right-4 cursor-pointer rounded-full text-muted-foreground"
                 size="icon-sm"
               />
             }
           >
-            <HugeiconsIcon icon={Cancel01Icon} strokeWidth={2} />
+            <HugeiconsIcon icon={Cancel01Icon} className="size-3.5" strokeWidth={2} />
             <span className="sr-only">Close</span>
           </DialogPrimitive.Close>
         )}

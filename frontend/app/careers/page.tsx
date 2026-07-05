@@ -1,11 +1,4 @@
 import Link from "next/link";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Briefcase01Icon,
-  Location01Icon,
-  ArrowRight01Icon,
-} from "@hugeicons/core-free-icons";
-
 import type { Job } from "@/types";
 
 type CareerJobRow = {
@@ -50,65 +43,38 @@ export default async function CareersIndexPage() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950 transition-colors duration-300">
-      <div className="max-w-6xl mx-auto pt-16 pb-24 px-6 sm:px-10 lg:px-12">
-        <h1 className="text-left text-3xl sm:text-[32px] font-semibold text-slate-900 dark:text-neutral-100 leading-tight mb-3">
-          Available positions
+      <div className="max-w-3xl mx-auto px-6 py-14">
+        <h1 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 mb-6">
+          Open roles
         </h1>
-        <p className="text-left text-[15px] text-slate-500 dark:text-neutral-400 mb-12 max-w-3xl">
-          Browse open roles and apply in a few minutes. We review every
-          application carefully.
-        </p>
 
         {jobs.length === 0 ? (
-          <p className="text-slate-500 dark:text-neutral-400 text-[15px]">
-            There are no open positions at the moment. Please check back later.
+          <p className="text-[14px] text-slate-500 dark:text-neutral-400 py-8 text-center">
+            There are no open positions at the moment. Please check back
+            later.
           </p>
         ) : (
-          <ul className="flex flex-col gap-4">
+          <ul className="flex flex-col gap-2">
             {jobs.map((job) => (
               <li key={job.id}>
                 <Link
                   href={`/careers/${job.id}`}
-                  className="group block rounded-lg border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 px-6 py-5 shadow-sm hover:border-slate-300 dark:hover:border-neutral-700 hover:shadow transition-[border-color,box-shadow] duration-200"
+                  className="group flex items-center justify-between gap-4 rounded-lg border border-slate-200 dark:border-neutral-800 bg-slate-100 dark:bg-neutral-900 px-5 py-4 transition-colors hover:bg-slate-200/70 dark:hover:bg-neutral-800"
                 >
-                  <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
-                    <div className="min-w-0 flex-1 space-y-2">
-                      <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 transition-colors">
-                        {job.title}
-                      </h2>
-                      <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[14px] text-slate-500 dark:text-neutral-400">
-                        <span className="inline-flex items-center gap-2">
-                          <HugeiconsIcon
-                            icon={Briefcase01Icon}
-                            className="size-[17px] text-slate-400 dark:text-neutral-500 shrink-0"
-                          />
-                          <span className="font-medium">
-                            {EMPLOYMENT_LABELS[job.employmentType] ??
-                              job.employmentType}
-                          </span>
-                        </span>
-                        {job.location ? (
-                          <span className="inline-flex items-center gap-2">
-                            <HugeiconsIcon
-                              icon={Location01Icon}
-                              className="size-[17px] text-slate-400 dark:text-neutral-500 shrink-0"
-                            />
-                            <span className="font-medium">{job.location}</span>
-                          </span>
-                        ) : null}
-                        <span className="text-slate-400 dark:text-neutral-500">
-                          {job.departmentName}
-                        </span>
-                      </div>
-                    </div>
-                    <span className="inline-flex items-center gap-1.5 text-sm font-medium text-theme shrink-0 sm:pt-0.5">
-                      Apply
-                      <HugeiconsIcon
-                        icon={ArrowRight01Icon}
-                        className="size-4 transition-transform group-hover:translate-x-0.5"
-                      />
-                    </span>
+                  <div className="min-w-0">
+                    <h2 className="text-[14.5px] font-semibold text-slate-900 dark:text-neutral-100">
+                      {job.title}
+                    </h2>
+                    <p className="mt-0.5 text-[13px] text-slate-500 dark:text-neutral-400">
+                      {job.departmentName} ·{" "}
+                      {EMPLOYMENT_LABELS[job.employmentType] ??
+                        job.employmentType}
+                      {job.location ? ` · ${job.location}` : ""}
+                    </p>
                   </div>
+                  <span className="shrink-0 rounded-full bg-[#a9c9c4] dark:bg-[#4d625f] px-4 py-1.5 text-[13px] font-semibold text-slate-900 dark:text-neutral-50 transition-colors group-hover:bg-[#98bdb7] dark:group-hover:bg-[#5b7370]">
+                    Apply
+                  </span>
                 </Link>
               </li>
             ))}

@@ -32,7 +32,6 @@ interface BuildJobPayloadParams {
   salaryMin: string;
   salaryMax: string;
   salaryFixed: string;
-  isActive: boolean;
 }
 
 export function buildJobPayload(
@@ -52,7 +51,6 @@ export function buildJobPayload(
     salaryMin,
     salaryMax,
     salaryFixed,
-    isActive,
   } = params;
 
   const salaryPayload = (() => {
@@ -106,7 +104,7 @@ export function buildJobPayload(
     location: location || undefined,
     description: description || undefined,
     skills: skills.length > 0 ? skills : [],
-    status: isActive ? "published" : "draft",
+    status: "draft",
     ...salaryPayload,
   };
 }

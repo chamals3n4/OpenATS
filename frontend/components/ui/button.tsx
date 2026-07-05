@@ -11,7 +11,7 @@ export const buttonPress =
   "active:scale-[0.985]";
 
 const buttonVariants = cva(
-  "focus-visible:border-ring aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-md border border-transparent bg-clip-padding text-[14px] font-semibold leading-none inline-flex items-center justify-center whitespace-nowrap disabled:pointer-events-none disabled:opacity-50 disabled:active:scale-100 [&_svg]:pointer-events-none shrink-0 [&_svg]:shrink-0 outline-none group/button select-none",
+  "focus-visible:border-ring aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 rounded-md border border-transparent bg-clip-padding text-[14px] font-semibold leading-none inline-flex items-center justify-center whitespace-nowrap cursor-pointer disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 [&_svg]:pointer-events-none shrink-0 [&_svg]:shrink-0 outline-none group/button select-none",
   {
     variants: {
       variant: {

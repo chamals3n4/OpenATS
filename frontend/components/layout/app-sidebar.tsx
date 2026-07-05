@@ -15,7 +15,7 @@ import {
 
 import { usePathname } from "next/navigation";
 
-import { NavMain } from "@/components/nav-main";
+import { NavMain } from "@/components/layout/nav-main";
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
 import { useCurrentUser } from "@/hooks/queries/use-user";
 

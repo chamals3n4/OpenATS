@@ -5,8 +5,8 @@ import { Public_Sans } from "next/font/google";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Notification03Icon } from "@hugeicons/core-free-icons";
 
-import { SidebarUserMenu } from "@/components/sidebar-user-menu";
-import { Button } from "./ui/button";
+import { SidebarUserMenu } from "@/components/layout/sidebar-user-menu";
+import { Button } from "@/components/ui/button";
 
 const publicSans = Public_Sans({
   subsets: ["latin"],

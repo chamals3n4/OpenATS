@@ -1,11 +1,11 @@
 import { Suspense } from "react";
-import { AppSidebar } from "@/components/app-sidebar";
-import { SiteHeaderServer } from "@/components/site-header-server";
+import { AppSidebar } from "@/components/layout/app-sidebar";
+import { SiteHeaderServer } from "@/components/layout/site-header-server";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DragDropProvider } from "@/components/dynamic-imports";
-import { PrefetchProvider } from "@/components/prefetch-provider";
-import { SetupCompanyGate } from "@/components/setup-company-gate";
-import { QueryProvider } from "@/components/query-provider";
+import { PrefetchProvider } from "@/components/providers/prefetch-provider";
+import { SetupCompanyGate } from "@/components/guards/setup-company-gate";
+import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { DashboardMainLoading } from "@/components/dashboard-main-loading";
 

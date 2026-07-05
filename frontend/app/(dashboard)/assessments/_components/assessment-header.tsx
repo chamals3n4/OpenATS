@@ -2,7 +2,7 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
-import { ThemeButton } from "@/components/theme-button";
+import { ThemeButton } from "@/components/theme/theme-button";
 import { useIsManager } from "@/hooks/use-role";
 
 export function AssessmentHeader() {

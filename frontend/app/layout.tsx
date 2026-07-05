@@ -27,8 +27,8 @@ export const metadata: Metadata = {
 
 export const dynamic = "force-dynamic";
 
-import { ThemeProvider } from "@/components/theme-provider";
-import { ThemeInitializer } from "@/components/theme-initializer";
+import { ThemeProvider } from "@/components/providers/theme-provider";
+import { ThemeInitializer } from "@/components/theme/theme-initializer";
 
 export default function RootLayout({
   children,

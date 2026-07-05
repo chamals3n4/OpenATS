@@ -71,7 +71,7 @@ export const CandidateJobFitTab = dynamic(
 
 export const DragDropProvider = dynamic(
   () =>
-    import("@/components/drag-drop-provider").then((mod) => ({
+    import("@/components/providers/drag-drop-provider").then((mod) => ({
       default: mod.DragDropProvider,
     })),
   { ssr: false },

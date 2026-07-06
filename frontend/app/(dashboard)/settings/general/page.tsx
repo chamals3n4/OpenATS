@@ -65,6 +65,7 @@ function CompanyForm({ company, isNew }: { company: Company; isNew?: boolean }) 
   const fileRef = useRef<HTMLInputElement>(null);
 
   const [preview, setPreview] = useState<string | null>(company.logoUrl ?? null);
+  const [logoUrl, setLogoUrl] = useState<string | null>(company.logoUrl ?? null);
   const [companyName, setCompanyName] = useState(company.name ?? "");
   const [email, setEmail] = useState(company.email ?? "");
   const [website, setWebsite] = useState(company.website ?? "");
@@ -79,7 +80,10 @@ function CompanyForm({ company, isNew }: { company: Company; isNew?: boolean }) 
     reader.onload = (ev) => setPreview(ev.target?.result as string);
     reader.readAsDataURL(file);
     uploadLogo.mutate(file, {
-      onSuccess: () => toast.success("Logo updated"),
+      onSuccess: (data) => {
+        setLogoUrl(data.url);
+        toast.success("Logo updated");
+      },
       onError: (err) => toast.error(err.message ?? "Upload failed"),
     });
     e.target.value = "";
@@ -94,6 +98,7 @@ function CompanyForm({ company, isNew }: { company: Company; isNew?: boolean }) 
         phone: phone || null,
         address: address || null,
         description: description || null,
+        logoUrl,
       },
       {
         onSuccess: () => toast.success(isNew ? "Company created" : "Changes saved"),

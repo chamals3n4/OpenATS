@@ -1,5 +1,7 @@
 ## Contributing to OpenATS
 
+> 🔑 Setting up authentication? See [docs/IAM_SETUP.md](docs/IAM_SETUP.md) for the full WSO2 Identity Platform setup guide.
+
 - [Prerequisites](#prerequisites)
 - [Tech Stack](#tech-stack)
 - [Initial Setup](#initial-setup)
@@ -163,7 +165,7 @@ REDIS_URL=redis://localhost:6379
 
 The remaining variables are for external/cloud services and are only needed if you're working on the feature that depends on them:
 
-- `ASGARDEO_*` - WSO2 Asgardeo auth. Required for almost everything - most routes are gated behind the auth middleware.
+- `ASGARDEO_*` - WSO2 Asgardeo auth. Required for almost everything - most routes are gated behind the auth middleware. See [docs/IAM_SETUP.md](docs/IAM_SETUP.md) for a full walkthrough of setting up your own Asgardeo application.
 - `R2_*` - Cloudflare R2 object storage, used for file uploads (e.g. resumes).
 - `RESEND_*` - Resend API, used for sending emails (e.g. application confirmations).
 - `GEMINI_API_KEY` - Used by the CV analysis service.

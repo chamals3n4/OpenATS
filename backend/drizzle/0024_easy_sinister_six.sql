@@ -1,0 +1,1 @@
+ALTER TABLE "candidate_interviews" ADD COLUMN "location" varchar(500);

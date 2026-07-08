@@ -32,6 +32,7 @@ export const candidateInterviews = pgTable(
     eventName: varchar("event_name", { length: 255 }),
     eventType: varchar("event_type", { length: 20 }).default("virtual"),
     meetingUrl: varchar("meeting_url", { length: 1000 }),
+    location: varchar("location", { length: 500 }),
     bodyText: text("body_text"),
 
     // Time slots (array of { datetime: string, selected: boolean })

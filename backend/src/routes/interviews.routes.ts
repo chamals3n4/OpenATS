@@ -37,6 +37,7 @@ const updateInterviewSchema = z.object({
   eventName: z.string().min(1).optional(),
   eventType: z.enum(["virtual", "onsite"]).optional(),
   meetingUrl: z.string().url().optional().nullable(),
+  location: z.string().optional().nullable(),
   bodyText: z.string().optional().nullable(),
   attendeeEmails: z.array(z.string().email()).optional(),
 });
@@ -150,6 +151,7 @@ const scheduleSchema = z.object({
   eventName: z.string().min(1),
   eventType: z.enum(["virtual", "onsite"]),
   meetingUrl: z.string().url().optional().nullable(),
+  location: z.string().optional().nullable(),
   bodyText: z.string().optional().nullable(),
   stageId: z.number().int().optional(),
   timeSlots: z.array(
@@ -208,6 +210,7 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
         eventName: parsed.data.eventName,
         eventType: parsed.data.eventType,
         meetingUrl: parsed.data.meetingUrl ?? null,
+        location: parsed.data.location ?? null,
         bodyText: parsed.data.bodyText ?? null,
         timeSlots: parsed.data.timeSlots,
         status: "pending_schedule",
@@ -234,6 +237,7 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
         candidate.jobTitle ?? "",
         parsed.data.eventType,
         parsed.data.meetingUrl ?? null,
+        parsed.data.location ?? null,
         parsed.data.bodyText ?? null,
         publicUrl,
       )
@@ -256,6 +260,7 @@ router.get("/public/interview/:token", async (req, res) => {
         eventName: candidateInterviews.eventName,
         eventType: candidateInterviews.eventType,
         meetingUrl: candidateInterviews.meetingUrl,
+        location: candidateInterviews.location,
         bodyText: candidateInterviews.bodyText,
         timeSlots: candidateInterviews.timeSlots,
         status: candidateInterviews.status,

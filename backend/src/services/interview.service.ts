@@ -33,6 +33,7 @@ export interface UpdateInterviewInput {
   eventName?: string;
   eventType?: "virtual" | "onsite";
   meetingUrl?: string | null;
+  location?: string | null;
   bodyText?: string | null;
   attendeeEmails?: string[];
 }
@@ -280,6 +281,7 @@ export const interviewService = {
           eventName: input.eventName,
           eventType: input.eventType,
           meetingUrl: input.meetingUrl,
+          location: input.location,
           bodyText: input.bodyText,
           updatedAt: new Date(),
         }),

@@ -64,10 +64,10 @@ export function buildEmailPayload(blocks: Block[]): TemplateBodyBlock[] {
 }
 
 export function buildEventPayload(
-  name: string,
   eventName: string,
   eventTypeRadio: "virtual" | "onsite",
   meetingUrl: string,
+  location: string,
   eventDesc: string,
   timeSlots: { datetime: string }[],
 ): TemplateBodyBlock[] {
@@ -75,9 +75,10 @@ export function buildEventPayload(
     {
       type: "text" as const,
       content: JSON.stringify({
-        eventName: eventName || name,
+        eventName,
         eventType: eventTypeRadio,
         meetingUrl: eventTypeRadio === "virtual" ? meetingUrl : null,
+        location: eventTypeRadio === "onsite" ? location : null,
         description: eventDesc,
         timeSlots: timeSlots.filter((s) => s.datetime).map((s) => s.datetime),
       }),

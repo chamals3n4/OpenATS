@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Calendar02Icon } from "@hugeicons/core-free-icons";
+import { Calendar02Icon, Location01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { InterviewData, Slot } from "../types";
@@ -96,6 +96,18 @@ export default function SlotPicker({ data, token, apiBase }: Props) {
                 >
                   {data.meetingUrl}
                 </a>
+              </div>
+            )}
+
+            {data.location && (
+              <div className="rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900 p-3">
+                <p className="text-[12px] font-semibold text-blue-600 dark:text-blue-400 mb-1 flex items-center gap-1">
+                  <HugeiconsIcon icon={Location01Icon} className="size-3.5" />
+                  Location
+                </p>
+                <p className="text-[13px] text-blue-700 dark:text-blue-300">
+                  {data.location}
+                </p>
               </div>
             )}
 

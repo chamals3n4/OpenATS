@@ -19,6 +19,7 @@ export function useTemplateForm(initialType: TemplateType) {
     "virtual",
   );
   const [meetingUrl, setMeetingUrl] = useState("");
+  const [location, setLocation] = useState("");
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([{ datetime: "" }]);
 
   // Block CRUD
@@ -68,6 +69,7 @@ export function useTemplateForm(initialType: TemplateType) {
           setEventDesc(config.description || "");
           setEventTypeRadio(config.eventType || "virtual");
           setMeetingUrl(config.meetingUrl || "");
+          setLocation(config.location || "");
           if (config.timeSlots?.length > 0) {
             setTimeSlots(
               config.timeSlots.map((dt: string) => ({ datetime: dt })),
@@ -100,6 +102,8 @@ export function useTemplateForm(initialType: TemplateType) {
     setEventTypeRadio,
     meetingUrl,
     setMeetingUrl,
+    location,
+    setLocation,
     timeSlots,
     addSlot,
     updateSlot,

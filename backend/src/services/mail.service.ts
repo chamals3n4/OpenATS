@@ -137,6 +137,7 @@ export const mailService = {
     jobTitle: string,
     eventType: string,
     meetingUrl: string | null,
+    location: string | null,
     bodyText: string | null,
     publicUrl: string,
   ) {
@@ -151,6 +152,9 @@ export const mailService = {
       `<p style="margin:0 0 8px"><strong>Type:</strong> ${typeLabel}</p>`,
       meetingUrl
         ? `<p style="margin:0"><strong>Link:</strong> <a href="${meetingUrl}">${meetingUrl}</a></p>`
+        : "",
+      location
+        ? `<p style="margin:0"><strong>Location:</strong> ${location}</p>`
         : "",
       "</div>",
       '<div style="text-align:center;margin:24px 0">',

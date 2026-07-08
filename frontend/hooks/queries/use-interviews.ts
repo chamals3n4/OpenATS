@@ -50,6 +50,7 @@ export function useUpdateInterview() {
       eventName?: string;
       eventType?: "virtual" | "onsite";
       meetingUrl?: string | null;
+      location?: string | null;
       bodyText?: string | null;
     }) =>
       serverFetch(`/interviews/${id}`, {

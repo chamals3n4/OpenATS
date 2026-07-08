@@ -169,6 +169,13 @@
       "when": 1782409215912,
       "tag": "0023_handy_phil_sheldon",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1783493864493,
+      "tag": "0024_easy_sinister_six",
+      "breakpoints": true
     }
   ]
 }

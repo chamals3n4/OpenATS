@@ -12,6 +12,7 @@ import { TemplateNameField } from "./name-field";
 import { EmailBuilder } from "./email-builder";
 import { EmailPreviewPanel } from "./email-builder/email-preview";
 import { EventBuilder } from "./event-builder";
+import { TimeSlotsEditor } from "./event-builder/time-slots-editor";
 
 interface TemplateFormProps {
   mode: "new" | "edit";
@@ -47,21 +48,23 @@ export function TemplateForm({
 
   const isPending = mode === "new" ? createMutation.isPending : updateMutation.isPending;
 
+  const nameValue = templateType === "event" ? form.eventName : form.name;
+
   const handleSave = () => {
-    if (!form.name.trim()) return;
+    if (!nameValue.trim()) return;
 
     const payload = {
-      name: form.name.trim(),
+      name: nameValue.trim(),
       type: templateType,
-      subject: templateType === "event" ? form.eventName || form.name : form.subject,
+      subject: templateType === "event" ? nameValue.trim() : form.subject,
       bodyJson:
         templateType === "email"
           ? buildEmailPayload(form.blocks)
           : buildEventPayload(
-              form.name,
-              form.eventName,
+              nameValue.trim(),
               form.eventTypeRadio,
               form.meetingUrl,
+              form.location,
               form.eventDesc,
               form.timeSlots,
             ),
@@ -91,7 +94,7 @@ export function TemplateForm({
     <TemplateFormHeader
       templateType={templateType}
       mode={mode}
-      canSave={!!form.name.trim()}
+      canSave={!!nameValue.trim()}
       isPending={isPending}
       onSave={handleSave}
       readOnly={readOnly}
@@ -135,34 +138,42 @@ export function TemplateForm({
     );
   }
 
-  // ── Event: single-column clean form ─────────────────────────────────────
+  // ── Event: details / time slots ─────────────────────────────────────────
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-white dark:bg-neutral-950">
       {header}
 
-      <div className="flex-1 overflow-y-auto">
-        <div className="max-w-xl mx-auto px-8 py-6 space-y-5">
-          <TemplateNameField
-            value={form.name}
-            onChange={form.setName}
-            placeholder="e.g. Technical Interview Round 1"
-            readOnly={readOnly}
-          />
-          <EventBuilder
-            eventName={form.eventName}
-            onEventNameChange={form.setEventName}
-            eventDesc={form.eventDesc}
-            onEventDescChange={form.setEventDesc}
-            eventTypeRadio={form.eventTypeRadio}
-            onEventTypeChange={form.setEventTypeRadio}
-            meetingUrl={form.meetingUrl}
-            onMeetingUrlChange={form.setMeetingUrl}
-            timeSlots={form.timeSlots}
-            onAddSlot={form.addSlot}
-            onUpdateSlot={form.updateSlot}
-            onRemoveSlot={form.removeSlot}
-            readOnly={readOnly}
-          />
+      <div className="flex flex-1 min-h-0">
+        {/* Left — event details */}
+        <div className="flex-1 overflow-y-auto border-r border-slate-200 dark:border-neutral-800">
+          <div className="px-8 py-6 space-y-4 max-w-xl">
+            <EventBuilder
+              eventName={form.eventName}
+              onEventNameChange={form.setEventName}
+              eventDesc={form.eventDesc}
+              onEventDescChange={form.setEventDesc}
+              eventTypeRadio={form.eventTypeRadio}
+              onEventTypeChange={form.setEventTypeRadio}
+              meetingUrl={form.meetingUrl}
+              onMeetingUrlChange={form.setMeetingUrl}
+              location={form.location}
+              onLocationChange={form.setLocation}
+              readOnly={readOnly}
+            />
+          </div>
+        </div>
+
+        {/* Right — time slots */}
+        <div className="w-[420px] xl:w-[480px] shrink-0 overflow-y-auto bg-white dark:bg-neutral-950 border-l border-slate-200 dark:border-neutral-800">
+          <div className="px-7 py-6">
+            <TimeSlotsEditor
+              slots={form.timeSlots}
+              onAdd={form.addSlot}
+              onUpdate={form.updateSlot}
+              onRemove={form.removeSlot}
+              readOnly={readOnly}
+            />
+          </div>
         </div>
       </div>
     </div>

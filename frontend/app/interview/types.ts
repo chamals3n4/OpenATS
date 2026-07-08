@@ -7,6 +7,7 @@ export interface InterviewData {
   eventName: string;
   eventType: string;
   meetingUrl: string | null;
+  location: string | null;
   bodyText: string | null;
   status: string;
   jobTitle: string;

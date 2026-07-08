@@ -68,6 +68,7 @@ export function InterviewSchedulerDialog({
   const [eventName, setEventName] = useState("");
   const [eventType, setEventType] = useState<"virtual" | "onsite">("virtual");
   const [meetingUrl, setMeetingUrl] = useState("");
+  const [location, setLocation] = useState("");
   const [bodyText, setBodyText] = useState("");
   const [timeSlots, setTimeSlots] = useState([{ datetime: "" }]);
   const [saving, setSaving] = useState(false);
@@ -79,6 +80,7 @@ export function InterviewSchedulerDialog({
       setEventName("");
       setEventType("virtual");
       setMeetingUrl("");
+      setLocation("");
       setTimeSlots([{ datetime: "" }]);
       setBodyText("");
       return;
@@ -88,6 +90,7 @@ export function InterviewSchedulerDialog({
     setEventName(tpl.name);
     setEventType("virtual");
     setMeetingUrl("");
+    setLocation("");
     const blocks = (tpl.bodyJson as Array<{ content?: string }>) ?? [];
     // Read event config from bodyJson (stored as JSON text block)
     const configBlock = blocks.find((b: { content?: string }) =>
@@ -98,6 +101,7 @@ export function InterviewSchedulerDialog({
         const config = JSON.parse(configBlock.content!);
         setEventType(config.eventType || "virtual");
         setMeetingUrl(config.meetingUrl || "");
+        setLocation(config.location || "");
         if (config.timeSlots?.length > 0) {
           setTimeSlots(
             config.timeSlots.map((dt: string) => ({ datetime: dt })),
@@ -132,6 +136,7 @@ export function InterviewSchedulerDialog({
           eventName: name,
           eventType,
           meetingUrl: eventType === "virtual" ? meetingUrl || null : null,
+          location: eventType === "onsite" ? location || null : null,
           bodyText: bodyText || null,
           stageId: pipelineStageId,
           timeSlots: validSlots.map((s) => ({
@@ -144,6 +149,8 @@ export function InterviewSchedulerDialog({
       onSuccess?.();
       onOpenChange(false);
       setEventName("");
+      setMeetingUrl("");
+      setLocation("");
       setBodyText("");
       setTimeSlots([{ datetime: "" }]);
       setUseTemplate("");
@@ -269,6 +276,20 @@ export function InterviewSchedulerDialog({
                     value={meetingUrl}
                     onChange={(e) => setMeetingUrl(e.target.value)}
                     placeholder="Zoom / Teams / Meet link"
+                    className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-sm rounded-lg"
+                  />
+                </div>
+              )}
+
+              {eventType === "onsite" && (
+                <div className="space-y-1.5">
+                  <Label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    Location
+                  </Label>
+                  <Input
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="Office address or building / floor"
                     className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 shadow-none text-sm rounded-lg"
                   />
                 </div>

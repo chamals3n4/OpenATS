@@ -2,11 +2,17 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useCreateTemplate, useUpdateTemplate } from "@/hooks/queries/use-templates";
+import {
+  useCreateTemplate,
+  useUpdateTemplate,
+} from "@/hooks/queries/use-templates";
 import type { Template } from "@/types";
 import type { TemplateType } from "../../lib/template-form-types";
 import { useTemplateForm } from "../../hooks/use-template-form";
-import { buildEmailPayload, buildEventPayload } from "../../lib/template-form-utils";
+import {
+  buildEmailPayload,
+  buildEventPayload,
+} from "../../lib/template-form-utils";
 import { TemplateFormHeader } from "./header";
 import { TemplateNameField } from "./name-field";
 import { EmailBuilder } from "./email-builder";
@@ -46,7 +52,8 @@ export function TemplateForm({
     }
   }, [mode, existingTemplate]);
 
-  const isPending = mode === "new" ? createMutation.isPending : updateMutation.isPending;
+  const isPending =
+    mode === "new" ? createMutation.isPending : updateMutation.isPending;
 
   const nameValue = templateType === "event" ? form.eventName : form.name;
 
@@ -64,7 +71,6 @@ export function TemplateForm({
               nameValue.trim(),
               form.eventTypeRadio,
               form.meetingUrl,
-              form.location,
               form.eventDesc,
               form.timeSlots,
             ),
@@ -138,7 +144,6 @@ export function TemplateForm({
     );
   }
 
-  // ── Event: details / time slots ─────────────────────────────────────────
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-white dark:bg-neutral-950">
       {header}
@@ -146,7 +151,7 @@ export function TemplateForm({
       <div className="flex flex-1 min-h-0">
         {/* Left — event details */}
         <div className="flex-1 overflow-y-auto border-r border-slate-200 dark:border-neutral-800">
-          <div className="px-8 py-6 space-y-4 max-w-xl">
+          <div className="px-8 py-6 space-y-6 max-w-xl">
             <EventBuilder
               eventName={form.eventName}
               onEventNameChange={form.setEventName}
@@ -156,8 +161,6 @@ export function TemplateForm({
               onEventTypeChange={form.setEventTypeRadio}
               meetingUrl={form.meetingUrl}
               onMeetingUrlChange={form.setMeetingUrl}
-              location={form.location}
-              onLocationChange={form.setLocation}
               readOnly={readOnly}
             />
           </div>

@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import { useInterviews } from "@/hooks/queries/use-interviews";
 import { useDepartments } from "@/hooks/queries/use-company";
-import { useCandidateSocket } from "@/hooks/use-candidate-socket";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Calendar02Icon,
@@ -27,7 +26,6 @@ import FeedbackDialog from "./feedback-dialog";
 import { EditDialog } from "./edit-dialog";
 
 export default function InterviewsClient() {
-  useCandidateSocket();
   const [view, setView] = useState<"list" | "calendar">("calendar");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");

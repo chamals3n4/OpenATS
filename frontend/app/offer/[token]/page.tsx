@@ -1,40 +1,55 @@
 "use client";
 
 import { useEffect, useState, use } from "react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Tick02Icon, Alert02Icon } from "@hugeicons/core-free-icons";
 import {
   fetchPublicOffer,
   acceptPublicOffer,
   declinePublicOffer,
 } from "@/hooks/queries/use-offers";
 import type { PublicOfferView } from "@/types";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Separator } from "@/components/ui/separator";
+import { Spinner } from "@/components/ui/spinner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-const STATUS_STYLES: Record<string, { bg: string; text: string }> = {
+const STATUS_LABELS: Record<string, { label: string; className: string }> = {
   draft: {
-    bg: "bg-slate-100 dark:bg-neutral-800",
-    text: "text-slate-500 dark:text-neutral-400",
+    label: "Draft",
+    className:
+      "bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400",
   },
   sent: {
-    bg: "bg-blue-50 dark:bg-blue-950/30",
-    text: "text-blue-600 dark:text-blue-400",
+    label: "Awaiting Response",
+    className:
+      "bg-(--theme-color)/10 text-[var(--theme-color)]",
   },
   viewed: {
-    bg: "bg-purple-50 dark:bg-purple-950/30",
-    text: "text-purple-600 dark:text-purple-400",
+    label: "Awaiting Response",
+    className:
+      "bg-(--theme-color)/10 text-[var(--theme-color)]",
   },
   accepted: {
-    bg: "bg-emerald-50 dark:bg-emerald-950/30",
-    text: "text-emerald-600 dark:text-emerald-400",
+    label: "Accepted",
+    className:
+      "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
   },
   declined: {
-    bg: "bg-red-50 dark:bg-red-950/30",
-    text: "text-red-500 dark:text-red-400",
+    label: "Declined",
+    className: "bg-red-50 text-red-500 dark:bg-red-950/30 dark:text-red-400",
   },
   expired: {
-    bg: "bg-amber-50 dark:bg-amber-950/30",
-    text: "text-amber-600 dark:text-amber-400",
+    label: "Expired",
+    className:
+      "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
   },
 };
 
@@ -71,6 +86,7 @@ export default function OfferPortalPage({
   const [error, setError] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState(false);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [showDeclineConfirm, setShowDeclineConfirm] = useState(false);
 
   useEffect(() => {
     fetchPublicOffer(token)
@@ -89,9 +105,7 @@ export default function OfferPortalPage({
     setActionError(null);
     try {
       await acceptPublicOffer(token);
-      setOffer((prev) =>
-        prev ? { ...prev, status: "accepted" } : prev,
-      );
+      setOffer((prev) => (prev ? { ...prev, status: "accepted" } : prev));
     } catch (err) {
       setActionError((err as Error).message || "Failed to accept offer");
     } finally {
@@ -100,14 +114,12 @@ export default function OfferPortalPage({
   };
 
   const handleDecline = async () => {
-    if (!confirm("Are you sure you want to decline this offer?")) return;
+    setShowDeclineConfirm(false);
     setActionLoading(true);
     setActionError(null);
     try {
       await declinePublicOffer(token);
-      setOffer((prev) =>
-        prev ? { ...prev, status: "declined" } : prev,
-      );
+      setOffer((prev) => (prev ? { ...prev, status: "declined" } : prev));
     } catch (err) {
       setActionError((err as Error).message || "Failed to decline offer");
     } finally {
@@ -117,10 +129,10 @@ export default function OfferPortalPage({
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-neutral-950">
-        <div className="flex items-center gap-2.5 text-slate-400">
-          <div className="size-4 border-2 border-slate-300 dark:border-neutral-600 border-t-slate-400 rounded-full animate-spin" />
-          <p className="text-sm font-medium">Loading offer...</p>
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-neutral-950">
+        <div className="flex items-center gap-2.5 text-slate-400 dark:text-neutral-500">
+          <Spinner className="size-4" />
+          <p className="text-sm font-medium">Loading offer…</p>
         </div>
       </div>
     );
@@ -128,15 +140,19 @@ export default function OfferPortalPage({
 
   if (error || !offer) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-neutral-950 px-4">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-neutral-950 px-6">
         <div className="text-center max-w-md">
-          <div className="size-14 rounded-full bg-red-100 dark:bg-red-950/30 flex items-center justify-center mx-auto mb-4">
-            <span className="text-2xl">!</span>
+          <div className="mx-auto mb-5 flex size-12 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/30">
+            <HugeiconsIcon
+              icon={Alert02Icon}
+              className="size-5 text-red-500 dark:text-red-400"
+              strokeWidth={2}
+            />
           </div>
-          <h1 className="text-[20px] font-bold text-slate-900 dark:text-neutral-100 mb-2">
-            Offer Not Found
+          <h1 className="text-2xl font-semibold text-slate-900 dark:text-neutral-100">
+            Offer not found
           </h1>
-          <p className="text-[14px] text-slate-500 dark:text-neutral-400">
+          <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-neutral-400">
             {error || "This offer link is invalid or has expired."}
           </p>
         </div>
@@ -144,196 +160,165 @@ export default function OfferPortalPage({
     );
   }
 
-  const statusStyle = STATUS_STYLES[offer.status] ?? STATUS_STYLES.draft;
+  const status = STATUS_LABELS[offer.status] ?? STATUS_LABELS.draft;
   const canRespond = ["sent", "viewed"].includes(offer.status);
 
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-neutral-950 py-12 px-4">
-      <div className="max-w-2xl mx-auto">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-[24px] font-bold text-slate-900 dark:text-neutral-100 mb-2">
-            Offer Letter
-          </h1>
-          <p className="text-[15px] text-slate-500 dark:text-neutral-400">
-            {offer.jobTitle}
-          </p>
-          <div className="mt-3">
-            <Badge
-              className={`${statusStyle.bg} ${statusStyle.text} border-none px-3 py-1 text-[12px] font-bold uppercase tracking-wider shadow-none`}
-            >
-              {offer.status}
-            </Badge>
-          </div>
-        </div>
+  const details = [
+    {
+      label: "Salary",
+      value: offer.currency
+        ? `${offer.currency} ${fmtCurrency(offer.salary)}`
+        : fmtCurrency(offer.salary),
+    },
+    {
+      label: "Employment type",
+      value: offer.employmentType
+        ? (EMPLOYMENT_LABELS[offer.employmentType] ?? offer.employmentType)
+        : "—",
+    },
+    { label: "Start date", value: fmtDate(offer.startDate) },
+    { label: "Reporting manager", value: offer.reportingManager || "—" },
+  ];
 
-        {/* Candidate info */}
-        <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 mb-6">
-          <p className="text-[13px] font-semibold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
-            Candidate
-          </p>
-          <p className="text-[17px] font-bold text-slate-900 dark:text-neutral-100">
+  return (
+    <div className="min-h-screen bg-white dark:bg-neutral-950 transition-colors duration-300">
+      <div className="max-w-[640px] mx-auto pt-14 pb-24 px-6 sm:px-8">
+        <p className="text-sm font-medium text-slate-500 dark:text-neutral-400">
+          Offer Letter
+        </p>
+
+        <h1 className="mt-4 text-3xl sm:text-[32px] font-semibold text-slate-900 dark:text-neutral-100 leading-tight">
+          {offer.jobTitle}
+        </h1>
+
+        <div className="mt-3 flex items-center gap-3">
+          <p className="text-sm text-slate-500 dark:text-neutral-400">
             {offer.candidateName}
           </p>
-          <p className="text-[14px] text-slate-500 dark:text-neutral-400 mt-0.5">
-            {offer.candidateEmail}
-          </p>
+          <span
+            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${status.className}`}
+          >
+            {status.label}
+          </span>
         </div>
 
-        {/* Offer Details */}
-        <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 overflow-hidden mb-6">
-          <div className="px-6 py-4 border-b border-slate-100 dark:border-neutral-800">
-            <p className="text-[13px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
-              Compensation &amp; Details
-            </p>
-          </div>
-          <div className="divide-y divide-slate-100 dark:divide-neutral-800">
-            {[
-              {
-                label: "Salary",
-                value: offer.currency
-                  ? `${offer.currency} ${fmtCurrency(offer.salary)}`
-                  : fmtCurrency(offer.salary),
-              },
-              {
-                label: "Employment Type",
-                value: offer.employmentType
-                  ? (EMPLOYMENT_LABELS[offer.employmentType] ??
-                    offer.employmentType)
-                  : "—",
-              },
-              { label: "Start Date", value: fmtDate(offer.startDate) },
-              {
-                label: "Reporting Manager",
-                value: offer.reportingManager || "—",
-              },
-            ].map(({ label, value }) => (
-              <div
-                key={label}
-                className="flex items-center justify-between px-6 py-4 gap-4"
-              >
-                <span className="text-[13px] text-slate-500 dark:text-neutral-400 font-medium">
+        {/* Details */}
+        <div className="mt-10 rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/60 p-6">
+          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
+            {details.map(({ label, value }) => (
+              <div key={label}>
+                <p className="text-xs font-medium text-slate-500 dark:text-neutral-400">
                   {label}
-                </span>
-                <span className="text-[13px] text-slate-800 dark:text-neutral-200 font-semibold text-right">
+                </p>
+                <p className="mt-1 text-sm font-medium text-slate-900 dark:text-neutral-100">
                   {value}
-                </span>
+                </p>
               </div>
             ))}
-          </div>
-          {offer.benefits && (
-            <>
-              <Separator />
-              <div className="px-6 py-4">
-                <p className="text-[13px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-2">
+            {offer.benefits && (
+              <div className="col-span-2">
+                <p className="text-xs font-medium text-slate-500 dark:text-neutral-400">
                   Benefits
                 </p>
-                <p className="text-[13px] text-slate-700 dark:text-neutral-300 whitespace-pre-line leading-relaxed">
+                <p className="mt-1 text-sm leading-relaxed text-slate-700 dark:text-neutral-300 whitespace-pre-line">
                   {offer.benefits}
                 </p>
               </div>
-            </>
-          )}
-        </div>
-
-        {/* Offer Letter */}
-        {offer.offerLetterHtml && (
-          <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 overflow-hidden mb-6">
-            <div className="px-6 py-4 border-b border-slate-100 dark:border-neutral-800">
-              <p className="text-[13px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
-                Offer Letter
-              </p>
-            </div>
-            <div className="px-6 py-4">
-              <div
-                className="prose prose-sm max-w-none text-slate-700 dark:text-neutral-300 [&_a]:text-[var(--theme-color)] [&_h1]:text-lg [&_h2]:text-base"
-                dangerouslySetInnerHTML={{ __html: offer.offerLetterHtml }}
-              />
-            </div>
-          </div>
-        )}
-
-        {/* Status Timeline */}
-        <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6 mb-6">
-          <p className="text-[13px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-4">
-            Timeline
-          </p>
-          <div className="grid grid-cols-2 gap-3">
-            {[
-              { label: "Sent", value: fmtDate(offer.sentAt) },
-              { label: "Viewed", value: fmtDate(offer.viewedAt) },
-              { label: "Accepted", value: fmtDate(offer.acceptedAt) },
-              { label: "Declined", value: fmtDate(offer.declinedAt) },
-            ]
-              .filter((i) => i.value !== "—")
-              .map(({ label, value }) => (
-                <div key={label}>
-                  <p className="text-[11px] text-slate-400 dark:text-neutral-500 uppercase tracking-wider font-semibold">
-                    {label}
-                  </p>
-                  <p className="text-[13px] text-slate-700 dark:text-neutral-300 font-medium mt-0.5">
-                    {value}
-                  </p>
-                </div>
-              ))}
-          </div>
-        </div>
-
-        {/* Actions */}
-        {canRespond && (
-          <div className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 p-6">
-            <p className="text-[15px] font-bold text-slate-900 dark:text-neutral-100 mb-4">
-              Review &amp; Respond
-            </p>
-
-            {actionError && (
-              <div className="rounded-lg border border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20 px-4 py-3 text-[13px] text-red-600 dark:text-red-400 font-medium mb-4">
-                {actionError}
-              </div>
             )}
+          </div>
+        </div>
 
-            <div className="flex items-center gap-3">
-              <Button
+        {/* Respond */}
+        {canRespond && (
+          <div className="mt-12">
+            {actionError && (
+              <p className="mb-4 text-sm text-red-500 dark:text-red-400">
+                {actionError}
+              </p>
+            )}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <button
+                type="button"
                 onClick={handleAccept}
                 disabled={actionLoading}
-                className="h-10 rounded-lg border-none bg-emerald-600 px-6 text-[14px] font-semibold text-white shadow-none hover:bg-emerald-500 disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 text-white px-6 h-11 font-medium text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {actionLoading ? "Processing…" : "Accept Offer"}
-              </Button>
-              <Button
-                onClick={handleDecline}
+                {actionLoading && <Spinner className="size-3.5" />}
+                {actionLoading ? "Processing" : "Accept offer"}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowDeclineConfirm(true)}
                 disabled={actionLoading}
-                className="h-10 rounded-lg border-none bg-neutral-700 px-6 text-[14px] font-semibold text-white shadow-none hover:bg-neutral-600 disabled:opacity-60"
+                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-transparent text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 px-6 h-11 font-medium text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {actionLoading ? "Processing…" : "Decline Offer"}
-              </Button>
+                Decline
+              </button>
             </div>
           </div>
         )}
 
-        {/* Already responded */}
         {offer.status === "accepted" && (
-          <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/50 dark:bg-emerald-950/20 p-6 text-center">
-            <p className="text-[16px] font-bold text-emerald-700 dark:text-emerald-300 mb-1">
-              🎉 Offer Accepted
+          <div className="mt-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 px-6 py-5 text-center">
+            <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/40">
+              <HugeiconsIcon
+                icon={Tick02Icon}
+                className="size-4 text-emerald-600 dark:text-emerald-400"
+                strokeWidth={2.5}
+              />
+            </div>
+            <p className="text-base font-semibold text-emerald-700 dark:text-emerald-300">
+              Offer accepted
             </p>
-            <p className="text-[13px] text-emerald-600 dark:text-emerald-400">
+            <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400">
               Congratulations! The hiring team has been notified.
             </p>
           </div>
         )}
 
         {offer.status === "declined" && (
-          <div className="rounded-xl border border-red-200 dark:border-red-800 bg-red-50/50 dark:bg-red-950/20 p-6 text-center">
-            <p className="text-[16px] font-bold text-red-600 dark:text-red-400 mb-1">
-              Offer Declined
+          <div className="mt-12 rounded-xl bg-red-50 dark:bg-red-950/20 px-6 py-5 text-center">
+            <p className="text-base font-semibold text-red-600 dark:text-red-400">
+              Offer declined
             </p>
-            <p className="text-[13px] text-red-500 dark:text-red-500">
+            <p className="mt-1 text-sm text-red-500 dark:text-red-400">
               You have declined this offer. The hiring team has been notified.
             </p>
           </div>
         )}
+
+        <p className="text-center text-xs text-slate-400 dark:text-neutral-500 mt-12">
+          Powered by OpenATS
+        </p>
       </div>
+
+      {/* Decline confirmation */}
+      <AlertDialog
+        open={showDeclineConfirm}
+        onOpenChange={(o) => !o && setShowDeclineConfirm(false)}
+      >
+        <AlertDialogContent className="max-w-sm rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
+              Decline this offer?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 dark:text-neutral-400 leading-relaxed">
+              The hiring team will be notified. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="h-8 rounded-md border-none bg-neutral-700 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDecline}
+              className="h-8 rounded-md border-none bg-red-600 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
+            >
+              Decline offer
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

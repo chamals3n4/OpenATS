@@ -76,6 +76,10 @@ const navMainData = [
         title: "User Management",
         url: "/settings/user-management",
       },
+      {
+        title: "Integrations",
+        url: "/settings/integrations",
+      },
     ],
   },
 ];

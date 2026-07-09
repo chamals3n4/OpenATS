@@ -9,20 +9,24 @@ interface Props {
 
 export default function ConfirmedState({ jobTitle }: Props) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 dark:bg-neutral-950">
-      <div className="text-center max-w-md px-4">
-        <div className="size-14 rounded-full bg-emerald-100 flex items-center justify-center mx-auto mb-4">
+    <div className="flex min-h-screen items-center justify-center bg-white dark:bg-neutral-950 px-6">
+      <div className="text-center max-w-md">
+        <div className="mx-auto mb-5 flex size-12 items-center justify-center rounded-full bg-(--theme-color)/10">
           <HugeiconsIcon
             icon={Tick02Icon}
-            className="size-6 text-emerald-600"
+            className="size-5 text-[var(--theme-color)]"
+            strokeWidth={2.5}
           />
         </div>
-        <h1 className="text-[20px] font-bold text-slate-900 dark:text-neutral-100 mb-2">
-          Time Slot Confirmed!
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-neutral-100">
+          You&apos;re all set
         </h1>
-        <p className="text-[14px] text-slate-500 dark:text-neutral-400">
-          Your interview for <strong>{jobTitle}</strong> has been scheduled.
-          You&apos;ll receive a confirmation email shortly.
+        <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-neutral-400">
+          Your interview for <strong className="font-medium text-slate-700 dark:text-neutral-200">{jobTitle}</strong>{" "}
+          is confirmed. A confirmation email with the details is on its way.
+        </p>
+        <p className="mt-8 text-xs text-slate-400 dark:text-neutral-500">
+          Powered by OpenATS
         </p>
       </div>
     </div>

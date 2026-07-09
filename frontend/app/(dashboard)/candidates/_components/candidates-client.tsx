@@ -20,13 +20,11 @@ import {
   buildUpdateFormData,
 } from "../lib/candidate-types";
 import { CandidateStatusFilter } from "../lib/candidate-utils";
-import { useCandidateSocket } from "@/hooks/use-candidate-socket";
 
 const PAGE_LIMIT = 15;
 
 export default function CandidatesPageClient() {
   const router = useRouter();
-  useCandidateSocket();
 
   // ── Filter State ───────────────────────────────────────────
   const [selectedJobId, setSelectedJobId] = useState<number | undefined>();

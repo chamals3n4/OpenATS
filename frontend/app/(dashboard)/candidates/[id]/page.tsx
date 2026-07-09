@@ -40,7 +40,6 @@ import { ScoresSection } from "./_components/sections/scores-section";
 import { EditCandidateDialog } from "./_components/dialogs/edit-candidate-dialog";
 import { DeleteCandidateDialog } from "./_components/dialogs/delete-candidate-dialog";
 import { RejectCandidateDialog } from "./_components/dialogs/reject-candidate-dialog";
-import { useCandidateSocket } from "@/hooks/use-candidate-socket";
 import { useIsManager } from "@/hooks/use-role";
 
 export default function CandidateDetailPage({
@@ -48,7 +47,6 @@ export default function CandidateDetailPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
-  useCandidateSocket();
   const router = useRouter();
   const isManager = useIsManager();
   const queryClient = useQueryClient();

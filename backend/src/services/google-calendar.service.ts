@@ -28,6 +28,11 @@ function getCalendarId(): string {
   return process.env.GOOGLE_CALENDAR_ID || "primary";
 }
 
+// Attendee invites need Domain-Wide Delegation; otherwise they go in the description
+function attendeesAllowed(): boolean {
+  return process.env.GOOGLE_CALENDAR_ALLOW_ATTENDEES === "true";
+}
+
 export interface CalendarEventInput {
   interviewId: number;
   candidateName: string;
@@ -37,6 +42,7 @@ export interface CalendarEventInput {
   durationMinutes: number;
   notes: string | null;
   attendeeEmails: string[];
+  meetingUrl?: string | null;
 }
 
 export async function createCalendarEvent(
@@ -47,6 +53,7 @@ export async function createCalendarEvent(
     input.scheduledAt.getTime() + input.durationMinutes * 60_000,
   );
 
+  const withAttendees = attendeesAllowed();
   const event = await calendar.events.insert({
     calendarId: getCalendarId(),
     requestBody: {
@@ -56,12 +63,19 @@ export async function createCalendarEvent(
         `Job: ${input.jobTitle}`,
         `Stage: ${input.stageName}`,
         input.notes ? `Notes: ${input.notes}` : null,
+        input.meetingUrl ? `Meeting link: ${input.meetingUrl}` : null,
+        !withAttendees && input.attendeeEmails.length > 0
+          ? `Attendees: ${input.attendeeEmails.join(", ")}`
+          : null,
       ]
         .filter(Boolean)
         .join("\n"),
+      location: input.meetingUrl ?? undefined,
       start: { dateTime: input.scheduledAt.toISOString(), timeZone: "UTC" },
       end: { dateTime: endTime.toISOString(), timeZone: "UTC" },
-      attendees: input.attendeeEmails.map((email) => ({ email })),
+      attendees: withAttendees
+        ? input.attendeeEmails.map((email) => ({ email }))
+        : undefined,
       reminders: {
         useDefault: false,
         overrides: [
@@ -92,7 +106,9 @@ export async function updateCalendarEvent(
       summary: `Interview: ${input.candidateName} — ${input.jobTitle}`,
       start: { dateTime: input.scheduledAt.toISOString(), timeZone: "UTC" },
       end: { dateTime: endTime.toISOString(), timeZone: "UTC" },
-      attendees: input.attendeeEmails.map((email) => ({ email })),
+      attendees: attendeesAllowed()
+        ? input.attendeeEmails.map((email) => ({ email }))
+        : undefined,
     },
   });
 }
@@ -102,5 +118,6 @@ export async function deleteCalendarEvent(googleEventId: string) {
   await calendar.events.delete({
     calendarId: getCalendarId(),
     eventId: googleEventId,
+    sendUpdates: "all",
   });
 }

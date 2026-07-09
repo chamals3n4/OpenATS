@@ -95,3 +95,5 @@ export const cvAnalysisStatus = pgEnum("cv_analysis_status", [
   "done",
   "failed",
 ]);
+
+export const meetingProvider = pgEnum("meeting_provider", ["google_meet"]);

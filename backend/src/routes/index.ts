@@ -13,6 +13,7 @@ import reportRoutes from "./report.routes";
 import settingsRoutes from "./settings.routes";
 import interviewRoutes from "./interviews.routes";
 import rejectionRoutes from "./rejections.routes";
+import integrationRoutes from "./integrations.routes";
 
 const router: Router = Router();
 
@@ -30,5 +31,6 @@ router.use("/reports", reportRoutes);
 router.use("/settings", settingsRoutes);
 router.use("/", interviewRoutes);
 router.use("/", rejectionRoutes);
+router.use("/integrations", integrationRoutes);
 
 export default router;

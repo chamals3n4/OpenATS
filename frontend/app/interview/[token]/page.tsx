@@ -1,7 +1,4 @@
 import { notFound } from "next/navigation";
-import LoadingState from "../_components/loading-state";
-import ErrorState from "../_components/error-state";
-import ConfirmedState from "../_components/confirmed-state";
 import AlreadyScheduled from "../_components/already-scheduled";
 import SlotPicker from "../_components/slot-picker";
 import { InterviewData } from "../types";

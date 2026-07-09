@@ -37,6 +37,7 @@ import {
 import { candidateRejections } from "./rejections";
 import { candidateInterviews } from "./interviews";
 import { interviewFeedback } from "./interview-feedback";
+import { integrationConnections } from "./integrations";
 
 // company
 export const companyRelations = relations(company, ({ many }) => ({
@@ -63,6 +64,7 @@ export const usersRelations = relations(users, ({ many }) => ({
   candidateChatMessages: many(candidateChatMessages),
   stageMoves: many(candidateStageHistory),
   candidateActivities: many(candidateActivities),
+  integrationConnections: many(integrationConnections),
 }));
 
 // templates
@@ -499,7 +501,22 @@ export const candidateInterviewsRelations = relations(
       fields: [candidateInterviews.createdBy],
       references: [users.id],
     }),
+    interviewer: one(users, {
+      fields: [candidateInterviews.interviewerId],
+      references: [users.id],
+    }),
     feedback: many(interviewFeedback),
+  }),
+);
+
+// integrations
+export const integrationConnectionsRelations = relations(
+  integrationConnections,
+  ({ one }) => ({
+    user: one(users, {
+      fields: [integrationConnections.userId],
+      references: [users.id],
+    }),
   }),
 );
 

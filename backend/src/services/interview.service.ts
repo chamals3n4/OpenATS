@@ -22,6 +22,8 @@ export interface CreateInterviewInput {
   notes?: string | null;
   /** Emails of interviewers to invite (Google Calendar guests) */
   attendeeEmails?: string[];
+  /** The user conducting the interview — whose connected provider (if any) generates the meeting link */
+  interviewerId: number;
 }
 
 export interface UpdateInterviewInput {
@@ -33,6 +35,8 @@ export interface UpdateInterviewInput {
   eventName?: string;
   eventType?: "virtual" | "onsite";
   meetingUrl?: string | null;
+  meetingProvider?: "google_meet" | null;
+  interviewerId?: number;
   location?: string | null;
   bodyText?: string | null;
   attendeeEmails?: string[];
@@ -74,6 +78,7 @@ export const interviewService = {
         scheduledAt: input.scheduledAt ? new Date(input.scheduledAt) : null,
         durationMinutes: input.durationMinutes ?? 30,
         notes: input.notes ?? null,
+        interviewerId: input.interviewerId,
         createdBy,
       })
       .returning();
@@ -214,6 +219,8 @@ export const interviewService = {
         eventName: candidateInterviews.eventName,
         eventType: candidateInterviews.eventType,
         meetingUrl: candidateInterviews.meetingUrl,
+        meetingProvider: candidateInterviews.meetingProvider,
+        interviewerId: candidateInterviews.interviewerId,
         bodyText: candidateInterviews.bodyText,
         createdBy: candidateInterviews.createdBy,
         createdAt: candidateInterviews.createdAt,
@@ -281,6 +288,8 @@ export const interviewService = {
           eventName: input.eventName,
           eventType: input.eventType,
           meetingUrl: input.meetingUrl,
+          meetingProvider: input.meetingProvider,
+          interviewerId: input.interviewerId,
           location: input.location,
           bodyText: input.bodyText,
           updatedAt: new Date(),
@@ -319,6 +328,7 @@ export const interviewService = {
             durationMinutes: updated.durationMinutes,
             notes: updated.notes,
             attendeeEmails: input.attendeeEmails ?? [],
+            meetingUrl: updated.meetingUrl,
           });
         }
       } catch (err: any) {
@@ -393,12 +403,46 @@ export const interviewService = {
       .where(eq(candidateInterviews.id, id));
     if (!existing) return null;
 
-    // Delete Google Calendar event if synced
+    // Cancel the Meet event on the interviewer's calendar so attendees are notified
+    if (
+      existing.providerMeetingId &&
+      existing.meetingProvider &&
+      existing.interviewerId
+    ) {
+      try {
+        const { integrationConnectionService } = await import(
+          "../integrations/connection.service"
+        );
+        const { getProviderClient } = await import("../integrations/registry");
+        const accessToken =
+          await integrationConnectionService.getValidAccessToken(
+            existing.interviewerId,
+          );
+        if (accessToken) {
+          await getProviderClient(existing.meetingProvider).deleteMeeting(
+            accessToken,
+            existing.providerMeetingId,
+          );
+        } else {
+          logger.warn(
+            `Interview ${id}: cannot cancel provider meeting ${existing.providerMeetingId} — interviewer ${existing.interviewerId} has no valid connection`,
+          );
+        }
+      } catch (err: any) {
+        logger.error(
+          `Failed to cancel provider meeting for interview ${id}: ${err?.message}`,
+        );
+      }
+    }
+
+    // Delete Google Calendar event if synced (sendUpdates:all notifies attendees)
     if (existing.googleEventId) {
       try {
         await gcal.deleteCalendarEvent(existing.googleEventId);
-      } catch {
-        /* non-fatal */
+      } catch (err: any) {
+        logger.error(
+          `Failed to delete calendar event for interview ${id}: ${err?.message}`,
+        );
       }
     }
 
@@ -406,6 +450,33 @@ export const interviewService = {
       .delete(candidateInterviews)
       .where(eq(candidateInterviews.id, id))
       .returning();
+
+    // Tell the candidate their confirmed interview was cancelled
+    if (deleted && existing.status === "scheduled" && existing.eventName) {
+      const [candidate] = await db
+        .select({
+          email: candidates.email,
+          firstName: candidates.firstName,
+          lastName: candidates.lastName,
+        })
+        .from(candidates)
+        .where(eq(candidates.id, existing.candidateId));
+      if (candidate) {
+        mailService
+          .sendInterviewCancellationEmail(
+            candidate.email,
+            `${candidate.firstName} ${candidate.lastName}`,
+            existing.eventName,
+            existing.scheduledAt,
+          )
+          .catch((err: any) => {
+            logger.error(
+              `Failed to send cancellation email for interview ${id}: ${err?.message}`,
+            );
+          });
+      }
+    }
+
     return deleted ?? null;
   },
 };

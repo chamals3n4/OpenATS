@@ -2,7 +2,6 @@
 
 import * as React from "react";
 import { Select as SelectPrimitive } from "@base-ui/react/select";
-import { motion } from "motion/react";
 
 import { cn } from "@/lib/utils";
 import { ChevronDownIcon, CheckIcon, ChevronUpIcon } from "lucide-react";
@@ -42,20 +41,7 @@ function SelectTrigger({
     <SelectPrimitive.Trigger
       data-slot="select-trigger"
       data-size={size}
-      render={
-        render ?? (
-          <motion.button
-            whileHover={{ scale: 1.004 }}
-            whileTap={{ scale: 0.993 }}
-            transition={{
-              type: "spring",
-              stiffness: 520,
-              damping: 38,
-              mass: 0.2,
-            }}
-          />
-        )
-      }
+      render={render}
       className={cn(
         "border-input data-placeholder:text-muted-foreground dark:bg-input/30 dark:hover:bg-input/50 focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 gap-1.5 rounded-lg border bg-transparent py-2 pr-2 pl-2.5 text-sm transition-colors select-none focus-visible:ring-3 aria-invalid:ring-3 data-[size=default]:h-8 data-[size=sm]:h-7 data-[size=sm]:rounded-[min(var(--radius-md),10px)] *:data-[slot=select-value]:gap-1.5 [&_svg:not([class*='size-'])]:size-4 flex w-fit items-center justify-between whitespace-nowrap outline-none disabled:cursor-not-allowed disabled:opacity-50 *:data-[slot=select-value]:line-clamp-1 *:data-[slot=select-value]:flex *:data-[slot=select-value]:items-center [&_svg]:pointer-events-none [&_svg]:shrink-0",
         className,
@@ -100,22 +86,9 @@ function SelectContent({
         <SelectPrimitive.Popup
           data-slot="select-content"
           data-align-trigger={alignItemWithTrigger}
-          render={
-            render ?? (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.995, y: 2 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 520,
-                  damping: 40,
-                  mass: 0.26,
-                }}
-              />
-            )
-          }
+          render={render}
           className={cn(
-            "relative isolate z-50 max-h-[min(var(--available-height),16rem)] min-w-(--anchor-width) w-max max-w-[min(16rem,calc(100vw-2rem))] origin-(--transform-origin) overflow-x-hidden overflow-y-auto rounded-md border border-slate-200 bg-white text-slate-900 shadow-lg dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 duration-100 data-[align-trigger=true]:animate-none data-[side=bottom]:slide-in-from-top-2 data-[side=inline-end]:slide-in-from-left-2 data-[side=inline-start]:slide-in-from-right-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2 data-open:animate-in data-open:fade-in-0 data-open:zoom-in-95 data-closed:animate-out data-closed:fade-out-0 data-closed:zoom-out-95",
+            "relative isolate z-50 max-h-[min(var(--available-height),16rem)] min-w-(--anchor-width) w-max max-w-[min(16rem,calc(100vw-2rem))] overflow-x-hidden overflow-y-auto rounded-md border border-slate-200 bg-white text-slate-900 shadow-lg dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100 duration-100 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0",
             className,
           )}
           {...props}

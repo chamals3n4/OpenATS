@@ -176,6 +176,20 @@
       "when": 1783493864493,
       "tag": "0024_easy_sinister_six",
       "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1783512171683,
+      "tag": "0025_harsh_masked_marvel",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1783593885977,
+      "tag": "0026_omniscient_squadron_sinister",
+      "breakpoints": true
     }
   ]
 }

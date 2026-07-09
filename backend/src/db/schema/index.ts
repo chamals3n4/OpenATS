@@ -14,3 +14,4 @@ export * from "./rejections";
 export * from "./interviews";
 export * from "./interview-feedback";
 export * from "./page-settings";
+export * from "./integrations";

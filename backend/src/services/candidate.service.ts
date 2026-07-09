@@ -478,6 +478,11 @@ export const candidateService = {
 
       if (!stage) throw new Error("Invalid stage for this job");
 
+      // Already in this stage — skip duplicate history and automations
+      if (candidate.currentStageId === newStageId) {
+        return { candidate, stageAutomation };
+      }
+
       const nextStatus =
         candidate.status === "rejected" || candidate.status === "hired"
           ? candidate.status

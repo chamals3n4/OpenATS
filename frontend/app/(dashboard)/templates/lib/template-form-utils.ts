@@ -67,6 +67,7 @@ export function buildEventPayload(
   eventName: string,
   eventTypeRadio: "virtual" | "onsite",
   meetingUrl: string,
+  autoGenerateMeet: boolean,
   location: string,
   eventDesc: string,
   timeSlots: { datetime: string }[],
@@ -77,7 +78,9 @@ export function buildEventPayload(
       content: JSON.stringify({
         eventName,
         eventType: eventTypeRadio,
-        meetingUrl: eventTypeRadio === "virtual" ? meetingUrl : null,
+        meetingUrl:
+          eventTypeRadio === "virtual" && !autoGenerateMeet ? meetingUrl : null,
+        autoGenerateMeet: eventTypeRadio === "virtual" && autoGenerateMeet,
         location: eventTypeRadio === "onsite" ? location : null,
         description: eventDesc,
         timeSlots: timeSlots.filter((s) => s.datetime).map((s) => s.datetime),

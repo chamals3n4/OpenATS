@@ -21,6 +21,8 @@ interface EventBuilderProps {
   onEventTypeChange: (type: "virtual" | "onsite") => void;
   meetingUrl: string;
   onMeetingUrlChange: (value: string) => void;
+  autoGenerateMeet: boolean;
+  onAutoGenerateMeetChange: (value: boolean) => void;
   location: string;
   onLocationChange: (value: string) => void;
   readOnly?: boolean;
@@ -43,6 +45,8 @@ export function EventBuilder({
   onEventTypeChange,
   meetingUrl,
   onMeetingUrlChange,
+  autoGenerateMeet,
+  onAutoGenerateMeetChange,
   location,
   onLocationChange,
   readOnly = false,
@@ -87,7 +91,13 @@ export function EventBuilder({
         <EventTypeSelector value={eventTypeRadio} onChange={onEventTypeChange} readOnly={readOnly} />
 
         {eventTypeRadio === "virtual" && (
-          <MeetingUrlField value={meetingUrl} onChange={onMeetingUrlChange} readOnly={readOnly} />
+          <MeetingUrlField
+            value={meetingUrl}
+            onChange={onMeetingUrlChange}
+            autoGenerateMeet={autoGenerateMeet}
+            onAutoGenerateMeetChange={onAutoGenerateMeetChange}
+            readOnly={readOnly}
+          />
         )}
 
         {eventTypeRadio === "onsite" && (

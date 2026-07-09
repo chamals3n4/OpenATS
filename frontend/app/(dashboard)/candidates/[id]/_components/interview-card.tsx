@@ -15,6 +15,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import {
   useInterviewFeedback,
@@ -31,6 +42,7 @@ export function InterviewCard({
   deleteInterviewMutation: any;
 }) {
   const [showFeedback, setShowFeedback] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   const { data: feedbackData } = useInterviewFeedback(
     showFeedback ? interview.id : 0,
@@ -95,24 +107,26 @@ export function InterviewCard({
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-1 shrink-0">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
             onClick={() => setShowFeedback(true)}
-            className="inline-flex items-center gap-1.5 h-7 rounded-md bg-[var(--theme-color)] px-2.5 text-sm font-semibold text-white shadow-none hover:bg-[var(--theme-color-hover)] transition-colors"
+            className="inline-flex items-center gap-1.5 h-8 rounded-md bg-[var(--theme-color)]/10 px-3 text-xs font-semibold text-[var(--theme-color)] shadow-none border-none hover:bg-[var(--theme-color)]/15 transition-colors cursor-pointer"
           >
-            <HugeiconsIcon icon={Message02Icon} className="size-3" />
-            Feedback {feedback.length > 0 ? `(${feedback.length})` : ""}
+            <HugeiconsIcon icon={Message02Icon} className="size-3.5" />
+            Feedback
+            {feedback.length > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-[var(--theme-color)]/15 px-1 text-[10px] font-semibold text-[var(--theme-color)]">
+                {feedback.length}
+              </span>
+            )}
           </button>
           <button
-            onClick={() => {
-              if (confirm("Delete this interview?")) {
-                deleteInterviewMutation.mutate(interview.id);
-              }
-            }}
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={deleteInterviewMutation.isPending}
-            className="size-7 flex items-center justify-center rounded-md text-slate-300 dark:text-neutral-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors"
+            title="Delete interview"
+            className="size-8 flex items-center justify-center rounded-md bg-red-50 dark:bg-red-950/30 text-red-500 dark:text-red-400 border-none hover:bg-red-100 dark:hover:bg-red-950/50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <HugeiconsIcon icon={Delete02Icon} className="size-3" />
+            <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
           </button>
         </div>
       </div>
@@ -190,6 +204,47 @@ export function InterviewCard({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Delete confirmation */}
+      <AlertDialog
+        open={showDeleteConfirm}
+        onOpenChange={(o) => !o && setShowDeleteConfirm(false)}
+      >
+        <AlertDialogContent className="max-w-sm rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
+              Delete Interview?
+            </AlertDialogTitle>
+            <AlertDialogDescription className="text-sm text-slate-500 dark:text-neutral-400 leading-relaxed">
+              <strong className="text-slate-700 dark:text-neutral-200">
+                {interview.eventName ??
+                  stageMap[interview.stageId] ??
+                  `Interview #${interview.id}`}
+              </strong>{" "}
+              will be permanently removed. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="gap-2">
+            <AlertDialogCancel className="h-8 rounded-md border-none bg-neutral-700 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer">
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                deleteInterviewMutation.mutate(interview.id, {
+                  onSettled: () => setShowDeleteConfirm(false),
+                });
+              }}
+              disabled={deleteInterviewMutation.isPending}
+              className="h-8 rounded-md border-none bg-red-600 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
+            >
+              {deleteInterviewMutation.isPending && (
+                <Spinner className="size-3.5" />
+              )}
+              {deleteInterviewMutation.isPending ? "Deleting" : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

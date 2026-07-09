@@ -4,6 +4,7 @@ import { SiteHeaderServer } from "@/components/layout/site-header-server";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DragDropProvider } from "@/components/dynamic-imports";
 import { PrefetchProvider } from "@/components/providers/prefetch-provider";
+import { CandidateSocketProvider } from "@/components/providers/candidate-socket-provider";
 import { SetupCompanyGate } from "@/components/guards/setup-company-gate";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
@@ -17,6 +18,7 @@ export default function DashboardLayout({
   return (
     <QueryProvider>
       <PrefetchProvider />
+      <CandidateSocketProvider />
       <div className="[--header-height:calc(--spacing(14))]">
         <SidebarProvider className="flex flex-col">
           <SiteHeaderServer />

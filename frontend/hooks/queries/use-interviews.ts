@@ -22,6 +22,22 @@ export function useInterviews(filters?: Record<string, string | number>) {
   });
 }
 
+export type AllocatedSlot = {
+  datetime: string;
+  interviewerId: number | null;
+};
+
+/** Upcoming confirmed interview times — used to flag already-taken slots when scheduling. */
+export function useAllocatedSlots(enabled = true) {
+  return useQuery({
+    queryKey: ["interviews", "allocated-slots"],
+    queryFn: () =>
+      serverFetch<{ data: AllocatedSlot[] }>("/interviews/allocated-slots"),
+    enabled,
+    staleTime: 1000 * 30,
+  });
+}
+
 export function useDeleteInterview() {
   const queryClient = useQueryClient();
   return useMutation({

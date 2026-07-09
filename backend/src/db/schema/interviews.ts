@@ -8,7 +8,7 @@ import {
   varchar,
   index,
 } from "drizzle-orm/pg-core";
-import { interviewOutcome } from "./enums";
+import { interviewOutcome, meetingProvider } from "./enums";
 import { candidates } from "./candidates";
 import { jobPipelineStages } from "./pipeline";
 import { jobs } from "./jobs";
@@ -32,8 +32,14 @@ export const candidateInterviews = pgTable(
     eventName: varchar("event_name", { length: 255 }),
     eventType: varchar("event_type", { length: 20 }).default("virtual"),
     meetingUrl: varchar("meeting_url", { length: 1000 }),
+    meetingProvider: meetingProvider("meeting_provider"),
     location: varchar("location", { length: 500 }),
     bodyText: text("body_text"),
+
+    // Interviewer whose connected provider generates the meeting link (nullable for old rows)
+    interviewerId: integer("interviewer_id").references(() => users.id, {
+      onDelete: "set null",
+    }),
 
     // Time slots (array of { datetime: string, selected: boolean })
     timeSlots:
@@ -52,6 +58,9 @@ export const candidateInterviews = pgTable(
     // Google Calendar
     googleEventId: varchar("google_event_id", { length: 255 }),
 
+    // Provider meeting event id, used to cancel the event on delete
+    providerMeetingId: varchar("provider_meeting_id", { length: 255 }),
+
     // Legacy
     scheduledAt: timestamp("scheduled_at"),
     durationMinutes: integer("duration_minutes"),
@@ -67,6 +76,7 @@ export const candidateInterviews = pgTable(
     index("idx_candidate_interviews_candidate_id").on(t.candidateId),
     index("idx_candidate_interviews_job_id").on(t.jobId),
     index("idx_candidate_interviews_stage_id").on(t.stageId),
+    index("idx_candidate_interviews_interviewer_id").on(t.interviewerId),
   ],
 );
 

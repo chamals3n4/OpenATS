@@ -15,6 +15,7 @@ import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import logger from "../utils/logger";
 import type { Request, Response } from "express";
+import { integrationConnectionService } from "../integrations/connection.service";
 
 const router: Router = Router();
 
@@ -24,6 +25,7 @@ const createInterviewSchema = z.object({
   durationMinutes: z.number().int().positive().optional().nullable(),
   notes: z.string().optional().nullable(),
   attendeeEmails: z.array(z.string().email()).optional(),
+  interviewerId: z.number().int(),
 });
 
 const updateInterviewSchema = z.object({
@@ -37,6 +39,8 @@ const updateInterviewSchema = z.object({
   eventName: z.string().min(1).optional(),
   eventType: z.enum(["virtual", "onsite"]).optional(),
   meetingUrl: z.string().url().optional().nullable(),
+  meetingProvider: z.enum(["google_meet"]).optional().nullable(),
+  interviewerId: z.number().int().optional(),
   location: z.string().optional().nullable(),
   bodyText: z.string().optional().nullable(),
   attendeeEmails: z.array(z.string().email()).optional(),
@@ -67,6 +71,7 @@ router.post("/candidates/:candidateId/interviews", requireManager, async (req, r
         durationMinutes: parsed.data.durationMinutes ?? null,
         notes: parsed.data.notes ?? null,
         attendeeEmails: parsed.data.attendeeEmails,
+        interviewerId: parsed.data.interviewerId,
       },
       req.user.id,
     );
@@ -115,6 +120,30 @@ router.get("/interviews", async (req, res) => {
   }
 });
 
+// Confirmed upcoming interview times, used to flag already-allocated slots
+router.get("/interviews/allocated-slots", async (req, res) => {
+  try {
+    const rows = await db
+      .select({
+        scheduledAt: candidateInterviews.scheduledAt,
+        interviewerId: candidateInterviews.interviewerId,
+      })
+      .from(candidateInterviews)
+      .where(eq(candidateInterviews.status, "scheduled"));
+    const now = Date.now();
+    const data = rows
+      .filter((r) => r.scheduledAt && r.scheduledAt.getTime() >= now)
+      .map((r) => ({
+        datetime: r.scheduledAt!.toISOString(),
+        interviewerId: r.interviewerId,
+      }));
+    res.status(200).json({ data });
+  } catch (error: any) {
+    logger.error(`Failed to list allocated slots: ${error?.message}`);
+    res.status(500).json({ error: "Failed to list allocated slots" });
+  }
+});
+
 router.patch("/interviews/:id", requireManager, async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
@@ -147,20 +176,42 @@ router.patch("/interviews/:id", requireManager, async (req, res) => {
   }
 });
 
-const scheduleSchema = z.object({
-  eventName: z.string().min(1),
-  eventType: z.enum(["virtual", "onsite"]),
-  meetingUrl: z.string().url().optional().nullable(),
-  location: z.string().optional().nullable(),
-  bodyText: z.string().optional().nullable(),
-  stageId: z.number().int().optional(),
-  timeSlots: z.array(
-    z.object({
-      datetime: z.string(),
-      selected: z.boolean().default(false),
-    }),
-  ),
-});
+const scheduleSchema = z
+  .object({
+    eventName: z.string().min(1),
+    eventType: z.enum(["virtual", "onsite"]),
+    meetingUrl: z.string().url().optional().nullable(),
+    meetingProvider: z.enum(["google_meet"]).optional(),
+    interviewerId: z.number().int(),
+    location: z.string().optional().nullable(),
+    bodyText: z.string().optional().nullable(),
+    stageId: z.number().int().optional(),
+    timeSlots: z
+      .array(
+        z.object({
+          datetime: z.string().refine((v) => {
+            const d = new Date(v);
+            return !Number.isNaN(d.getTime()) && d.getTime() > Date.now();
+          }, "Each time slot must be a valid date in the future"),
+          selected: z.boolean().default(false),
+        }),
+      )
+      .min(1, "At least one time slot is required"),
+  })
+  .superRefine((data, ctx) => {
+    if (
+      data.eventType === "virtual" &&
+      !data.meetingProvider &&
+      !data.meetingUrl
+    ) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["meetingUrl"],
+        message:
+          "Virtual interviews need a meeting link — auto-generate one or paste a URL",
+      });
+    }
+  });
 
 router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
   try {
@@ -198,6 +249,18 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
       return;
     }
 
+    if (parsed.data.meetingProvider) {
+      const accessToken = await integrationConnectionService.getValidAccessToken(
+        parsed.data.interviewerId,
+      );
+      if (!accessToken) {
+        res.status(422).json({
+          error: "Selected interviewer has not connected this meeting provider",
+        });
+        return;
+      }
+    }
+
     const stageId = parsed.data.stageId || candidate.currentStageId || 0;
     const token = randomUUID();
 
@@ -210,6 +273,8 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
         eventName: parsed.data.eventName,
         eventType: parsed.data.eventType,
         meetingUrl: parsed.data.meetingUrl ?? null,
+        meetingProvider: parsed.data.meetingProvider ?? null,
+        interviewerId: parsed.data.interviewerId,
         location: parsed.data.location ?? null,
         bodyText: parsed.data.bodyText ?? null,
         timeSlots: parsed.data.timeSlots,
@@ -290,84 +355,6 @@ router.get("/public/interview/:token", async (req, res) => {
     });
   } catch (error: any) {
     res.status(500).json({ error: "Failed to load interview" });
-  }
-});
-
-router.patch("/public/interview/:token/select", async (req, res) => {
-  try {
-    const slotIndex = req.body?.slotIndex;
-    if (slotIndex == null) {
-      res.status(400).json({ error: "slotIndex required" });
-      return;
-    }
-
-    const [interview] = await db
-      .select()
-      .from(candidateInterviews)
-      .where(eq(candidateInterviews.publicToken, req.params.token));
-
-    if (!interview || !interview.timeSlots) {
-      res.status(404).json({ error: "Invalid link" });
-      return;
-    }
-
-    const slots = interview.timeSlots as Array<{
-      datetime: string;
-      selected: boolean;
-    }>;
-    if (slotIndex < 0 || slotIndex >= slots.length) {
-      res.status(400).json({ error: "Invalid slot index" });
-      return;
-    }
-
-    const selectedSlot = slots[slotIndex]!;
-    selectedSlot.selected = true;
-
-    await db
-      .update(candidateInterviews)
-      .set({
-        timeSlots: slots,
-        status: "scheduled",
-        scheduledAt: new Date(selectedSlot.datetime),
-        updatedAt: new Date(),
-      })
-      .where(eq(candidateInterviews.id, interview.id));
-
-    if (interview.eventName) {
-      try {
-        const [candidate] = await db
-          .select({
-            email: candidates.email,
-            firstName: candidates.firstName,
-            lastName: candidates.lastName,
-          })
-          .from(candidates)
-          .where(eq(candidates.id, interview.candidateId));
-
-        if (candidate) {
-          const gcal = await import("../services/google-calendar.service");
-          await gcal.createCalendarEvent({
-            interviewId: interview.id,
-            candidateName: `${candidate.firstName} ${candidate.lastName}`,
-            jobTitle: "",
-            stageName: "",
-            scheduledAt: new Date(selectedSlot.datetime),
-            durationMinutes: 60,
-            notes: interview.bodyText ?? null,
-            attendeeEmails: [candidate.email],
-          });
-        }
-      } catch {}
-    }
-
-    socketService.notifyInterviewChanged({
-      interviewId: interview.id,
-      candidateId: interview.candidateId,
-    });
-
-    res.status(200).json({ data: { confirmed: true, slot: selectedSlot } });
-  } catch (error: any) {
-    res.status(500).json({ error: "Failed to confirm slot" });
   }
 });
 

@@ -19,6 +19,7 @@ export function useTemplateForm(initialType: TemplateType) {
     "virtual",
   );
   const [meetingUrl, setMeetingUrl] = useState("");
+  const [autoGenerateMeet, setAutoGenerateMeet] = useState(false);
   const [location, setLocation] = useState("");
   const [timeSlots, setTimeSlots] = useState<TimeSlot[]>([{ datetime: "" }]);
 
@@ -69,6 +70,7 @@ export function useTemplateForm(initialType: TemplateType) {
           setEventDesc(config.description || "");
           setEventTypeRadio(config.eventType || "virtual");
           setMeetingUrl(config.meetingUrl || "");
+          setAutoGenerateMeet(!!config.autoGenerateMeet);
           setLocation(config.location || "");
           if (config.timeSlots?.length > 0) {
             setTimeSlots(
@@ -102,6 +104,8 @@ export function useTemplateForm(initialType: TemplateType) {
     setEventTypeRadio,
     meetingUrl,
     setMeetingUrl,
+    autoGenerateMeet,
+    setAutoGenerateMeet,
     location,
     setLocation,
     timeSlots,

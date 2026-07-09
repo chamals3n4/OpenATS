@@ -11,7 +11,6 @@ import { ArrowLeft, GripVertical } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useCandidateSocket } from "@/hooks/use-candidate-socket";
 import { toast } from "sonner";
 import { useJob } from "@/hooks/queries/use-jobs";
 import { useCurrentUser } from "@/hooks/queries/use-user";
@@ -300,7 +299,6 @@ function DroppableColumn({
 export default function HiringPipelinePage() {
   const params = useParams();
   const jobId = Number(params.id);
-  useCandidateSocket();
 
   const queryClient = useQueryClient();
   const { data: currentUserRes, isLoading: isLoadingUser } = useCurrentUser();
@@ -388,7 +386,13 @@ export default function HiringPipelinePage() {
   const writeStageToCaches = useCallback(
     (candidateId: number, toStageId: number) => {
       queryClient.setQueriesData<{ data?: Candidate[] }>(
-        { queryKey: ["candidates"] },
+        {
+          // Patch list queries only — touching detail keys (numeric second part) would mark them fresh and skip the post-move refetch
+          predicate: (query) => {
+            const key = query.queryKey as unknown[];
+            return key[0] === "candidates" && typeof key[1] !== "number";
+          },
+        },
         (old) => {
           if (!old || !Array.isArray(old.data)) return old;
           let changed = false;

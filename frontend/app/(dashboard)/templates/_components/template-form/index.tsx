@@ -71,6 +71,8 @@ export function TemplateForm({
               nameValue.trim(),
               form.eventTypeRadio,
               form.meetingUrl,
+              form.autoGenerateMeet,
+              form.location,
               form.eventDesc,
               form.timeSlots,
             ),
@@ -161,6 +163,10 @@ export function TemplateForm({
               onEventTypeChange={form.setEventTypeRadio}
               meetingUrl={form.meetingUrl}
               onMeetingUrlChange={form.setMeetingUrl}
+              autoGenerateMeet={form.autoGenerateMeet}
+              onAutoGenerateMeetChange={form.setAutoGenerateMeet}
+              location={form.location}
+              onLocationChange={form.setLocation}
               readOnly={readOnly}
             />
           </div>

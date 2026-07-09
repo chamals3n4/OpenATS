@@ -16,6 +16,7 @@ export interface EventConfig {
   eventName: string;
   eventType: "virtual" | "onsite";
   meetingUrl: string | null;
+  autoGenerateMeet: boolean;
   location: string | null;
   description: string;
   timeSlots: string[];
@@ -29,6 +30,7 @@ export interface TemplateFormState {
   eventDesc: string;
   eventTypeRadio: "virtual" | "onsite";
   meetingUrl: string;
+  autoGenerateMeet: boolean;
   location: string;
   timeSlots: TimeSlot[];
 }

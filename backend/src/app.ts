@@ -4,6 +4,7 @@ import morgan from "morgan";
 import helmet from "helmet";
 import router from "./routes";
 import publicRouter from "./routes/public.routes";
+import oauthRouter from "./routes/oauth.routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import { swaggerUi, swaggerDocument } from "./config/swagger";
 import { authMiddleware } from "./middlewares/auth.middleware";
@@ -61,10 +62,11 @@ app.use(
   ),
 );
 app.get("/health", (req, res) => {
-  res.status(200).json({ status: "ok)" });
+  res.status(200).json({ status: "working" });
 });
 
 app.use("/public", publicRouter);
+app.use("/oauth", oauthRouter);
 
 app.use("/api", authMiddleware, router);
 

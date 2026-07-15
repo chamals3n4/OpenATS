@@ -2,6 +2,8 @@
 
 > 🔑 Setting up authentication? See [docs/IAM_SETUP.md](docs/IAM_SETUP.md) for the full WSO2 Identity Platform setup guide.
 
+> 🐳 This guide runs the app with `pnpm dev` and uses Docker only for Postgres and Redis. To run the whole stack in containers instead, see [docs/DOCKER.md](docs/DOCKER.md).
+
 - [Prerequisites](#prerequisites)
 - [Tech Stack](#tech-stack)
 - [Initial Setup](#initial-setup)

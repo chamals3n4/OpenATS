@@ -11,6 +11,21 @@ Live demo: [demo.openats.dev](https://demo.openats.dev)
 - Email: `demo@openats.dev`
 - Password: `Demo@123#`
 
+## Self-hosting with Docker
+
+Postgres, Redis, the API, the CV analysis worker and the frontend, in one command:
+
+```bash
+cp .env.example .env
+docker compose up -d --build
+docker compose --profile seed run --rm seed   # first time only
+```
+
+The frontend is then on http://localhost:3000 and the API on http://localhost:8080.
+You will need a WSO2 Asgardeo tenant before the UI renders — see
+[docs/DOCKER.md](docs/DOCKER.md) for the full walkthrough and
+[docs/IAM_SETUP.md](docs/IAM_SETUP.md) for auth setup.
+
 ## Key Features
 
 - Centralized candidate management in one place

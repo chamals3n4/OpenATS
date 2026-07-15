@@ -32,6 +32,17 @@ pnpm build    # next build
 pnpm lint     # eslint
 ```
 
+### Whole stack (repo root)
+
+```bash
+cp .env.example .env                          # root .env is for Docker only
+docker compose up -d --build                  # postgres, redis, migrate, backend, worker, frontend
+docker compose --profile seed run --rm seed   # opt-in; seed.ts wipes pipeline_stage_templates
+docker compose logs -f backend worker
+```
+
+`docker-compose.yml` (root) runs everything; `backend/docker-compose.yml` runs only Postgres + Redis for the `pnpm dev` flow. Don't run both — they collide on 5432/6379. See `docs/DOCKER.md`.
+
 ## Architecture
 
 ### Backend
@@ -75,10 +86,14 @@ pnpm lint     # eslint
 
 ## Environment Variables
 
-Two separate `.env` files are required (copy from `.env.example` in each directory):
+For the `pnpm dev` flow, two separate `.env` files are required (copy from `.env.example` in each directory):
 
 - `backend/.env` — `DATABASE_URL`, `REDIS_URL`, `R2_*`, `RESEND_*`, `ASGARDEO_*`, `GEMINI_API_KEY`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_CALENDAR_ID`
 - `frontend/.env` — `NEXT_PUBLIC_ASGARDEO_*`, `ASGARDEO_*`, `OPENATS_API_URL`, `NEXT_PUBLIC_API_URL`
+
+The Docker flow ignores both and reads the root `.env` (from `/.env.example`) instead.
+
+`RESEND_API_KEY`, `GEMINI_API_KEY` and `ASGARDEO_JWKS_URL` are read at module scope (`mail.service.ts`, `cv-analysis.service.ts`, `auth.middleware.ts`), so an empty value crashes the backend at startup rather than degrading the feature. The root `.env.example` ships placeholders for exactly this reason.
 
 ## CI/CD
 

@@ -30,7 +30,7 @@ export function TemplatesFilters({
   const hasFilters = search || filterType !== "all";
 
   return (
-    <div className="border-y border-slate-200 dark:border-neutral-800 px-6 py-2.5 flex items-center gap-2">
+    <div className="border-b border-slate-200 dark:border-neutral-800 px-6 py-2.5 flex items-center gap-2">
       <div className="relative w-64">
         <HugeiconsIcon
           icon={Search01Icon}

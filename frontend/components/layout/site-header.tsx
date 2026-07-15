@@ -15,7 +15,7 @@ const publicSans = Public_Sans({
 
 export function SiteHeader({ accessToken }: { accessToken?: string }) {
   return (
-    <header className="bg-white dark:bg-neutral-950 sticky top-0 z-50 flex w-full items-center border-b border-slate-100 dark:border-neutral-800">
+    <header className="bg-sidebar sticky top-0 z-50 flex w-full items-center border-b border-sidebar-border">
       <div className="flex h-(--header-height) w-full items-center justify-between gap-4 px-6">
         <Link
           href="/"

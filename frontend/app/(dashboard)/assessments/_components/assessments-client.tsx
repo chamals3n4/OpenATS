@@ -11,7 +11,6 @@ import { useCandidates } from "@/hooks/queries/use-candidates";
 import type { Assessment } from "@/types";
 
 import { AssessmentHeader } from "./assessment-header";
-import { AssessmentSearchBar } from "./search-bar";
 import { AssessmentCardGrid } from "./card-grid";
 import { AssessmentInviteDialog } from "./invite-dialog";
 import { AssessmentDeleteDialog } from "./delete-dialog";
@@ -93,7 +92,6 @@ export default function AssessmentsPageClient() {
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
       <AssessmentHeader />
-      <AssessmentSearchBar />
 
       <AssessmentCardGrid
         assessments={assessments}

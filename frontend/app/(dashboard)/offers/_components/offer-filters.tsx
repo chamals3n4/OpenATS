@@ -45,7 +45,7 @@ export function OfferFilters({
   onClear,
 }: OfferFiltersProps) {
   return (
-    <div className="border-y border-slate-300 dark:border-neutral-700 px-6 py-2.5 flex items-center gap-2">
+    <div className="border-b border-slate-300 dark:border-neutral-700 px-6 py-2.5 flex items-center gap-2">
       <div className="relative w-64">
         <HugeiconsIcon
           icon={Search01Icon}

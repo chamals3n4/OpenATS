@@ -80,8 +80,8 @@ export default function InterviewsClient() {
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
       {/* Header */}
-      <div className="px-6 py-3 flex items-center justify-between">
-        <h1 className="text-xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
+      <div className="px-6 pt-4 pb-3 flex items-center justify-between">
+        <h1 className="text-2xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Manage Interviews
         </h1>
 
@@ -113,7 +113,7 @@ export default function InterviewsClient() {
       </div>
 
       {/* Filters */}
-      <div className="border-y border-slate-300 dark:border-neutral-700 px-6 py-2.5 flex items-center gap-2 flex-wrap">
+      <div className="border-b border-slate-300 dark:border-neutral-700 px-6 py-2.5 flex items-center gap-2 flex-wrap">
         <div className="relative w-64">
           <HugeiconsIcon
             icon={Search01Icon}

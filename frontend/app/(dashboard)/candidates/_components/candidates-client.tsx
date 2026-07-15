@@ -153,8 +153,8 @@ export default function CandidatesPageClient() {
     // can contain it properly and the inner scroll area works.
     <div className="flex flex-1 flex-col min-h-0 bg-white dark:bg-neutral-950">
       {/* Fixed header — never scrolls away */}
-      <div className="flex-shrink-0 px-6 py-3 flex items-center justify-between">
-        <h1 className="text-xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
+      <div className="flex-shrink-0 px-6 pt-4 pb-3 flex items-center justify-between">
+        <h1 className="text-2xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
           Manage Candidates
         </h1>
       </div>

@@ -77,14 +77,14 @@
   --chart-4: oklch(0.6 0.13 163);
   --chart-5: oklch(0.51 0.1 166);
   --radius: 0.625rem;
-  --sidebar: #ffffff;
+  --sidebar: #fdfdfd;
   --sidebar-foreground: #5c5c5c;
   --sidebar-primary: oklch(0.93 0 0);
   --sidebar-primary-foreground: oklch(0.22 0 0);
-  --sidebar-accent: #d1e2e3;
+  --sidebar-accent: #0e434b;
   --sidebar-hover: oklch(0 0 0 / 0.055);
-  --sidebar-accent-foreground: oklch(0.2 0 0);
-  --sidebar-border: #ececec;
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: #cfcfcf;
   --sidebar-ring: oklch(0.55 0 0);
   --theme-color: #145962;
   --theme-color-hover: rgba(20, 89, 98, 0.9);

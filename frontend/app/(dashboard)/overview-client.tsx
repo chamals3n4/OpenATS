@@ -155,12 +155,41 @@ export function OverviewClient() {
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
       {/* Header */}
-      <div className="px-6 py-3 flex items-center justify-between">
-        <h1 className="text-xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
-          Reports And Analytics
+      <div className="px-6 pt-4 pb-3 flex items-center justify-between gap-4">
+        <h1 className="text-2xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
+          How Your Hiring Is Going
         </h1>
-        {isManager && (
-          <div className="flex items-center gap-2">
+
+        <div className="flex items-center gap-2">
+          <Select
+            value={period}
+            onValueChange={(value) => setPeriod(value ?? "7d")}
+          >
+            <SelectTrigger className="w-44 h-8! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+              <SelectValue>{PERIOD_LABELS[period]}</SelectValue>
+            </SelectTrigger>
+            <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+              <SelectItem value="7d">Last 7 Days</SelectItem>
+              <SelectItem value="30d">Last 30 Days</SelectItem>
+              <SelectItem value="90d">Last 90 Days</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={dept} onValueChange={(value) => setDept(value ?? "all")}>
+            <SelectTrigger className="w-44 h-8! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+              <SelectValue>{DEPT_LABELS[dept]}</SelectValue>
+            </SelectTrigger>
+            <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+              <SelectItem value="all">All Departments</SelectItem>
+              {departments.map((d) => (
+                <SelectItem key={d.id} value={String(d.id)}>
+                  {d.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {isManager && (
             <Button
               onClick={() => setExportDialogOpen(true)}
               className="bg-theme hover:bg-theme-hover text-white rounded-md h-8 px-3 flex items-center gap-1.5 border border-theme shadow-none text-sm font-semibold cursor-pointer"
@@ -168,39 +197,8 @@ export function OverviewClient() {
               <HugeiconsIcon icon={Download05Icon} className="size-3.5" />
               Export Report
             </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Filters */}
-      <div className="border-y border-slate-200 dark:border-neutral-800 px-6 py-2.5 flex items-center gap-2">
-        <Select
-          value={period}
-          onValueChange={(value) => setPeriod(value ?? "7d")}
-        >
-          <SelectTrigger className="w-44 h-8! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
-            <SelectValue>{PERIOD_LABELS[period]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-            <SelectItem value="7d">Last 7 Days</SelectItem>
-            <SelectItem value="30d">Last 30 Days</SelectItem>
-            <SelectItem value="90d">Last 90 Days</SelectItem>
-          </SelectContent>
-        </Select>
-
-        <Select value={dept} onValueChange={(value) => setDept(value ?? "all")}>
-          <SelectTrigger className="w-44 h-8! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
-            <SelectValue>{DEPT_LABELS[dept]}</SelectValue>
-          </SelectTrigger>
-          <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-            <SelectItem value="all">All Departments</SelectItem>
-            {departments.map((d) => (
-              <SelectItem key={d.id} value={String(d.id)}>
-                {d.name}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+          )}
+        </div>
       </div>
 
       {/* Content */}

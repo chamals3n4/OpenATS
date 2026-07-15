@@ -12,8 +12,8 @@ interface TemplatesHeaderProps {
 export function TemplatesHeader({ onNewTemplate }: TemplatesHeaderProps) {
   const isManager = useIsManager();
   return (
-    <div className="px-6 py-3 flex items-center justify-between">
-      <h1 className="text-xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
+    <div className="px-6 pt-4 pb-3 flex items-center justify-between">
+      <h1 className="text-2xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
         Templates
       </h1>
       {isManager && (

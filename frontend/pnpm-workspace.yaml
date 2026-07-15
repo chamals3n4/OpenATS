@@ -1,0 +1,5 @@
+allowBuilds:
+  core-js: false
+  msw: false
+  sharp: false
+  unrs-resolver: false

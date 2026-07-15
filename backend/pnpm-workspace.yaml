@@ -1,0 +1,5 @@
+allowBuilds:
+  '@scarf/scarf': true
+  esbuild: true
+  msgpackr-extract: true
+  protobufjs: true

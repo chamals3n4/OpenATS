@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Emit a self-contained server bundle in .next/standalone for the Docker
+  // image. Has no effect on `next dev` or `next start`.
+  output: "standalone",
   // Bundle optimization — tree-shake these large package re-exports
   experimental: {
     optimizePackageImports: [

@@ -2,6 +2,7 @@ node_modules
 dist
 tests
 vitest.config.ts
+.pnpm-store
 
 .env
 .env.*

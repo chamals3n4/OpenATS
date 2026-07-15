@@ -2,9 +2,10 @@ node_modules
 .next
 out
 
+# .env.example is deliberately not re-included: `next build` never reads it,
+# and keeping it out of the context stops doc edits from busting the cache.
 .env
 .env.*
-!.env.example
 
 Dockerfile
 .dockerignore

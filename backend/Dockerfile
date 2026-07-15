@@ -22,18 +22,23 @@ FROM base AS deps
 COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 
-FROM base AS prod-deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
-RUN pnpm install --frozen-lockfile --prod
+# Re-resolving with --prod on top of the deps stage prunes devDependencies
+# while reusing the already-populated store, instead of downloading the whole
+# tree a second time.
+FROM deps AS prod-deps
+RUN pnpm install --frozen-lockfile --prod --prefer-offline
 
 FROM deps AS build
-COPY tsconfig.json drizzle.config.ts ./
+COPY tsconfig.json ./
 COPY src ./src
 RUN pnpm build
 
 # drizzle-kit and tsx are devDependencies, so migrations and the seed script
 # run from a stage that keeps them rather than from the runtime image.
+# drizzle.config.ts lives here, not in `build`, so the runtime image doesn't
+# ship a compiled copy of it (tsconfig.json includes it).
 FROM build AS migrator
+COPY drizzle.config.ts ./
 COPY drizzle ./drizzle
 CMD ["pnpm", "drizzle-kit", "migrate"]
 

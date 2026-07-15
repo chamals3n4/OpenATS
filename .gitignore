@@ -4,4 +4,7 @@
 .env.local
 .env.*.local
 
+# Local pnpm store (created when pnpm runs with a project-local store path).
+.pnpm-store/
+
 .DS_Store

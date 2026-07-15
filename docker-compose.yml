@@ -12,10 +12,6 @@
 
 name: openats
 
-x-backend-build: &backend-build
-  context: ./backend
-  target: runner
-
 # The API and the worker are the same image and take the same configuration.
 x-backend-env: &backend-env
   DATABASE_URL: ${DATABASE_URL:-postgresql://openats:openats@postgres:5432/openats}
@@ -27,14 +23,15 @@ x-backend-env: &backend-env
   # constructs the Resend client, cv-analysis.service.ts throws outright).
   # The placeholders keep the stack bootable; the features need real keys.
   RESEND_API_KEY: ${RESEND_API_KEY:-re_placeholder}
-  RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@resend.dev}
+  # Empty is fine: mail.service.ts defaults the sender to onboarding@resend.dev.
+  RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-}
   GEMINI_API_KEY: ${GEMINI_API_KEY:-placeholder}
   # Same story: auth.middleware.ts does new URL(...) on this at module scope,
-  # so an empty value is a startup crash. The default is a syntactically valid
-  # dummy — token verification only reaches the network on a real request, so
-  # the stack boots and every authenticated route 401s until you set this for
-  # real. See docs/IAM_SETUP.md.
-  ASGARDEO_JWKS_URL: ${ASGARDEO_JWKS_URL:-https://api.asgardeo.io/t/example/oauth2/jwks}
+  # so an empty value is a startup crash. The default is syntactically valid
+  # but deliberately unresolvable (.invalid TLD), so if it is left in place the
+  # backend logs a clear ENOTFOUND for this hostname and every authenticated
+  # route 401s — set your tenant's real JWKS URL. See docs/IAM_SETUP.md.
+  ASGARDEO_JWKS_URL: ${ASGARDEO_JWKS_URL:-https://jwks-not-configured.invalid/oauth2/jwks}
   ASGARDEO_ISSUER: ${ASGARDEO_ISSUER:-}
   R2_ENDPOINT: ${R2_ENDPOINT:-}
   R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
@@ -96,21 +93,22 @@ services:
 
   # Opt-in: `docker compose --profile seed run --rm seed`
   # Wipes and rewrites the pipeline stage templates, so it never runs on `up`.
+  # Reuses the image the migrate service builds; depending on migrate also
+  # guarantees the tables exist before seeding a fresh database.
   seed:
     profiles: ["seed"]
     image: openats-migrator:local
-    build:
-      context: ./backend
-      target: migrator
     command: ["pnpm", "tsx", "src/db/seed.ts"]
     environment: *backend-env
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: "no"
 
   backend:
-    build: *backend-build
+    build:
+      context: ./backend
+      target: runner
     image: openats-backend:local
     environment: *backend-env
     ports:
@@ -131,10 +129,10 @@ services:
       start_period: 15s
     restart: unless-stopped
 
-  # Same image as the API, different entrypoint. Without it, CV analysis jobs
-  # queue up in Redis and are never processed.
+  # Same image as the API (built by the backend service), different
+  # entrypoint. Without it, CV analysis jobs queue up in Redis and are never
+  # processed. Rebuild both together: `docker compose up -d --build backend worker`.
   worker:
-    build: *backend-build
     image: openats-backend:local
     command: ["node", "dist/src/worker.js"]
     environment: *backend-env
@@ -160,16 +158,24 @@ services:
         NEXT_PUBLIC_ASGARDEO_CLIENT_ID: ${NEXT_PUBLIC_ASGARDEO_CLIENT_ID:-}
     image: openats-frontend:local
     environment:
-      # Server-side rendering talks to the API over the Docker network.
+      # Server-side rendering talks to the API over the Docker network. (The
+      # NEXT_PUBLIC_* values above are build args because `next build` inlines
+      # them; passing them here at runtime would have no effect.)
       OPENATS_API_URL: ${OPENATS_API_URL:-http://backend:8080}
-      # Also read at runtime by server components and route handlers.
-      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
-      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      # Read at runtime by @asgardeo/nextjs itself (bracket-notation env
+      # access, never inlined) — changing these needs only a restart.
+      # The SDK's default scopes lack `email`, which the API's auth middleware
+      # requires, so the scopes must be passed explicitly.
+      NEXT_PUBLIC_ASGARDEO_SCOPES: ${NEXT_PUBLIC_ASGARDEO_SCOPES:-openid profile email offline_access}
+      NEXT_PUBLIC_ASGARDEO_ORGANIZATION_HANDLE: ${NEXT_PUBLIC_ASGARDEO_ORGANIZATION_HANDLE:-}
       NEXT_PUBLIC_ASGARDEO_BASE_URL: ${NEXT_PUBLIC_ASGARDEO_BASE_URL:-}
       NEXT_PUBLIC_ASGARDEO_CLIENT_ID: ${NEXT_PUBLIC_ASGARDEO_CLIENT_ID:-}
       ASGARDEO_BASE_URL: ${ASGARDEO_BASE_URL:-}
       ASGARDEO_CLIENT_ID: ${ASGARDEO_CLIENT_ID:-}
       ASGARDEO_CLIENT_SECRET: ${ASGARDEO_CLIENT_SECRET:-}
+      # Signs the session cookie. @asgardeo/nextjs refuses to sign in without
+      # it when NODE_ENV=production (which this image sets).
+      ASGARDEO_SECRET: ${ASGARDEO_SECRET:-}
       ASGARDEO_SCIM_CLIENT_ID: ${ASGARDEO_SCIM_CLIENT_ID:-}
       ASGARDEO_SCIM_CLIENT_SECRET: ${ASGARDEO_SCIM_CLIENT_SECRET:-}
       ASGARDEO_MANAGEMENT_SCOPES: ${ASGARDEO_MANAGEMENT_SCOPES:-}

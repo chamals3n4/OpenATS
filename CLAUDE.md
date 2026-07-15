@@ -62,7 +62,7 @@ docker compose logs -f backend worker
 - PostgreSQL via **Drizzle ORM**. Schema files live in `backend/src/db/schema/` (one file per domain + `relations.ts`).
 - DB connection: `backend/src/db/index.ts` — pg Pool with Neon scale-to-zero handling (production uses Neon; local dev can point `DATABASE_URL` at any Postgres, including the local Docker container).
 - When changing the schema: run `pnpm drizzle-kit generate` in `backend/`, then **commit the generated `drizzle/*.sql` files**.
-- The seed (`backend/src/db/seed.ts`) creates 5 default pipeline stages (Applied, Screening, Interviewed, Offer, Rejected) - required for the app to function.
+- The seed (`backend/src/db/seed.ts`) wipes `pipeline_stage_templates` and inserts the 7 default stages (Screening, Screening Qualified, Screening Disqualified, Interviews, Shortlisted, Offer, Hired) - required for the app to function.
 - **Local Postgres + Redis**: `backend/docker-compose.yml` runs both as containers (`openats`/`openats`/`openats` for user/password/db on Postgres; Redis with no auth). Not required — Neon/hosted Redis work too — but this is the fastest path for local dev. See `CONTRIBUTING.md` for the full setup flow.
 
 ### Frontend

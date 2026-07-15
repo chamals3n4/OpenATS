@@ -34,14 +34,19 @@ docker compose --profile seed run --rm seed   # first time only
 box the API comes up healthy and the public endpoints work, but every frontend
 page returns 500 until you fill in the Asgardeo values — the root layout renders
 through `AsgardeoProvider`, which refuses to initialize without them. See
-[IAM_SETUP.md](./IAM_SETUP.md), then:
+[IAM_SETUP.md](./IAM_SETUP.md). While you're in that block, also set
+`ASGARDEO_SECRET` (any long random string — `openssl rand -base64 32`): the
+production build refuses to sign users in without it. Then:
 
 ```bash
 docker compose up -d --build frontend
 ```
 
-The rebuild matters: `NEXT_PUBLIC_*` values are compiled into the browser
-bundle, so a plain restart will not pick them up.
+The rebuild matters for `NEXT_PUBLIC_ASGARDEO_BASE_URL` and
+`NEXT_PUBLIC_ASGARDEO_CLIENT_ID`, which are compiled into the browser bundle.
+`NEXT_PUBLIC_ASGARDEO_SCOPES`, `NEXT_PUBLIC_ASGARDEO_ORGANIZATION_HANDLE` and
+the server-only `ASGARDEO_*` values are read at runtime — a restart is enough
+for those.
 
 ## What you get
 
@@ -78,9 +83,9 @@ the feature:
 
 | Variable            | Placeholder effect                                    |
 | ------------------- | ----------------------------------------------------- |
-| `RESEND_API_KEY`    | API boots; sending email fails                         |
+| `RESEND_API_KEY`    | API boots; every email send fails — and interview invites and application confirmations fail *silently* (logged only, the API still returns success), so candidates simply never hear anything |
 | `GEMINI_API_KEY`    | API boots; CV analysis fails in the worker             |
-| `ASGARDEO_JWKS_URL` | API boots; every authenticated route 401s              |
+| `ASGARDEO_JWKS_URL` | API boots; every authenticated route 401s, and the logs show `ENOTFOUND jwks-not-configured.invalid` |
 
 Replace them with real values to use those features. To point at a hosted
 Postgres (Neon) instead of the container, set `DATABASE_URL` — the `postgres`
@@ -109,23 +114,31 @@ The app needs those stages to function, so don't skip it on a fresh database.
 ## Everyday commands
 
 ```bash
-docker compose logs -f backend worker      # follow logs
-docker compose up -d --build backend       # rebuild after backend changes
+docker compose logs -f backend worker            # follow logs
+docker compose up -d --build backend worker      # rebuild after backend changes (they share the image)
 docker compose restart worker
-docker compose ps                          # health status
+docker compose ps                                # health status
 docker compose exec postgres psql -U openats -d openats
-docker compose down                        # stop; data survives
-docker compose down -v                     # stop and delete the data volumes
+docker compose down                              # stop; data survives
+docker compose down -v                           # stop and delete the data volumes
 ```
 
-To generate a migration after changing the schema, use the toolchain in the
-migrator image rather than installing pnpm locally:
+To generate a migration after changing the schema without installing pnpm
+locally, run drizzle-kit in the migrator image **with your working tree
+mounted** — the mounts matter: drizzle-kit must read your *edited* schema (the
+copy baked into the image is stale until a rebuild), and the generated SQL
+must land on the host or it is deleted with the `--rm` container:
 
 ```bash
-docker compose run --rm migrate pnpm drizzle-kit generate
+docker compose run --rm \
+  -v "$PWD/backend/src:/app/src" \
+  -v "$PWD/backend/drizzle:/app/drizzle" \
+  migrate pnpm drizzle-kit generate
 ```
 
-Commit the generated `backend/drizzle/*.sql` files, as CONTRIBUTING.md requires.
+(If you have Node and pnpm, `cd backend && pnpm drizzle-kit generate` does the
+same thing.) Either way, commit the generated `backend/drizzle/*.sql` files,
+as CONTRIBUTING.md requires.
 
 ## Troubleshooting
 
@@ -134,15 +147,31 @@ A crash at startup on `Invalid URL` means `ASGARDEO_JWKS_URL` is empty, and
 `Missing API key` means `RESEND_API_KEY` is empty. Copying `.env.example`
 supplies working placeholders for both.
 
+**Every authenticated route 401s after setting up Asgardeo.** If the logs show
+`ENOTFOUND jwks-not-configured.invalid`, the `ASGARDEO_JWKS_URL` placeholder
+was left in place — replace it with your tenant's real JWKS URL and restart
+the backend.
+
 **Frontend returns 500 on every page.** Asgardeo is not configured — see
 [IAM_SETUP.md](./IAM_SETUP.md). Rebuild rather than restart afterwards.
 
-**Changed a `NEXT_PUBLIC_*` value and nothing happened.** Those are baked into
-the bundle at build time: `docker compose up -d --build frontend`.
+**Sign-in fails even though Asgardeo is configured.** `ASGARDEO_SECRET` is
+probably unset — the production build requires it to sign the session cookie.
+Set it in `.env` and restart the frontend.
+
+**Changed a `NEXT_PUBLIC_*` value and nothing happened.** Most of those are
+baked into the bundle at build time: `docker compose up -d --build frontend`.
+(The exceptions are the two Asgardeo runtime values noted in the quick start.)
 
 **`address already in use`.** Something else holds the port. Set
-`FRONTEND_PORT=3100` (or similar) in `.env`, or stop
-`backend/docker-compose.yml` if that is what's holding 5432/6379.
+`FRONTEND_PORT=3100` (or similar) in `.env` — but the origin change has to be
+carried through, or the app breaks in new ways: set
+`FRONTEND_URL=http://localhost:3100` too (it is the API's CORS allowlist *and*
+the base for links in outgoing emails — restart backend), set
+`NEXT_PUBLIC_APP_URL=http://localhost:3100` (baked into the bundle — rebuild
+frontend), and update the authorized redirect URL in your Asgardeo app. If the
+clash is on 5432/6379, it is probably `backend/docker-compose.yml` — stop that
+instead.
 
 **Login redirects back to the login page.** `FRONTEND_URL` (the API's CORS
 allowlist) must match the origin you load in the browser.

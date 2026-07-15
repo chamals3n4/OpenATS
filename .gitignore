@@ -1,0 +1,7 @@
+# Configuration for the Docker Compose stack — holds real credentials.
+# Only .env.example belongs in git.
+.env
+.env.local
+.env.*.local
+
+.DS_Store

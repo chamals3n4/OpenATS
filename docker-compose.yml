@@ -1,0 +1,188 @@
+# Full OpenATS stack: Postgres, Redis, API, CV-analysis worker and frontend.
+#
+#   cp .env.example .env     # then fill in the values you need
+#   docker compose up -d --build
+#   docker compose --profile seed run --rm seed   # first run only, see docs/DOCKER.md
+#
+# Migrations run automatically before the API starts. Seeding does not — it
+# replaces the pipeline stage templates, so it is opt-in via the profile above.
+#
+# backend/docker-compose.yml is a different thing: it starts only Postgres and
+# Redis for the `pnpm dev` workflow described in CONTRIBUTING.md.
+
+name: openats
+
+x-backend-build: &backend-build
+  context: ./backend
+  target: runner
+
+# The API and the worker are the same image and take the same configuration.
+x-backend-env: &backend-env
+  DATABASE_URL: ${DATABASE_URL:-postgresql://openats:openats@postgres:5432/openats}
+  REDIS_URL: ${REDIS_URL:-redis://redis:6379}
+  PORT: 8080
+  FRONTEND_URL: ${FRONTEND_URL:-http://localhost:3000}
+  # These two are checked at module scope, so an empty value crash-loops the
+  # API on startup rather than just disabling the feature (mail.service.ts
+  # constructs the Resend client, cv-analysis.service.ts throws outright).
+  # The placeholders keep the stack bootable; the features need real keys.
+  RESEND_API_KEY: ${RESEND_API_KEY:-re_placeholder}
+  RESEND_FROM_EMAIL: ${RESEND_FROM_EMAIL:-onboarding@resend.dev}
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-placeholder}
+  # Same story: auth.middleware.ts does new URL(...) on this at module scope,
+  # so an empty value is a startup crash. The default is a syntactically valid
+  # dummy — token verification only reaches the network on a real request, so
+  # the stack boots and every authenticated route 401s until you set this for
+  # real. See docs/IAM_SETUP.md.
+  ASGARDEO_JWKS_URL: ${ASGARDEO_JWKS_URL:-https://api.asgardeo.io/t/example/oauth2/jwks}
+  ASGARDEO_ISSUER: ${ASGARDEO_ISSUER:-}
+  R2_ENDPOINT: ${R2_ENDPOINT:-}
+  R2_ACCESS_KEY_ID: ${R2_ACCESS_KEY_ID:-}
+  R2_SECRET_ACCESS_KEY: ${R2_SECRET_ACCESS_KEY:-}
+  R2_BUCKET_NAME: ${R2_BUCKET_NAME:-}
+  R2_PUBLIC_URL: ${R2_PUBLIC_URL:-}
+  ENCRYPTION_KEY: ${ENCRYPTION_KEY:-}
+  GOOGLE_SERVICE_ACCOUNT_JSON: ${GOOGLE_SERVICE_ACCOUNT_JSON:-}
+  GOOGLE_CALENDAR_ID: ${GOOGLE_CALENDAR_ID:-}
+  GOOGLE_CALENDAR_ALLOW_ATTENDEES: ${GOOGLE_CALENDAR_ALLOW_ATTENDEES:-}
+  GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH_CLIENT_ID:-}
+  GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH_CLIENT_SECRET:-}
+  GOOGLE_OAUTH_REDIRECT_URI: ${GOOGLE_OAUTH_REDIRECT_URI:-}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-openats}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-openats}
+      POSTGRES_DB: ${POSTGRES_DB:-openats}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test:
+        ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-openats} -d ${POSTGRES_DB:-openats}"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  # Runs to completion, then the API starts. drizzle-kit is a devDependency,
+  # hence the separate `migrator` build target.
+  migrate:
+    build:
+      context: ./backend
+      target: migrator
+    image: openats-migrator:local
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  # Opt-in: `docker compose --profile seed run --rm seed`
+  # Wipes and rewrites the pipeline stage templates, so it never runs on `up`.
+  seed:
+    profiles: ["seed"]
+    image: openats-migrator:local
+    build:
+      context: ./backend
+      target: migrator
+    command: ["pnpm", "tsx", "src/db/seed.ts"]
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  backend:
+    build: *backend-build
+    image: openats-backend:local
+    environment: *backend-env
+    ports:
+      - "${BACKEND_PORT:-8080}:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  # Same image as the API, different entrypoint. Without it, CV analysis jobs
+  # queue up in Redis and are never processed.
+  worker:
+    build: *backend-build
+    image: openats-backend:local
+    command: ["node", "dist/src/worker.js"]
+    environment: *backend-env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      # NEXT_PUBLIC_* are compiled into the browser bundle, so these are the
+      # values the browser will use — they must be reachable from the browser,
+      # not from inside the Docker network. Re-run with --build after changing.
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+        NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+        NEXT_PUBLIC_ASGARDEO_BASE_URL: ${NEXT_PUBLIC_ASGARDEO_BASE_URL:-}
+        NEXT_PUBLIC_ASGARDEO_CLIENT_ID: ${NEXT_PUBLIC_ASGARDEO_CLIENT_ID:-}
+    image: openats-frontend:local
+    environment:
+      # Server-side rendering talks to the API over the Docker network.
+      OPENATS_API_URL: ${OPENATS_API_URL:-http://backend:8080}
+      # Also read at runtime by server components and route handlers.
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8080}
+      NEXT_PUBLIC_APP_URL: ${NEXT_PUBLIC_APP_URL:-http://localhost:3000}
+      NEXT_PUBLIC_ASGARDEO_BASE_URL: ${NEXT_PUBLIC_ASGARDEO_BASE_URL:-}
+      NEXT_PUBLIC_ASGARDEO_CLIENT_ID: ${NEXT_PUBLIC_ASGARDEO_CLIENT_ID:-}
+      ASGARDEO_BASE_URL: ${ASGARDEO_BASE_URL:-}
+      ASGARDEO_CLIENT_ID: ${ASGARDEO_CLIENT_ID:-}
+      ASGARDEO_CLIENT_SECRET: ${ASGARDEO_CLIENT_SECRET:-}
+      ASGARDEO_SCIM_CLIENT_ID: ${ASGARDEO_SCIM_CLIENT_ID:-}
+      ASGARDEO_SCIM_CLIENT_SECRET: ${ASGARDEO_SCIM_CLIENT_SECRET:-}
+      ASGARDEO_MANAGEMENT_SCOPES: ${ASGARDEO_MANAGEMENT_SCOPES:-}
+      ASGARDEO_SUPER_ADMIN_ROLE_ID: ${ASGARDEO_SUPER_ADMIN_ROLE_ID:-}
+      ASGARDEO_HIRING_MANAGER_ROLE_ID: ${ASGARDEO_HIRING_MANAGER_ROLE_ID:-}
+      ASGARDEO_INTERVIEWER_ROLE_ID: ${ASGARDEO_INTERVIEWER_ROLE_ID:-}
+    ports:
+      - "${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
+  redis-data:

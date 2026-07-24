@@ -143,9 +143,10 @@ export function CandidateHeader({
 
           <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
             <Button
+              type="button"
               size="sm"
               disabled={!candidate.resumeUrl}
-              className="h-7 rounded-[6px] cursor-pointer border-none bg-[var(--theme-color)] px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:bg-neutral-700 disabled:text-neutral-400 disabled:opacity-70"
+              className="h-7 rounded-[6px] cursor-pointer border-none bg-[var(--theme-color)] px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onViewCv}
             >
               <HugeiconsIcon icon={File01Icon} className="size-3" />
@@ -158,7 +159,7 @@ export function CandidateHeader({
                 !isManager || pipelineStages.length === 0 || moveStageMutation.isPending
               }
             >
-              <SelectTrigger className="h-8 rounded-[6px] border-none bg-neutral-100 px-2.5 text-sm font-semibold leading-none text-slate-700 shadow-none hover:bg-neutral-200 focus:ring-0 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700">
+              <SelectTrigger className="h-8 rounded-[6px] border-none bg-neutral-100 px-2.5 text-sm font-semibold leading-none text-slate-700 shadow-none hover:bg-neutral-200 focus:ring-0 dark:bg-neutral-800 dark:text-neutral-200">
                 <SelectValue>{selectedStageName}</SelectValue>
               </SelectTrigger>
               <SelectContent className="rounded-[6px] border-slate-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
@@ -196,6 +197,7 @@ export function CandidateHeader({
               </>
             )}
             <Button
+              type="button"
               size="sm"
               className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
               onClick={onClose}
@@ -204,18 +206,20 @@ export function CandidateHeader({
               Close
             </Button>
             <Button
+              type="button"
               size="sm"
               disabled={!isManager}
-              className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-7 cursor-pointer rounded-[6px] border-none bg-neutral-700 px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onEdit}
             >
               <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
               Edit
             </Button>
             <Button
+              type="button"
               size="sm"
               disabled={!isManager}
-              className="h-7 cursor-pointer rounded-[6px] border-none bg-red-600 px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="h-7 cursor-pointer rounded-[6px] border-none bg-red-600 px-2.5 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
               onClick={onDelete}
             >
               <HugeiconsIcon icon={Delete02Icon} className="size-3" />

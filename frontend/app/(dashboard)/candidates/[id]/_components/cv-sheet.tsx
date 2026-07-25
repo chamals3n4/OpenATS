@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { ResumeScrollView } from "./resume-scroll-view";
 
 interface CvSheetProps {
   open: boolean;
@@ -21,9 +22,9 @@ export function CvSheet({ open, onOpenChange, candidate }: CvSheetProps) {
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="w-full gap-0 border-slate-200 p-0 dark:border-neutral-800 sm:max-w-none lg:w-[min(920px,72vw)]"
+        className="flex flex-col w-full gap-0 border-slate-200 p-0 dark:border-neutral-800 sm:max-w-none lg:w-[min(920px,72vw)]"
       >
-        <SheetHeader className="flex-row items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-neutral-800">
+        <SheetHeader className="shrink-0 flex-row items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-neutral-800">
           <SheetTitle className="truncate text-sm font-semibold text-slate-900 dark:text-neutral-100">
             {candidate.firstName} {candidate.lastName} CV
           </SheetTitle>
@@ -49,11 +50,7 @@ export function CvSheet({ open, onOpenChange, candidate }: CvSheetProps) {
           </div>
         </SheetHeader>
         {candidate.resumeUrl ? (
-          <iframe
-            src={candidate.resumeUrl}
-            title={`${candidate.firstName} ${candidate.lastName} CV`}
-            className="min-h-0 flex-1 border-0 bg-slate-100 dark:bg-neutral-900"
-          />
+          <ResumeScrollView resumeUrl={candidate.resumeUrl} />
         ) : (
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
             <div className="flex size-14 items-center justify-center rounded-xl bg-slate-100 dark:bg-neutral-800">

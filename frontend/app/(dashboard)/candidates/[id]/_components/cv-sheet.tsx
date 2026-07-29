@@ -8,6 +8,7 @@ import {
   SheetHeader,
   SheetTitle,
 } from "@/components/ui/sheet";
+import { ResumeScrollView } from "./resume-scroll-view";
 
 interface CvSheetProps {
   open: boolean;
@@ -49,11 +50,7 @@ export function CvSheet({ open, onOpenChange, candidate }: CvSheetProps) {
           </div>
         </SheetHeader>
         {candidate.resumeUrl ? (
-          <iframe
-            src={candidate.resumeUrl}
-            title={`${candidate.firstName} ${candidate.lastName} CV`}
-            className="min-h-0 flex-1 border-0 bg-slate-100 dark:bg-neutral-900"
-          />
+          <ResumeScrollView resumeUrl={candidate.resumeUrl} />
         ) : (
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
             <div className="flex size-14 items-center justify-center rounded-xl bg-slate-100 dark:bg-neutral-800">

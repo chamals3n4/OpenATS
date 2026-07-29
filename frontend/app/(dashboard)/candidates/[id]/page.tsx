@@ -38,7 +38,7 @@ import { RejectionSection } from "./_components/sections/rejection-section";
 import { EmailSection } from "./_components/sections/email-section";
 import { ScoresSection } from "./_components/sections/scores-section";
 import { EditCandidateDialog } from "./_components/dialogs/edit-candidate-dialog";
-import { DeleteCandidateDialog } from "./_components/dialogs/delete-candidate-dialog";
+import { CandidateDeleteDialog } from "../_components/candidate-delete-dialog";
 import { RejectCandidateDialog } from "./_components/dialogs/reject-candidate-dialog";
 import { useIsManager } from "@/hooks/use-role";
 
@@ -321,11 +321,12 @@ export default function CandidateDetailPage({
         isPending={updateMutation.isPending}
       />
 
-      <DeleteCandidateDialog
-        open={deleteTarget}
-        onOpenChange={setDeleteTarget}
-        candidate={candidate}
+      <CandidateDeleteDialog
+        candidate={candidate ?? null}
+        isOpen={deleteTarget}
+        onClose={() => setDeleteTarget(false)}
         onConfirm={confirmDelete}
+        isPending={deleteMutation.isPending}
       />
 
       <RejectCandidateDialog

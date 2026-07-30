@@ -1,30 +1,17 @@
-import type { Block, EventConfig, TemplateType } from "./template-form-types";
-import type { TemplateBodyBlock } from "@/types";
+import type { EventConfig } from "./template-form-types";
+import type { TemplateBody, TemplateBodyBlock } from "@/types";
+import { SAMPLE, VARS } from "./template-form-constants";
 
-export function renderPreview(text: string, vars: string[]): string {
-  let out = text;
-  vars.forEach((key) => {
+/** Substitute {{var}} placeholders in an HTML string with styled sample-value pills, for preview only. */
+export function renderPreviewHtml(html: string): string {
+  let out = html;
+  VARS.forEach((key) => {
     out = out.replaceAll(
       `{{${key}}}`,
       `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:600;font-size:0.85em">${SAMPLE[key] ?? key}</span>`,
     );
   });
   return out;
-}
-
-import { SAMPLE } from "./template-form-constants";
-
-export function createEmptyBlock(kind: Block["kind"]): Block {
-  return {
-    id: `${kind}-${Date.now()}`,
-    kind,
-    content:
-      kind === "heading"
-        ? "Your Heading"
-        : kind === "text"
-          ? "Write your message."
-          : "Click Here",
-  };
 }
 
 export function parseEventConfig(
@@ -42,25 +29,9 @@ export function parseEventConfig(
   }
 }
 
-export function parseEmailBlocks(bodyJson: unknown): Block[] {
-  const blocks = bodyJson as
-    | Array<{ type?: string; content?: string }>
-    | undefined;
-  if (!blocks) return [];
-  return blocks
-    .filter((b) => b.type && !b.content?.startsWith("{"))
-    .map((b, i) => ({
-      id: `e${i}`,
-      kind: (b.type as Block["kind"]) || "text",
-      content: b.content || "",
-    }));
-}
-
-export function buildEmailPayload(blocks: Block[]): TemplateBodyBlock[] {
-  return blocks.map((b) => ({
-    type: b.kind as TemplateBodyBlock["type"],
-    content: b.content,
-  }));
+/** Email templates store bodyJson as a plain HTML string. */
+export function parseEmailBody(bodyJson: unknown): string {
+  return typeof bodyJson === "string" ? bodyJson : "";
 }
 
 export function buildEventPayload(
@@ -71,7 +42,7 @@ export function buildEventPayload(
   location: string,
   eventDesc: string,
   timeSlots: { datetime: string }[],
-): TemplateBodyBlock[] {
+): TemplateBody {
   return [
     {
       type: "text" as const,
@@ -85,6 +56,6 @@ export function buildEventPayload(
         description: eventDesc,
         timeSlots: timeSlots.filter((s) => s.datetime).map((s) => s.datetime),
       }),
-    },
+    } satisfies TemplateBodyBlock,
   ];
 }

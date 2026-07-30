@@ -1,16 +1,23 @@
 "use client";
 
-import { renderPreview } from "../../../lib/template-form-utils";
-import { VARS } from "../../../lib/template-form-constants";
-import type { Block } from "../../../lib/template-form-types";
+import { renderPreviewHtml } from "../../../lib/template-form-utils";
+import { VARS, SAMPLE } from "../../../lib/template-form-constants";
 
 interface EmailPreviewPanelProps {
   subject: string;
-  blocks: Block[];
+  bodyHtml: string;
 }
 
-export function EmailPreviewPanel({ subject, blocks }: EmailPreviewPanelProps) {
-  const isEmpty = blocks.length === 0;
+function renderSubject(subject: string): string {
+  let out = subject;
+  VARS.forEach((key) => {
+    out = out.replaceAll(`{{${key}}}`, SAMPLE[key] ?? key);
+  });
+  return out;
+}
+
+export function EmailPreviewPanel({ subject, bodyHtml }: EmailPreviewPanelProps) {
+  const isEmpty = !bodyHtml || bodyHtml === "<p></p>";
 
   return (
     <div className="flex flex-col h-full">
@@ -26,84 +33,26 @@ export function EmailPreviewPanel({ subject, blocks }: EmailPreviewPanelProps) {
 
       {/* Preview content */}
       <div className="flex-1 overflow-y-auto px-8 pb-10">
-        {isEmpty ? (
+        {isEmpty && !subject ? (
           <div className="flex flex-col items-center justify-center h-48 text-center">
             <p className="text-sm text-slate-400 dark:text-neutral-500">
-              Add blocks on the left to preview the email
+              Start writing on the left to preview the email
             </p>
           </div>
         ) : (
-          <div className="space-y-1">
-            {/* Subject */}
+          <div>
             {subject && (
-              <div className="mb-6">
-                <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500 block mb-1">
-                  Subject
-                </span>
-                <p
-                  className="text-sm font-semibold text-slate-800 dark:text-neutral-100 leading-snug"
-                  dangerouslySetInnerHTML={{
-                    __html: renderPreview(subject, VARS),
-                  }}
-                />
-              </div>
+              <>
+                <p className="text-sm font-semibold text-slate-800 dark:text-neutral-100 leading-snug mb-4">
+                  {renderSubject(subject)}
+                </p>
+                <div className="border-t border-slate-200 dark:border-neutral-700 mb-4" />
+              </>
             )}
-
-            {/* Divider */}
-            {subject && (
-              <div className="border-t border-slate-200 dark:border-neutral-700 mb-6" />
-            )}
-
-            {/* Blocks */}
-            <div className="space-y-5">
-              {blocks.map((block) => {
-                switch (block.kind) {
-                  case "heading":
-                    return (
-                      <h2
-                        key={block.id}
-                        className="text-base font-bold text-slate-900 dark:text-neutral-100 leading-snug m-0"
-                        dangerouslySetInnerHTML={{
-                          __html: renderPreview(block.content, VARS),
-                        }}
-                      />
-                    );
-                  case "text":
-                    return (
-                      <p
-                        key={block.id}
-                        className="text-sm text-slate-600 dark:text-neutral-300 leading-relaxed m-0 whitespace-pre-wrap"
-                        dangerouslySetInnerHTML={{
-                          __html: renderPreview(block.content, VARS).replace(
-                            /\n/g,
-                            "<br/>",
-                          ),
-                        }}
-                      />
-                    );
-                  case "button":
-                    return (
-                      <div key={block.id}>
-                        <span
-                          style={{
-                            display: "inline-block",
-                            background: "var(--theme-color)",
-                            color: "#fff",
-                            padding: "9px 22px",
-                            fontWeight: 600,
-                            fontSize: 13,
-                            borderRadius: 6,
-                          }}
-                        >
-                          {block.content}
-                        </span>
-                      </div>
-                    );
-                  default:
-                    return null;
-                }
-              })}
-            </div>
+            <div
+              className="text-sm text-slate-700 dark:text-neutral-300 leading-relaxed [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-slate-900 dark:[&_h1]:text-neutral-100 [&_h1]:mb-2 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-slate-900 dark:[&_h2]:text-neutral-100 [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-slate-900 dark:[&_h3]:text-neutral-100 [&_h3]:mb-1.5 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_a]:text-[var(--theme-color)] [&_a]:underline [&_hr]:my-4 [&_hr]:border-slate-200 dark:[&_hr]:border-neutral-700"
+              dangerouslySetInnerHTML={{ __html: renderPreviewHtml(bodyHtml) }}
+            />
           </div>
         )}
       </div>

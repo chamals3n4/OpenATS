@@ -268,12 +268,15 @@ export type TemplateBodyBlock = {
   content: string;
 };
 
+// Email templates store a plain HTML string; event templates store a ContentBlock[]-style array.
+export type TemplateBody = TemplateBodyBlock[] | string;
+
 export type Template = {
   id: number;
   name: string;
   type: "email" | "event";
   subject: string;
-  bodyJson: TemplateBodyBlock[];
+  bodyJson: TemplateBody;
   createdAt: string;
   updatedAt: string;
 };

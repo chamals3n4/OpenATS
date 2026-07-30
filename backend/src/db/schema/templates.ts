@@ -18,12 +18,15 @@ export type ContentBlock =
   | { type: "divider" }
   | { type: "spacer"; height: number };
 
+// Email templates store a plain HTML string; event templates store ContentBlock[].
+export type TemplateBody = ContentBlock[] | string;
+
 export const templates = pgTable("templates", {
   id: serial("id").primaryKey(),
   name: varchar("name", { length: 255 }).notNull(),
   type: templateType("type").notNull(),
   subject: varchar("subject", { length: 500 }).notNull(),
-  bodyJson: jsonb("body_json").$type<ContentBlock[]>().notNull().default([]),
+  bodyJson: jsonb("body_json").$type<TemplateBody>().notNull().default([]),
   createdBy: integer("created_by")
     .notNull()
     .references(() => users.id),

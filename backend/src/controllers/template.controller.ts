@@ -19,18 +19,20 @@ const contentBlockSchema = z.discriminatedUnion("type", [
 
 const templateTypeEnum = z.enum(["email", "event"]);
 
+const bodyJsonSchema = z.union([z.string(), z.array(contentBlockSchema)]);
+
 const createTemplateSchema = z.object({
   name: z.string().min(1, "Name is required").max(255),
   type: templateTypeEnum,
   subject: z.string().min(1, "Subject is required").max(500),
-  bodyJson: z.array(contentBlockSchema).default([]),
+  bodyJson: bodyJsonSchema.default([]),
 });
 
 const updateTemplateSchema = z.object({
   name: z.string().min(1).max(255).optional(),
   type: templateTypeEnum.optional(),
   subject: z.string().min(1).max(500).optional(),
-  bodyJson: z.array(contentBlockSchema).optional(),
+  bodyJson: bodyJsonSchema.optional(),
 });
 
 const bulkDeleteTemplatesSchema = z.object({

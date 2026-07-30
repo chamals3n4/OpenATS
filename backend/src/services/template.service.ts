@@ -1,14 +1,14 @@
 import { eq, ilike, inArray, and, sql, desc } from "drizzle-orm";
 import { db } from "../db";
 import { templates } from "../db/schema";
-import type { ContentBlock } from "../db/schema";
+import type { TemplateBody } from "../db/schema";
 import { cleanObject as clean } from "../utils/object.utils";
 
 export interface CreateTemplateInput {
   name: string;
   type: "email" | "event";
   subject: string;
-  bodyJson: ContentBlock[];
+  bodyJson: TemplateBody;
   createdBy: number;
 }
 
@@ -16,7 +16,7 @@ export interface UpdateTemplateInput {
   name?: string | undefined;
   type?: ("email" | "event") | undefined;
   subject?: string | undefined;
-  bodyJson?: ContentBlock[] | undefined;
+  bodyJson?: TemplateBody | undefined;
 }
 
 export type TemplateListFilters = {

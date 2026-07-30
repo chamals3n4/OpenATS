@@ -1,4 +1,4 @@
-import { ContentBlock } from "../db/schema/templates";
+import { ContentBlock, TemplateBody } from "../db/schema/templates";
 
 export interface TemplateContext {
   candidate_name?: string;
@@ -22,8 +22,12 @@ export const templateEngineService = {
     });
   },
 
-  renderJSON(blocks: ContentBlock[], context: TemplateContext): ContentBlock[] {
-    return blocks.map((block) => {
+  renderJSON(body: TemplateBody, context: TemplateContext): TemplateBody {
+    if (typeof body === "string") {
+      return this.replaceVariables(body, context);
+    }
+
+    return body.map((block) => {
       switch (block.type) {
         case "heading":
         case "text":
@@ -47,9 +51,13 @@ export const templateEngineService = {
     });
   },
 
-  renderHTML(blocks: ContentBlock[], context: TemplateContext): string {
-    const processedBlocks = this.renderJSON(blocks, context);
-    
+  renderHTML(body: TemplateBody, context: TemplateContext): string {
+    if (typeof body === "string") {
+      return this.replaceVariables(body, context);
+    }
+
+    const processedBlocks = this.renderJSON(body, context) as ContentBlock[];
+
     return processedBlocks.map((block) => {
       switch (block.type) {
         case "heading":
@@ -75,7 +83,7 @@ export const templateEngineService = {
     }).join("");
   },
 
-  compileTemplate(subject: string, bodyJson: ContentBlock[], context: TemplateContext) {
+  compileTemplate(subject: string, bodyJson: TemplateBody, context: TemplateContext) {
     return {
       subject: this.replaceVariables(subject, context),
       bodyJson: this.renderJSON(bodyJson, context),

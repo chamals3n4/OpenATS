@@ -86,7 +86,8 @@ export function AssessmentResultsSheetContent({
                 )}
               </div>
 
-              {q.questionType === "text" ? (
+              {q.questionType === "short_answer" ||
+              q.questionType === "long_answer" ? (
                 <div className="space-y-1 bg-slate-50 dark:bg-neutral-950 p-3 rounded-lg border border-slate-100 dark:border-neutral-800/60">
                   <span className="text-xs font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
                     Candidate Response

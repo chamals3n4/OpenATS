@@ -7,10 +7,29 @@ export const TEXTAREA_CLASS =
 export const LABEL_CLASS =
   "text-xs font-medium text-slate-500 dark:text-neutral-400";
 
-export const VARS = ["candidate_name", "job_title", "company_name"];
+// Keep in sync with backend/src/services/variable.service.ts
+export const VARS = [
+  "candidate_name",
+  "job_title",
+  "company_name",
+  "start_date",
+  "salary",
+  "currency",
+  "employment_type",
+  "reporting_manager",
+  "benefits",
+  "offer_review_url",
+];
 
 export const SAMPLE: Record<string, string> = {
   candidate_name: "Alex Johnson",
   job_title: "Senior Software Engineer",
   company_name: "OpenATS Inc.",
+  start_date: "August 18, 2026",
+  salary: "120,000",
+  currency: "USD",
+  employment_type: "Full-time",
+  reporting_manager: "Jamie Rivera",
+  benefits: "Health insurance, 401(k) match, unlimited PTO",
+  offer_review_url: "https://app.openats.dev/offers/preview-token",
 };

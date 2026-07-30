@@ -9,10 +9,7 @@ import {
 import type { Template } from "@/types";
 import type { TemplateType } from "../../lib/template-form-types";
 import { useTemplateForm } from "../../hooks/use-template-form";
-import {
-  buildEmailPayload,
-  buildEventPayload,
-} from "../../lib/template-form-utils";
+import { buildEventPayload } from "../../lib/template-form-utils";
 import { TemplateFormHeader } from "./header";
 import { TemplateNameField } from "./name-field";
 import { EmailBuilder } from "./email-builder";
@@ -66,7 +63,7 @@ export function TemplateForm({
       subject: templateType === "event" ? nameValue.trim() : form.subject,
       bodyJson:
         templateType === "email"
-          ? buildEmailPayload(form.blocks)
+          ? form.emailBodyHtml
           : buildEventPayload(
               nameValue.trim(),
               form.eventTypeRadio,
@@ -118,7 +115,7 @@ export function TemplateForm({
         <div className="flex flex-1 min-h-0">
           {/* Left — editor */}
           <div className="flex-1 overflow-y-auto border-r border-slate-200 dark:border-neutral-800">
-            <div className="px-8 py-6 space-y-5 max-w-xl">
+            <div className="px-8 py-6 space-y-5 max-w-3xl">
               <TemplateNameField
                 value={form.name}
                 onChange={form.setName}
@@ -128,18 +125,16 @@ export function TemplateForm({
               <EmailBuilder
                 subject={form.subject}
                 onSubjectChange={form.setSubject}
-                blocks={form.blocks}
-                onAddBlock={form.addBlock}
-                onUpdateBlock={form.updateBlock}
-                onDeleteBlock={form.deleteBlock}
+                bodyHtml={form.emailBodyHtml}
+                onBodyHtmlChange={form.setEmailBodyHtml}
                 readOnly={readOnly}
               />
             </div>
           </div>
 
           {/* Right — live preview */}
-          <div className="w-[420px] xl:w-[480px] shrink-0 overflow-y-auto bg-slate-50 dark:bg-neutral-900/40 border-l border-slate-200 dark:border-neutral-800">
-            <EmailPreviewPanel subject={form.subject} blocks={form.blocks} />
+          <div className="w-[420px] xl:w-[480px] shrink-0 overflow-y-auto bg-white dark:bg-neutral-950 border-l border-slate-200 dark:border-neutral-800">
+            <EmailPreviewPanel subject={form.subject} bodyHtml={form.emailBodyHtml} />
           </div>
         </div>
       </div>

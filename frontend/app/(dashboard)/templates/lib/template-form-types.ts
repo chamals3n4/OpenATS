@@ -1,13 +1,5 @@
 export type TemplateType = "email" | "event";
 
-export type BlockKind = "heading" | "text" | "button";
-
-export interface Block {
-  id: string;
-  kind: BlockKind;
-  content: string;
-}
-
 export interface TimeSlot {
   datetime: string;
 }
@@ -25,7 +17,7 @@ export interface EventConfig {
 export interface TemplateFormState {
   name: string;
   subject: string;
-  blocks: Block[];
+  emailBodyHtml: string;
   eventName: string;
   eventDesc: string;
   eventTypeRadio: "virtual" | "onsite";

@@ -190,6 +190,13 @@
       "when": 1783593885977,
       "tag": "0026_omniscient_squadron_sinister",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1785756015414,
+      "tag": "0027_gifted_tony_stark",
+      "breakpoints": true
     }
   ]
 }

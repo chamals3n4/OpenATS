@@ -9,7 +9,12 @@ import { errorMiddleware } from "./middlewares/error.middleware";
 import { swaggerUi, swaggerDocument } from "./config/swagger";
 import { authMiddleware } from "./middlewares/auth.middleware";
 import { pageSettingsService } from "./services/page-settings.service";
+import { sql } from "drizzle-orm";
+import { db } from "./db";
+import { createRedisConnection } from "./config/redis";
 import logger from "./utils/logger";
+
+const healthRedis = createRedisConnection();
 
 const app: Express = express();
 
@@ -61,8 +66,33 @@ app.use(
     },
   ),
 );
-app.get("/health", (req, res) => {
-  res.status(200).json({ status: "working" });
+app.get("/health", async (req, res) => {
+  const checks: Record<string, "ok" | "error"> = { db: "ok", redis: "ok" };
+
+  try {
+    await db.execute(sql`select 1`);
+  } catch (err) {
+    checks.db = "error";
+    logger.error(
+      `[health] db check failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  try {
+    const pong = await healthRedis.ping();
+    if (pong !== "PONG") checks.redis = "error";
+  } catch (err) {
+    checks.redis = "error";
+    logger.error(
+      `[health] redis check failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  const healthy = Object.values(checks).every((v) => v === "ok");
+  res.status(healthy ? 200 : 503).json({
+    status: healthy ? "ok" : "degraded",
+    checks,
+  });
 });
 
 app.use("/public", publicRouter);

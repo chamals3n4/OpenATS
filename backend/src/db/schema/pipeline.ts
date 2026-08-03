@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   integer,
   pgTable,
   serial,
@@ -59,7 +60,10 @@ export const jobHiringTeam = pgTable(
       .references(() => users.id, { onDelete: "cascade" }),
     addedAt: timestamp("added_at").notNull().defaultNow(),
   },
-  (t) => [unique().on(t.jobId, t.userId)],
+  (t) => [
+    unique().on(t.jobId, t.userId),
+    index("idx_job_hiring_team_user_id").on(t.userId),
+  ],
 );
 
 export type PipelineStageTemplate = typeof pipelineStageTemplates.$inferSelect;

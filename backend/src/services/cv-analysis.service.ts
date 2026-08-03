@@ -20,6 +20,8 @@ if (!process.env.GEMINI_API_KEY) {
 }
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
+const GEMINI_TIMEOUT_MS = 30_000;
+
 type JobLevel =
   | "intern"
   | "entry"
@@ -234,6 +236,7 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
         },
       },
     ],
+    config: { httpOptions: { timeout: GEMINI_TIMEOUT_MS } },
   });
 
   let raw = response.text?.trim() ?? "";
@@ -318,6 +321,7 @@ async function parseJdWithGemini(description: string): Promise<ParsedJd> {
   const response = await ai.models.generateContent({
     model: "gemini-3-flash-preview",
     contents: [{ text: prompt }],
+    config: { httpOptions: { timeout: GEMINI_TIMEOUT_MS } },
   });
 
   let raw = response.text?.trim() ?? "";
@@ -334,7 +338,15 @@ async function parseJdWithGemini(description: string): Promise<ParsedJd> {
 
 // Each array is a group of equivalent skill names. Matching any one satisfies any other.
 const SKILL_GROUPS: readonly string[][] = [
-  ["git", "github", "gitlab", "bitbucket", "version control", "source control", "svn"],
+  [
+    "git",
+    "github",
+    "gitlab",
+    "bitbucket",
+    "version control",
+    "source control",
+    "svn",
+  ],
   ["javascript", "js", "es6", "es2015", "ecmascript", "vanilla js"],
   ["typescript", "ts"],
   ["node.js", "node", "nodejs", "node js"],
@@ -457,6 +469,7 @@ async function generateAiSummary(
     const response = await ai.models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ text: prompt }],
+      config: { httpOptions: { timeout: GEMINI_TIMEOUT_MS } },
     });
 
     let raw = response.text?.trim() ?? "";
@@ -474,7 +487,10 @@ async function generateAiSummary(
   }
 }
 
-function scoreCV(parsedCv: ParsedCv, jobReqs: JobRequirements): Omit<ScoreResult, "aiSummary"> {
+function scoreCV(
+  parsedCv: ParsedCv,
+  jobReqs: JobRequirements,
+): Omit<ScoreResult, "aiSummary"> {
   /*
     Scoring is based on four dimensions, each with a fixed weight:
    

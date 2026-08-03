@@ -180,7 +180,7 @@ export const reportService = {
         SUM(CASE WHEN j.created_at >= ${currentStart} AND j.created_at < ${now} THEN 1 ELSE 0 END)::text AS current_opened,
         SUM(CASE WHEN j.created_at >= ${previousStart} AND j.created_at < ${currentStart} THEN 1 ELSE 0 END)::text AS previous_opened
       FROM jobs j
-      WHERE 1=1 ${departmentId ? sql` AND j.department_id = ${departmentId}` : sql``}
+      WHERE 1=1 ${deptFilter}
     `);
 
     const hireTimeRes = await db.execute<{
@@ -299,7 +299,7 @@ export const reportService = {
       INNER JOIN jobs j ON j.id = o.job_id
       INNER JOIN departments d ON d.id = j.department_id
       WHERE o.status = 'accepted'
-      ${departmentId ? sql` AND d.id = ${departmentId}` : sql``}
+      ${deptFilter}
       GROUP BY d.name
       ORDER BY d.name ASC
     `);

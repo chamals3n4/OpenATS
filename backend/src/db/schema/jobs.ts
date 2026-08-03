@@ -1,5 +1,6 @@
 import {
   check,
+  index,
   integer,
   numeric,
   pgTable,
@@ -80,6 +81,8 @@ export const jobs = pgTable(
       "chk_salary_min_max",
       sql`${t.salaryMin} IS NULL OR ${t.salaryMax} IS NULL OR ${t.salaryMax} >= ${t.salaryMin}`,
     ),
+    index("idx_jobs_department_id").on(t.departmentId),
+    index("idx_jobs_created_by").on(t.createdBy),
   ],
 );
 

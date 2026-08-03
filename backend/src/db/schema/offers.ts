@@ -1,5 +1,6 @@
 import {
   date,
+  index,
   integer,
   numeric,
   pgTable,
@@ -57,7 +58,11 @@ export const offers = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (t) => [unique().on(t.candidateId, t.jobId)],
+  (t) => [
+    unique().on(t.candidateId, t.jobId),
+    index("idx_offers_job_id").on(t.jobId),
+    index("idx_offers_created_by").on(t.createdBy),
+  ],
 );
 
 export type Offer = typeof offers.$inferSelect;

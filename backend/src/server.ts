@@ -1,10 +1,15 @@
+import "dotenv/config";
 import http from "http";
+import { validateEnv } from "./config/env";
+
+const env = validateEnv();
+
 import app from "./app";
 import { socketService } from "./services/socket.service";
 import { subscribeToCvAnalysisEvents } from "./queues/cv-analysis/events";
 import logger from "./utils/logger";
 
-const PORT = process.env.PORT || 8080;
+const PORT = env.PORT;
 
 const server = http.createServer(app);
 

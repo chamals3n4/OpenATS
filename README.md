@@ -1,3 +1,10 @@
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="./frontend/public/assets/openats-logo-white.png">
+    <img src="./frontend/public/assets/openats-logo.png" alt="OpenATS logo" width="80">
+  </picture>
+</p>
+
 <h1 align="center">OpenATS</h1>
 
 <p align="center">

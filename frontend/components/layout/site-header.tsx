@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Public_Sans } from "next/font/google";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Notification03Icon } from "@hugeicons/core-free-icons";
@@ -19,8 +20,15 @@ export function SiteHeader({ accessToken }: { accessToken?: string }) {
       <div className="flex h-(--header-height) w-full items-center justify-between gap-4 px-6">
         <Link
           href="/"
-          className={`${publicSans.className} text-2xl leading-none tracking-tight text-black dark:text-white select-none`}
+          className={`${publicSans.className} flex items-center gap-2 text-2xl leading-none tracking-tight text-black dark:text-white select-none`}
         >
+          <Image
+            src="/assets/openats-logo.png"
+            alt="OpenATS"
+            width={32}
+            height={32}
+            className="size-8 object-contain dark:brightness-0 dark:invert"
+          />
           OpenATS
         </Link>
 

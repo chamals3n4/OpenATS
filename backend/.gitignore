@@ -45,3 +45,5 @@ coverage/
 temp/
 tmp/
 EOF
+
+.env.prod

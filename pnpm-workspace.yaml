@@ -1,0 +1,13 @@
+packages:
+  - "backend"
+  - "frontend"
+
+allowBuilds:
+  core-js: false
+  msw: false
+  sharp: false
+  unrs-resolver: false
+  "@scarf/scarf": true
+  esbuild: true
+  msgpackr-extract: true
+  protobufjs: true

@@ -1,0 +1,15 @@
+{
+  "name": "openats",
+  "private": true,
+  "description": "OpenATS monorepo root - orchestrates backend and frontend as a pnpm workspace",
+  "scripts": {
+    "dev": "concurrently -n backend,frontend -c blue,green \"pnpm --filter ./backend dev\" \"pnpm --filter ./frontend dev\"",
+    "dev:backend": "pnpm --filter ./backend dev",
+    "dev:frontend": "pnpm --filter ./frontend dev",
+    "build": "pnpm --filter ./backend build && pnpm --filter ./frontend build",
+    "lint": "pnpm --filter ./backend lint && pnpm --filter ./frontend lint"
+  },
+  "devDependencies": {
+    "concurrently": "^9.0.0"
+  }
+}

@@ -216,7 +216,6 @@ else
 
   if api_call POST "${BASE_URL}/api/server/v1/applications" "$CREATE_APP_PAYLOAD"; then
     APP_ID=$(echo "$HTTP_BODY" | jq -r '.id // empty' 2>/dev/null)
-    # 201 often returns an empty body with a Location header, so look it up.
     if [ -z "$APP_ID" ]; then
       if api_call GET "${BASE_URL}/api/server/v1/applications?filter=name+eq+${APP_NAME}"; then
         APP_ID=$(echo "$HTTP_BODY" | jq -r '.applications[0].id // empty')
@@ -244,9 +243,6 @@ if [ -n "$OIDC_CURRENT" ]; then
   OIDC_PAYLOAD=$(echo "$OIDC_CURRENT" | jq \
     --arg redirectUri "$REDIRECT_URI" \
     '
-      # clientId and clientSecret must be kept: the API validates them on
-      # update and rejects the request with "Invalid ClientID provided" if
-      # they are missing. Only .state is server-managed and read-only.
       del(.state)
       | .grantTypes = ["authorization_code", "client_credentials", "refresh_token"]
       | .publicClient = false
@@ -411,8 +407,6 @@ if [ -n "$ALL_RESOURCES" ]; then
   debug "names: $(echo "$ALL_RESOURCES" | jq -r '[.apiResources[]?.name] | join(", ")' 2>/dev/null)"
 
   for RESOURCE_NAME in "${RESOURCE_NAMES[@]}"; do
-    # Exact match first, then case-insensitive, since Asgardeo renames these
-    # slightly between versions.
     RESOURCE_ID=$(echo "$ALL_RESOURCES" | jq -r --arg name "$RESOURCE_NAME" \
       '.apiResources[]? | select(.name == $name) | .id' | head -n1)
 
@@ -440,7 +434,6 @@ if [ -n "$ALL_RESOURCES" ]; then
     if api_call POST "${BASE_URL}/api/server/v1/applications/${APP_ID}/authorized-apis" "$AUTHORIZE_PAYLOAD"; then
       ok "Authorized ${RESOURCE_NAME}"
     else
-      # 409 just means it is already authorized.
       if [ "$HTTP_STATUS" = "409" ]; then
         ok "${RESOURCE_NAME} already authorized"
       elif [ "$HTTP_STATUS" = "403" ]; then
@@ -462,6 +455,8 @@ step "Creating application roles"
 
 ROLES_ENDPOINT="${BASE_URL}/scim2/v2/Roles"
 SUPER_ADMIN_ROLE_ID=""
+HIRING_MANAGER_ROLE_ID=""
+INTERVIEWER_ROLE_ID=""
 
 for ROLE_NAME in "Super Admin" "Hiring Manager" "Interviewer"; do
   ROLE_ID=""
@@ -492,7 +487,11 @@ for ROLE_NAME in "Super Admin" "Hiring Manager" "Interviewer"; do
     fi
   fi
 
-  [ "$ROLE_NAME" = "Super Admin" ] && SUPER_ADMIN_ROLE_ID="$ROLE_ID"
+  case "$ROLE_NAME" in
+    "Super Admin")    SUPER_ADMIN_ROLE_ID="$ROLE_ID" ;;
+    "Hiring Manager")  HIRING_MANAGER_ROLE_ID="$ROLE_ID" ;;
+    "Interviewer")     INTERVIEWER_ROLE_ID="$ROLE_ID" ;;
+  esac
 done
 
 step "Fetching JWKS URI and issuer"
@@ -621,33 +620,60 @@ elif [ -n "$USER_ID" ]; then
   warn "Super Admin role id unknown, assign the role manually in the console"
 fi
 
-# UPDATING .envs
-# if api_call GET "${BASE_URL}/api/server/v1/applications/${APP_ID}"; then
-#   CLIENT_ID=$(echo "$HTTP_BODY" | jq -r '.clientId // empty')
-#   CLIENT_SECRET=$(echo "$HTTP_BODY" | jq -r '.clientSecret // empty')
-# fi
+# ---------------------------------------------------------------------------
+# .env output
 #
-# echo ""
-# echo "──────────────────────────────────────────────────────────"
-# echo "📄 frontend/.env"
-# echo "──────────────────────────────────────────────────────────"
-# echo "NEXT_PUBLIC_ASGARDEO_BASE_URL=${BASE_URL}"
-# echo "NEXT_PUBLIC_ASGARDEO_CLIENT_ID=${CLIENT_ID}"
-# echo "ASGARDEO_CLIENT_SECRET=${CLIENT_SECRET}"
-# echo "NEXT_PUBLIC_ASGARDEO_SCOPES=\"${FULL_SCOPES}\""
-# echo ""
-# echo "──────────────────────────────────────────────────────────"
-# echo "📄 backend/.env"
-# echo "──────────────────────────────────────────────────────────"
-# echo "ASGARDEO_JWKS_URL=${JWKS_URI}"
-# echo "ASGARDEO_ISSUER=${ISSUER}"
-# echo "──────────────────────────────────────────────────────────"
+# Fetches the app's clientId/clientSecret, then prints exactly the variables
+# your actual frontend/.env and backend/.env files use.
+# ---------------------------------------------------------------------------
+step "Preparing .env values"
+
+CLIENT_ID=""
+CLIENT_SECRET=""
+if api_call GET "${BASE_URL}/api/server/v1/applications/${APP_ID}"; then
+  CLIENT_ID=$(echo "$HTTP_BODY" | jq -r '.clientId // empty')
+  CLIENT_SECRET=$(echo "$HTTP_BODY" | jq -r '.clientSecret // empty')
+fi
+
+if [ -z "$CLIENT_SECRET" ]; then
+  warn "Client secret was not returned (Asgardeo only shows it once, at creation)."
+  warn "If this app already existed from a previous run, regenerate the secret"
+  warn "manually in the console under Protocol > Client secret, then paste it in below."
+fi
+
+echo ""
+echo "──────────────────────────────────────────────────────────"
+echo "📄 frontend/.env"
+echo "──────────────────────────────────────────────────────────"
+echo "NEXT_PUBLIC_ASGARDEO_BASE_URL=\"${BASE_URL}\""
+echo "NEXT_PUBLIC_ASGARDEO_CLIENT_ID=\"${CLIENT_ID}\""
+echo "ASGARDEO_CLIENT_SECRET=\"${CLIENT_SECRET}\""
+echo "NEXT_PUBLIC_ASGARDEO_SCOPES=\"${FULL_SCOPES}\""
+echo ""
+echo "# These two look like duplicates of the vars above (ASGARDEO_SECRET vs"
+echo "# ASGARDEO_CLIENT_SECRET, ASGARDEO_CLIENT_ID vs NEXT_PUBLIC_ASGARDEO_CLIENT_ID)."
+echo "# Filling them with the same values so nothing breaks either way, but worth"
+echo "# checking your code for which one is actually read and removing the other."
+echo "ASGARDEO_SECRET=\"${CLIENT_SECRET}\""
+echo "ASGARDEO_CLIENT_ID=\"${CLIENT_ID}\""
+echo ""
+echo "# Not set automatically, this isn't a tenant-level value the API returns."
+echo "# Check what your asgardeo-nextjs SDK config expects here."
+echo "NEXT_PUBLIC_ASGARDEO_SIGN_IN_URL="
+echo ""
+echo "ASGARDEO_SUPER_ADMIN_ROLE_ID=\"${SUPER_ADMIN_ROLE_ID}\""
+echo "ASGARDEO_HIRING_MANAGER_ROLE_ID=\"${HIRING_MANAGER_ROLE_ID}\""
+echo "ASGARDEO_INTERVIEWER_ROLE_ID=\"${INTERVIEWER_ROLE_ID}\""
+echo ""
+echo "──────────────────────────────────────────────────────────"
+echo "📄 backend/.env"
+echo "──────────────────────────────────────────────────────────"
+echo "ASGARDEO_JWKS_URL=${JWKS_URI}"
+echo "ASGARDEO_ISSUER=${ISSUER}"
+echo "──────────────────────────────────────────────────────────"
 
 echo ""
 echo "🎉 DONE"
 echo "   App id:   ${APP_ID}"
 echo "   Console:  https://console.asgardeo.io/t/${ASGARDEO_ORG}/develop/applications/${APP_ID}"
 [ -n "$TEST_EMAIL" ] && echo "   Login as: ${CREATED_USERNAME:-$TEST_EMAIL} (Super Admin)"
-echo ""
-echo "   .env output is commented out at the bottom of this script."
-echo "   Uncomment that block when you want the client ID/secret printed."

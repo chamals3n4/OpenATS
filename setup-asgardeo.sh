@@ -10,6 +10,10 @@
 #        - API Resource Management API
 #        - Role Management API (v2)
 #        - SCIM2 Users API
+#        - Claim Metadata Management API (optional, lets the script look up
+#          the correct OIDC claim names for access token attributes; if not
+#          authorized, that one step is skipped with a warning and everything
+#          else still runs normally)
 #   3. curl and jq installed
 #
 # Usage:
@@ -138,7 +142,8 @@ internal_role_mgt_create internal_role_mgt_view internal_role_mgt_update \
 internal_role_mgt_delete internal_role_mgt_users_update internal_role_mgt_groups_update \
 internal_role_mgt_permissions_update \
 internal_user_mgt_create internal_user_mgt_view internal_user_mgt_list \
-internal_user_mgt_update internal_user_mgt_delete"
+internal_user_mgt_update internal_user_mgt_delete \
+internal_claim_meta_view"
 
 TOKEN_RAW=$(curl -sS -m 60 -w $'\n%{http_code}' -X POST "${BASE_URL}/oauth2/token" \
   -H "Content-Type: application/x-www-form-urlencoded" \
@@ -230,67 +235,6 @@ else
 fi
 
 # OIDC protocol config
-step "Configuring OIDC protocol settings"
-
-OIDC_CURRENT=""
-if api_call GET "${BASE_URL}/api/server/v1/applications/${APP_ID}/inbound-protocols/oidc"; then
-  OIDC_CURRENT="$HTTP_BODY"
-else
-  warn "Could not read current OIDC config, will send a fresh one"
-fi
-
-if [ -n "$OIDC_CURRENT" ]; then
-  OIDC_PAYLOAD=$(echo "$OIDC_CURRENT" | jq \
-    --arg redirectUri "$REDIRECT_URI" \
-    '
-      del(.state)
-      | .grantTypes = ["authorization_code", "client_credentials", "refresh_token"]
-      | .publicClient = false
-      | .callbackURLs = [$redirectUri]
-      | .allowedOrigins = ["http://localhost:3000"]
-      | .accessToken = ((.accessToken // {})
-          | .type = "JWT"
-          | .userAccessTokenExpiryInSeconds = 3600
-          | .applicationAccessTokenExpiryInSeconds = 3600
-          | .accessTokenAttributes = [
-              "http://wso2.org/claims/emailaddress",
-              "http://wso2.org/claims/givenname",
-              "http://wso2.org/claims/lastname",
-              "http://wso2.org/claims/roles",
-              "http://wso2.org/claims/applicationRoles"
-            ])
-      | .refreshToken = ((.refreshToken // {}) | .renewRefreshToken = true)
-    ')
-else
-  OIDC_PAYLOAD=$(jq -n --arg redirectUri "$REDIRECT_URI" \
-    '{
-      grantTypes: ["authorization_code", "client_credentials", "refresh_token"],
-      publicClient: false,
-      callbackURLs: [$redirectUri],
-      allowedOrigins: [$redirectUri],
-      accessToken: {
-        type: "JWT",
-        userAccessTokenExpiryInSeconds: 3600,
-        applicationAccessTokenExpiryInSeconds: 3600,
-        accessTokenAttributes: [
-          "http://wso2.org/claims/emailaddress",
-          "http://wso2.org/claims/givenname",
-          "http://wso2.org/claims/lastname",
-          "http://wso2.org/claims/roles",
-          "http://wso2.org/claims/applicationRoles"
-        ]
-      },
-      refreshToken: { renewRefreshToken: true }
-    }')
-fi
-
-if api_call PUT "${BASE_URL}/api/server/v1/applications/${APP_ID}/inbound-protocols/oidc" "$OIDC_PAYLOAD"; then
-  ok "Grant types, allowed origins, JWT access token attributes and refresh token renewal set"
-else
-  show_error "Configuring OIDC protocol"
-  warn "Set grant types and JWT access token manually on the app's Protocol tab"
-fi
-
 step "Configuring requested claims"
 
 CLAIMS_PAYLOAD='{
@@ -311,6 +255,156 @@ if api_call PATCH "${BASE_URL}/api/server/v1/applications/${APP_ID}" "$CLAIMS_PA
 else
   show_error "Configuring claims"
   warn "Add these on the app's User Attributes tab manually if needed"
+fi
+
+# ---------------------------------------------------------------------------
+# Discover the real OIDC claim names for access token attributes.
+#
+# Confirmed against WSO2's own OAuth admin service source: accessTokenAttributes
+# is validated against the KEYS of the OIDC-dialect-to-local claim mapping,
+# meaning it wants the short OIDC claim name (e.g. "email", "given_name"),
+# not the local claim URI ("http://wso2.org/claims/emailaddress") that looks
+# like the obvious value to send. Sending the local URI is what caused
+# OAUTH-60001 every time, regardless of step ordering.
+#
+# This looks up the tenant's actual mapping rather than hardcoding names,
+# since the WSO2-custom ones (roles, application roles) aren't guaranteed to
+# be named the same across tenants. Needs internal_claim_meta_view; if the
+# M2M app wasn't authorized for Claim Metadata Management API, this step is
+# skipped entirely and access token attributes just won't be set, everything
+# else in the script is unaffected.
+# ---------------------------------------------------------------------------
+step "Looking up OIDC claim names for access token attributes"
+
+ACCESS_TOKEN_ATTRS_JSON="[]"
+
+if api_call GET "${BASE_URL}/api/server/v1/claim-dialects?limit=100"; then
+  OIDC_DIALECT_ID=$(echo "$HTTP_BODY" | jq -r '
+    ( if type == "array" then . else (.claimDialects // .) end )
+    | map(select((.dialectURI // "") == "http://wso2.org/oidc/claim"))
+    | .[0].id // empty' 2>/dev/null)
+
+  if [ -n "$OIDC_DIALECT_ID" ]; then
+    debug "OIDC dialect id: ${OIDC_DIALECT_ID}"
+    if api_call GET "${BASE_URL}/api/server/v1/claim-dialects/${OIDC_DIALECT_ID}/claims?limit=200"; then
+      EXTERNAL_CLAIMS="$HTTP_BODY"
+      TARGET_LOCAL_URIS=(
+        "http://wso2.org/claims/emailaddress"
+        "http://wso2.org/claims/givenname"
+        "http://wso2.org/claims/lastname"
+        "http://wso2.org/claims/roles"
+        "http://wso2.org/claims/applicationRoles"
+      )
+      FOUND_ATTRS=()
+      for LOCAL_URI in "${TARGET_LOCAL_URIS[@]}"; do
+        OIDC_NAME=$(echo "$EXTERNAL_CLAIMS" | jq -r --arg local "$LOCAL_URI" \
+          '( if type == "array" then . else (.[] // .) end )
+           | map(select((.mappedLocalClaimURI // "") == $local))
+           | .[0].claimURI // empty' 2>/dev/null)
+        if [ -n "$OIDC_NAME" ]; then
+          debug "${LOCAL_URI} -> ${OIDC_NAME}"
+          FOUND_ATTRS+=("$OIDC_NAME")
+        else
+          debug "${LOCAL_URI} has no OIDC dialect mapping in this tenant, skipping"
+        fi
+      done
+
+      if [ ${#FOUND_ATTRS[@]} -gt 0 ]; then
+        ACCESS_TOKEN_ATTRS_JSON=$(printf '%s\n' "${FOUND_ATTRS[@]}" | jq -R . | jq -s .)
+        ok "Found ${#FOUND_ATTRS[@]} of 5 claims mapped to the OIDC dialect"
+      else
+        warn "None of the target claims are mapped to the OIDC dialect in this tenant, skipping access token attributes"
+      fi
+    else
+      warn "Could not list OIDC dialect claims, skipping access token attributes"
+    fi
+  else
+    warn "OIDC claim dialect not found in this tenant, skipping access token attributes"
+  fi
+else
+  warn "Could not look up claim dialects (M2M app may be missing Claim Metadata Management API), skipping access token attributes"
+fi
+
+# ---------------------------------------------------------------------------
+# OIDC protocol config
+#
+# Runs after claims are requested and after OIDC claim names are discovered
+# above.
+# ---------------------------------------------------------------------------
+step "Configuring OIDC protocol settings"
+
+OIDC_CURRENT=""
+if api_call GET "${BASE_URL}/api/server/v1/applications/${APP_ID}/inbound-protocols/oidc"; then
+  OIDC_CURRENT="$HTTP_BODY"
+else
+  warn "Could not read current OIDC config, will send a fresh one"
+fi
+
+# Critical fields only when include_attrs=false: grant types, callback URLs,
+# allowed origins, JWT type, refresh token renewal. When true, also sets
+# accessTokenAttributes using the OIDC claim names discovered above (falls
+# back to an empty array if discovery found nothing, which Asgardeo accepts
+# fine, it just means no extra attributes get added to the token).
+build_oidc_payload() {
+  local include_attrs="$1"
+  if [ -n "$OIDC_CURRENT" ]; then
+    echo "$OIDC_CURRENT" | jq \
+      --arg redirectUri "$REDIRECT_URI" \
+      --argjson includeAttrs "$include_attrs" \
+      --argjson attrs "$ACCESS_TOKEN_ATTRS_JSON" \
+      '
+        del(.state)
+        | .grantTypes = ["authorization_code", "client_credentials", "refresh_token"]
+        | .publicClient = false
+        | .callbackURLs = [$redirectUri]
+        | .allowedOrigins = [$redirectUri]
+        | .accessToken = ((.accessToken // {})
+            | .type = "JWT"
+            | .userAccessTokenExpiryInSeconds = 3600
+            | .applicationAccessTokenExpiryInSeconds = 3600
+            | if $includeAttrs then .accessTokenAttributes = $attrs else . end)
+        | .refreshToken = ((.refreshToken // {}) | .renewRefreshToken = true)
+      '
+  else
+    jq -n --arg redirectUri "$REDIRECT_URI" --argjson includeAttrs "$include_attrs" --argjson attrs "$ACCESS_TOKEN_ATTRS_JSON" \
+      '{
+        grantTypes: ["authorization_code", "client_credentials", "refresh_token"],
+        publicClient: false,
+        callbackURLs: [$redirectUri],
+        allowedOrigins: [$redirectUri],
+        accessToken: ({
+          type: "JWT",
+          userAccessTokenExpiryInSeconds: 3600,
+          applicationAccessTokenExpiryInSeconds: 3600
+        } + (if $includeAttrs then { accessTokenAttributes: $attrs } else {} end)),
+        refreshToken: { renewRefreshToken: true }
+      }'
+  fi
+}
+
+OIDC_PAYLOAD=$(build_oidc_payload true)
+
+if api_call PUT "${BASE_URL}/api/server/v1/applications/${APP_ID}/inbound-protocols/oidc" "$OIDC_PAYLOAD"; then
+  ok "Grant types, allowed origins, JWT access token attributes and refresh token renewal set"
+  # Refresh the current config so the follow-up claims/login-flow steps below
+  # have the latest state to work from.
+  api_call GET "${BASE_URL}/api/server/v1/applications/${APP_ID}/inbound-protocols/oidc" && OIDC_CURRENT="$HTTP_BODY"
+else
+  ATTRS_ERROR="$HTTP_BODY"
+  warn "Full OIDC update rejected (HTTP ${HTTP_STATUS}), even with discovered OIDC claim names:"
+  echo "$ATTRS_ERROR" | jq . 2>/dev/null || echo "$ATTRS_ERROR"
+  info "Retrying without access token attributes so grant types and allowed origins still get set..."
+
+  OIDC_PAYLOAD_CORE=$(build_oidc_payload false)
+  if api_call PUT "${BASE_URL}/api/server/v1/applications/${APP_ID}/inbound-protocols/oidc" "$OIDC_PAYLOAD_CORE"; then
+    ok "Grant types, allowed origins, JWT access token and refresh token renewal set"
+    api_call GET "${BASE_URL}/api/server/v1/applications/${APP_ID}/inbound-protocols/oidc" && OIDC_CURRENT="$HTTP_BODY"
+    warn "Access token attributes were skipped. Set them manually on the app's Protocol tab"
+    warn "under 'Access Token', the field there shows you the exact valid claim names for this tenant."
+  else
+    show_error "Configuring OIDC protocol"
+    warn "Set grant types, allowed origins and JWT access token manually on the app's Protocol tab"
+  fi
 fi
 
 step "Setting username/password login flow"

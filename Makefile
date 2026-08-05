@@ -82,3 +82,9 @@ lint:
 
 clean:
 	rm -rf node_modules backend/node_modules frontend/node_modules
+
+test:
+	pnpm test
+
+test-e2e:
+	pnpm test:e2e

@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createRemoteJWKSet, jwtVerify, errors as joseErrors } from "jose";
 import { db } from "../db";
 import { users } from "../db/schema/users";
 import { eq } from "drizzle-orm";
@@ -113,7 +113,18 @@ export const authMiddleware = async (
       .limit(1);
 
     if (!user) {
-      // JIT provision — insert once on first login, never update after
+      // The `sub` can change for an existing account when the Asgardeo tenant
+      // or user is re-provisioned. Email is the stable identity, so reconcile
+      // onto the existing row instead of colliding with its unique constraint.
+      [user] = await db
+        .update(users)
+        .set({ asgardeoUserId: sub, updatedAt: new Date() })
+        .where(eq(users.email, email))
+        .returning();
+    }
+
+    if (!user) {
+      // JIT provision — genuinely first login for this email
       [user] = await db
         .insert(users)
         .values({ asgardeoUserId: sub, firstName, lastName, email })
@@ -134,8 +145,16 @@ export const authMiddleware = async (
     req.user = { ...user, role };
     next();
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : String(err);
-    logger.error("[authMiddleware] error:", msg);
-    res.status(401).json({ error: "Invalid or expired token" });
+    // Only genuine token problems are a 401. Anything else (DB down, unique
+    // constraint, bug) is a server fault — reporting it as "invalid token"
+    // sends debugging down the wrong path entirely.
+    if (err instanceof joseErrors.JOSEError) {
+      logger.warn(`[authMiddleware] token rejected (${err.code}): ${err.message}`);
+      res.status(401).json({ error: "Invalid or expired token" });
+      return;
+    }
+
+    logger.error("[authMiddleware] unexpected error:", err);
+    res.status(500).json({ error: "Authentication failed" });
   }
 };

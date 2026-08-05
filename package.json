@@ -7,9 +7,15 @@
     "dev:backend": "pnpm --filter ./backend dev",
     "dev:frontend": "pnpm --filter ./frontend dev",
     "build": "pnpm --filter ./backend build && pnpm --filter ./frontend build",
-    "lint": "pnpm --filter ./backend lint && pnpm --filter ./frontend lint"
+    "lint": "pnpm --filter ./backend lint && pnpm --filter ./frontend lint",
+    "test": "pnpm --filter ./backend test:run",
+    "test:watch": "pnpm --filter ./backend test",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
-    "concurrently": "^9.0.0"
+    "@playwright/test": "^1.62.1",
+    "@types/node": "^26.1.2",
+    "concurrently": "^9.0.0",
+    "typescript": "^5.9.3"
   }
 }

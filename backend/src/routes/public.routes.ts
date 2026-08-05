@@ -4,32 +4,32 @@ import multer from "multer";
 import {
   getPublicJobById,
   listPublishedCareersJobs,
-} from "../controllers/job.controller";
-import { getPublicCompany } from "../controllers/company.controller";
+} from "../modules/job/job.controller";
+import { getPublicCompany } from "../modules/company/company.controller";
 import { checkOrigins } from "../middlewares/allowedOrigins.middleware";
-import { getCustomQuestions } from "../controllers/custom-question.controller";
-import { applyForJob } from "../controllers/candidate.controller";
-import { uploadFile } from "../controllers/upload.controller";
+import { getCustomQuestions } from "../modules/custom-question/custom-question.controller";
+import { applyForJob } from "../modules/candidate/candidate.controller";
+import { uploadFile } from "../modules/upload/upload.controller";
 import {
   getAssessmentForCandidate,
   startAssessment,
   submitAssessmentAnswer,
   completeAssessment,
-} from "../controllers/assessment-execution.controller";
+} from "../modules/assessment-execution/assessment-execution.controller";
 import {
   acceptPublicOffer,
   declinePublicOffer,
   getPublicOfferByToken,
-} from "../controllers/offer.controller";
+} from "../modules/offer/offer.controller";
 import { db } from "../db";
 import { candidates, jobs, candidateInterviews, users } from "../db/schema";
 import { and, eq, ne } from "drizzle-orm";
 import rateLimit from "express-rate-limit";
 import logger from "../utils/logger";
-import { mailService } from "../services/mail.service";
-import { socketService } from "../services/socket.service";
-import { integrationConnectionService } from "../integrations/connection.service";
-import { getProviderClient } from "../integrations/registry";
+import { mailService } from "../shared/services/mail.service";
+import { socketService } from "../shared/services/socket.service";
+import { integrationConnectionService } from "../shared/integrations/connection.service";
+import { getProviderClient } from "../shared/integrations/registry";
 
 const router: Router = Router();
 
@@ -375,7 +375,7 @@ router.patch(
       let googleEventId: string | null = null;
       if (candidate && iv.eventName) {
         try {
-          const gcal = await import("../services/google-calendar.service");
+          const gcal = await import("../shared/services/google-calendar.service");
           googleEventId = await gcal.createCalendarEvent({
             interviewId: iv.id,
             candidateName: `${candidate.firstName} ${candidate.lastName}`,

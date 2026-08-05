@@ -1,19 +1,19 @@
 import { Router } from "express";
-import companyRoutes from "./company.routes";
-import jobRoutes from "./job.routes";
-import userRoutes from "./user.routes";
-import templateRoutes from "./template.routes";
-import assessmentRoutes from "./assessment.routes";
-import candidateRoutes from "./candidate.routes";
-import assessmentExecutionRoutes from "./assessment-execution.routes";
-import offerRoutes from "./offer.routes";
-import uploadRoutes from "./upload.routes";
-import chatRoutes from "./chat.routes";
-import reportRoutes from "./report.routes";
-import settingsRoutes from "./settings.routes";
-import interviewRoutes from "./interviews.routes";
-import rejectionRoutes from "./rejections.routes";
-import integrationRoutes from "./integrations.routes";
+import companyRoutes from "../modules/company/company.routes";
+import jobRoutes from "../modules/job/job.routes";
+import userRoutes from "../modules/user/user.routes";
+import templateRoutes from "../modules/template/template.routes";
+import assessmentRoutes from "../modules/assessment/assessment.routes";
+import candidateRoutes from "../modules/candidate/candidate.routes";
+import assessmentExecutionRoutes from "../modules/assessment-execution/assessment-execution.routes";
+import offerRoutes from "../modules/offer/offer.routes";
+import uploadRoutes from "../modules/upload/upload.routes";
+import chatRoutes from "../modules/chat/chat.routes";
+import reportRoutes from "../modules/report/report.routes";
+import settingsRoutes from "../modules/settings/settings.routes";
+import interviewRoutes from "../modules/interview/interviews.routes";
+import rejectionRoutes from "../modules/rejection/rejections.routes";
+import integrationRoutes from "../modules/integrations/integrations.routes";
 
 const router: Router = Router();
 

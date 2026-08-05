@@ -5,7 +5,7 @@ import { validateEnv } from "./config/env";
 const env = validateEnv();
 
 import app from "./app";
-import { socketService } from "./services/socket.service";
+import { socketService } from "./shared/services/socket.service";
 import { subscribeToCvAnalysisEvents } from "./queues/cv-analysis/events";
 import logger from "./utils/logger";
 

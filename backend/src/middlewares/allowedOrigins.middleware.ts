@@ -1,5 +1,5 @@
 import type { NextFunction, Request, Response } from "express";
-import { pageSettingsService } from "../services/page-settings.service";
+import { pageSettingsService } from "../modules/settings/page-settings.service";
 
 const FORWARDED = "x-openats-browser-origin";
 

@@ -4,7 +4,7 @@ import {
   type CvAnalysisJobData,
 } from "./queue";
 import { createRedisConnection } from "../../config/redis";
-import { cvAnalysisService } from "../../services/cv-analysis.service";
+import { cvAnalysisService } from "../../modules/candidate/cv-analysis.service";
 import { publishCvAnalysisEvent } from "./events";
 import logger from "../../utils/logger";
 

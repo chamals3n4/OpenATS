@@ -52,7 +52,7 @@
     "@types/helmet": "^4.0.0",
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.0.0",
-    "@types/node": "^25.2.2",
+    "@types/node": "^25.9.5",
     "@types/pg": "^8.16.0",
     "@types/socket.io": "^3.0.2",
     "@types/supertest": "^7.2.0",

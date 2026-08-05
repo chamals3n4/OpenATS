@@ -104,11 +104,12 @@ Two independent packages - not a monorepo, no shared `package.json` or lockfile.
 | `backend/src/queues/cv-analysis` | The BullMQ queue, worker, and event bridge for background CV scoring          |
 | `backend/src/db/schema`          | Drizzle schema, one file per domain                                           |
 | `backend/drizzle`                | Generated migration SQL - always committed, never hand-edited                 |
-| `docs/`                          | Setup guides, including the full [IAM setup walkthrough](./docs/IAM_SETUP.md) |
+| `e2e/`                           | Playwright end-to-end tests, at the root because they span both packages      |
+| `docs/`                          | [IAM setup](./docs/IAM_SETUP.md) and [testing guide](./docs/TESTING.md)       |
 
 ## Quick start
 
-You need Node.js 18+, Docker, and pnpm (`npm install -g pnpm`).
+You need Node.js 22+, Docker, and pnpm (`npm install -g pnpm`).
 
 ```sh
 git clone https://github.com/chamals3n4/OpenATS.git && cd OpenATS

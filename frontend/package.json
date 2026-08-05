@@ -52,7 +52,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@tanstack/react-query-devtools": "^5.95.2",
-    "@types/node": "^20",
+    "@types/node": "^25.9.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",

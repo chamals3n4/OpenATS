@@ -4,7 +4,8 @@ OpenATS backend was written using Express.js.
 
 ## How It Works
 
-- **Request flow**: `src/server.ts` starts the HTTP server, `src/app.ts` wires up middleware and routes, `src/routes/index.ts` mounts per-resource route files (candidates, jobs, interviews, offers, etc.), which delegate to controllers and then services.
+- **Folder layout**: code is grouped by feature under `src/modules/<feature>/`, each holding that feature's `*.controller.ts`, `*.service.ts`, and `*.routes.ts` together (for example `src/modules/candidate/`). There are no top-level `controllers/` or `services/` folders. Code shared by two or more modules lives in `src/shared/services/` (mail, socket, r2, google-calendar) and `src/shared/integrations/` (external provider infra).
+- **Request flow**: `src/server.ts` starts the HTTP server, `src/app.ts` wires up middleware and routes, `src/routes/index.ts` mounts each module's routes file, which delegates to that module's controller and then its service.
 - **Authentication**: WSO2 Asgardeo JWTs are verified in `src/middlewares/auth.middleware.ts`, which maps roles (`super_admin`, `hiring_manager`, `interviewer`) and auto-provisions new users on first login.
 - **Public routes**: Career page and application endpoints under `/public/*` use origin-based access control instead of auth middleware. Assessment links use token-based auth.
 - **Database**: PostgreSQL via Drizzle ORM. Schema files live in `src/db/schema/`, one per domain.
@@ -15,20 +16,23 @@ OpenATS backend was written using Express.js.
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 22+
 - pnpm
 - A running PostgreSQL database and Redis instance (see `CONTRIBUTING.md` for local Docker setup)
 - `.env` file configured (copy from `.env.example`)
 
 ### Install dependencies
 
+OpenATS is a pnpm workspace, so install once from the **repo root**, not from `backend/`:
+
 ```bash
+cd ..
 pnpm install
 ```
 
 ### Start Postgres and Redis with Docker
 
-A `docker-compose.yml` is provided so you don't need to install or configure either manually:
+A `docker-compose.yml` is provided at the **repo root** so you don't need to install or configure either manually. Run these from the root:
 
 ```bash
 docker compose up -d
@@ -101,10 +105,14 @@ pnpm dev:worker
 
 ### Run tests
 
+Unit and integration tests use Vitest and live in `tests/`. Integration tests need the separate test database on port 5433, which is the `postgres-test` service in the root `docker-compose.yml`. See `docs/TESTING.md` for the full guide and first-time setup.
+
 ```bash
-pnpm test:run          # single run
-pnpm vitest run tests/candidates/candidate.service.test.ts   # a single file
+pnpm test:run                                    # single run
+pnpm vitest run tests/unit/object.util.test.ts   # a single file
 ```
+
+End-to-end tests (Playwright) live in `e2e/` at the repo root and are run from there with `pnpm test:e2e`.
 
 ### Build for production
 

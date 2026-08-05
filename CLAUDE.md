@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-OpenATS is a self-hosted applicant tracking system. It is **not a monorepo** — `backend/` and `frontend/` are independent packages with separate `package.json` and `pnpm-lock.yaml` files. Install and run them independently.
+OpenATS is a self-hosted applicant tracking system. It is a **pnpm workspace**: `backend/` and `frontend/` are separate packages sharing one root `package.json` and one root `pnpm-lock.yaml`. Run `pnpm install` once at the root, and use the root scripts (`pnpm dev`, `pnpm build`, `pnpm test`) or `pnpm --filter ./backend <script>` to target one package.
 
 ## Commands
 
@@ -16,12 +16,11 @@ pnpm build            # tsc → dist/
 pnpm start            # node dist/src/server.js
 pnpm test             # vitest (watch mode)
 pnpm test:run         # vitest (single run)
-pnpm vitest run tests/health.test.ts                           # run one test file
-pnpm vitest run tests/candidates/candidate.service.test.ts
+pnpm vitest run tests/unit/object.util.test.ts                 # run one test file
 pnpm drizzle-kit generate   # generate migration SQL (always commit output)
 pnpm drizzle-kit migrate    # apply migrations to DB
 pnpm tsx src/db/seed.ts     # seed pipeline stages (required on first setup)
-docker compose up -d        # local Postgres (5432) + Redis (6379), see backend/docker-compose.yml
+docker compose up -d        # local Postgres (5432) + Redis (6379), see docker-compose.yml at the repo root
 ```
 
 ### Frontend (`frontend/`)
@@ -56,7 +55,7 @@ pnpm lint     # eslint
 - DB connection: `backend/src/db/index.ts` — pg Pool with Neon scale-to-zero handling (production uses Neon; local dev can point `DATABASE_URL` at any Postgres, including the local Docker container).
 - When changing the schema: run `pnpm drizzle-kit generate` in `backend/`, then **commit the generated `drizzle/*.sql` files**.
 - The seed (`backend/src/db/seed.ts`) creates 5 default pipeline stages (Applied, Screening, Interviewed, Offer, Rejected) - required for the app to function.
-- **Local Postgres + Redis**: `backend/docker-compose.yml` runs both as containers (`openats`/`openats`/`openats` for user/password/db on Postgres; Redis with no auth). Not required — Neon/hosted Redis work too — but this is the fastest path for local dev. See `CONTRIBUTING.md` for the full setup flow.
+- **Local Postgres + Redis**: `docker-compose.yml` at the repo root runs both as containers (`openats`/`openats`/`openats` for user/password/db on Postgres; Redis with no auth). Not required — Neon/hosted Redis work too — but this is the fastest path for local dev. See `CONTRIBUTING.md` for the full setup flow.
 
 ### Frontend
 
@@ -71,10 +70,15 @@ pnpm lint     # eslint
 
 ## Testing
 
-- All tests live in `backend/tests/` and are excluded from `tsconfig.json` compilation.
-- Service tests (`*.service.test.ts`) define their own Zod schemas — they do NOT import real service code or DB schemas. Pure unit/schema validation, no DB.
-- Security tests (`*.security.test.ts`) test SQL injection and XSS resistance via Zod validation.
-- The only integration test is `tests/health.test.ts` (uses supertest against the Express app).
+See `docs/TESTING.md` for the full guide. In short:
+
+- **Unit + integration tests** use Vitest and live in `backend/tests/` (`unit/`, `integration/`), excluded from `tsconfig.json` compilation. Config is `backend/vitest.config.mts` (`.mts` because the backend is a CommonJS package).
+- **End-to-end tests** use Playwright and live in `e2e/` at the repo root, because they span both packages. Config is `playwright.config.ts`, and `tsconfig.json` at the root covers them.
+- **Integration tests hit a real database**: a separate Postgres on port **5433** (`postgres-test` in `docker-compose.yml`), never the dev database on 5432. `backend/tests/setup.ts` loads `backend/.env.test` with `override: true` to enforce this.
+- `backend/.env.test` is committed on purpose. It holds no secrets, only dummy values, so that tests pass on pull requests from forks (GitHub never gives secrets to those).
+- E2E tests also use the 5433 database, via `webServer.env` in `playwright.config.ts`. `reuseExistingServer` is `false` so an already-running `make dev` cannot be adopted, which would silently point tests at the dev database. **Stop `make dev` before running E2E.**
+- Commands: `pnpm test` (unit + integration), `pnpm test:e2e` (Playwright), `pnpm exec tsc --noEmit` (type-check the E2E specs, which Playwright does not do).
+- CI runs tests, type-check, and the backend build on every pull request (`.github/workflows/test.yml`). It deliberately uses no secrets.
 - No frontend tests exist.
 
 ## Environment Variables

@@ -44,6 +44,5 @@ coverage/
 .cache/
 temp/
 tmp/
-EOF
 
 .env.prod

@@ -1,0 +1,68 @@
+name: Tests
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_USER: openats
+          POSTGRES_PASSWORD: openats
+          POSTGRES_DB: openats_test
+        # 5433 on the runner to match backend/.env.test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Apply migrations to the test database
+        working-directory: backend
+        env:
+          DATABASE_URL: postgresql://openats:openats@localhost:5433/openats_test
+        run: pnpm drizzle-kit migrate
+
+      - name: Run unit and integration tests
+        run: pnpm test
+
+      - name: Type-check end-to-end specs
+        run: pnpm exec tsc --noEmit
+
+      - name: Build backend
+        run: pnpm --filter ./backend build

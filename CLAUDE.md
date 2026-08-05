@@ -81,6 +81,12 @@ See `docs/TESTING.md` for the full guide. In short:
 - CI runs tests, type-check, and the backend build on every pull request (`.github/workflows/test.yml`). It deliberately uses no secrets.
 - No frontend tests exist.
 
+## Roadmap
+
+`docs/GA_ROADMAP.md` tracks everything remaining before v1.0, grouped by release, with a status on every item (🔴 Planned, 🟡 In progress, 🟢 Done).
+
+**When you complete work that appears on that roadmap, update the item's status in the same change.** If you finish something that is not listed, add a row for it. An out-of-date roadmap is worse than none, because it states things that are not true.
+
 ## Environment Variables
 
 Two separate `.env` files are required (copy from `.env.example` in each directory):

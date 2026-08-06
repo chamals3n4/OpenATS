@@ -22,9 +22,11 @@ The focus of this phase is correctness and safety, not new features. Nothing her
 
 | Item | Why it matters | Status |
 | --- | --- | --- |
-| Authenticate Socket.IO connections | Sockets currently accept **any** connection with `cors: "*"` and no auth. An anonymous client can emit `send_job_message` with any `senderId` and write to the database impersonating a user. **This is the one true GA blocker.** | 🔴 Planned |
-| Scope socket broadcasts to rooms | `notifyStageChanged`, `notifyOfferChanged`, and `notifyInterviewChanged` use `io.emit()` with no room, so every connected client receives candidate pipeline movements, offers, and interviews. | 🔴 Planned |
-| Take `senderId` from the JWT, not the payload | The client currently supplies its own user id on socket writes. | 🔴 Planned |
+| Authenticate Socket.IO connections | Sockets currently accept **any** connection with `cors: "*"` and no auth. An anonymous client can emit `send_job_message` with any `senderId` and write to the database impersonating a user. **This is the one true GA blocker.** | 🟢 Done |
+| Scope socket broadcasts to rooms | `notifyStageChanged`, `notifyOfferChanged`, and `notifyInterviewChanged` use `io.emit()` with no room, so every connected client receives candidate pipeline movements, offers, and interviews. | 🟢 Done |
+| Take `senderId` from the JWT, not the payload | The client currently supplies its own user id on socket writes. | 🟢 Done |
+| Authorize socket room joins | Sockets now require authentication, but any logged-in user can still `join_job` for a job they are not on the hiring team for. Authentication closed the public hole, this closes the internal one. | 🔴 Planned |
+| Re-check socket tokens on reconnect | The token is read once when the dashboard layout renders. If it expires while a tab is open, reconnects fail silently and realtime stops until the page is refreshed. | 🔴 Planned |
 | Rate limit authenticated routes | Only `/public/*` is rate limited today. | 🔴 Planned |
 | Resolve dependency vulnerabilities | 52 reported (15 high). Real ones are `next` (DoS via Server Components), `sharp`, and `postcss`. `dompurify` arrives through `@asgardeo/nextjs` and may need an upstream fix. | 🔴 Planned |
 

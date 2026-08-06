@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+  # Lets deploy.yml run this suite as a gate before deploying.
+  workflow_call:
 
 jobs:
   test:

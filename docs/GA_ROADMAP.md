@@ -32,11 +32,11 @@ The focus of this phase is correctness and safety, not new features. Nothing her
 
 | Item | Why it matters | Status |
 | --- | --- | --- |
-| Add `set -e` to the deploy script | Without it, failed steps still report success because only the last command sets the exit code. Deploys have been silently failing since at least 3 Aug 2026. | 🔴 Planned |
-| Use `git reset --hard origin/main` | The VM has drifted (locally modified `pnpm-workspace.yaml`, stray `pnpm-lock.yaml`), which makes `git pull` abort. A hard reset removes drift permanently. | 🔴 Planned |
-| Install from the repo root, not `backend/` | The deploy still installs from `backend/`, which is wrong since the pnpm workspace conversion. | 🔴 Planned |
-| Health check after restart | `curl -fsS http://localhost:8080/health` at the end, so a crash-looping process does not report a green deploy. | 🔴 Planned |
-| Gate deploy on tests passing | `test.yml` and `deploy.yml` are independent, so a red build still deploys. | 🔴 Planned |
+| Add `set -e` to the deploy script | Without it, failed steps still report success because only the last command sets the exit code. Deploys have been silently failing since at least 3 Aug 2026. | 🟢 Done |
+| Use `git reset --hard origin/main` | The VM has drifted (locally modified `pnpm-workspace.yaml`, stray `pnpm-lock.yaml`), which makes `git pull` abort. A hard reset removes drift permanently. | 🟢 Done |
+| Install from the repo root, not `backend/` | The deploy still installs from `backend/`, which is wrong since the pnpm workspace conversion. | 🟢 Done |
+| Health check after restart | `curl -fsS http://localhost:8080/health` at the end, so a crash-looping process does not report a green deploy. | 🟢 Done |
+| Gate deploy on tests passing | `test.yml` and `deploy.yml` are independent, so a red build still deploys. | 🟢 Done |
 
 ### Testing
 

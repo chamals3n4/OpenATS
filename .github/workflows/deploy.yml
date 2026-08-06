@@ -8,7 +8,12 @@ on:
       - "backend/**"
 
 jobs:
+  # Deploy only runs if the full test suite passes.
+  test:
+    uses: ./.github/workflows/test.yml
+
   deploy:
+    needs: test
     runs-on: ubuntu-latest
 
     steps:
@@ -22,14 +27,29 @@ jobs:
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # Abort on the first failing command. Without this, a failed step
+            # is ignored and the job reports success because only the last
+            # command sets the exit code.
+            set -e
+
             export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" || true
+
             cd /home/azureuser/OpenATS
-            git pull origin main
-            cd backend
+
+            # reset --hard, not pull: any local drift on the VM makes a merge
+            # abort, which previously left the server on stale code.
+            git fetch origin main
+            git reset --hard origin/main
+
+            # Single pnpm workspace, so install from the repo root.
             pnpm install --frozen-lockfile
-            pnpm build
-            pnpm drizzle-kit migrate
-            cd ..
+            pnpm --filter ./backend build
+            pnpm --filter ./backend exec drizzle-kit migrate
+
             pm2 restart ecosystem.config.js --update-env
             pm2 save
+
+            # Fail the deploy if the app did not come back up.
+            sleep 5
+            curl -fsS http://localhost:8080/health

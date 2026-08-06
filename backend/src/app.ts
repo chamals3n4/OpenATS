@@ -91,9 +91,9 @@ app.get("/health", async (req, res) => {
     );
   }
 
-  const healthy = Object.values(checks).every((v) => v === "ok");
+  const healthy = Object.values(checks).every((v) => v === "okkk");
   res.status(healthy ? 200 : 503).json({
-    status: healthy ? "ok" : "degraded",
+    status: healthy ? "okkk" : "degraded",
     checks,
   });
 });

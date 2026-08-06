@@ -30,6 +30,8 @@ The focus of this phase is correctness and safety, not new features. Nothing her
 
 ### Deployment
 
+🟢 **Complete and verified in production on 6 Aug 2026.** A deliberate change to the `/health` response string was pushed and confirmed live at `api.openats.dev`, proving the VM now receives new code. Before this, deploys had been silently failing since at least 3 Aug 2026 while reporting success.
+
 | Item | Why it matters | Status |
 | --- | --- | --- |
 | Add `set -e` to the deploy script | Without it, failed steps still report success because only the last command sets the exit code. Deploys have been silently failing since at least 3 Aug 2026. | 🟢 Done |

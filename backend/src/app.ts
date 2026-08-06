@@ -67,9 +67,9 @@ app.use(
   ),
 );
 app.get("/health", async (req, res) => {
-  const checks: Record<string, "okkk" | "error"> = {
-    db: "okkk",
-    redis: "okkk",
+  const checks: Record<string, "ok" | "error"> = {
+    db: "ok",
+    redis: "ok",
   };
 
   try {
@@ -91,9 +91,9 @@ app.get("/health", async (req, res) => {
     );
   }
 
-  const healthy = Object.values(checks).every((v) => v === "okkk");
+  const healthy = Object.values(checks).every((v) => v === "ok");
   res.status(healthy ? 200 : 503).json({
-    status: healthy ? "okkk" : "degraded",
+    status: healthy ? "ok" : "degraded",
     checks,
   });
 });

@@ -3,18 +3,23 @@
 import { useEffect } from "react";
 import { io } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
+import { useSocketToken } from "@/components/providers/socket-auth-provider";
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export function useCandidateSocket() {
   const queryClient = useQueryClient();
+  const token = useSocketToken();
 
   useEffect(() => {
-    const socket = io(SOCKET_URL, { transports: ["websocket"] });
+    if (!token) return;
+
+    const socket = io(SOCKET_URL, {
+      transports: ["websocket"],
+      auth: { token },
+    });
 
     socket.on("candidate_applied", (data: { jobId: number }) => {
-      // Only invalidate list-type queries (3-part keys). Individual detail
-      // queries ["candidates", id] share the same prefix and must not be touched.
       queryClient.invalidateQueries({
         predicate: (query) => {
           const key = query.queryKey as unknown[];
@@ -99,5 +104,5 @@ export function useCandidateSocket() {
     return () => {
       socket.disconnect();
     };
-  }, [queryClient]);
+  }, [queryClient, token]);
 }

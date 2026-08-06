@@ -22,7 +22,7 @@ interface DiscussionsPanelProps {
   setEditingNoteId: (id: number | null) => void;
   editingNoteText: string;
   setEditingNoteText: (text: string) => void;
-  editMessage: (userId: number, msgId: number, text: string) => void;
+  editMessage: (msgId: number, text: string) => void;
   setNoteDeleteTarget: (target: any) => void;
   noteText: string;
   setNoteText: (text: string) => void;
@@ -154,7 +154,7 @@ export function DiscussionsPanel({
                             if (!me) return;
                             const next = editingNoteText.trim();
                             if (!next) return;
-                            editMessage(me.id, msg.id, next);
+                            editMessage(msg.id, next);
                             setEditingNoteId(null);
                             setEditingNoteText("");
                           }}

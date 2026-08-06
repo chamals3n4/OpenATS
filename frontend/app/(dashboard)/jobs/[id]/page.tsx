@@ -204,7 +204,7 @@ export default function JobDetailsPage() {
 
   const handleSendNote = () => {
     if (!noteText.trim() || !me) return;
-    sendMessage(me.id, noteText.trim());
+    sendMessage(noteText.trim());
     setNoteText("");
   };
 
@@ -617,7 +617,7 @@ export default function JobDetailsPage() {
             <AlertDialogAction
               onClick={() => {
                 if (!me || !noteDeleteTarget) return;
-                deleteMessage(me.id, noteDeleteTarget.id);
+                deleteMessage(noteDeleteTarget.id);
                 setNoteDeleteTarget(null);
               }}
               disabled={!me || !noteDeleteTarget}

@@ -5,38 +5,55 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DragDropProvider } from "@/components/dynamic-imports";
 import { PrefetchProvider } from "@/components/providers/prefetch-provider";
 import { CandidateSocketProvider } from "@/components/providers/candidate-socket-provider";
+import { SocketAuthProvider } from "@/components/providers/socket-auth-provider";
+import { asgardeo } from "@asgardeo/nextjs/server";
 import { SetupCompanyGate } from "@/components/guards/setup-company-gate";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { DashboardMainLoading } from "@/components/dashboard-main-loading";
 
-export default function DashboardLayout({
+async function getAccessToken(): Promise<string | undefined> {
+  try {
+    const client = await asgardeo();
+    const sessionId = await client.getSessionId();
+    if (!sessionId) return undefined;
+    return await client.getAccessToken(sessionId);
+  } catch {
+    return undefined;
+  }
+}
+
+export default async function DashboardLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const socketToken = await getAccessToken();
+
   return (
     <QueryProvider>
-      <PrefetchProvider />
-      <CandidateSocketProvider />
-      <div className="[--header-height:calc(--spacing(14))]">
-        <SidebarProvider className="flex flex-col">
-          <SiteHeaderServer />
-          <div className="flex flex-1 min-w-0 overflow-x-hidden w-full">
-            <AppSidebar />
-            <SidebarInset>
-              <DragDropProvider>
-                <SetupCompanyGate>
-                  <Suspense fallback={<DashboardMainLoading />}>
-                    {children}
-                  </Suspense>
-                </SetupCompanyGate>
-              </DragDropProvider>
-            </SidebarInset>
-          </div>
-        </SidebarProvider>
-      </div>
-      <Toaster richColors closeButton />
+      <SocketAuthProvider token={socketToken}>
+        <PrefetchProvider />
+        <CandidateSocketProvider />
+        <div className="[--header-height:calc(--spacing(14))]">
+          <SidebarProvider className="flex flex-col">
+            <SiteHeaderServer />
+            <div className="flex flex-1 min-w-0 overflow-x-hidden w-full">
+              <AppSidebar />
+              <SidebarInset>
+                <DragDropProvider>
+                  <SetupCompanyGate>
+                    <Suspense fallback={<DashboardMainLoading />}>
+                      {children}
+                    </Suspense>
+                  </SetupCompanyGate>
+                </DragDropProvider>
+              </SidebarInset>
+            </div>
+          </SidebarProvider>
+        </div>
+        <Toaster richColors closeButton />
+      </SocketAuthProvider>
     </QueryProvider>
   );
 }

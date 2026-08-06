@@ -3,7 +3,22 @@ import { Server as HttpServer } from "http";
 import { db } from "../../db";
 import { jobChatMessages, candidateChatMessages, users } from "../../db/schema";
 import { eq, and } from "drizzle-orm";
+import { verifyAccessToken } from "../auth/verify-token";
+import type { AuthenticatedUser } from "../auth/verify-token";
 import logger from "../../utils/logger";
+
+const STAFF_ROOM = "staff";
+
+interface SocketData {
+  user: AuthenticatedUser;
+}
+
+type AuthedSocket = Socket<
+  Record<string, never>,
+  Record<string, never>,
+  Record<string, never>,
+  SocketData
+>;
 
 export class SocketService {
   private static instance: SocketService;
@@ -21,13 +36,37 @@ export class SocketService {
   public initialize(server: HttpServer) {
     this.io = new Server(server, {
       cors: {
-        origin: "*",
+        origin: process.env.FRONTEND_URL ?? "http://localhost:3000",
         methods: ["GET", "POST"],
+        credentials: true,
       },
     });
 
-    this.io.on("connection", (socket: Socket) => {
-      logger.info(`Socket connected: ${socket.id}`);
+    this.io.use(async (socket, next) => {
+      const token = socket.handshake.auth?.token;
+
+      if (typeof token !== "string" || !token) {
+        next(new Error("unauthorized"));
+        return;
+      }
+
+      try {
+        (socket as AuthedSocket).data.user = await verifyAccessToken(token);
+        next();
+      } catch (err) {
+        logger.warn(
+          `[socket] rejected connection: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        next(new Error("unauthorized"));
+      }
+    });
+
+    this.io.on("connection", (rawSocket: Socket) => {
+      const socket = rawSocket as AuthedSocket;
+      const user = socket.data.user;
+
+      socket.join(STAFF_ROOM);
+      logger.info(`Socket connected: ${socket.id} (user ${user.id})`);
 
       // job room
       socket.on("join_job", (jobId: number) => {
@@ -47,7 +86,6 @@ export class SocketService {
         "send_job_message",
         async (data: {
           jobId: number;
-          senderId: number;
           message: string;
           replyToId?: number;
         }) => {
@@ -56,7 +94,7 @@ export class SocketService {
               .insert(jobChatMessages)
               .values({
                 jobId: data.jobId,
-                senderId: data.senderId,
+                senderId: user.id,
                 message: data.message,
                 replyToId: data.replyToId,
               })
@@ -69,7 +107,7 @@ export class SocketService {
                 avatarUrl: users.avatarUrl,
               })
               .from(users)
-              .where(eq(users.id, data.senderId))
+              .where(eq(users.id, user.id))
               .limit(1);
 
             this.io?.to(`job_${data.jobId}`).emit("new_job_message", {
@@ -87,12 +125,7 @@ export class SocketService {
 
       socket.on(
         "edit_job_message",
-        async (data: {
-          jobId: number;
-          senderId: number;
-          messageId: number;
-          message: string;
-        }) => {
+        async (data: { jobId: number; messageId: number; message: string }) => {
           try {
             const [updated] = await db
               .update(jobChatMessages)
@@ -101,7 +134,7 @@ export class SocketService {
                 and(
                   eq(jobChatMessages.id, data.messageId),
                   eq(jobChatMessages.jobId, data.jobId),
-                  eq(jobChatMessages.senderId, data.senderId),
+                  eq(jobChatMessages.senderId, user.id),
                   eq(jobChatMessages.isDeleted, false),
                 ),
               )
@@ -116,7 +149,7 @@ export class SocketService {
                 avatarUrl: users.avatarUrl,
               })
               .from(users)
-              .where(eq(users.id, data.senderId))
+              .where(eq(users.id, user.id))
               .limit(1);
 
             this.io?.to(`job_${data.jobId}`).emit("job_message_updated", {
@@ -134,11 +167,7 @@ export class SocketService {
 
       socket.on(
         "delete_job_message",
-        async (data: {
-          jobId: number;
-          senderId: number;
-          messageId: number;
-        }) => {
+        async (data: { jobId: number; messageId: number }) => {
           try {
             const [deleted] = await db
               .update(jobChatMessages)
@@ -147,7 +176,7 @@ export class SocketService {
                 and(
                   eq(jobChatMessages.id, data.messageId),
                   eq(jobChatMessages.jobId, data.jobId),
-                  eq(jobChatMessages.senderId, data.senderId),
+                  eq(jobChatMessages.senderId, user.id),
                   eq(jobChatMessages.isDeleted, false),
                 ),
               )
@@ -167,7 +196,6 @@ export class SocketService {
         "send_candidate_message",
         async (data: {
           candidateId: number;
-          senderId: number;
           message: string;
           replyToId?: number;
         }) => {
@@ -176,7 +204,7 @@ export class SocketService {
               .insert(candidateChatMessages)
               .values({
                 candidateId: data.candidateId,
-                senderId: data.senderId,
+                senderId: user.id,
                 message: data.message,
                 replyToId: data.replyToId,
               })
@@ -199,25 +227,25 @@ export class SocketService {
   }
 
   public notifyCandidateApplied(jobId: number) {
-    this.io?.emit("candidate_applied", { jobId });
+    this.io?.to(STAFF_ROOM).emit("candidate_applied", { jobId });
   }
 
-  // Broadcast a candidate pipeline stage change to all connected clients
+  // Broadcast a candidate pipeline stage change to authenticated dashboard clients
   public notifyStageChanged(event: {
     candidateId: number;
     jobId: number;
     stageId: number;
   }) {
-    this.io?.emit("candidate_stage_changed", event);
+    this.io?.to(STAFF_ROOM).emit("candidate_stage_changed", event);
   }
 
-  // Broadcast an offer create/update/status change to all connected clients
+  // Broadcast an offer create/update/status change to authenticated dashboard clients
   public notifyOfferChanged(event: {
     offerId: number;
     candidateId: number;
     jobId: number;
   }) {
-    this.io?.emit("offer_changed", event);
+    this.io?.to(STAFF_ROOM).emit("offer_changed", event);
   }
 
   // Broadcast an interview create/update/delete/feedback change
@@ -225,7 +253,7 @@ export class SocketService {
     interviewId: number;
     candidateId: number;
   }) {
-    this.io?.emit("interview_changed", event);
+    this.io?.to(STAFF_ROOM).emit("interview_changed", event);
   }
 
   // Broadcast assessment attempt progress (answer saved / attempt completed)
@@ -233,7 +261,7 @@ export class SocketService {
     candidateId: number;
     attemptId: number;
   }) {
-    this.io?.emit("assessment_progress_updated", event);
+    this.io?.to(STAFF_ROOM).emit("assessment_progress_updated", event);
   }
 
   public async sendSystemMessageToJob(jobId: number, message: string) {
@@ -253,13 +281,13 @@ export class SocketService {
       logger.error("Error sending system job message: " + error);
     }
   }
-  // Broadcast a CV analysis status change to all connected clients
+  // Broadcast a CV analysis status change to authenticated dashboard clients
   public emitCvAnalysisUpdate(event: {
     candidateId: number;
     jobId: number;
     status: "done" | "failed";
   }) {
-    this.io?.emit("cv_analysis_updated", event);
+    this.io?.to(STAFF_ROOM).emit("cv_analysis_updated", event);
   }
 }
 

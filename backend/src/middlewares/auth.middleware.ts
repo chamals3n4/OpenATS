@@ -15,9 +15,13 @@ export const authMiddleware = async (
     return;
   }
 
+  let user;
+
+  // Only the verification is guarded. Calling next() inside the try would
+  // funnel a synchronous downstream error into the catch below, which would
+  // report a route failure as an auth failure and attempt a second response.
   try {
-    req.user = await verifyAccessToken(authHeader.slice(7));
-    next();
+    user = await verifyAccessToken(authHeader.slice(7));
   } catch (err: unknown) {
     if (err instanceof AuthError) {
       logger.warn(`[authMiddleware] ${err.status}: ${err.message}`);
@@ -35,5 +39,9 @@ export const authMiddleware = async (
 
     logger.error("[authMiddleware] unexpected error:", err);
     res.status(500).json({ error: "Authentication failed" });
+    return;
   }
+
+  req.user = user;
+  next();
 };

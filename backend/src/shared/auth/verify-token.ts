@@ -60,14 +60,10 @@ function mapToAppRole(names: string[]): AppRole | null {
   );
   const has = (pred: (n: string) => boolean) => normalized.some(pred);
 
-  if (
-    has(
-      (n) =>
-        n === "super admin" ||
-        n.endsWith("/super admin") ||
-        n.includes("super admin"),
-    )
-  )
+  // Exact name or group path only. A substring match would grant full
+  // privileges to any role merely containing the words, e.g.
+  // "super_admin_readonly" or "ex super admin".
+  if (has((n) => n === "super admin" || n.endsWith("/super admin")))
     return "super_admin";
   if (has((n) => n === "hiring manager" || n.endsWith("/hiring manager")))
     return "hiring_manager";

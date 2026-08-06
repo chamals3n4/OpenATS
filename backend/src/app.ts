@@ -67,7 +67,7 @@ app.use(
   ),
 );
 app.get("/health", async (req, res) => {
-  const checks: Record<string, "ok" | "error"> = { db: "ok", redis: "ok" };
+  const checks: Record<string, "ok" | "error"> = { db: "okkk", redis: "ok" };
 
   try {
     await db.execute(sql`select 1`);

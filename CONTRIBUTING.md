@@ -1,6 +1,6 @@
 ## Contributing to OpenATS
 
-> 🔑 Setting up authentication? See [docs/IAM_SETUP.md](docs/IAM_SETUP.md) for the full WSO2 Identity Platform setup guide.
+> 🔑 Setting up authentication? See [docs-draft/IAM_SETUP.md](docs-draft/IAM_SETUP.md) for the full WSO2 Identity Platform setup guide.
 
 - [Prerequisites](#prerequisites)
 - [Tech Stack](#tech-stack)
@@ -190,7 +190,7 @@ REDIS_URL=redis://localhost:6379
 
 OpenATS uses WSO2 Asgardeo for login and user management. You need your own free tenant.
 
-Follow [docs/IAM_SETUP.md](docs/IAM_SETUP.md) to create the application and get your Base URL, Client ID, and Client Secret. Put them in `frontend/.env` and `backend/.env` as the guide describes.
+Follow [docs-draft/IAM_SETUP.md](docs-draft/IAM_SETUP.md) to create the application and get your Base URL, Client ID, and Client Secret. Put them in `frontend/.env` and `backend/.env` as the guide describes.
 
 ### 4. Run the Asgardeo setup script
 
@@ -252,7 +252,7 @@ pnpm --filter ./backend dev:worker
 
 ## Testing
 
-Full guide: [docs/TESTING.md](docs/TESTING.md).
+Full guide: [docs-draft/TESTING.md](docs-draft/TESTING.md).
 
 There are three kinds of tests:
 

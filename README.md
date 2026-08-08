@@ -97,15 +97,15 @@ Two independent packages - not a monorepo, no shared `package.json` or lockfile.
 
 ### Layout
 
-| Path                             |                                                                               |
-| -------------------------------- | ----------------------------------------------------------------------------- |
-| `frontend/`                      | Next.js app · :3000                                                           |
-| `backend/`                       | Express API · :8080                                                           |
-| `backend/src/queues/cv-analysis` | The BullMQ queue, worker, and event bridge for background CV scoring          |
-| `backend/src/db/schema`          | Drizzle schema, one file per domain                                           |
-| `backend/drizzle`                | Generated migration SQL - always committed, never hand-edited                 |
-| `e2e/`                           | Playwright end-to-end tests, at the root because they span both packages      |
-| `docs/`                          | [IAM setup](./docs/IAM_SETUP.md), [testing guide](./docs/TESTING.md), [road to GA](./docs/GA_ROADMAP.md) |
+| Path                             |                                                                                                                            |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| `frontend/`                      | Next.js app · :3000                                                                                                        |
+| `backend/`                       | Express API · :8080                                                                                                        |
+| `backend/src/queues/cv-analysis` | The BullMQ queue, worker, and event bridge for background CV scoring                                                       |
+| `backend/src/db/schema`          | Drizzle schema, one file per domain                                                                                        |
+| `backend/drizzle`                | Generated migration SQL - always committed, never hand-edited                                                              |
+| `e2e/`                           | Playwright end-to-end tests, at the root because they span both packages                                                   |
+| `docs/`                          | [IAM setup](./docs-draft/IAM_SETUP.md), [testing guide](./docs-draft/TESTING.md), [road to GA](./docs-draft/GA_ROADMAP.md) |
 
 ## Quick start
 

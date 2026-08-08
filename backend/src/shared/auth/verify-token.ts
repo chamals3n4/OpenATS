@@ -27,7 +27,9 @@ export class AuthError extends Error {
   }
 }
 
-function collectRolesFromPayload(payload: Record<string, unknown>): string[] {
+export function collectRolesFromPayload(
+  payload: Record<string, unknown>,
+): string[] {
   const out: string[] = [];
 
   const rolesClaim = payload["roles"];
@@ -54,7 +56,7 @@ function collectRolesFromPayload(payload: Record<string, unknown>): string[] {
   return out;
 }
 
-function mapToAppRole(names: string[]): AppRole | null {
+export function mapToAppRole(names: string[]): AppRole | null {
   const normalized = names.map((s) =>
     s.trim().toLowerCase().replace(/_/g, " ").replace(/\s+/g, " "),
   );

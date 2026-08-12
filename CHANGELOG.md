@@ -11,6 +11,15 @@ so the history lives in the repository. See
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [0.5.0] - 2026-08-13
+
+This release fixes what was broken rather than adding features. The headline is
+that Socket.IO was completely unauthenticated: anyone who could reach the server
+could read every hiring team's chat and write messages as any user. That is
+closed, along with the rest of the authorization gaps around it.
+
 ### Security
 
 - Socket.IO connections now require a valid Asgardeo JWT in the handshake,
@@ -34,8 +43,31 @@ so the history lives in the repository. See
   office behind one NAT does not share a budget. Tunable with `RATE_LIMIT_API`
   and `RATE_LIMIT_EXPENSIVE`.
 
+### Added
+
+- Automated tests for authentication (`tests/integration/auth.test.ts`), covering
+  expired, wrong-issuer and wrongly-signed tokens, the claim checks, user
+  provisioning, and the auth middleware. Only the JWKS fetch is mocked, so
+  signatures, `exp` and `iss` are genuinely verified.
+- Automated tests for the core hiring flow
+  (`tests/integration/core-flows.test.ts`): apply, duplicate application, stage
+  move, interview scheduling, and the offer draft-to-send path, driven through
+  the real HTTP API with a signed token.
+- Frontend unit tests, using a separate Vitest install in `frontend/` with jsdom
+  and Testing Library. `pnpm test` at the root now runs backend and frontend
+  tests in turn.
+- Coverage reporting: `pnpm test:coverage` produces text, HTML and lcov reports
+  for the backend.
+- This `CHANGELOG.md`.
+
 ### Fixed
 
+- **A partial `PATCH /api/offers/:id` silently wiped the offer's start date.**
+  Every other field was passed through untouched when omitted, but `startDate`
+  was normalized to `null` first, and the helper that drops unset fields only
+  drops `undefined`. Editing any other field on a draft offer erased the start
+  date, after which the offer could not be sent ("Missing required fields:
+  startDate").
 - `tsconfig.test.json` inherited `"exclude": ["tests"]` from the base config and
   therefore type-checked nothing. A deliberate type error had been sitting in
   `object.util.test.ts` undetected.
@@ -59,10 +91,20 @@ so the history lives in the repository. See
   narrowed helpers in `utils/error.utils.ts`.
 - The frontend's `any` uses were removed the same way, replacing them with the
   types that already existed in `types/index.ts`.
+- The frontend's remaining lint errors are fixed, so `pnpm lint` at the repo
+  root now passes and can be used as a CI gate. Two `react-hooks` cases keep a
+  scoped `eslint-disable` with the reason written next to it, because the state
+  they touch cannot legally move into render.
 - `worker.ts` calls `validateEnv()` on boot, matching the API, so it can no
   longer start with broken configuration and fail later at job time.
 - CI gates backend lint and type-checks the backend test files.
 - Removed the unused `components/ui/carousel.tsx` shadcn primitive.
+
+### Known issues
+
+- 54 dependency advisories are open (15 high), almost all reached through
+  `next@16.1.6`. The upgrade is deliberately held until immediately before the
+  v1.0.0 release so the version bump is as fresh as possible.
 
 ## [0.4.0] - 2026-08-05
 
@@ -212,7 +254,8 @@ so the history lives in the repository. See
 
 Initial release.
 
-[Unreleased]: https://github.com/chamals3n4/OpenATS/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/chamals3n4/OpenATS/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/chamals3n4/OpenATS/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/chamals3n4/OpenATS/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/chamals3n4/OpenATS/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/chamals3n4/OpenATS/compare/v0.2.0...v0.2.1

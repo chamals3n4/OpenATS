@@ -2,7 +2,7 @@
 
 This is the plan for getting OpenATS to `v1.0.0` (general availability). It tracks what is left, why each item matters, and what is already done.
 
-Current version: **v0.4.0**
+Current version: **v0.5.0**
 
 ## Status legend
 

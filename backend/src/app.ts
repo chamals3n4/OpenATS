@@ -8,6 +8,7 @@ import oauthRouter from "./modules/integrations/oauth.routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
 import { swaggerUi, swaggerDocument } from "./config/swagger";
 import { authMiddleware } from "./middlewares/auth.middleware";
+import { apiLimiter } from "./middlewares/rate-limit.middleware";
 import { pageSettingsService } from "./modules/settings/page-settings.service";
 import { sql } from "drizzle-orm";
 import { db } from "./db";
@@ -101,7 +102,7 @@ app.get("/health", async (req, res) => {
 app.use("/public", publicRouter);
 app.use("/oauth", oauthRouter);
 
-app.use("/api", authMiddleware, router);
+app.use("/api", authMiddleware, apiLimiter, router);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 

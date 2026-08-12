@@ -27,8 +27,8 @@ The focus of this phase is correctness and safety, not new features. Nothing her
 | Take `senderId` from the JWT, not the payload | The client currently supplies its own user id on socket writes. | 🟢 Done |
 | Authorize socket room joins | Sockets now require authentication, but any logged-in user can still `join_job` for a job they are not on the hiring team for. Authentication closed the public hole, this closes the internal one. | 🟢 Done |
 | Re-check socket tokens on reconnect | The token is read once when the dashboard layout renders. If it expires while a tab is open, reconnects fail silently and realtime stops until the page is refreshed. | 🟢 Done |
-| Authorize chat history over HTTP | `GET /chat/job/:jobId` and `/chat/candidate/:candidateId` return any conversation to any authenticated user. The socket rooms are now gated, so this is the remaining way to read another hiring team's chat. | 🔴 Planned |
-| Rate limit authenticated routes | Only `/public/*` is rate limited today. | 🔴 Planned |
+| Authorize chat history over HTTP | `GET /chat/job/:jobId` and `/chat/candidate/:candidateId` return any conversation to any authenticated user. The socket rooms are now gated, so this is the remaining way to read another hiring team's chat. | 🟢 Done |
+| Rate limit authenticated routes | Only `/public/*` is rate limited today. | 🟢 Done |
 | Resolve dependency vulnerabilities | 52 reported (15 high). Real ones are `next` (DoS via Server Components), `sharp`, and `postcss`. `dompurify` arrives through `@asgardeo/nextjs` and may need an upstream fix. | 🔴 Planned |
 
 ### Deployment

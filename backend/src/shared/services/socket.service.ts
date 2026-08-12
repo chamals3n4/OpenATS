@@ -20,7 +20,7 @@ interface SocketData {
   user: AuthenticatedUser;
 }
 
-/** Events this server sends directly to one socket (broadcasts go via `io`). */
+// Events sent to a single socket. Broadcasts go through `io`.
 interface ServerToClientEvents {
   room_denied: (payload: { room: "job" | "candidate"; id: number }) => void;
   write_denied: (payload: { event: string }) => void;
@@ -81,7 +81,7 @@ export class SocketService {
       socket.join(STAFF_ROOM);
       logger.info(`Socket connected: ${socket.id} (user ${user.id})`);
 
-      // job room — membership of the hiring team is the entry ticket
+      // job room — hiring team members only
       socket.on("join_job", async (rawJobId: unknown) => {
         const jobId = parseRoomId(rawJobId);
         if (jobId === null) return;
@@ -98,7 +98,7 @@ export class SocketService {
         logger.info(`Socket ${socket.id} joined job room: job_${jobId}`);
       });
 
-      // candidate room — access follows the candidate's job
+      // candidate room — follows the candidate's job
       socket.on("join_candidate", async (rawCandidateId: unknown) => {
         const candidateId = parseRoomId(rawCandidateId);
         if (candidateId === null) return;
@@ -117,12 +117,7 @@ export class SocketService {
         );
       });
 
-      /**
-       * Writes are authorized by room membership rather than a fresh query:
-       * a socket can only be in `job_<id>` if `join_job` already proved this
-       * user is on that hiring team. Without this, a client could skip the
-       * join entirely and post straight into any job's chat.
-       */
+      // Writes require the room, which the join already checked.
       const inJobRoom = (jobId: number) => socket.rooms.has(jobRoom(jobId));
       const inCandidateRoom = (candidateId: number) =>
         socket.rooms.has(candidateRoom(candidateId));

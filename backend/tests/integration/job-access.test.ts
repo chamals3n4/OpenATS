@@ -7,12 +7,14 @@ import { jobHiringTeam } from "../../src/db/schema/pipeline";
 import { candidates } from "../../src/db/schema/candidates";
 import { users } from "../../src/db/schema/users";
 import { canAccessJob, canAccessCandidate } from "../../src/shared/auth/job-access";
+import {
+  requireCandidateAccess,
+  requireJobAccess,
+} from "../../src/middlewares/job-access.middleware";
 import type { AuthenticatedUser } from "../../src/shared/auth/verify-token";
+import type { NextFunction, Request, Response } from "express";
 
-/**
- * These cover the rule that keeps one hiring team's chat away from another:
- * a logged-in user is not automatically entitled to every job.
- */
+// Covers the rule that keeps one hiring team's chat away from another.
 
 const SUFFIX = `job-access-${Date.now()}`;
 
@@ -136,6 +138,79 @@ describe("canAccessJob", () => {
 
   it("denies a job that does not exist", async () => {
     expect(await canAccessJob(memberUser, 2_000_000_000)).toBe(false);
+  });
+});
+
+// Driven directly: the real route needs a signed token we cannot issue here.
+function runMiddleware(
+  middleware: ReturnType<typeof requireJobAccess>,
+  user: AuthenticatedUser,
+  params: Record<string, string>,
+) {
+  return new Promise<{ status: number | null; body: unknown; passed: boolean }>(
+    (resolve) => {
+      let status: number | null = null;
+      const res = {
+        status(code: number) {
+          status = code;
+          return this;
+        },
+        json(body: unknown) {
+          resolve({ status, body, passed: false });
+          return this;
+        },
+      } as unknown as Response;
+
+      const next: NextFunction = () =>
+        resolve({ status: null, body: null, passed: true });
+
+      void middleware({ user, params } as unknown as Request, res, next);
+    },
+  );
+}
+
+describe("requireJobAccess", () => {
+  it("passes a hiring team member through", async () => {
+    const result = await runMiddleware(requireJobAccess(), memberUser, {
+      jobId: String(teamJobId),
+    });
+    expect(result.passed).toBe(true);
+  });
+
+  it("rejects an outsider with 403", async () => {
+    const result = await runMiddleware(requireJobAccess(), outsiderUser, {
+      jobId: String(teamJobId),
+    });
+    expect(result.passed).toBe(false);
+    expect(result.status).toBe(403);
+  });
+
+  it("rejects a malformed id with 400", async () => {
+    const result = await runMiddleware(requireJobAccess(), memberUser, {
+      jobId: "not-a-number",
+    });
+    expect(result.status).toBe(400);
+  });
+});
+
+describe("requireCandidateAccess", () => {
+  it("rejects a candidate on another job with 403", async () => {
+    const result = await runMiddleware(
+      requireCandidateAccess(),
+      memberUser,
+      { candidateId: String(otherCandidateId) },
+    );
+    expect(result.passed).toBe(false);
+    expect(result.status).toBe(403);
+  });
+
+  it("passes for a candidate on the user's own job", async () => {
+    const result = await runMiddleware(
+      requireCandidateAccess(),
+      memberUser,
+      { candidateId: String(teamCandidateId) },
+    );
+    expect(result.passed).toBe(true);
   });
 });
 

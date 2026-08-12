@@ -3,15 +3,7 @@ import { asgardeo } from "@asgardeo/nextjs/server";
 
 export const dynamic = "force-dynamic";
 
-/**
- * Hands the browser a current Asgardeo access token for the Socket.IO
- * handshake. Client hooks call this on every connect attempt, so a token
- * that expired while a tab sat open is replaced on reconnect instead of
- * failing the handshake silently.
- *
- * The token never reaches the client any other way: it is read from the
- * server-side session, and an unauthenticated caller gets nothing.
- */
+// Gives the browser a current access token for the socket handshake.
 export async function GET() {
   try {
     const client = await asgardeo();

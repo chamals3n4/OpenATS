@@ -1,6 +1,7 @@
 import { Router } from "express";
 import multer from "multer";
 import { uploadFile } from "./upload.controller";
+import { expensiveLimiter } from "../../middlewares/rate-limit.middleware";
 
 const router: Router = Router();
 
@@ -12,8 +13,9 @@ const upload = multer({
   }
 });
 
-router.post("/resume", upload.single("file"), uploadFile);
+// Each upload costs an R2 write, so these get the tighter budget.
+router.post("/resume", expensiveLimiter, upload.single("file"), uploadFile);
 
-router.post("/logo", upload.single("file"), uploadFile);
+router.post("/logo", expensiveLimiter, upload.single("file"), uploadFile);
 
 export default router;

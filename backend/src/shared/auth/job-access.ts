@@ -4,17 +4,9 @@ import { jobHiringTeam } from "../../db/schema/pipeline";
 import { candidates } from "../../db/schema/candidates";
 import type { AuthenticatedUser } from "./verify-token";
 
-/**
- * Per-job authorization, shared by the Socket.IO room joins and any HTTP
- * handler that needs the same rule. Authentication answers "who are you",
- * this answers "which jobs are yours" — a logged-in user is not entitled to
- * every job's chat and candidate traffic.
- *
- * `super_admin` is deliberately exempt: admins manage hiring teams, so
- * requiring membership would lock them out of the jobs they administer.
- */
+// Per-job authorization, shared by the sockets and the HTTP middleware.
 
-/** Narrows an untrusted client-supplied room id to a usable row id. */
+// Narrows an untrusted client-supplied id to a usable row id.
 export function parseRoomId(value: unknown): number | null {
   const id = typeof value === "string" ? Number(value) : value;
   if (typeof id !== "number" || !Number.isInteger(id) || id <= 0) return null;
@@ -25,6 +17,7 @@ export async function canAccessJob(
   user: AuthenticatedUser,
   jobId: number,
 ): Promise<boolean> {
+  // Admins manage hiring teams, so requiring membership would lock them out.
   if (user.role === "super_admin") return true;
 
   const [member] = await db
@@ -38,7 +31,7 @@ export async function canAccessJob(
   return !!member;
 }
 
-/** A candidate belongs to exactly one job, so access follows that job. */
+// A candidate belongs to one job, so access follows that job.
 export async function canAccessCandidate(
   user: AuthenticatedUser,
   candidateId: number,

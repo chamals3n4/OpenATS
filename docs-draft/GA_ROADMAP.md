@@ -51,13 +51,13 @@ The focus of this phase is correctness and safety, not new features. Nothing her
 | Tests for core flows | Apply to a job, move pipeline stage, send an offer, schedule an interview. None are covered today. | 🔴 Planned |
 | Frontend tests | None exist. | 🔴 Planned |
 | Coverage reporting | Without it, "how much is tested" is guesswork. | 🔴 Planned |
-| Type-check tests in CI | `tsconfig.test.json` inherited `"exclude": ["tests"]` from the base config, so it checked nothing; a deliberate type error sat in `object.util.test.ts` and passed. Fixed, but CI still only type-checks the E2E specs. | 🟡 In progress |
+| Type-check tests in CI | `tsconfig.test.json` inherited `"exclude": ["tests"]` from the base config, so it checked nothing; a deliberate type error sat in `object.util.test.ts` and passed. Config fixed and `test.yml` now runs it as its own step, verified with a canary error. | 🟢 Done |
 
 ### Tooling
 
 | Item | Why it matters | Status |
 | --- | --- | --- |
-| Add linting to the backend | There is no ESLint config or script, and `pnpm lint` at the repo root currently **fails** with `ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT`. | 🟢 Done |
+| Add linting to the backend | There is no ESLint config or script, and `pnpm lint` at the repo root currently **fails** with `ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT`. Now configured, passing with 0 problems, and gated in CI. | 🟢 Done |
 | Call `validateEnv()` in `worker.ts` | The API validates its environment on boot, the worker does not, so it can start with broken config and fail later at job time. | 🟢 Done |
 | Fix the frontend's lint errors | The backend now passes, so `pnpm lint` at the root fails only on the frontend: 112 errors, mostly `react-hooks/set-state-in-effect`. Until these are cleared, lint cannot be a CI gate. | 🔴 Planned |
 | Remove `any` from the backend | 108 uses, mostly `catch (e: any)` and `(e as any).message`. All replaced with narrowed helpers, so `no-explicit-any` is an **error** and the backend has none. | 🟢 Done |

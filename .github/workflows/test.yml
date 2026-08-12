@@ -54,6 +54,11 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Backend only. The frontend still has lint errors, so the root `lint`
+      # script would fail every run until those are cleared.
+      - name: Lint backend
+        run: pnpm --filter ./backend lint
+
       - name: Apply migrations to the test database
         working-directory: backend
         env:
@@ -65,6 +70,11 @@ jobs:
 
       - name: Type-check end-to-end specs
         run: pnpm exec tsc --noEmit
+
+      # The test files are excluded from the build, so nothing else checks them.
+      - name: Type-check backend tests
+        working-directory: backend
+        run: pnpm exec tsc --noEmit -p tsconfig.test.json
 
       - name: Build backend
         run: pnpm --filter ./backend build

@@ -11,11 +11,12 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useAddInterviewFeedback } from "@/hooks/queries/use-interview-feedback";
+import type { InterviewListItem } from "@/types";
 
 interface FeedbackDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  target: any;
+  target: InterviewListItem | null;
 }
 
 export default function FeedbackDialog({
@@ -62,7 +63,7 @@ export default function FeedbackDialog({
           </button>
           <button
             onClick={async () => {
-              if (!feedbackText.trim()) return;
+              if (!target || !feedbackText.trim()) return;
               try {
                 await addFeedbackMutation.mutateAsync({
                   interviewId: target.id,

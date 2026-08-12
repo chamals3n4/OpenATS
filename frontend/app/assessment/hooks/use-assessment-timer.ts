@@ -1,7 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import type { AttemptData } from "../_lib/assessment-types";
+
+// An in-progress attempt resumes where it left off; anything else starts full.
+function remainingSeconds(attempt: AttemptData): number {
+  const limit = attempt.assessment.timeLimit ?? 0;
+  if (attempt.status !== "started" || !attempt.startedAt) return limit;
+  const elapsed = Math.floor(
+    (Date.now() - new Date(attempt.startedAt).getTime()) / 1000,
+  );
+  return Math.max(0, limit - elapsed);
+}
 
 export function useAssessmentTimer(
   screen: string,
@@ -10,23 +20,12 @@ export function useAssessmentTimer(
 ) {
   const [timeLeft, setTimeLeft] = useState(0);
 
-  // Initialize timer based on attempt status
-  useEffect(() => {
-    if (!attempt) return;
-
-    if (attempt.status === "started" && attempt.startedAt) {
-      const elapsed = Math.floor(
-        (Date.now() - new Date(attempt.startedAt).getTime()) / 1000,
-      );
-      const remaining = Math.max(
-        0,
-        (attempt.assessment.timeLimit ?? 0) - elapsed,
-      );
-      setTimeLeft(remaining);
-    } else {
-      setTimeLeft(attempt.assessment.timeLimit ?? 0);
-    }
-  }, [attempt]);
+  // Seed the timer once per attempt, then let the countdown below own it.
+  const [seededAttemptId, setSeededAttemptId] = useState<number | null>(null);
+  if (attempt && attempt.id !== seededAttemptId) {
+    setSeededAttemptId(attempt.id);
+    setTimeLeft(remainingSeconds(attempt));
+  }
 
   // Countdown
   useEffect(() => {

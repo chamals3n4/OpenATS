@@ -9,11 +9,12 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { ResumeScrollView } from "./resume-scroll-view";
+import type { CandidateDetail } from "@/types";
 
 interface CvSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  candidate: any;
+  candidate: CandidateDetail;
 }
 
 export function CvSheet({ open, onOpenChange, candidate }: CvSheetProps) {

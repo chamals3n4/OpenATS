@@ -22,6 +22,7 @@ import {
 } from "@/components/ui/select";
 
 import type { User } from "@/types";
+import type { useRemoveHiringTeamMember } from "@/hooks/queries/use-jobs";
 import { useIsManager } from "@/hooks/use-role";
 
 interface HiringTeamTabProps {
@@ -33,7 +34,7 @@ interface HiringTeamTabProps {
   setNewMemberId: (id: string) => void;
   handleAddTeamMember: () => void;
   addTeamMemberMutationPending: boolean;
-  removeTeamMemberMutation: any;
+  removeTeamMemberMutation: ReturnType<typeof useRemoveHiringTeamMember>;
 }
 
 export function HiringTeamTab({

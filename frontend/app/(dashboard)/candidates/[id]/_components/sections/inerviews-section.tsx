@@ -4,11 +4,13 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { InterviewCard } from "../interview-card";
+import type { useDeleteInterview } from "@/hooks/queries/use-interviews";
+import type { CandidateDetail } from "@/types";
 
 interface InterviewsSectionProps {
-  candidate: any;
+  candidate: CandidateDetail;
   stageMap: Record<number, string>;
-  deleteInterviewMutation: any;
+  deleteInterviewMutation: ReturnType<typeof useDeleteInterview>;
   onSchedule: () => void;
 }
 
@@ -57,7 +59,7 @@ export function InterviewsSection({
         </div>
       ) : (
         <div className="space-y-3">
-          {(candidate.interviews ?? []).map((iv: any) => (
+          {(candidate.interviews ?? []).map((iv) => (
             <InterviewCard
               key={iv.id}
               interview={iv}

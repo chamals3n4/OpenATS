@@ -58,7 +58,7 @@ export default function CreateAssessmentPageClient() {
         toast.success("Assessment successfully created!");
         router.push("/assessments");
       },
-      onError: (error: any) => {
+      onError: (error) => {
         toast.error(error.message || "Failed to create assessment");
       },
     });

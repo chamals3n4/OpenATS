@@ -2,8 +2,9 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { QuestionIcon } from "@hugeicons/core-free-icons";
+import type { CandidateDetail } from "@/types";
 
-export function AnswersSection({ candidate }: { candidate: any }) {
+export function AnswersSection({ candidate }: { candidate: CandidateDetail }) {
   return (
     <div className="p-5 sm:p-6">
       <div className="mb-6">
@@ -31,7 +32,7 @@ export function AnswersSection({ candidate }: { candidate: any }) {
         </div>
       ) : (
         <div className="space-y-5">
-          {candidate.answers.map((a: any) => (
+          {candidate.answers.map((a) => (
             <div
               key={a.id}
               className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"
@@ -54,15 +55,12 @@ export function AnswersSection({ candidate }: { candidate: any }) {
           ))}
           {candidate.selections.length > 0 && (
             <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden">
-              {(
-                Array.from(
-                  new Set(
-                    candidate.selections.map(
-                      (s: any) =>
-                        s.questionTitle || `Question #${s.questionId}`,
-                    ),
+              {Array.from(
+                new Set(
+                  candidate.selections.map(
+                    (s) => s.questionTitle || `Question #${s.questionId}`,
                   ),
-                ) as string[]
+                ),
               ).map((title) => (
                 <div
                   key={title}
@@ -74,11 +72,11 @@ export function AnswersSection({ candidate }: { candidate: any }) {
                   <div className="flex flex-wrap gap-2">
                     {candidate.selections
                       .filter(
-                        (s: any) =>
+                        (s) =>
                           (s.questionTitle || `Question #${s.questionId}`) ===
                           title,
                       )
-                      .map((s: any) => (
+                      .map((s) => (
                         <span
                           key={s.id}
                           className="text-xs bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 px-3 py-1.5 rounded-md font-medium border border-slate-200 dark:border-neutral-700"

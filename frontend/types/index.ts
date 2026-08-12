@@ -110,12 +110,20 @@ export type AssessmentOption = {
   position: number;
 };
 
+// Mirrors the `question_type` enum in the database.
+export type QuestionType =
+  | "short_answer"
+  | "long_answer"
+  | "checkbox"
+  | "radio"
+  | "multiple_choice";
+
 export type AssessmentQuestion = {
   id: number;
   assessmentId: number;
   title: string;
   description: string;
-  questionType: "short_answer" | "multiple_choice";
+  questionType: QuestionType;
   points: number;
   position: number;
   createdAt: string;
@@ -156,6 +164,10 @@ export type CandidateRejection = {
   rejectedAt: string;
 };
 
+export type InterviewTimeSlot = { datetime: string; selected: boolean };
+
+export type StageType = "screening" | "interview" | "offer";
+
 export type CandidateInterview = {
   id: number;
   candidateId: number;
@@ -165,13 +177,19 @@ export type CandidateInterview = {
   eventType: string | null;
   meetingUrl: string | null;
   bodyText: string | null;
-  status: string | null;
+  status: string;
   scheduledAt: string | null;
   durationMinutes: number | null;
   notes: string | null;
   outcome: "pending" | "pass" | "fail";
+  timeSlots: InterviewTimeSlot[] | null;
+  publicToken: string | null;
+  googleEventId: string | null;
+  // Joined from the pipeline stage, not stored on the interview row.
+  stageType: StageType | null;
   createdBy: number | null;
   createdAt: string;
+  updatedAt: string;
 };
 
 export type Candidate = {
@@ -311,6 +329,29 @@ export type Offer = {
   updatedAt: string;
 };
 
+// Payload shape for creating questions, as sent by the assessment builder.
+export type NewAssessmentQuestion = {
+  title: string;
+  description: string | null;
+  questionType: QuestionType;
+  points: number;
+  position: number;
+  options?: { label: string; isCorrect: boolean; position: number }[];
+};
+
+export type HiringTeamMembership = {
+  id: number;
+  jobId: number;
+  userId: number;
+  addedAt: string;
+};
+
+// The offer list and detail endpoints join the candidate and job rows.
+export type OfferWithRelations = Offer & {
+  candidate?: { firstName: string; lastName: string } | null;
+  job?: { id: number; title: string } | null;
+};
+
 export type InterviewListItem = {
   id: number;
   candidateId: number;
@@ -320,7 +361,7 @@ export type InterviewListItem = {
   durationMinutes: number | null;
   notes: string | null;
   outcome: "pending" | "pass" | "fail";
-  status: string | null;
+  status: string;
   eventName: string | null;
   eventType: string | null;
   meetingUrl: string | null;

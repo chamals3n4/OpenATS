@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useMemo, useRef } from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { serverFetch } from "@/lib/auth-action";
 import { Tabs } from "@/components/ui/tabs";
@@ -98,7 +98,7 @@ export default function JobDetailsPage() {
 
   useEffect(() => {
     if (!jobId) return;
-    const prefetch = (key: any[], url: string, staleTime: number) => {
+    const prefetch = (key: QueryKey, url: string, staleTime: number) => {
       void queryClient.prefetchQuery({
         queryKey: key,
         queryFn: () => serverFetch(url),
@@ -224,9 +224,14 @@ export default function JobDetailsPage() {
   const [newQuestionText, setNewQuestionText] = useState("");
   const [newQuestionRequired, setNewQuestionRequired] = useState(false);
 
-  useEffect(() => {
-    if (customQuestionsData?.data) setQuestions(customQuestionsData.data);
-  }, [customQuestionsData]);
+  // Seed the editable copy whenever the query returns a new list.
+  const [seededQuestions, setSeededQuestions] = useState<
+    CustomQuestion[] | null
+  >(null);
+  if (customQuestionsData?.data && customQuestionsData.data !== seededQuestions) {
+    setSeededQuestions(customQuestionsData.data);
+    setQuestions(customQuestionsData.data);
+  }
 
   useEffect(() => {
     const mq = window.matchMedia("(min-width: 1024px)");
@@ -298,18 +303,20 @@ export default function JobDetailsPage() {
   const [stages, setStages] = useState<(PipelineStage & { color: string })[]>(
     [],
   );
-  useEffect(() => {
-    if (pipelineData?.data) {
-      setStages(
-        [...pipelineData.data]
-          .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
-          .map((s) => ({
-            ...s,
-            color: STAGE_COLORS[s.stageType] ?? "bg-slate-400",
-          })),
-      );
-    }
-  }, [pipelineData]);
+  const [seededStages, setSeededStages] = useState<PipelineStage[] | null>(
+    null,
+  );
+  if (pipelineData?.data && pipelineData.data !== seededStages) {
+    setSeededStages(pipelineData.data);
+    setStages(
+      [...pipelineData.data]
+        .sort((a, b) => (a.position ?? 0) - (b.position ?? 0))
+        .map((s) => ({
+          ...s,
+          color: STAGE_COLORS[s.stageType] ?? "bg-slate-400",
+        })),
+    );
+  }
 
   const [addStageOpen, setAddStageOpen] = useState(false);
   const [newStageName, setNewStageName] = useState("");

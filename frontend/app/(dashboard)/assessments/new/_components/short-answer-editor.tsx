@@ -14,7 +14,7 @@ export function ShortAnswerEditor({ value, onChange }: ShortAnswerEditorProps) {
         Correct Answer (Key)
       </h3>
       <p className="text-xs text-slate-400 dark:text-neutral-500">
-        Candidates' answers will be compared against this key for grading.
+        Candidates&apos; answers will be compared against this key for grading.
       </p>
       <textarea
         placeholder="Type the correct answer here ..."

@@ -20,14 +20,16 @@ import {
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { REJECTION_REASONS } from "../constants";
+import type { useRejectCandidate } from "@/hooks/queries/use-candidates";
+import type { CandidateDetail, Template } from "@/types";
 
 interface RejectCandidateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  candidate: any;
+  candidate: CandidateDetail;
   candidateId: number;
-  emailTemplates: any[];
-  rejectMutation: any;
+  emailTemplates: Template[];
+  rejectMutation: ReturnType<typeof useRejectCandidate>;
 }
 
 export function RejectCandidateDialog({
@@ -113,7 +115,7 @@ export function RejectCandidateDialog({
                   <SelectValue placeholder="Select template" />
                 </SelectTrigger>
                 <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-                  {emailTemplates.map((t: any) => (
+                  {emailTemplates.map((t) => (
                     <SelectItem
                       key={t.id}
                       value={String(t.id)}

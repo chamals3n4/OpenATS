@@ -15,6 +15,7 @@ import type {
   User,
   Candidate,
   CustomQuestion,
+  JobAssessment,
 } from "@/types";
 import { EMPLOYMENT_TYPE_LABELS } from "@/lib/job-labels";
 import { formatDate } from "@/lib/utils";
@@ -67,7 +68,8 @@ export function JobTableRow({
     });
     void queryClient.prefetchQuery({
       queryKey: ["jobs", jobId, "assessments"],
-      queryFn: () => serverFetch<{ data: any[] }>(`/jobs/${jobId}/assessments`),
+      queryFn: () =>
+        serverFetch<{ data: JobAssessment[] }>(`/jobs/${jobId}/assessments`),
       staleTime: 1000 * 60 * 5,
     });
   }, [queryClient, job.id]);

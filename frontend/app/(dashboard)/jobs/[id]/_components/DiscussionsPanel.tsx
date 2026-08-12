@@ -23,7 +23,9 @@ interface DiscussionsPanelProps {
   editingNoteText: string;
   setEditingNoteText: (text: string) => void;
   editMessage: (msgId: number, text: string) => void;
-  setNoteDeleteTarget: (target: any) => void;
+  setNoteDeleteTarget: (
+    target: { id: number; senderName: string | null; message: string | null } | null,
+  ) => void;
   noteText: string;
   setNoteText: (text: string) => void;
   handleSendNote: () => void;

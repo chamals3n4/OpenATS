@@ -21,15 +21,17 @@ import {
 } from "@/components/ui/select";
 import { getInitials, formatDate, OFFER_STATUS_STYLES } from "./constants";
 import { useIsManager } from "@/hooks/use-role";
+import type { useMoveCandidateStage } from "@/hooks/queries/use-candidates";
+import type { CandidateDetail, Offer, PipelineStage } from "@/types";
 
 interface CandidateHeaderProps {
-  candidate: any;
-  offer: any;
-  pipelineStages: any[];
+  candidate: CandidateDetail;
+  offer: Offer | null;
+  pipelineStages: PipelineStage[];
   selectedStageId: string;
   effectiveSelectedStageId: string;
   hasStageChange: boolean;
-  moveStageMutation: any;
+  moveStageMutation: ReturnType<typeof useMoveCandidateStage>;
   onStageChange: (value: string) => void;
   onCancelStageChange: () => void;
   onSaveStageChange: () => void;

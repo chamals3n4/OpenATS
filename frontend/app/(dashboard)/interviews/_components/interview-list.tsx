@@ -14,11 +14,12 @@ import {
   fmtTime,
   fmtDateLong,
 } from "./constants";
+import type { InterviewListItem } from "@/types";
 
 interface InterviewListProps {
-  interviews: any[];
-  onFeedback: (iv: any) => void;
-  onEdit: (iv: any) => void;
+  interviews: InterviewListItem[];
+  onFeedback: (iv: InterviewListItem) => void;
+  onEdit: (iv: InterviewListItem) => void;
 }
 
 export function InterviewList({
@@ -27,7 +28,7 @@ export function InterviewList({
   onEdit,
 }: InterviewListProps) {
   const grouped = useMemo(() => {
-    const m: Record<string, any[]> = {};
+    const m: Record<string, InterviewListItem[]> = {};
     interviews.forEach((iv) => {
       const key = iv.scheduledAt
         ? new Date(iv.scheduledAt).toDateString()

@@ -18,11 +18,12 @@ import {
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useUpdateInterview } from "@/hooks/queries/use-interviews";
+import type { InterviewListItem } from "@/types";
 
 interface EditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  target: any;
+  target: InterviewListItem | null;
   eventName: string;
   onEventNameChange: (v: string) => void;
   meetingUrl: string;
@@ -137,6 +138,7 @@ export function EditDialog({
           </button>
           <button
             onClick={async () => {
+              if (!target) return;
               try {
                 await updateInterviewMutation.mutateAsync({
                   id: target.id,

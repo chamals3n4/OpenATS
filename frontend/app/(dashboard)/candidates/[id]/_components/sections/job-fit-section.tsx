@@ -1,13 +1,14 @@
 "use client";
 
 import { CandidateJobFitTab } from "@/components/dynamic-imports";
+import type { CandidateCvAnalysisPayload } from "@/types";
 
 export function JobFitSection({
   resumeUrl,
   cvAnalysis,
 }: {
   resumeUrl: string | null;
-  cvAnalysis: any;
+  cvAnalysis: CandidateCvAnalysisPayload | null;
 }) {
   return (
     <div className="p-5 sm:p-6">

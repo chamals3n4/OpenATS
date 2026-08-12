@@ -1,6 +1,12 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
-import type { Job, JobDetail, CustomQuestion, User } from "@/types";
+import type {
+  Job,
+  JobDetail,
+  CustomQuestion,
+  HiringTeamMembership,
+  User,
+} from "@/types";
 import type { PaginationInfo } from "@/components/table/table-footer";
 
 export type JobListParams = {
@@ -218,7 +224,7 @@ export function useAddHiringTeamMember(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: { userId: number; role?: string }) =>
-      serverFetch<{ data: any }>(`/jobs/${jobId}/team`, {
+      serverFetch<{ data: HiringTeamMembership }>(`/jobs/${jobId}/team`, {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -232,9 +238,10 @@ export function useRemoveHiringTeamMember(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (userId: number) =>
-      serverFetch<{ data: any }>(`/jobs/${jobId}/team/${userId}`, {
-        method: "DELETE",
-      }),
+      serverFetch<{ data: HiringTeamMembership | null }>(
+        `/jobs/${jobId}/team/${userId}`,
+        { method: "DELETE" },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "team"] });
     },

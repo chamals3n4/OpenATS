@@ -5,11 +5,13 @@ import { UserRemove01Icon } from "@hugeicons/core-free-icons";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { timeAgo } from "../constants";
+import type { useUnrejectCandidate } from "@/hooks/queries/use-candidates";
+import type { CandidateDetail } from "@/types";
 
 interface RejectionSectionProps {
-  candidate: any;
+  candidate: CandidateDetail;
   candidateId: number;
-  unrejectMutation: any;
+  unrejectMutation: ReturnType<typeof useUnrejectCandidate>;
   onReject: () => void;
 }
 
@@ -66,7 +68,7 @@ export function RejectionSection({
         </div>
       ) : (
         <div className="space-y-3">
-          {(candidate.rejections ?? []).map((r: any) => (
+          {(candidate.rejections ?? []).map((r) => (
             <div
               key={r.id}
               className="rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 overflow-hidden"

@@ -66,7 +66,7 @@ export function AssessmentResultsSheetContent({
         <h5 className="text-xs font-bold text-slate-400 dark:text-neutral-500 uppercase tracking-wider mb-2">
           Questions &amp; Answers
         </h5>
-        {questions.map((q: any, idx: number) => {
+        {questions.map((q, idx) => {
           return (
             <div
               key={q.id}
@@ -106,7 +106,7 @@ export function AssessmentResultsSheetContent({
                     Options
                   </span>
                   <div className="grid gap-2">
-                    {q.options.map((opt: any) => {
+                    {q.options.map((opt) => {
                       const isSelected =
                         q.answer?.selectedOptionIds?.includes(opt.id) ?? false;
                       const isCorrect = opt.isCorrect;

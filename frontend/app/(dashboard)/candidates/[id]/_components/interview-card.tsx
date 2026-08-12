@@ -31,15 +31,17 @@ import {
   useInterviewFeedback,
   useDeleteInterviewFeedback,
 } from "@/hooks/queries/use-interview-feedback";
+import type { useDeleteInterview } from "@/hooks/queries/use-interviews";
+import type { CandidateInterview, StageType } from "@/types";
 
 export function InterviewCard({
   interview,
   stageMap,
   deleteInterviewMutation,
 }: {
-  interview: any;
+  interview: CandidateInterview;
   stageMap: Record<number, string>;
-  deleteInterviewMutation: any;
+  deleteInterviewMutation: ReturnType<typeof useDeleteInterview>;
 }) {
   const [showFeedback, setShowFeedback] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -50,7 +52,7 @@ export function InterviewCard({
   const feedback = feedbackData?.data ?? [];
   const deleteFeedbackMutation = useDeleteInterviewFeedback();
 
-  const stageTypeColor = (stageType: string | null) => {
+  const stageTypeColor = (stageType: StageType | null) => {
     if (stageType === "screening") return "bg-amber-500";
     if (stageType === "interview") return "bg-blue-500";
     if (stageType === "offer") return "bg-emerald-500";
@@ -150,7 +152,7 @@ export function InterviewCard({
             </div>
           ) : (
             <div className="max-h-[400px] space-y-3 overflow-y-auto pr-1">
-              {feedback.map((fb: any) => (
+              {feedback.map((fb) => (
                 <div
                   key={fb.id}
                   className="rounded-md border border-slate-200 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-900 p-3"

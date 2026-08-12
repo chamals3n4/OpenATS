@@ -6,7 +6,13 @@ import {
   useMutation,
 } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
-import type { Assessment, AssessmentQuestion } from "@/types";
+import type {
+  Assessment,
+  AssessmentQuestion,
+  JobAssessment,
+  NewAssessmentQuestion,
+  QuestionType,
+} from "@/types";
 
 export function useAssessments() {
   return useQuery({
@@ -44,7 +50,7 @@ export function useCreateAssessment() {
       description: string | null;
       timeLimit: number;
       createdBy?: number;
-      questions?: any[];
+      questions?: NewAssessmentQuestion[];
     }) =>
       serverFetch<{ data: Assessment }>("/assessments", {
         method: "POST",
@@ -182,7 +188,7 @@ export function useAttachAssessment(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: { assessmentId: number; triggerStageId: number }) =>
-      serverFetch<{ data: any }>(`/jobs/${jobId}/assessments`, {
+      serverFetch<{ data: JobAssessment }>(`/jobs/${jobId}/assessments`, {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -198,9 +204,10 @@ export function useDetachAssessment(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (attachmentId: number) =>
-      serverFetch<{ data: any }>(`/jobs/${jobId}/assessments/${attachmentId}`, {
-        method: "DELETE",
-      }),
+      serverFetch<{ data: JobAssessment }>(
+        `/jobs/${jobId}/assessments/${attachmentId}`,
+        { method: "DELETE" },
+      ),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ["jobs", jobId, "assessments"],
@@ -279,7 +286,7 @@ export function useAttemptResults(attemptId: number, options?: { enabled?: boole
             id: number;
             title: string;
             description: string | null;
-            questionType: "single_choice" | "multiple_choice" | "text";
+            questionType: QuestionType;
             points: number;
             position: number;
             options: {

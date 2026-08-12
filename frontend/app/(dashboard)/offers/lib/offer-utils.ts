@@ -1,4 +1,4 @@
-import type { Offer } from "@/types";
+import type { Offer, OfferWithRelations } from "@/types";
 
 export const STATUS_BADGE: Record<string, { bg: string; text: string }> = {
   draft: {
@@ -49,19 +49,7 @@ export function capitalizeStatus(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }
 
-// Note: These types depend on your API response shape.
-// If your API returns nested candidate/job objects, update the Offer type
-// or use these helper types:
-export interface OfferWithRelations extends Offer {
-  candidate?: {
-    firstName: string;
-    lastName: string;
-  } | null;
-  job?: {
-    id: number;
-    title: string;
-  } | null;
-}
+export type { OfferWithRelations } from "@/types";
 
 export function getCandidateName(offer: OfferWithRelations): string {
   const c = offer.candidate;

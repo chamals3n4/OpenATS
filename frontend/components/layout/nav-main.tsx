@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
 
 import {
   Collapsible,
@@ -24,7 +24,7 @@ import {
 type NavItem = {
   title: string;
   url: string;
-  icon: any;
+  icon: IconSvgElement;
   isActive?: boolean;
   items?: { title: string; url: string }[];
 };
@@ -36,11 +36,13 @@ function NavCollapsibleSection({
 }) {
   const [open, setOpen] = React.useState(() => Boolean(item.isActive));
 
-  React.useEffect(() => {
-    if (item.isActive) {
-      setOpen(true);
-    }
-  }, [item.isActive]);
+  // Force the section open when it becomes active, while still letting the
+  // user collapse it afterwards.
+  const [wasActive, setWasActive] = React.useState(item.isActive);
+  if (item.isActive !== wasActive) {
+    setWasActive(item.isActive);
+    if (item.isActive) setOpen(true);
+  }
 
   return (
     <Collapsible

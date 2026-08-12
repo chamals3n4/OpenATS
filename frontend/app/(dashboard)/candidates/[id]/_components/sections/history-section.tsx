@@ -3,12 +3,13 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon } from "@hugeicons/core-free-icons";
 import { timeAgo } from "../constants";
+import type { CandidateDetail } from "@/types";
 
 export function HistorySection({
   candidate,
   stageMap,
 }: {
-  candidate: any;
+  candidate: CandidateDetail;
   stageMap: Record<number, string>;
 }) {
   return (
@@ -42,7 +43,7 @@ export function HistorySection({
           <div className="relative">
             <div className="absolute left-[11px] top-2 bottom-2 w-px bg-slate-200 dark:bg-neutral-800" />
             <div className="space-y-5 pl-8">
-              {candidate.history.map((h: any, i: number) => (
+              {candidate.history.map((h, i) => (
                 <div key={h.id} className="relative">
                   <div
                     className={`absolute -left-[31px] top-1.5 size-3.5 rounded-full border-[3px] border-white dark:border-neutral-900 ring-2 ${

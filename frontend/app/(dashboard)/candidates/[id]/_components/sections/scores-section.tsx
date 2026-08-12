@@ -3,9 +3,10 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ChartEvaluationIcon } from "@hugeicons/core-free-icons";
 import { formatDate } from "../constants";
+import type { useCandidateAssessments } from "@/hooks/queries/use-assessments";
 
 interface ScoresSectionProps {
-  assessmentsData: any;
+  assessmentsData: ReturnType<typeof useCandidateAssessments>["data"];
   onViewAttempt: (id: number) => void;
 }
 
@@ -77,7 +78,7 @@ export function ScoresSection({
         </p>
       </div>
       <div className="space-y-3">
-        {attempts.map((a: any) => {
+        {attempts.map((a) => {
           const statusStyles: Record<
             string,
             { bg: string; text: string; label: string }

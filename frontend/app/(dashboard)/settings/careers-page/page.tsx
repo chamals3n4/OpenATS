@@ -101,10 +101,13 @@ export default function CareersSettingsPage() {
   const [origins, setOrigins] = useState<string[]>([]);
   const [draft, setDraft] = useState("");
 
-  useEffect(() => {
-    const list = data?.data?.origins;
-    if (Array.isArray(list)) setOrigins(list);
-  }, [data]);
+  // Seed the editable list whenever the query returns a new one.
+  const [seededOrigins, setSeededOrigins] = useState<string[] | null>(null);
+  const fetchedOrigins = data?.data?.origins;
+  if (Array.isArray(fetchedOrigins) && fetchedOrigins !== seededOrigins) {
+    setSeededOrigins(fetchedOrigins);
+    setOrigins(fetchedOrigins);
+  }
 
   const appBase = useMemo(() => {
     const env = process.env.NEXT_PUBLIC_APP_URL?.replace(/\/$/, "").trim();
@@ -310,7 +313,7 @@ export default function CareersSettingsPage() {
             title="Embed snippet"
             description={
               <>
-                Drop this on any site that can load your app's{" "}
+                Drop this on any site that can load your app&apos;s{" "}
                 <code className="font-mono">/embed.js</code> — same origin or
                 CORS, as configured above.
               </>

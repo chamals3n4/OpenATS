@@ -36,6 +36,13 @@ import {
 import { useDragSort } from "@/hooks/use-drag-sort";
 import { useIsManager } from "@/hooks/use-role";
 import type { CustomQuestion } from "@/types";
+import type {
+  useCreateQuestion,
+  useDeleteQuestion,
+} from "@/hooks/queries/use-jobs";
+
+// The DB enum also allows `multiple_choice`, but this tab only offers these four.
+type CustomQuestionType = CustomQuestion["questionType"];
 
 interface CustomQuestionsTabProps {
   questions: CustomQuestion[];
@@ -43,8 +50,8 @@ interface CustomQuestionsTabProps {
   isAddingMode: boolean;
   editingQuestionId: number | null;
   setEditingQuestionId: (id: number | null) => void;
-  editQuestionType: any;
-  setEditQuestionType: (type: any) => void;
+  editQuestionType: CustomQuestionType;
+  setEditQuestionType: (type: CustomQuestionType) => void;
   editQuestionText: string;
   setEditQuestionText: (text: string) => void;
   editQuestionRequired: boolean;
@@ -52,15 +59,15 @@ interface CustomQuestionsTabProps {
   handleSaveQuestion: (id: number) => void;
   updateQuestionMutationPending: boolean;
   openEditQuestion: (q: CustomQuestion) => void;
-  deleteQuestionMutation: any;
+  deleteQuestionMutation: ReturnType<typeof useDeleteQuestion>;
   handleQuestionReorder: (from: number, to: number) => void;
-  newQuestionType: any;
-  setNewQuestionType: (type: any) => void;
+  newQuestionType: CustomQuestionType;
+  setNewQuestionType: (type: CustomQuestionType) => void;
   newQuestionText: string;
   setNewQuestionText: (text: string) => void;
   newQuestionRequired: boolean;
   setNewQuestionRequired: (req: boolean) => void;
-  createQuestionMutation: any;
+  createQuestionMutation: ReturnType<typeof useCreateQuestion>;
 }
 
 const QUESTION_TYPE_LABELS: Record<string, string> = {
@@ -133,7 +140,9 @@ export function CustomQuestionsTab({
                     <div className="flex flex-wrap items-center gap-4">
                       <Select
                         value={editQuestionType}
-                        onValueChange={(val) => setEditQuestionType(val as any)}
+                        onValueChange={(val) =>
+                          setEditQuestionType(val as CustomQuestionType)
+                        }
                       >
                         <SelectTrigger className="w-[180px] h-10! min-h-10 rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-0 text-[15px] text-slate-600 dark:text-neutral-300 shadow-none focus-visible:ring-1 focus-visible:ring-slate-300 dark:focus-visible:ring-neutral-600">
                           <SelectValue>
@@ -301,7 +310,9 @@ export function CustomQuestionsTab({
             <div className="flex flex-wrap items-center gap-4">
               <Select
                 value={newQuestionType}
-                onValueChange={(val) => setNewQuestionType(val as any)}
+                onValueChange={(val) =>
+                  setNewQuestionType(val as CustomQuestionType)
+                }
               >
                 <SelectTrigger className="w-[180px] h-10! min-h-10 cursor-pointer rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-3 py-0 text-[15px] text-slate-600 dark:text-neutral-300 shadow-none focus-visible:ring-1 focus-visible:ring-slate-300 dark:focus-visible:ring-neutral-600">
                   <SelectValue placeholder="Question Type">

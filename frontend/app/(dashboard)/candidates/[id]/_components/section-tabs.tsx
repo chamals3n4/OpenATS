@@ -2,11 +2,12 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { SECTIONS, type SectionId } from "./constants";
+import type { CandidateCvAnalysisPayload } from "@/types";
 
 interface SectionTabsProps {
   activeSection: SectionId;
   onSectionChange: (id: SectionId) => void;
-  cvAnalysis?: any;
+  cvAnalysis?: CandidateCvAnalysisPayload | null;
   hasOffer: boolean;
   offerDotColor?: string;
 }

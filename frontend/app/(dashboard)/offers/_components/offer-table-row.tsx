@@ -6,7 +6,7 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
-import type { Offer } from "@/types";
+import type { OfferWithRelations } from "@/types";
 import {
   getStatusStyle,
   fmtSalary,
@@ -18,9 +18,9 @@ import {
 import { useIsManager } from "@/hooks/use-role";
 
 interface OfferTableRowProps {
-  offer: Offer;
-  onRowClick: (offer: Offer) => void;
-  onDelete: (offer: Offer) => void;
+  offer: OfferWithRelations;
+  onRowClick: (offer: OfferWithRelations) => void;
+  onDelete: (offer: OfferWithRelations) => void;
   isSelected: boolean;
   onSelectedChange: (checked: boolean) => void;
 }
@@ -46,7 +46,7 @@ export function OfferTableRow({
         onCheckedChange={onSelectedChange}
       />
       <TableCell className="h-10 px-6 py-0 text-slate-700 dark:text-neutral-300 font-medium">
-        {getCandidateName(offer as any)}
+        {getCandidateName(offer)}
       </TableCell>
       <TableCell className="h-10 px-6 py-0">
         <Badge
@@ -56,7 +56,7 @@ export function OfferTableRow({
         </Badge>
       </TableCell>
       <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
-        {getJobTitle(offer as any)}
+        {getJobTitle(offer)}
       </TableCell>
       <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
         {fmtSalary(offer)}

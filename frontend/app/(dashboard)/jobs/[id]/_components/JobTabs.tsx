@@ -14,6 +14,14 @@ import type {
   Assessment,
   JobAssessment,
 } from "@/types";
+import type {
+  useCreateQuestion,
+  useDeleteQuestion,
+  useRemoveHiringTeamMember,
+} from "@/hooks/queries/use-jobs";
+import type { useAttachAssessment } from "@/hooks/queries/use-assessments";
+
+type CustomQuestionType = CustomQuestion["questionType"];
 
 interface JobTabsProps {
   activeJobTab: string;
@@ -27,7 +35,7 @@ interface JobTabsProps {
   setNewMemberId: (id: string) => void;
   handleAddTeamMember: () => void;
   addTeamMemberMutationPending: boolean;
-  removeTeamMemberMutation: any;
+  removeTeamMemberMutation: ReturnType<typeof useRemoveHiringTeamMember>;
   stages: (PipelineStage & { color: string })[];
   setAddStageOpen: (open: boolean) => void;
   editingStageId: number | null;
@@ -43,8 +51,8 @@ interface JobTabsProps {
   isAddingMode: boolean;
   editingQuestionId: number | null;
   setEditingQuestionId: (id: number | null) => void;
-  editQuestionType: any;
-  setEditQuestionType: (type: any) => void;
+  editQuestionType: CustomQuestionType;
+  setEditQuestionType: (type: CustomQuestionType) => void;
   editQuestionText: string;
   setEditQuestionText: (text: string) => void;
   editQuestionRequired: boolean;
@@ -52,21 +60,21 @@ interface JobTabsProps {
   handleSaveQuestion: (id: number) => void;
   updateQuestionMutationPending: boolean;
   openEditQuestion: (q: CustomQuestion) => void;
-  deleteQuestionMutation: any;
+  deleteQuestionMutation: ReturnType<typeof useDeleteQuestion>;
   handleQuestionReorder: (from: number, to: number) => void;
-  newQuestionType: any;
-  setNewQuestionType: (type: any) => void;
+  newQuestionType: CustomQuestionType;
+  setNewQuestionType: (type: CustomQuestionType) => void;
   newQuestionText: string;
   setNewQuestionText: (text: string) => void;
   newQuestionRequired: boolean;
   setNewQuestionRequired: (req: boolean) => void;
-  createQuestionMutation: any;
+  createQuestionMutation: ReturnType<typeof useCreateQuestion>;
   isAssessmentDialogOpen: boolean;
   setIsAssessmentDialogOpen: (open: boolean) => void;
   attachedAssessments: JobAssessment[];
   allAssessments: Assessment[];
   setDetachTarget: (id: number | null) => void;
-  attachAssessmentMutation: any;
+  attachAssessmentMutation: ReturnType<typeof useAttachAssessment>;
   assessmentSelectId: string;
   setAssessmentSelectId: (id: string) => void;
   triggerStageSelectId: string;

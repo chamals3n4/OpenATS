@@ -74,12 +74,15 @@ export function SidebarUserMenu({
   const { theme, setTheme } = useTheme();
   const { state } = useSidebar();
   const queryClient = useQueryClient();
-  const [mounted, setMounted] = React.useState(false);
   const [confirmLogoutOpen, setConfirmLogoutOpen] = React.useState(false);
 
-  React.useEffect(() => {
-    setMounted(true);
-  }, []);
+  // The theme is only known on the client, so hold the toggle back until
+  // after hydration rather than rendering a value the server cannot match.
+  const mounted = React.useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
 
   const collapsed = state === "collapsed";
   const showProfileRow = variant === "sidebar" && !collapsed;

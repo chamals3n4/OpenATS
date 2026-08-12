@@ -20,6 +20,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import type { Assessment, JobAssessment, PipelineStage } from "@/types";
+import type { useAttachAssessment } from "@/hooks/queries/use-assessments";
 import { useIsManager } from "@/hooks/use-role";
 
 interface AssessmentsTabProps {
@@ -29,7 +30,7 @@ interface AssessmentsTabProps {
   allAssessments: Assessment[];
   stages: (PipelineStage & { color: string })[];
   setDetachTarget: (id: number | null) => void;
-  attachAssessmentMutation: any;
+  attachAssessmentMutation: ReturnType<typeof useAttachAssessment>;
   assessmentSelectId: string;
   setAssessmentSelectId: (id: string) => void;
   triggerStageSelectId: string;

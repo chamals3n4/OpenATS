@@ -11,11 +11,11 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/spinner";
-import type { Offer } from "@/types";
+import type { OfferWithRelations } from "@/types";
 import { getCandidateName } from "../lib/offer-utils";
 
 interface OfferDeleteDialogProps {
-  offer: Offer | null;
+  offer: OfferWithRelations | null;
   isOpen: boolean;
   isPending: boolean;
   onClose: () => void;
@@ -29,7 +29,7 @@ export function OfferDeleteDialog({
   onClose,
   onConfirm,
 }: OfferDeleteDialogProps) {
-  const candidateName = offer ? getCandidateName(offer as any) : "";
+  const candidateName = offer ? getCandidateName(offer) : "";
 
   return (
     <AlertDialog open={isOpen} onOpenChange={(o) => !o && onClose()}>

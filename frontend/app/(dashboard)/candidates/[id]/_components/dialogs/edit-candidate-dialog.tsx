@@ -11,11 +11,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import type { CandidateDetail } from "@/types";
 
 interface EditCandidateDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  candidate: any;
+  candidate: CandidateDetail;
   firstName: string;
   onFirstNameChange: (v: string) => void;
   lastName: string;

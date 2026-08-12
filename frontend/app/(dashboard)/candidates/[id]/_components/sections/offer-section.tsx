@@ -27,13 +27,19 @@ import {
 } from "@/hooks/queries/use-offers";
 import { serverFetch } from "@/lib/auth-action";
 import { OFFER_STATUS_STYLES, formatDate } from "../constants";
+import type {
+  CandidateDetail,
+  Offer,
+  PipelineStage,
+  Template,
+} from "@/types";
 
 interface OfferSectionProps {
-  candidate: any;
+  candidate: CandidateDetail;
   candidateId: number;
-  offer: any;
-  pipelineStages: any[];
-  emailTemplates: any[];
+  offer: Offer | null;
+  pipelineStages: PipelineStage[];
+  emailTemplates: Template[];
   jobId: number;
 }
 
@@ -309,7 +315,7 @@ export function OfferSection({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="">No template</SelectItem>
-                  {emailTemplates.map((t: any) => (
+                  {emailTemplates.map((t) => (
                     <SelectItem key={t.id} value={String(t.id)}>
                       {t.name}
                     </SelectItem>

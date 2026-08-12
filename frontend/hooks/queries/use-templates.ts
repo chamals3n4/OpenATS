@@ -5,7 +5,7 @@ import {
   useQueryClient,
   useMutation,
 } from "@tanstack/react-query";
-import type { Template } from "@/types";
+import type { Template, TemplateBody } from "@/types";
 import { serverFetch } from "@/lib/auth-action";
 import type { PaginationInfo } from "@/components/table/table-footer";
 
@@ -102,8 +102,16 @@ export function useDeleteTemplate() {
 
 export function usePreviewTemplate() {
   return useMutation({
-    mutationFn: ({ id, context }: { id: number; context: any }) =>
-      serverFetch<any>(`/templates/${id}/preview`, {
+    mutationFn: ({
+      id,
+      context,
+    }: {
+      id: number;
+      context: Record<string, string | number | undefined>;
+    }) =>
+      serverFetch<{
+        data: { subject: string; bodyJson: TemplateBody; html: string };
+      }>(`/templates/${id}/preview`, {
         method: "POST",
         body: JSON.stringify({ context }),
       }),

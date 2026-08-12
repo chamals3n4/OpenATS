@@ -10,8 +10,13 @@ import {
   ChevronRight,
 } from "@hugeicons/core-free-icons";
 import { STATUS_CONFIG, fmtTime, fmtDateLong } from "./constants";
+import type { InterviewListItem } from "@/types";
 
-export function InlineCalendar({ interviews }: { interviews: any[] }) {
+export function InlineCalendar({
+  interviews,
+}: {
+  interviews: InterviewListItem[];
+}) {
   const today = new Date();
   const [cursor, setCursor] = useState(
     new Date(today.getFullYear(), today.getMonth(), 1),
@@ -29,7 +34,7 @@ export function InlineCalendar({ interviews }: { interviews: any[] }) {
   while (cells.length % 7 !== 0) cells.push(null);
 
   const byDay = useMemo(() => {
-    const m: Record<string, any[]> = {};
+    const m: Record<string, InterviewListItem[]> = {};
     interviews.forEach((iv) => {
       if (!iv.scheduledAt) return;
       const d = new Date(iv.scheduledAt);

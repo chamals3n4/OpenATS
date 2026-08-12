@@ -66,7 +66,7 @@ export default function CandidateDetailPage({
   const stageMap = useMemo(
     () =>
       Object.fromEntries(
-        (pipelineData?.data ?? []).map((s: any) => [s.id, s.name]),
+        (pipelineData?.data ?? []).map((s) => [s.id, s.name]),
       ),
     [pipelineData],
   );
@@ -92,7 +92,7 @@ export default function CandidateDetailPage({
   const unrejectMutation = useUnrejectCandidate();
   const { data: templatesData } = useTemplates();
   const allTemplates = templatesData?.data ?? [];
-  const emailTemplates = allTemplates.filter((t: any) => t.type === "email");
+  const emailTemplates = allTemplates.filter((t) => t.type === "email");
 
   const [showSchedulerDialog, setShowSchedulerDialog] = useState(false);
   const deleteInterviewMutation = useDeleteInterview();
@@ -100,9 +100,7 @@ export default function CandidateDetailPage({
 
   const pipelineStages = useMemo(
     () =>
-      [...(pipelineData?.data ?? [])].sort(
-        (a: any, b: any) => a.position - b.position,
-      ),
+      [...(pipelineData?.data ?? [])].sort((a, b) => a.position - b.position),
     [pipelineData],
   );
 

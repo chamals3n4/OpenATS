@@ -3,6 +3,7 @@
 import { useState, useMemo } from "react";
 import { useInterviews } from "@/hooks/queries/use-interviews";
 import { useDepartments } from "@/hooks/queries/use-company";
+import type { InterviewListItem } from "@/types";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Calendar02Icon,
@@ -32,10 +33,11 @@ export default function InterviewsClient() {
   const [departmentFilter, setDepartmentFilter] = useState("all");
 
   const [feedbackDialogOpen, setFeedbackDialogOpen] = useState(false);
-  const [feedbackTarget, setFeedbackTarget] = useState<any>(null);
+  const [feedbackTarget, setFeedbackTarget] =
+    useState<InterviewListItem | null>(null);
 
   const [editDialogOpen, setEditDialogOpen] = useState(false);
-  const [editTarget, setEditTarget] = useState<any>(null);
+  const [editTarget, setEditTarget] = useState<InterviewListItem | null>(null);
   const [editEventName, setEditEventName] = useState("");
   const [editMeetingUrl, setEditMeetingUrl] = useState("");
   const [editOutcome, setEditOutcome] = useState("pending");
@@ -63,12 +65,12 @@ export default function InterviewsClient() {
   const inputCls =
     "h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0";
 
-  const handleFeedback = (iv: any) => {
+  const handleFeedback = (iv: InterviewListItem) => {
     setFeedbackTarget(iv);
     setFeedbackDialogOpen(true);
   };
 
-  const handleEdit = (iv: any) => {
+  const handleEdit = (iv: InterviewListItem) => {
     setEditTarget(iv);
     setEditEventName(iv.eventName || "");
     setEditMeetingUrl(iv.meetingUrl || "");
@@ -136,7 +138,7 @@ export default function InterviewsClient() {
           </SelectTrigger>
           <SelectContent className="rounded-md shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
             <SelectItem value="all">All Departments</SelectItem>
-            {departments.map((d: any) => (
+            {departments.map((d) => (
               <SelectItem key={d.id} value={String(d.id)}>
                 {d.name}
               </SelectItem>

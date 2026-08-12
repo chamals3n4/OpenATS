@@ -32,7 +32,7 @@ export default function AssessmentsPageClient() {
     if (!deleteTarget) return;
     deleteAssessment.mutate(deleteTarget.id, {
       onSuccess: () => setDeleteTarget(null),
-      onError: (error: any) => {
+      onError: (error) => {
         toast.error(error.message || "Failed to delete assessment");
         setDeleteTarget(null);
       },

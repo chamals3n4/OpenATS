@@ -4,6 +4,7 @@ import type {
   QuestionType,
 } from "./assessment-builder-types";
 import { TRUE_FALSE_OPTIONS } from "./assessment-builder-constants";
+import type { NewAssessmentQuestion } from "@/types";
 
 let idCounter = 10;
 
@@ -50,7 +51,9 @@ export function getDefaultOptionsForType(
   return currentOptions;
 }
 
-export function formatQuestionsForApi(questions: Question[]) {
+export function formatQuestionsForApi(
+  questions: Question[],
+): NewAssessmentQuestion[] {
   return questions.map((q, idx) => {
     const isMultipleChoice = q.type !== "Short Answer";
 

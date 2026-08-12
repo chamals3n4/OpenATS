@@ -7,9 +7,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { timeAgo, type SentEmail } from "../constants";
+import type { CandidateDetail } from "@/types";
 
 interface EmailSectionProps {
-  candidate: any;
+  candidate: CandidateDetail;
 }
 
 export function EmailSection({ candidate }: EmailSectionProps) {

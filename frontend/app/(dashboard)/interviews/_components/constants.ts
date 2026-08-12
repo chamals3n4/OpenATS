@@ -1,4 +1,5 @@
-export function fmtTime(s: string) {
+export function fmtTime(s: string | null) {
+  if (!s) return "";
   return new Date(s).toLocaleTimeString("en-US", {
     hour: "2-digit",
     minute: "2-digit",

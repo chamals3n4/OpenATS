@@ -184,7 +184,7 @@ export default function EditAssessmentPage({
         title: assessmentTitle,
         description: assessmentDesc || null,
         timeLimit: parseInt(timeLimit) || 120,
-      } as any);
+      });
 
       const currentDbIds = new Set(
         savedQuestions.filter((q) => q.dbId).map((q) => q.dbId!),
@@ -227,8 +227,12 @@ export default function EditAssessmentPage({
       }
 
       router.push("/assessments");
-    } catch (error: any) {
-      alert(error.message || "Failed to update assessment");
+    } catch (error) {
+      alert(
+        error instanceof Error
+          ? error.message
+          : "Failed to update assessment",
+      );
     } finally {
       setIsSaving(false);
     }

@@ -1,9 +1,5 @@
-export type QuestionType =
-  | "short_answer"
-  | "long_answer"
-  | "checkbox"
-  | "radio"
-  | "multiple_choice";
+export type { QuestionType } from "@/types";
+import type { QuestionType } from "@/types";
 
 export interface Option {
   id: number;

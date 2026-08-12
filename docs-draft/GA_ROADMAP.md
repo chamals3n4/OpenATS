@@ -29,7 +29,6 @@ The focus of this phase is correctness and safety, not new features. Nothing her
 | Re-check socket tokens on reconnect | The token is read once when the dashboard layout renders. If it expires while a tab is open, reconnects fail silently and realtime stops until the page is refreshed. | 🟢 Done |
 | Authorize chat history over HTTP | `GET /chat/job/:jobId` and `/chat/candidate/:candidateId` return any conversation to any authenticated user. The socket rooms are now gated, so this is the remaining way to read another hiring team's chat. | 🟢 Done |
 | Rate limit authenticated routes | Only `/public/*` is rate limited today. | 🟢 Done |
-| Resolve dependency vulnerabilities | 52 reported (15 high). Real ones are `next` (DoS via Server Components), `sharp`, and `postcss`. `dompurify` arrives through `@asgardeo/nextjs` and may need an upstream fix. | 🔴 Planned |
 
 ### Deployment
 
@@ -59,9 +58,9 @@ The focus of this phase is correctness and safety, not new features. Nothing her
 | --- | --- | --- |
 | Add linting to the backend | There is no ESLint config or script, and `pnpm lint` at the repo root currently **fails** with `ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT`. Now configured, passing with 0 problems, and gated in CI. | 🟢 Done |
 | Call `validateEnv()` in `worker.ts` | The API validates its environment on boot, the worker does not, so it can start with broken config and fail later at job time. | 🟢 Done |
-| Fix the frontend's lint errors | The backend now passes, so `pnpm lint` at the root fails only on the frontend: 112 errors, mostly `react-hooks/set-state-in-effect`. Until these are cleared, lint cannot be a CI gate. | 🔴 Planned |
+| Fix the frontend's lint errors | 112 errors, of which 91 were `no-explicit-any` (not `set-state-in-effect` as first recorded). All 91 are gone, replaced with the types already in `types/index.ts`; fixing them surfaced three type/API mismatches, including question types that could never match. 11 errors remain, all `react-hooks` rules needing per-case behavioural judgement. | 🟡 In progress |
 | Remove `any` from the backend | 108 uses, mostly `catch (e: any)` and `(e as any).message`. All replaced with narrowed helpers, so `no-explicit-any` is an **error** and the backend has none. | 🟢 Done |
-| Add `CHANGELOG.md` | Release notes only exist on GitHub. | 🔴 Planned |
+| Add `CHANGELOG.md` | Release notes only existed on GitHub. All five releases are now reproduced in the repo in Keep a Changelog format, with an `[Unreleased]` section tracking the v0.5.0 work. | 🟢 Done |
 
 ---
 
@@ -73,6 +72,7 @@ The focus of this phase is correctness and safety, not new features. Nothing her
 | Implement NLP-based parsing | The feature itself. | 🔴 Planned |
 | Decide the Gemini relationship | Does in-house parsing replace Gemini or fall back to it? This decides whether `GEMINI_API_KEY` stays mandatory for self-hosters. | 🔴 Planned |
 | Tests for the parser | Written alongside, not after. | 🔴 Planned |
+| Resolve dependency vulnerabilities | 54 reported (15 high). Every high comes through `next@16.1.6`, the only direct dependency involved: bumping it to `>=16.2.11` also clears the `sharp` and `postcss` copies it pins. `dompurify` arrives via `@asgardeo/react` and needs a `pnpm.overrides` entry or an upstream fix. Deferred to just before release so the version bump is fresh. | 🔴 Planned |
 
 ---
 

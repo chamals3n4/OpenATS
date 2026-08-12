@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import type { Offer, PublicOfferView } from "@/types";
+import type { Offer, OfferWithRelations, PublicOfferView } from "@/types";
 import { serverFetch } from "@/lib/auth-action";
 import type { PaginationInfo } from "@/components/table/table-footer";
 
@@ -15,7 +15,7 @@ export function useOffers(jobId?: number) {
   return useQuery({
     queryKey: jobId ? ["offers", "job", jobId] : ["offers", "all"],
     queryFn: () =>
-      serverFetch<{ data: Offer[] }>(
+      serverFetch<{ data: OfferWithRelations[] }>(
         jobId ? `/offers/job/${jobId}` : "/offers",
       ),
     enabled: jobId === undefined || !!jobId,
@@ -104,7 +104,10 @@ export function useOffersList(params: OfferListParams = {}) {
       if (params.search) qs.set("search", params.search);
       if (params.status) qs.set("status", params.status);
       if (params.jobId) qs.set("jobId", String(params.jobId));
-      return serverFetch<{ data: Offer[]; pagination: PaginationInfo }>(`/offers?${qs}`);
+      return serverFetch<{
+        data: OfferWithRelations[];
+        pagination: PaginationInfo;
+      }>(`/offers?${qs}`);
     },
     staleTime: 1000 * 60 * 5,
     placeholderData: keepPreviousData,

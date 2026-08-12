@@ -5,17 +5,30 @@ import { jobChatMessages, candidateChatMessages, users } from "../../db/schema";
 import { eq, and } from "drizzle-orm";
 import { verifyAccessToken } from "../auth/verify-token";
 import type { AuthenticatedUser } from "../auth/verify-token";
+import {
+  canAccessCandidate,
+  canAccessJob,
+  parseRoomId,
+} from "../auth/job-access";
 import logger from "../../utils/logger";
 
 const STAFF_ROOM = "staff";
+const jobRoom = (jobId: number) => `job_${jobId}`;
+const candidateRoom = (candidateId: number) => `candidate_${candidateId}`;
 
 interface SocketData {
   user: AuthenticatedUser;
 }
 
+/** Events this server sends directly to one socket (broadcasts go via `io`). */
+interface ServerToClientEvents {
+  room_denied: (payload: { room: "job" | "candidate"; id: number }) => void;
+  write_denied: (payload: { event: string }) => void;
+}
+
 type AuthedSocket = Socket<
   Record<string, never>,
-  Record<string, never>,
+  ServerToClientEvents,
   Record<string, never>,
   SocketData
 >;
@@ -68,19 +81,58 @@ export class SocketService {
       socket.join(STAFF_ROOM);
       logger.info(`Socket connected: ${socket.id} (user ${user.id})`);
 
-      // job room
-      socket.on("join_job", (jobId: number) => {
-        socket.join(`job_${jobId}`);
+      // job room — membership of the hiring team is the entry ticket
+      socket.on("join_job", async (rawJobId: unknown) => {
+        const jobId = parseRoomId(rawJobId);
+        if (jobId === null) return;
+
+        if (!(await canAccessJob(user, jobId))) {
+          logger.warn(
+            `[socket] user ${user.id} denied join of job_${jobId} (not on hiring team)`,
+          );
+          socket.emit("room_denied", { room: "job", id: jobId });
+          return;
+        }
+
+        socket.join(jobRoom(jobId));
         logger.info(`Socket ${socket.id} joined job room: job_${jobId}`);
       });
 
-      // candidate room
-      socket.on("join_candidate", (candidateId: number) => {
-        socket.join(`candidate_${candidateId}`);
+      // candidate room — access follows the candidate's job
+      socket.on("join_candidate", async (rawCandidateId: unknown) => {
+        const candidateId = parseRoomId(rawCandidateId);
+        if (candidateId === null) return;
+
+        if (!(await canAccessCandidate(user, candidateId))) {
+          logger.warn(
+            `[socket] user ${user.id} denied join of candidate_${candidateId}`,
+          );
+          socket.emit("room_denied", { room: "candidate", id: candidateId });
+          return;
+        }
+
+        socket.join(candidateRoom(candidateId));
         logger.info(
           `Socket ${socket.id} joined candidate room: candidate_${candidateId}`,
         );
       });
+
+      /**
+       * Writes are authorized by room membership rather than a fresh query:
+       * a socket can only be in `job_<id>` if `join_job` already proved this
+       * user is on that hiring team. Without this, a client could skip the
+       * join entirely and post straight into any job's chat.
+       */
+      const inJobRoom = (jobId: number) => socket.rooms.has(jobRoom(jobId));
+      const inCandidateRoom = (candidateId: number) =>
+        socket.rooms.has(candidateRoom(candidateId));
+
+      const denyWrite = (event: string, id: number | null) => {
+        logger.warn(
+          `[socket] user ${user.id} denied ${event} for room id ${id} (not joined)`,
+        );
+        socket.emit("write_denied", { event });
+      };
 
       socket.on(
         "send_job_message",
@@ -89,11 +141,17 @@ export class SocketService {
           message: string;
           replyToId?: number;
         }) => {
+          const jobId = parseRoomId(data?.jobId);
+          if (jobId === null || !inJobRoom(jobId)) {
+            denyWrite("send_job_message", jobId);
+            return;
+          }
+
           try {
             const [newMessage] = await db
               .insert(jobChatMessages)
               .values({
-                jobId: data.jobId,
+                jobId,
                 senderId: user.id,
                 message: data.message,
                 replyToId: data.replyToId,
@@ -110,7 +168,7 @@ export class SocketService {
               .where(eq(users.id, user.id))
               .limit(1);
 
-            this.io?.to(`job_${data.jobId}`).emit("new_job_message", {
+            this.io?.to(jobRoom(jobId)).emit("new_job_message", {
               ...newMessage,
               senderName: sender
                 ? `${sender.firstName} ${sender.lastName}`
@@ -126,6 +184,12 @@ export class SocketService {
       socket.on(
         "edit_job_message",
         async (data: { jobId: number; messageId: number; message: string }) => {
+          const jobId = parseRoomId(data?.jobId);
+          if (jobId === null || !inJobRoom(jobId)) {
+            denyWrite("edit_job_message", jobId);
+            return;
+          }
+
           try {
             const [updated] = await db
               .update(jobChatMessages)
@@ -133,7 +197,7 @@ export class SocketService {
               .where(
                 and(
                   eq(jobChatMessages.id, data.messageId),
-                  eq(jobChatMessages.jobId, data.jobId),
+                  eq(jobChatMessages.jobId, jobId),
                   eq(jobChatMessages.senderId, user.id),
                   eq(jobChatMessages.isDeleted, false),
                 ),
@@ -152,7 +216,7 @@ export class SocketService {
               .where(eq(users.id, user.id))
               .limit(1);
 
-            this.io?.to(`job_${data.jobId}`).emit("job_message_updated", {
+            this.io?.to(jobRoom(jobId)).emit("job_message_updated", {
               ...updated,
               senderName: sender
                 ? `${sender.firstName} ${sender.lastName}`
@@ -168,6 +232,12 @@ export class SocketService {
       socket.on(
         "delete_job_message",
         async (data: { jobId: number; messageId: number }) => {
+          const jobId = parseRoomId(data?.jobId);
+          if (jobId === null || !inJobRoom(jobId)) {
+            denyWrite("delete_job_message", jobId);
+            return;
+          }
+
           try {
             const [deleted] = await db
               .update(jobChatMessages)
@@ -175,7 +245,7 @@ export class SocketService {
               .where(
                 and(
                   eq(jobChatMessages.id, data.messageId),
-                  eq(jobChatMessages.jobId, data.jobId),
+                  eq(jobChatMessages.jobId, jobId),
                   eq(jobChatMessages.senderId, user.id),
                   eq(jobChatMessages.isDeleted, false),
                 ),
@@ -184,7 +254,7 @@ export class SocketService {
 
             if (!deleted) return;
             this.io
-              ?.to(`job_${data.jobId}`)
+              ?.to(jobRoom(jobId))
               .emit("job_message_deleted", { id: deleted.id });
           } catch (error) {
             logger.error("Error deleting job message: " + error);
@@ -199,11 +269,17 @@ export class SocketService {
           message: string;
           replyToId?: number;
         }) => {
+          const candidateId = parseRoomId(data?.candidateId);
+          if (candidateId === null || !inCandidateRoom(candidateId)) {
+            denyWrite("send_candidate_message", candidateId);
+            return;
+          }
+
           try {
             const [newMessage] = await db
               .insert(candidateChatMessages)
               .values({
-                candidateId: data.candidateId,
+                candidateId,
                 senderId: user.id,
                 message: data.message,
                 replyToId: data.replyToId,
@@ -212,7 +288,7 @@ export class SocketService {
 
             // broadcast to the candidate room
             this.io
-              ?.to(`candidate_${data.candidateId}`)
+              ?.to(candidateRoom(candidateId))
               .emit("new_candidate_message", newMessage);
           } catch (error) {
             logger.error("Error saving candidate message: " + error);
@@ -276,7 +352,7 @@ export class SocketService {
         })
         .returning();
 
-      this.io?.to(`job_${jobId}`).emit("new_job_message", newMessage);
+      this.io?.to(jobRoom(jobId)).emit("new_job_message", newMessage);
     } catch (error) {
       logger.error("Error sending system job message: " + error);
     }

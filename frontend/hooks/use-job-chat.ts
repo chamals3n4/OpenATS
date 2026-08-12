@@ -1,11 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { io, type Socket } from "socket.io-client";
+import { type Socket } from "socket.io-client";
 import type { ChatMessage } from "@/types";
 import { useSocketToken } from "@/components/providers/socket-auth-provider";
-
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+import { createAuthedSocket } from "@/lib/socket";
 
 export function useJobChat(jobId: number, enabled: boolean) {
   const [liveMessages, setLiveMessages] = useState<ChatMessage[]>([]);
@@ -15,12 +14,10 @@ export function useJobChat(jobId: number, enabled: boolean) {
   useEffect(() => {
     if (!enabled || !jobId || !token) return;
 
-    const socket = io(SOCKET_URL, {
-      transports: ["websocket"],
-      auth: { token },
-    });
+    const socket = createAuthedSocket(token);
     socketRef.current = socket;
 
+    // Re-joined on every connect, so a reconnect restores the room too.
     socket.on("connect", () => {
       socket.emit("join_job", jobId);
     });

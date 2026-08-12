@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect } from "react";
-import { io } from "socket.io-client";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSocketToken } from "@/components/providers/socket-auth-provider";
-
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+import { createAuthedSocket } from "@/lib/socket";
 
 export function useCandidateSocket() {
   const queryClient = useQueryClient();
@@ -14,10 +12,7 @@ export function useCandidateSocket() {
   useEffect(() => {
     if (!token) return;
 
-    const socket = io(SOCKET_URL, {
-      transports: ["websocket"],
-      auth: { token },
-    });
+    const socket = createAuthedSocket(token);
 
     socket.on("candidate_applied", (data: { jobId: number }) => {
       queryClient.invalidateQueries({

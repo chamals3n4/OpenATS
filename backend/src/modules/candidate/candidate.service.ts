@@ -20,7 +20,6 @@ import {
 import type { Candidate } from "../../db/schema/candidates";
 import { assessmentExecutionService } from "../assessment-execution/assessment-execution.service";
 import { candidateActivityService } from "./candidate-activity.service";
-import { jobService } from "../job/job.service";
 import { socketService } from "../../shared/services/socket.service";
 import { rejectionService } from "../rejection/rejection.service";
 import { mailService } from "../../shared/services/mail.service";

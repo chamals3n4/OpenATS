@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { assessmentService } from "./assessment.service";
 import logger from "../../utils/logger";
+import { getErrorCode, getErrorMessage} from "../../utils/error.utils";
 
 const optionSchema = z.object({
   label: z.string().min(1, "Option label is required").max(500),
@@ -62,7 +63,7 @@ export const getAllAssessments = async (req: Request, res: Response) => {
     const result = await assessmentService.getAll();
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch all assessments: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch all assessments: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch assessments" });
   }
 };
@@ -84,7 +85,7 @@ export const getAssessmentById = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch assessment id=${req.params.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch assessment id=${req.params.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch assessment" });
   }
 };
@@ -117,12 +118,12 @@ export const createAssessment = async (req: Request, res: Response) => {
     });
     logger.info(`Assessment created: id=${result.id}, title="${result.title}", timeLimit=${result.timeLimit}m, createdBy=${createdBy}`);
     res.status(201).json({ data: result });
-  } catch (error: any) {
-    if (error?.code === "23503") {
+  } catch (error) {
+    if (getErrorCode(error) === "23503") {
       res.status(400).json({ error: "User not found" });
       return;
     }
-    logger.error(`Failed to create assessment - user ${req.user?.id}: ${error?.message}`);
+    logger.error(`Failed to create assessment - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to create assessment" });
   }
 };
@@ -153,7 +154,7 @@ export const updateAssessment = async (req: Request, res: Response) => {
     logger.info(`Assessment updated: id=${id} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to update assessment id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to update assessment id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to update assessment" });
   }
 };
@@ -176,7 +177,7 @@ export const deleteAssessment = async (req: Request, res: Response) => {
     logger.info(`Assessment deleted: id=${id}, title="${result.title}" by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to delete assessment id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to delete assessment id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to delete assessment" });
   }
 };
@@ -209,7 +210,7 @@ export const createQuestion = async (req: Request, res: Response) => {
     logger.info(`Assessment question created: id=${result.id}, type="${result.questionType}", assessmentId=${assessmentId} by user ${req.user?.id}`);
     res.status(201).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to create question for assessment id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to create question for assessment id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to create question" });
   }
 };
@@ -248,7 +249,7 @@ export const updateQuestion = async (req: Request, res: Response) => {
     logger.info(`Assessment question updated: id=${questionId}, assessmentId=${assessmentId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to update question id=${req.params.questionId} for assessment id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to update question id=${req.params.questionId} for assessment id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to update question" });
   }
 };
@@ -275,7 +276,7 @@ export const deleteQuestion = async (req: Request, res: Response) => {
     logger.info(`Assessment question deleted: id=${questionId}, assessmentId=${assessmentId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to delete question id=${req.params.questionId} for assessment id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to delete question id=${req.params.questionId} for assessment id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to delete question" });
   }
 };

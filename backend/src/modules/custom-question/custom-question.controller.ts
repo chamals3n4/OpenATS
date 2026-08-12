@@ -3,6 +3,7 @@ import { z } from "zod";
 import { customQuestionService } from "./custom-question.service";
 import { jobService } from "../job/job.service";
 import logger from "../../utils/logger";
+import { getErrorCode, getErrorMessage} from "../../utils/error.utils";
 
 const optionSchema = z.object({
   label: z.string().min(1, "Option label is required").max(500),
@@ -58,7 +59,7 @@ export const getCustomQuestions = async (req: Request, res: Response) => {
     const result = await customQuestionService.getByJobId(jobId);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch custom questions for job id=${req.params.jobId}: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch custom questions for job id=${req.params.jobId}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch custom questions" });
   }
 };
@@ -88,7 +89,7 @@ export const createCustomQuestion = async (req: Request, res: Response) => {
     logger.info(`Custom question created: id=${result.id}, type="${result.questionType}", jobId=${jobId} by user ${req.user?.id}`);
     res.status(201).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to create custom question for job id=${req.params.jobId} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to create custom question for job id=${req.params.jobId} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to create custom question" });
   }
 };
@@ -127,7 +128,7 @@ export const updateCustomQuestion = async (req: Request, res: Response) => {
     logger.info(`Custom question updated: id=${questionId}, jobId=${jobId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to update custom question id=${req.params.questionId} for job id=${req.params.jobId} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to update custom question id=${req.params.questionId} for job id=${req.params.jobId} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to update custom question" });
   }
 };
@@ -154,7 +155,7 @@ export const deleteCustomQuestion = async (req: Request, res: Response) => {
     logger.info(`Custom question deleted: id=${questionId}, jobId=${jobId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to delete custom question id=${req.params.questionId} for job id=${req.params.jobId} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to delete custom question id=${req.params.questionId} for job id=${req.params.jobId} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to delete custom question" });
   }
 };
@@ -173,7 +174,7 @@ export const getAssessmentAttachment = async (req: Request, res: Response) => {
     const result = await customQuestionService.getAttachment(jobId);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch assessment attachment for job id=${req.params.jobId}: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch assessment attachment for job id=${req.params.jobId}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch assessment attachment" });
   }
 };
@@ -204,16 +205,16 @@ export const attachAssessment = async (req: Request, res: Response) => {
     );
     logger.info(`Assessment attached to job application form: jobId=${jobId}, assessmentId=${parsed.data.assessmentId}, triggerStageId=${parsed.data.triggerStageId} by user ${req.user?.id}`);
     res.status(201).json({ data: result });
-  } catch (error: any) {
-    if (error?.message?.includes("Stage not found")) {
-      res.status(400).json({ error: error.message });
+  } catch (error) {
+    if (getErrorMessage(error).includes("Stage not found")) {
+      res.status(400).json({ error: getErrorMessage(error) });
       return;
     }
-    if (error?.code === "23503") {
+    if (getErrorCode(error) === "23503") {
       res.status(400).json({ error: "Assessment not found" });
       return;
     }
-    logger.error(`Failed to attach assessment to job id=${req.params.jobId} application form - user ${req.user?.id}: ${error?.message}`);
+    logger.error(`Failed to attach assessment to job id=${req.params.jobId} application form - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to attach assessment" });
   }
 };
@@ -242,7 +243,7 @@ export const detachAssessment = async (req: Request, res: Response) => {
     logger.info(`Assessment detached from job application form: jobId=${jobId}, triggerStageId=${triggerStageId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to detach assessment from job id=${req.params.jobId} application form - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to detach assessment from job id=${req.params.jobId} application form - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to detach assessment" });
   }
 };

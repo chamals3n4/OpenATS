@@ -8,7 +8,7 @@ export interface TemplateContext {
   start_date?: string;
   expiry_date?: string;
   company_name?: string;
-  [key: string]: any;
+  [key: string]: string | number | undefined;
 }
 
 export const templateEngineService = {

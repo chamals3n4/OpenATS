@@ -1,6 +1,7 @@
 import type IORedis from "ioredis";
 import { createRedisConnection } from "../../config/redis";
 import logger from "../../utils/logger";
+import { getErrorMessage } from "../../utils/error.utils";
 
 const CHANNEL = "cv-analysis:events";
 
@@ -25,7 +26,7 @@ export function subscribeToCvAnalysisEvents(
 
   subscriber.subscribe(CHANNEL, (err) => {
     if (err) {
-      logger.error(`[cv-events] failed to subscribe: ${err.message}`);
+      logger.error(`[cv-events] failed to subscribe: ${getErrorMessage(err)}`);
       return;
     }
     logger.info(`[cv-events] subscribed to "${CHANNEL}"`);

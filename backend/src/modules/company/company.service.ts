@@ -2,10 +2,12 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { company, departments } from "../../db";
 
+type Department = typeof departments.$inferSelect;
+
 const departmentsCache = new Map<
   string,
   {
-    value: any[];
+    value: Department[];
     expiresAt: number;
   }
 >();

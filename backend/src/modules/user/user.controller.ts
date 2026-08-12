@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { userService } from "./user.service";
 import logger from "../../utils/logger";
+import { getErrorMessage } from "../../utils/error.utils";
 
 const updateUserSchema = z.object({
   firstName: z.string().min(1).max(100).optional(),
@@ -31,6 +32,7 @@ export const getAllUsers = async (req: Request, res: Response) => {
     const result = await userService.getAll();
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch users: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch users" });
   }
 };
@@ -51,6 +53,7 @@ export const getUserById = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch user: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch user" });
   }
 };
@@ -119,6 +122,7 @@ export const createUser = async (req: Request, res: Response) => {
     const result = await userService.create(parsed.data);
     res.status(201).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to create user: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to create user" });
   }
 };

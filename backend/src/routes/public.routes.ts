@@ -30,6 +30,7 @@ import { mailService } from "../shared/services/mail.service";
 import { socketService } from "../shared/services/socket.service";
 import { integrationConnectionService } from "../shared/integrations/connection.service";
 import { getProviderClient } from "../shared/integrations/registry";
+import { getErrorMessage } from "../utils/error.utils";
 
 const router: Router = Router();
 
@@ -217,8 +218,8 @@ router.get("/interview/:token", publicReadLimiter, async (req, res) => {
           : "Unknown",
       },
     });
-  } catch (e: any) {
-    logger.error(`Failed to fetch public interview by token: ${e?.message}`);
+  } catch (e) {
+    logger.error(`Failed to fetch public interview by token: ${getErrorMessage(e)}`);
     res.status(500).json({ error: "Something went wrong. Please try again." });
   }
 });
@@ -359,10 +360,10 @@ router.patch(
               `Interview ${iv.id}: interviewer ${iv.interviewerId} no longer has a valid ${iv.meetingProvider} connection — confirmation will go out without an auto-generated link`,
             );
           }
-        } catch (err: any) {
+        } catch (err) {
           // Non-fatal — keep whatever meetingUrl was already on the row (manual or none)
           logger.error(
-            `Failed to auto-generate meeting link for interview ${iv.id}: ${err.message}`,
+            `Failed to auto-generate meeting link for interview ${iv.id}: ${getErrorMessage(err)}`,
           );
         }
       }
@@ -390,9 +391,9 @@ router.patch(
             ],
             meetingUrl,
           });
-        } catch (err: any) {
+        } catch (err) {
           logger.error(
-            `Failed to create calendar event for interview ${iv.id}: ${err.message}`,
+            `Failed to create calendar event for interview ${iv.id}: ${getErrorMessage(err)}`,
           );
         }
       }
@@ -421,9 +422,9 @@ router.patch(
             meetingUrl,
             iv.location ?? null,
           )
-          .catch((err: any) => {
+          .catch((err: unknown) => {
             logger.error(
-              `Failed to send confirmation email for interview ${iv.id}: ${err.message}`,
+              `Failed to send confirmation email for interview ${iv.id}: ${getErrorMessage(err)}`,
             );
           });
       }
@@ -434,8 +435,8 @@ router.patch(
       });
 
       res.status(200).json({ data: { confirmed: true, slot: selectedSlot } });
-    } catch (e: any) {
-      logger.error(`Failed to select interview slot: ${e?.message}`);
+    } catch (e) {
+      logger.error(`Failed to select interview slot: ${getErrorMessage(e)}`);
       res
         .status(500)
         .json({ error: "Something went wrong. Please try again." });

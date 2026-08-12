@@ -1,6 +1,6 @@
 import { eq, or } from "drizzle-orm";
 import { db } from "../../db";
-import { users, NewUser } from "../../db/schema";
+import { users } from "../../db/schema";
 import { cleanObject as clean } from "../../utils/object.utils";
 
 export interface UpdateUserInput {

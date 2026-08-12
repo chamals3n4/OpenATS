@@ -4,6 +4,7 @@ import { pipelineService } from "./pipeline.service";
 import { jobService } from "../job/job.service";
 import { cleanObject as clean } from "../../utils/object.utils";
 import logger from "../../utils/logger";
+import { getErrorCode, getErrorMessage} from "../../utils/error.utils";
 
 const stageTypeEnum = z.enum(["screening", "interview", "offer"]);
 
@@ -56,7 +57,7 @@ export const getPipeline = async (req: Request, res: Response) => {
     res.status(200).json({ data: stages });
   } catch (error) {
     logger.error(
-      `Failed to fetch pipeline for job id=${req.params.jobId}: ${(error as any)?.message}`,
+      `Failed to fetch pipeline for job id=${req.params.jobId}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({ error: "Failed to fetch pipeline stages" });
   }
@@ -87,11 +88,11 @@ export const createStage = async (req: Request, res: Response) => {
       `Pipeline stage created: id=${result?.id}, name="${result?.name}", jobId=${jobId} by user ${req.user?.id}`,
     );
     res.status(201).json({ data: result });
-  } catch (error: any) {
+  } catch (error) {
     logger.error(
-      `Failed to create pipeline stage for job id=${req.params.jobId} - user ${req.user?.id}: ${error?.message}`,
+      `Failed to create pipeline stage for job id=${req.params.jobId} - user ${req.user?.id}: ${getErrorMessage(error)}`,
     );
-    if (error?.code === "23505") {
+    if (getErrorCode(error) === "23505") {
       res
         .status(409)
         .json({ error: "A stage already exists at that position" });
@@ -99,7 +100,7 @@ export const createStage = async (req: Request, res: Response) => {
     }
     res.status(500).json({
       error: "Failed to create stage",
-      message: error.message || "Unknown server error",
+      message: getErrorMessage(error) || "Unknown server error",
     });
   }
 };
@@ -136,15 +137,15 @@ export const updateStage = async (req: Request, res: Response) => {
       `Pipeline stage updated: id=${stageId}, jobId=${jobId} by user ${req.user?.id}`,
     );
     res.status(200).json({ data: result });
-  } catch (error: any) {
-    if (error?.code === "23505") {
+  } catch (error) {
+    if (getErrorCode(error) === "23505") {
       res
         .status(409)
         .json({ error: "A stage already exists at that position" });
       return;
     }
     logger.error(
-      `Failed to update pipeline stage id=${req.params.stageId} for job id=${req.params.jobId} - user ${req.user?.id}: ${error?.message}`,
+      `Failed to update pipeline stage id=${req.params.stageId} for job id=${req.params.jobId} - user ${req.user?.id}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({ error: "Failed to update stage" });
   }
@@ -175,13 +176,13 @@ export const reorderStages = async (req: Request, res: Response) => {
       `Pipeline stages reordered: jobId=${jobId}, stageCount=${parsed.data.stages.length} by user ${req.user?.id}`,
     );
     res.status(200).json({ data: result });
-  } catch (error: any) {
+  } catch (error) {
     logger.error(
-      `Failed to reorder pipeline stages for job id=${req.params.jobId} - user ${req.user?.id}: ${error?.message}`,
+      `Failed to reorder pipeline stages for job id=${req.params.jobId} - user ${req.user?.id}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({
       error: "Failed to reorder stages",
-      message: error.message || "Unknown server error",
+      message: getErrorMessage(error) || "Unknown server error",
     });
   }
 };
@@ -217,8 +218,8 @@ export const deleteStage = async (req: Request, res: Response) => {
       `Pipeline stage deleted: id=${stageId}, name="${stage.name}", jobId=${jobId} by user ${req.user?.id}`,
     );
     res.status(200).json({ data: result });
-  } catch (error: any) {
-    if (error?.code === "23503") {
+  } catch (error) {
+    if (getErrorCode(error) === "23503") {
       res.status(409).json({
         error:
           "Cannot delete a stage that has candidate history. Move candidates to another stage first.",
@@ -226,7 +227,7 @@ export const deleteStage = async (req: Request, res: Response) => {
       return;
     }
     logger.error(
-      `Failed to delete pipeline stage id=${req.params.stageId} for job id=${req.params.jobId} - user ${req.user?.id}: ${error?.message}`,
+      `Failed to delete pipeline stage id=${req.params.stageId} for job id=${req.params.jobId} - user ${req.user?.id}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({ error: "Failed to delete stage" });
   }

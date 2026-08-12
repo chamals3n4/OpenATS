@@ -8,6 +8,7 @@ import { db } from "../../db";
 import { templates, candidates } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import logger from "../../utils/logger";
+import { getErrorMessage} from "../../utils/error.utils";
 
 const router: Router = Router();
 
@@ -96,9 +97,9 @@ router.post("/candidates/:id/reject", requireManager, async (req, res) => {
         renderedHtml: renderedHtml || null,
       },
     });
-  } catch (error: any) {
-    logger.error(`Failed to reject candidate ${req.params.id}: ${error.message}`);
-    res.status(400).json({ error: error.message || "Failed to reject candidate" });
+  } catch (error) {
+    logger.error(`Failed to reject candidate ${req.params.id}: ${getErrorMessage(error)}`);
+    res.status(400).json({ error: getErrorMessage(error) || "Failed to reject candidate" });
   }
 });
 
@@ -113,9 +114,9 @@ router.post("/candidates/:id/unreject", requireManager, async (req, res) => {
 
     const result = await rejectionService.unreject(id, req.user.id);
     res.status(200).json({ data: result });
-  } catch (error: any) {
-    logger.error(`Failed to unreject candidate ${req.params.id}: ${error.message}`);
-    res.status(400).json({ error: error.message || "Failed to unreject candidate" });
+  } catch (error) {
+    logger.error(`Failed to unreject candidate ${req.params.id}: ${getErrorMessage(error)}`);
+    res.status(400).json({ error: getErrorMessage(error) || "Failed to unreject candidate" });
   }
 });
 
@@ -130,7 +131,8 @@ router.get("/candidates/:id/rejections", async (req, res) => {
 
     const rejections = await rejectionService.getByCandidate(id);
     res.status(200).json({ data: rejections });
-  } catch (error: any) {
+  } catch (error) {
+    logger.error(`Failed to fetch rejections: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch rejections" });
   }
 });
@@ -175,7 +177,8 @@ router.post("/templates/:id/preview", async (req, res) => {
         html: compiled.html,
       },
     });
-  } catch (error: any) {
+  } catch (error) {
+    logger.error(`Failed to preview template: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to preview template" });
   }
 });

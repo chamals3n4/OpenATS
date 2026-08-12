@@ -3,6 +3,7 @@ import { z } from "zod";
 import { hiringTeamService } from "./hiring-team.service";
 import { jobService } from "../job/job.service";
 import logger from "../../utils/logger";
+import { getErrorCode, getErrorMessage} from "../../utils/error.utils";
 
 const addMemberSchema = z.object({
   userId: z.number().int().positive("User ID is required"),
@@ -25,7 +26,7 @@ export const getHiringTeam = async (req: Request, res: Response) => {
     const members = await hiringTeamService.getByJobId(jobId);
     res.status(200).json({ data: members });
   } catch (error) {
-    logger.error(`Failed to fetch hiring team for job id=${req.params.jobId}: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch hiring team for job id=${req.params.jobId}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch hiring team" });
   }
 };
@@ -66,12 +67,12 @@ export const addTeamMember = async (req: Request, res: Response) => {
     const result = await hiringTeamService.add(jobId, parsed.data.userId);
     logger.info(`Hiring team member added: userId=${parsed.data.userId}, jobId=${jobId} by user ${req.user?.id}`);
     res.status(201).json({ data: result });
-  } catch (error: any) {
-    if (error?.code === "23503") {
+  } catch (error) {
+    if (getErrorCode(error) === "23503") {
       res.status(400).json({ error: "User not found" });
       return;
     }
-    logger.error(`Failed to add team member to job id=${req.params.jobId} - user ${req.user?.id}: ${error?.message}`);
+    logger.error(`Failed to add team member to job id=${req.params.jobId} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to add team member" });
   }
 };
@@ -108,7 +109,7 @@ export const removeTeamMember = async (req: Request, res: Response) => {
     logger.info(`Hiring team member removed: userId=${userId}, jobId=${jobId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to remove team member userId=${req.params.userId} from job id=${req.params.jobId} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to remove team member userId=${req.params.userId} from job id=${req.params.jobId} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to remove team member" });
   }
 };

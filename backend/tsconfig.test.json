@@ -4,5 +4,8 @@
     "noEmit": true,
     "types": ["node"]
   },
+  // The base config excludes `tests`, and `exclude` is inherited, so it has to
+  // be reset here or nothing below is actually checked.
+  "exclude": ["node_modules", "dist"],
   "include": ["tests/**/*.ts", "src/**/*.ts", "vitest.config.mts"]
 }

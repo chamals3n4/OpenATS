@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { companyService, departmentService } from "./company.service";
 import logger from "../../utils/logger";
+import { getErrorCode, getErrorMessage} from "../../utils/error.utils";
 
 const upsertCompanySchema = z.object({
   name: z.string().min(1, "Company name is required").max(255),
@@ -34,7 +35,7 @@ export const getCompany = async (req: Request, res: Response) => {
     const result = await companyService.get();
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch company: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch company: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "failed to fetch company" });
   }
 };
@@ -52,7 +53,7 @@ export const getPublicCompany = async (_req: Request, res: Response) => {
         : null,
     });
   } catch (error) {
-    logger.error(`Failed to fetch public company: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch public company: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch company" });
   }
 };
@@ -80,7 +81,7 @@ export const upsertCompany = async (req: Request, res: Response) => {
     logger.info(`Company profile upserted: name="${result?.name}", email="${result?.email}" by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to upsert company - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to upsert company - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to upsert company" });
   }
 };
@@ -90,7 +91,7 @@ export const getDepartments = async (req: Request, res: Response) => {
     const result = await departmentService.getAll();
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch departments: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch departments: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch departments" });
   }
 };
@@ -109,16 +110,16 @@ export const createDepartment = async (req: Request, res: Response) => {
     const result = await departmentService.create(parsed.data);
     logger.info(`Department created: id=${result?.id}, name="${result?.name}" by user ${req.user?.id}`);
     res.status(201).json({ data: result });
-  } catch (error: any) {
-    if (error?.code === "23505") {
+  } catch (error) {
+    if (getErrorCode(error) === "23505") {
       res.status(409).json({ error: "Department name already exists" });
       return;
     }
-    if (error?.message?.includes("Company must be set up")) {
-      res.status(400).json({ error: error.message });
+    if (getErrorMessage(error).includes("Company must be set up")) {
+      res.status(400).json({ error: getErrorMessage(error) });
       return;
     }
-    logger.error(`Failed to create department - user ${req.user?.id}: ${error?.message}`);
+    logger.error(`Failed to create department - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to create department" });
   }
 };
@@ -148,12 +149,12 @@ export const updateDepartment = async (req: Request, res: Response) => {
 
     logger.info(`Department updated: id=${id}, name="${result.name}" by user ${req.user?.id}`);
     res.status(200).json({ data: result });
-  } catch (error: any) {
-    if (error?.code === "23505") {
+  } catch (error) {
+    if (getErrorCode(error) === "23505") {
       res.status(409).json({ error: "Department name already exists" });
       return;
     }
-    logger.error(`Failed to update department id=${req.params.id} - user ${req.user?.id}: ${error?.message}`);
+    logger.error(`Failed to update department id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to update department" });
   }
 };
@@ -175,14 +176,14 @@ export const deleteDepartment = async (req: Request, res: Response) => {
 
     logger.info(`Department deleted: id=${id}, name="${result.name}" by user ${req.user?.id}`);
     res.status(200).json({ data: result });
-  } catch (error: any) {
-    if (error?.code === "23503") {
+  } catch (error) {
+    if (getErrorCode(error) === "23503") {
       res.status(409).json({
         error: "Cannot delete department that has jobs assigned to it",
       });
       return;
     }
-    logger.error(`Failed to delete department id=${req.params.id} - user ${req.user?.id}: ${error?.message}`);
+    logger.error(`Failed to delete department id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to delete department" });
   }
 };

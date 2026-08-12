@@ -6,5 +6,3 @@ describe("cleanObject", () => {
     expect(cleanObject({ a: 1, b: undefined })).toEqual({ a: 1 });
   });
 });
-
-const broken: number = "not a number";

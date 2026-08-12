@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, desc, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   candidateStageHistory,
@@ -156,7 +156,7 @@ export type OfferListFilters = {
   page?: number;
   limit?: number;
   search?: string;
-  status?: string;
+  status?: (typeof offers.status.enumValues)[number];
   jobId?: number;
 };
 
@@ -182,7 +182,7 @@ export const offerService = {
 
     const conditions = [];
     if (jobId) conditions.push(eq(offers.jobId, jobId));
-    if (status) conditions.push(eq(offers.status, status as any));
+    if (status) conditions.push(eq(offers.status, status));
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [countRow] = await db
@@ -434,7 +434,7 @@ export const offerService = {
     const mailHtml = [
       `<p>Hello ${candidate.firstName} ${candidate.lastName},</p>`,
       "<p>Congratulations and welcome to the next step.</p>",
-      `<p>Please review your offer using this secure link: <a href=\"${reviewUrl}\">${reviewUrl}</a></p>`,
+      `<p>Please review your offer using this secure link: <a href="${reviewUrl}">${reviewUrl}</a></p>`,
       "<p>You can accept or decline directly from the page.</p>",
       "<hr />",
       "<p>OpenATS Hiring Team</p>",

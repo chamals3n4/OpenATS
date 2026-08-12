@@ -11,6 +11,7 @@ import {
   parseRoomId,
 } from "../auth/job-access";
 import logger from "../../utils/logger";
+import { getErrorMessage } from "../../utils/error.utils";
 
 const STAFF_ROOM = "staff";
 const jobRoom = (jobId: number) => `job_${jobId}`;
@@ -171,7 +172,7 @@ export class SocketService {
               senderAvatar: sender?.avatarUrl ?? null,
             });
           } catch (error) {
-            logger.error("Error saving job message: " + error);
+            logger.error(`Error saving job message: ${getErrorMessage(error)}`);
           }
         },
       );
@@ -219,7 +220,7 @@ export class SocketService {
               senderAvatar: sender?.avatarUrl ?? null,
             });
           } catch (error) {
-            logger.error("Error updating job message: " + error);
+            logger.error(`Error updating job message: ${getErrorMessage(error)}`);
           }
         },
       );
@@ -252,7 +253,7 @@ export class SocketService {
               ?.to(jobRoom(jobId))
               .emit("job_message_deleted", { id: deleted.id });
           } catch (error) {
-            logger.error("Error deleting job message: " + error);
+            logger.error(`Error deleting job message: ${getErrorMessage(error)}`);
           }
         },
       );
@@ -286,7 +287,7 @@ export class SocketService {
               ?.to(candidateRoom(candidateId))
               .emit("new_candidate_message", newMessage);
           } catch (error) {
-            logger.error("Error saving candidate message: " + error);
+            logger.error(`Error saving candidate message: ${getErrorMessage(error)}`);
           }
         },
       );
@@ -349,7 +350,7 @@ export class SocketService {
 
       this.io?.to(jobRoom(jobId)).emit("new_job_message", newMessage);
     } catch (error) {
-      logger.error("Error sending system job message: " + error);
+      logger.error(`Error sending system job message: ${getErrorMessage(error)}`);
     }
   }
   // Broadcast a CV analysis status change to authenticated dashboard clients

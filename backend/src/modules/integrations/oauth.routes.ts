@@ -1,6 +1,7 @@
 import { Router, Request, Response } from "express";
 import { integrationConnectionService } from "../../shared/integrations/connection.service";
 import logger from "../../utils/logger";
+import { getErrorMessage } from "../../utils/error.utils";
 
 const router: Router = Router();
 
@@ -23,8 +24,8 @@ router.get("/google/callback", async (req: Request, res: Response) => {
   try {
     await integrationConnectionService.handleCallback(code, state);
     res.redirect(`${frontendUrl()}/settings/integrations?connected=google_meet`);
-  } catch (error: any) {
-    logger.error(`Google OAuth callback failed: ${error?.message}`);
+  } catch (error) {
+    logger.error(`Google OAuth callback failed: ${getErrorMessage(error)}`);
     res.redirect(`${frontendUrl()}/settings/integrations?error=google_meet`);
   }
 });

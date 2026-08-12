@@ -5,12 +5,12 @@ import {
   DuplicateApplicationError,
 } from "./candidate.service";
 import { jobService } from "../job/job.service";
-import { cvAnalysisService } from "./cv-analysis.service";
 import { r2Service } from "../../shared/services/r2.service";
 import { socketService } from "../../shared/services/socket.service";
 import logger from "../../utils/logger";
 
 import { requestCvAnalysis } from "../../queues/cv-analysis/queue";
+import { getErrorMessage} from "../../utils/error.utils";
 
 const customAnswerSchema = z.object({
   questionId: z.number().int().positive(),
@@ -94,7 +94,7 @@ export const applyForJob = async (req: Request, res: Response) => {
         resumeUrl: result.resumeUrl,
       }).catch((err) =>
         logger.error(
-          `Failed to enqueue CV analysis for candidateId=${result.id}: ${err?.message}`,
+          `Failed to enqueue CV analysis for candidateId=${result.id}: ${getErrorMessage(err)}`,
         ),
       );
     }
@@ -112,7 +112,7 @@ export const applyForJob = async (req: Request, res: Response) => {
       return;
     }
     logger.error(
-      `Failed to submit application for jobId=${req.params.jobId}: ${(error as any)?.message}`,
+      `Failed to submit application for jobId=${req.params.jobId}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({ error: "Failed to submit application" });
   }
@@ -178,7 +178,7 @@ export const getCandidates = async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error(
-      `Failed to fetch candidates${req.params.jobId ? ` for jobId=${req.params.jobId}` : ""}: ${(error as any)?.message}`,
+      `Failed to fetch candidates${req.params.jobId ? ` for jobId=${req.params.jobId}` : ""}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({ error: "Failed to fetch candidates" });
   }
@@ -201,7 +201,7 @@ export const getCandidateById = async (req: Request, res: Response) => {
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(
-      `Failed to fetch candidate id=${req.params.id}: ${(error as any)?.message}`,
+      `Failed to fetch candidate id=${req.params.id}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({ error: "Failed to fetch candidate" });
   }
@@ -241,13 +241,13 @@ export const moveCandidateStage = async (req: Request, res: Response) => {
       data: result.candidate,
       stageAutomation: result.stageAutomation,
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error(
-      `Failed to move candidate id=${req.params.id} to stage ${req.body?.newStageId} - user ${req.user?.id}: ${error?.message}`,
+      `Failed to move candidate id=${req.params.id} to stage ${req.body?.newStageId} - user ${req.user?.id}: ${getErrorMessage(error)}`,
     );
     res
       .status(400)
-      .json({ error: error.message || "Failed to move candidate" });
+      .json({ error: getErrorMessage(error) || "Failed to move candidate" });
   }
 };
 
@@ -286,7 +286,7 @@ export const bulkDeleteCandidates = async (req: Request, res: Response) => {
     });
   } catch (error) {
     logger.error(
-      `Failed to bulk delete candidates - user ${req.user?.id}: ${(error as any)?.message}`,
+      `Failed to bulk delete candidates - user ${req.user?.id}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({ error: "Failed to delete candidates" });
   }
@@ -315,7 +315,7 @@ export const deleteCandidate = async (req: Request, res: Response) => {
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(
-      `Failed to delete candidate id=${req.params.id} - user ${req.user?.id}: ${(error as any)?.message}`,
+      `Failed to delete candidate id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({ error: "Failed to delete candidate" });
   }
@@ -409,7 +409,7 @@ export const updateCandidateBasicDetails = async (
         resumeUrl: newResumeUrl,
       }).catch((err) =>
         logger.error(
-          `Failed to enqueue CV analysis for candidateId=${updated.id}: ${err?.message}`,
+          `Failed to enqueue CV analysis for candidateId=${updated.id}: ${getErrorMessage(err)}`,
         ),
       );
     }
@@ -418,12 +418,12 @@ export const updateCandidateBasicDetails = async (
       `Candidate details updated: id=${id}${newResumeUrl ? ", resumeReplaced=true" : ""} by user ${req.user?.id}`,
     );
     res.status(200).json({ data: updated });
-  } catch (error: any) {
+  } catch (error) {
     logger.error(
-      `Failed to update candidate details id=${req.params.id} - user ${req.user?.id}: ${error?.message}`,
+      `Failed to update candidate details id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`,
     );
     res
       .status(500)
-      .json({ error: error.message || "Failed to update candidate details" });
+      .json({ error: getErrorMessage(error) || "Failed to update candidate details" });
   }
 };

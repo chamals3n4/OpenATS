@@ -23,7 +23,7 @@ export type TemplateListFilters = {
   page?: number;
   limit?: number;
   search?: string;
-  type?: string;
+  type?: (typeof templates.type.enumValues)[number];
 };
 
 export const templateService = {
@@ -37,7 +37,7 @@ export const templateService = {
 
     const conditions = [];
     if (search) conditions.push(ilike(templates.name, `%${search}%`));
-    if (type) conditions.push(eq(templates.type, type as any));
+    if (type) conditions.push(eq(templates.type, type));
     const where = conditions.length > 0 ? and(...conditions) : undefined;
 
     const [rows, [countRow]] = await Promise.all([
@@ -54,11 +54,11 @@ export const templateService = {
     return db.delete(templates).where(inArray(templates.id, ids)).returning();
   },
 
-  async getByType(type: string) {
+  async getByType(type: (typeof templates.type.enumValues)[number]) {
     return db
       .select()
       .from(templates)
-      .where(eq(templates.type, type as any));
+      .where(eq(templates.type, type));
   },
 
   async getById(id: number) {

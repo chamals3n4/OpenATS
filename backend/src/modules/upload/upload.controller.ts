@@ -42,7 +42,7 @@ export const uploadFile = async (req: Request, res: Response) => {
         size: req.file.size,
       }
     });
-  } catch (error: any) {
+  } catch (error) {
     logger.error("Upload error:" + error);
     res.status(500).json({ error: "Failed to upload file to storage" });
   }

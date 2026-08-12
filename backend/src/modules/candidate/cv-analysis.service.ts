@@ -2,7 +2,7 @@ import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { GoogleGenAI } from "@google/genai";
 import { eq } from "drizzle-orm";
 import { candidateCvAnalysis, db } from "../../db";
-import { CandidateCvAnalysis, jobSkills, jobs } from "../../db";
+import { jobSkills, jobs } from "../../db";
 import logger from "../../utils/logger";
 
 const r2Client = new S3Client({

@@ -6,13 +6,13 @@ import {
   jobs,
   jobPipelineStages,
   interviewFeedback,
-  departments,
   users,
 } from "../../db/schema";
 import { cleanObject as clean } from "../../utils/object.utils";
 import * as gcal from "../../shared/services/google-calendar.service";
 import { mailService } from "../../shared/services/mail.service";
 import logger from "../../utils/logger";
+import { getErrorMessage } from "../../utils/error.utils";
 
 export interface CreateInterviewInput {
   candidateId: number;
@@ -106,10 +106,10 @@ export const interviewService = {
           .where(eq(candidateInterviews.id, interview.id));
 
         interview.googleEventId = eventId;
-      } catch (err: any) {
+      } catch (err) {
         // Don't fail the interview creation just because calendar sync failed
         logger.error(
-          `Failed to sync interview ${interview.id} to Google Calendar: ${err.message}`,
+          `Failed to sync interview ${interview.id} to Google Calendar: ${getErrorMessage(err)}`,
         );
       }
     }
@@ -125,8 +125,8 @@ export const interviewService = {
       //     interview.scheduledAt.toISOString(),
       //     interview.durationMinutes,
       //   );
-      // } catch (err: any) {
-      //   logger.error(`Failed to send interview email: ${err.message}`);
+      // } catch (err) {
+      //   logger.error(`Failed to send interview email: ${getErrorMessage(err)}`);
       // }
       if (interview.scheduledAt && interview.durationMinutes) {
         mailService
@@ -138,8 +138,8 @@ export const interviewService = {
             interview.scheduledAt.toISOString(),
             interview.durationMinutes,
           )
-          .catch((err: any) => {
-            logger.error(`Failed to send interview email: ${err.message}`);
+          .catch((err: unknown) => {
+            logger.error(`Failed to send interview email: ${getErrorMessage(err)}`);
           });
       }
     }
@@ -331,9 +331,9 @@ export const interviewService = {
             meetingUrl: updated.meetingUrl,
           });
         }
-      } catch (err: any) {
+      } catch (err) {
         logger.error(
-          `Failed to sync interview ${id} to Google Calendar: ${err.message}`,
+          `Failed to sync interview ${id} to Google Calendar: ${getErrorMessage(err)}`,
         );
       }
     }
@@ -428,9 +428,9 @@ export const interviewService = {
             `Interview ${id}: cannot cancel provider meeting ${existing.providerMeetingId} — interviewer ${existing.interviewerId} has no valid connection`,
           );
         }
-      } catch (err: any) {
+      } catch (err) {
         logger.error(
-          `Failed to cancel provider meeting for interview ${id}: ${err?.message}`,
+          `Failed to cancel provider meeting for interview ${id}: ${getErrorMessage(err)}`,
         );
       }
     }
@@ -439,9 +439,9 @@ export const interviewService = {
     if (existing.googleEventId) {
       try {
         await gcal.deleteCalendarEvent(existing.googleEventId);
-      } catch (err: any) {
+      } catch (err) {
         logger.error(
-          `Failed to delete calendar event for interview ${id}: ${err?.message}`,
+          `Failed to delete calendar event for interview ${id}: ${getErrorMessage(err)}`,
         );
       }
     }
@@ -469,9 +469,9 @@ export const interviewService = {
             existing.eventName,
             existing.scheduledAt,
           )
-          .catch((err: any) => {
+          .catch((err: unknown) => {
             logger.error(
-              `Failed to send cancellation email for interview ${id}: ${err?.message}`,
+              `Failed to send cancellation email for interview ${id}: ${getErrorMessage(err)}`,
             );
           });
       }

@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { jobService } from "./job.service";
-import { cleanObject as clean } from "../../utils/object.utils";
+import { cleanObject as clean, asEnum } from "../../utils/object.utils";
 import logger from "../../utils/logger";
+import { getErrorCode, getErrorMessage} from "../../utils/error.utils";
+import { jobs } from "../../db/schema";
 
 const employmentTypeEnum = z.enum([
   "full_time",
@@ -19,27 +21,6 @@ const payFrequencyEnum = z.enum([
   "monthly",
   "yearly",
 ]);
-
-const salarySchema = z
-  .discriminatedUnion("salaryType", [
-    z.object({
-      salaryType: z.literal("fixed"),
-      currency: z.string().length(3, "Currency must be a 3-letter ISO code"),
-      payFrequency: payFrequencyEnum,
-      salaryFixed: z.number().positive("Salary must be a positive number"),
-      salaryMin: z.undefined(),
-      salaryMax: z.undefined(),
-    }),
-    z.object({
-      salaryType: z.literal("range"),
-      currency: z.string().length(3, "Currency must be a 3-letter ISO code"),
-      payFrequency: payFrequencyEnum,
-      salaryFixed: z.undefined(),
-      salaryMin: z.number().positive("Min salary must be a positive number"),
-      salaryMax: z.number().positive("Max salary must be a positive number"),
-    }),
-  ])
-  .optional();
 
 const createJobSchema = z
   .object({
@@ -103,7 +84,7 @@ export const listPublishedCareersJobs = async (
     const result = await jobService.listPublishedForCareers();
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch published careers jobs: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch published careers jobs: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch jobs" });
   }
 };
@@ -118,7 +99,7 @@ export const getAllJobs = async (req: Request, res: Response) => {
         page: parseInt(page as string) || 1,
         limit: parseInt((limit as string) ?? "15") || 15,
         search: (search as string) || undefined,
-        status: (status as string) || undefined,
+        status: asEnum(status, jobs.status.enumValues),
         departmentId: departmentId ? parseInt(departmentId as string) : undefined,
         userId: teamUserId,
       });
@@ -132,7 +113,7 @@ export const getAllJobs = async (req: Request, res: Response) => {
     const result = await jobService.getAll(teamUserId);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch all jobs: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch all jobs: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch jobs" });
   }
 };
@@ -152,7 +133,7 @@ export const bulkDeleteJobs = async (req: Request, res: Response) => {
     const deleted = await jobService.deleteMany(parsed.data.ids);
     res.status(200).json({ data: deleted, count: deleted.length });
   } catch (error) {
-    logger.error(`Failed to bulk delete jobs - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to bulk delete jobs - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to delete jobs" });
   }
 };
@@ -172,7 +153,7 @@ export const getJobById = async (req: Request, res: Response) => {
     }
 
     if (req.user.role === "interviewer") {
-      const onTeam = result.hiringTeam?.some((m: any) => m.userId === req.user.id);
+      const onTeam = result.hiringTeam?.some((m: { userId: number }) => m.userId === req.user.id);
       if (!onTeam) {
         res.status(403).json({ error: "Access restricted to assigned jobs" });
         return;
@@ -181,7 +162,7 @@ export const getJobById = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch job id=${req.params.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch job id=${req.params.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch job" });
   }
 };
@@ -203,7 +184,7 @@ export const getPublicJobById = async (req: Request, res: Response) => {
     const { hiringTeam, pipelineStages, createdBy, ...data } = result;
     res.status(200).json({ data });
   } catch (error) {
-    logger.error(`Failed to fetch public job id=${req.params.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch public job id=${req.params.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch job" });
   }
 };
@@ -222,7 +203,7 @@ export const getJobBySlug = async (req: Request, res: Response) => {
     }
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch job by slug="${req.params.slug}": ${(error as any)?.message}`);
+    logger.error(`Failed to fetch job by slug="${req.params.slug}": ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch job" });
   }
 };
@@ -256,12 +237,12 @@ export const createJob = async (req: Request, res: Response) => {
     const result = await jobService.create(data);
     logger.info(`Job created: id=${result.id}, title="${result.title}", status=${result.status}, createdBy=${req.user.id}`);
     res.status(201).json({ data: result });
-  } catch (error: any) {
-    if (error?.code === "23503") {
+  } catch (error) {
+    if (getErrorCode(error) === "23503") {
       res.status(400).json({ error: "Department not found" });
       return;
     }
-    logger.error(`Failed to create job - user ${req.user?.id}: ${error?.message}`);
+    logger.error(`Failed to create job - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to create job" });
   }
 };
@@ -293,12 +274,12 @@ export const updateJob = async (req: Request, res: Response) => {
 
     logger.info(`Job updated: id=${id}, status=${result.status}, updatedBy=${req.user?.id}`);
     res.status(200).json({ data: result });
-  } catch (error: any) {
-    if (error?.code === "23503") {
+  } catch (error) {
+    if (getErrorCode(error) === "23503") {
       res.status(400).json({ error: "Department not found" });
       return;
     }
-    logger.error(`Failed to update job id=${req.params.id} - user ${req.user?.id}: ${error?.message}`);
+    logger.error(`Failed to update job id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to update job" });
   }
 };
@@ -320,15 +301,15 @@ export const deleteJob = async (req: Request, res: Response) => {
 
     logger.info(`Job deleted: id=${id}, title="${result.title}" by user ${req.user?.id}`);
     res.status(200).json({ data: result });
-  } catch (error: any) {
-    if (error?.code === "23503") {
+  } catch (error) {
+    if (getErrorCode(error) === "23503") {
       res.status(409).json({
         error:
           "Cannot delete a job that has candidates. Close or archive it instead.",
       });
       return;
     }
-    logger.error(`Failed to delete job id=${req.params.id} - user ${req.user?.id}: ${error?.message}`);
+    logger.error(`Failed to delete job id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to delete job" });
   }
 };
@@ -343,7 +324,7 @@ export const getAssessments = async (req: Request, res: Response) => {
     const result = await jobService.getAssessments(jobId);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch assessments for job id=${req.params.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch assessments for job id=${req.params.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch job assessments" });
   }
 };
@@ -372,14 +353,14 @@ export const attachAssessment = async (req: Request, res: Response) => {
 
     logger.info(`Assessment attached to job: jobId=${jobId}, assessmentId=${assessmentId}, triggerStageId=${triggerStageId} by user ${req.user?.id}`);
     res.status(201).json({ data: result });
-  } catch (error: any) {
-    if (error?.code === "23505") {
+  } catch (error) {
+    if (getErrorCode(error) === "23505") {
       res.status(409).json({
         error: "An assessment is already attached to this stage for this job",
       });
       return;
     }
-    logger.error(`Failed to attach assessment to job id=${req.params.id} - user ${req.user?.id}: ${error?.message}`);
+    logger.error(`Failed to attach assessment to job id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to attach assessment" });
   }
 };
@@ -399,7 +380,7 @@ export const detachAssessment = async (req: Request, res: Response) => {
     logger.info(`Assessment detached: attachmentId=${attachmentId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to detach assessment attachmentId=${req.params.attachmentId} - user ${req.user?.id}: ${(error as any)?.message}`);
+    logger.error(`Failed to detach assessment attachmentId=${req.params.attachmentId} - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to detach assessment" });
   }
 };

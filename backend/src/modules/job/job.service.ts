@@ -16,7 +16,7 @@ export type JobListFilters = {
   page?: number;
   limit?: number;
   search?: string;
-  status?: string;
+  status?: (typeof jobs.status.enumValues)[number];
   departmentId?: number;
   userId?: number;
 };
@@ -128,7 +128,7 @@ export const jobService = {
 
     const conditions = [];
     if (search) conditions.push(ilike(jobs.title, `%${search}%`));
-    if (status) conditions.push(eq(jobs.status, status as any));
+    if (status) conditions.push(eq(jobs.status, status));
     if (departmentId) conditions.push(eq(jobs.departmentId, departmentId));
     if (userId) conditions.push(
       inArray(jobs.id, db.select({ id: jobHiringTeam.jobId }).from(jobHiringTeam).where(eq(jobHiringTeam.userId, userId)))
@@ -278,19 +278,16 @@ export const jobService = {
     const { skills, ...jobData } = input;
 
     return await db.transaction(async (tx) => {
-      const updateData: any = { ...jobData, updatedAt: new Date() };
+      const updateData: Partial<typeof jobs.$inferInsert> = {
+        ...jobData,
+        updatedAt: new Date(),
+      };
       if (jobData.salaryFixed !== undefined)
-        updateData.salaryFixed = jobData.salaryFixed
-          ? String(jobData.salaryFixed)
-          : null;
+        updateData.salaryFixed = jobData.salaryFixed || null;
       if (jobData.salaryMin !== undefined)
-        updateData.salaryMin = jobData.salaryMin
-          ? String(jobData.salaryMin)
-          : null;
+        updateData.salaryMin = jobData.salaryMin || null;
       if (jobData.salaryMax !== undefined)
-        updateData.salaryMax = jobData.salaryMax
-          ? String(jobData.salaryMax)
-          : null;
+        updateData.salaryMax = jobData.salaryMax || null;
 
       const [updated] = await tx
         .update(jobs)

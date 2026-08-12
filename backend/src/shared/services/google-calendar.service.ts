@@ -1,5 +1,4 @@
 import { google } from "googleapis";
-import logger from "../../utils/logger";
 
 function getAuth() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;

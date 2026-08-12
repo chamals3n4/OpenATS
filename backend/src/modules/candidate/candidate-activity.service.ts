@@ -1,9 +1,16 @@
 import { desc, eq } from "drizzle-orm";
+import type { ExtractTablesWithRelations } from "drizzle-orm";
 import type { PgTransaction } from "drizzle-orm/pg-core";
+import type { NodePgQueryResultHKT } from "drizzle-orm/node-postgres";
+import type * as schema from "../../db/schema";
 import { db } from "../../db";
 import { candidateActivities } from "../../db/schema";
 
-type TxLike = PgTransaction<any, any, any>;
+type TxLike = PgTransaction<
+  NodePgQueryResultHKT,
+  typeof schema,
+  ExtractTablesWithRelations<typeof schema>
+>;
 
 type CandidateActivityType =
   | "offer_created"

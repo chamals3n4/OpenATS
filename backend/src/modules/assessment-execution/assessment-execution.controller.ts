@@ -4,6 +4,7 @@ import { assessmentExecutionService } from "./assessment-execution.service";
 import { mailService } from "../../shared/services/mail.service";
 import { socketService } from "../../shared/services/socket.service";
 import logger from "../../utils/logger";
+import { getErrorMessage} from "../../utils/error.utils";
 
 const inviteCandidateSchema = z.object({
   candidateId: z.number().int().positive(),
@@ -68,8 +69,8 @@ export const inviteCandidateToAssessment = async (
 
     logger.info(`Assessment invite created: attemptId=${attempt.id}, candidateId=${candidateId}, assessmentId=${assessmentId}, didSendInvite=${didSendInvite}`);
     res.status(201).json({ data: attempt, didSendInvite });
-  } catch (error: any) {
-    logger.error(`Failed to generate assessment invite - candidateId=${req.body?.candidateId}, assessmentId=${req.body?.assessmentId}: ${error?.message}`);
+  } catch (error) {
+    logger.error(`Failed to generate assessment invite - candidateId=${req.body?.candidateId}, assessmentId=${req.body?.assessmentId}: ${getErrorMessage(error)}`);
     res.status(500).json({
       error: "Failed to generate assessment invite",
     });
@@ -88,6 +89,7 @@ export const getCandidateAttempts = async (req: Request, res: Response) => {
       await assessmentExecutionService.getAttemptsByCandidate(candidateId);
     res.status(200).json({ data: result });
   } catch (error) {
+    logger.error(`Failed to fetch candidate assessment attempts: ${getErrorMessage(error)}`);
     res
       .status(500)
       .json({ error: "Failed to fetch candidate assessment attempts" });
@@ -106,6 +108,7 @@ export const getAssessmentForCandidate = async (
 
     res.status(200).json({ data: attempt });
   } catch (error) {
+    logger.error(`Failed to fetch assessment: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch assessment" });
   }
 };
@@ -128,7 +131,7 @@ export const startAssessment = async (req: Request, res: Response) => {
     logger.info(`Assessment started: attemptId=${attempt.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to start assessment attempt for token=${req.params.token}: ${(error as any)?.message}`);
+    logger.error(`Failed to start assessment attempt for token=${req.params.token}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to start assessment" });
   }
 };
@@ -165,8 +168,8 @@ export const submitAssessmentAnswer = async (req: Request, res: Response) => {
       attemptId: attempt.id,
     });
     res.status(200).json({ data: result });
-  } catch (error: any) {
-    logger.error(`Failed to save answer for attempt token=${req.params.token}: ${error?.message}`);
+  } catch (error) {
+    logger.error(`Failed to save answer for attempt token=${req.params.token}: ${getErrorMessage(error)}`);
     res.status(500).json({
       error: "Failed to save answer",
     });
@@ -236,8 +239,8 @@ export const completeAssessment = async (req: Request, res: Response) => {
         scorePercentage: result.scorePercentage,
       },
     });
-  } catch (error: any) {
-    logger.error(`Failed to complete assessment for token=${req.params.token}: ${error?.message}`);
+  } catch (error) {
+    logger.error(`Failed to complete assessment for token=${req.params.token}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to finalize assessment" });
   }
 };
@@ -258,7 +261,7 @@ export const getAttemptResults = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch attempt results for id=${req.params.attemptId}: ${(error as any)?.message}`);
+    logger.error(`Failed to fetch attempt results for id=${req.params.attemptId}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch attempt results" });
   }
 };

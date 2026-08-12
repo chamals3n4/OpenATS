@@ -8,14 +8,13 @@ import { db } from "../../db";
 import {
   candidates,
   jobs,
-  jobPipelineStages,
   candidateInterviews,
 } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import logger from "../../utils/logger";
-import type { Request, Response } from "express";
 import { integrationConnectionService } from "../../shared/integrations/connection.service";
+import { getErrorMessage} from "../../utils/error.utils";
 
 const router: Router = Router();
 
@@ -80,11 +79,11 @@ router.post("/candidates/:candidateId/interviews", requireManager, async (req, r
       candidateId,
     });
     res.status(201).json({ data: interview });
-  } catch (error: any) {
-    logger.error(`Failed to create interview: ${error.message}`);
+  } catch (error) {
+    logger.error(`Failed to create interview: ${getErrorMessage(error)}`);
     res
       .status(400)
-      .json({ error: error.message || "Failed to create interview" });
+      .json({ error: getErrorMessage(error) || "Failed to create interview" });
   }
 });
 
@@ -97,7 +96,8 @@ router.get("/candidates/:candidateId/interviews", async (req, res) => {
     }
     const interviews = await interviewService.getByCandidate(candidateId);
     res.status(200).json({ data: interviews });
-  } catch (error: any) {
+  } catch (error) {
+    logger.error(`Failed to fetch interviews: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch interviews" });
   }
 });
@@ -115,7 +115,8 @@ router.get("/interviews", async (req, res) => {
     };
     const interviews = await interviewService.getAll(filters);
     res.status(200).json({ data: interviews });
-  } catch (error: any) {
+  } catch (error) {
+    logger.error(`Failed to list interviews: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to list interviews" });
   }
 });
@@ -138,8 +139,8 @@ router.get("/interviews/allocated-slots", async (req, res) => {
         interviewerId: r.interviewerId,
       }));
     res.status(200).json({ data });
-  } catch (error: any) {
-    logger.error(`Failed to list allocated slots: ${error?.message}`);
+  } catch (error) {
+    logger.error(`Failed to list allocated slots: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to list allocated slots" });
   }
 });
@@ -169,10 +170,10 @@ router.patch("/interviews/:id", requireManager, async (req, res) => {
       candidateId: interview.candidateId,
     });
     res.status(200).json({ data: interview });
-  } catch (error: any) {
+  } catch (error) {
     res
       .status(400)
-      .json({ error: error.message || "Failed to update interview" });
+      .json({ error: getErrorMessage(error) || "Failed to update interview" });
   }
 });
 
@@ -306,14 +307,14 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
         parsed.data.bodyText ?? null,
         publicUrl,
       )
-      .catch((err: any) => {
-        logger.error(`Failed to send interview slot email: ${err.message}`);
+      .catch((err: unknown) => {
+        logger.error(`Failed to send interview slot email: ${getErrorMessage(err)}`);
       });
 
     res.status(201).json({ data: interview });
-  } catch (error: any) {
-    logger.error(`Schedule interview failed: ${error.message}`);
-    res.status(400).json({ error: error.message });
+  } catch (error) {
+    logger.error(`Schedule interview failed: ${getErrorMessage(error)}`);
+    res.status(400).json({ error: getErrorMessage(error) });
   }
 });
 
@@ -353,7 +354,8 @@ router.get("/public/interview/:token", async (req, res) => {
           : "Unknown",
       },
     });
-  } catch (error: any) {
+  } catch (error) {
+    logger.error(`Failed to load interview: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to load interview" });
   }
 });
@@ -375,8 +377,8 @@ router.delete("/interviews/:id", requireManager, async (req, res) => {
       candidateId: deleted.candidateId,
     });
     res.status(200).json({ data: deleted });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (error) {
+    res.status(500).json({ error: getErrorMessage(error) });
   }
 });
 
@@ -421,8 +423,8 @@ router.post("/interviews/:id/feedback", async (req, res) => {
       });
     }
     res.status(201).json({ data: feedback });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message || "Failed to add feedback" });
+  } catch (error) {
+    res.status(500).json({ error: getErrorMessage(error) || "Failed to add feedback" });
   }
 });
 
@@ -435,7 +437,8 @@ router.get("/interviews/:id/feedback", async (req, res) => {
     }
     const feedback = await interviewService.getFeedback(interviewId);
     res.status(200).json({ data: feedback });
-  } catch (error: any) {
+  } catch (error) {
+    logger.error(`Failed to fetch feedback: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch feedback" });
   }
 });
@@ -463,8 +466,8 @@ router.delete("/interviews/:id/feedback/:feedbackId", requireManager, async (req
       });
     }
     res.status(200).json({ data: deleted });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+  } catch (error) {
+    res.status(500).json({ error: getErrorMessage(error) });
   }
 });
 

@@ -1,12 +1,13 @@
 import {
+  AnyPgColumn,
   boolean,
+  index,
   integer,
   pgTable,
   serial,
   text,
   timestamp,
   varchar,
-  index,
 } from "drizzle-orm/pg-core";
 
 import { candidates } from "./candidates";
@@ -58,7 +59,7 @@ export const jobChatMessages = pgTable(
     message: text("message"),
 
     replyToId: integer("reply_to_id").references(
-      (): any => jobChatMessages.id,
+      (): AnyPgColumn => jobChatMessages.id,
       {
         onDelete: "set null",
       },
@@ -88,7 +89,7 @@ export const candidateChatMessages = pgTable(
     message: text("message"),
 
     replyToId: integer("reply_to_id").references(
-      (): any => candidateChatMessages.id,
+      (): AnyPgColumn => candidateChatMessages.id,
       {
         onDelete: "set null",
       },

@@ -3,6 +3,8 @@ import { z } from "zod";
 import { offerService } from "./offer.service";
 import { socketService } from "../../shared/services/socket.service";
 import logger from "../../utils/logger";
+import { asEnum } from "../../utils/object.utils";
+import { offers } from "../../db/schema";
 
 const bulkDeleteOffersSchema = z.object({
   ids: z.array(z.number().int().positive()).min(1),
@@ -67,7 +69,7 @@ export const getAllOffers = async (req: Request, res: Response) => {
         page: parseInt(page as string) || 1,
         limit: parseInt((limit as string) ?? "15") || 15,
         search: (search as string) || undefined,
-        status: (status as string) || undefined,
+        status: asEnum(status, offers.status.enumValues),
         jobId: jobId ? parseInt(jobId as string) : undefined,
       });
       res.status(200).json({

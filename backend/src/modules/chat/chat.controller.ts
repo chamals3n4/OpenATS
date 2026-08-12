@@ -3,6 +3,7 @@ import { db } from "../../db";
 import { jobChatMessages, candidateChatMessages, users } from "../../db/schema";
 import { eq, desc, and } from "drizzle-orm";
 import logger from "../../utils/logger";
+import { getErrorMessage } from "../../utils/error.utils";
 
 export const getJobChatHistory = async (req: Request, res: Response) => {
   try {
@@ -38,7 +39,7 @@ export const getJobChatHistory = async (req: Request, res: Response) => {
       })),
     });
   } catch (error) {
-    logger.error("Error fetching job chat history: " + error);
+    logger.error(`Error fetching job chat history: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch job chat history" });
   }
 };
@@ -77,7 +78,7 @@ export const getCandidateChatHistory = async (req: Request, res: Response) => {
       })),
     });
   } catch (error) {
-    logger.error("Error fetching candidate chat history: " + error);
+    logger.error(`Error fetching candidate chat history: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch candidate chat history" });
   }
 };

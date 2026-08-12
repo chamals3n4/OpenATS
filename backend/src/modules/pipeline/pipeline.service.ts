@@ -1,6 +1,7 @@
 import { eq, and, desc } from "drizzle-orm";
 import { db } from "../../db";
 import { jobPipelineStages } from "../../db/schema";
+import { getErrorCode } from "../../utils/error.utils";
 
 export type CreateStageInput = {
   name: string;
@@ -53,9 +54,9 @@ export const pipelineService = {
         })
         .returning();
       return created;
-    } catch (err: any) {
+    } catch (err) {
       // If position is already taken, append to the end.
-      if (err?.code === "23505") {
+      if (getErrorCode(err) === "23505") {
         const [created] = await db
           .insert(jobPipelineStages)
           .values({

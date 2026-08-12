@@ -52,7 +52,7 @@ export const r2Service = {
 
     try {
       await r2Client.send(command);
-    } catch (error: any) {
+    } catch (error) {
       logger.error(
         `Attempting upload to Bucket: ${process.env.R2_BUCKET_NAME}`,
       );

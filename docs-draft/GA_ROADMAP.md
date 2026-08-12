@@ -29,6 +29,7 @@ The focus of this phase is correctness and safety, not new features. Nothing her
 | Re-check socket tokens on reconnect | The token is read once when the dashboard layout renders. If it expires while a tab is open, reconnects fail silently and realtime stops until the page is refreshed. | 🟢 Done |
 | Authorize chat history over HTTP | `GET /chat/job/:jobId` and `/chat/candidate/:candidateId` return any conversation to any authenticated user. The socket rooms are now gated, so this is the remaining way to read another hiring team's chat. | 🟢 Done |
 | Rate limit authenticated routes | Only `/public/*` is rate limited today. | 🟢 Done |
+| Resolve dependency vulnerabilities | 54 reported (15 high). Every high comes through `next@16.1.6`, the only direct dependency involved: bumping it to `>=16.2.11` also clears the `sharp` and `postcss` copies it pins. `dompurify` arrives via `@asgardeo/react` and needs a `pnpm.overrides` entry or an upstream fix. Do this last, right before release, so the version bump is fresh. | 🔴 Planned |
 
 ### Deployment
 
@@ -46,10 +47,10 @@ The focus of this phase is correctness and safety, not new features. Nothing her
 
 | Item | Why it matters | Status |
 | --- | --- | --- |
-| Tests for authentication | Login broke completely in v0.4.0 and nothing would have caught it. | 🔴 Planned |
-| Tests for core flows | Apply to a job, move pipeline stage, send an offer, schedule an interview. None are covered today. | 🔴 Planned |
-| Frontend tests | None exist. | 🔴 Planned |
-| Coverage reporting | Without it, "how much is tested" is guesswork. | 🔴 Planned |
+| Tests for authentication | Login broke completely in v0.4.0 and nothing would have caught it. 17 tests in `tests/integration/auth.test.ts` now cover token validity, claims, provisioning, and the middleware. Only the JWKS fetch is mocked, so signature/issuer/expiry are genuinely verified. Confirmed to bite by reintroducing the v0.4.0 `sub`-change bug and watching only that test fail. | 🟢 Done |
+| Tests for core flows | Apply to a job, move pipeline stage, send an offer, schedule an interview. 11 tests in `tests/integration/core-flows.test.ts` drive the real HTTP API end to end with a signed token. Writing them found a live bug: a partial `PATCH /offers/:id` wiped `startDate`, leaving the offer unsendable. Fixed, with a regression test. | 🟢 Done |
+| Frontend tests | None existed. Vitest + Testing Library + jsdom are set up in `frontend/`, with 24 tests covering `buildJobPayload`, the offer formatting helpers, and one rendered component to prove the React half works. | 🟢 Done |
+| Coverage reporting | Without it, "how much is tested" is guesswork. `pnpm test:coverage` runs v8 coverage on the backend (text, html, lcov). Baseline is 20% statements overall, 94% on `shared/auth`. | 🟢 Done |
 | Type-check tests in CI | `tsconfig.test.json` inherited `"exclude": ["tests"]` from the base config, so it checked nothing; a deliberate type error sat in `object.util.test.ts` and passed. Config fixed and `test.yml` now runs it as its own step, verified with a canary error. | 🟢 Done |
 
 ### Tooling
@@ -58,21 +59,9 @@ The focus of this phase is correctness and safety, not new features. Nothing her
 | --- | --- | --- |
 | Add linting to the backend | There is no ESLint config or script, and `pnpm lint` at the repo root currently **fails** with `ERR_PNPM_RECURSIVE_RUN_NO_SCRIPT`. Now configured, passing with 0 problems, and gated in CI. | 🟢 Done |
 | Call `validateEnv()` in `worker.ts` | The API validates its environment on boot, the worker does not, so it can start with broken config and fail later at job time. | 🟢 Done |
-| Fix the frontend's lint errors | 112 errors, of which 91 were `no-explicit-any` (not `set-state-in-effect` as first recorded). All 91 are gone, replaced with the types already in `types/index.ts`; fixing them surfaced three type/API mismatches, including question types that could never match. 11 errors remain, all `react-hooks` rules needing per-case behavioural judgement. | 🟡 In progress |
+| Fix the frontend's lint errors | 112 errors, of which 91 were `no-explicit-any` (not `set-state-in-effect` as first recorded). All are now fixed and root `pnpm lint` exits 0, so lint can become a CI gate. Two `react-hooks/set-state-in-effect` cases carry a scoped `eslint-disable` with the reason in a comment: both mutate state (a pending-moves map, a module-level id counter) that cannot legally move into render. 35 warnings remain, mostly unused vars. | 🟢 Done |
 | Remove `any` from the backend | 108 uses, mostly `catch (e: any)` and `(e as any).message`. All replaced with narrowed helpers, so `no-explicit-any` is an **error** and the backend has none. | 🟢 Done |
 | Add `CHANGELOG.md` | Release notes only existed on GitHub. All five releases are now reproduced in the repo in Keep a Changelog format, with an `[Unreleased]` section tracking the v0.5.0 work. | 🟢 Done |
-
----
-
-## v0.6.0 - In-house resume parsing
-
-| Item | Why it matters | Status |
-| --- | --- | --- |
-| Design the `ResumeParser` interface | Greenfield and pure logic, so write the tests before the implementation rather than retrofitting them. | 🔴 Planned |
-| Implement NLP-based parsing | The feature itself. | 🔴 Planned |
-| Decide the Gemini relationship | Does in-house parsing replace Gemini or fall back to it? This decides whether `GEMINI_API_KEY` stays mandatory for self-hosters. | 🔴 Planned |
-| Tests for the parser | Written alongside, not after. | 🔴 Planned |
-| Resolve dependency vulnerabilities | 54 reported (15 high). Every high comes through `next@16.1.6`, the only direct dependency involved: bumping it to `>=16.2.11` also clears the `sharp` and `postcss` copies it pins. `dompurify` arrives via `@asgardeo/react` and needs a `pnpm.overrides` entry or an upstream fix. Deferred to just before release so the version bump is fresh. | 🔴 Planned |
 
 ---
 

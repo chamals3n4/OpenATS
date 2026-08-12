@@ -218,5 +218,5 @@ A concrete example from this project: the careers page catches its own fetch err
 ## 10. Things to be aware of
 
 - The E2E suite runs against an empty test database. Once you write tests that need job listings, candidates, or pipeline stages, seed the test database first (`pnpm tsx src/db/seed.ts` with `DATABASE_URL` pointed at port 5433) or insert fixtures in a Playwright `beforeAll`.
-- There are no frontend unit tests yet. If you add them, install Vitest inside `frontend/` rather than at the root.
+- Frontend unit tests use their own Vitest install inside `frontend/` (jsdom + Testing Library), configured by `frontend/vitest.config.mts`. Run them with `pnpm test:frontend`, or `pnpm test` at the root, which runs backend and frontend in turn.
 - Authenticated E2E tests are not set up. Logging in through WSO2 Asgardeo in a test means driving a hosted identity provider, which needs real credentials and is slow and flaky. Prefer testing `/public/*` routes, which skip authentication entirely, or save a Playwright `storageState` from one manual login and reuse it.

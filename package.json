@@ -10,9 +10,11 @@
     "dev:frontend": "pnpm --filter ./frontend dev",
     "build": "pnpm --filter ./backend build && pnpm --filter ./frontend build",
     "lint": "pnpm --filter ./backend lint && pnpm --filter ./frontend lint",
-    "test": "pnpm --filter ./backend test:run",
+    "test": "pnpm --filter ./backend test:run && pnpm --filter ./frontend test:run",
     "test:watch": "pnpm --filter ./backend test",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "test:coverage": "pnpm --filter ./backend test:coverage",
+    "test:frontend": "pnpm --filter ./frontend test:run"
   },
   "devDependencies": {
     "@playwright/test": "^1.62.1",

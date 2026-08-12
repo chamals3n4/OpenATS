@@ -85,6 +85,9 @@ function generateReviewToken() {
 }
 
 function normalizeDate(dateInput?: string | null) {
+  // `undefined` must stay undefined so `clean()` drops it. Collapsing it to
+  // null made any partial update wipe a start date it never mentioned.
+  if (dateInput === undefined) return undefined;
   if (!dateInput) return null;
   return dateInput;
 }

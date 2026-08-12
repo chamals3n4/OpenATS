@@ -9,11 +9,9 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   {
     rules: {
-      // TypeScript already resolves identifiers, so no-undef only produces
-      // false positives on node globals here.
+      // TypeScript resolves identifiers, so this only false-positives here.
       "no-undef": "off",
-      // Unused args are fine when they exist to satisfy a signature, and
-      // destructuring to omit keys is an idiom used across the controllers.
+      // Allow args kept for a signature, and rest-destructuring to omit keys.
       "@typescript-eslint/no-unused-vars": [
         "error",
         {

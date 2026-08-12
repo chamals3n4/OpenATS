@@ -130,7 +130,7 @@ function DraggableCard({
   onClick: (id: number) => void;
   onDragMiss: () => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   const name = `${candidate.firstName} ${candidate.lastName}`;
   const appliedAtLabel = timeAgo(candidate.appliedAt);
 
@@ -179,11 +179,18 @@ function DraggableCard({
     },
   });
 
-  dragRef(dropRef(ref));
+  // Connect on attach rather than during render.
+  const attachRef = useCallback(
+    (node: HTMLDivElement | null) => {
+      ref.current = node;
+      dragRef(dropRef(node));
+    },
+    [dragRef, dropRef],
+  );
 
   return (
     <div
-      ref={ref as unknown as Ref<HTMLDivElement>}
+      ref={attachRef}
       onClick={() => !isDragging && onClick(candidate.id)}
       className={`bg-white dark:bg-neutral-900 px-3 py-2.5 rounded-lg flex items-center gap-2 group select-none transition-colors ${
         isDragging
@@ -356,9 +363,11 @@ export default function HiringPipelinePage() {
       });
   }, []);
 
+  // Can't move to render: `reconcile` clears the pending-moves map.
   useEffect(() => {
     if (!candidatesData?.data) return;
     latestServerRef.current = candidatesData.data;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLocalCandidates(reconcile(candidatesData.data));
   }, [candidatesData, reconcile]);
 

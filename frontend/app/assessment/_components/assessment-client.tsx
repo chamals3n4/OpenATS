@@ -61,10 +61,6 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
       });
   }, [token]);
 
-  const { timeLeft } = useAssessmentTimer(screen, attempt, () => {
-    void handleComplete();
-  });
-
   const handleStart = async () => {
     setStarting(true);
     try {
@@ -108,6 +104,11 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
       setSubmitting(false);
     }
   }, [submitting, attempt, answers, saveCurrentAnswer, token]);
+
+  // Must come after `handleComplete` so the callback can close over it.
+  const { timeLeft } = useAssessmentTimer(screen, attempt, () => {
+    void handleComplete();
+  });
 
   const handleNavigate = useCallback(
     async (direction: "prev" | "next") => {

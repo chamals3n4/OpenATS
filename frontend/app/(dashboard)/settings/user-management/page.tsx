@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/queries/use-user";
 import { toast } from "sonner";
@@ -156,8 +157,21 @@ export default function UserManagementPage() {
     }
   }, [currentUserRes, router]);
 
-  const [users, setUsers] = useState<AsgardeoUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    data: users = [],
+    isLoading: loading,
+    refetch: reloadUsers,
+  } = useQuery({
+    queryKey: ["asgardeo-users"],
+    queryFn: async () => {
+      try {
+        return await fetchUsers();
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Failed to fetch users");
+        throw e;
+      }
+    },
+  });
   const [query, setQuery] = useState("");
 
   const [editUser, setEditUser] = useState<AsgardeoUser | null>(null);
@@ -174,21 +188,6 @@ export default function UserManagementPage() {
   const [createForm, setCreateForm] = useState(emptyCreate);
   const [showPassword, setShowPassword] = useState(false);
 
-  const load = async () => {
-    setLoading(true);
-    try {
-      const list = await fetchUsers();
-      setUsers(list);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Failed to fetch users");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    load();
-  }, []);
 
   const filteredUsers = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -217,7 +216,7 @@ export default function UserManagementPage() {
       await updateUser(editUser.id, { ...editForm, oldRole: editUser.role });
       toast.success("User updated");
       setEditUser(null);
-      await load();
+      await reloadUsers();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to update user");
     } finally {
@@ -231,7 +230,7 @@ export default function UserManagementPage() {
     try {
       await deleteUser(deleteTarget.id);
       toast.success("User removed");
-      setUsers((prev) => prev.filter((u) => u.id !== deleteTarget.id));
+      await reloadUsers();
       setDeleteTarget(null);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to remove user");
@@ -290,7 +289,7 @@ export default function UserManagementPage() {
         passwordMethod === "invite" ? "Invitation sent" : "User created",
       );
       setCreateOpen(false);
-      await load();
+      await reloadUsers();
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "Failed to create user");
     } finally {

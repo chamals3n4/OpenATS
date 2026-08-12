@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useCallback, useRef } from "react";
 import { useDrag, useDrop } from "react-dnd";
 
 interface UseDragSortOptions {
@@ -9,7 +9,7 @@ interface UseDragSortOptions {
 }
 
 export function useDragSort({ id, index, type, onMove }: UseDragSortOptions) {
-  const ref = useRef<HTMLElement>(null);
+  const ref = useRef<HTMLElement | null>(null);
 
   const [{ isDragging }, dragRef, dragPreviewRef] = useDrag({
     type,
@@ -44,7 +44,14 @@ export function useDragSort({ id, index, type, onMove }: UseDragSortOptions) {
     },
   });
 
-  dragRef(dropRef(ref));
+  // Connect on attach rather than during render.
+  const attachRef = useCallback(
+    (node: HTMLElement | null) => {
+      ref.current = node;
+      dragRef(dropRef(node));
+    },
+    [dragRef, dropRef],
+  );
 
-  return { ref, isDragging, isOver, dragPreviewRef };
+  return { ref: attachRef, isDragging, isOver, dragPreviewRef };
 }

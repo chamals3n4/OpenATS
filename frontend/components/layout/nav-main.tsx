@@ -36,8 +36,7 @@ function NavCollapsibleSection({
 }) {
   const [open, setOpen] = React.useState(() => Boolean(item.isActive));
 
-  // Force the section open when it becomes active, while still letting the
-  // user collapse it afterwards.
+  // Open when it becomes active, but still let the user collapse it.
   const [wasActive, setWasActive] = React.useState(item.isActive);
   if (item.isActive !== wasActive) {
     setWasActive(item.isActive);

@@ -179,12 +179,10 @@ export function InterviewSchedulerDialog({
     setBodyText(textBlock?.content ?? "");
   };
 
-  useEffect(() => {
-    if (linkMode === "auto" && !interviewerGoogleConnected) {
-      setLinkMode("manual");
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [interviewerId, interviewerGoogleConnected]);
+  // Auto links need a connected Google account, so fall back to manual.
+  if (linkMode === "auto" && !interviewerGoogleConnected) {
+    setLinkMode("manual");
+  }
 
   const addSlot = () => setTimeSlots([...timeSlots, { datetime: "" }]);
 

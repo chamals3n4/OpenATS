@@ -43,6 +43,8 @@ export default function SlotPicker({ data, token, apiBase }: Props) {
   // Slots discovered to be taken after page load (confirm attempt lost a race)
   const [takenIndexes, setTakenIndexes] = useState<Set<number>>(new Set());
   const [notice, setNotice] = useState<string | null>(null);
+  // Fixed at mount so re-renders cannot reshuffle which slots read as past.
+  const [now] = useState(() => Date.now());
 
   const handleConfirm = async () => {
     if (selectedSlot === null) return;
@@ -146,7 +148,7 @@ export default function SlotPicker({ data, token, apiBase }: Props) {
 
         <div className="mt-6 space-y-2.5">
           {(data.timeSlots ?? []).map((slot, i) => {
-            const isPast = new Date(slot.datetime).getTime() <= Date.now();
+            const isPast = new Date(slot.datetime).getTime() <= now;
             const isTaken = !!slot.taken || takenIndexes.has(i);
             const isActive = selectedSlot === i;
             const disabled = slot.selected || isPast || isTaken;

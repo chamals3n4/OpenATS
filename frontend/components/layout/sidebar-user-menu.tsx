@@ -76,8 +76,7 @@ export function SidebarUserMenu({
   const queryClient = useQueryClient();
   const [confirmLogoutOpen, setConfirmLogoutOpen] = React.useState(false);
 
-  // The theme is only known on the client, so hold the toggle back until
-  // after hydration rather than rendering a value the server cannot match.
+  // Theme is client-only, so hold the toggle back until after hydration.
   const mounted = React.useSyncExternalStore(
     () => () => {},
     () => true,

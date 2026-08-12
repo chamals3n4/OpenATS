@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -33,19 +33,17 @@ export function InlineCalendar({
   ];
   while (cells.length % 7 !== 0) cells.push(null);
 
-  const byDay = useMemo(() => {
-    const m: Record<string, InterviewListItem[]> = {};
-    interviews.forEach((iv) => {
-      if (!iv.scheduledAt) return;
-      const d = new Date(iv.scheduledAt);
-      if (d.getFullYear() === year && d.getMonth() === month) {
-        const key = d.getDate().toString();
-        if (!m[key]) m[key] = [];
-        m[key].push(iv);
-      }
-    });
-    return m;
-  }, [interviews, year, month]);
+  // Not memoized: a manual useMemo made the compiler skip this component.
+  const byDay: Record<string, InterviewListItem[]> = {};
+  interviews.forEach((iv) => {
+    if (!iv.scheduledAt) return;
+    const d = new Date(iv.scheduledAt);
+    if (d.getFullYear() === year && d.getMonth() === month) {
+      const key = d.getDate().toString();
+      if (!byDay[key]) byDay[key] = [];
+      byDay[key].push(iv);
+    }
+  });
 
   const [selected, setSelected] = useState<number | null>(null);
   const selectedInterviews = selected ? (byDay[selected.toString()] ?? []) : [];

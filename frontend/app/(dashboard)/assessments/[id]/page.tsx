@@ -123,6 +123,8 @@ export default function EditAssessmentPage({
     if (!data) return;
     hasInitialized.current = true;
 
+    // Can't move to render: it bumps the module-level `idCounter`.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setAssessmentTitle(data.title ?? "");
     setAssessmentDesc(data.description ?? "");
     setTimeLimit(String(data.timeLimit ?? 120));

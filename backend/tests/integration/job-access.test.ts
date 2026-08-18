@@ -11,6 +11,7 @@ import {
   requireCandidateAccess,
   requireJobAccess,
 } from "../../src/middlewares/job-access.middleware";
+import { getCandidateById } from "../../src/modules/candidate/candidate.controller";
 import type { AuthenticatedUser } from "../../src/shared/auth/verify-token";
 import type { NextFunction, Request, Response } from "express";
 
@@ -21,6 +22,8 @@ const SUFFIX = `job-access-${Date.now()}`;
 let memberUser: AuthenticatedUser;
 let outsiderUser: AuthenticatedUser;
 let adminUser: AuthenticatedUser;
+let interviewerOnTeamUser: AuthenticatedUser;
+let interviewerOffTeamUser: AuthenticatedUser;
 let teamJobId: number;
 let otherJobId: number;
 let teamCandidateId: number;
@@ -56,6 +59,11 @@ beforeAll(async () => {
   memberUser = await makeUser("member", "hiring_manager");
   outsiderUser = await makeUser("outsider", "hiring_manager");
   adminUser = await makeUser("admin", "super_admin");
+  interviewerOnTeamUser = await makeUser("interviewer-on-team", "interviewer");
+  interviewerOffTeamUser = await makeUser(
+    "interviewer-off-team",
+    "interviewer",
+  );
 
   const inserted = await db
     .insert(jobs)
@@ -80,9 +88,10 @@ beforeAll(async () => {
   teamJobId = inserted[0]!.id;
   otherJobId = inserted[1]!.id;
 
-  await db
-    .insert(jobHiringTeam)
-    .values({ jobId: teamJobId, userId: memberUser.id });
+  await db.insert(jobHiringTeam).values([
+    { jobId: teamJobId, userId: memberUser.id },
+    { jobId: teamJobId, userId: interviewerOnTeamUser.id },
+  ]);
 
   const insertedCandidates = await db
     .insert(candidates)
@@ -111,11 +120,15 @@ afterAll(async () => {
     .delete(candidates)
     .where(inArray(candidates.id, [teamCandidateId, otherCandidateId]));
   await db.delete(jobs).where(inArray(jobs.id, [teamJobId, otherJobId]));
-  await db
-    .delete(users)
-    .where(
-      inArray(users.id, [memberUser.id, outsiderUser.id, adminUser.id]),
-    );
+  await db.delete(users).where(
+    inArray(users.id, [
+      memberUser.id,
+      outsiderUser.id,
+      adminUser.id,
+      interviewerOnTeamUser.id,
+      interviewerOffTeamUser.id,
+    ]),
+  );
   await db.delete(company).where(eq(company.email, `co.${SUFFIX}@example.test`));
 });
 
@@ -233,5 +246,70 @@ describe("canAccessCandidate", () => {
 
   it("denies a candidate that does not exist", async () => {
     expect(await canAccessCandidate(memberUser, 2_000_000_000)).toBe(false);
+  });
+});
+
+// Driven directly, same technique as runMiddleware above: the real route
+// needs a signed token we cannot issue here.
+function runController(
+  controller: typeof getCandidateById,
+  user: AuthenticatedUser,
+  params: Record<string, string>,
+) {
+  return new Promise<{ status: number | null; body: unknown }>((resolve) => {
+    let status: number | null = null;
+    const res = {
+      status(code: number) {
+        status = code;
+        return this;
+      },
+      json(body: unknown) {
+        resolve({ status, body });
+        return this;
+      },
+    } as unknown as Response;
+
+    void controller({ user, params } as unknown as Request, res);
+  });
+}
+
+describe("getCandidateById authorization", () => {
+  // Regression coverage for the candidate-detail IDOR: interviewer must be
+  // scoped to their own hiring team, exactly like the list endpoint already
+  // is; hiring_manager/super_admin must stay company-wide (see the comment
+  // on the check itself in candidate.controller.ts for why).
+  it("allows an interviewer on the candidate's hiring team", async () => {
+    const result = await runController(getCandidateById, interviewerOnTeamUser, {
+      id: String(teamCandidateId),
+    });
+    expect(result.status).toBe(200);
+  });
+
+  it("denies an interviewer not on the candidate's hiring team with 403", async () => {
+    const result = await runController(getCandidateById, interviewerOffTeamUser, {
+      id: String(teamCandidateId),
+    });
+    expect(result.status).toBe(403);
+  });
+
+  it("allows hiring_manager for a candidate outside their own hiring team (no regression)", async () => {
+    const result = await runController(getCandidateById, outsiderUser, {
+      id: String(teamCandidateId),
+    });
+    expect(result.status).toBe(200);
+  });
+
+  it("allows super_admin unconditionally", async () => {
+    const result = await runController(getCandidateById, adminUser, {
+      id: String(otherCandidateId),
+    });
+    expect(result.status).toBe(200);
+  });
+
+  it("returns 403, not a leaking 404, for an interviewer probing a nonexistent id", async () => {
+    const result = await runController(getCandidateById, interviewerOffTeamUser, {
+      id: "2000000000",
+    });
+    expect(result.status).toBe(403);
   });
 });

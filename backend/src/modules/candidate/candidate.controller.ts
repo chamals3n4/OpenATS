@@ -7,6 +7,7 @@ import {
 import { jobService } from "../job/job.service";
 import { r2Service } from "../../shared/services/r2.service";
 import { socketService } from "../../shared/services/socket.service";
+import { canAccessCandidate } from "../../shared/auth/job-access";
 import logger from "../../utils/logger";
 
 import { requestCvAnalysis } from "../../queues/cv-analysis/queue";
@@ -190,6 +191,22 @@ export const getCandidateById = async (req: Request, res: Response) => {
     if (isNaN(id)) {
       res.status(400).json({ error: "Invalid candidate ID" });
       return;
+    }
+
+    // Only `interviewer` is job-team-scoped elsewhere (getCandidates' own
+    // teamUserId filter above); hiring_manager/super_admin are company-wide
+    // by design everywhere else (jobs, interviews, offers). Keep that same
+    // split here — widening this check to every role would lock
+    // hiring_manager out of candidates outside their own hiring team.
+    if (req.user.role === "interviewer") {
+      const allowed = await canAccessCandidate(req.user, id);
+      if (!allowed) {
+        logger.warn(`[access] user ${req.user.id} denied candidate ${id}`);
+        res
+          .status(403)
+          .json({ error: "You do not have access to this resource" });
+        return;
+      }
     }
 
     const result = await candidateService.getById(id);

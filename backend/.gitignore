@@ -2,6 +2,10 @@ node_modules/
 .pnp
 .pnp.js
 
+# This repo's real lockfile is pnpm-lock.yaml; npm regenerates its own
+# package-lock.json on `npm install`, which shouldn't be tracked.
+package-lock.json
+
 dist/
 build/
 

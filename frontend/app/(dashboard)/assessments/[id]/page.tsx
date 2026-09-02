@@ -4,7 +4,6 @@ import { useState, use, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import {
   useAssessment,
-  useUpdateAssessment,
   useCreateAssessmentQuestion,
   useUpdateAssessmentQuestion,
   useDeleteAssessmentQuestion,
@@ -17,8 +16,6 @@ import {
   DragDropVerticalIcon,
   RadioButtonIcon,
   CheckmarkCircle01Icon,
-  ArrowUp01Icon,
-  ArrowDown01Icon,
   TickDouble01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -100,17 +97,12 @@ export default function EditAssessmentPage({
   const assessmentId = parseInt(unwrappedParams.id, 10);
 
   const { data: assessmentData, isLoading } = useAssessment(assessmentId);
-  const updateAssessment = useUpdateAssessment(assessmentId);
   const createQuestionMutation = useCreateAssessmentQuestion(assessmentId);
   const updateQuestionMutation = useUpdateAssessmentQuestion(assessmentId);
   const deleteQuestionMutation = useDeleteAssessmentQuestion(assessmentId);
 
   const [isSaving, setIsSaving] = useState(false);
   const [isActive, setIsActive] = useState(true);
-  const [metaOpen, setMetaOpen] = useState(false);
-  const [assessmentTitle, setAssessmentTitle] = useState("");
-  const [assessmentDesc, setAssessmentDesc] = useState("");
-  const [timeLimit, setTimeLimit] = useState("120");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedQ, setSelectedQ] = useState<number>(0);
   const originalDbIds = useRef<number[]>([]);
@@ -125,9 +117,6 @@ export default function EditAssessmentPage({
 
     // Can't move to render: it bumps the module-level `idCounter`.
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setAssessmentTitle(data.title ?? "");
-    setAssessmentDesc(data.description ?? "");
-    setTimeLimit(String(data.timeLimit ?? 120));
 
     if (data.questions && data.questions.length > 0) {
       const loaded: Question[] = data.questions.map((dbQ) => {
@@ -170,11 +159,6 @@ export default function EditAssessmentPage({
   }, [assessmentData]);
 
   const handleSave = async () => {
-    if (!assessmentTitle.trim()) {
-      alert("Assessment title is required.");
-      return;
-    }
-
     // Snapshot current state immediately — cache invalidations triggered by
     // mutateAsync calls below will cause refetches that would otherwise reset
     // `questions` via the useEffect before all saves complete.
@@ -182,12 +166,6 @@ export default function EditAssessmentPage({
 
     setIsSaving(true);
     try {
-      await updateAssessment.mutateAsync({
-        title: assessmentTitle,
-        description: assessmentDesc || null,
-        timeLimit: parseInt(timeLimit) || 120,
-      });
-
       const currentDbIds = new Set(
         savedQuestions.filter((q) => q.dbId).map((q) => q.dbId!),
       );
@@ -380,7 +358,7 @@ export default function EditAssessmentPage({
           {isManager ? (
             <>
               <Button
-                className="text-white cursor-pointer rounded-lg h-10 px-6 font-medium shadow-none border-none transition-all active:scale-[0.98] disabled:opacity-70 gap-2"
+                className="h-9 gap-2 rounded-md border-none px-4 text-sm font-medium text-white shadow-none transition-all active:scale-[0.98] disabled:opacity-70 cursor-pointer"
                 style={{ backgroundColor: "var(--theme-color)" }}
                 onClick={handleSave}
                 disabled={isSaving}
@@ -391,7 +369,7 @@ export default function EditAssessmentPage({
               <Link href="/assessments">
                 <Button
                   variant="outline"
-                  className="h-10 px-6 rounded-lg border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 shadow-none font-medium text-sm"
+                  className="h-9 rounded-md border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 shadow-none hover:bg-slate-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 >
                   Cancel
                 </Button>
@@ -408,63 +386,6 @@ export default function EditAssessmentPage({
             </Link>
           )}
         </div>
-      </div>
-
-      <div className="border-b border-slate-100 dark:border-neutral-800 shrink-0">
-        <button
-          onClick={() => setMetaOpen((o) => !o)}
-          className="w-full flex items-center justify-between px-8 py-4 hover:bg-slate-50/60 dark:hover:bg-neutral-900 transition-colors group"
-        >
-          <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400 tracking-widest uppercase">
-            Assessment Details
-          </span>
-          <HugeiconsIcon
-            icon={metaOpen ? ArrowUp01Icon : ArrowDown01Icon}
-            className="size-4 text-slate-400 group-hover:text-slate-600 transition-colors"
-            strokeWidth={2}
-          />
-        </button>
-
-        {metaOpen && (
-          <div className="px-8 pb-6 space-y-4">
-            <div>
-              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
-                Assessment Title
-              </Label>
-              <Input
-                placeholder="e.g., Frontend Developer Assessment"
-                value={assessmentTitle}
-                onChange={(e) => setAssessmentTitle(e.target.value)}
-                readOnly={!isManager}
-                className={inputCls}
-              />
-            </div>
-            <div>
-              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
-                Description
-              </Label>
-              <textarea
-                placeholder="Describe what this assessment is for ..."
-                rows={2}
-                value={assessmentDesc}
-                onChange={(e) => setAssessmentDesc(e.target.value)}
-                readOnly={!isManager}
-                className={textareaCls}
-              />
-            </div>
-            <div className="w-48">
-              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
-                Time Limit (Minutes)
-              </Label>
-              <Input
-                value={timeLimit}
-                onChange={(e) => setTimeLimit(e.target.value)}
-                readOnly={!isManager}
-                className={inputCls}
-              />
-            </div>
-          </div>
-        )}
       </div>
 
       <div className="flex flex-1 overflow-hidden">
@@ -724,7 +645,7 @@ export default function EditAssessmentPage({
                   <Button
                     onClick={() => addOption(selectedQ)}
                     variant="outline"
-                    className="h-9 px-4 border-[var(--theme-color)] text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 rounded-lg shadow-none text-sm font-medium transition-all"
+                    className="h-9 rounded-lg border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700 shadow-none hover:bg-slate-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
                   >
                     <HugeiconsIcon
                       icon={PlusSignIcon}

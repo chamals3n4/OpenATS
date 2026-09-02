@@ -102,7 +102,7 @@ export function AnswerOptionsEditor({
         <Button
           onClick={onAddOption}
           variant="outline"
-          className="h-9 px-4 border-[var(--theme-color)] text-[var(--theme-color)] hover:bg-[var(--theme-color)]/5 rounded-lg shadow-none text-sm font-medium transition-all"
+          className="h-9 rounded-lg border-slate-200 bg-slate-50 px-4 text-sm font-medium text-slate-700 shadow-none hover:bg-slate-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
         >
           <HugeiconsIcon
             icon={PlusSignIcon}

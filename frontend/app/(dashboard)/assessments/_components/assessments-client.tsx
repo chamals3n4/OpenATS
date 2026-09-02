@@ -14,6 +14,7 @@ import { AssessmentHeader } from "./assessment-header";
 import { AssessmentCardGrid } from "./card-grid";
 import { AssessmentInviteDialog } from "./invite-dialog";
 import { AssessmentDeleteDialog } from "./delete-dialog";
+import { CreateAssessmentDialog } from "./create-assessment-dialog";
 import { generateAssessmentUrl } from "../lib/utils";
 
 export default function AssessmentsPageClient() {
@@ -27,6 +28,7 @@ export default function AssessmentsPageClient() {
   const inviteMutation = useInviteToAssessment();
 
   const [deleteTarget, setDeleteTarget] = useState<Assessment | null>(null);
+  const [createOpen, setCreateOpen] = useState(false);
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
@@ -91,7 +93,7 @@ export default function AssessmentsPageClient() {
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
-      <AssessmentHeader />
+      <AssessmentHeader onCreate={() => setCreateOpen(true)} />
 
       <AssessmentCardGrid
         assessments={assessments}
@@ -122,6 +124,7 @@ export default function AssessmentsPageClient() {
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleConfirmDelete}
       />
+      <CreateAssessmentDialog open={createOpen} onOpenChange={setCreateOpen} />
     </div>
   );
 }

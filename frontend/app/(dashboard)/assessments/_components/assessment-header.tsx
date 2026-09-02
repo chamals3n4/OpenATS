@@ -6,7 +6,7 @@ import { ThemeButton } from "@/components/theme/theme-button";
 import { useIsManager } from "@/hooks/use-role";
 import { AssessmentSearchBar } from "./search-bar";
 
-export function AssessmentHeader() {
+export function AssessmentHeader({ onCreate }: { onCreate: () => void }) {
   const isManager = useIsManager();
   return (
     <div className="px-6 pt-4 pb-3 flex items-center justify-between gap-3 flex-wrap">
@@ -19,9 +19,7 @@ export function AssessmentHeader() {
 
         {isManager && (
           <ThemeButton
-            asChild
-            href="/assessments/new"
-            prefetch
+            onClick={onCreate}
             className="h-8 px-4 gap-2 text-sm shadow-none border-none"
           >
             <HugeiconsIcon

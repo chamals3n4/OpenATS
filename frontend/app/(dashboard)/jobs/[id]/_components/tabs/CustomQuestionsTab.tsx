@@ -5,7 +5,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   PlusSignIcon,
   DragDropVerticalIcon,
-  PencilEdit01Icon,
   Delete02Icon,
   TextIcon,
   ParagraphIcon,
@@ -17,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Select,
   SelectContent,
@@ -77,6 +77,31 @@ const QUESTION_TYPE_LABELS: Record<string, string> = {
   radio: "Radio Button",
 };
 
+const QUESTION_TYPE_META: Record<
+  CustomQuestionType,
+  { icon: typeof TextIcon; accent: string }
+> = {
+  short_answer: {
+    icon: TextIcon,
+    accent: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400",
+  },
+  long_answer: {
+    icon: ParagraphIcon,
+    accent:
+      "bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400",
+  },
+  checkbox: {
+    icon: Tick02Icon,
+    accent:
+      "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
+  },
+  radio: {
+    icon: CircleIcon,
+    accent:
+      "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
+  },
+};
+
 export function CustomQuestionsTab({
   questions,
   setIsAddingMode,
@@ -105,18 +130,31 @@ export function CustomQuestionsTab({
   const isManager = useIsManager();
   return (
     <div className="flex flex-col gap-6">
-      {isManager && (
-        <button
-          onClick={() => setIsAddingMode(true)}
-          className="flex items-center cursor-pointer gap-2 text-[var(--theme-color)] hover:underline font-medium text-[15px] w-fit"
-        >
-          <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={3} />
-          <span>Add Custom Question</span>
-        </button>
-      )}
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h2 className="text-[18px] font-semibold text-slate-900 dark:text-neutral-100">
+            Application questions
+          </h2>
+          <p className="mt-1 text-[13px] text-slate-400 dark:text-neutral-500">
+            Questions candidates complete when they apply for this role.
+          </p>
+        </div>
+        {isManager && (
+          <Button
+            type="button"
+            onClick={() => setIsAddingMode(true)}
+            disabled={isAddingMode}
+            className="h-9 shrink-0 cursor-pointer gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 shadow-none transition-colors hover:bg-slate-50 hover:text-slate-800 disabled:cursor-not-allowed dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+          >
+            <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2.5} />
+            Add question
+          </Button>
+        )}
+      </div>
 
       <div className="space-y-3">
         {questions.map((q, index) => {
+          const questionMeta = QUESTION_TYPE_META[q.questionType];
           function QuestionDraggable() {
             const { ref, isDragging, isOver } = useDragSort({
               id: q.id,
@@ -216,9 +254,9 @@ export function CustomQuestionsTab({
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
-                          variant="outline"
+                          variant="ghost"
                           onClick={() => setEditingQuestionId(null)}
-                          className="h-10 px-6 border-slate-200 text-slate-600 hover:bg-slate-50 font-medium shadow-none"
+                          className="h-9 cursor-pointer border-2 border-slate-300 px-4 text-sm font-medium text-slate-600 shadow-none hover:bg-slate-50 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800"
                         >
                           Cancel
                         </Button>
@@ -228,71 +266,53 @@ export function CustomQuestionsTab({
                             updateQuestionMutationPending
                           }
                           onClick={() => handleSaveQuestion(q.id)}
-                          className="h-10 px-6 cursor-pointer bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none rounded-lg font-medium disabled:opacity-50"
+                          className="h-9 cursor-pointer gap-2 rounded-md bg-[var(--theme-color)] px-4 text-sm font-medium text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-50"
                         >
-                          {updateQuestionMutationPending
-                            ? "Saving…"
-                            : "Save Changes"}
+                          {updateQuestionMutationPending && <Spinner className="size-3.5" />}
+                          {updateQuestionMutationPending ? "Saving" : "Save changes"}
                         </Button>
                       </div>
                     </div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-4">
-                      <div className="size-8 rounded-lg bg-slate-50 flex items-center justify-center text-slate-500 border border-slate-100">
-                        {q.questionType === "short_answer" && (
-                          <HugeiconsIcon icon={TextIcon} className="size-4" />
-                        )}
-                        {q.questionType === "long_answer" && (
-                          <HugeiconsIcon
-                            icon={ParagraphIcon}
-                            className="size-4"
-                          />
-                        )}
-                        {q.questionType === "checkbox" && (
-                          <HugeiconsIcon icon={Tick02Icon} className="size-4" />
-                        )}
-                        {q.questionType === "radio" && (
-                          <HugeiconsIcon icon={CircleIcon} className="size-4" />
-                        )}
+                  <div className="flex items-center justify-between px-4 py-3.5">
+                    <div className="flex min-w-0 items-center gap-3.5">
+                      <div className={`flex size-9 shrink-0 items-center justify-center rounded-lg ${questionMeta.accent}`}>
+                        <HugeiconsIcon icon={questionMeta.icon} className="size-4" />
                       </div>
-                      <div className="flex flex-col">
-                        <span className="text-slate-700 dark:text-neutral-200 font-medium text-[15px]">
+                      <div className="flex min-w-0 flex-col gap-1">
+                        <span className="truncate text-[15px] font-medium text-slate-800 dark:text-neutral-200">
                           {q.title}
                         </span>
-                        {q.isRequired && (
-                          <span className="text-[11px] text-red-500 font-medium">
-                            Required
-                          </span>
-                        )}
+                        <div className="flex items-center gap-2 text-[12px] text-slate-400 dark:text-neutral-500">
+                          <span>{QUESTION_TYPE_LABELS[q.questionType]}</span>
+                          {q.isRequired && (
+                            <span className="font-medium text-red-500">Required</span>
+                          )}
+                        </div>
                       </div>
                     </div>
                     {isManager && (
-                      <div className="flex items-center gap-3">
+                      <div className="ml-4 flex shrink-0 items-center gap-4">
                         <button
+                          type="button"
                           onClick={() => openEditQuestion(q)}
-                          className="p-1.5 text-slate-400 hover:text-[var(--theme-color)] transition-colors"
+                          className="cursor-pointer text-sm font-medium text-slate-500 transition-colors hover:text-[var(--theme-color)] dark:text-neutral-400"
                         >
-                          <HugeiconsIcon
-                            icon={PencilEdit01Icon}
-                            className="size-[18px]"
-                          />
+                          Edit
                         </button>
                         <button
+                          type="button"
                           onClick={() => deleteQuestionMutation.mutate(q.id)}
                           disabled={deleteQuestionMutation.isPending}
-                          className="p-1.5 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                          className="cursor-pointer text-sm font-medium text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400"
                         >
-                          <HugeiconsIcon
-                            icon={Delete02Icon}
-                            className="size-[18px]"
-                          />
+                          Delete
                         </button>
-                        <button className="p-1.5 text-slate-300 cursor-grab active:cursor-grabbing">
+                        <button type="button" className="cursor-grab p-1 text-slate-300 active:cursor-grabbing dark:text-neutral-600">
                           <HugeiconsIcon
                             icon={DragDropVerticalIcon}
-                            className="size-[18px]"
+                            className="size-4"
                           />
                         </button>
                       </div>
@@ -305,8 +325,23 @@ export function CustomQuestionsTab({
           return <QuestionDraggable key={q.id} />;
         })}
 
+        {!isAddingMode && questions.length === 0 && (
+          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 py-12 text-center dark:border-neutral-800">
+            <p className="text-sm font-medium text-slate-700 dark:text-neutral-300">
+              No application questions yet
+            </p>
+            <p className="mt-1 text-[13px] text-slate-400 dark:text-neutral-500">
+              Add a question to collect the details that matter for this role.
+            </p>
+          </div>
+        )}
+
         {isAddingMode && isManager && (
-          <div className="p-3 border border-slate-200 dark:border-neutral-800 rounded-lg bg-white dark:bg-neutral-900 space-y-4 animate-in slide-in-from-top-2 duration-200">
+          <div className="space-y-4 rounded-xl border border-[var(--theme-color)]/25 bg-[var(--theme-color)]/[0.035] p-4 dark:bg-[var(--theme-color)]/[0.08] animate-in slide-in-from-top-2 duration-200">
+            <div>
+              <p className="text-sm font-semibold text-slate-800 dark:text-neutral-200">New question</p>
+              <p className="mt-0.5 text-[13px] text-slate-400 dark:text-neutral-500">Choose the answer format, then write the question candidates will see.</p>
+            </div>
             <div className="flex flex-wrap items-center gap-4">
               <Select
                 value={newQuestionType}
@@ -441,7 +476,7 @@ export function CustomQuestionsTab({
                     setNewQuestionText("");
                     setNewQuestionRequired(false);
                   }}
-                  className="h-10 px-6 border-slate-200 cursor-pointer dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 font-medium shadow-none"
+                  className="h-9 cursor-pointer border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 shadow-none hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
                 >
                   Cancel
                 </Button>
@@ -449,7 +484,7 @@ export function CustomQuestionsTab({
                   disabled={
                     !newQuestionText.trim() || createQuestionMutation.isPending
                   }
-                  className="h-10 px-6 bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white shadow-none rounded-lg font-medium disabled:opacity-50"
+                  className="h-9 cursor-pointer gap-2 rounded-md bg-[var(--theme-color)] px-4 text-sm font-medium text-white shadow-none hover:bg-[var(--theme-color-hover)] disabled:opacity-50"
                   onClick={() => {
                     if (!newQuestionText.trim()) return;
                     createQuestionMutation.mutate(
@@ -470,23 +505,14 @@ export function CustomQuestionsTab({
                     );
                   }}
                 >
-                  {createQuestionMutation.isPending
-                    ? "Adding..."
-                    : "Add Question"}
+                  {createQuestionMutation.isPending && <Spinner className="size-3.5" />}
+                  {createQuestionMutation.isPending ? "Adding" : "Add question"}
                 </Button>
               </div>
             </div>
           </div>
         )}
       </div>
-
-      {isManager && (
-        <div className="pt-4">
-          <Button className="bg-[var(--theme-color)] cursor-pointer hover:bg-[var(--theme-color-hover)] text-white rounded-lg h-10 px-6 font-medium shadow-none">
-            Save Changes
-          </Button>
-        </div>
-      )}
     </div>
   );
 }

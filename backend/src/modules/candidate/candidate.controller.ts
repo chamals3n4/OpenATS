@@ -70,8 +70,11 @@ export const applyForJob = async (req: Request, res: Response) => {
       return;
     }
 
-    const job = await getJobOrFail(res, jobId);
-    if (!job) return;
+    const job = await jobService.getPublishedById(jobId);
+    if (!job) {
+      res.status(404).json({ error: "Job not found" });
+      return;
+    }
 
     const parsed = candidateApplySchema.safeParse(req.body);
     if (!parsed.success) {

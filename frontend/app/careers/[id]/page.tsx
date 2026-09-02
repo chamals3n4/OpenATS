@@ -11,7 +11,7 @@ async function getJob(id: number): Promise<JobDetail | null> {
   if (!API_BASE) return null;
   try {
     const res = await fetch(`${API_BASE}/public/jobs/${id}`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
     if (!res.ok) return null;
     const body = (await res.json()) as { data?: JobDetail };
@@ -25,7 +25,7 @@ async function getQuestions(id: number): Promise<CustomQuestion[]> {
   if (!API_BASE) return [];
   try {
     const res = await fetch(`${API_BASE}/public/jobs/${id}/questions`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
     if (!res.ok) return [];
     const body = (await res.json()) as { data?: CustomQuestion[] };

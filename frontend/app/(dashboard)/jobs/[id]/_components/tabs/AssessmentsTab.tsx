@@ -1,9 +1,10 @@
 "use client";
 
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PlusSignIcon, Delete02Icon } from "@hugeicons/core-free-icons";
+import { PlusSignIcon, Task01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import {
   Select,
   SelectContent,
@@ -15,6 +16,7 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -22,6 +24,21 @@ import {
 import type { Assessment, JobAssessment, PipelineStage } from "@/types";
 import type { useAttachAssessment } from "@/hooks/queries/use-assessments";
 import { useIsManager } from "@/hooks/use-role";
+
+const assessmentAccents = [
+  {
+    surface: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
+  },
+  {
+    surface: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400",
+  },
+  {
+    surface: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
+  },
+  {
+    surface: "bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400",
+  },
+] as const;
 
 interface AssessmentsTabProps {
   isAssessmentDialogOpen: boolean;
@@ -74,7 +91,7 @@ export function AssessmentsTab({
         >
           <DialogTrigger
             render={
-              <Button className="inline-flex cursor-pointer items-center gap-2 h-10 px-5 rounded-lg text-[13px] font-medium border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 hover:text-slate-800 dark:hover:text-neutral-100 transition-colors">
+              <Button className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
                 <HugeiconsIcon
                   icon={PlusSignIcon}
                   className="size-4"
@@ -84,12 +101,12 @@ export function AssessmentsTab({
               </Button>
             }
           />
-          <DialogContent className="!top-[18%] !translate-y-0 max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg p-6 duration-0 data-open:zoom-in-100 data-closed:zoom-out-100">
-            <DialogHeader className="mb-4">
-              <DialogTitle className="text-[16px] font-semibold text-slate-900 dark:text-neutral-100">
+          <DialogContent className="max-w-md gap-0 overflow-hidden rounded-xl border-slate-200 bg-white p-0 dark:border-neutral-800 dark:bg-neutral-900">
+            <DialogHeader className="px-6 py-5">
+              <DialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
                 Attach Assessment
               </DialogTitle>
-              <DialogDescription className="text-slate-400 dark:text-neutral-500 text-[13px] mt-1">
+              <DialogDescription className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
                 Auto-send when a candidate enters the selected stage.
               </DialogDescription>
             </DialogHeader>
@@ -108,10 +125,11 @@ export function AssessmentsTab({
                   );
                 }
               }}
-              className="space-y-3"
+              className="px-6 py-5"
             >
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
+              <div className="space-y-5">
+              <div>
+                <Label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-neutral-300">
                   Assessment
                 </Label>
                 <Select
@@ -120,7 +138,7 @@ export function AssessmentsTab({
                   onValueChange={(value) => setAssessmentSelectId(value ?? "")}
                   required
                 >
-                  <SelectTrigger className="w-full h-9 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-none rounded-lg text-[13px] text-slate-600 dark:text-neutral-300 focus:ring-0">
+                  <SelectTrigger className="h-10! w-full rounded-md border-slate-200 bg-slate-50 text-sm text-slate-700 shadow-none focus-visible:border-[var(--theme-color)] focus-visible:ring-0 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200">
                     <SelectValue placeholder="Choose assessment…">
                       {assessmentSelectId
                         ? (allAssessments.find(
@@ -129,7 +147,7 @@ export function AssessmentsTab({
                         : null}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+                  <SelectContent>
                     {allAssessments.map((a) => (
                       <SelectItem
                         key={a.id}
@@ -142,8 +160,8 @@ export function AssessmentsTab({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="space-y-1.5">
-                <Label className="text-[11px] font-semibold text-slate-400 dark:text-neutral-500 uppercase tracking-wide">
+              <div>
+                <Label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-neutral-300">
                   Trigger Stage
                 </Label>
                 <Select
@@ -154,7 +172,7 @@ export function AssessmentsTab({
                   }
                   required
                 >
-                  <SelectTrigger className="w-full h-9 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shadow-none rounded-lg text-[13px] text-slate-600 dark:text-neutral-300 focus:ring-0">
+                  <SelectTrigger className="h-10! w-full rounded-md border-slate-200 bg-slate-50 text-sm text-slate-700 shadow-none focus-visible:border-[var(--theme-color)] focus-visible:ring-0 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200">
                     <SelectValue placeholder="When candidate moves into…">
                       {triggerStageSelectId
                         ? (stages.find(
@@ -163,7 +181,7 @@ export function AssessmentsTab({
                         : null}
                     </SelectValue>
                   </SelectTrigger>
-                  <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
+                  <SelectContent>
                     {stages.map((s) => (
                       <SelectItem
                         key={s.id}
@@ -176,15 +194,26 @@ export function AssessmentsTab({
                   </SelectContent>
                 </Select>
               </div>
-              <div className="pt-2 flex justify-end">
+              </div>
+              <DialogFooter className="mt-6 border-t border-slate-100 pt-4 dark:border-neutral-800">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => setIsAssessmentDialogOpen(false)}
+                  disabled={attachAssessmentMutation.isPending}
+                  className="h-9 border-2 border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                >
+                  Cancel
+                </Button>
                 <Button
                   type="submit"
                   disabled={attachAssessmentMutation.isPending}
-                  className="h-9 px-5 bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white shadow-none border-none rounded-lg text-[13px] font-medium"
+                  className="h-9 gap-2 rounded-md border-none bg-[var(--theme-color)] px-4 text-sm font-medium text-white shadow-none hover:bg-[var(--theme-color-hover)]"
                 >
-                  {attachAssessmentMutation.isPending ? "Saving…" : "Save"}
+                  {attachAssessmentMutation.isPending && <Spinner className="size-3.5" />}
+                  {attachAssessmentMutation.isPending ? "Saving" : "Attach assessment"}
                 </Button>
-              </div>
+              </DialogFooter>
             </form>
           </DialogContent>
         </Dialog>}
@@ -193,6 +222,8 @@ export function AssessmentsTab({
       {attachedAssessments.length > 0 ? (
         <div className="space-y-3">
           {attachedAssessments.map((attachment) => {
+            const accent =
+              assessmentAccents[attachment.id % assessmentAccents.length];
             const stageFound = stages.find(
               (s) => s.id === attachment.triggerStageId,
             );
@@ -205,11 +236,13 @@ export function AssessmentsTab({
                 className="flex items-center justify-between px-5 py-4 bg-white dark:bg-neutral-900 border border-[var(--theme-color)]/20 hover:border-[var(--theme-color)]/40 rounded-xl transition-colors"
               >
                 <div className="flex items-center gap-4 min-w-0">
-                  <div className="size-10 rounded-xl bg-purple-50 dark:bg-purple-950/30 flex items-center justify-center shrink-0 text-[18px]">
-                    📋
+                  <div
+                    className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${accent.surface}`}
+                  >
+                    <HugeiconsIcon icon={Task01Icon} className="size-5" />
                   </div>
                   <div className="min-w-0">
-                    <p className="text-[14px] font-semibold text-slate-800 dark:text-neutral-200 truncate">
+                    <p className="truncate text-[14px] font-semibold text-slate-800 dark:text-neutral-200">
                       {assessmentFound?.title ?? "Unknown Assessment"}
                     </p>
                     <p className="text-[12px] text-slate-400 mt-0.5">
@@ -224,13 +257,13 @@ export function AssessmentsTab({
                   </div>
                 </div>
                 {isManager && (
-                  <Button
+                  <button
+                    type="button"
                     onClick={() => setDetachTarget(attachment.id)}
-                    className="shrink-0 ml-4 cursor-pointer bg-red inline-flex items-center gap-1.5 h-8 px-3 rounded-lg text-[12px] font-medium border border-red-200 dark:border-red-900 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 hover:border-red-300 dark:hover:border-red-800 transition-colors"
+                    className="ml-4 shrink-0 cursor-pointer text-sm font-medium text-red-500 transition-colors hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
                   >
-                    <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
                     Remove
-                  </Button>
+                  </button>
                 )}
               </div>
             );

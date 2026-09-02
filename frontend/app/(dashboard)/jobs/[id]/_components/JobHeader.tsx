@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   ArrowLeft02Icon,
-  ArrowRight01Icon,
+  Task01Icon,
   Link01Icon,
   Chatting01Icon,
   UserMultiple02Icon,
@@ -15,7 +15,6 @@ import {
   StopCircleIcon,
   ArchiveIcon,
   RefreshIcon,
-  MoreVerticalIcon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -28,12 +27,6 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import type { JobDetail } from "@/types";
 import { useIsManager } from "@/hooks/use-role";
 import { useUpdateJob } from "@/hooks/queries/use-jobs";
@@ -52,19 +45,19 @@ const STATUS_ACTIONS: Record<JobStatus, StatusAction[]> = {
   draft: [
     {
       to: "published",
-      label: "Publish",
+      label: "Publish Job",
       pendingLabel: "Publishing",
       icon: RocketIcon,
-      className: "bg-emerald-600 hover:bg-emerald-700",
+      className: "bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)]",
     },
   ],
   inactive: [
     {
       to: "published",
-      label: "Publish",
+      label: "Publish Job",
       pendingLabel: "Publishing",
       icon: RocketIcon,
-      className: "bg-emerald-600 hover:bg-emerald-700",
+      className: "bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)]",
     },
     {
       to: "closed",
@@ -80,7 +73,7 @@ const STATUS_ACTIONS: Record<JobStatus, StatusAction[]> = {
       label: "Deactivate",
       pendingLabel: "Deactivating",
       icon: PauseIcon,
-      className: "bg-slate-600 hover:bg-slate-700",
+      className: "bg-slate-700 hover:bg-slate-800",
     },
     {
       to: "closed",
@@ -96,7 +89,7 @@ const STATUS_ACTIONS: Record<JobStatus, StatusAction[]> = {
       label: "Reopen",
       pendingLabel: "Reopening",
       icon: RefreshIcon,
-      className: "bg-emerald-600 hover:bg-emerald-700",
+      className: "bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)]",
     },
     {
       to: "archived",
@@ -142,12 +135,6 @@ const STATUS_CONFIRM_COPY: Record<
     description: `This will move "${title}" back to draft. It won't be visible publicly until you publish it again.`,
   }),
 };
-
-const ACTION_BY_TARGET: Record<JobStatus, StatusAction> = Object.fromEntries(
-  Object.values(STATUS_ACTIONS)
-    .flat()
-    .map((action) => [action.to, action]),
-) as Record<JobStatus, StatusAction>;
 
 interface JobHeaderProps {
   job: JobDetail | undefined;
@@ -215,6 +202,10 @@ export function JobHeader({
 
   const actions = job ? STATUS_ACTIONS[job.status as JobStatus] : undefined;
   const [primaryAction, ...secondaryActions] = actions ?? [];
+  const secondaryAction = secondaryActions[0];
+  const pendingAction = pendingStatus
+    ? actions?.find((action) => action.to === pendingStatus)
+    : null;
 
   const handleConfirmStatusChange = () => {
     if (!pendingStatus) return;
@@ -321,31 +312,24 @@ export function JobHeader({
                 {primaryAction.label}
               </Button>
             )}
-            {isManager && secondaryActions.length > 0 && (
-              <DropdownMenu>
-                <DropdownMenuTrigger
-                  aria-label="More status actions"
-                  className="flex h-[34px] w-[34px] cursor-pointer items-center justify-center rounded-md border-none bg-neutral-700 text-white shadow-none outline-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
-                >
-                  <HugeiconsIcon icon={MoreVerticalIcon} className="size-4" />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  {secondaryActions.map((action) => (
-                    <DropdownMenuItem
-                      key={action.to}
-                      onClick={() => setPendingStatus(action.to)}
-                    >
-                      <HugeiconsIcon icon={action.icon} className="size-4" />
-                      {action.label}
-                    </DropdownMenuItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+            {isManager && secondaryAction && (
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setPendingStatus(secondaryAction.to)}
+                className={`h-[34px] cursor-pointer rounded-md px-4 text-[14px] font-semibold leading-none shadow-none ${
+                  secondaryAction.to === "closed"
+                    ? "border-red-200 bg-white text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:bg-neutral-950 dark:text-red-400 dark:hover:bg-red-950/30"
+                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                }`}
+              >
+                {secondaryAction.label}
+              </Button>
             )}
             <Button
               size="sm"
               onClick={() => setIsNotesOpen(!isNotesOpen)}
-              className="h-[34px] cursor-pointer rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+              className="h-[34px] cursor-pointer rounded-md border border-blue-200 bg-blue-50 px-4 text-[14px] font-semibold leading-none text-blue-700 shadow-none hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/50"
             >
               <HugeiconsIcon
                 icon={Chatting01Icon}
@@ -360,12 +344,8 @@ export function JobHeader({
                   size="sm"
                   className="h-[34px] cursor-pointer rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
                 >
+                  <HugeiconsIcon icon={Task01Icon} className="size-4" />
                   Hiring Pipeline
-                  <HugeiconsIcon
-                    icon={ArrowRight01Icon}
-                    className="size-4"
-                    strokeWidth={3}
-                  />
                 </Button>
               </Link>
             ) : (
@@ -374,18 +354,15 @@ export function JobHeader({
                 disabled
                 className="h-[34px] rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
               >
+                <HugeiconsIcon icon={Task01Icon} className="size-4" />
                 Hiring Pipeline
-                <HugeiconsIcon
-                  icon={ArrowRight01Icon}
-                  className="size-4"
-                  strokeWidth={3}
-                />
               </Button>
             )}
             <Link href="/jobs">
               <Button
                 size="sm"
-                className="h-[34px] cursor-pointer rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
+                variant="ghost"
+                className="h-[34px] cursor-pointer rounded-md px-2 text-[14px] font-medium leading-none text-slate-500 shadow-none hover:bg-slate-100 hover:text-slate-800 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
               >
                 <HugeiconsIcon icon={ArrowLeft02Icon} className="size-4" />
                 Back
@@ -410,9 +387,10 @@ export function JobHeader({
               </DialogHeader>
               <DialogFooter>
                 <Button
-                  variant="outline"
+                  variant="ghost"
                   onClick={() => setPendingStatus(null)}
                   disabled={updateJob.isPending}
+                  className="border-2 border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
                 >
                   Cancel
                 </Button>
@@ -420,15 +398,13 @@ export function JobHeader({
                   onClick={handleConfirmStatusChange}
                   disabled={updateJob.isPending}
                   className={`inline-flex items-center gap-2 text-white disabled:opacity-70 disabled:cursor-not-allowed ${
-                    pendingStatus ? ACTION_BY_TARGET[pendingStatus].className : ""
+                    pendingAction?.className ?? ""
                   }`}
                 >
                   {updateJob.isPending && <Spinner className="size-3.5" />}
-                  {pendingStatus
-                    ? updateJob.isPending
-                      ? ACTION_BY_TARGET[pendingStatus].pendingLabel
-                      : ACTION_BY_TARGET[pendingStatus].label
-                    : "Confirm"}
+                  {updateJob.isPending
+                    ? (pendingAction?.pendingLabel ?? "Saving")
+                    : (pendingAction?.label ?? "Confirm")}
                 </Button>
               </DialogFooter>
             </>

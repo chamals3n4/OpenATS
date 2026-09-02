@@ -199,6 +199,12 @@ export const jobService = {
     };
   },
 
+  /** A job is publicly accessible only after it has been published. */
+  async getPublishedById(id: number) {
+    const job = await this.getById(id);
+    return job?.status === "published" ? job : null;
+  },
+
   async getBySlug(slug: string) {
     const [job] = await db.select().from(jobs).where(eq(jobs.slug, slug));
     if (!job) return null;

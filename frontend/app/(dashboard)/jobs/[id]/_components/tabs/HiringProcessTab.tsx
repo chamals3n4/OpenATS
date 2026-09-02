@@ -5,8 +5,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   PlusSignIcon,
   DragDropVerticalIcon,
-  PencilEdit01Icon,
-  Delete02Icon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -47,9 +45,9 @@ export function HiringProcessTab({
           <h3 className="text-slate-900 dark:text-neutral-100 font-semibold text-[17px]">
             Hiring Pipeline Stages
           </h3>
-          <p className="text-slate-500 dark:text-neutral-400 text-[13px]">
+          <p className="text-sm text-slate-500 dark:text-neutral-400">
             {isManager
-              ? "Drag To Reorder Stages. Click To Edit Or Remove."
+              ? "Drag stages to reorder them, or use the actions to make changes."
               : "View only — contact a hiring manager to modify stages."}
           </p>
         </div>
@@ -80,21 +78,21 @@ export function HiringProcessTab({
             return (
               <div
                 ref={ref as Ref<HTMLDivElement>}
-                className={`flex items-center justify-between p-4 border rounded-lg transition-all group bg-white dark:bg-neutral-900 ${
+                className={`group flex items-center justify-between rounded-lg border px-4 py-3.5 transition-colors ${
                   isDragging
-                    ? "opacity-40 border-slate-300 dark:border-neutral-700"
+                    ? "border-slate-300 bg-slate-100 opacity-40 dark:border-neutral-700 dark:bg-neutral-800"
                     : isOver
-                      ? "border-[var(--theme-color)]/40 bg-[var(--theme-color)]/5"
-                      : "border-slate-200/70 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700"
+                      ? "border-[var(--theme-color)]/50 bg-[var(--theme-color)]/5"
+                      : "border-[var(--theme-color)]/25 bg-[var(--theme-color)]/[0.05] hover:border-[var(--theme-color)]/40 hover:bg-[var(--theme-color)]/[0.08] dark:border-neutral-800 dark:bg-neutral-900 dark:hover:border-neutral-700 dark:hover:bg-neutral-800/70"
                 }`}
               >
-                <div className="flex items-center gap-4 flex-1 min-w-0">
+                <div className="flex min-w-0 flex-1 items-center gap-4">
                   <HugeiconsIcon
                     icon={DragDropVerticalIcon}
-                    className="size-5 text-slate-300 group-hover:text-slate-400 cursor-grab active:cursor-grabbing shrink-0"
+                    className="size-5 shrink-0 cursor-grab rounded text-slate-400 active:cursor-grabbing dark:text-neutral-500"
                   />
                   <div
-                    className={`size-2 rounded-full ${stage.color} shrink-0`}
+                    className={`size-2.5 shrink-0 rounded-full ring-4 ring-slate-100 dark:ring-neutral-800 ${stage.color}`}
                   />
                   {editingStageId === stage.id ? (
                     <div className="flex items-center gap-2 flex-1">
@@ -111,36 +109,33 @@ export function HiringProcessTab({
                       <button
                         onClick={() => handleSaveStage(stage.id)}
                         disabled={updateStageMutationPending}
-                        className="text-xs font-medium text-white bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] px-3 h-8 rounded-md disabled:opacity-50"
+                        className="h-8 cursor-pointer rounded-md bg-[var(--theme-color)] px-3 text-xs font-medium text-white hover:bg-[var(--theme-color-hover)] disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         {updateStageMutationPending ? "Saving…" : "Save"}
                       </button>
                       <button
                         onClick={() => setEditingStageId(null)}
-                        className="text-xs font-medium text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200 px-3 h-8 rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
+                        className="h-8 cursor-pointer rounded-md border border-slate-200 bg-white px-3 text-xs font-medium text-slate-600 hover:bg-slate-50 hover:text-slate-800 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-200"
                       >
                         Cancel
                       </button>
                     </div>
                   ) : (
-                    <span className="text-slate-700 dark:text-neutral-200 font-medium text-[15px]">
+                    <span className="text-[15px] font-semibold text-slate-800 dark:text-neutral-100">
                       {stage.name}
                     </span>
                   )}
                 </div>
                 {editingStageId !== stage.id && isManager && (
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3">
                     <button
                       onClick={() => {
                         setEditingStageId(stage.id);
                         setEditingStageName(stage.name);
                       }}
-                      className="text-[var(--theme-color)]/60 cursor-pointer hover:text-[var(--theme-color)] transition-colors"
+                      className="text-sm font-medium text-slate-600 transition-colors hover:text-[var(--theme-color)] dark:text-neutral-400 cursor-pointer"
                     >
-                      <HugeiconsIcon
-                        icon={PencilEdit01Icon}
-                        className="size-[18px]"
-                      />
+                      Edit
                     </button>
                     <button
                       onClick={() =>
@@ -149,12 +144,9 @@ export function HiringProcessTab({
                           name: stage.name,
                         })
                       }
-                      className="text-red-400/80 cursor-pointer hover:text-red-500 transition-colors disabled:opacity-50"
+                      className="text-sm font-medium text-red-500 transition-colors hover:text-red-600 dark:text-red-400 cursor-pointer"
                     >
-                      <HugeiconsIcon
-                        icon={Delete02Icon}
-                        className="size-[18px]"
-                      />
+                      Delete
                     </button>
                   </div>
                 )}

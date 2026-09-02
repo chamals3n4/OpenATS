@@ -175,7 +175,7 @@ export const getPublicJobById = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await jobService.getById(id);
+    const result = await jobService.getPublishedById(id);
     if (!result) {
       res.status(404).json({ error: "Job not found" });
       return;

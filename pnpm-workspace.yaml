@@ -1,6 +1,7 @@
 packages:
   - "backend"
   - "frontend"
+  - "docs"
 
 allowBuilds:
   core-js: false
@@ -12,3 +13,4 @@ allowBuilds:
   msgpackr-extract: true
   protobufjs: true
   '@google/genai': true
+  '@swc/core': false

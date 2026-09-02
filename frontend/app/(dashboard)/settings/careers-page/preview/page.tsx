@@ -6,11 +6,10 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Briefcase01Icon,
   Location01Icon,
-  ArrowLeft01Icon,
+  ArrowLeft02Icon,
 } from "@hugeicons/core-free-icons";
 
 import type { Job } from "@/types";
-import { Button } from "@/components/ui/button";
 
 type ListRow = {
   id: number;
@@ -81,14 +80,14 @@ export default function CareersPreviewPage() {
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 min-w-0">
       <div className="px-8 py-6 border-b border-slate-100 dark:border-neutral-800 shrink-0">
-        <Button
-          variant="outline"
-          className="mb-4 h-10 min-h-10 px-4 gap-2 rounded-md w-full sm:w-fit justify-center text-sm font-medium border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 text-slate-800 dark:text-neutral-100 hover:bg-slate-50 dark:hover:bg-neutral-900 shadow-none"
-          render={<Link href="/settings/careers" prefetch />}
+        <Link
+          href="/settings/careers-page"
+          prefetch
+          className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-100"
         >
-          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4 shrink-0" />
-          Careers settings
-        </Button>
+          <HugeiconsIcon icon={ArrowLeft02Icon} className="size-3.5 shrink-0" />
+          Careers page settings
+        </Link>
         <h1 className="text-xl font-semibold text-slate-900 dark:text-neutral-100 leading-none mb-2">
           Careers preview
         </h1>
@@ -97,7 +96,7 @@ export default function CareersPreviewPage() {
           <code className="text-xs font-mono px-1 py-0.5 rounded bg-slate-100 dark:bg-neutral-800">
             GET /api/public/jobs
           </code>
-          — published jobs only, same shape as the public listing.
+          - published jobs only, with the same shape as the public listing.
         </p>
       </div>
 

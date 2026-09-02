@@ -565,7 +565,7 @@ export default function SettingsGeneralPage() {
   return (
     <div className="flex flex-1 flex-col bg-slate-50/70 dark:bg-neutral-950">
       <div className="flex-1 overflow-y-auto scroll-smooth px-4 py-6 sm:px-6 sm:py-8">
-        <div className="mx-auto max-w-5xl">
+        <div className="w-full">
           <header className="mb-7">
             <h1 className="text-xl font-semibold text-slate-950 dark:text-white">General settings</h1>
             <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">Manage your organization and departments.</p>

@@ -11,6 +11,7 @@ import { Add01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 
 import {
   useSettingsAllowedOrigins,
@@ -21,30 +22,25 @@ const inputCls =
   "h-9 rounded-md shadow-none bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 text-sm font-mono";
 
 function Section({
-  step,
   title,
   description,
   children,
 }: {
-  step: string;
   title: string;
   description: React.ReactNode;
   children: React.ReactNode;
 }) {
   return (
-    <section className="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-6 lg:gap-10 py-10 border-b border-slate-100 dark:border-neutral-800 last:border-b-0">
-      <div>
-        <span className="font-mono text-xs font-semibold text-theme">
-          {step}
-        </span>
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 mt-1">
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="border-b border-slate-100 px-5 py-4 sm:px-6 dark:border-neutral-800">
+        <h2 className="text-base font-semibold text-slate-900 dark:text-neutral-100">
           {title}
         </h2>
-        <p className="text-sm text-slate-400 dark:text-neutral-500 mt-2 leading-relaxed">
+        <p className="mt-1 text-sm leading-relaxed text-slate-500 dark:text-neutral-400">
           {description}
         </p>
       </div>
-      <div className="min-w-0">{children}</div>
+      <div className="min-w-0 p-5 sm:p-6">{children}</div>
     </section>
   );
 }
@@ -59,8 +55,8 @@ function Endpoint({
   onCopy: () => void;
 }) {
   return (
-    <div className="rounded-lg border border-slate-200 dark:border-neutral-800 bg-slate-950 dark:bg-black overflow-hidden">
-      <div className="flex items-center gap-3 px-4 py-3">
+    <div className="overflow-hidden rounded-lg border border-slate-800 bg-slate-950 dark:border-neutral-800">
+      <div className="flex items-center gap-3 px-4 py-3.5">
         <span className="shrink-0 rounded bg-emerald-500/15 text-emerald-400 text-[11px] font-mono font-bold px-2 py-1">
           GET
         </span>
@@ -157,36 +153,30 @@ export default function CareersSettingsPage() {
   if (isLoadingUser || !role || !isManager) return null;
 
   return (
-    <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 min-w-0">
-      <div className="shrink-0 px-6 pt-4 pb-3 border-b border-slate-200 dark:border-neutral-800 flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
-            Careers Page
-          </h1>
-          <p className="text-sm text-slate-400 dark:text-neutral-500 mt-1.5 max-w-2xl">
-            Connect your careers site to OpenATS with the public job API or
-            the embed snippet below.
-          </p>
-        </div>
+    <div className="flex min-w-0 flex-1 flex-col bg-slate-50/70 dark:bg-neutral-950">
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">
+        <div className="w-full">
+          <header className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <p className="text-sm font-medium text-theme">Publishing</p>
+              <h1 className="mt-1 text-xl font-semibold text-slate-950 dark:text-white">Careers page</h1>
+              <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
+                Publish open roles on your own careers site.
+              </p>
+            </div>
         <Button
-          className="h-9 px-4 shrink-0 bg-theme hover:bg-theme-hover text-white rounded-md border border-theme shadow-none text-sm font-semibold cursor-pointer"
+          className="h-9 shrink-0 rounded-md border border-theme bg-theme px-4 text-sm font-semibold text-white shadow-none hover:bg-theme-hover cursor-pointer"
           render={<Link href="/settings/careers-page/preview" prefetch />}
         >
           Open listing preview
         </Button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-6 min-w-0">
-        <div className="max-w-4xl">
+          </header>
+          <div className="space-y-5">
           <Section
-            step="01 · SECURITY"
             title="Allowed origins"
             description={
               <>
-                When this list is non-empty, browser requests to the public
-                job API must send an <code className="font-mono">Origin</code>{" "}
-                header that matches an entry here. Leave it empty to skip
-                the origin check entirely.
+                Limit which websites can request jobs from your public API. Leave this empty to allow all origins.
               </>
             }
           >
@@ -214,10 +204,10 @@ export default function CareersSettingsPage() {
               </p>
             )}
 
-            <div className="rounded-lg border border-slate-200 dark:border-neutral-800 overflow-hidden">
+            <div className="overflow-hidden rounded-lg border border-slate-200 dark:border-neutral-800">
               {!isLoading && origins.length === 0 && !isError ? (
-                <p className="px-4 py-3 text-xs text-slate-400 dark:text-neutral-500 font-mono">
-                  # no origins configured — all origins allowed
+                <p className="px-4 py-3 text-sm text-slate-500 dark:text-neutral-400">
+                  All origins are currently allowed.
                 </p>
               ) : (
                 origins.map((o, i) => (
@@ -241,7 +231,7 @@ export default function CareersSettingsPage() {
                   </div>
                 ))
               )}
-              <div className="flex items-center gap-2 px-3 py-2.5 border-t border-slate-100 dark:border-neutral-800 bg-gray-50 dark:bg-neutral-900/60">
+              <div className="flex items-center gap-2 border-t border-slate-100 bg-slate-50 px-3 py-2.5 dark:border-neutral-800 dark:bg-neutral-950">
                 <Input
                   placeholder="https://jobs.example.com"
                   value={draft}
@@ -271,17 +261,16 @@ export default function CareersSettingsPage() {
               onClick={saveOrigins}
               disabled={isLoading || updateOrigins.isPending || isError}
             >
-              {updateOrigins.isPending ? "Saving…" : "Save origins"}
+              {updateOrigins.isPending && <Spinner className="mr-2 size-3.5" />}
+              {updateOrigins.isPending ? "Saving" : "Save origins"}
             </Button>
           </Section>
 
           <Section
-            step="02 · API"
             title="Public HTTP API"
             description={
               <>
-                Proxied by Next.js, no Asgardeo session required. Every
-                response is shaped{" "}
+                Use these endpoints to render open roles in a custom experience. No sign-in is required. Every response is shaped{" "}
                 <code className="font-mono">{'{ "data": Job[] | Job }'}</code>
                 .
               </>
@@ -309,13 +298,10 @@ export default function CareersSettingsPage() {
           </Section>
 
           <Section
-            step="03 · EMBED"
             title="Embed snippet"
             description={
               <>
-                Drop this on any site that can load your app&apos;s{" "}
-                <code className="font-mono">/embed.js</code> — same origin or
-                CORS, as configured above.
+                Add this snippet to a website to show your open roles without building a custom integration.
               </>
             }
           >
@@ -335,6 +321,7 @@ export default function CareersSettingsPage() {
               </Button>
             </div>
           </Section>
+          </div>
         </div>
       </div>
     </div>

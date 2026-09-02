@@ -3,7 +3,7 @@
 import { useState, useRef } from "react";
 import {
   PlusSignIcon,
-  CloudUploadIcon,
+  Upload06Icon,
   Building02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -43,7 +43,7 @@ import {
 } from "@/hooks/queries/use-company";
 
 const inputCls =
-  "h-10 bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 rounded-md shadow-none text-base placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors";
+  "h-11 bg-slate-50/80 dark:bg-neutral-950 border-slate-200 dark:border-neutral-700 rounded-lg shadow-none text-sm text-slate-800 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:border-theme transition-colors";
 
 const DESCRIPTION_MAX = 500;
 
@@ -62,24 +62,19 @@ const NEW_COMPANY_PLACEHOLDER: Company = {
 
 function Row({
   title,
-  description,
   children,
 }: {
   title: string;
-  description: string;
   children: React.ReactNode;
 }) {
   return (
-    <div className="py-6 grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-2 lg:gap-8 border-b border-slate-100 dark:border-neutral-800">
+    <div className="grid grid-cols-1 gap-3 px-5 py-6 sm:px-7 lg:grid-cols-[220px_minmax(0,1fr)] lg:gap-10">
       <div>
-        <p className="text-base font-semibold text-slate-800 dark:text-neutral-100">
+        <p className="text-sm font-semibold text-slate-800 dark:text-neutral-100">
           {title}
         </p>
-        <p className="text-sm text-slate-400 dark:text-neutral-500 mt-1 leading-relaxed max-w-[260px]">
-          {description}
-        </p>
       </div>
-      <div className="min-w-0 max-w-lg">{children}</div>
+      <div className="min-w-0 max-w-xl">{children}</div>
     </div>
   );
 }
@@ -157,40 +152,20 @@ function CompanyForm({
   const charsLeft = DESCRIPTION_MAX - description.length;
 
   return (
-    <div>
-      <div className="flex items-start justify-between gap-4 pb-6">
+    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+      <div className="border-b border-slate-100 px-5 py-5 sm:px-7 dark:border-neutral-800">
         <div>
-          <h2 className="text-2xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
+          <h2 className="text-base font-semibold text-slate-900 dark:text-neutral-100">
             Company Profile
           </h2>
-          <p className="text-sm text-slate-400 dark:text-neutral-500 mt-1.5">
-            Update your company photo and details here.
+          <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
+            Company details shown on your careers page and job listings.
           </p>
-        </div>
-        <div className="flex items-center gap-2 shrink-0">
-          <Button
-            variant="outline"
-            onClick={resetForm}
-            disabled={upsertCompany.isPending}
-            className="h-8 px-4 rounded-md border-slate-200 dark:border-neutral-700 bg-white hover:bg-slate-50 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-slate-600 dark:text-neutral-300 text-sm shadow-none cursor-pointer"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleSave}
-            disabled={upsertCompany.isPending}
-            className="h-8 px-4 bg-theme hover:bg-theme-hover text-white rounded-md border border-theme shadow-none text-sm font-semibold cursor-pointer"
-          >
-            {upsertCompany.isPending
-              ? "Saving…"
-              : isNew
-                ? "Create"
-                : "Save"}
-          </Button>
         </div>
       </div>
 
-      <Row title="Company Name" description="This will be displayed on your profile.">
+      <div className="divide-y divide-slate-100 dark:divide-neutral-800">
+      <Row title="Company Name">
         <Input
           value={companyName}
           onChange={(e) => setCompanyName(e.target.value)}
@@ -198,7 +173,7 @@ function CompanyForm({
         />
       </Row>
 
-      <Row title="Contact Email" description="Where hiring notifications are sent.">
+      <Row title="Contact Email">
         <Input
           type="email"
           value={email}
@@ -207,7 +182,7 @@ function CompanyForm({
         />
       </Row>
 
-      <Row title="Website" description="Your public website or careers page.">
+      <Row title="Website">
         <Input
           value={website}
           onChange={(e) => setWebsite(e.target.value)}
@@ -216,7 +191,7 @@ function CompanyForm({
         />
       </Row>
 
-      <Row title="Phone" description="A contact number for candidates or partners.">
+      <Row title="Phone">
         <Input
           value={phone}
           onChange={(e) => setPhone(e.target.value)}
@@ -224,7 +199,7 @@ function CompanyForm({
         />
       </Row>
 
-      <Row title="Address" description="Your registered or office address.">
+      <Row title="Address">
         <Input
           value={address}
           onChange={(e) => setAddress(e.target.value)}
@@ -232,7 +207,7 @@ function CompanyForm({
         />
       </Row>
 
-      <Row title="Tagline" description="A quick snapshot of your company.">
+      <Row title="Tagline">
         <Textarea
           value={description}
           onChange={(e) =>
@@ -240,19 +215,18 @@ function CompanyForm({
           }
           placeholder="A short description of your company shown on the careers page"
           rows={3}
-          className={`${inputCls} h-auto resize-none`}
+          className={`${inputCls} h-auto min-h-24 resize-y py-3`}
         />
-        <p className="text-xs text-slate-400 dark:text-neutral-500 mt-1.5">
+        <p className="mt-1.5 text-right text-xs text-slate-400 dark:text-neutral-500">
           {charsLeft} characters left
         </p>
       </Row>
 
       <Row
         title="Company Logo"
-        description="Update your company logo and then choose where you want it displayed."
       >
-        <div className="flex items-stretch gap-4">
-          <div className="h-28 w-28 flex items-center justify-center rounded-md border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 shrink-0 overflow-hidden">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+          <div className="flex h-24 w-24 items-center justify-center rounded-xl border border-slate-200 bg-slate-50 dark:border-neutral-700 dark:bg-neutral-950 shrink-0 overflow-hidden">
             {preview ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -263,7 +237,7 @@ function CompanyForm({
             ) : (
               <HugeiconsIcon
                 icon={Building02Icon}
-                className="size-5 text-slate-400"
+                className="size-6 text-slate-400"
               />
             )}
           </div>
@@ -279,13 +253,13 @@ function CompanyForm({
             type="button"
             onClick={() => fileRef.current?.click()}
             disabled={uploadLogo.isPending}
-            className="flex-1 flex flex-col items-center justify-center gap-1.5 rounded-md border border-dashed border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:border-slate-300 dark:hover:border-neutral-600 hover:bg-slate-50 dark:hover:bg-neutral-800/60 transition-colors px-4 py-4 cursor-pointer"
+            className="flex h-24 flex-1 flex-col items-center justify-center gap-1 rounded-xl border border-dashed border-slate-300 bg-slate-50/50 px-4 py-2 transition-colors hover:border-theme/60 hover:bg-theme/5 dark:border-neutral-700 dark:bg-neutral-950 dark:hover:border-theme/60 dark:hover:bg-theme/10 cursor-pointer"
           >
             {uploadLogo.isPending ? (
               <Loader2 className="size-4 animate-spin text-slate-400" />
             ) : (
-              <span className="flex items-center justify-center size-7 rounded-full border border-slate-200 dark:border-neutral-700 text-slate-500 dark:text-neutral-400">
-                <HugeiconsIcon icon={CloudUploadIcon} className="size-3.5" />
+              <span className="flex size-8 items-center justify-center rounded-lg bg-theme/10 text-theme">
+                <HugeiconsIcon icon={Upload06Icon} className="size-4" strokeWidth={2} />
               </span>
             )}
             <span className="text-xs text-slate-600 dark:text-neutral-300">
@@ -298,7 +272,31 @@ function CompanyForm({
           </button>
         </div>
       </Row>
-    </div>
+      </div>
+      <footer className="flex items-center justify-end gap-2 border-t border-slate-100 px-5 py-4 sm:px-7 dark:border-neutral-800">
+        <Button
+          variant="outline"
+          onClick={resetForm}
+          disabled={upsertCompany.isPending}
+          className="h-9 rounded-lg border-slate-200 bg-white px-4 text-sm text-slate-600 shadow-none hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 cursor-pointer"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSave}
+          disabled={upsertCompany.isPending}
+          className="h-9 rounded-lg border border-theme bg-theme px-4 text-sm font-semibold text-white hover:bg-theme-hover cursor-pointer"
+        >
+          {upsertCompany.isPending ? (
+            <><Spinner className="size-3.5" /> Saving</>
+          ) : isNew ? (
+            "Create"
+          ) : (
+            "Save"
+          )}
+        </Button>
+      </footer>
+    </section>
   );
 }
 
@@ -363,24 +361,26 @@ function DepartmentsPanel({ company }: { company: Company | null | undefined }) 
 
   return (
     <>
-      <Row
-        title="Departments"
-        description="Used to group jobs and candidates across your organization."
-      >
+      <section id="departments" className="mt-6 scroll-mt-6 overflow-hidden rounded-xl border border-slate-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+        <div className="border-b border-slate-100 px-5 py-5 sm:px-7 dark:border-neutral-800">
+          <p className="text-base font-semibold text-slate-900 dark:text-neutral-100">Departments</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">Organize jobs and candidates by team.</p>
+        </div>
+      <Row title="Your departments">
         {!company ? (
           <p className="text-xs text-slate-400 dark:text-neutral-500">
             Save company details first to manage departments.
           </p>
         ) : (
-          <div className="space-y-1.5 mb-3">
+          <div className="mb-3 space-y-2">
             {departments.length === 0 ? (
-              <p className="text-xs text-slate-400 dark:text-neutral-500 mb-3">
-                No departments yet.
+              <p className="rounded-lg border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-sm text-slate-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-400">
+                No departments yet. Add one to start organizing your work.
               </p>
             ) : (
               departments.map((dept) => (
-                <div key={dept.id} className="flex items-center gap-2">
-                  <div className="flex-1 min-w-0 h-9 flex items-center rounded-md bg-theme/10 dark:bg-theme/15 border border-theme/20 dark:border-theme/25 px-3">
+                <div key={dept.id} className="flex items-center gap-2 rounded-lg border border-slate-200 bg-slate-50/60 p-2 dark:border-neutral-700 dark:bg-neutral-950">
+                  <div className="flex-1 min-w-0 h-9 flex items-center rounded-md px-2">
                     <span className="text-sm font-medium text-slate-700 dark:text-neutral-200 truncate block">
                       {dept.name}
                     </span>
@@ -391,13 +391,13 @@ function DepartmentsPanel({ company }: { company: Company | null | undefined }) 
                         setEditId(dept.id);
                         setEditVal(dept.name);
                       }}
-                      className="h-9 px-4 rounded-md bg-slate-700 hover:bg-slate-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 flex items-center text-sm font-semibold text-white cursor-pointer"
+                      className="h-8 rounded-md bg-slate-700 px-3 text-sm font-medium text-white hover:bg-slate-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
                     >
                       Edit
                     </button>
                     <button
                       onClick={() => setDeleteId(dept.id)}
-                      className="h-9 px-4 rounded-md bg-red-600 hover:bg-red-500 flex items-center text-sm font-semibold text-white cursor-pointer"
+                      className="h-8 rounded-md bg-red-600 px-3 text-sm font-medium text-white hover:bg-red-500 cursor-pointer"
                     >
                       Delete
                     </button>
@@ -411,13 +411,14 @@ function DepartmentsPanel({ company }: { company: Company | null | undefined }) 
         {company && (
           <button
             onClick={() => setAddOpen(true)}
-            className="w-full h-9 flex cursor-pointer items-center justify-center gap-1.5 rounded-md border-2 border-dashed border-theme/40 text-sm font-semibold text-theme hover:border-theme hover:bg-theme/5 transition-colors"
+            className="h-10 w-full flex cursor-pointer items-center justify-center gap-1.5 rounded-lg border border-dashed border-theme/40 text-sm font-semibold text-theme hover:border-theme hover:bg-theme/5 transition-colors"
           >
             <HugeiconsIcon icon={PlusSignIcon} className="size-3.5" strokeWidth={2.5} />
             Add Department
           </button>
         )}
       </Row>
+      </section>
 
       {/* Add dialog */}
       <Dialog
@@ -460,7 +461,11 @@ function DepartmentsPanel({ company }: { company: Company | null | undefined }) 
                 disabled={!newName.trim() || createDept.isPending}
                 className="h-9 px-4 rounded-md bg-theme hover:bg-theme-hover text-white border border-theme shadow-none text-sm font-semibold cursor-pointer"
               >
-                {createDept.isPending ? "Adding…" : "Add"}
+                {createDept.isPending ? (
+                  <><Spinner className="size-3.5" /> Adding</>
+                ) : (
+                  "Add"
+                )}
               </Button>
             </div>
           </div>
@@ -558,14 +563,23 @@ export default function SettingsGeneralPage() {
   const company = companyData?.data;
 
   return (
-    <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
-      <div className="flex-1 overflow-y-auto px-4 py-6">
-        <div className="max-w-4xl mx-auto">
+    <div className="flex flex-1 flex-col bg-slate-50/70 dark:bg-neutral-950">
+      <div className="flex-1 overflow-y-auto scroll-smooth px-4 py-6 sm:px-6 sm:py-8">
+        <div className="mx-auto max-w-5xl">
+          <header className="mb-7">
+            <h1 className="text-xl font-semibold text-slate-950 dark:text-white">General settings</h1>
+            <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">Manage your organization and departments.</p>
+            <a
+              href="#departments"
+              className="mt-3 inline-flex h-8 items-center rounded-md bg-slate-900 px-3 text-sm font-medium text-white hover:bg-slate-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-white"
+            >
+              Departments
+            </a>
+          </header>
           {companyLoading ? (
-            <div className="py-6 space-y-6">
-              <div className="h-16 rounded-lg bg-slate-50 dark:bg-neutral-900 animate-pulse" />
-              <div className="h-16 rounded-lg bg-slate-50 dark:bg-neutral-900 animate-pulse" />
-              <div className="h-16 rounded-lg bg-slate-50 dark:bg-neutral-900 animate-pulse" />
+            <div className="space-y-6">
+              <div className="h-96 rounded-2xl bg-white dark:bg-neutral-900 animate-pulse" />
+              <div className="h-56 rounded-2xl bg-white dark:bg-neutral-900 animate-pulse" />
             </div>
           ) : companyError ? (
             <div className="mt-6 rounded-xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-950/20 px-4 py-3">
@@ -576,7 +590,7 @@ export default function SettingsGeneralPage() {
           ) : (
             <>
               {!company && (
-                <div className="mt-6 mb-2 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/20 px-4 py-3">
+                <div className="mb-5 rounded-xl border border-amber-200 dark:border-amber-900/40 bg-amber-50 dark:bg-amber-950/20 px-4 py-3">
                   <p className="text-sm text-amber-800 dark:text-amber-200">
                     Set up your organization to get started.
                   </p>

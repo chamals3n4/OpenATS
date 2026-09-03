@@ -23,18 +23,6 @@ services:
       - redis-data:/data
     restart: unless-stopped
 
-  postgres-test:
-    image: postgres:17
-    container_name: openats-postgres-test
-    environment:
-      POSTGRES_USER: openats
-      POSTGRES_PASSWORD: openats
-      POSTGRES_DB: openats_test
-    ports:
-      - "5433:5432"
-    tmpfs:
-      - /var/lib/postgresql/data
-
 volumes:
   postgres-data:
   redis-data:

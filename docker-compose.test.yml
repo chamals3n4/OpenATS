@@ -1,0 +1,19 @@
+name: openats-test
+
+services:
+  postgres-test:
+    image: postgres:17
+    container_name: openats-postgres-test
+    environment:
+      POSTGRES_USER: openats
+      POSTGRES_PASSWORD: openats
+      POSTGRES_DB: openats_test
+    ports:
+      - "5433:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openats -d openats_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5

@@ -53,15 +53,6 @@ const bulkDeleteCandidatesSchema = z.object({
     .optional(),
 });
 
-async function getJobOrFail(res: Response, jobId: number) {
-  const job = await jobService.getById(jobId);
-  if (!job) {
-    res.status(404).json({ error: "Job not found" });
-    return null;
-  }
-  return job;
-}
-
 export const applyForJob = async (req: Request, res: Response) => {
   try {
     const jobId = parseInt((req.params.jobId ?? "").toString());

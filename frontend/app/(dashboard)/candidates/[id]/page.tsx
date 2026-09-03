@@ -37,7 +37,7 @@ import { InterviewsSection } from "./_components/sections/inerviews-section";
 import { RejectionSection } from "./_components/sections/rejection-section";
 import { EmailSection } from "./_components/sections/email-section";
 import { ScoresSection } from "./_components/sections/scores-section";
-import { EditCandidateDialog } from "./_components/dialogs/edit-candidate-dialog";
+import { CandidateEditDialog } from "../_components/candidate-edit-dialog";
 import { CandidateDeleteDialog } from "../_components/candidate-delete-dialog";
 import { RejectCandidateDialog } from "./_components/dialogs/reject-candidate-dialog";
 import { useIsManager } from "@/hooks/use-role";
@@ -301,21 +301,25 @@ export default function CandidateDetailPage({
         candidate={candidate}
       />
 
-      <EditCandidateDialog
-        open={editOpen}
-        onOpenChange={setEditOpen}
+      <CandidateEditDialog
+        isOpen={editOpen}
+        onClose={() => setEditOpen(false)}
         candidate={candidate}
-        firstName={editFirstName}
-        onFirstNameChange={setEditFirstName}
-        lastName={editLastName}
-        onLastNameChange={setEditLastName}
-        email={editEmail}
-        onEmailChange={setEditEmail}
-        phone={editPhone}
-        onPhoneChange={setEditPhone}
-        resumeFile={editResumeFile}
-        onResumeFileChange={setEditResumeFile}
-        onSave={confirmUpdate}
+        formData={{
+          firstName: editFirstName,
+          lastName: editLastName,
+          email: editEmail,
+          phone: editPhone,
+          resumeFile: editResumeFile,
+        }}
+        onFormChange={(formData) => {
+          setEditFirstName(formData.firstName);
+          setEditLastName(formData.lastName);
+          setEditEmail(formData.email);
+          setEditPhone(formData.phone);
+          setEditResumeFile(formData.resumeFile);
+        }}
+        onConfirm={confirmUpdate}
         isPending={updateMutation.isPending}
       />
 

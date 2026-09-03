@@ -4,6 +4,7 @@ import {
   applyForJob,
   getCandidates,
   getCandidateById,
+  getCandidateResume,
   moveCandidateStage,
   deleteCandidate,
   bulkDeleteCandidates,
@@ -26,6 +27,7 @@ router.post("/jobs/:jobId/apply", applyForJob);
 
 router.get("/", getCandidates);
 router.get("/jobs/:jobId", getCandidates);
+router.get("/:id/resume", getCandidateResume);
 router.get("/:id", getCandidateById);
 router.patch("/:id", requireManager, upload.single("resume"), updateCandidateBasicDetails);
 router.put("/:id/stage", requireManager, moveCandidateStage);

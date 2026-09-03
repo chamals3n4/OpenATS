@@ -11,7 +11,11 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import type { CandidateDetail } from "@/types";
+
+const fieldClassName =
+  "h-10! rounded-lg border border-slate-300 bg-gray-100 shadow-none placeholder:text-slate-400 focus-visible:!border-slate-500 focus-visible:ring-0 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus-visible:!border-neutral-400";
 
 interface EditCandidateDialogProps {
   open: boolean;
@@ -65,7 +69,7 @@ export function EditCandidateDialog({
               <Input
                 value={firstName}
                 onChange={(e) => onFirstNameChange(e.target.value)}
-                className="h-10 rounded-md border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                className={fieldClassName}
               />
             </div>
             <div className="space-y-1.5">
@@ -75,7 +79,7 @@ export function EditCandidateDialog({
               <Input
                 value={lastName}
                 onChange={(e) => onLastNameChange(e.target.value)}
-                className="h-10 rounded-md border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                className={fieldClassName}
               />
             </div>
             <div className="col-span-2 space-y-1.5">
@@ -86,7 +90,7 @@ export function EditCandidateDialog({
                 type="email"
                 value={email}
                 onChange={(e) => onEmailChange(e.target.value)}
-                className="h-10 rounded-md border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                className={fieldClassName}
               />
             </div>
             <div className="col-span-2 space-y-1.5">
@@ -96,7 +100,7 @@ export function EditCandidateDialog({
               <Input
                 value={phone}
                 onChange={(e) => onPhoneChange(e.target.value)}
-                className="h-10 rounded-md border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)]"
+                className={fieldClassName}
                 placeholder="Optional"
               />
             </div>
@@ -126,7 +130,7 @@ export function EditCandidateDialog({
                 onChange={(e) =>
                   onResumeFileChange(e.target.files?.[0] ?? null)
                 }
-                className="h-10 rounded-md border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-[var(--theme-color)] pt-2.5 file:text-sm"
+                className={`${fieldClassName} pt-2 file:text-sm`}
               />
               <p className="text-xs text-slate-400">
                 If uploaded, the existing CV will be replaced.
@@ -137,16 +141,17 @@ export function EditCandidateDialog({
         <DialogFooter className="px-6 pb-6 pt-0 gap-2">
           <DialogClose
             disabled={isPending}
-            className="h-7 rounded-md border-none bg-neutral-800 px-2.5 text-sm font-semibold text-white shadow-none transition-colors hover:bg-neutral-700 disabled:opacity-60 dark:bg-neutral-700 dark:hover:bg-neutral-600 cursor-pointer"
+            className="h-9 cursor-pointer rounded-md border-2 border-slate-300 bg-white px-4 text-sm font-medium text-slate-600 shadow-none transition-colors hover:bg-slate-50 disabled:opacity-60 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
           >
             Cancel
           </DialogClose>
           <Button
             onClick={onSave}
             disabled={isPending}
-            className="h-7 rounded-md border-none bg-[var(--theme-color)] px-2.5 text-sm font-semibold text-white shadow-none transition-colors hover:bg-[var(--theme-color-hover)] disabled:opacity-60 cursor-pointer"
+            className="h-9 cursor-pointer gap-2 rounded-md border-none bg-[var(--theme-color)] px-4 text-sm font-medium text-white shadow-none transition-colors hover:bg-[var(--theme-color-hover)] disabled:opacity-60"
           >
-            {isPending ? "Saving…" : "Save Changes"}
+            {isPending && <Spinner className="size-3.5" />}
+            {isPending ? "Saving" : "Save changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -13,11 +13,13 @@ export const integrations: Integration[] = [
     description: "Automatically create Zoom meetings for scheduled interviews.",
     logo: "/integrations/zoom.webp",
     url: "https://zoom.us",
+    availability: "coming_soon",
   },
   {
     name: "Microsoft Teams",
     description: "Automatically create Microsoft Teams meetings for scheduled interviews.",
     logo: "/integrations/teams.webp",
     url: "https://www.microsoft.com/en/microsoft-teams/group-chat-software",
+    availability: "coming_soon",
   },
 ];

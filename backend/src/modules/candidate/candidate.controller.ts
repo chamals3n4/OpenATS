@@ -218,12 +218,60 @@ export const getCandidateById = async (req: Request, res: Response) => {
       return;
     }
 
+    if (result.resumeUrl) {
+      await r2Service.ensureInlinePdf(result.resumeUrl).catch((error) => {
+        logger.warn(
+          `Unable to prepare inline CV preview for candidate ${id}: ${getErrorMessage(error)}`,
+        );
+      });
+    }
+
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(
       `Failed to fetch candidate id=${req.params.id}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({ error: "Failed to fetch candidate" });
+  }
+};
+
+export const getCandidateResume = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid candidate ID" });
+      return;
+    }
+
+    if (req.user.role === "interviewer") {
+      const allowed = await canAccessCandidate(req.user, id);
+      if (!allowed) {
+        res.status(403).json({ error: "You do not have access to this resource" });
+        return;
+      }
+    }
+
+    const candidate = await candidateService.getById(id);
+    if (!candidate?.resumeUrl) {
+      res.status(404).json({ error: "Resume not found" });
+      return;
+    }
+
+    const resume = await r2Service.getPdfByUrl(candidate.resumeUrl);
+    if (!resume) {
+      res.status(404).json({ error: "Resume not found" });
+      return;
+    }
+
+    res.setHeader("Content-Type", resume.contentType);
+    res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Cache-Control", "private, max-age=300");
+    res.send(Buffer.from(resume.body));
+  } catch (error) {
+    logger.error(
+      `Failed to stream candidate resume id=${req.params.id}: ${getErrorMessage(error)}`,
+    );
+    res.status(500).json({ error: "Failed to load resume" });
   }
 };
 

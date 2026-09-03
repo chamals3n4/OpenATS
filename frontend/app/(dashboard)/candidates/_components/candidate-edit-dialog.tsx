@@ -10,8 +10,12 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
 import type { Candidate } from "@/types";
 import type { CandidateFormData } from "../lib/candidate-types";
+
+const fieldClassName =
+  "h-10! rounded-lg border border-slate-300 bg-gray-100 shadow-none placeholder:text-slate-400 focus-visible:!border-slate-500 focus-visible:ring-0 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus-visible:!border-neutral-400";
 
 interface CandidateEditDialogProps {
   candidate: Candidate | null;
@@ -56,7 +60,7 @@ export function CandidateEditDialog({
             <Input
               value={formData.firstName}
               onChange={(e) => updateField("firstName", e.target.value)}
-              className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+              className={fieldClassName}
             />
           </div>
           <div>
@@ -66,7 +70,7 @@ export function CandidateEditDialog({
             <Input
               value={formData.lastName}
               onChange={(e) => updateField("lastName", e.target.value)}
-              className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+              className={fieldClassName}
             />
           </div>
 
@@ -78,7 +82,7 @@ export function CandidateEditDialog({
               type="email"
               value={formData.email}
               onChange={(e) => updateField("email", e.target.value)}
-              className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+              className={fieldClassName}
             />
           </div>
 
@@ -89,7 +93,7 @@ export function CandidateEditDialog({
             <Input
               value={formData.phone}
               onChange={(e) => updateField("phone", e.target.value)}
-              className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+              className={fieldClassName}
               placeholder="Optional"
             />
           </div>
@@ -118,7 +122,7 @@ export function CandidateEditDialog({
               onChange={(e) =>
                 updateField("resumeFile", e.target.files?.[0] ?? null)
               }
-              className="h-10 rounded-lg border-slate-200 dark:border-neutral-800"
+              className={`${fieldClassName} pt-2 file:text-sm`}
             />
             <p className="text-[12px] text-slate-400 mt-1">
               If uploaded, the existing CV will be replaced.
@@ -129,17 +133,18 @@ export function CandidateEditDialog({
         <DialogFooter className="gap-2">
           <DialogClose
             disabled={isPending}
-            className="h-9 px-5 rounded-lg border cursor-pointer border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[13px] font-medium hover:bg-slate-50 dark:hover:bg-neutral-800"
+            className="h-9 cursor-pointer rounded-md border-2 border-slate-300 bg-white px-4 text-sm font-medium text-slate-600 shadow-none hover:bg-slate-50 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
           >
             Cancel
           </DialogClose>
           <Button
             onClick={onConfirm}
             disabled={isPending}
-            className="h-9 px-5 cursor-pointer rounded-lg text-white text-[13px] font-semibold shadow-none border-none"
+            className="h-9 cursor-pointer gap-2 rounded-md border-none px-4 text-sm font-medium text-white shadow-none"
             style={{ backgroundColor: "var(--theme-color)" }}
           >
-            {isPending ? "Saving…" : "Save"}
+            {isPending && <Spinner className="size-3.5" />}
+            {isPending ? "Saving" : "Save changes"}
           </Button>
         </DialogFooter>
       </DialogContent>

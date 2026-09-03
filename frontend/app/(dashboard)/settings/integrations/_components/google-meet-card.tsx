@@ -11,6 +11,7 @@ import {
   useDisconnectGoogle,
   type IntegrationStatus,
 } from "@/hooks/queries/use-integrations";
+import { Spinner } from "@/components/ui/spinner";
 
 export function GoogleMeetCard({
   initialStatus,
@@ -44,21 +45,33 @@ export function GoogleMeetCard({
       name="Google Meet"
       logo="/integrations/meet.webp"
       description="Automatically create Google Meet links for scheduled interviews."
+      status={
+        status?.connected ? (
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-1 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            Connected
+          </span>
+        ) : (
+          <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-medium text-slate-500 dark:bg-neutral-800 dark:text-neutral-400">
+            Available
+          </span>
+        )
+      }
     >
       {status?.connected ? (
-        <div className="space-y-2">
-          <p className="text-xs text-slate-500 dark:text-neutral-400 truncate">
-            Connected as{" "}
+        <div className="flex items-center justify-between gap-3">
+          <p className="truncate text-[12px] text-slate-500 dark:text-neutral-400">
             <span className="font-medium text-slate-700 dark:text-neutral-200">
               {status.accountEmail}
             </span>
           </p>
           <button
+            type="button"
             onClick={handleDisconnect}
             disabled={disconnect.isPending}
-            className="inline-flex h-9 w-full items-center justify-center rounded-md border border-slate-200 dark:border-neutral-700 text-sm font-medium text-slate-600 dark:text-neutral-300 hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
+            className="shrink-0 cursor-pointer text-sm font-medium text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-60 dark:text-red-400 dark:hover:text-red-300"
           >
-            {disconnect.isPending ? "Disconnecting…" : "Disconnect"}
+            {disconnect.isPending ? "Disconnecting" : "Disconnect"}
           </button>
         </div>
       ) : (
@@ -66,9 +79,9 @@ export function GoogleMeetCard({
           onClick={handleConnect}
           disabled={authorizeUrl.isPending}
           className={integrationConnectButtonClassName}
-          style={{ backgroundColor: "var(--theme-color)" }}
         >
-          {authorizeUrl.isPending ? "Redirecting…" : "Connect"}
+          {authorizeUrl.isPending && <Spinner className="size-3.5" />}
+          {authorizeUrl.isPending ? "Redirecting" : "Connect Google Meet"}
         </button>
       )}
     </IntegrationCardShell>

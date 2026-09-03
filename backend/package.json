@@ -19,9 +19,8 @@
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": ">=22.0.0"
+    "node": ">=22.x"
   },
-  "packageManager": "pnpm@11.12.0",
   "nodemonConfig": {
     "ext": "ts,json"
   },

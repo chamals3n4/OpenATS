@@ -32,7 +32,7 @@ export function CvSheet({ open, onOpenChange, candidate }: CvSheetProps) {
           <div className="flex shrink-0 items-center gap-2">
             {candidate.resumeUrl && (
               <a
-                href={candidate.resumeUrl}
+                href={`/api/candidates/${candidate.id}/resume`}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--theme-color)] px-3 text-sm font-semibold text-white hover:bg-[var(--theme-color-hover)]"
@@ -51,7 +51,7 @@ export function CvSheet({ open, onOpenChange, candidate }: CvSheetProps) {
           </div>
         </SheetHeader>
         {candidate.resumeUrl ? (
-          <ResumeScrollView resumeUrl={candidate.resumeUrl} />
+          <ResumeScrollView candidateId={candidate.id} />
         ) : (
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
             <div className="flex size-14 items-center justify-center rounded-xl bg-slate-100 dark:bg-neutral-800">

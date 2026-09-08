@@ -1,0 +1,26 @@
+# OpenATS
+
+> OpenATS is an open-source applicant tracking system for teams that want a clear, adaptable hiring process and ownership of their hiring data.
+
+## About
+
+- Website: https://openats.dev/
+- Source code: https://github.com/chamals3n4/OpenATS
+- License: Apache License 2.0
+- Live demo: https://demo.openats.dev/
+
+## Documentation
+
+- What is OpenATS?: https://openats.dev/docs/intro
+- Quick Start: https://openats.dev/docs/getting-started/make-setup
+- Manual setup: https://openats.dev/docs/getting-started/quick-start
+- Architecture: https://openats.dev/docs/developer/architecture
+- Using OpenATS: https://openats.dev/docs/using-openats/jobs-and-candidates
+- Testing: https://openats.dev/docs/developer/testing
+- Contributing Guide: https://openats.dev/docs/developer/contributing
+
+## Product scope
+
+OpenATS supports job management, candidate tracking, interview coordination, hiring-team collaboration, AI-assisted resume parsing, and branded career pages. It uses WSO2 Identity Platform for authentication, PostgreSQL for persistent data, Redis and BullMQ for background work, and an S3-compatible storage provider for resumes and attachments.
+
+For the complete, long-form documentation index, see https://openats.dev/llms-full.txt.

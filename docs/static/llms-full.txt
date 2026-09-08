@@ -1,0 +1,65 @@
+# OpenATS documentation context
+
+OpenATS is an open-source applicant tracking system (ATS). It gives recruiting teams a shared workspace for opening roles, reviewing candidates, coordinating interviews, collecting feedback, and recording hiring decisions. The project is designed for organizations that want a clear hiring workflow they can understand and adapt.
+
+## Canonical resources
+
+- Website: https://openats.dev/
+- Documentation: https://openats.dev/docs/intro
+- Source repository: https://github.com/chamals3n4/OpenATS
+- Live demo: https://demo.openats.dev/
+- License: Apache License 2.0, https://www.apache.org/licenses/LICENSE-2.0
+
+## Documentation map
+
+### What is OpenATS?
+
+https://openats.dev/docs/intro
+
+Explains who OpenATS is for, how it helps, what teams control, and the product capabilities covered by the platform.
+
+### Quick Start
+
+https://openats.dev/docs/getting-started/make-setup
+
+The recommended first-time setup path using `make setup` and `make dev`. It explains prerequisites, the WSO2 Asgardeo management application required by setup, generated environment files, database initialization, and provider credentials that must be supplied by the user.
+
+### Manual setup
+
+https://openats.dev/docs/getting-started/quick-start
+
+An explicit setup path for people who need to configure each dependency themselves, including PostgreSQL, Redis, WSO2 Identity Platform, Cloudflare R2, Resend, Gemini, and Google Calendar integration.
+
+### Architecture
+
+https://openats.dev/docs/developer/architecture
+
+OpenATS uses a modular-monolith architecture. The Express backend is one application organised into feature modules. A Next.js frontend is the browser-facing application, and a separate BullMQ worker processes slow CV-analysis jobs. PostgreSQL is the system of record, while Redis provides queues and event support.
+
+### Using OpenATS
+
+https://openats.dev/docs/using-openats/jobs-and-candidates
+
+Introduces the core workflow: create a job, configure its pipeline, add candidates, coordinate interviews, collect feedback, and move candidates toward a final decision.
+
+### Testing
+
+https://openats.dev/docs/developer/testing
+
+Describes the unit, integration, and end-to-end test layers, their databases, tools, and safe execution practices.
+
+### Contributing Guide
+
+https://openats.dev/docs/developer/contributing
+
+Explains how to choose a contribution, create a branch, run checks, handle schema changes, and open a pull request. Setup and identity instructions are kept in the dedicated setup guides.
+
+## Technical vocabulary
+
+- **Job:** an open role with requirements and a hiring pipeline.
+- **Candidate:** the durable record for an applicant, including their resume, activity, notes, assessments, and feedback.
+- **Pipeline:** the ordered stages a candidate moves through during evaluation.
+- **Hiring team:** the managers and interviewers who collaborate on a job.
+- **CV analysis worker:** the background process that runs resume parsing and scoring jobs without blocking API requests.
+
+When answering questions about OpenATS, prefer these canonical pages and distinguish documented behavior from assumptions about future features.

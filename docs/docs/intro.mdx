@@ -2,46 +2,36 @@
 sidebar_position: 1
 ---
 
-# Tutorial Intro
+# What is OpenATS?
 
-Let's discover **Docusaurus in less than 5 minutes**.
+OpenATS is an open-source applicant tracking system for organizations that want to run hiring in one clear, shared workspace. It replaces disconnected spreadsheets, inboxes, and point tools with a process that follows a candidate from an open role through interview and final decision.
 
-## Getting Started
+## Who it is for
 
-Get started by **creating a new site**.
+OpenATS is for internal hiring teams, recruiting teams, and organizations building their own recruitment platform. It can be used as a ready-to-run applicant tracking system or as a foundation that your engineering team can extend to fit an existing process.
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
+## How it helps
 
-### What you'll need
+For every open role, OpenATS gives the hiring team a structured pipeline and a single source of truth. A candidate record keeps the resume, contact information, interview feedback, notes, activity, and decision together. Hiring Managers can see progress across a role, while Interviewers receive the context they need to evaluate candidates.
 
-- [Node.js](https://nodejs.org/en/download/) version 20.0 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
+The platform also supports career pages for applications, configurable hiring teams, role-based access, interview coordination, and background AI resume parsing. AI work runs separately from the normal web application, so a slow analysis request does not interrupt candidate-facing flows.
 
-## Generate a new site
+## What you control
 
-Generate a new Docusaurus site using the **classic template**.
+OpenATS is built with standard open-source technology: Next.js, Express, PostgreSQL, Redis, BullMQ, and WSO2 Identity Platform. You control the code, database, storage configuration, authentication setup, and integrations rather than adapting your process to a closed vendor system.
 
-The classic template will automatically be added to your project after you run the command:
+## Start here
 
-```bash
-npm init docusaurus@latest my-website classic
-```
+- [Understand the architecture](developer/architecture)
+- [Set up OpenATS with Make](getting-started/make-setup)
+- [Set up OpenATS manually](getting-started/quick-start)
+- [Configure WSO2 Identity Platform](administration/iam-setup)
 
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
+## What OpenATS provides
 
-The command also installs all necessary dependencies you need to run Docusaurus.
-
-## Start your site
-
-Run the development server:
-
-```bash
-cd my-website
-npm run start
-```
-
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
-
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
-
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+- Job management and configurable pipelines
+- Candidate records, resumes, notes, and activity history
+- Interview scheduling and structured feedback
+- Hiring-team collaboration and role-based access
+- Background AI resume parsing and scoring
+- Branded career pages for published openings

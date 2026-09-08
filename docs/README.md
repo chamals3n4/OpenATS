@@ -1,43 +1,68 @@
-# Website
+# OpenATS Website and Documentation
 
-This website is built using [Docusaurus](https://docusaurus.io/), a modern static website generator.
+This directory contains the public OpenATS website and product documentation, built with [Docusaurus](https://docusaurus.io/).
 
-## Installation
+## Install dependencies
 
-```bash
-npm install
-```
-
-**Note**: feel free to use the package manager of your choice.
-
-## Local Development
+From this directory, install the documentation site dependencies:
 
 ```bash
-npm run start
+pnpm install
 ```
 
-This command starts a local development server and opens up a browser window. Most changes are reflected live without having to restart the server.
+## Run locally
 
-## Build
+Start the development server:
 
 ```bash
-npm run build
+pnpm start
 ```
 
-This command generates static content into the `build` directory and can be served using any static contents hosting service.
+The site opens at [http://localhost:3001](http://localhost:3001). Port 3001 keeps the documentation site separate from the OpenATS frontend, which uses port 3000. Changes are reflected automatically while the server is running.
+
+## Build the site
+
+Generate the production files:
+
+```bash
+pnpm build
+```
+
+The output is written to `build/` and includes the static website, sitemap, robots file, and AI-readable documentation indexes.
+
+Preview the production build locally:
+
+```bash
+pnpm serve
+```
+
+The preview server also uses port 3001.
+
+## Write documentation
+
+- Product and setup documentation lives in `docs/`.
+- Navigation is defined in `sidebars.ts`.
+- Landing-page code lives in `src/pages/index.tsx`.
+- Landing-page styles live in `src/pages/index.module.css`.
+- Global documentation styles live in `src/css/custom.css`.
+- Public assets such as the favicon, logos, robots file, and `llms.txt` live in `static/`.
+
+Run the type check before opening a pull request:
+
+```bash
+pnpm typecheck
+```
 
 ## Deployment
 
-Using SSH:
+Build the site first, then deploy the generated `build/` directory using the hosting provider configured for OpenATS. For GitHub Pages deployment through Docusaurus:
 
 ```bash
-USE_SSH=true npm run deploy
+GIT_USER=<Your GitHub username> pnpm deploy
 ```
 
-Not using SSH:
+Use `USE_SSH=true` when the GitHub remote should use SSH:
 
 ```bash
-GIT_USER=<Your GitHub username> npm run deploy
+USE_SSH=true GIT_USER=<Your GitHub username> pnpm deploy
 ```
-
-If you are using GitHub Pages for hosting, this command is a convenient way to build the website and push to the `gh-pages` branch.

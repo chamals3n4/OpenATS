@@ -5,9 +5,9 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'My Site',
-  tagline: 'Dinosaurs are cool',
-  favicon: 'img/favicon.ico',
+  title: 'An open-source hiring platform to streamline recruitment and hire faster.',
+  tagline: 'An open-source applicant tracking system for clear, adaptable hiring.',
+  favicon: 'img/favicon.png',
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -15,15 +15,15 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
+  url: 'https://openats.dev',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
 
   // GitHub pages deployment config.
   // If you aren't using GitHub pages, you don't need these.
-  organizationName: 'facebook', // Usually your GitHub org/user name.
-  projectName: 'docusaurus', // Usually your repo name.
+  organizationName: 'chamals3n4',
+  projectName: 'OpenATS',
 
   onBrokenLinks: 'throw',
 
@@ -41,10 +41,7 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+          editUrl: 'https://github.com/chamals3n4/OpenATS/tree/main/docs/',
         },
         blog: {
           showReadingTime: true,
@@ -52,14 +49,15 @@ const config: Config = {
             type: ['rss', 'atom'],
             xslt: true,
           },
-          // Please change this to your repo.
-          // Remove this to remove the "edit this page" links.
-          editUrl:
-            'https://github.com/facebook/docusaurus/tree/main/packages/create-docusaurus/templates/shared/',
+          editUrl: 'https://github.com/chamals3n4/OpenATS/tree/main/docs/',
           // Useful options to enforce blogging best practices
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
           onUntruncatedBlogPosts: 'warn',
+        },
+        sitemap: {
+          changefreq: 'weekly',
+          priority: 0.5,
         },
         theme: {
           customCss: './src/css/custom.css',
@@ -69,27 +67,37 @@ const config: Config = {
   ],
 
   themeConfig: {
-    // Replace with your project's social card
-    image: 'img/docusaurus-social-card.jpg',
+    image: 'img/brand/openats-logo.png',
+    metadata: [
+      {name: 'keywords', content: 'open source applicant tracking system, ATS, recruitment software, hiring platform, candidate tracking, interview management'},
+      {name: 'author', content: 'OpenATS contributors'},
+      {name: 'robots', content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'},
+      {property: 'og:site_name', content: 'OpenATS'},
+      {property: 'og:type', content: 'website'},
+      {property: 'og:image:alt', content: 'OpenATS open-source hiring platform'},
+      {name: 'twitter:card', content: 'summary_large_image'},
+      {name: 'theme-color', content: '#198754'},
+    ],
     colorMode: {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'My Site',
+      title: 'OpenATS',
       logo: {
-        alt: 'My Site Logo',
-        src: 'img/logo.svg',
+        alt: 'OpenATS logo',
+        src: 'img/brand/openats-logo.png',
+        srcDark: 'img/brand/openats-logo-white.png',
       },
       items: [
         {
           type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
-          label: 'Tutorial',
+          label: 'Documentation',
+          className: 'navbar-docs-link',
         },
-        {to: '/blog', label: 'Blog', position: 'left'},
         {
-          href: 'https://github.com/facebook/docusaurus',
+          href: 'https://github.com/chamals3n4/OpenATS',
           label: 'GitHub',
           position: 'right',
         },
@@ -102,43 +110,39 @@ const config: Config = {
           title: 'Docs',
           items: [
             {
-              label: 'Tutorial',
+              label: 'Get started',
               to: '/docs/intro',
             },
           ],
         },
         {
-          title: 'Community',
+          title: 'Project',
           items: [
             {
-              label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+              label: 'GitHub',
+              href: 'https://github.com/chamals3n4/OpenATS',
             },
             {
-              label: 'Discord',
-              href: 'https://discordapp.com/invite/docusaurus',
-            },
-            {
-              label: 'X',
-              href: 'https://x.com/docusaurus',
+              label: 'Live demo',
+              href: 'https://demo.openats.dev',
             },
           ],
         },
         {
-          title: 'More',
+          title: 'Resources',
           items: [
             {
-              label: 'Blog',
-              to: '/blog',
+              label: 'Contributing',
+              href: 'https://github.com/chamals3n4/OpenATS/blob/main/CONTRIBUTING.md',
             },
             {
-              label: 'GitHub',
-              href: 'https://github.com/facebook/docusaurus',
+              label: 'Apache 2.0 License',
+              href: 'https://github.com/chamals3n4/OpenATS/blob/main/LICENSE',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+      copyright: `Copyright © ${new Date().getFullYear()} OpenATS. Licensed under Apache 2.0.`,
     },
     prism: {
       theme: prismThemes.github,

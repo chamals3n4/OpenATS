@@ -6,13 +6,13 @@
 
 /* You can override the default Infima variables here. */
 :root {
-  --ifm-color-primary: #087443;
-  --ifm-color-primary-dark: #07683c;
-  --ifm-color-primary-darker: #066237;
-  --ifm-color-primary-darkest: #05512e;
-  --ifm-color-primary-light: #09804a;
-  --ifm-color-primary-lighter: #0a894f;
-  --ifm-color-primary-lightest: #0ca860;
+  --ifm-color-primary: #1f6870;
+  --ifm-color-primary-dark: #195861;
+  --ifm-color-primary-darker: #174f56;
+  --ifm-color-primary-darkest: #123f45;
+  --ifm-color-primary-light: #287983;
+  --ifm-color-primary-lighter: #328994;
+  --ifm-color-primary-lightest: #4fa6ad;
   --ifm-font-family-base: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --ifm-code-font-size: 95%;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.1);
@@ -21,21 +21,36 @@
 .navbar { border-bottom: 1px solid #dddcd7; box-shadow: none; background: rgba(255,255,255,.94); }
 .navbar__logo { height: 47px; width: 47px; }
 .navbar__title { color: #171717; font-size: 1.38rem; font-weight: 750; letter-spacing: -.035em; }
-.navbar__link { font-size: .86rem; font-weight: 650; color: #5f5f5a; }.navbar__link:hover, .navbar__link--active { color: #198754; }
+.navbar__link { font-size: .86rem; font-weight: 650; color: #5f5f5a; }.navbar__link:hover, .navbar__link--active { color: #1f6870; }
 .navbar-docs-link { font-size: 1rem; }
 [data-theme='dark'] .navbar-docs-link { color: #fff; }
 .footer { background: #171717; }.footer__title { color: #f4f4ef; font-size: .78rem; letter-spacing: .06em; text-transform: uppercase; }.footer__link-item { color: #bdbdb5; font-size: .88rem; }.footer__link-item:hover { color: #fff; }
 [data-theme='dark'] .navbar { background: #171717; border-color: #3c3c38; } [data-theme='dark'] .navbar__title { color: #f4f4ef; } [data-theme='dark'] .navbar__link { color: #c2c2bc; }
 
+.docs-image-trigger { background: transparent; border: 0; cursor: zoom-in; display: block; margin: 1.5rem auto; max-width: 100%; padding: 0; width: 100%; }
+.docs-image-trigger img { display: block; height: auto !important; max-height: none !important; max-width: 100%; width: 100% !important; }
+.docs-image-lightbox { align-items: center; animation: docs-image-fade-in .18s ease-out; background: rgba(10, 13, 11, .84); display: flex; inset: 0; justify-content: center; padding: 3.5rem 2rem 2rem; position: fixed; z-index: 1000; }
+.docs-image-expanded { animation: docs-image-scale-in .22s cubic-bezier(.2,.75,.25,1); cursor: zoom-out; max-height: calc(100vh - 5.5rem); max-width: min(1200px, 96vw); object-fit: contain; }
+.docs-image-lightbox:focus-visible { outline: 2px solid #8bd7ae; outline-offset: -6px; }
+@keyframes docs-image-fade-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes docs-image-scale-in { from { opacity: 0; transform: scale(.97); } to { opacity: 1; transform: scale(1); } }
+.docs-image-lightbox.is-closing { animation: docs-image-fade-out .18s ease-in forwards; }
+.docs-image-lightbox.is-closing .docs-image-expanded { animation: docs-image-scale-out .18s ease-in forwards; }
+@keyframes docs-image-fade-out { from { opacity: 1; } to { opacity: 0; } }
+@keyframes docs-image-scale-out { from { opacity: 1; transform: scale(1); } to { opacity: 0; transform: scale(.97); } }
+@media (prefers-reduced-motion: reduce) { .docs-image-lightbox, .docs-image-expanded { animation: none; } .docs-image-lightbox.is-closing { animation: none; opacity: 0; } }
+.docs-image-close { background: rgba(255, 255, 255, .12); border: 1px solid rgba(255, 255, 255, .35); border-radius: 50%; color: #fff; cursor: pointer; font-size: 1.7rem; height: 2.25rem; line-height: 1; position: absolute; right: 1.25rem; top: 1.25rem; width: 2.25rem; }
+.docs-image-close:hover { background: rgba(255, 255, 255, .24); }
+
 /* For readability concerns, you should choose a lighter palette in dark mode. */
 [data-theme='dark'] {
-  --ifm-color-primary: #25c2a0;
-  --ifm-color-primary-dark: #21af90;
-  --ifm-color-primary-darker: #1fa588;
-  --ifm-color-primary-darkest: #1a8870;
-  --ifm-color-primary-light: #29d5b0;
-  --ifm-color-primary-lighter: #32d8b4;
-  --ifm-color-primary-lightest: #4fddbf;
+  --ifm-color-primary: #86d1c4;
+  --ifm-color-primary-dark: #72c3b6;
+  --ifm-color-primary-darker: #64b6aa;
+  --ifm-color-primary-darkest: #4d9f95;
+  --ifm-color-primary-light: #98ddd1;
+  --ifm-color-primary-lighter: #a9e5db;
+  --ifm-color-primary-lightest: #c2eee7;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
 

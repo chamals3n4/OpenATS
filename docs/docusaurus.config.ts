@@ -27,6 +27,16 @@ const config: Config = {
 
   onBrokenLinks: 'throw',
 
+  plugins: [
+    [
+      'docusaurus-plugin-copy-page-button',
+      {
+        enabledActions: ['copy', 'view', 'chatgpt', 'claude', 'perplexity', 'gemini'],
+        placement: 'article',
+      },
+    ],
+  ],
+
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
   // may want to replace "en" with "zh-Hans".
@@ -41,6 +51,9 @@ const config: Config = {
       {
         docs: {
           sidebarPath: './sidebars.ts',
+          // Keep dependency READMEs out of the docs content glob. The copy
+          // page plugin is installed in the workspace and ships Markdown files.
+          exclude: ['**/node_modules/**'],
           editUrl: 'https://github.com/chamals3n4/OpenATS/tree/main/docs/',
         },
         blog: {
@@ -76,7 +89,7 @@ const config: Config = {
       {property: 'og:type', content: 'website'},
       {property: 'og:image:alt', content: 'OpenATS open-source hiring platform'},
       {name: 'twitter:card', content: 'summary_large_image'},
-      {name: 'theme-color', content: '#198754'},
+      {name: 'theme-color', content: '#1f6870'},
     ],
     colorMode: {
       respectPrefersColorScheme: true,

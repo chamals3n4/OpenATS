@@ -42,6 +42,12 @@ https://openats.dev/docs/using-openats/jobs-and-candidates
 
 Introduces the core workflow: create a job, configure its pipeline, add candidates, coordinate interviews, collect feedback, and move candidates toward a final decision.
 
+### Manage jobs
+
+https://openats.dev/docs/using-openats/manage-jobs
+
+Explains how to create a job, add skills, configure optional salary information, save a draft, configure the hiring pipeline and application questions, and publish the job to the public careers page.
+
 ### Testing
 
 https://openats.dev/docs/developer/testing

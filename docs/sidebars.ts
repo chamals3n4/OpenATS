@@ -17,7 +17,8 @@ const sidebars: SidebarsConfig = {
   tutorialSidebar: [
     {type: 'category', label: 'Overview', items: ['intro', 'developer/architecture']},
     {type: 'category', label: 'Get started', items: ['getting-started/make-setup', {type: 'doc', id: 'getting-started/quick-start', label: 'Manual setup'}, 'administration/iam-setup']},
-    {type: 'category', label: 'Using OpenATS', items: ['using-openats/jobs-and-candidates']},
+    {type: 'category', label: 'Using OpenATS', items: [{type: 'doc', id: 'using-openats/first-login-and-company-setup', label: 'Company setup'}, 'using-openats/manage-jobs', 'using-openats/hiring-pipeline', 'using-openats/jobs-and-candidates', 'using-openats/templates', 'using-openats/interviews', 'using-openats/assessments', 'using-openats/offers', 'using-openats/rejecting-candidates']},
+    {type: 'doc', id: 'careers-page-integration', label: 'Careers page'},
     {type: 'category', label: 'Operations', items: ['operations/deployment']},
     {type: 'category', label: 'Developer guide', items: ['developer/testing', 'developer/contributing']},
   ],

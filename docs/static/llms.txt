@@ -16,6 +16,7 @@
 - Manual setup: https://openats.dev/docs/getting-started/quick-start
 - Architecture: https://openats.dev/docs/developer/architecture
 - Using OpenATS: https://openats.dev/docs/using-openats/jobs-and-candidates
+- Manage jobs: https://openats.dev/docs/using-openats/manage-jobs
 - Testing: https://openats.dev/docs/developer/testing
 - Contributing Guide: https://openats.dev/docs/developer/contributing
 

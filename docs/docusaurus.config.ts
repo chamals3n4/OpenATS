@@ -32,7 +32,7 @@ const config: Config = {
       'docusaurus-plugin-copy-page-button',
       {
         enabledActions: ['copy', 'view', 'chatgpt', 'claude', 'perplexity', 'gemini'],
-        placement: 'article',
+        placement: 'auto',
       },
     ],
   ],

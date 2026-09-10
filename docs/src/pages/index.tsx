@@ -64,7 +64,7 @@ export default function Home(): ReactNode {
       title="Open-source hiring infrastructure"
       description="OpenATS is an open-source applicant tracking system for teams that want a clear, adaptable hiring process."
     >
-      <main>
+      <main className="openats-landing-page">
         <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(structuredData)}} />
         <section className={styles.hero}>
           <div className={`container ${styles.heroInner}`}>

@@ -14,3 +14,7 @@ allowBuilds:
   protobufjs: true
   '@google/genai': true
   '@swc/core': false
+
+
+overrides:
+  jose: '5.10.0'

@@ -11,6 +11,8 @@ export interface SendEmailOptions {
   to: string;
   subject: string;
   html: string;
+  /** Where a reply should go. Without it, replies go to the From address. */
+  replyTo?: string;
 }
 
 // Shared interview email layout (inline styles only — email clients strip <style>)
@@ -80,13 +82,14 @@ function formatEmailTime(d: Date): string {
 }
 
 export const mailService = {
-  async sendEmail({ to, subject, html }: SendEmailOptions) {
+  async sendEmail({ to, subject, html, replyTo }: SendEmailOptions) {
     try {
       const { data, error } = await resend.emails.send({
         from: `OpenATS <${FROM_EMAIL}>`,
         to: [to],
         subject,
         html,
+        ...(replyTo ? { replyTo } : {}),
       });
 
       if (error) {

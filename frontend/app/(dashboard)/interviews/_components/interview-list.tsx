@@ -128,7 +128,7 @@ export function InterviewList({
                 return (
                   <div
                     key={iv.id}
-                    className="group rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-3 hover:border-slate-300 dark:hover:border-neutral-700 hover:shadow-sm transition-all"
+                    className="group rounded-md border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 px-4 py-3"
                   >
                     <div className="flex items-center justify-between gap-4">
                       {/* Left: candidate info */}

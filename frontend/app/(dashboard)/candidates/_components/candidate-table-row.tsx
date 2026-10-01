@@ -52,10 +52,10 @@ export function CandidateTableRow({
           <span className="text-slate-500">—</span>
         )}
       </TableCell>
-      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         {candidate.jobTitle ?? "—"}
       </TableCell>
-      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         {timeAgo(candidate.appliedAt)}
       </TableCell>
       <TableCell

@@ -26,6 +26,14 @@ import { InterviewList } from "./interview-list";
 import FeedbackDialog from "./feedback-dialog";
 import { EditDialog } from "./edit-dialog";
 
+const STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "All Statuses" },
+  { value: "pending_schedule", label: "Awaiting Slot" },
+  { value: "scheduled", label: "Confirmed" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
 export default function InterviewsClient() {
   const [view, setView] = useState<"list" | "calendar">("calendar");
   const [search, setSearch] = useState("");
@@ -130,6 +138,10 @@ export default function InterviewsClient() {
         </div>
 
         <Select
+          items={[
+            { value: "all", label: "All Departments" },
+            ...departments.map((d) => ({ value: String(d.id), label: d.name })),
+          ]}
           value={departmentFilter}
           onValueChange={(v) => setDepartmentFilter(v ?? "all")}
         >
@@ -147,6 +159,7 @@ export default function InterviewsClient() {
         </Select>
 
         <Select
+          items={STATUS_FILTER_OPTIONS}
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v ?? "all")}
         >
@@ -154,11 +167,11 @@ export default function InterviewsClient() {
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent className="rounded-md shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="pending_schedule">Awaiting Slot</SelectItem>
-            <SelectItem value="scheduled">Confirmed</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
+            {STATUS_FILTER_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 

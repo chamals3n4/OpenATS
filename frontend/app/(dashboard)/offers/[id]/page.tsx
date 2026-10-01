@@ -329,7 +329,7 @@ export default function OfferDetailPage() {
               </div>
             ) : (
               <div className="max-w-[520px]">
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white rounded-xl border border-slate-300 shadow-none overflow-hidden">
                   <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-semibold text-slate-800">

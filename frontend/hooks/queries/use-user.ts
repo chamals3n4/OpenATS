@@ -9,11 +9,12 @@ export function useCurrentUser() {
   });
 }
 
-export function useUsers() {
+export function useUsers(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["users"],
     queryFn: () => serverFetch<{ data: User[] }>("/users"),
     staleTime: 1000 * 60 * 5,
+    enabled: options?.enabled ?? true,
   });
 }
 

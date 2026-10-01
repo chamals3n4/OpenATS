@@ -9,7 +9,8 @@ export function ResumeScrollView({ candidateId }: ResumeScrollViewProps) {
   return (
     <div className="min-h-0 flex-1 bg-slate-100 dark:bg-neutral-900">
       <iframe
-        src={`/api/candidates/${candidateId}/resume`}
+        // Open at actual size (100%): a fit-to-width zoom blows the page up in a wide frame.
+        src={`/api/candidates/${candidateId}/resume#zoom=100`}
         title="Candidate CV preview"
         className="size-full border-0"
       />

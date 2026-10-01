@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import {
   useAssessments,
@@ -19,7 +19,7 @@ import { generateAssessmentUrl } from "../lib/utils";
 
 export default function AssessmentsPageClient() {
   const { data, isLoading } = useAssessments();
-  const assessments = data?.data ?? [];
+  const allAssessments = useMemo(() => data?.data ?? [], [data]);
 
   const { data: candidatesData } = useCandidates();
   const candidates = candidatesData?.data ?? [];
@@ -29,6 +29,17 @@ export default function AssessmentsPageClient() {
 
   const [deleteTarget, setDeleteTarget] = useState<Assessment | null>(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  const assessments = useMemo(() => {
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return allAssessments;
+    return allAssessments.filter(
+      (a) =>
+        a.title.toLowerCase().includes(term) ||
+        (a.description ?? "").toLowerCase().includes(term),
+    );
+  }, [allAssessments, searchTerm]);
 
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
@@ -93,13 +104,19 @@ export default function AssessmentsPageClient() {
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
-      <AssessmentHeader onCreate={() => setCreateOpen(true)} />
+      <AssessmentHeader
+        onCreate={() => setCreateOpen(true)}
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+      />
 
       <AssessmentCardGrid
         assessments={assessments}
         isLoading={isLoading}
+        searchTerm={searchTerm}
+        onClearSearch={() => setSearchTerm("")}
+        onCreate={() => setCreateOpen(true)}
         onDelete={setDeleteTarget}
-        onInvite={openInviteDialog}
       />
 
       <AssessmentInviteDialog

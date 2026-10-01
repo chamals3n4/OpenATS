@@ -53,13 +53,13 @@ export function OfferTableRow({
           {capitalizeStatus(offer.status)}
         </Badge>
       </TableCell>
-      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         {getJobTitle(offer)}
       </TableCell>
-      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         {fmtSalary(offer)}
       </TableCell>
-      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         {fmtDate(offer.sentAt)}
       </TableCell>
       <TableCell

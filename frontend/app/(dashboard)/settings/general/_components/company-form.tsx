@@ -8,7 +8,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpsertCompany, useUploadLogo } from "@/hooks/queries/use-company";
 import type { Company } from "@/types";
-import { FormField, inputCls } from "./form-field";
+import { FormField, inputCls } from "@/components/form/form-field";
 import { LogoField } from "./logo-field";
 
 const DESCRIPTION_MAX = 500;

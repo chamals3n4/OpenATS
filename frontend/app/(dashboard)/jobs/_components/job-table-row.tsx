@@ -98,13 +98,13 @@ export function JobTableRow({
           {job.title}
         </span>
       </TableCell>
-      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         {EMPLOYMENT_TYPE_LABELS[job.employmentType]}
       </TableCell>
-      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         {departmentName}
       </TableCell>
-      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         {formatDate(job.createdAt)}
       </TableCell>
       <TableCell

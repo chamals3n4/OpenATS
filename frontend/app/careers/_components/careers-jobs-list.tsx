@@ -104,7 +104,14 @@ export function CareersJobsList({ jobs }: { jobs: CareerJobRow[] }) {
             className="pl-9 h-10 bg-slate-100 dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md focus-visible:ring-0"
           />
         </div>
-        <Select value={department} onValueChange={(v) => setDepartment(v ?? "all")}>
+        <Select
+          items={[
+            { value: "all", label: "All Departments" },
+            ...departments.map((name) => ({ value: name, label: name })),
+          ]}
+          value={department}
+          onValueChange={(v) => setDepartment(v ?? "all")}
+        >
           <SelectTrigger className="w-full sm:w-48 h-10! bg-slate-100 dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md focus:ring-0">
             <SelectValue placeholder="All Departments" />
           </SelectTrigger>

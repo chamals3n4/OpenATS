@@ -73,7 +73,7 @@ describe("AnswersSection", () => {
       />,
     );
 
-    expect(screen.getByText("No text answer")).toBeInTheDocument();
+    expect(screen.getByText("No answer given")).toBeInTheDocument();
   });
 
   it("groups multiple selected options under one question heading", () => {
@@ -100,5 +100,38 @@ describe("AnswersSection", () => {
     expect(screen.getAllByText("Preferred stack")).toHaveLength(1);
     expect(screen.getByText("React")).toBeInTheDocument();
     expect(screen.getByText("Node")).toBeInTheDocument();
+  });
+
+  it("shows the questions in the order of the application form, whichever kind they are", () => {
+    render(
+      <AnswersSection
+        candidate={candidate(
+          [
+            answer({ id: 1, questionId: 30, questionTitle: "Why us?", questionPosition: 3, answerText: "Mission" }),
+            answer({ id: 2, questionId: 10, questionTitle: "Years of experience?", questionPosition: 1, answerText: "5" }),
+          ],
+          [
+            selection({ id: 1, questionId: 20, questionTitle: "Preferred stack", questionPosition: 2, optionLabel: "React" }),
+          ],
+        )}
+      />,
+    );
+
+    const titles = screen.getAllByRole("heading", { level: 4 }).map((h) => h.textContent);
+    expect(titles).toEqual(["Years of experience?", "Preferred stack", "Why us?"]);
+    expect(screen.getByText("Question 2")).toBeInTheDocument();
+  });
+
+  it("summarises how many questions were answered", () => {
+    render(
+      <AnswersSection
+        candidate={candidate(
+          [answer({ id: 1, questionId: 1, answerText: "Yes" }), answer({ id: 2, questionId: 2, answerText: null })],
+          [],
+        )}
+      />,
+    );
+
+    expect(screen.getByText(/1 of 2 questions answered/)).toBeInTheDocument();
   });
 });

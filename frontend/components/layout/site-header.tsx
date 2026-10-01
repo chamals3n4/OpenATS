@@ -2,17 +2,11 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Public_Sans } from "next/font/google";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Notification03Icon } from "@hugeicons/core-free-icons";
 
 import { SidebarUserMenu } from "@/components/layout/sidebar-user-menu";
 import { Button } from "@/components/ui/button";
-
-const publicSans = Public_Sans({
-  subsets: ["latin"],
-  weight: "600",
-});
 
 export function SiteHeader({ accessToken }: { accessToken?: string }) {
   return (
@@ -20,7 +14,7 @@ export function SiteHeader({ accessToken }: { accessToken?: string }) {
       <div className="flex h-(--header-height) w-full items-center justify-between gap-4 px-6">
         <Link
           href="/"
-          className={`${publicSans.className} flex items-center gap-2 text-2xl leading-none tracking-tight text-black dark:text-white select-none`}
+          className="flex items-center gap-2 text-2xl font-semibold leading-none tracking-tight text-black dark:text-white select-none"
         >
           <Image
             src="/assets/openats-logo.png"

@@ -82,6 +82,7 @@ export function OfferFilters({
       </Select>
 
       <Select
+        items={STATUS_OPTIONS}
         value={statusFilter}
         onValueChange={(value) => {
           if (value !== null) onStatusChange(value);

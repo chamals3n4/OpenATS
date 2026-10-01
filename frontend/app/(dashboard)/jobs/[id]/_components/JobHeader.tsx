@@ -19,15 +19,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner";
-import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
 import type { JobDetail } from "@/types";
 import { useIsManager } from "@/hooks/use-role";
 import { useUpdateJob } from "@/hooks/queries/use-jobs";
@@ -121,7 +113,7 @@ const STATUS_CONFIRM_COPY: Record<
   }),
   inactive: (title) => ({
     heading: "Deactivate this job?",
-    description: `This will hide "${title}" from your public careers page. You can publish it again anytime — nothing is deleted.`,
+    description: `This will hide "${title}" from your public careers page. You can publish it again anytime. Nothing is deleted.`,
   }),
   closed: (title) => ({
     heading: "Close this job?",
@@ -238,7 +230,7 @@ export function JobHeader({
               <div className="flex items-center gap-3">
                 <div className="min-w-0">
                   {/* Title + status badge */}
-                  <h1 className="truncate text-[22px] font-bold leading-tight text-slate-950 dark:text-neutral-50">
+                  <h1 className="truncate text-2xl font-bold leading-tight text-slate-950 dark:text-neutral-50">
                     {jobLoading ? "Loading…" : (job?.title ?? "Job Not Found")}
                   </h1>
 
@@ -258,6 +250,22 @@ export function JobHeader({
                       </Badge>
                     )}
                   </div>
+
+                  {job?.skills && job.skills.length > 0 && (
+                    <ul
+                      aria-label="Required skills"
+                      className="mt-3 flex flex-wrap gap-2"
+                    >
+                      {job.skills.map((skill) => (
+                        <li
+                          key={skill}
+                          className="inline-flex items-center rounded-md border border-slate-300 bg-slate-100 px-3 py-1 text-[13px] font-medium text-slate-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200"
+                        >
+                          {skill}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                 </div>
               </div>
 
@@ -374,45 +382,17 @@ export function JobHeader({
         </div>
       </div>
 
-      <Dialog
+      <ConfirmDeleteDialog
         open={pendingStatus !== null}
-        onOpenChange={(open) => !open && setPendingStatus(null)}
-      >
-        <DialogContent className="max-w-md rounded-2xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-xl">
-          {confirmCopy && (
-            <>
-              <DialogHeader>
-                <DialogTitle className="text-[16px] font-bold text-slate-900 dark:text-neutral-100">
-                  {confirmCopy.heading}
-                </DialogTitle>
-                <DialogDescription>{confirmCopy.description}</DialogDescription>
-              </DialogHeader>
-              <DialogFooter>
-                <Button
-                  variant="ghost"
-                  onClick={() => setPendingStatus(null)}
-                  disabled={updateJob.isPending}
-                  className="border-2 border-slate-300 text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:border-neutral-600 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleConfirmStatusChange}
-                  disabled={updateJob.isPending}
-                  className={`inline-flex items-center gap-2 text-white disabled:opacity-70 disabled:cursor-not-allowed ${
-                    pendingAction?.className ?? ""
-                  }`}
-                >
-                  {updateJob.isPending && <Spinner className="size-3.5" />}
-                  {updateJob.isPending
-                    ? (pendingAction?.pendingLabel ?? "Saving")
-                    : (pendingAction?.label ?? "Confirm")}
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+        title={confirmCopy?.heading ?? ""}
+        description={confirmCopy?.description ?? ""}
+        confirmLabel={pendingAction?.label ?? "Confirm"}
+        pendingLabel={pendingAction?.pendingLabel ?? "Saving"}
+        confirmClassName={pendingAction?.className}
+        isPending={updateJob.isPending}
+        onClose={() => setPendingStatus(null)}
+        onConfirm={handleConfirmStatusChange}
+      />
     </div>
   );
 }

@@ -12,6 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const TYPE_OPTIONS = [
+  { value: "all", label: "All Types" },
+  { value: "email", label: "Email" },
+  { value: "event", label: "Interview Event" },
+];
+
 interface TemplatesFiltersProps {
   search: string;
   onSearchChange: (value: string) => void;
@@ -45,6 +51,7 @@ export function TemplatesFilters({
       </div>
 
       <Select
+        items={TYPE_OPTIONS}
         value={filterType}
         onValueChange={(value) => {
           if (value !== null) onFilterTypeChange(value);
@@ -54,9 +61,11 @@ export function TemplatesFilters({
           <SelectValue placeholder="All Types" />
         </SelectTrigger>
         <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-          <SelectItem value="all">All Types</SelectItem>
-          <SelectItem value="email">Email</SelectItem>
-          <SelectItem value="event">Interview Event</SelectItem>
+          {TYPE_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 

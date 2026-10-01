@@ -1,18 +1,19 @@
 import type { Metadata } from "next";
-import { Changa_One, Geist, Geist_Mono, Public_Sans } from "next/font/google";
+import { Changa_One, Geist_Mono, Google_Sans } from "next/font/google";
 import { AsgardeoProvider } from "@asgardeo/nextjs/server";
 import "./globals.css";
 
-const publicSans = Public_Sans({ subsets: ["latin"], variable: "--font-sans" });
+// Variable font (wght 400-700). next/font self-hosts it at build time, so there is
+// no request to fonts.googleapis.com at runtime.
+const googleSans = Google_Sans({
+  subsets: ["latin", "latin-ext"],
+  variable: "--font-google-sans",
+  display: "swap",
+});
 const changaOne = Changa_One({
   subsets: ["latin"],
   weight: "400",
   variable: "--font-changa-one",
-});
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
 });
 
 const geistMono = Geist_Mono({
@@ -38,11 +39,11 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${publicSans.variable} ${changaOne.variable}`}
+      className={`${googleSans.variable} ${changaOne.variable}`}
       suppressHydrationWarning
     >
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-x-hidden`}
+        className={`${geistMono.variable} antialiased overflow-x-hidden`}
       >
         <ThemeProvider
           attribute="class"

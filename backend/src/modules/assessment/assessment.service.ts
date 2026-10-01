@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { count, eq, getTableColumns, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   assessments,
@@ -58,7 +58,26 @@ export interface UpdateQuestionInput {
 
 export const assessmentService = {
   async getAll() {
-    return db.select().from(assessments).orderBy(assessments.createdAt);
+    // One grouped count instead of loading every question just to count them.
+    const questionCounts = db
+      .select({
+        assessmentId: assessmentQuestions.assessmentId,
+        total: count().as("total"),
+      })
+      .from(assessmentQuestions)
+      .groupBy(assessmentQuestions.assessmentId)
+      .as("question_counts");
+
+    return db
+      .select({
+        ...getTableColumns(assessments),
+        questionCount: sql<number>`coalesce(${questionCounts.total}, 0)`.mapWith(
+          Number,
+        ),
+      })
+      .from(assessments)
+      .leftJoin(questionCounts, eq(questionCounts.assessmentId, assessments.id))
+      .orderBy(assessments.createdAt);
   },
 
   async getById(id: number) {

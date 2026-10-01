@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { FormField, inputCls } from "./form-field";
+import { FormField, inputCls } from "@/components/form/form-field";
 
 interface DepartmentNameDialogProps {
   open: boolean;

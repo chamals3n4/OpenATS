@@ -47,10 +47,10 @@ export function TemplateTableRow({
           {meta.label}
         </span>
       </TableCell>
-      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         System
       </TableCell>
-      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         {formatDate(template.updatedAt)}
       </TableCell>
       <TableCell

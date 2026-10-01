@@ -334,13 +334,17 @@ export const candidateService = {
         answerText: candidateCustomAnswers.answerText,
         createdAt: candidateCustomAnswers.createdAt,
         questionTitle: jobCustomQuestions.title,
+        questionType: jobCustomQuestions.questionType,
+        questionPosition: jobCustomQuestions.position,
       })
       .from(candidateCustomAnswers)
       .leftJoin(
         jobCustomQuestions,
         eq(candidateCustomAnswers.questionId, jobCustomQuestions.id),
       )
-      .where(eq(candidateCustomAnswers.candidateId, id));
+      .where(eq(candidateCustomAnswers.candidateId, id))
+      // The order of the application form, not the order rows happen to come back in.
+      .orderBy(asc(jobCustomQuestions.position), asc(candidateCustomAnswers.id));
 
     const selections = await db
       .select({
@@ -350,6 +354,8 @@ export const candidateService = {
         optionId: candidateCustomAnswerSelections.optionId,
         createdAt: candidateCustomAnswerSelections.createdAt,
         questionTitle: jobCustomQuestions.title,
+        questionType: jobCustomQuestions.questionType,
+        questionPosition: jobCustomQuestions.position,
         optionLabel: jobCustomQuestionOptions.label,
       })
       .from(candidateCustomAnswerSelections)
@@ -364,7 +370,12 @@ export const candidateService = {
           jobCustomQuestionOptions.id,
         ),
       )
-      .where(eq(candidateCustomAnswerSelections.candidateId, id));
+      .where(eq(candidateCustomAnswerSelections.candidateId, id))
+      .orderBy(
+        asc(jobCustomQuestions.position),
+        asc(jobCustomQuestionOptions.position),
+        asc(candidateCustomAnswerSelections.id),
+      );
 
     const history = await db
       .select()

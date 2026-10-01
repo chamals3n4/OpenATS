@@ -139,6 +139,8 @@ export type Assessment = {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  /** Sent by the list endpoint, which doesn't include the questions themselves. */
+  questionCount?: number;
   questions?: AssessmentQuestion[];
 };
 
@@ -244,6 +246,9 @@ export type CandidateDetail = Candidate & {
     candidateId: number;
     questionId: number;
     questionTitle?: string | null;
+    /** Where the question sits on the application form (sent by newer API versions). */
+    questionPosition?: number | null;
+    questionType?: string | null;
     answerText: string | null;
     createdAt: string;
   }[];
@@ -252,6 +257,8 @@ export type CandidateDetail = Candidate & {
     candidateId: number;
     questionId: number;
     questionTitle?: string | null;
+    questionPosition?: number | null;
+    questionType?: string | null;
     optionId: number;
     optionLabel?: string | null;
     createdAt: string;
@@ -466,4 +473,15 @@ export type AnalyticsExportPayload = {
   fileName: string;
   mimeType: string;
   content: string;
+};
+
+/** An email sent to a candidate from the Send Email tab. */
+export type CandidateEmail = {
+  id: number;
+  candidateId: number;
+  subject: string;
+  bodyHtml: string;
+  recipientEmail: string;
+  sentAt: string;
+  sentByName: string | null;
 };

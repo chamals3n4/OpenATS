@@ -375,10 +375,10 @@ export default function UserManagementPage() {
                     <TableCell className="h-12 px-6 py-0 font-medium text-slate-900 dark:text-neutral-100">
                       {getDisplayName(u)}
                     </TableCell>
-                    <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
+                    <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
                       {u.email}
                     </TableCell>
-                    <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium capitalize">
+                    <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal capitalize">
                       {u.role.replace(/_/g, " ")}
                     </TableCell>
                     <TableCell

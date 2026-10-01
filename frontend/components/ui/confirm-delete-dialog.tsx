@@ -13,6 +13,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Spinner } from "@/components/ui/spinner";
+import { cn } from "@/lib/utils";
 
 type ConfirmDeleteDialogProps = {
   open: boolean;
@@ -22,6 +23,8 @@ type ConfirmDeleteDialogProps = {
   /** Button label, e.g. "Delete" or "Remove". The pending label is derived from it. */
   confirmLabel?: string;
   pendingLabel?: string;
+  /** Overrides the confirm button colors, for non-delete actions such as publishing. */
+  confirmClassName?: string;
   onClose: () => void;
   onConfirm: () => void;
 };
@@ -43,6 +46,7 @@ export function ConfirmDeleteDialog({
   isPending = false,
   confirmLabel = "Delete",
   pendingLabel,
+  confirmClassName,
   onClose,
   onConfirm,
 }: ConfirmDeleteDialogProps) {
@@ -70,7 +74,10 @@ export function ConfirmDeleteDialog({
               onConfirm();
             }}
             disabled={isPending}
-            className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border-none bg-red-600 px-4 text-sm font-medium leading-none text-white shadow-none hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70"
+            className={cn(
+              "inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border-none bg-red-600 px-4 text-sm font-medium leading-none text-white shadow-none hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70",
+              confirmClassName,
+            )}
           >
             {isPending && <Spinner className="size-3.5" />}
             {isPending ? (pendingLabel ?? `${confirmLabel.replace(/e$/, "")}ing`) : confirmLabel}

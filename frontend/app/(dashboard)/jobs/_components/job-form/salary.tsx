@@ -110,7 +110,7 @@ export function SalarySection({
                   value={currency}
                   onValueChange={(val) => onCurrencyChange(val || "USD")}
                 >
-                  <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0 focus:border-slate-300 dark:focus:border-neutral-600">
+                  <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-800 dark:text-neutral-200 focus:ring-0">
                     <SelectValue placeholder="USD" />
                   </SelectTrigger>
                   <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
@@ -128,7 +128,7 @@ export function SalarySection({
                   value={payFrequency}
                   onValueChange={(val) => onPayFrequencyChange(val || "yearly")}
                 >
-                  <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0 focus:border-slate-300 dark:focus:border-neutral-600">
+                  <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-800 dark:text-neutral-200 focus:ring-0">
                     <SelectValue>
                       {PAY_FREQUENCY_LABELS[payFrequency] ?? null}
                     </SelectValue>
@@ -156,7 +156,7 @@ export function SalarySection({
                     value={salaryMin}
                     onChange={(e) => onSalaryMinChange(e.target.value)}
                     placeholder="e.g. 50,000"
-                    className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
+                    className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0"
                   />
                 </div>
                 <div className="space-y-2.5">
@@ -167,7 +167,7 @@ export function SalarySection({
                     value={salaryMax}
                     onChange={(e) => onSalaryMaxChange(e.target.value)}
                     placeholder="e.g. 80,000"
-                    className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
+                    className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0"
                   />
                 </div>
               </div>
@@ -180,7 +180,7 @@ export function SalarySection({
                   value={salaryFixed}
                   onChange={(e) => onSalaryFixedChange(e.target.value)}
                   placeholder="e.g. 75,000"
-                  className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
+                  className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0"
                 />
               </div>
             )}

@@ -1,11 +1,11 @@
 "use client";
 
 import { useMemo } from "react";
+import { RowEditButton } from "@/components/table/row-actions";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Clock01Icon,
-  PencilEdit01Icon,
   Message02Icon,
 } from "@hugeicons/core-free-icons";
 import {
@@ -204,19 +204,13 @@ export function InterviewList({
                           />
                           Feedback
                         </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onEdit(iv);
-                          }}
-                          className="inline-flex items-center gap-1.5 h-7 rounded-md bg-neutral-700/90 px-2.5 text-sm font-semibold text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 transition-colors cursor-pointer"
-                        >
-                          <HugeiconsIcon
-                            icon={PencilEdit01Icon}
-                            className="size-3"
-                          />
-                          Edit
-                        </button>
+                        <RowEditButton
+ onClick={(e) => {
+ e.stopPropagation();
+ onEdit(iv);
+ }}
+ className="h-7 px-2.5"
+ />
                       </div>
                     </div>
                   </div>

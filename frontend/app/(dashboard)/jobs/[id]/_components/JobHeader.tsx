@@ -15,6 +15,7 @@ import {
   StopCircleIcon,
   ArchiveIcon,
   RefreshIcon,
+  Money02Icon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -264,16 +265,17 @@ export function JobHeader({
               <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-slate-600 dark:text-neutral-300">
                 {salaryStr && (
                   <div className="inline-flex items-center gap-2 font-medium">
-                    <span className="size-4 shrink-0 text-slate-400 dark:text-neutral-500">
-                      💰
-                    </span>
+                    <HugeiconsIcon
+                      icon={Money02Icon}
+                      className="size-5 shrink-0 text-theme dark:text-primary"
+                    />
                     <span>{salaryStr}</span>
                   </div>
                 )}
                 <div className="inline-flex items-center gap-2 font-medium">
                   <HugeiconsIcon
                     icon={UserMultiple02Icon}
-                    className="size-4 shrink-0 text-slate-400 dark:text-neutral-500"
+                    className="size-5 shrink-0 text-theme dark:text-primary"
                   />
                   <span>
                     {jobCandidatesPending ? "…" : jobCandidateCount}{" "}
@@ -289,7 +291,7 @@ export function JobHeader({
                 >
                   <HugeiconsIcon
                     icon={Link01Icon}
-                    className="size-4 shrink-0 text-slate-400 dark:text-neutral-500"
+                    className="size-5 shrink-0 text-theme dark:text-primary"
                   />
                   <span className="truncate">
                     {typeof window !== "undefined"

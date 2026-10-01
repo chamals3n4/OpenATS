@@ -10,7 +10,7 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { useAssessmentQuestions } from "../hooks/use-assessment-questions";
 import { formatQuestionsForApi } from "../lib/assessment-builder-utils";
-import { AssessmentMetaSection } from "./meta-section";
+import { AssessmentMetaSection } from "../../_components/assessment-meta-section";
 import { QuestionSidebar } from "./question-sidebar";
 import { QuestionEditor } from "./question-editor";
 
@@ -67,7 +67,7 @@ export default function CreateAssessmentPageClient() {
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 overflow-hidden">
       {/* Header */}
-      <div className="px-8 py-5 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between shrink-0 gap-4">
+      <div className="px-8 py-5 border-b border-slate-300 dark:border-neutral-700 flex items-center justify-between shrink-0 gap-4">
         <div className="flex items-center gap-5 min-w-0">
           <h1 className="text-xl font-semibold text-slate-900 dark:text-neutral-100 leading-none whitespace-nowrap">
             Create New Assessment

@@ -58,7 +58,7 @@ export function AddStageDialog({
               value={newStageType}
               onValueChange={(v) => setNewStageType(v ?? "screening")}
             >
-              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-md shadow-none focus-visible:ring-0 focus-visible:border-slate-300 text-[14px]">
+              <SelectTrigger className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-md shadow-none focus-visible:ring-0 text-[14px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
@@ -78,7 +78,7 @@ export function AddStageDialog({
               value={newStageName}
               onChange={(e) => setNewStageName(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAddStage()}
-              className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-md shadow-none focus-visible:ring-0 focus-visible:border-slate-300 text-[14px] placeholder:text-slate-300 dark:placeholder:text-neutral-600"
+              className="h-10 border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 rounded-md shadow-none focus-visible:ring-0 text-[14px] placeholder:text-slate-300 dark:placeholder:text-neutral-600"
             />
           </div>
           <div className="text-[13px] text-slate-500 dark:text-neutral-400 space-y-0.5 pl-0.5">

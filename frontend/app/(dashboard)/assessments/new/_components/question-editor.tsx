@@ -1,5 +1,6 @@
 "use client";
 
+import { Textarea } from "@/components/ui/textarea";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Delete02Icon } from "@hugeicons/core-free-icons";
 import { Input } from "@/components/ui/input";
@@ -39,7 +40,7 @@ export function QuestionEditor({
 
   return (
     <div className="flex-1 overflow-y-auto p-8 space-y-5 bg-white dark:bg-neutral-950">
-      <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 space-y-5">
+      <div className="border border-slate-300 dark:border-neutral-700 rounded-xl p-6 space-y-5">
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
             Question Details
@@ -73,7 +74,7 @@ export function QuestionEditor({
               (optional)
             </span>
           </Label>
-          <textarea
+          <Textarea
             placeholder="Add more context for this question ..."
             rows={2}
             value={question.description}
@@ -91,7 +92,7 @@ export function QuestionEditor({
       </div>
 
       {isShortAnswer ? (
-        <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6">
+        <div className="border border-slate-300 dark:border-neutral-700 rounded-xl p-6">
           <p className="text-sm text-slate-500 dark:text-neutral-400">
             Short answer questions are reviewed manually by the hiring team.
           </p>

@@ -1,5 +1,6 @@
 "use client";
 
+import { ConfirmDeleteDialog, ConfirmDeleteName } from "@/components/ui/confirm-delete-dialog";
 import { useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -15,17 +16,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Spinner } from "@/components/ui/spinner";
 import { Button } from "@/components/ui/button";
 import {
   useInterviewFeedback,
@@ -208,45 +198,27 @@ export function InterviewCard({
       </Dialog>
 
       {/* Delete confirmation */}
-      <AlertDialog
+      <ConfirmDeleteDialog
         open={showDeleteConfirm}
-        onOpenChange={(o) => !o && setShowDeleteConfirm(false)}
-      >
-        <AlertDialogContent className="max-w-sm rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
-              Delete Interview?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-slate-500 dark:text-neutral-400 leading-relaxed">
-              <strong className="text-slate-700 dark:text-neutral-200">
-                {interview.eventName ??
-                  stageMap[interview.stageId] ??
-                  `Interview #${interview.id}`}
-              </strong>{" "}
-              will be permanently removed. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-8 rounded-md border-none bg-neutral-700 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                deleteInterviewMutation.mutate(interview.id, {
-                  onSettled: () => setShowDeleteConfirm(false),
-                });
-              }}
-              disabled={deleteInterviewMutation.isPending}
-              className="h-8 rounded-md border-none bg-red-600 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
-            >
-              {deleteInterviewMutation.isPending && (
-                <Spinner className="size-3.5" />
-              )}
-              {deleteInterviewMutation.isPending ? "Deleting" : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="Delete this interview?"
+        description={
+          <>
+            <ConfirmDeleteName>
+              {interview.eventName ??
+                stageMap[interview.stageId] ??
+                `Interview #${interview.id}`}
+            </ConfirmDeleteName>{" "}
+            will be permanently deleted. This cannot be undone.
+          </>
+        }
+        isPending={deleteInterviewMutation.isPending}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => {
+          deleteInterviewMutation.mutate(interview.id, {
+            onSettled: () => setShowDeleteConfirm(false),
+          });
+        }}
+      />
     </div>
   );
 }

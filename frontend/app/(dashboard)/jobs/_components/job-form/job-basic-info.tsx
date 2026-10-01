@@ -41,7 +41,7 @@ export function JobBasicInfo({
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           placeholder="Senior Software Engineer - Backend"
-          className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
+          className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0"
         />
       </div>
 
@@ -54,7 +54,7 @@ export function JobBasicInfo({
             value={departmentId?.toString() ?? ""}
             onValueChange={(val) => onDepartmentChange(Number(val))}
           >
-            <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0 focus:border-slate-300 dark:focus:border-neutral-600">
+            <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-800 dark:text-neutral-200 focus:ring-0">
               <SelectValue placeholder="Select">
                 {departmentId
                   ? (departments.find((d) => d.id === departmentId)?.name ??
@@ -82,7 +82,7 @@ export function JobBasicInfo({
               onEmploymentTypeChange(val as Job["employmentType"])
             }
           >
-            <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-500 dark:text-neutral-400 focus:ring-0 focus:border-slate-300 dark:focus:border-neutral-600">
+            <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-800 dark:text-neutral-200 focus:ring-0">
               <SelectValue placeholder="Select">
                 {employmentType ? EMPLOYMENT_TYPE_LABELS[employmentType] : null}
               </SelectValue>

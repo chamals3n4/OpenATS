@@ -63,7 +63,7 @@ export default function InterviewsClient() {
     search || statusFilter !== "all" || departmentFilter !== "all";
 
   const inputCls =
-    "h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0";
+    "h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0";
 
   const handleFeedback = (iv: InterviewListItem) => {
     setFeedbackTarget(iv);
@@ -133,7 +133,7 @@ export default function InterviewsClient() {
           value={departmentFilter}
           onValueChange={(v) => setDepartmentFilter(v ?? "all")}
         >
-          <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
+          <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-800 dark:text-neutral-200 text-sm focus:ring-0 focus-visible:ring-0 px-3">
             <SelectValue placeholder="All Departments" />
           </SelectTrigger>
           <SelectContent className="rounded-md shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
@@ -150,7 +150,7 @@ export default function InterviewsClient() {
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v ?? "all")}
         >
-          <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
+          <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-800 dark:text-neutral-200 text-sm focus:ring-0 focus-visible:ring-0 px-3">
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent className="rounded-md shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">

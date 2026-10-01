@@ -1,5 +1,6 @@
 "use client";
 
+import { Textarea } from "@/components/ui/textarea";
 import { textareaCls } from "../lib/assessment-builder-constants";
 
 interface ShortAnswerEditorProps {
@@ -16,12 +17,12 @@ export function ShortAnswerEditor({ value, onChange }: ShortAnswerEditorProps) {
       <p className="text-xs text-slate-400 dark:text-neutral-500">
         Candidates&apos; answers will be compared against this key for grading.
       </p>
-      <textarea
+      <Textarea
         placeholder="Type the correct answer here ..."
         rows={3}
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className={textareaCls}
+        className={`min-h-20 ${textareaCls}`}
       />
     </div>
   );

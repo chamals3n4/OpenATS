@@ -6,6 +6,7 @@ import { Loader2, Save } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 interface FormActionsProps {
+  submitLabel: string;
   onSubmit: () => void;
   onCancel: () => void;
   isSubmitDisabled: boolean;
@@ -13,6 +14,7 @@ interface FormActionsProps {
 }
 
 export function FormActions({
+  submitLabel,
   onSubmit,
   onCancel,
   isSubmitDisabled,
@@ -33,7 +35,7 @@ export function FormActions({
         ) : (
           <>
             <Save className="size-4" />
-            <span>Save Job</span>
+            <span>{submitLabel}</span>
           </>
         )}
       </Button>

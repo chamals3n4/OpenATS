@@ -166,7 +166,7 @@ export function OverviewClient() {
             value={period}
             onValueChange={(value) => setPeriod(value ?? "7d")}
           >
-            <SelectTrigger className="w-44 h-8! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+            <SelectTrigger className="w-44 h-8! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-800 dark:text-neutral-200 text-sm focus:ring-0 px-3">
               <SelectValue>{PERIOD_LABELS[period]}</SelectValue>
             </SelectTrigger>
             <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
@@ -177,7 +177,7 @@ export function OverviewClient() {
           </Select>
 
           <Select value={dept} onValueChange={(value) => setDept(value ?? "all")}>
-            <SelectTrigger className="w-44 h-8! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 px-3">
+            <SelectTrigger className="w-44 h-8! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-800 dark:text-neutral-200 text-sm focus:ring-0 px-3">
               <SelectValue>{DEPT_LABELS[dept]}</SelectValue>
             </SelectTrigger>
             <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">

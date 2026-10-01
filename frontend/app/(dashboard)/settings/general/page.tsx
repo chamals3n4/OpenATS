@@ -1,5 +1,6 @@
 "use client";
 
+import { ConfirmDeleteDialog, ConfirmDeleteName } from "@/components/ui/confirm-delete-dialog";
 import { useState, useRef } from "react";
 import {
   PlusSignIcon,
@@ -19,16 +20,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 import type { Company } from "@/types";
@@ -526,34 +517,19 @@ function DepartmentsPanel({ company }: { company: Company | null | undefined }) 
       </Dialog>
 
       {/* Delete confirm */}
-      <AlertDialog open={deleteId !== null} onOpenChange={(o) => !o && setDeleteId(null)}>
-        <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-[19px] font-semibold text-slate-900 dark:text-neutral-100">
-              Delete this department?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-[14px] text-slate-500 dark:text-neutral-400 leading-relaxed">
-              <strong className="text-slate-700 dark:text-neutral-200">
-                {deleteName}
-              </strong>{" "}
-              will be permanently deleted. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleteDept.isPending}
-              className="h-[34px] rounded-md border-none bg-red-600 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
-            >
-              {deleteDept.isPending && <Spinner className="size-3.5" />}
-              {deleteDept.isPending ? "Deleting" : "Delete"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <ConfirmDeleteDialog
+        open={deleteId !== null}
+        title="Delete this department?"
+        description={
+          <>
+            <ConfirmDeleteName>{deleteName}</ConfirmDeleteName> will be permanently
+            deleted. This cannot be undone.
+          </>
+        }
+        isPending={deleteDept.isPending}
+        onClose={() => setDeleteId(null)}
+        onConfirm={handleDelete}
+      />
     </>
   );
 }

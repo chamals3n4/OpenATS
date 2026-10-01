@@ -1,10 +1,8 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Delete02Icon } from "@hugeicons/core-free-icons";
+import { RowDeleteButton } from "@/components/table/row-actions";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 import type { OfferWithRelations } from "@/types";
 import {
@@ -45,39 +43,32 @@ export function OfferTableRow({
         checked={isSelected}
         onCheckedChange={onSelectedChange}
       />
-      <TableCell className="h-10 px-6 py-0 text-slate-700 dark:text-neutral-300 font-medium">
+      <TableCell className="h-12 px-6 py-0 text-slate-900 dark:text-neutral-100 font-medium">
         {getCandidateName(offer)}
       </TableCell>
-      <TableCell className="h-10 px-6 py-0">
+      <TableCell className="h-12 px-6 py-0">
         <Badge
-          className={`${bg} ${text} hover:${bg} border-none shadow-none font-medium px-2 py-0.5 rounded-full text-xs`}
+          className={`${bg} ${text} hover:${bg} border-none shadow-none font-medium px-2 py-0.5 rounded-full text-[13px]`}
         >
           {capitalizeStatus(offer.status)}
         </Badge>
       </TableCell>
-      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
         {getJobTitle(offer)}
       </TableCell>
-      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
         {fmtSalary(offer)}
       </TableCell>
-      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
         {fmtDate(offer.sentAt)}
       </TableCell>
       <TableCell
-        className="h-10 px-6 py-0"
+        className="h-12 px-6 py-0"
         onClick={(e) => e.stopPropagation()}
       >
         {isManager && (
           <div className="flex items-center justify-end gap-2">
-            <Button
-              size="sm"
-              className="h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
-              onClick={() => onDelete(offer)}
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="size-3.5 mr-1" />
-              Delete
-            </Button>
+            <RowDeleteButton onClick={() => onDelete(offer)} />
           </div>
         )}
       </TableCell>

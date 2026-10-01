@@ -1,13 +1,13 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { RowDeleteButton, RowEditButton } from "@/components/table/row-actions";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  Delete02Icon,
   QuestionIcon,
   Time01Icon,
 } from "@hugeicons/core-free-icons";
-import { Button } from "@/components/ui/button";
 import type { Assessment } from "@/types";
 import { useIsManager } from "@/hooks/use-role";
 
@@ -23,8 +23,12 @@ export function AssessmentCard({
   onInvite,
 }: AssessmentCardProps) {
   const isManager = useIsManager();
+  const router = useRouter();
   return (
-    <div className="flex flex-col border border-slate-200 dark:border-neutral-800 rounded-md bg-white dark:bg-neutral-900 shadow-sm">
+    <div
+      onClick={() => router.push(`/assessments/${assessment.id}`)}
+      className="flex cursor-pointer flex-col rounded-md border border-slate-300 bg-white shadow-none transition-[border-color] duration-500 ease-in-out hover:border-theme dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-primary motion-reduce:transition-none"
+    >
       {/* Card body */}
       <div className="flex flex-col gap-2 px-4 pt-4 pb-3">
         <Link
@@ -53,20 +57,12 @@ export function AssessmentCard({
 
       {/* Card footer */}
       {isManager && (
-        <div className="flex items-center gap-1.5 px-4 py-2.5 border-t border-slate-100 dark:border-neutral-800">
-          <Button
-            render={<Link href={`/assessments/${assessment.id}`} />}
-            className="h-8 rounded-md border-none px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
-          >
-            Edit
-          </Button>
-          <Button
-            onClick={() => onDelete(assessment)}
-            className="inline-flex h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
-          >
-            <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
-            Delete
-          </Button>
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className="flex items-center gap-1.5 px-4 py-2.5 border-t border-slate-200 dark:border-neutral-800"
+        >
+          <RowEditButton render={<Link href={`/assessments/${assessment.id}`} />} />
+          <RowDeleteButton onClick={() => onDelete(assessment)} />
         </div>
       )}
     </div>

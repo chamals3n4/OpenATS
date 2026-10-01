@@ -94,7 +94,7 @@ export function TemplateTypePicker({
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="cancel" onClick={onClose}>
             Cancel
           </Button>
           <Button

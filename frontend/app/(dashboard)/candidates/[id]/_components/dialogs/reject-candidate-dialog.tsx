@@ -133,8 +133,9 @@ export function RejectCandidateDialog({
         <DialogFooter className="gap-2">
           <Button
             size="sm"
+            variant="cancel"
             onClick={() => onOpenChange(false)}
-            className="h-7 rounded-md border-none bg-neutral-700 px-2.5 text-sm font-semibold text-white shadow-none hover:bg-neutral-600"
+            className="h-7 px-2.5 text-sm"
           >
             Cancel
           </Button>

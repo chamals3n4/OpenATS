@@ -19,7 +19,7 @@ import {
 } from "@/hooks/queries/use-settings";
 
 const inputCls =
-  "h-9 rounded-md shadow-none bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 text-sm font-mono";
+  "h-9 rounded-md shadow-none bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 focus-visible:ring-0 text-sm font-mono";
 
 function Section({
   title,

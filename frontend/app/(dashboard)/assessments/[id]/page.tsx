@@ -17,14 +17,21 @@ import {
   RadioButtonIcon,
   CheckmarkCircle01Icon,
   TickDouble01Icon,
+  Edit02Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { useDragSort } from "@/hooks/use-drag-sort";
 import { useCurrentUser } from "@/hooks/queries/use-user";
 import { Loader2 } from "lucide-react";
+import { EditAssessmentDetailsDialog } from "../_components/edit-assessment-details-dialog";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  inputCls,
+  textareaCls,
+} from "../new/lib/assessment-builder-constants";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -78,12 +85,6 @@ const TRUE_FALSE_OPTIONS: AnswerOption[] = [
   { id: -2, text: "False", isCorrect: false },
 ];
 
-const inputCls =
-  "h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus-visible:ring-0 focus-visible:border-slate-400 transition-colors";
-
-const textareaCls =
-  "w-full px-3 py-2 text-sm bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 rounded-md shadow-none placeholder:text-slate-400 dark:placeholder:text-neutral-500 text-slate-900 dark:text-neutral-100 focus:outline-none focus:border-slate-400 resize-none transition-colors";
-
 export default function EditAssessmentPage({
   params,
 }: {
@@ -103,6 +104,10 @@ export default function EditAssessmentPage({
 
   const [isSaving, setIsSaving] = useState(false);
   const [isActive, setIsActive] = useState(true);
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [timeLimit, setTimeLimit] = useState("120");
   const [questions, setQuestions] = useState<Question[]>([]);
   const [selectedQ, setSelectedQ] = useState<number>(0);
   const originalDbIds = useRef<number[]>([]);
@@ -114,6 +119,9 @@ export default function EditAssessmentPage({
     const data = assessmentData?.data;
     if (!data) return;
     hasInitialized.current = true;
+    setTitle(data.title ?? "");
+    setDescription(data.description ?? "");
+    setTimeLimit(String(data.timeLimit ?? 120));
 
     // Can't move to render: it bumps the module-level `idCounter`.
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -335,11 +343,26 @@ export default function EditAssessmentPage({
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 overflow-hidden">
-      <div className="px-8 py-5 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between shrink-0 gap-4">
+      <div className="px-8 py-5 border-b border-slate-300 dark:border-neutral-700 flex items-center justify-between shrink-0 gap-4">
         <div className="flex items-center gap-5 min-w-0">
           <h1 className="text-xl font-semibold text-slate-900 dark:text-neutral-100 leading-none whitespace-nowrap">
             {isManager ? "Edit Assessment" : "View Assessment"}
           </h1>
+          {title && (
+            <span className="max-w-xs truncate text-sm font-medium text-slate-500 dark:text-neutral-400">
+              {title}
+            </span>
+          )}
+          {isManager && (
+            <Button
+              variant="outline"
+              onClick={() => setDetailsOpen(true)}
+              className="h-8 gap-2 rounded-md border-slate-300 bg-transparent px-3 text-sm font-medium text-slate-700 shadow-none hover:bg-slate-50 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-800"
+            >
+              <HugeiconsIcon icon={Edit02Icon} className="size-4" strokeWidth={1.75} />
+              Edit details
+            </Button>
+          )}
           {isManager && (
             <div className="flex items-center gap-2.5">
               <Switch
@@ -389,8 +412,8 @@ export default function EditAssessmentPage({
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="w-[280px] border-r border-slate-100 dark:border-neutral-800 flex flex-col shrink-0 bg-white dark:bg-neutral-950">
-          <div className="px-5 py-4 border-b border-slate-100 dark:border-neutral-800">
+        <div className="w-[280px] border-r border-slate-300 dark:border-neutral-700 flex flex-col shrink-0 bg-white dark:bg-neutral-950">
+          <div className="px-5 py-4 border-b border-slate-300 dark:border-neutral-700">
             <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
               Questions ({questions.length})
             </span>
@@ -481,7 +504,7 @@ export default function EditAssessmentPage({
 
         {currentQ && (
           <div className="flex-1 overflow-y-auto p-8 space-y-5 bg-white dark:bg-neutral-950">
-            <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 space-y-5">
+            <div className="border border-slate-300 dark:border-neutral-700 rounded-xl p-6 space-y-5">
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
                   Question Details
@@ -520,7 +543,7 @@ export default function EditAssessmentPage({
                     (optional)
                   </span>
                 </Label>
-                <textarea
+                <Textarea
                   placeholder="Add more context for this question ..."
                   rows={2}
                   value={currentQ.description}
@@ -543,7 +566,7 @@ export default function EditAssessmentPage({
                   }
                   disabled={!isManager}
                 >
-                  <SelectTrigger className="h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-sm focus:ring-0 focus:border-slate-400 dark:focus:border-neutral-500 gap-2 transition-colors">
+                  <SelectTrigger className="h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-sm focus:ring-0 gap-2 transition-colors">
                     <div className="flex items-center gap-2">
                       <HugeiconsIcon
                         icon={RadioButtonIcon}
@@ -562,13 +585,13 @@ export default function EditAssessmentPage({
             </div>
 
             {isShortAnswer ? (
-              <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-5">
+              <div className="border border-slate-300 dark:border-neutral-700 rounded-xl p-5">
                 <p className="text-sm text-slate-500 dark:text-neutral-400">
                   Short answer questions are reviewed manually by the hiring team.
                 </p>
               </div>
             ) : (
-              <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 space-y-4">
+              <div className="border border-slate-300 dark:border-neutral-700 rounded-xl p-6 space-y-4">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
                     Answer Options
@@ -672,6 +695,24 @@ export default function EditAssessmentPage({
           </div>
         )}
       </div>
+
+      {isManager && (
+        <EditAssessmentDetailsDialog
+          assessmentId={assessmentId}
+          open={detailsOpen}
+          onOpenChange={setDetailsOpen}
+          details={{
+            title,
+            description,
+            timeLimit: Number(timeLimit) || 120,
+          }}
+          onSaved={(d) => {
+            setTitle(d.title);
+            setDescription(d.description);
+            setTimeLimit(String(d.timeLimit));
+          }}
+        />
+      )}
     </div>
   );
 }

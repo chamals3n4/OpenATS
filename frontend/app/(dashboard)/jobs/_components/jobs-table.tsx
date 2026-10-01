@@ -75,7 +75,7 @@ export function JobsTable({
         />
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
+            <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-slate-100/70 dark:bg-neutral-800/60 hover:bg-slate-100/70 dark:hover:bg-neutral-800/60">
               <BulkSelectHeaderCell
                 className="h-11"
                 checked={selection.allVisibleSelected}
@@ -83,19 +83,19 @@ export function JobsTable({
                 disabled={isLoading || jobs.length === 0}
                 onCheckedChange={selection.toggleVisible}
               />
-              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                 Job Name
               </TableHead>
-              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                 Job Type
               </TableHead>
-              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                 Department Name
               </TableHead>
-              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                 Created At
               </TableHead>
-              <TableHead className="h-11 px-6 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                 Actions
               </TableHead>
             </TableRow>

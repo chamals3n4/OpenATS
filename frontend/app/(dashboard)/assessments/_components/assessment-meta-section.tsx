@@ -1,10 +1,11 @@
 "use client";
 
+import { Textarea } from "@/components/ui/textarea";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowUp01Icon, ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { inputCls, textareaCls } from "../lib/assessment-builder-constants";
+import { inputCls, textareaCls } from "../new/lib/assessment-builder-constants";
 
 interface AssessmentMetaSectionProps {
   isOpen: boolean;
@@ -28,10 +29,10 @@ export function AssessmentMetaSection({
   onTimeLimitChange,
 }: AssessmentMetaSectionProps) {
   return (
-    <div className="border-b border-slate-100 dark:border-neutral-800 shrink-0">
+    <div className="border-b border-slate-300 bg-slate-100/70 dark:border-neutral-700 dark:bg-neutral-900 shrink-0">
       <button
         onClick={onToggle}
-        className="w-full flex items-center justify-between px-8 py-4 hover:bg-slate-50/60 dark:hover:bg-neutral-900 transition-colors group"
+        className="w-full flex items-center justify-between px-8 py-4 hover:bg-slate-200/50 dark:hover:bg-neutral-800 transition-colors group"
       >
         <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400 tracking-widest uppercase">
           Assessment Details
@@ -60,7 +61,7 @@ export function AssessmentMetaSection({
             <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
               Description
             </Label>
-            <textarea
+            <Textarea
               placeholder="Describe what this assessment is for ..."
               rows={2}
               value={description}

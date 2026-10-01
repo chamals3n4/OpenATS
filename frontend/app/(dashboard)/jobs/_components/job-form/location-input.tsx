@@ -18,7 +18,7 @@ export function LocationInput({ value, onChange }: LocationInputProps) {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Search"
-        className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
+        className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0"
       />
     </div>
   );

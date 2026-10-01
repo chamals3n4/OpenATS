@@ -1,12 +1,10 @@
 "use client";
 
 import { useCallback } from "react";
+import { RowDeleteButton, RowEditButton } from "@/components/table/row-actions";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { PencilEdit01Icon, Delete02Icon } from "@hugeicons/core-free-icons";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 import { serverFetch } from "@/lib/auth-action";
 import type {
@@ -95,42 +93,28 @@ export function JobTableRow({
         checked={isSelected}
         onCheckedChange={onSelectedChange}
       />
-      <TableCell className="h-10 px-6 py-0">
-        <span className="text-slate-700 dark:text-neutral-300 font-medium">
+      <TableCell className="h-12 px-6 py-0">
+        <span className="text-slate-900 dark:text-neutral-100 font-medium">
           {job.title}
         </span>
       </TableCell>
-      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
         {EMPLOYMENT_TYPE_LABELS[job.employmentType]}
       </TableCell>
-      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
         {departmentName}
       </TableCell>
-      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
         {formatDate(job.createdAt)}
       </TableCell>
       <TableCell
-        className="h-10 px-6 py-0"
+        className="h-12 px-6 py-0"
         onClick={(e) => e.stopPropagation()}
       >
         {isManager && (
           <div className="flex items-center justify-end gap-2">
-            <Button
-              size="sm"
-              className="h-8 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
-              onClick={handleEditClick}
-            >
-              <HugeiconsIcon icon={PencilEdit01Icon} className="size-3.5" />
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              className="h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
-              onClick={handleDeleteClick}
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="size-3.5 mr-1" />
-              Delete
-            </Button>
+            <RowEditButton onClick={handleEditClick} />
+            <RowDeleteButton onClick={handleDeleteClick} />
           </div>
         )}
       </TableCell>

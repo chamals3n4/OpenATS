@@ -1,14 +1,14 @@
 "use client";
 
+import { ConfirmDeleteDialog, ConfirmDeleteName } from "@/components/ui/confirm-delete-dialog";
 import { useEffect, useMemo, useState } from "react";
+import { RowDeleteButton, RowEditButton } from "@/components/table/row-actions";
 import { useQuery } from "@tanstack/react-query";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/queries/use-user";
 import { toast } from "sonner";
 import { Copy, Eye, EyeOff } from "lucide-react";
 import {
-  PencilEdit01Icon,
-  Delete02Icon,
   Add01Icon,
   Search01Icon,
 } from "@hugeicons/core-free-icons";
@@ -45,16 +45,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
   Sheet,
@@ -72,11 +62,10 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
-import { Spinner } from "@/components/ui/spinner";
 import { TableFooter } from "@/components/table/table-footer";
 
 const inputCls =
-  "h-9 bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 rounded-md shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors";
+  "h-9 bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 rounded-md shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0 transition-colors";
 
 const ROLES = [
   { value: "interviewer", label: "Interviewer" },
@@ -317,7 +306,7 @@ export default function UserManagementPage() {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Search User"
-            className="pl-9 h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
+            className="pl-9 h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0"
           />
         </div>
         <Button
@@ -346,17 +335,17 @@ export default function UserManagementPage() {
         <div className="overflow-hidden rounded-md border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-900">
           <Table>
             <TableHeader>
-              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 hover:bg-transparent">
-                <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-slate-100/70 dark:bg-neutral-800/60 hover:bg-slate-100/70 dark:hover:bg-neutral-800/60">
+                <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                   Name
                 </TableHead>
-                <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                   Email
                 </TableHead>
-                <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                   Role
                 </TableHead>
-                <TableHead className="h-11 px-6 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+                <TableHead className="h-11 px-6 w-44 text-right font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                   Actions
                 </TableHead>
               </TableRow>
@@ -383,42 +372,22 @@ export default function UserManagementPage() {
                     key={u.id}
                     className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
                   >
-                    <TableCell className="h-10 px-6 py-0 font-medium text-slate-700 dark:text-neutral-300">
+                    <TableCell className="h-12 px-6 py-0 font-medium text-slate-900 dark:text-neutral-100">
                       {getDisplayName(u)}
                     </TableCell>
-                    <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+                    <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium">
                       {u.email}
                     </TableCell>
-                    <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal capitalize">
+                    <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-medium capitalize">
                       {u.role.replace(/_/g, " ")}
                     </TableCell>
                     <TableCell
-                      className="h-10 px-6 py-0"
+                      className="h-12 px-6 py-0"
                       onClick={(e) => e.stopPropagation()}
                     >
                       <div className="flex items-center justify-end gap-2">
-                        <Button
-                          size="sm"
-                          className="h-8 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
-                          onClick={() => openEdit(u)}
-                        >
-                          <HugeiconsIcon
-                            icon={PencilEdit01Icon}
-                            className="size-3.5"
-                          />
-                          Edit
-                        </Button>
-                        <Button
-                          size="sm"
-                          className="h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
-                          onClick={() => setDeleteTarget(u)}
-                        >
-                          <HugeiconsIcon
-                            icon={Delete02Icon}
-                            className="size-3.5 mr-1"
-                          />
-                          Delete
-                        </Button>
+                        <RowEditButton onClick={() => openEdit(u)} />
+                        <RowDeleteButton onClick={() => setDeleteTarget(u)} />
                       </div>
                     </TableCell>
                   </TableRow>
@@ -502,7 +471,7 @@ export default function UserManagementPage() {
                     setCreateForm((f) => ({ ...f, role: v as Role }))
                   }
                 >
-                  <SelectTrigger className="w-full h-9! rounded-md bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 shadow-none px-3! py-0! text-sm focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors">
+                  <SelectTrigger className="w-full h-9! rounded-md bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 shadow-none px-3! py-0! text-sm focus-visible:ring-0 transition-colors">
                     <SelectValue placeholder="Select role">
                       {ROLES.find((r) => r.value === createForm.role)?.label ??
                         null}
@@ -769,44 +738,25 @@ export default function UserManagementPage() {
       </Dialog>
 
       {/* Delete Dialog */}
-      <AlertDialog
+      <ConfirmDeleteDialog
         open={!!deleteTarget}
-        onOpenChange={(open) => !open && setDeleteTarget(null)}
-      >
-        <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
-              Remove user?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-slate-500 dark:text-neutral-400 leading-relaxed">
-              {deleteTarget ? (
-                <>
-                  Are you sure you want to remove{" "}
-                  <strong className="text-slate-700 dark:text-neutral-200">
-                    {getDisplayName(deleteTarget)}
-                  </strong>
-                  ?
-                </>
-              ) : (
-                "Are you sure?"
-              )}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-[34px] rounded-md border-none bg-neutral-700 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              disabled={deleting}
-              className="h-[34px] rounded-md border-none bg-red-600 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed inline-flex items-center gap-2"
-            >
-              {deleting && <Spinner className="size-3.5" />}
-              {deleting ? "Removing" : "Remove"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="Remove this user?"
+        description={
+          deleteTarget ? (
+            <>
+              <ConfirmDeleteName>{getDisplayName(deleteTarget)}</ConfirmDeleteName>{" "}
+              will lose access to OpenATS. This cannot be undone.
+            </>
+          ) : (
+            "Are you sure?"
+          )
+        }
+        confirmLabel="Remove"
+        pendingLabel="Removing"
+        isPending={deleting}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

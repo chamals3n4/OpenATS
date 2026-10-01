@@ -22,7 +22,7 @@ export function JobFormHeader({
 
       {mode === "create" ? (
         <p className="text-sm font-medium text-slate-500 dark:text-neutral-400">
-          Saved as a draft — publish it from the job page when you&apos;re
+          Saved as a draft. Publish it from the job page when you&apos;re
           ready.
         </p>
       ) : (

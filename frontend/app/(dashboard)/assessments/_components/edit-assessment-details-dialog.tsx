@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useId, useState } from "react";
 import { toast } from "sonner";
 import { useUpdateAssessment } from "@/hooks/queries/use-assessments";
 import { Button } from "@/components/ui/button";
@@ -32,14 +32,17 @@ interface EditAssessmentDetailsDialogProps {
 }
 
 function DetailsForm({
-  assessmentId,
   details,
-  onClose,
-  onSaved,
-}: Omit<EditAssessmentDetailsDialogProps, "open" | "onOpenChange"> & {
-  onClose: () => void;
+  isPending,
+  onCancel,
+  onSave,
+}: {
+  details: AssessmentDetails;
+  isPending: boolean;
+  onCancel: () => void;
+  onSave: (details: AssessmentDetails) => void;
 }) {
-  const updateAssessment = useUpdateAssessment(assessmentId);
+  const uid = useId();
   const [title, setTitle] = useState(details.title);
   const [description, setDescription] = useState(details.description);
   const [timeLimit, setTimeLimit] = useState(String(details.timeLimit));
@@ -50,24 +53,11 @@ function DetailsForm({
     if (!Number.isInteger(limit) || limit < 1) {
       return toast.warning("Time limit must be a whole number of minutes.");
     }
-
-    const next = {
+    onSave({
       title: title.trim(),
       description: description.trim(),
       timeLimit: limit,
-    };
-    updateAssessment.mutate(
-      { ...next, description: next.description || null },
-      {
-        onSuccess: () => {
-          toast.success("Assessment details updated");
-          onSaved(next);
-          onClose();
-        },
-        onError: (error) =>
-          toast.error(error.message || "Failed to update assessment"),
-      },
-    );
+    });
   };
 
   return (
@@ -84,10 +74,14 @@ function DetailsForm({
 
       <div className="space-y-4">
         <div>
-          <Label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-neutral-300">
+          <Label
+            htmlFor={`${uid}-title`}
+            className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-neutral-300"
+          >
             Assessment title
           </Label>
           <Input
+            id={`${uid}-title`}
             autoFocus
             value={title}
             onChange={(e) => setTitle(e.target.value)}
@@ -96,11 +90,15 @@ function DetailsForm({
           />
         </div>
         <div>
-          <Label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-neutral-300">
+          <Label
+            htmlFor={`${uid}-description`}
+            className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-neutral-300"
+          >
             Description{" "}
             <span className="font-normal text-slate-400">(optional)</span>
           </Label>
           <Textarea
+            id={`${uid}-description`}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             placeholder="What should this assessment evaluate?"
@@ -109,10 +107,14 @@ function DetailsForm({
           />
         </div>
         <div className="w-44">
-          <Label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-neutral-300">
+          <Label
+            htmlFor={`${uid}-time-limit`}
+            className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-neutral-300"
+          >
             Time limit (minutes)
           </Label>
           <Input
+            id={`${uid}-time-limit`}
             type="number"
             min="1"
             value={timeLimit}
@@ -125,19 +127,19 @@ function DetailsForm({
       <DialogFooter>
         <Button
           variant="cancel"
-          onClick={onClose}
-          disabled={updateAssessment.isPending}
+          onClick={onCancel}
+          disabled={isPending}
           className="h-9"
         >
           Cancel
         </Button>
         <Button
           onClick={handleSave}
-          disabled={updateAssessment.isPending}
+          disabled={isPending}
           className="h-9 gap-2 bg-theme text-white hover:bg-theme-hover"
         >
-          {updateAssessment.isPending && <Spinner className="size-3.5" />}
-          {updateAssessment.isPending ? "Saving" : "Save details"}
+          {isPending && <Spinner className="size-3.5" />}
+          {isPending ? "Saving" : "Save details"}
         </Button>
       </DialogFooter>
     </>
@@ -145,15 +147,48 @@ function DetailsForm({
 }
 
 export function EditAssessmentDetailsDialog({
+  assessmentId,
   open,
   onOpenChange,
-  ...formProps
+  details,
+  onSaved,
 }: EditAssessmentDetailsDialogProps) {
+  // The mutation lives here, not in the form: this component stays mounted, so
+  // the completion callbacks still run even if the form were unmounted.
+  const updateAssessment = useUpdateAssessment(assessmentId);
+
+  const handleSave = (next: AssessmentDetails) => {
+    updateAssessment.mutate(
+      { ...next, description: next.description || null },
+      {
+        onSuccess: () => {
+          toast.success("Assessment details updated");
+          onSaved(next);
+          onOpenChange(false);
+        },
+        onError: (error) =>
+          toast.error(error.message || "Failed to update assessment"),
+      },
+    );
+  };
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog
+      open={open}
+      onOpenChange={(nextOpen) => {
+        // Ignore close requests (X button, Escape, outside click) mid-save.
+        if (!nextOpen && updateAssessment.isPending) return;
+        onOpenChange(nextOpen);
+      }}
+    >
       <DialogContent className="max-w-md gap-5 border-slate-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
         {/* Mounted only while open, so the fields start from the saved values each time. */}
-        <DetailsForm {...formProps} onClose={() => onOpenChange(false)} />
+        <DetailsForm
+          details={details}
+          isPending={updateAssessment.isPending}
+          onCancel={() => onOpenChange(false)}
+          onSave={handleSave}
+        />
       </DialogContent>
     </Dialog>
   );

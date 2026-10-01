@@ -557,7 +557,6 @@ export default function JobDetailsPage() {
         open={noteDeleteTarget !== null}
         title="Delete this note?"
         description="This note will be permanently deleted. This cannot be undone."
-        isPending={!me}
         onClose={() => setNoteDeleteTarget(null)}
         onConfirm={() => {
           if (!me || !noteDeleteTarget) return;

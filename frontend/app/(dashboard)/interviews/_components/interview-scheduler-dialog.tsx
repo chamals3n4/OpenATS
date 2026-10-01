@@ -1,5 +1,6 @@
 "use client";
 
+import { Textarea } from "@/components/ui/textarea";
 import { useEffect, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, Delete02Icon } from "@hugeicons/core-free-icons";
@@ -405,11 +406,11 @@ export function InterviewSchedulerDialog({
               {/* Email body */}
               <div>
                 <Label className={labelCls}>Email Body</Label>
-                <textarea
+                <Textarea
                   value={bodyText}
                   onChange={(e) => setBodyText(e.target.value)}
                   placeholder="Write the message the candidate will receive..."
-                  className="min-h-[90px] w-full rounded-md border border-slate-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 px-3 py-2 text-sm shadow-none resize-none placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:outline-none transition-colors"
+                  className="min-h-[90px] w-full rounded-md border border-slate-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 px-3 py-2 text-sm shadow-none resize-none placeholder:text-slate-400 dark:placeholder:text-neutral-500"
                 />
               </div>
             </>

@@ -1,5 +1,6 @@
 "use client";
 
+import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -50,7 +51,7 @@ const selectTriggerCls =
   "w-full h-9! rounded-md bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 shadow-none px-3! py-0! text-sm focus-visible:ring-0 transition-colors";
 
 const textareaCls =
-  "w-full rounded-md border border-slate-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 px-3 py-2 text-sm shadow-none resize-none placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:outline-none transition-colors";
+  "w-full rounded-md border border-slate-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 px-3 py-2 text-sm shadow-none resize-none placeholder:text-slate-400 dark:placeholder:text-neutral-500";
 
 const labelCls =
   "text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block";
@@ -398,7 +399,7 @@ export function OfferSection({
 
             <div className="col-span-2">
               <Label className={labelCls}>Benefits</Label>
-              <textarea
+              <Textarea
                 value={editBenefits}
                 onChange={(e) => setEditBenefits(e.target.value)}
                 placeholder="e.g. Health insurance, 401k matching, 20 PTO days..."
@@ -433,7 +434,7 @@ export function OfferSection({
                   Generate from template
                 </button>
               </div>
-              <textarea
+              <Textarea
                 value={editOfferLetterHtml}
                 onChange={(e) => setEditOfferLetterHtml(e.target.value)}
                 placeholder="<p>Dear candidate...</p>"

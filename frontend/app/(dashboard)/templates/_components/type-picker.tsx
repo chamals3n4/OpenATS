@@ -1,19 +1,17 @@
 "use client";
 
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Mail01Icon,
-  Calendar02Icon,
-  CheckmarkCircle02Icon,
-} from "@hugeicons/core-free-icons";
+import { ArrowRight02Icon, Calendar02Icon, Mail01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
 } from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { TYPE_META, type TemplateType } from "../lib/templates-utils";
 
 const TEMPLATE_TYPES: TemplateType[] = ["email", "event"];
@@ -24,8 +22,8 @@ const TYPE_ICONS: Record<TemplateType, typeof Mail01Icon> = {
 };
 
 const TYPE_DESCRIPTIONS: Record<TemplateType, string> = {
-  email: "Send emails to candidates",
-  event: "Interview scheduling with time slots & calendar sync",
+  email: "A message sent to a candidate, such as a rejection or an offer letter.",
+  event: "Invite a candidate to pick an interview time, with a meeting link or a location.",
 };
 
 interface TemplateTypePickerProps {
@@ -45,64 +43,60 @@ export function TemplateTypePicker({
 }: TemplateTypePickerProps) {
   return (
     <Dialog open={isOpen} onOpenChange={(o) => !o && onClose()}>
-      <DialogContent className="sm:max-w-[480px] rounded-2xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 shadow-xl">
-        <DialogHeader>
-          <DialogTitle className="text-sm font-bold text-slate-900 dark:text-neutral-100">
-            What type of template is this?
+      <DialogContent className="max-w-[calc(100%-2rem)] gap-0 rounded-xl border-slate-200 bg-white p-6 sm:max-w-[640px] dark:border-neutral-800 dark:bg-neutral-900">
+        <DialogHeader className="mb-5 gap-1">
+          <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
+            New template
           </DialogTitle>
-          <p className="text-sm text-slate-500 dark:text-neutral-400 mt-1">
-            The type sets which variables are available in the builder.
-          </p>
+          <DialogDescription className="text-sm leading-relaxed text-slate-600 dark:text-neutral-400">
+            Choose what you are building. The type decides which variables you
+            can use in the builder.
+          </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-2 gap-3 mt-2">
-          {TEMPLATE_TYPES.map((type) => {
-            const isSelected = pickedType === type;
-            return (
-              <button
-                key={type}
-                type="button"
-                onClick={() => onPickType(type)}
-                className={`relative flex flex-col items-start gap-3 rounded-xl border p-4 text-left transition-colors cursor-pointer ${
-                  isSelected
-                    ? "border-theme bg-theme/5 dark:bg-theme/10"
-                    : "border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700"
-                }`}
-              >
-                {isSelected && (
-                  <HugeiconsIcon
-                    icon={CheckmarkCircle02Icon}
-                    className="absolute top-3 right-3 size-4 text-theme"
-                  />
-                )}
-                <div
-                  className={`flex size-9 items-center justify-center rounded-full ${TYPE_META[type].badge}`}
-                >
-                  <HugeiconsIcon icon={TYPE_ICONS[type]} className="size-4" />
-                </div>
-                <div>
-                  <p className="text-[13.5px] font-semibold text-slate-900 dark:text-neutral-100">
-                    {TYPE_META[type].label}
-                  </p>
-                  <p className="mt-0.5 text-xs text-slate-500 dark:text-neutral-400 leading-snug">
-                    {TYPE_DESCRIPTIONS[type]}
-                  </p>
-                </div>
-              </button>
-            );
-          })}
-        </div>
+        <RadioGroup
+          aria-label="Template type"
+          value={pickedType ?? ""}
+          onValueChange={(v) => onPickType(v || null)}
+          className="gap-2.5"
+        >
+          {TEMPLATE_TYPES.map((type) => (
+            <label
+              key={type}
+              className="flex cursor-pointer items-center gap-4 rounded-lg border border-slate-300 bg-white px-4 py-3.5 transition-[border-color,background-color] duration-200 ease-out hover:border-slate-400 has-data-checked:border-theme has-data-checked:bg-theme/5 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-theme motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-neutral-500 dark:has-data-checked:bg-theme/10"
+            >
+              <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-neutral-800 dark:text-neutral-200">
+                <HugeiconsIcon icon={TYPE_ICONS[type]} className="size-5" strokeWidth={1.75} />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
+                  {TYPE_META[type].label}
+                </span>
+                <span className="mt-0.5 block text-sm leading-snug text-slate-600 dark:text-neutral-400">
+                  {TYPE_DESCRIPTIONS[type]}
+                </span>
+              </span>
+              <RadioGroupItem
+                variant="theme"
+                value={type}
+                aria-label={TYPE_META[type].label}
+                className="shrink-0"
+              />
+            </label>
+          ))}
+        </RadioGroup>
 
-        <DialogFooter>
-          <Button variant="cancel" onClick={onClose}>
+        <DialogFooter className="mt-6">
+          <Button variant="cancel" onClick={onClose} className="h-9 px-4 text-sm">
             Cancel
           </Button>
           <Button
             disabled={!pickedType}
             onClick={onContinue}
-            className="bg-theme hover:bg-theme-hover text-white disabled:opacity-40"
+            className="h-9 gap-2 border-none bg-theme px-4 text-sm font-semibold text-white hover:bg-theme-hover disabled:opacity-50"
           >
             Continue
+            <HugeiconsIcon icon={ArrowRight02Icon} className="size-4" strokeWidth={2} />
           </Button>
         </DialogFooter>
       </DialogContent>

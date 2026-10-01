@@ -30,7 +30,7 @@ export function TemplateTableRow({
   return (
     <TableRow
       onClick={() => onRowClick(template)}
-      className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50/50 dark:hover:bg-neutral-900/50"
+      className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
     >
       {onSelectedChange && (
         <BulkSelectRowCell checked={isSelected} onCheckedChange={onSelectedChange} />

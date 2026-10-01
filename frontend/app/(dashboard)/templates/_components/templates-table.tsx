@@ -59,7 +59,7 @@ export function TemplatesTable({
 
   return (
     <div className="px-6 py-4">
-      <div className="border border-slate-200 dark:border-neutral-800 rounded-md bg-white dark:bg-neutral-950 shadow-none overflow-hidden">
+      <div className="overflow-hidden rounded-md border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-900">
         <BulkSelectionBar
           selectedCount={selection.selectedCount}
           label="template"

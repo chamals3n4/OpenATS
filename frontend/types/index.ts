@@ -453,13 +453,21 @@ export type PublicOfferView = {
 export type AnalyticsReport = {
   summary: {
     totalCandidates: number;
-    totalCandidatesDeltaPct: number;
+    /** Applications received in the period. */
+    newCandidates: number;
+    /** Change against the previous period, null when there was nothing to compare with. */
+    totalCandidatesDeltaPct: number | null;
     openPositions: number;
     openPositionsDelta: number;
-    avgTimeToHireDays: number;
-    avgTimeToHireDeltaDays: number;
-    offerAcceptanceRate: number;
-    offerAcceptanceRateDeltaPct: number;
+    /** Null when no offer was accepted in the period. */
+    avgTimeToHireDays: number | null;
+    /** Days faster than the previous period (negative is slower), null without both periods. */
+    avgTimeToHireDeltaDays: number | null;
+    /** Offers sent in the period. */
+    offersSent: number;
+    /** Null when no offer was sent in the period. */
+    offerAcceptanceRate: number | null;
+    offerAcceptanceRateDeltaPct: number | null;
   };
   pipelineReport: {
     stage: string;
@@ -484,6 +492,42 @@ export type AnalyticsReport = {
     sent: number;
     accepted: number;
   }[];
+};
+
+/** What needs a hiring manager's attention right now. Managers only. */
+export type AttentionReport = {
+  newApplicants: { last24h: number };
+  offersAwaitingAnswer: {
+    count: number;
+    items: {
+      offerId: number;
+      candidateId: number;
+      candidateName: string;
+      jobTitle: string;
+      sentAt: string;
+    }[];
+  };
+  upcomingInterviews: {
+    count: number;
+    items: {
+      interviewId: number;
+      candidateId: number;
+      candidateName: string;
+      jobTitle: string;
+      startsAt: string;
+    }[];
+  };
+  stalledCandidates: {
+    count: number;
+    afterDays: number;
+    items: {
+      candidateId: number;
+      candidateName: string;
+      jobTitle: string;
+      stageName: string;
+      days: number;
+    }[];
+  };
 };
 
 export type AnalyticsExportPayload = {

@@ -13,13 +13,21 @@ type OfferTrendRow = { month: string; sent: number; accepted: number };
 export type AnalyticsReport = {
   summary: {
     totalCandidates: number;
-    totalCandidatesDeltaPct: number;
+    /** Applications received in the period. */
+    newCandidates: number;
+    /** Change against the previous period, or null when there was nothing to compare with. */
+    totalCandidatesDeltaPct: number | null;
     openPositions: number;
     openPositionsDelta: number;
-    avgTimeToHireDays: number;
-    avgTimeToHireDeltaDays: number;
-    offerAcceptanceRate: number;
-    offerAcceptanceRateDeltaPct: number;
+    /** Null when no offer was accepted in the period. */
+    avgTimeToHireDays: number | null;
+    /** Days faster than the previous period (negative is slower), or null without both periods. */
+    avgTimeToHireDeltaDays: number | null;
+    /** Offers sent in the period, the base of the acceptance rate. */
+    offersSent: number;
+    /** Null when no offer was sent in the period. */
+    offerAcceptanceRate: number | null;
+    offerAcceptanceRateDeltaPct: number | null;
   };
   pipelineReport: PipelineRow[];
   candidateVolume: VolumeRow[];
@@ -39,9 +47,19 @@ function round(value: number, digits = 2): number {
   return Math.round(value * factor) / factor;
 }
 
-function safePct(current: number, previous: number): number {
-  if (previous <= 0) return current > 0 ? 100 : 0;
+/** Percent change from `previous` to `current`, or null when there is no earlier figure to compare. */
+export function pctChange(current: number, previous: number): number | null {
+  if (previous <= 0) return null;
   return round(((current - previous) / previous) * 100, 1);
+}
+
+/** `previous - current` in days (positive means faster), null unless both periods have data. */
+export function daysFaster(
+  current: number | null,
+  previous: number | null,
+): number | null {
+  if (current === null || previous === null) return null;
+  return round(previous - current, 1);
 }
 
 function toDayKey(input: Date): string {
@@ -86,9 +104,10 @@ function buildCsv(report: AnalyticsReport): string {
     ["=== Summary ==="],
     ["Metric", "Value"],
     ["Total Candidates", report.summary.totalCandidates],
+    ["New Applications", report.summary.newCandidates],
     ["Open Positions", report.summary.openPositions],
-    ["Avg. Time To Hire (Days)", report.summary.avgTimeToHireDays],
-    ["Offer Acceptance Rate (%)", report.summary.offerAcceptanceRate],
+    ["Avg. Time To Hire (Days)", report.summary.avgTimeToHireDays ?? "No data"],
+    ["Offer Acceptance Rate (%)", report.summary.offerAcceptanceRate ?? "No data"],
     [],
     ["=== Pipeline Report ==="],
     ["Stage", "This Period", "Previous Period"],
@@ -339,8 +358,11 @@ export const reportService = {
       openPositionRes.rows[0]?.previous_opened ?? "0",
     );
 
-    const currentHireDays = Number(hireTimeRes.rows[0]?.current_days ?? "0");
-    const previousHireDays = Number(hireTimeRes.rows[0]?.previous_days ?? "0");
+    // AVG over no rows is NULL, which is "no data", not zero days.
+    const toNullableNumber = (v: string | null | undefined) =>
+      v === null || v === undefined ? null : Number(v);
+    const currentHireDays = toNullableNumber(hireTimeRes.rows[0]?.current_days);
+    const previousHireDays = toNullableNumber(hireTimeRes.rows[0]?.previous_days);
 
     const currentSent = Number(offerRateRes.rows[0]?.current_sent ?? "0");
     const currentAccepted = Number(
@@ -352,9 +374,9 @@ export const reportService = {
     );
 
     const currentOfferRate =
-      currentSent > 0 ? (currentAccepted / currentSent) * 100 : 0;
+      currentSent > 0 ? (currentAccepted / currentSent) * 100 : null;
     const previousOfferRate =
-      previousSent > 0 ? (previousAccepted / previousSent) * 100 : 0;
+      previousSent > 0 ? (previousAccepted / previousSent) * 100 : null;
 
     const pipelineReport: PipelineRow[] = pipelineRes.rows.map((row) => ({
       stage: row.stage,
@@ -438,16 +460,20 @@ export const reportService = {
     const report: AnalyticsReport = {
       summary: {
         totalCandidates,
-        totalCandidatesDeltaPct: safePct(currentCandidates, previousCandidates),
+        newCandidates: currentCandidates,
+        totalCandidatesDeltaPct: pctChange(currentCandidates, previousCandidates),
         openPositions,
         openPositionsDelta: currentOpened - previousOpened,
-        avgTimeToHireDays: round(currentHireDays, 1),
-        avgTimeToHireDeltaDays: round(previousHireDays - currentHireDays, 1),
-        offerAcceptanceRate: round(currentOfferRate, 1),
-        offerAcceptanceRateDeltaPct: round(
-          currentOfferRate - previousOfferRate,
-          1,
-        ),
+        avgTimeToHireDays:
+          currentHireDays === null ? null : round(currentHireDays, 1),
+        avgTimeToHireDeltaDays: daysFaster(currentHireDays, previousHireDays),
+        offersSent: currentSent,
+        offerAcceptanceRate:
+          currentOfferRate === null ? null : round(currentOfferRate, 1),
+        offerAcceptanceRateDeltaPct:
+          currentOfferRate === null || previousOfferRate === null
+            ? null
+            : round(currentOfferRate - previousOfferRate, 1),
       },
       pipelineReport,
       candidateVolume,

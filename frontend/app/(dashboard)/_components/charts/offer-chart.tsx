@@ -8,10 +8,11 @@ import {
   ChartLegendContent,
 } from "@/components/ui/chart";
 import type { ChartConfig } from "@/components/ui/chart";
+import { ChartEmpty } from "./chart-empty";
 
-const offerConfig = {
+const config = {
   sent: { label: "Sent", color: "var(--theme-color)" },
-  accepted: { label: "Accepted", color: "#22c55e" },
+  accepted: { label: "Accepted", color: "var(--color-green-600)" },
 } satisfies ChartConfig;
 
 export function OfferChart({
@@ -19,39 +20,18 @@ export function OfferChart({
 }: {
   data: { month: string; sent: number; accepted: number }[];
 }) {
-  if (!data.length)
-    return (
-      <p className="text-sm text-slate-400 p-8 text-center">
-        No offer data yet.
-      </p>
-    );
+  if (!data.length || data.every((d) => d.sent === 0 && d.accepted === 0)) {
+    return <ChartEmpty message="No offers have been sent in the last 5 months." />;
+  }
   return (
-    <ChartContainer config={offerConfig} className="h-52 w-full">
+    <ChartContainer config={config} className="h-56 w-full">
       <BarChart data={data} barGap={3} barCategoryGap="35%">
-        <CartesianGrid
-          vertical={false}
-          stroke="currentColor"
-          className="text-slate-100 dark:text-neutral-800"
-        />
-        <XAxis
-          dataKey="month"
-          tick={{ fontSize: 10, fill: "#94a3b8" }}
-          tickLine={false}
-          axisLine={false}
-        />
-        <YAxis
-          tick={{ fontSize: 10, fill: "#94a3b8" }}
-          tickLine={false}
-          axisLine={false}
-          width={26}
-        />
+        <CartesianGrid vertical={false} stroke="currentColor" className="text-slate-200 dark:text-neutral-700" />
+        <XAxis dataKey="month" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+        <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} width={28} allowDecimals={false} />
         <ChartTooltip content={<ChartTooltipContent />} />
         <Bar dataKey="sent" fill="var(--color-sent)" radius={[3, 3, 0, 0]} />
-        <Bar
-          dataKey="accepted"
-          fill="var(--color-accepted)"
-          radius={[3, 3, 0, 0]}
-        />
+        <Bar dataKey="accepted" fill="var(--color-accepted)" radius={[3, 3, 0, 0]} />
         <ChartLegend content={<ChartLegendContent />} />
       </BarChart>
     </ChartContainer>

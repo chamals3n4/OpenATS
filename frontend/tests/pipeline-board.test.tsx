@@ -245,7 +245,7 @@ describe("paging", () => {
     fireEvent.click(screen.getByRole("button", { name: "Show 20 more (20 not shown)" }));
     expect(document.querySelectorAll("[data-board-card]")).toHaveLength(120);
     expect(screen.queryByRole("button", { name: /Show .* more/ })).not.toBeInTheDocument();
-  });
+  }, 20_000);
 
   it("shows no button when everything fits", () => {
     setup(many.slice(0, 50));

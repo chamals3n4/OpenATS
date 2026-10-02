@@ -1,339 +1,145 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import {
-  Download05Icon,
-  Csv01Icon,
-  DocumentCodeIcon,
-} from "@hugeicons/core-free-icons";
-import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from "@/components/ui/dialog";
+import { useEffect, useMemo, useState } from "react";
+import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { useDepartments } from "@/hooks/queries/use-company";
 import {
   useAnalyticsReport,
+  useAttentionReport,
   useExportAnalyticsReport,
 } from "@/hooks/queries/use-reports";
-import { useDepartments } from "@/hooks/queries/use-company";
 import { useIsManager } from "@/hooks/use-role";
-
-import { Button } from "@/components/ui/button";
-import { Spinner } from "@/components/ui/spinner";
-import {
-  PipelineChart,
-  VolumeChart,
-  DeptChart,
-  OfferChart,
-} from "./_components/charts";
-
-function ChartCard({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 overflow-hidden">
-      <div className="px-4 pt-4 pb-1">
-        <p className="text-sm font-semibold text-slate-700 dark:text-neutral-200">
-          {title}
-        </p>
-        <p className="text-xs text-slate-400 dark:text-neutral-500 mt-0.5">
-          {subtitle}
-        </p>
-      </div>
-      <div className="px-3 pb-3">{children}</div>
-    </div>
-  );
-}
-
-const PERIOD_LABELS: Record<string, string> = {
-  "7d": "Last 7 Days",
-  "30d": "Last 30 Days",
-  "90d": "Last 90 Days",
-};
+import { DeptChart, OfferChart, PipelineChart, VolumeChart } from "./_components/charts";
+import { AttentionPanel } from "./_components/overview/attention-panel";
+import { Card, cardCls } from "./_components/overview/card";
+import { ExportDialog, type ExportFormat } from "./_components/overview/export-dialog";
+import { KpiCards } from "./_components/overview/kpi-cards";
+import { OverviewHeader } from "./_components/overview/overview-header";
+import { buildKpis, periodOf, type Period } from "./lib/overview-utils";
 
 export function OverviewClient() {
   const isManager = useIsManager();
-  const [period, setPeriod] = useState<"7d" | "30d" | "90d">("7d");
+  const [period, setPeriod] = useState<Period>("7d");
   const [dept, setDept] = useState("all");
-  const [exportDialogOpen, setExportDialogOpen] = useState(false);
-  const [exportFormat, setExportFormat] = useState<"csv" | "json">("csv");
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exportFormat, setExportFormat] = useState<ExportFormat>("csv");
 
-  const selectedDepartmentId = dept === "all" ? undefined : Number(dept);
-
+  const departmentId = dept === "all" ? undefined : Number(dept);
   const { data: deptRes } = useDepartments();
-  const departments = deptRes?.data ?? [];
+  const departments = useMemo(() => deptRes?.data ?? [], [deptRes]);
 
-  const { data: analyticsRes } = useAnalyticsReport(
-    period,
-    selectedDepartmentId,
-  );
+  const analytics = useAnalyticsReport(period, departmentId);
+  const attention = useAttentionReport(departmentId, { enabled: isManager });
   const exportReport = useExportAnalyticsReport();
-  const report = analyticsRes?.data;
+  const report = analytics.data?.data;
 
-  const pipelineData = report?.pipelineReport ?? [];
-  const volumeData = report?.candidateVolume ?? [];
-  const deptData = report?.timeToHireByDepartment ?? [];
-  const offerData = report?.offerTrends ?? [];
+  // The clock for "Today, 2:30 PM" and "3 days ago", refreshed each minute.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
-  const DEPT_LABELS: Record<string, string> = useMemo(() => {
-    const labels: Record<string, string> = { all: "All Departments" };
-    departments.forEach((d) => {
-      labels[String(d.id)] = d.name;
-    });
-    return labels;
-  }, [departments]);
-
-  const STATS = useMemo(
-    () => [
-      {
-        label: "Total Candidates",
-        value: String(report?.summary.totalCandidates ?? 0),
-        delta: `${(report?.summary.totalCandidatesDeltaPct ?? 0) >= 0 ? "+" : ""}${(report?.summary.totalCandidatesDeltaPct ?? 0).toFixed(1)}%`,
-        up: (report?.summary.totalCandidatesDeltaPct ?? 0) >= 0,
-        managerOnly: false,
-      },
-      {
-        label: "Open Positions",
-        value: String(report?.summary.openPositions ?? 0),
-        delta: `${(report?.summary.openPositionsDelta ?? 0) >= 0 ? "+" : ""}${report?.summary.openPositionsDelta ?? 0}`,
-        up: (report?.summary.openPositionsDelta ?? 0) >= 0,
-        managerOnly: false,
-      },
-      {
-        label: "Avg. Time To Hire",
-        value: String(report?.summary.avgTimeToHireDays ?? 0),
-        delta: `${(report?.summary.avgTimeToHireDeltaDays ?? 0) >= 0 ? "-" : "+"}${Math.abs(report?.summary.avgTimeToHireDeltaDays ?? 0).toFixed(1)} days`,
-        up: (report?.summary.avgTimeToHireDeltaDays ?? 0) >= 0,
-        managerOnly: false,
-      },
-      {
-        label: "Offer Acceptance Rate",
-        value: `${(report?.summary.offerAcceptanceRate ?? 0).toFixed(1)}%`,
-        delta: `${(report?.summary.offerAcceptanceRateDeltaPct ?? 0) >= 0 ? "+" : ""}${(report?.summary.offerAcceptanceRateDeltaPct ?? 0).toFixed(1)}%`,
-        up: (report?.summary.offerAcceptanceRateDeltaPct ?? 0) >= 0,
-        managerOnly: true,
-      },
-    ].filter((s) => isManager || !s.managerOnly),
+  const kpis = useMemo(
+    () => (report ? buildKpis(report.summary).filter((k) => isManager || !k.managerOnly) : []),
     [report, isManager],
   );
 
-  const handleExport = async () => {
-    const result = await exportReport.mutateAsync({
-      period,
-      departmentId: selectedDepartmentId,
-      format: exportFormat,
-    });
+  const { label: periodLabel, days } = periodOf(period);
+  const departmentName = departments.find((d) => String(d.id) === dept)?.name ?? "All departments";
 
-    const payload = result.data;
-    const blob = new Blob([payload.content], { type: payload.mimeType });
-    const url = URL.createObjectURL(blob);
-    const a = Object.assign(document.createElement("a"), {
-      href: url,
-      download: payload.fileName,
-    });
-    a.click();
-    URL.revokeObjectURL(url);
-    setExportDialogOpen(false);
+  const handleExport = async () => {
+    try {
+      const result = await exportReport.mutateAsync({ period, departmentId, format: exportFormat });
+      const { content, mimeType, fileName } = result.data;
+      const url = URL.createObjectURL(new Blob([content], { type: mimeType }));
+      Object.assign(document.createElement("a"), { href: url, download: fileName }).click();
+      URL.revokeObjectURL(url);
+      setExportOpen(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not export the report");
+    }
   };
 
   return (
-    <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
-      {/* Header */}
-      <div className="px-6 pt-4 pb-3 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-medium text-slate-900 dark:text-neutral-100 leading-none">
-          How Your Hiring Is Going
-        </h1>
+    <div className="flex flex-1 flex-col bg-slate-50/70 dark:bg-neutral-950">
+      <div className="flex flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8">
+        <OverviewHeader
+          period={period}
+          onPeriodChange={setPeriod}
+          departmentId={dept}
+          onDepartmentChange={setDept}
+          departments={departments}
+          canExport={isManager}
+          onExport={() => setExportOpen(true)}
+        />
 
-        <div className="flex items-center gap-2">
-          <Select
-            value={period}
-            onValueChange={(value) => setPeriod(value ?? "7d")}
-          >
-            <SelectTrigger className="w-44 h-8! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-800 dark:text-neutral-200 text-sm focus:ring-0 px-3">
-              <SelectValue>{PERIOD_LABELS[period]}</SelectValue>
-            </SelectTrigger>
-            <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-              <SelectItem value="7d">Last 7 Days</SelectItem>
-              <SelectItem value="30d">Last 30 Days</SelectItem>
-              <SelectItem value="90d">Last 90 Days</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={dept} onValueChange={(value) => setDept(value ?? "all")}>
-            <SelectTrigger className="w-44 h-8! cursor-pointer bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 shadow-none rounded-md text-slate-800 dark:text-neutral-200 text-sm focus:ring-0 px-3">
-              <SelectValue>{DEPT_LABELS[dept]}</SelectValue>
-            </SelectTrigger>
-            <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-              <SelectItem value="all">All Departments</SelectItem>
-              {departments.map((d) => (
-                <SelectItem key={d.id} value={String(d.id)}>
-                  {d.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          {isManager && (
-            <Button
-              onClick={() => setExportDialogOpen(true)}
-              className="bg-theme hover:bg-theme-hover text-white rounded-md h-8 px-3 flex items-center gap-1.5 border border-theme shadow-none text-sm font-semibold cursor-pointer"
-            >
-              <HugeiconsIcon icon={Download05Icon} className="size-3.5" />
-              Export Report
-            </Button>
-          )}
-        </div>
-      </div>
-
-      {/* Content */}
-      <div className="px-6 py-4 flex flex-col gap-4">
-        {/* Stat cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-          {STATS.map((s) => (
-            <div
-              key={s.label}
-              className="border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 p-4 flex flex-col gap-2"
-            >
-              <p className="text-xs text-slate-500 dark:text-neutral-400 font-medium">
-                {s.label}
-              </p>
-              <div className="flex items-end justify-between gap-2">
-                <p className="text-2xl font-medium text-slate-800 dark:text-neutral-100 leading-none">
-                  {s.value}
-                </p>
-                <span
-                  className={`text-xs font-semibold px-1.5 py-0.5 rounded-full mb-0.5 ${s.up ? "text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-950/30" : "text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30"}`}
-                >
-                  {s.delta}
-                </span>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Charts row 1 */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-          <ChartCard
-            title="Pipeline Report"
-            subtitle="Candidates By Stage (Current Vs. Previous Period)"
-          >
-            <PipelineChart data={pipelineData} />
-          </ChartCard>
-
-          <ChartCard
-            title="Candidate Volume"
-            subtitle="Applications And Hires Over Time"
-          >
-            <VolumeChart data={volumeData} />
-          </ChartCard>
-        </div>
-
-        {/* Charts row 2 */}
-        <div className={`grid grid-cols-1 gap-3 ${isManager ? "lg:grid-cols-2" : ""}`}>
-          <ChartCard title="Time To Hire" subtitle="Average days by department">
-            <DeptChart data={deptData} />
-          </ChartCard>
-
-          {isManager && (
-            <ChartCard
-              title="Offer Trends"
-              subtitle="Offers sent vs. accepted (last 5 months)"
-            >
-              <OfferChart data={offerData} />
-            </ChartCard>
-          )}
-        </div>
-      </div>
-
-      {/* Export Dialog */}
-      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
-        <DialogContent className="sm:max-w-lg" showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle className="text-slate-900 dark:text-neutral-100 text-base font-semibold">
-              Export Report
-            </DialogTitle>
-            <p className="text-xs text-slate-400 dark:text-neutral-500">
-              Choose a format to download the analytics report.
+        {analytics.isError && !report ? (
+          <div role="alert" className={`${cardCls} flex flex-wrap items-center justify-between gap-3 px-5 py-4`}>
+            <p className="text-sm font-medium text-red-700 dark:text-red-400">
+              The overview could not be loaded.
             </p>
-          </DialogHeader>
-
-          <div className="flex gap-3">
-            {(["csv", "json"] as const).map((fmt) => (
-              <button
-                key={fmt}
-                onClick={() => setExportFormat(fmt)}
-                className={`flex flex-1 items-center gap-3 rounded-xl border px-4 py-3.5 text-left transition-colors cursor-pointer
-                  ${
-                    exportFormat === fmt
-                      ? "border-theme bg-theme/5 dark:bg-theme/10"
-                      : "border-slate-200 dark:border-neutral-700 hover:border-slate-300 dark:hover:border-neutral-600"
-                  }`}
-              >
-                <span
-                  className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 transition-colors
-                    ${exportFormat === fmt ? "border-theme" : "border-slate-300 dark:border-neutral-600"}`}
-                >
-                  {exportFormat === fmt && (
-                    <span className="h-2 w-2 rounded-full bg-theme" />
-                  )}
-                </span>
-                <HugeiconsIcon
-                  icon={fmt === "json" ? DocumentCodeIcon : Csv01Icon}
-                  className={`size-4 shrink-0 ${exportFormat === fmt ? "text-theme" : "text-slate-400 dark:text-neutral-500"}`}
-                />
-                <div>
-                  <p
-                    className={`text-sm font-semibold leading-none mb-1 ${exportFormat === fmt ? "text-slate-800 dark:text-neutral-100" : "text-slate-600 dark:text-neutral-300"}`}
-                  >
-                    {fmt.toUpperCase()}
-                  </p>
-                  <p className="text-xs text-slate-400 dark:text-neutral-500">
-                    {fmt === "csv" ? "Rows & columns" : "Developer-friendly"}
-                  </p>
-                </div>
-              </button>
-            ))}
-          </div>
-
-          <DialogFooter className="gap-2">
-            <DialogClose
-              render={
-                <Button
-                  variant="ghost"
-                  className="h-9 flex-1 cursor-pointer rounded-md border-2 border-slate-300 bg-white text-sm font-medium text-slate-600 shadow-none hover:bg-slate-50 dark:border-neutral-600 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
-                />
-              }
-            >
-              Cancel
-            </DialogClose>
-            <Button
-              onClick={handleExport}
-              disabled={exportReport.isPending}
-              className="h-9 flex-1 cursor-pointer gap-2 rounded-md border border-theme bg-theme text-sm font-semibold text-white shadow-none hover:bg-theme-hover"
-            >
-              {exportReport.isPending && <Spinner className="size-3.5" />}
-              {exportReport.isPending ? "Exporting" : "Export"}
+            <Button variant="cancel" className="h-8 px-3 text-sm" onClick={() => analytics.refetch()}>
+              Try again
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </div>
+        ) : (
+          <>
+            {isManager && (
+              <AttentionPanel
+                report={attention.data?.data}
+                isLoading={attention.isPending}
+                isError={attention.isError}
+                onRetry={() => attention.refetch()}
+                now={now}
+              />
+            )}
+
+            <KpiCards kpis={kpis} comparedWith={`the previous ${days} days`} isLoading={analytics.isPending} />
+
+            {/* Dim the charts while a new period loads, so old numbers are not mistaken for new. */}
+            <div
+              aria-busy={analytics.isPlaceholderData}
+              className={`grid grid-cols-1 gap-4 lg:grid-cols-2 ${analytics.isPlaceholderData ? "opacity-60" : ""}`}
+            >
+              <Card
+                title="Applications and hires"
+                subtitle={`Applications received and offers accepted, ${periodLabel.toLowerCase()}`}
+              >
+                <VolumeChart data={report?.candidateVolume ?? []} />
+              </Card>
+
+              <Card
+                title="Movement between stages"
+                subtitle={`Candidates who entered each stage, compared with the previous ${days} days`}
+              >
+                <PipelineChart data={report?.pipelineReport ?? []} />
+              </Card>
+
+              <Card title="Time to hire by department" subtitle="Average days from applying to an accepted offer, all time">
+                <DeptChart data={report?.timeToHireByDepartment ?? []} />
+              </Card>
+
+              {isManager && (
+                <Card title="Offers" subtitle="Offers sent and accepted over the last 5 months">
+                  <OfferChart data={report?.offerTrends ?? []} />
+                </Card>
+              )}
+            </div>
+          </>
+        )}
+      </div>
+
+      <ExportDialog
+        open={exportOpen}
+        format={exportFormat}
+        onFormatChange={setExportFormat}
+        scope={`${periodLabel}, ${departmentName}`}
+        isPending={exportReport.isPending}
+        onClose={() => setExportOpen(false)}
+        onExport={handleExport}
+      />
     </div>
   );
 }

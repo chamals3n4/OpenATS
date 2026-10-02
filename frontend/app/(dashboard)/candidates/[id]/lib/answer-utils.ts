@@ -73,3 +73,20 @@ export function groupAnswers(
 export function isAnswered(item: AnswerItem) {
   return Boolean(item.text) || item.options.length > 0;
 }
+
+/**
+ * The address to open when a written answer is just a web link, else null. Only http and
+ * https count, so an answer such as `javascript:...` is never turned into a clickable link.
+ * A bare `www.` address gets https added.
+ */
+export function asWebUrl(text: string | null | undefined): string | null {
+  const value = text?.trim();
+  if (!value || /\s/.test(value)) return null;
+  const candidate = /^www\./i.test(value) ? `https://${value}` : value;
+  try {
+    const url = new URL(candidate);
+    return url.protocol === "http:" || url.protocol === "https:" ? url.href : null;
+  } catch {
+    return null;
+  }
+}

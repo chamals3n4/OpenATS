@@ -76,6 +76,7 @@ export const candidateStatus = pgEnum("candidate_status", [
 export const questionType = pgEnum("question_type", [
   "short_answer",
   "long_answer",
+  "url",
   "checkbox",
   "radio",
   "multiple_choice",

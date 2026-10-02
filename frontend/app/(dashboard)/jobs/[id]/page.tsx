@@ -12,6 +12,7 @@ import { JobTabs } from "./_components/JobTabs";
 import { DiscussionsPanel } from "./_components/DiscussionsPanel";
 import { AddStageDialog } from "./_components/dialogs/AddStageDialog";
 
+import { moveItem, positionChanges } from "./lib/question-utils";
 import {
   useJob,
   useCustomQuestions,
@@ -207,12 +208,6 @@ export default function JobDetailsPage() {
   } | null>(null);
 
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
-  const [isAddingMode, setIsAddingMode] = useState(false);
-  const [newQuestionType, setNewQuestionType] = useState<
-    "short_answer" | "long_answer" | "checkbox" | "radio"
-  >("short_answer");
-  const [newQuestionText, setNewQuestionText] = useState("");
-  const [newQuestionRequired, setNewQuestionRequired] = useState(false);
 
   // Seed the editable copy whenever the query returns a new list.
   const [seededQuestions, setSeededQuestions] = useState<
@@ -259,37 +254,6 @@ export default function JobDetailsPage() {
     );
   };
 
-  const [editingQuestionId, setEditingQuestionId] = useState<number | null>(
-    null,
-  );
-  const [editQuestionText, setEditQuestionText] = useState("");
-  const [editQuestionType, setEditQuestionType] = useState<
-    "short_answer" | "long_answer" | "checkbox" | "radio"
-  >("short_answer");
-  const [editQuestionRequired, setEditQuestionRequired] = useState(false);
-
-  const openEditQuestion = (q: CustomQuestion) => {
-    setEditingQuestionId(q.id);
-    setEditQuestionText(q.title);
-    setEditQuestionType(q.questionType);
-    setEditQuestionRequired(q.isRequired);
-  };
-
-  const handleSaveQuestion = (questionId: number) => {
-    if (!editQuestionText.trim()) return;
-    updateQuestionMutation.mutate(
-      {
-        questionId,
-        data: {
-          title: editQuestionText.trim(),
-          questionType: editQuestionType,
-          isRequired: editQuestionRequired,
-        },
-      },
-      { onSuccess: () => setEditingQuestionId(null) },
-    );
-  };
-
   const [stages, setStages] = useState<(PipelineStage & { color: string })[]>(
     [],
   );
@@ -311,14 +275,10 @@ export default function JobDetailsPage() {
   const [addStageOpen, setAddStageOpen] = useState(false);
   const [newStageName, setNewStageName] = useState("");
   const [newStageType, setNewStageType] = useState("screening");
-  const [isAssessmentDialogOpen, setIsAssessmentDialogOpen] = useState(false);
-  const [detachTarget, setDetachTarget] = useState<number | null>(null);
   const [stageDeleteTarget, setStageDeleteTarget] = useState<{
     id: number;
     name: string;
   } | null>(null);
-  const [assessmentSelectId, setAssessmentSelectId] = useState("");
-  const [triggerStageSelectId, setTriggerStageSelectId] = useState("");
 
   const handleAddStage = () => {
     if (!newStageName.trim()) return;
@@ -360,22 +320,14 @@ export default function JobDetailsPage() {
 
   const questionReorderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const handleQuestionReorder = (from: number, to: number) => {
-    const reordered = [...questions];
-    const [moved] = reordered.splice(from, 1);
-    reordered.splice(to, 0, moved);
+    const reordered = moveItem(questions, from, to);
     setQuestions(reordered);
 
     if (questionReorderTimeoutRef.current)
       clearTimeout(questionReorderTimeoutRef.current);
     questionReorderTimeoutRef.current = setTimeout(() => {
-      reordered.forEach((question, index) => {
-        const newPosition = index + 1;
-        if (question.position !== newPosition) {
-          updateQuestionMutation.mutate({
-            questionId: question.id,
-            data: { position: newPosition },
-          });
-        }
+      positionChanges(reordered).forEach(({ id, position }) => {
+        updateQuestionMutation.mutate({ questionId: id, data: { position } });
       });
     }, 500);
   };
@@ -445,38 +397,14 @@ export default function JobDetailsPage() {
                 setStageDeleteTarget={setStageDeleteTarget}
                 handleStageReorder={handleStageReorder}
                 questions={questions}
-                setIsAddingMode={setIsAddingMode}
-                isAddingMode={isAddingMode}
-                editingQuestionId={editingQuestionId}
-                setEditingQuestionId={setEditingQuestionId}
-                editQuestionType={editQuestionType}
-                setEditQuestionType={setEditQuestionType}
-                editQuestionText={editQuestionText}
-                setEditQuestionText={setEditQuestionText}
-                editQuestionRequired={editQuestionRequired}
-                setEditQuestionRequired={setEditQuestionRequired}
-                handleSaveQuestion={handleSaveQuestion}
-                updateQuestionMutationPending={updateQuestionMutation.isPending}
-                openEditQuestion={openEditQuestion}
                 deleteQuestionMutation={deleteQuestionMutation}
+                updateQuestionMutation={updateQuestionMutation}
                 handleQuestionReorder={handleQuestionReorder}
-                newQuestionType={newQuestionType}
-                setNewQuestionType={setNewQuestionType}
-                newQuestionText={newQuestionText}
-                setNewQuestionText={setNewQuestionText}
-                newQuestionRequired={newQuestionRequired}
-                setNewQuestionRequired={setNewQuestionRequired}
                 createQuestionMutation={createQuestionMutation}
-                isAssessmentDialogOpen={isAssessmentDialogOpen}
-                setIsAssessmentDialogOpen={setIsAssessmentDialogOpen}
                 attachedAssessments={attachedAssessments}
                 allAssessments={allAssessments}
-                setDetachTarget={setDetachTarget}
                 attachAssessmentMutation={attachAssessmentMutation}
-                assessmentSelectId={assessmentSelectId}
-                setAssessmentSelectId={setAssessmentSelectId}
-                triggerStageSelectId={triggerStageSelectId}
-                setTriggerStageSelectId={setTriggerStageSelectId}
+                detachAssessmentMutation={detachAssessmentMutation}
               />
             </Tabs>
 
@@ -533,23 +461,6 @@ export default function JobDetailsPage() {
           deleteStageMutation.mutate(stageDeleteTarget.id, {
             onSuccess: () => setStageDeleteTarget(null),
           });
-        }}
-      />
-
-      <ConfirmDeleteDialog
-        open={detachTarget !== null}
-        title="Remove this assessment?"
-        description="Candidates moved to this stage will no longer receive the assessment automatically."
-        confirmLabel="Remove"
-        pendingLabel="Removing"
-        isPending={detachAssessmentMutation.isPending}
-        onClose={() => setDetachTarget(null)}
-        onConfirm={() => {
-          if (detachTarget !== null) {
-            detachAssessmentMutation.mutate(detachTarget, {
-              onSuccess: () => setDetachTarget(null),
-            });
-          }
         }}
       />
 

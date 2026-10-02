@@ -57,7 +57,7 @@ export type CustomQuestion = {
   id: number;
   jobId: number;
   title: string;
-  questionType: "short_answer" | "long_answer" | "checkbox" | "radio";
+  questionType: "short_answer" | "long_answer" | "url" | "checkbox" | "radio";
   isRequired: boolean;
   position: number;
   createdAt: string;
@@ -114,6 +114,7 @@ export type AssessmentOption = {
 export type QuestionType =
   | "short_answer"
   | "long_answer"
+  | "url"
   | "checkbox"
   | "radio"
   | "multiple_choice";

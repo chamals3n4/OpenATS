@@ -360,6 +360,18 @@ export function JobApplicationForm({
                         />
                       )}
 
+                      {q.questionType === "url" && (
+                        <Input
+                          type="url"
+                          inputMode="url"
+                          placeholder="https://"
+                          required={q.isRequired}
+                          value={answers[q.id]?.answerText ?? ""}
+                          onChange={(e) => setTextAnswer(q.id, e.target.value)}
+                          className={fieldInput}
+                        />
+                      )}
+
                       {q.questionType === "long_answer" && (
                         <Textarea
                           required={q.isRequired}

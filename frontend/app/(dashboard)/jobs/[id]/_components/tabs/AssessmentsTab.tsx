@@ -1,9 +1,17 @@
 "use client";
 
+import { useState } from "react";
+import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, Task01Icon } from "@hugeicons/core-free-icons";
+import { toast } from "sonner";
+import { FormField } from "@/components/form/form-field";
+import { RowDeleteButton } from "@/components/table/row-actions";
 import { Button } from "@/components/ui/button";
-import { Label } from "@/components/ui/label";
+import {
+  ConfirmDeleteDialog,
+  ConfirmDeleteName,
+} from "@/components/ui/confirm-delete-dialog";
 import { Spinner } from "@/components/ui/spinner";
 import {
   Select,
@@ -19,271 +27,321 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import type { Assessment, JobAssessment, PipelineStage } from "@/types";
-import type { useAttachAssessment } from "@/hooks/queries/use-assessments";
+import type {
+  useAttachAssessment,
+  useDetachAssessment,
+} from "@/hooks/queries/use-assessments";
 import { useIsManager } from "@/hooks/use-role";
-
-const assessmentAccents = [
-  {
-    surface: "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
-  },
-  {
-    surface: "bg-blue-50 text-blue-600 dark:bg-blue-950/30 dark:text-blue-400",
-  },
-  {
-    surface: "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
-  },
-  {
-    surface: "bg-violet-50 text-violet-600 dark:bg-violet-950/30 dark:text-violet-400",
-  },
-] as const;
+import {
+  describeAssessment,
+  isAlreadyAttached,
+  sortByStageOrder,
+} from "../../lib/assessment-attach-utils";
 
 interface AssessmentsTabProps {
-  isAssessmentDialogOpen: boolean;
-  setIsAssessmentDialogOpen: (open: boolean) => void;
   attachedAssessments: JobAssessment[];
   allAssessments: Assessment[];
   stages: (PipelineStage & { color: string })[];
-  setDetachTarget: (id: number | null) => void;
   attachAssessmentMutation: ReturnType<typeof useAttachAssessment>;
-  assessmentSelectId: string;
-  setAssessmentSelectId: (id: string) => void;
-  triggerStageSelectId: string;
-  setTriggerStageSelectId: (id: string) => void;
+  detachAssessmentMutation: ReturnType<typeof useDetachAssessment>;
+}
+
+const selectTriggerCls =
+  "h-10! w-full rounded-md border border-slate-300 bg-gray-100 px-3! py-0! text-sm text-slate-900 shadow-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100";
+
+function AttachForm({
+  attached,
+  allAssessments,
+  stages,
+  isPending,
+  onSubmit,
+  onCancel,
+}: {
+  attached: JobAssessment[];
+  allAssessments: Assessment[];
+  stages: (PipelineStage & { color: string })[];
+  isPending: boolean;
+  onSubmit: (assessmentId: number, stageId: number) => void;
+  onCancel: () => void;
+}) {
+  const [assessmentId, setAssessmentId] = useState("");
+  const [stageId, setStageId] = useState("");
+  const [showErrors, setShowErrors] = useState(false);
+
+  const duplicate =
+    assessmentId && stageId
+      ? isAlreadyAttached(attached, Number(assessmentId), Number(stageId))
+      : false;
+
+  const assessmentError = !assessmentId ? "Choose an assessment." : null;
+  const stageError = !stageId
+    ? "Choose the stage that sends it."
+    : duplicate
+      ? "This assessment is already sent at this stage."
+      : null;
+
+  const assessmentItems = allAssessments.map((a) => ({
+    value: String(a.id),
+    label: a.title,
+  }));
+  const stageItems = stages.map((s) => ({ value: String(s.id), label: s.name }));
+  const picked = allAssessments.find((a) => String(a.id) === assessmentId);
+
+  return (
+    <form
+      noValidate
+      onSubmit={(e) => {
+        e.preventDefault();
+        setShowErrors(true);
+        if (assessmentError || stageError || isPending) return;
+        onSubmit(Number(assessmentId), Number(stageId));
+      }}
+    >
+      <DialogHeader className="px-6 pt-6">
+        <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
+          Attach assessment
+        </DialogTitle>
+        <DialogDescription className="text-sm text-slate-600 dark:text-neutral-400">
+          The candidate gets an email with the test as soon as they move into the stage you pick.
+        </DialogDescription>
+      </DialogHeader>
+
+      <div className="space-y-4 px-6 py-5">
+        <FormField
+          label="Assessment"
+          htmlFor="attach-assessment"
+          required
+          error={showErrors ? assessmentError : null}
+          hint={picked ? describeAssessment(picked) : undefined}
+        >
+          <Select
+            items={assessmentItems}
+            value={assessmentId || null}
+            onValueChange={(v) => setAssessmentId(v ?? "")}
+          >
+            <SelectTrigger id="attach-assessment" className={selectTriggerCls}>
+              <SelectValue placeholder="Choose an assessment" />
+            </SelectTrigger>
+            <SelectContent>
+              {assessmentItems.map((a) => (
+                <SelectItem key={a.value} value={a.value}>
+                  {a.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+
+        <FormField
+          label="Send when a candidate moves into"
+          htmlFor="attach-stage"
+          required
+          error={showErrors || duplicate ? stageError : null}
+        >
+          <Select
+            items={stageItems}
+            value={stageId || null}
+            onValueChange={(v) => setStageId(v ?? "")}
+          >
+            <SelectTrigger id="attach-stage" className={selectTriggerCls}>
+              <SelectValue placeholder="Choose a stage" />
+            </SelectTrigger>
+            <SelectContent>
+              {stageItems.map((s) => (
+                <SelectItem key={s.value} value={s.value}>
+                  {s.label}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </FormField>
+      </div>
+
+      <DialogFooter className="border-t border-slate-300 bg-slate-50 px-6 py-4 dark:border-neutral-700 dark:bg-neutral-950/50">
+        <Button
+          type="button"
+          variant="cancel"
+          onClick={onCancel}
+          disabled={isPending}
+          className="h-9 px-4 text-sm"
+        >
+          Cancel
+        </Button>
+        <Button
+          type="submit"
+          disabled={isPending}
+          className="h-9 gap-2 border-none bg-theme px-4 text-sm font-semibold text-white hover:bg-theme-hover"
+        >
+          {isPending && <Spinner className="size-3.5" />}
+          {isPending ? "Attaching" : "Attach assessment"}
+        </Button>
+      </DialogFooter>
+    </form>
+  );
 }
 
 export function AssessmentsTab({
-  isAssessmentDialogOpen,
-  setIsAssessmentDialogOpen,
   attachedAssessments,
   allAssessments,
   stages,
-  setDetachTarget,
   attachAssessmentMutation,
-  assessmentSelectId,
-  setAssessmentSelectId,
-  triggerStageSelectId,
-  setTriggerStageSelectId,
+  detachAssessmentMutation,
 }: AssessmentsTabProps) {
   const isManager = useIsManager();
+  const [isAttaching, setIsAttaching] = useState(false);
+  const [removeTarget, setRemoveTarget] = useState<JobAssessment | null>(null);
+
+  const rows = sortByStageOrder(attachedAssessments, stages);
+  const titleOf = (id: number) =>
+    allAssessments.find((a) => a.id === id)?.title ?? "Deleted assessment";
+
+  const handleAttach = (assessmentId: number, triggerStageId: number) =>
+    attachAssessmentMutation.mutate(
+      { assessmentId, triggerStageId },
+      {
+        onSuccess: () => {
+          setIsAttaching(false);
+          toast.success("Assessment attached");
+        },
+        onError: (error) => toast.error(error.message || "Failed to attach the assessment"),
+      },
+    );
+
+  const handleRemove = () => {
+    if (!removeTarget) return;
+    detachAssessmentMutation.mutate(removeTarget.id, {
+      onSuccess: () => {
+        setRemoveTarget(null);
+        toast.success("Assessment removed");
+      },
+      onError: (error) => toast.error(error.message || "Failed to remove the assessment"),
+    });
+  };
+
+  const attachButton = (extra = "") => (
+    <Button
+      type="button"
+      onClick={() => setIsAttaching(true)}
+      className={`h-9 shrink-0 cursor-pointer gap-2 border-none bg-theme px-4 text-sm font-semibold text-white shadow-none hover:bg-theme-hover ${extra}`}
+    >
+      <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2.5} />
+      Attach assessment
+    </Button>
+  );
+
   return (
-    <>
-      <div className="flex items-center justify-between">
+    <div className="flex flex-col gap-5">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <p className="text-[18px] font-semibold text-slate-900 dark:text-neutral-100">
-            Automated Assessments
-          </p>
-          <p className="text-[13px] text-slate-400 dark:text-neutral-500 mt-1">
-            Sent automatically when a candidate reaches the trigger stage.
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
+            Automated assessments
+          </h2>
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-neutral-400">
+            Sent to candidates by email when they reach the stage you choose.
           </p>
         </div>
-        {isManager && <Dialog
-          open={isAssessmentDialogOpen}
-          onOpenChange={(open) => {
-            setIsAssessmentDialogOpen(open);
-            if (!open) {
-              setAssessmentSelectId("");
-              setTriggerStageSelectId("");
-            }
-          }}
-        >
-          <DialogTrigger
-            render={
-              <Button className="inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border border-slate-200 bg-white px-4 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 hover:text-slate-800 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
-                <HugeiconsIcon
-                  icon={PlusSignIcon}
-                  className="size-4"
-                  strokeWidth={2.5}
-                />
-                Attach Assessment
-              </Button>
-            }
-          />
-          <DialogContent className="max-w-md gap-0 overflow-hidden rounded-xl border-slate-200 bg-white p-0 dark:border-neutral-800 dark:bg-neutral-900">
-            <DialogHeader className="px-6 py-5">
-              <DialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
-                Attach Assessment
-              </DialogTitle>
-              <DialogDescription className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
-                Auto-send when a candidate enters the selected stage.
-              </DialogDescription>
-            </DialogHeader>
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const assessmentId = Number(formData.get("assessmentId"));
-                const triggerStageId = Number(formData.get("triggerStageId"));
-                if (assessmentId && triggerStageId) {
-                  attachAssessmentMutation.mutate(
-                    { assessmentId, triggerStageId },
-                    {
-                      onSuccess: () => setIsAssessmentDialogOpen(false),
-                    },
-                  );
-                }
-              }}
-              className="px-6 py-5"
-            >
-              <div className="space-y-5">
-              <div>
-                <Label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-neutral-300">
-                  Assessment
-                </Label>
-                <Select
-                  name="assessmentId"
-                  value={assessmentSelectId}
-                  onValueChange={(value) => setAssessmentSelectId(value ?? "")}
-                  required
-                >
-                  <SelectTrigger className="h-10! w-full rounded-md border-slate-200 bg-slate-50 text-sm text-slate-700 shadow-none focus-visible:border-[var(--theme-color)] focus-visible:ring-0 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200">
-                    <SelectValue placeholder="Choose assessment…">
-                      {assessmentSelectId
-                        ? (allAssessments.find(
-                            (a) => a.id.toString() === assessmentSelectId,
-                          )?.title ?? null)
-                        : null}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {allAssessments.map((a) => (
-                      <SelectItem
-                        key={a.id}
-                        value={a.id.toString()}
-                        className="text-[13px]"
-                      >
-                        {a.title}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <Label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-neutral-300">
-                  Trigger Stage
-                </Label>
-                <Select
-                  name="triggerStageId"
-                  value={triggerStageSelectId}
-                  onValueChange={(value) =>
-                    setTriggerStageSelectId(value ?? "")
-                  }
-                  required
-                >
-                  <SelectTrigger className="h-10! w-full rounded-md border-slate-200 bg-slate-50 text-sm text-slate-700 shadow-none focus-visible:border-[var(--theme-color)] focus-visible:ring-0 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-200">
-                    <SelectValue placeholder="When candidate moves into…">
-                      {triggerStageSelectId
-                        ? (stages.find(
-                            (s) => s.id.toString() === triggerStageSelectId,
-                          )?.name ?? null)
-                        : null}
-                    </SelectValue>
-                  </SelectTrigger>
-                  <SelectContent>
-                    {stages.map((s) => (
-                      <SelectItem
-                        key={s.id}
-                        value={s.id.toString()}
-                        className="text-[13px]"
-                      >
-                        {s.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              </div>
-              <DialogFooter className="mt-6 border-t border-slate-100 pt-4 dark:border-neutral-800">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  onClick={() => setIsAssessmentDialogOpen(false)}
-                  disabled={attachAssessmentMutation.isPending}
-                  className="h-9 border-2 border-slate-300 text-slate-600 hover:bg-slate-50 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={attachAssessmentMutation.isPending}
-                  className="h-9 gap-2 rounded-md border-none bg-[var(--theme-color)] px-4 text-sm font-medium text-white shadow-none hover:bg-[var(--theme-color-hover)]"
-                >
-                  {attachAssessmentMutation.isPending && <Spinner className="size-3.5" />}
-                  {attachAssessmentMutation.isPending ? "Saving" : "Attach assessment"}
-                </Button>
-              </DialogFooter>
-            </form>
-          </DialogContent>
-        </Dialog>}
+        {isManager && rows.length > 0 && attachButton()}
       </div>
 
-      {attachedAssessments.length > 0 ? (
-        <div className="space-y-3">
-          {attachedAssessments.map((attachment) => {
-            const accent =
-              assessmentAccents[attachment.id % assessmentAccents.length];
-            const stageFound = stages.find(
-              (s) => s.id === attachment.triggerStageId,
-            );
-            const assessmentFound = allAssessments.find(
-              (a) => a.id === attachment.assessmentId,
-            );
+      {rows.length > 0 ? (
+        <ul className="space-y-3">
+          {rows.map((attachment) => {
+            const assessment = allAssessments.find((a) => a.id === attachment.assessmentId);
+            const stage = stages.find((s) => s.id === attachment.triggerStageId);
+            const meta = describeAssessment(assessment);
             return (
-              <div
+              <li
                 key={attachment.id}
-                className="flex items-center justify-between px-5 py-4 bg-white dark:bg-neutral-900 border border-[var(--theme-color)]/20 hover:border-[var(--theme-color)]/40 rounded-xl transition-colors"
+                className="flex items-center gap-4 rounded-lg border border-slate-300 bg-white px-4 py-4 dark:border-neutral-700 dark:bg-neutral-900"
               >
-                <div className="flex items-center gap-4 min-w-0">
-                  <div
-                    className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${accent.surface}`}
-                  >
-                    <HugeiconsIcon icon={Task01Icon} className="size-5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="truncate text-[14px] font-semibold text-slate-800 dark:text-neutral-200">
-                      {assessmentFound?.title ?? "Unknown Assessment"}
+                <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-neutral-800 dark:text-neutral-200">
+                  <HugeiconsIcon icon={Task01Icon} className="size-4" strokeWidth={1.75} />
+                </span>
+
+                <div className="min-w-0 flex-1">
+                  {assessment ? (
+                    <Link
+                      href={`/assessments/${assessment.id}`}
+                      className="block truncate text-[15px] font-medium text-slate-900 hover:underline dark:text-neutral-100"
+                    >
+                      {assessment.title}
+                    </Link>
+                  ) : (
+                    <p className="text-[15px] font-medium text-slate-500 dark:text-neutral-400">
+                      Deleted assessment
                     </p>
-                    <p className="text-[12px] text-slate-400 mt-0.5">
-                      Triggers on{" "}
-                      <span className="font-medium text-slate-500">
-                        {stageFound?.name ?? "Unknown Stage"}
+                  )}
+                  <p className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-slate-500 dark:text-neutral-400">
+                    <span>
+                      Sent when a candidate moves into{" "}
+                      <span className="font-medium text-slate-800 dark:text-neutral-200">
+                        {stage?.name ?? "a removed stage"}
                       </span>
-                      {assessmentFound?.timeLimit
-                        ? ` · ${assessmentFound.timeLimit} mins`
-                        : ""}
-                    </p>
-                  </div>
+                    </span>
+                    {meta && (
+                      <>
+                        <span aria-hidden>·</span>
+                        <span>{meta}</span>
+                      </>
+                    )}
+                  </p>
                 </div>
+
                 {isManager && (
-                  <button
-                    type="button"
-                    onClick={() => setDetachTarget(attachment.id)}
-                    className="ml-4 shrink-0 cursor-pointer text-sm font-medium text-red-500 transition-colors hover:text-red-600 dark:text-red-400 dark:hover:text-red-300"
-                  >
+                  <RowDeleteButton onClick={() => setRemoveTarget(attachment)}>
                     Remove
-                  </button>
+                  </RowDeleteButton>
                 )}
-              </div>
+              </li>
             );
           })}
-        </div>
+        </ul>
       ) : (
-        <div className="py-12 flex flex-col items-center justify-center text-center border border-dashed border-slate-200 dark:border-neutral-800 rounded-xl">
-          <p className="text-[13px] text-slate-400 dark:text-neutral-500">
-            No assessments attached yet.
+        <div className="rounded-lg border border-dashed border-slate-300 bg-white px-6 py-12 text-center dark:border-neutral-700 dark:bg-neutral-900">
+          <p className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
+            No assessments attached yet
           </p>
-          {isManager && (
-            <button
-              onClick={() => setIsAssessmentDialogOpen(true)}
-              className="mt-2 cursor-pointer text-[12px] font-medium text-[var(--theme-color)] hover:underline"
-            >
-              Attach one
-            </button>
-          )}
+          <p className="mx-auto mt-1 max-w-sm text-sm text-slate-500 dark:text-neutral-400">
+            Attach a test to a stage and every candidate who reaches it receives it automatically.
+          </p>
+          {isManager && attachButton("mt-4")}
         </div>
       )}
-    </>
+
+      <Dialog open={isAttaching} onOpenChange={(o) => !o && setIsAttaching(false)}>
+        <DialogContent className="max-w-[calc(100%-2rem)] gap-0 overflow-hidden rounded-xl border-slate-200 bg-white p-0 sm:max-w-[520px] dark:border-neutral-800 dark:bg-neutral-900">
+          {isAttaching && (
+            <AttachForm
+              attached={attachedAssessments}
+              allAssessments={allAssessments}
+              stages={stages}
+              isPending={attachAssessmentMutation.isPending}
+              onSubmit={handleAttach}
+              onCancel={() => setIsAttaching(false)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDeleteDialog
+        open={removeTarget !== null}
+        title="Remove this assessment?"
+        description={
+          <>
+            <ConfirmDeleteName>
+              {removeTarget ? titleOf(removeTarget.assessmentId) : ""}
+            </ConfirmDeleteName>{" "}
+            will no longer be sent automatically. Results from candidates who already took it are kept.
+          </>
+        }
+        confirmLabel="Remove"
+        pendingLabel="Removing"
+        isPending={detachAssessmentMutation.isPending}
+        onClose={() => setRemoveTarget(null)}
+        onConfirm={handleRemove}
+      />
+    </div>
   );
 }

@@ -13,7 +13,7 @@ const optionSchema = z.object({
 
 const baseCustomQuestionSchema = z.object({
   title: z.string().min(1, "Title is required").max(500),
-  questionType: z.enum(["short_answer", "long_answer", "checkbox", "radio"]),
+  questionType: z.enum(["short_answer", "long_answer", "url", "checkbox", "radio"]),
   isRequired: z.boolean().default(false),
   position: z.number().int().positive(),
   options: z.array(optionSchema).optional(),

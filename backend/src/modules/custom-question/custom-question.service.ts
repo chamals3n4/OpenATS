@@ -16,7 +16,7 @@ export interface OptionInput {
 
 export interface CreateCustomQuestionInput {
   title: string;
-  questionType: "short_answer" | "long_answer" | "checkbox" | "radio";
+  questionType: "short_answer" | "long_answer" | "url" | "checkbox" | "radio";
   isRequired?: boolean | undefined;
   position: number;
   options?: OptionInput[] | undefined;
@@ -24,7 +24,7 @@ export interface CreateCustomQuestionInput {
 
 export interface UpdateCustomQuestionInput {
   title?: string | undefined;
-  questionType?: ("short_answer" | "long_answer" | "checkbox" | "radio") | undefined;
+  questionType?: ("short_answer" | "long_answer" | "url" | "checkbox" | "radio") | undefined;
   isRequired?: boolean | undefined;
   position?: number | undefined;
   options?: OptionInput[] | undefined;

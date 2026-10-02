@@ -3,12 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  Briefcase01Icon,
-  Location01Icon,
-  ArrowLeft02Icon,
-} from "@hugeicons/core-free-icons";
-
+import { ArrowLeft01Icon, Briefcase01Icon, Location01Icon } from "@hugeicons/core-free-icons";
 import type { Job } from "@/types";
 
 type ListRow = {
@@ -22,28 +17,21 @@ type ListRow = {
 };
 
 const EMPLOYMENT_LABELS: Record<Job["employmentType"], string> = {
-  full_time: "Full-time",
-  part_time: "Part-time",
+  full_time: "Full time",
+  part_time: "Part time",
   contract: "Contract",
   internship: "Internship",
   freelance: "Freelance",
 };
 
-const panel =
-  "border border-slate-200 dark:border-neutral-800 rounded-md bg-white dark:bg-neutral-950";
-
 function formatPosted(iso: string) {
-  try {
-    return new Date(iso).toLocaleDateString(undefined, {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  } catch {
-    return iso;
-  }
+  const date = new Date(iso);
+  return Number.isNaN(date.getTime())
+    ? iso
+    : date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
+/** The raw data the public API returns, as a read-only list for managers. */
 export default function CareersPreviewPage() {
   const [jobs, setJobs] = useState<ListRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,21 +41,12 @@ export default function CareersPreviewPage() {
     let cancelled = false;
     (async () => {
       try {
-        const res = await fetch("/api/public/jobs", {
-          headers: { Accept: "application/json" },
-        });
-        const body = (await res.json().catch(() => ({}))) as {
-          data?: unknown;
-          error?: string;
-        };
-        if (!res.ok) {
-          throw new Error(body.error ?? `HTTP ${res.status}`);
-        }
-        const list = Array.isArray(body.data) ? (body.data as ListRow[]) : [];
-        if (!cancelled) setJobs(list);
+        const res = await fetch("/api/public/jobs", { headers: { Accept: "application/json" } });
+        const body = (await res.json().catch(() => ({}))) as { data?: unknown; error?: string };
+        if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+        if (!cancelled) setJobs(Array.isArray(body.data) ? (body.data as ListRow[]) : []);
       } catch (e) {
-        if (!cancelled)
-          setError(e instanceof Error ? e.message : "Failed to load");
+        if (!cancelled) setError(e instanceof Error ? e.message : "Failed to load");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -78,88 +57,65 @@ export default function CareersPreviewPage() {
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 min-w-0">
-      <div className="px-8 py-6 border-b border-slate-100 dark:border-neutral-800 shrink-0">
-        <Link
-          href="/settings/careers-page"
-          prefetch
-          className="mb-4 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-100"
-        >
-          <HugeiconsIcon icon={ArrowLeft02Icon} className="size-3.5 shrink-0" />
-          Careers page settings
-        </Link>
-        <h1 className="text-xl font-semibold text-slate-900 dark:text-neutral-100 leading-none mb-2">
-          Careers preview
-        </h1>
-        <p className="text-sm text-slate-500 dark:text-neutral-400 max-w-3xl">
-          Read-only preview of{" "}
-          <code className="text-xs font-mono px-1 py-0.5 rounded bg-slate-100 dark:bg-neutral-800">
-            GET /api/public/jobs
-          </code>
-          - published jobs only, with the same shape as the public listing.
-        </p>
-      </div>
+    <div className="flex min-w-0 flex-1 flex-col bg-slate-50/70 dark:bg-neutral-950">
+      <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-8 sm:py-8">
+        <div className="max-w-4xl space-y-6">
+          <header>
+            <Link
+              href="/settings/careers-page"
+              className="mb-3 inline-flex items-center gap-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-neutral-100"
+            >
+              <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" strokeWidth={2} />
+              Careers page settings
+            </Link>
+            <h1 className="text-2xl font-medium leading-none text-slate-900 dark:text-neutral-100">
+              Public job data
+            </h1>
+            <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
+              The published jobs your careers page and the API return, exactly as the public sees them.
+            </p>
+          </header>
 
-      <div className="flex-1 overflow-y-auto px-8 py-8 min-w-0">
-        <section className={`${panel} p-5`}>
-          <h2 className="text-sm font-semibold text-slate-800 dark:text-neutral-200 uppercase tracking-wide mb-4">
-            Job cards
-          </h2>
-          {loading && (
-            <p className="text-sm text-slate-400 dark:text-neutral-500 animate-pulse">
-              Loading…
-            </p>
-          )}
-          {error && (
-            <p className="text-sm text-red-600 dark:text-red-400 border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 rounded-md px-3 py-2">
-              {error}
-            </p>
-          )}
-          {!loading && !error && jobs.length === 0 && (
-            <p className="text-sm text-slate-500 dark:text-neutral-400">
-              No published jobs returned. Publish a job or check the API.
-            </p>
-          )}
-          {!loading && !error && jobs.length > 0 && (
-            <ul className="flex flex-col gap-2">
-              {jobs.map((job) => (
-                <li
-                  key={job.id}
-                  className="rounded-md border border-slate-200 dark:border-neutral-800 bg-slate-50/60 dark:bg-neutral-900/50 px-4 py-3"
-                >
-                  <p className="font-semibold text-slate-900 dark:text-neutral-100 mb-1.5 text-sm">
-                    {job.title}
-                  </p>
-                  <div className="flex flex-wrap gap-x-5 gap-y-1 text-sm text-slate-600 dark:text-neutral-400">
-                    <span className="inline-flex items-center gap-1.5">
-                      <HugeiconsIcon
-                        icon={Briefcase01Icon}
-                        className="size-3.5 text-slate-400"
-                      />
-                      {EMPLOYMENT_LABELS[job.employmentType] ??
-                        job.employmentType}
-                    </span>
-                    {job.location ? (
+          <section className="rounded-lg border border-slate-300 bg-white dark:border-neutral-700 dark:bg-neutral-900">
+            {loading ? (
+              <div className="space-y-px">
+                {[0, 1, 2].map((i) => (
+                  <div key={i} className="h-16 animate-pulse bg-slate-100 first:rounded-t-lg last:rounded-b-lg dark:bg-neutral-800" />
+                ))}
+              </div>
+            ) : error ? (
+              <p role="alert" className="px-5 py-4 text-sm font-medium text-red-700 dark:text-red-400">
+                {error}
+              </p>
+            ) : jobs.length === 0 ? (
+              <p className="px-5 py-10 text-center text-sm text-slate-600 dark:text-neutral-400">
+                No published jobs yet. Publish a job and it will appear here.
+              </p>
+            ) : (
+              <ul className="divide-y divide-slate-300 dark:divide-neutral-700">
+                {jobs.map((job) => (
+                  <li key={job.id} className="px-5 py-4">
+                    <p className="text-[15px] font-medium text-slate-900 dark:text-neutral-100">{job.title}</p>
+                    <p className="mt-1 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-600 dark:text-neutral-400">
                       <span className="inline-flex items-center gap-1.5">
-                        <HugeiconsIcon
-                          icon={Location01Icon}
-                          className="size-3.5 text-slate-400"
-                        />
-                        {job.location}
+                        <HugeiconsIcon icon={Briefcase01Icon} className="size-4" strokeWidth={1.75} />
+                        {EMPLOYMENT_LABELS[job.employmentType] ?? job.employmentType}
                       </span>
-                    ) : null}
-                    <span className="text-slate-500 dark:text-neutral-500">
-                      {job.departmentName}
-                    </span>
-                    <span className="text-slate-400 dark:text-neutral-500">
-                      Posted {formatPosted(job.createdAt)}
-                    </span>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
+                      {job.location && (
+                        <span className="inline-flex items-center gap-1.5">
+                          <HugeiconsIcon icon={Location01Icon} className="size-4" strokeWidth={1.75} />
+                          {job.location}
+                        </span>
+                      )}
+                      <span>{job.departmentName}</span>
+                      <span>Posted {formatPosted(job.createdAt)}</span>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
       </div>
     </div>
   );

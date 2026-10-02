@@ -6,12 +6,52 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 Releases through v0.4.0 were published only on GitHub; they are reproduced here
-so the history lives in the repository. See
-[docs-draft/GA_ROADMAP.md](docs-draft/GA_ROADMAP.md) for what is planned next.
+so the history lives in the repository.
 
 ## [Unreleased]
 
 Nothing yet.
+
+## [0.6.0] - 2026-10-02
+
+A UI-focused release: the pipeline board, Overview, Integrations, candidate
+profile, and several settings pages were rebuilt, and the project gained a
+documentation website.
+
+### Added
+
+- Hiring pipeline board rebuilt with saved card order, paging, search, filters,
+  bulk move, and confirmation before a candidate is moved.
+- Overview page rebuilt with a needs-attention panel and corrected KPIs.
+- Custom questions are added and edited in a dialog, with a new URL answer type.
+- Named duplicate dialog and a cleaner type picker for email templates.
+- Documentation and project website, living in `docs/` in this repository.
+- Separate development and test infrastructure, plus `AGENTS.md` linked to
+  `CLAUDE.md`.
+
+### Changed
+
+- Redesigned the Integrations page, My Profile page, candidate profile page,
+  company general settings page, job Assessments tab, and assessment builder.
+- Careers page settings reworked: listing-only careers page, allowed websites,
+  and a website integration card.
+- Switched the typeface to Google Sans.
+- Unified focus, cancel, and delete styles across the app, shared the job form,
+  and polished tables and assessment pages.
+- Upgraded pnpm and pinned the Node 22 toolchain.
+
+### Fixed
+
+- The candidate-detail endpoint is now scoped to the interviewer's hiring team.
+- Backend build includes fetch types, and uses a CommonJS-compatible `jose`
+  version (lockfile synced).
+- Documentation site deployment and landing page controls.
+- Review feedback from CodeRabbit addressed.
+
+### Removed
+
+- The `docs-draft/` directory, including the draft GA roadmap, IAM setup, and
+  testing notes.
 
 ## [0.5.0] - 2026-08-13
 
@@ -254,7 +294,8 @@ closed, along with the rest of the authorization gaps around it.
 
 Initial release.
 
-[Unreleased]: https://github.com/chamals3n4/OpenATS/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/chamals3n4/OpenATS/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/chamals3n4/OpenATS/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/chamals3n4/OpenATS/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/chamals3n4/OpenATS/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/chamals3n4/OpenATS/compare/v0.2.1...v0.3.0

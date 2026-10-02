@@ -1,327 +1,57 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
-import type { Ref } from "react";
+import { useCallback, useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import { useDrag, useDrop, useDragLayer } from "react-dnd";
-import { getEmptyImage } from "react-dnd-html5-backend";
-import { useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft, GripVertical } from "lucide-react";
-
-import { Badge } from "@/components/ui/badge";
+import { useDragLayer } from "react-dnd";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import type { BoardCandidate } from "@/types";
 import { useJob } from "@/hooks/queries/use-jobs";
 import { useCurrentUser } from "@/hooks/queries/use-user";
 import { usePipeline } from "@/hooks/queries/use-pipeline";
+import { useJobAssessments } from "@/hooks/queries/use-assessments";
+import { useBoardCandidates } from "@/hooks/queries/use-candidates";
+import { BoardColumn } from "./_components/board-column";
+import { BoardFiltersBar } from "./_components/board-filters-bar";
+import { BulkActionBar } from "./_components/bulk-action-bar";
+import { BoardHeader } from "./_components/board-header";
+import { DragPreview } from "./_components/drag-preview";
+import { MoveConfirmDialog } from "./_components/move-confirm-dialog";
+import { useBoardMoves } from "./hooks/use-board-moves";
+import { useEdgeScroll } from "./hooks/use-edge-scroll";
 import {
-  useCandidates,
-  useMoveCandidateStage,
-} from "@/hooks/queries/use-candidates";
+  EMPTY_FILTERS,
+  hasCandidateFilters,
+  matchesFilters,
+  type BoardFilters,
+} from "./lib/board-filters";
+import { bulkMoveTargets, groupByStage, isFullyVisibleX, toFullIndex } from "./lib/board-utils";
 
-import type { Candidate, PipelineStage, StageAutomationFlags } from "@/types";
-
-function showStageAutomationToasts(automation: StageAutomationFlags) {
-  if (automation.assessmentInvite === "skipped_active_invite") {
-    toast.message("Assessment", {
-      description:
-        "An invite is already active — no new email was sent. The existing link still works.",
-    });
-  } else if (automation.assessmentInvite === "sent") {
-    toast.success("Assessment invite sent.");
-  }
-}
-
-const STAGE_COLORS: Record<PipelineStage["stageType"], string> = {
-  screening: "#d97706",
-  interview: "#3b82f6",
-  offer: "#22c55e",
-};
-
-const EMPLOYMENT_LABELS: Record<string, string> = {
-  full_time: "Full Time",
-  part_time: "Part Time",
-  contract: "Contract",
-  internship: "Internship",
-  freelance: "Freelance",
-};
-
-const CARD_TYPE = "PIPELINE_CARD";
-
-function timeAgo(dateStr: string) {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return "just now";
-  if (mins < 60) return `${mins}m ago`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
-}
-
-function CustomDragLayer() {
-  const { isDragging, item, currentOffset } = useDragLayer((monitor) => ({
-    isDragging: monitor.isDragging(),
-    item: monitor.getItem() as { name: string; appliedAt: string } | null,
-    currentOffset: monitor.getSourceClientOffset(),
-  }));
-
-  if (!isDragging || !currentOffset || !item) return null;
-
-  return (
-    <div
-      style={{
-        position: "fixed",
-        pointerEvents: "none",
-        left: 0,
-        top: 0,
-        zIndex: 9999,
-        transform: `translate(${currentOffset.x}px, ${currentOffset.y}px)`,
-      }}
-    >
-      <div
-        style={{ transform: "rotate(3deg)" }}
-        className="bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-800 shadow-xl px-3 py-2.5 rounded-lg flex items-center gap-2 w-65 opacity-95"
-      >
-        <GripVertical className="size-3.5 text-slate-300 shrink-0" />
-        <div className="space-y-0.5 min-w-0">
-          <p className="font-semibold text-theme text-[13px] leading-snug truncate">
-            {item.name}
-          </p>
-          <p className="text-slate-400 text-[10px] font-medium uppercase tracking-tight">
-            {item.appliedAt}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-type DragItem = {
-  id: number;
-  name: string;
-  appliedAt: string;
-  // The stage the drag STARTED in. Never mutated — the drop target relies on
-  // this (not the live position) to decide whether a real cross-column move
-  // must be persisted.
-  originStageId: number;
-  // Live position, mutated only during same-column hover reordering.
-  fromStageId: number;
-  fromIndex: number;
-};
-
-function DraggableCard({
-  candidate,
-  stageId,
-  index,
-  onReorder,
-  onClick,
-  onDragMiss,
-}: {
-  candidate: Candidate;
-  stageId: number;
-  index: number;
-  onReorder: (
-    fromStageId: number,
-    fromIndex: number,
-    toStageId: number,
-    toIndex: number,
-  ) => void;
-  onClick: (id: number) => void;
-  onDragMiss: () => void;
-}) {
-  const ref = useRef<HTMLDivElement | null>(null);
-  const name = `${candidate.firstName} ${candidate.lastName}`;
-  const appliedAtLabel = timeAgo(candidate.appliedAt);
-
-  const [{ isDragging }, dragRef, dragPreviewRef] = useDrag<
-    DragItem,
-    unknown,
-    { isDragging: boolean }
-  >({
-    type: CARD_TYPE,
-    item: {
-      id: candidate.id,
-      name,
-      appliedAt: appliedAtLabel,
-      originStageId: stageId,
-      fromStageId: stageId,
-      fromIndex: index,
-    },
-    collect: (monitor) => ({ isDragging: monitor.isDragging() }),
-    // Released outside any drop target → undo the ephemeral hover reorder.
-    end: (_item, monitor) => {
-      if (!monitor.didDrop()) onDragMiss();
-    },
-  });
-
+/** Re-reads the clock once a minute so "5m ago" on the cards does not go stale. */
+function useMinuteClock() {
+  const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
-    dragPreviewRef(getEmptyImage(), { captureDraggingState: true });
-  }, [dragPreviewRef]);
-
-  const [, dropRef] = useDrop<DragItem>({
-    accept: CARD_TYPE,
-    hover(dragItem, monitor) {
-      if (!ref.current || dragItem.id === candidate.id) return;
-      // Only reorder within the SAME column. Cross-column positioning is
-      // committed by the column's drop handler, which keeps the dragged DOM
-      // node in its origin column (no mid-drag re-parenting / react-dnd glitch).
-      if (dragItem.fromStageId !== stageId) return;
-      const { bottom, top } = ref.current.getBoundingClientRect();
-      const hoverMiddleY = (bottom - top) / 2;
-      const clientOffset = monitor.getClientOffset();
-      if (!clientOffset) return;
-      const hoverClientY = clientOffset.y - top;
-      const toIndex = hoverClientY < hoverMiddleY ? index : index + 1;
-      if (toIndex === dragItem.fromIndex) return;
-      onReorder(dragItem.fromStageId, dragItem.fromIndex, stageId, toIndex);
-      dragItem.fromIndex = toIndex > dragItem.fromIndex ? toIndex - 1 : toIndex;
-    },
-  });
-
-  // Connect on attach rather than during render.
-  const attachRef = useCallback(
-    (node: HTMLDivElement | null) => {
-      ref.current = node;
-      dragRef(dropRef(node));
-    },
-    [dragRef, dropRef],
-  );
-
-  return (
-    <div
-      ref={attachRef}
-      onClick={() => !isDragging && onClick(candidate.id)}
-      className={`bg-white dark:bg-neutral-900 px-3 py-2.5 rounded-lg flex items-center gap-2 group select-none transition-colors ${
-        isDragging
-          ? "border-2 border-dashed border-theme opacity-40 cursor-grabbing"
-          : "border border-slate-200 dark:border-neutral-800 hover:border-(--theme-color)/40 cursor-pointer"
-      }`}
-    >
-      <GripVertical className="size-3.5 text-slate-300 dark:text-neutral-600 shrink-0 group-hover:text-slate-400 dark:group-hover:text-neutral-500 transition-colors cursor-grab" />
-      <div className="space-y-0.5 min-w-0">
-        <p className="font-semibold text-slate-800 dark:text-neutral-200 text-[13px] leading-snug group-hover:text-theme transition-colors truncate">
-          {name}
-        </p>
-        <p className="text-slate-400 dark:text-neutral-500 text-[10px] font-medium uppercase tracking-tight">
-          {appliedAtLabel}
-        </p>
-      </div>
-    </div>
-  );
-}
-
-function DroppableColumn({
-  stage,
-  candidates,
-  onDropToStage,
-  onReorder,
-  onCardClick,
-  onDragMiss,
-}: {
-  stage: PipelineStage & { color: string };
-  candidates: Candidate[];
-  onDropToStage: (candidateId: number, toStageId: number) => void;
-  onReorder: (
-    fromStageId: number,
-    fromIndex: number,
-    toStageId: number,
-    toIndex: number,
-  ) => void;
-  onCardClick: (id: number) => void;
-  onDragMiss: () => void;
-}) {
-  const [{ isOver, canDrop }, dropRef] = useDrop<
-    DragItem,
-    void,
-    { isOver: boolean; canDrop: boolean }
-  >({
-    accept: CARD_TYPE,
-    // Persist only a genuine cross-column move, decided by the immutable
-    // origin stage so an intra-drag hover can never suppress the API call.
-    drop: (item, monitor) => {
-      if (monitor.didDrop()) return;
-      if (item.originStageId !== stage.id) {
-        onDropToStage(item.id, stage.id);
-      }
-    },
-    collect: (monitor) => ({
-      isOver: monitor.isOver({ shallow: true }),
-      canDrop: monitor.canDrop(),
-    }),
-  });
-
-  const isActive = isOver && canDrop;
-
-  return (
-    <div className="w-75 min-h-130 flex flex-col shrink-0">
-      <div className="flex items-center gap-2.5 px-0.5 mb-4 shrink-0">
-        <div
-          className="size-2 rounded-full"
-          style={{ backgroundColor: stage.color }}
-        />
-        <h3 className="font-semibold text-slate-700 dark:text-neutral-300 text-[15px]">
-          {stage.name}
-        </h3>
-        <span className="ml-auto text-[11px] font-bold text-slate-500 dark:text-neutral-500 bg-slate-100 dark:bg-neutral-800 px-2 py-0.5 rounded-full border border-slate-300 dark:border-neutral-700 uppercase tracking-tighter">
-          {candidates.length} Cards
-        </span>
-      </div>
-
-      <div
-        ref={dropRef as unknown as Ref<HTMLDivElement>}
-        className={`flex-1 rounded-xl p-3 space-y-2 overflow-y-auto custom-scrollbar-y transition-colors duration-150 ${
-          isActive
-            ? "bg-(--theme-color)/5 border-2 border-dashed border-(--theme-color)/40"
-            : "bg-slate-50/60 dark:bg-neutral-900/40 border border-slate-200 dark:border-neutral-800"
-        }`}
-      >
-        {candidates.length === 0 && (
-          <div
-            className={`h-20 flex items-center justify-center rounded-lg border-2 border-dashed text-sm font-medium transition-colors ${
-              isActive
-                ? "border-(--theme-color)/40 text-(--theme-color)/60 bg-(--theme-color)/5"
-                : "border-slate-200 dark:border-neutral-800 text-slate-300 dark:text-neutral-700"
-            }`}
-          >
-            {isActive ? "Drop here" : "No candidates"}
-          </div>
-        )}
-        {candidates.map((c, index) => (
-          <DraggableCard
-            key={c.id}
-            candidate={c}
-            stageId={stage.id}
-            index={index}
-            onReorder={onReorder}
-            onClick={onCardClick}
-            onDragMiss={onDragMiss}
-          />
-        ))}
-      </div>
-    </div>
-  );
+    const id = setInterval(() => setNow(Date.now()), 60_000);
+    return () => clearInterval(id);
+  }, []);
+  return now;
 }
 
 export default function HiringPipelinePage() {
-  const params = useParams();
-  const jobId = Number(params.id);
-
-  const queryClient = useQueryClient();
-  const { data: currentUserRes, isLoading: isLoadingUser } = useCurrentUser();
-  const { data: jobData, isLoading: isLoadingJob } = useJob(jobId);
-  const { data: pipelineData } = usePipeline(jobId);
-  const { data: candidatesData } = useCandidates(jobId, {
-    limit: 9999,
-  });
-  const moveStageMutation = useMoveCandidateStage();
-
+  const jobId = Number(useParams().id);
   const router = useRouter();
 
-  const job = jobData?.data;
+  const { data: currentUserRes, isLoading: isLoadingUser } = useCurrentUser();
+  const { data: jobData, isLoading: isLoadingJob } = useJob(jobId);
   const role = currentUserRes?.data?.role;
   const isManager = role === "super_admin" || role === "hiring_manager";
 
+  const { data: pipelineData, isLoading: isLoadingStages } = usePipeline(jobId);
+  const board = useBoardCandidates(jobId, { enabled: isManager });
+  const { data: assessmentData } = useJobAssessments(jobId);
+
+  const job = jobData?.data;
+
+  // Interviewers do not get the board.
   useEffect(() => {
     if (role && !isManager) router.replace(`/jobs/${jobId}`);
   }, [role, isManager, router, jobId]);
@@ -330,335 +60,241 @@ export default function HiringPipelinePage() {
     if (!isLoadingJob && !job) router.replace("/jobs");
   }, [isLoadingJob, job, router]);
 
-  const pipelineStages = pipelineData?.data ?? [];
-
-  // Local copy for optimistic drag-drop updates.
-  const [localCandidates, setLocalCandidates] = useState<Candidate[]>([]);
-
-  // Latest raw server list — read inside drag callbacks without stale closures.
-  const latestServerRef = useRef<Candidate[]>([]);
-  // candidateId -> stage it was optimistically moved to, but the server hasn't
-  // confirmed yet. Lets a stale background refetch be reconciled instead of
-  // clobbering the optimistic position (the old "snap back" bug).
-  const pendingMovesRef = useRef<Map<number, number>>(new Map());
-  // candidateId -> true while a move request is in flight. Blocks a second
-  // move of the same candidate so accidental re-drops can't double-fire
-  // stage automation (offers / assessment invites).
-  const inFlightRef = useRef<Set<number>>(new Set());
-
-  // Merge the server snapshot with not-yet-confirmed optimistic moves.
-  const reconcile = useCallback((server: Candidate[]): Candidate[] => {
-    const pending = pendingMovesRef.current;
-    return server
-      .filter((c) => c.status !== "rejected")
-      .map((c) => {
-        const target = pending.get(c.id);
-        if (target === undefined) return c;
-        if (c.currentStageId === target) {
-          // Server caught up — drop the optimistic override.
-          pending.delete(c.id);
-          return c;
-        }
-        return { ...c, currentStageId: target };
-      });
-  }, []);
-
-  // Can't move to render: `reconcile` clears the pending-moves map.
-  useEffect(() => {
-    if (!candidatesData?.data) return;
-    latestServerRef.current = candidatesData.data;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setLocalCandidates(reconcile(candidatesData.data));
-  }, [candidatesData, reconcile]);
-
-  // Group by currentStageId
-  const candidatesByStage = useMemo(
+  const stages = useMemo(
+    () => [...(pipelineData?.data ?? [])].sort((a, b) => a.position - b.position),
+    [pipelineData],
+  );
+  const assessmentStageIds = useMemo(
     () =>
-      localCandidates.reduce(
-        (acc, c) => {
-          const key = c.currentStageId ?? -1;
-          acc[key] = [...(acc[key] ?? []), c];
-          return acc;
-        },
-        {} as Record<number, Candidate[]>,
+      new Set(
+        (assessmentData?.data ?? [])
+          .map((a) => a.triggerStageId)
+          .filter((id): id is number => id !== null),
       ),
-    [localCandidates],
+    [assessmentData],
   );
 
-  const stages = pipelineStages.map((s) => ({
-    ...s,
-    color: STAGE_COLORS[s.stageType] ?? "#94a3b8",
-  }));
+  const candidates = board.data?.data;
+  const byStage = useMemo(() => groupByStage(candidates ?? []), [candidates]);
 
-  // Reflect a confirmed stage change in every cached candidate list so other
-  // views (job tabs, candidates table) stay consistent without a refetch.
-  const writeStageToCaches = useCallback(
-    (candidateId: number, toStageId: number) => {
-      queryClient.setQueriesData<{ data?: Candidate[] }>(
-        {
-          // Patch list queries only — touching detail keys (numeric second part) would mark them fresh and skip the post-move refetch
-          predicate: (query) => {
-            const key = query.queryKey as unknown[];
-            return key[0] === "candidates" && typeof key[1] !== "number";
-          },
-        },
-        (old) => {
-          if (!old || !Array.isArray(old.data)) return old;
-          let changed = false;
-          const data = old.data.map((c) => {
-            if (c.id === candidateId && c.currentStageId !== toStageId) {
-              changed = true;
-              return { ...c, currentStageId: toStageId };
-            }
-            return c;
-          });
-          return changed ? { ...old, data } : old;
-        },
-      );
-    },
-    [queryClient],
-  );
+  const now = useMinuteClock();
 
-  // Move a candidate into another column — optimistic, guarded, reconciled.
-  const handleDropToStage = useCallback(
-    (candidateId: number, toStageId: number) => {
-      // De-dupe: ignore if already moving, or already optimistically there.
-      if (inFlightRef.current.has(candidateId)) return;
-      if (pendingMovesRef.current.get(candidateId) === toStageId) return;
-
-      inFlightRef.current.add(candidateId);
-      pendingMovesRef.current.set(candidateId, toStageId);
-
-      // Optimistic: drop the card at the bottom of the target column.
-      setLocalCandidates((prev) => {
-        const moving = prev.find((c) => c.id === candidateId);
-        if (!moving) return prev;
-        return [
-          ...prev.filter((c) => c.id !== candidateId),
-          { ...moving, currentStageId: toStageId },
-        ];
-      });
-
-      // Stop any in-flight refetch from resolving with pre-move data.
-      queryClient.cancelQueries({ queryKey: ["candidates"] });
-
-      moveStageMutation.mutate(
-        { id: candidateId, newStageId: toStageId },
-        {
-          onSuccess: (res) => {
-            showStageAutomationToasts(res.stageAutomation);
-            writeStageToCaches(candidateId, toStageId);
-          },
-          onError: () => {
-            pendingMovesRef.current.delete(candidateId);
-            setLocalCandidates(reconcile(latestServerRef.current));
-            toast.error("Couldn't move candidate. Please try again.");
-          },
-          onSettled: () => {
-            inFlightRef.current.delete(candidateId);
-          },
-        },
-      );
-    },
-    [moveStageMutation, queryClient, reconcile, writeStageToCaches],
-  );
-
-  // Same-column reorder only (cross-column commits via handleDropToStage).
-  const handleReorder = useCallback(
-    (
-      fromStageId: number,
-      fromIndex: number,
-      toStageId: number,
-      toIndex: number,
-    ) => {
-      if (fromStageId !== toStageId || fromIndex === toIndex) return;
-      setLocalCandidates((prev) => {
-        const inStage = prev.filter((c) => c.currentStageId === fromStageId);
-        const card = inStage[fromIndex];
-        if (!card) return prev;
-        const reordered = [...inStage];
-        reordered.splice(fromIndex, 1);
-        reordered.splice(toIndex > fromIndex ? toIndex - 1 : toIndex, 0, card);
-        return prev
-          .filter((c) => c.currentStageId !== fromStageId)
-          .concat(reordered);
-      });
-    },
+  // Filters run on a deferred copy, so typing and picking stay instant even on a big board.
+  const [filters, setFilters] = useState<BoardFilters>(EMPTY_FILTERS);
+  const patchFilters = useCallback(
+    (patch: Partial<BoardFilters>) => setFilters((f) => ({ ...f, ...patch })),
     [],
   );
+  const clearFilters = useCallback(() => setFilters((f) => ({ ...EMPTY_FILTERS, search: f.search })), []);
+  const deferred = useDeferredValue(filters);
+  const isSearching = deferred.search.trim() !== "";
+  const isFiltering = hasCandidateFilters(deferred);
 
-  // Drag released outside any column — discard the ephemeral hover reorder.
-  const handleDragMiss = useCallback(() => {
-    setLocalCandidates(reconcile(latestServerRef.current));
-  }, [reconcile]);
+  // Columns the stage filter leaves on the board.
+  const shownStages = useMemo(
+    () => (filters.stageIds.length === 0 ? stages : stages.filter((s) => filters.stageIds.includes(s.id))),
+    [stages, filters.stageIds],
+  );
 
-  // Edge-scroll when dragging near left/right
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const animFrameRef = useRef<number | null>(null);
-  const { isDragging } = useDragLayer((monitor) => ({
-    isDragging: monitor.isDragging(),
-  }));
+  const visibleByStage = useMemo(() => {
+    if (!isFiltering) return byStage;
+    const filtered = new Map<number, BoardCandidate[]>();
+    for (const [stageId, list] of byStage) {
+      filtered.set(stageId, list.filter((c) => matchesFilters(c, deferred, now)));
+    }
+    return filtered;
+  }, [byStage, deferred, isFiltering, now]);
+
+  // Only candidates in the columns on screen count as matches or can be selected.
+  const shownCandidates = useMemo(
+    () => shownStages.flatMap((s) => visibleByStage.get(s.id) ?? []),
+    [shownStages, visibleByStage],
+  );
+  const matchCount = isFiltering ? shownCandidates.length : null;
+
+  // Selection. What is selected but no longer shown (filtered out) is ignored, not remembered.
+  const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
+  const selectedIds = useMemo(() => {
+    const shown = new Set(shownCandidates.map((c) => c.id));
+    return new Set([...selected].filter((id) => shown.has(id)));
+  }, [selected, shownCandidates]);
+  const selectionMode = selectedIds.size > 0;
+
+  const toggleSelect = useCallback((id: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }, []);
+  const toggleColumn = useCallback((ids: number[]) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      const allOn = ids.every((id) => next.has(id));
+      for (const id of ids) {
+        if (allOn) next.delete(id);
+        else next.add(id);
+      }
+      return next;
+    });
+  }, []);
+  const clearSelection = useCallback(() => setSelected(new Set()), []);
 
   useEffect(() => {
-    if (!isDragging) {
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      return;
+    if (!selectionMode) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") clearSelection();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [selectionMode, clearSelection]);
+
+  const { movingIds, pending, requestMove, requestBulkMove, confirmPending, cancelPending } =
+    useBoardMoves(jobId, stages, assessmentStageIds, { onBulkMoved: clearSelection });
+
+  const bulkTargets = useMemo(
+    () => bulkMoveTargets(stages, shownCandidates.filter((c) => selectedIds.has(c.id))),
+    [stages, shownCandidates, selectedIds],
+  );
+
+  // The selected cards in the order they appear on the board, so they keep that order.
+  const moveSelected = useCallback(
+    (stageId: number) => {
+      requestBulkMove(
+        shownCandidates.filter((c) => selectedIds.has(c.id)).map((c) => c.id),
+        stageId,
+      );
+    },
+    [requestBulkMove, shownCandidates, selectedIds],
+  );
+
+  // A slot counted among the cards shown becomes a slot in the whole column.
+  const moveVisible = useCallback(
+    (candidateId: number, stageId: number, index: number) => {
+      const full = byStage.get(stageId) ?? [];
+      const visible = visibleByStage.get(stageId) ?? [];
+      requestMove(candidateId, stageId, toFullIndex(full, visible, index));
+    },
+    [byStage, visibleByStage, requestMove],
+  );
+
+  const openCandidate = useCallback(
+    (id: number) => router.push(`/candidates/${id}?from=pipeline`),
+    [router],
+  );
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  // A filter can match in a column that is scrolled out of view, so bring the first column with
+  // a match into view. It runs when that column changes, not on every keystroke, so it does not
+  // fight someone who scrolls away by hand while typing.
+  const firstMatchStageId = isFiltering
+    ? (shownStages.find((s) => (visibleByStage.get(s.id)?.length ?? 0) > 0)?.id ?? null)
+    : null;
+  useEffect(() => {
+    if (firstMatchStageId === null) return;
+    const container = scrollRef.current;
+    const column = container?.querySelector<HTMLElement>(`[data-stage-id="${firstMatchStageId}"]`);
+    if (!container || !column) return;
+    const containerRect = container.getBoundingClientRect();
+    const columnRect = column.getBoundingClientRect();
+    if (isFullyVisibleX(columnRect, containerRect)) return;
+    container.scrollTo({
+      left: container.scrollLeft + (columnRect.left - containerRect.left) - 24,
+      behavior: "smooth",
+    });
+  }, [firstMatchStageId]);
+
+  // Clearing the filters puts the board back at the first stage.
+  const wasFiltering = useRef(false);
+  useEffect(() => {
+    if (wasFiltering.current && !isFiltering) {
+      scrollRef.current?.scrollTo({ left: 0, behavior: "smooth" });
     }
-    const EDGE = 120;
-    const SPEED = 12;
-    const onMouseMove = (e: MouseEvent) => {
-      const container = scrollRef.current;
-      if (!container) return;
-      const { left, right } = container.getBoundingClientRect();
-      const scroll = () => {
-        if (!isDragging) return;
-        if (e.clientX < left + EDGE) container.scrollLeft -= SPEED;
-        else if (e.clientX > right - EDGE) container.scrollLeft += SPEED;
-        animFrameRef.current = requestAnimationFrame(scroll);
-      };
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      animFrameRef.current = requestAnimationFrame(scroll);
-    };
-    window.addEventListener("mousemove", onMouseMove);
-    return () => {
-      window.removeEventListener("mousemove", onMouseMove);
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    };
-  }, [isDragging]);
+    wasFiltering.current = isFiltering;
+  }, [isFiltering]);
+
+  const { isDragging } = useDragLayer((monitor) => ({ isDragging: monitor.isDragging() }));
+  useEdgeScroll(scrollRef, isDragging);
 
   if (isLoadingUser || !role || !isManager) return null;
 
+  const isLoading = board.isPending || isLoadingStages;
+
   return (
-    <div className="flex flex-col h-[calc(100vh-var(--header-height))] bg-white dark:bg-neutral-950 overflow-hidden w-full min-w-0">
-      <CustomDragLayer />
+    <div className="relative flex h-[calc(100vh-var(--header-height))] w-full min-w-0 flex-col overflow-hidden bg-slate-50 dark:bg-neutral-950">
+      <DragPreview />
+      <BoardHeader
+        jobId={jobId}
+        job={job}
+        candidateCount={candidates ? candidates.length : null}
+        matchCount={matchCount}
+        search={filters.search}
+        onSearchChange={(search) => patchFilters({ search })}
+      />
+      <BoardFiltersBar
+        filters={filters}
+        stages={stages}
+        onChange={patchFilters}
+        onClear={clearFilters}
+      />
 
-      {/* Header */}
-      <div className="shrink-0 border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950">
-        <div className="px-4 py-4 sm:px-6">
-          <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-            <div className="min-w-0">
-              <div className="flex items-center gap-3">
-                <h1 className="truncate text-[22px] font-bold leading-tight text-slate-950 dark:text-neutral-50">
-                  {job?.title ?? "Loading…"}
-                </h1>
-                {job && (
-                  <Badge
-                    className={`rounded-md border-none px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider shadow-none shrink-0 ${
-                      job.status === "published"
-                        ? "bg-emerald-50 dark:bg-emerald-950/30 text-emerald-600 dark:text-emerald-400"
-                        : "bg-slate-100 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400"
-                    }`}
-                  >
-                    {job.status === "published" ? "Active Job" : job.status}
-                  </Badge>
-                )}
-              </div>
-              {job && (
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-[13px] font-medium text-slate-500 dark:text-neutral-400">
-                  <span>
-                    {EMPLOYMENT_LABELS[job.employmentType] ?? job.employmentType}
-                    {job.location ? ` · ${job.location}` : ""}
-                  </span>
-                  <span className="text-slate-300 dark:text-neutral-700">·</span>
-                  <span>
-                    {localCandidates.length} candidate
-                    {localCandidates.length !== 1 ? "s" : ""}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex shrink-0 items-center gap-2">
-              <Link href={`/jobs/${jobId}`}>
-                <Button
-                  size="sm"
-                  className="h-[34px] cursor-pointer rounded-md border-none bg-neutral-700 px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600"
-                >
-                  <ArrowLeft className="size-4" />
-                  Back to Job
-                </Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Kanban board */}
       <div
         ref={scrollRef}
-        className="flex-1 w-full min-w-0 overflow-x-auto overflow-y-auto bg-slate-50/10 dark:bg-neutral-950 pipeline-scroll-container"
+        className="min-h-0 w-full min-w-0 flex-1 overflow-x-auto overflow-y-hidden [scrollbar-width:thin]"
       >
-        {stages.length === 0 ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-slate-400 dark:text-neutral-600 text-sm">
-              No pipeline stages defined for this job yet.
+        {board.isError ? (
+          <div className="flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
+            <p className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
+              The pipeline could not be loaded
+            </p>
+            <p className="text-sm text-slate-500 dark:text-neutral-400">
+              Check your connection and try again.
+            </p>
+            <Button variant="cancel" className="h-9 px-4 text-sm" onClick={() => board.refetch()}>
+              Try again
+            </Button>
+          </div>
+        ) : !isLoadingStages && stages.length === 0 ? (
+          <div className="flex h-full items-center justify-center px-6">
+            <p className="text-sm text-slate-500 dark:text-neutral-400">
+              This job has no pipeline stages yet. Add some under Hiring Process.
             </p>
           </div>
         ) : (
-          <div className="flex min-h-full p-8 gap-5 w-max items-stretch">
-            {stages.map((stage) => (
-              <DroppableColumn
+          <div className="flex h-full w-max items-stretch gap-4 p-4 sm:p-6">
+            {(isLoadingStages ? [] : shownStages).map((stage) => (
+              <BoardColumn
                 key={stage.id}
                 stage={stage}
-                candidates={candidatesByStage[stage.id] ?? []}
-                onDropToStage={handleDropToStage}
-                onReorder={handleReorder}
-                onDragMiss={handleDragMiss}
-                onCardClick={(id) => {
-                  router.push(`/candidates/${id}?from=pipeline`);
-                }}
+                stages={stages}
+                candidates={visibleByStage.get(stage.id) ?? []}
+                totalCount={byStage.get(stage.id)?.length ?? 0}
+                now={now}
+                isLoading={isLoading}
+                movingIds={movingIds}
+                isSearching={isSearching}
+                selectedIds={selectedIds}
+                selectionMode={selectionMode}
+                onToggleSelect={toggleSelect}
+                onToggleColumn={toggleColumn}
+                onOpen={openCandidate}
+                onMove={moveVisible}
               />
             ))}
           </div>
         )}
       </div>
 
-      <style jsx global>{`
-        .pipeline-scroll-container {
-          scrollbar-width: auto !important;
-          -ms-overflow-style: auto !important;
-        }
-        .pipeline-scroll-container::-webkit-scrollbar {
-          display: block !important;
-          height: 10px !important;
-          width: 0px !important;
-        }
-        .pipeline-scroll-container::-webkit-scrollbar-track {
-          background: #f8fafc !important;
-          border-top: 1px solid #e2e8f0 !important;
-        }
-        :global(.dark) .pipeline-scroll-container::-webkit-scrollbar-track {
-          background: #0a0a0a !important;
-          border-top-color: #1a1a1a !important;
-        }
-        .pipeline-scroll-container::-webkit-scrollbar-thumb {
-          background: #cbd5e1 !important;
-          border-radius: 10px !important;
-          border: 2px solid #f8fafc !important;
-        }
-        :global(.dark) .pipeline-scroll-container::-webkit-scrollbar-thumb {
-          background: #262626 !important;
-          border-color: #0a0a0a !important;
-        }
-        .pipeline-scroll-container::-webkit-scrollbar-thumb:hover {
-          background: #94a3b8 !important;
-        }
-        :global(.dark)
-          .pipeline-scroll-container::-webkit-scrollbar-thumb:hover {
-          background: #404040 !important;
-        }
-        .custom-scrollbar-y::-webkit-scrollbar {
-          display: block !important;
-          width: 4px !important;
-        }
-        .custom-scrollbar-y::-webkit-scrollbar-thumb {
-          background: #e2e8f0 !important;
-          border-radius: 10px !important;
-        }
-        :global(.dark) .custom-scrollbar-y::-webkit-scrollbar-thumb {
-          background: #262626 !important;
-        }
-      `}</style>
+      <BulkActionBar
+        count={selectedIds.size}
+        stages={bulkTargets}
+        onMove={moveSelected}
+        onClear={clearSelection}
+      />
+
+      <MoveConfirmDialog pending={pending} onClose={cancelPending} onConfirm={confirmPending} />
     </div>
   );
 }

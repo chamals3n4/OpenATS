@@ -5,6 +5,7 @@ import {
   useMutation,
 } from "@tanstack/react-query";
 import type {
+  BoardCandidate,
   Candidate,
   CandidateDetail,
   CandidateRejection,
@@ -100,6 +101,21 @@ export function useCandidates(
   });
 }
 
+/** Key of the pipeline board's data. Kept apart from the `candidates` lists, whose rows carry more. */
+export const boardKey = (jobId: number) => ["pipeline-board", jobId] as const;
+
+/** Every candidate still in the process for one job, in the saved card order. */
+export function useBoardCandidates(jobId: number, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: boardKey(jobId),
+    queryFn: () =>
+      serverFetch<{ data: BoardCandidate[] }>(`/candidates/jobs/${jobId}/board`),
+    enabled: options?.enabled !== false && !!jobId,
+    staleTime: 15_000,
+    refetchOnMount: "always",
+  });
+}
+
 export function useCandidate(id: number, options?: { enabled?: boolean }) {
   const queryClient = useQueryClient();
   const enabled = (options?.enabled ?? true) && !!id;
@@ -141,17 +157,44 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
 export function useMoveCandidateStage() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, newStageId }: { id: number; newStageId: number }) =>
+    mutationFn: ({
+      id,
+      newStageId,
+      position,
+    }: {
+      id: number;
+      newStageId: number;
+      /** Where the card lands in the column, 0 being the top. Omitted means the end. */
+      position?: number;
+    }) =>
       serverFetch<{
         data: Candidate;
         stageAutomation: StageAutomationFlags;
       }>(`/candidates/${id}/stage`, {
         method: "PUT",
-        body: JSON.stringify({ newStageId }),
+        body: JSON.stringify({ newStageId, position }),
       }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["candidates", variables.id] });
     },
+  });
+}
+
+export type BulkMoveResult = {
+  moved: { id: number; jobId: number }[];
+  failed: { id: number; error: string }[];
+  assessmentInvitesSent: number;
+  assessmentInvitesSkipped: number;
+};
+
+/** Moves several candidates into one stage in a single request. */
+export function useBulkMoveCandidates() {
+  return useMutation({
+    mutationFn: ({ candidateIds, newStageId }: { candidateIds: number[]; newStageId: number }) =>
+      serverFetch<{ data: BulkMoveResult }>("/candidates/bulk/stage", {
+        method: "PUT",
+        body: JSON.stringify({ candidateIds, newStageId }),
+      }),
   });
 }
 

@@ -5,7 +5,7 @@ import { motion } from "motion/react"
 
 import { cn } from "@/lib/utils"
 import { HugeiconsIcon } from "@hugeicons/react"
-import { Tick02Icon } from "@hugeicons/core-free-icons"
+import { MinusSignIcon, Tick02Icon } from "@hugeicons/core-free-icons"
 
 export type CheckboxProps = CheckboxPrimitive.Root.Props & {
   /** `theme` uses brand terracotta; tick is white in light mode and `background` in dark. */
@@ -42,10 +42,16 @@ function Checkbox({
           transition={{ type: "spring", stiffness: 520, damping: 30, mass: 0.25 }}
           className="grid place-content-center"
         >
+          {/* A mixed (indeterminate) box shows a dash, so it never reads as "all checked". */}
           <HugeiconsIcon
             icon={Tick02Icon}
             strokeWidth={2}
-            className="size-3.5 shrink-0 text-current"
+            className="size-3.5 shrink-0 text-current in-data-indeterminate:hidden"
+          />
+          <HugeiconsIcon
+            icon={MinusSignIcon}
+            strokeWidth={2.5}
+            className="hidden size-3.5 shrink-0 text-current in-data-indeterminate:block"
           />
         </motion.span>
       </CheckboxPrimitive.Indicator>

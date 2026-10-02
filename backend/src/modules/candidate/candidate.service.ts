@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, inArray, ilike, or, sql } from "drizzle-orm";
+import { eq, and, desc, asc, inArray, ilike, ne, or, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   candidates,
@@ -122,6 +122,81 @@ function buildCandidateWhere(
 /** Returned with move-stage so the UI can toast automation outcomes. */
 export type StageAutomationFlags = {
   assessmentInvite?: "sent" | "skipped_active_invite";
+};
+
+/**
+ * A raw `timestamp` (no zone) subquery comes back as "2026-09-09 09:22:38.857". The column is
+ * stored in UTC, so read it as UTC rather than letting the runtime guess its own zone.
+ */
+export function parseUtcTimestamp(value: string | null): Date | null {
+  if (!value) return null;
+  const date = new Date(`${value.replace(" ", "T")}Z`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+/** Most candidates one board request returns, a safety net rather than a page size. */
+export const BOARD_MAX_CANDIDATES = 5000;
+
+/**
+ * Where `candidateId` lands in a stage's order: the other cards keep their order and the
+ * candidate is inserted at `position` (clamped, or the end when omitted). Returns the ids in
+ * their new order.
+ */
+export function insertAtPosition(
+  otherIds: number[],
+  candidateId: number,
+  position: number | undefined,
+): number[] {
+  const index =
+    position === undefined
+      ? otherIds.length
+      : Math.min(Math.max(position, 0), otherIds.length);
+  const ordered = [...otherIds];
+  ordered.splice(index, 0, candidateId);
+  return ordered;
+}
+
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
+
+/** Renumbers a stage's cards 0..n-1 so the saved order matches what the board shows. */
+async function placeInStage(
+  tx: Tx,
+  candidateId: number,
+  stageId: number,
+  position: number | undefined,
+) {
+  const others = await tx
+    .select({ id: candidates.id })
+    .from(candidates)
+    .where(
+      and(
+        eq(candidates.currentStageId, stageId),
+        ne(candidates.id, candidateId),
+        ne(candidates.status, "rejected"),
+      ),
+    )
+    .orderBy(asc(candidates.stagePosition), desc(candidates.appliedAt));
+
+  const ordered = insertAtPosition(
+    others.map((o) => o.id),
+    candidateId,
+    position,
+  );
+
+  const values = sql.join(
+    ordered.map((id, index) => sql`(${id}::int, ${index}::int)`),
+    sql`, `,
+  );
+  await tx.execute(
+    sql`update candidates set stage_position = v.pos from (values ${values}) as v(id, pos) where candidates.id = v.id and candidates.stage_position is distinct from v.pos`,
+  );
+}
+
+export type BulkMoveResult = {
+  moved: { id: number; jobId: number }[];
+  failed: { id: number; error: string }[];
+  assessmentInvitesSent: number;
+  assessmentInvitesSkipped: number;
 };
 
 export type MoveStageResult = {
@@ -299,6 +374,37 @@ export const candidateService = {
     };
   },
 
+  /**
+   * Everything the pipeline board needs for one job in a single light query: every candidate
+   * still in the process, in the saved card order. Rejected candidates are left out.
+   */
+  async getBoard(jobId: number) {
+    const rows = await db
+      .select({
+        id: candidates.id,
+        firstName: candidates.firstName,
+        lastName: candidates.lastName,
+        email: candidates.email,
+        jobId: candidates.jobId,
+        currentStageId: candidates.currentStageId,
+        status: candidates.status,
+        appliedAt: candidates.appliedAt,
+        updatedAt: candidates.updatedAt,
+        // When the candidate entered their current stage, for "time in stage".
+        stageEnteredAt: sql<string | null>`(
+          select max(${candidateStageHistory.movedAt})
+          from ${candidateStageHistory}
+          where ${candidateStageHistory.candidateId} = ${candidates.id}
+            and ${candidateStageHistory.stageId} = ${candidates.currentStageId}
+        )`.as("stage_entered_at"),
+      })
+      .from(candidates)
+      .where(and(eq(candidates.jobId, jobId), ne(candidates.status, "rejected")))
+      .orderBy(asc(candidates.stagePosition), desc(candidates.appliedAt))
+      .limit(BOARD_MAX_CANDIDATES);
+    return rows.map((r) => ({ ...r, stageEnteredAt: parseUtcTimestamp(r.stageEnteredAt) }));
+  },
+
   async getById(id: number) {
     const [candidate] = await db
       .select({
@@ -465,6 +571,7 @@ export const candidateService = {
     candidateId: number,
     newStageId: number,
     movedBy: number | null = null,
+    position?: number,
   ): Promise<MoveStageResult> {
     return await db.transaction(async (tx) => {
       const stageAutomation: StageAutomationFlags = {};
@@ -488,8 +595,12 @@ export const candidateService = {
 
       if (!stage) throw new Error("Invalid stage for this job");
 
-      // Already in this stage — skip duplicate history and automations
+      // Already in this stage: no history entry and no automations, but a requested
+      // position still reorders the column.
       if (candidate.currentStageId === newStageId) {
+        if (position !== undefined) {
+          await placeInStage(tx, candidateId, newStageId, position);
+        }
         return { candidate, stageAutomation };
       }
 
@@ -511,6 +622,8 @@ export const candidateService = {
         .returning();
 
       if (!updated) throw new Error("Failed to update candidate");
+
+      await placeInStage(tx, candidateId, newStageId, position);
 
       await tx.insert(candidateStageHistory).values({
         candidateId,
@@ -584,6 +697,42 @@ export const candidateService = {
 
       return { candidate: updated, stageAutomation };
     });
+  },
+
+  /**
+   * Moves several candidates into one stage. Each move is its own transaction, so one candidate
+   * that cannot move (wrong job, deleted) does not stop the rest. They land at the top of the
+   * stage in the order given.
+   */
+  async moveStageBulk(
+    candidateIds: number[],
+    newStageId: number,
+    movedBy: number | null = null,
+  ): Promise<BulkMoveResult> {
+    const result: BulkMoveResult = {
+      moved: [],
+      failed: [],
+      assessmentInvitesSent: 0,
+      assessmentInvitesSkipped: 0,
+    };
+    // Last first, so each one is placed at the top and the first id ends up on top.
+    for (const id of [...candidateIds].reverse()) {
+      try {
+        const res = await candidateService.moveStage(id, newStageId, movedBy, 0);
+        result.moved.push({ id, jobId: res.candidate.jobId });
+        if (res.stageAutomation.assessmentInvite === "sent") result.assessmentInvitesSent += 1;
+        if (res.stageAutomation.assessmentInvite === "skipped_active_invite") {
+          result.assessmentInvitesSkipped += 1;
+        }
+      } catch (error) {
+        result.failed.push({
+          id,
+          error: error instanceof Error ? error.message : "Failed to move candidate",
+        });
+      }
+    }
+    result.moved.reverse();
+    return result;
   },
 
   async rejectCandidate(

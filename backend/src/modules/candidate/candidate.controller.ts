@@ -35,6 +35,17 @@ const candidateApplySchema = z.object({
 
 const moveStageSchema = z.object({
   newStageId: z.number().int().positive("Target stage ID is required"),
+  // Where the card lands in the column (0 is the top). Omitted means the end.
+  position: z.number().int().min(0).optional(),
+});
+
+const bulkMoveSchema = z.object({
+  candidateIds: z
+    .array(z.number().int().positive())
+    .min(1, "Pick at least one candidate")
+    .max(200, "Move at most 200 candidates at a time")
+    .refine((ids) => new Set(ids).size === ids.length, "Candidate ids must be unique"),
+  newStageId: z.number().int().positive("Target stage ID is required"),
 });
 
 const updateCandidateBasicSchema = z.object({
@@ -110,6 +121,23 @@ export const applyForJob = async (req: Request, res: Response) => {
       `Failed to submit application for jobId=${req.params.jobId}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({ error: "Failed to submit application" });
+  }
+};
+
+export const getPipelineBoard = async (req: Request, res: Response) => {
+  try {
+    const jobId = parseInt((req.params.jobId ?? "").toString());
+    if (isNaN(jobId)) {
+      res.status(400).json({ error: "Invalid job ID" });
+      return;
+    }
+    const data = await candidateService.getBoard(jobId);
+    res.status(200).json({ data });
+  } catch (error) {
+    logger.error(
+      `Failed to load pipeline board for jobId=${req.params.jobId}: ${getErrorMessage(error)}`,
+    );
+    res.status(500).json({ error: "Failed to load the pipeline board" });
   }
 };
 
@@ -287,6 +315,7 @@ export const moveCandidateStage = async (req: Request, res: Response) => {
       id,
       parsed.data.newStageId,
       req.user.id,
+      parsed.data.position,
     );
     logger.info(
       `Candidate stage moved: candidateId=${id}, newStageId=${parsed.data.newStageId}, movedBy=${req.user.id}${result.stageAutomation ? `, automation="${result.stageAutomation}"` : ""}`,
@@ -307,6 +336,43 @@ export const moveCandidateStage = async (req: Request, res: Response) => {
     res
       .status(400)
       .json({ error: getErrorMessage(error) || "Failed to move candidate" });
+  }
+};
+
+export const bulkMoveCandidates = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      res.status(401).json({ error: "Unauthorized" });
+      return;
+    }
+    const parsed = bulkMoveSchema.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      });
+      return;
+    }
+
+    const result = await candidateService.moveStageBulk(
+      parsed.data.candidateIds,
+      parsed.data.newStageId,
+      req.user.id,
+    );
+    logger.info(
+      `Bulk stage move: stageId=${parsed.data.newStageId}, moved=${result.moved.length}, failed=${result.failed.length}, by user ${req.user.id}`,
+    );
+    for (const m of result.moved) {
+      socketService.notifyStageChanged({
+        candidateId: m.id,
+        jobId: m.jobId,
+        stageId: parsed.data.newStageId,
+      });
+    }
+    res.status(200).json({ data: result });
+  } catch (error) {
+    logger.error(`Failed bulk stage move: ${getErrorMessage(error)}`);
+    res.status(500).json({ error: "Failed to move the candidates" });
   }
 };
 

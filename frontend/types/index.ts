@@ -211,6 +211,23 @@ export type Candidate = {
   jobTitle: string | null;
 };
 
+/** What the pipeline board needs about a candidate: the light row from `/candidates/jobs/:id/board`. */
+export type BoardCandidate = Pick<
+  Candidate,
+  | "id"
+  | "firstName"
+  | "lastName"
+  | "email"
+  | "jobId"
+  | "currentStageId"
+  | "status"
+  | "appliedAt"
+  | "updatedAt"
+> & {
+  /** When the candidate entered their current stage. Null when there is no record of it. */
+  stageEnteredAt: string | null;
+};
+
 /** Mirrors API `stageAutomation` on candidate stage move. */
 export type StageAutomationFlags = {
   assessmentInvite?: "sent" | "skipped_active_invite";

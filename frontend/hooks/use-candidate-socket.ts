@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useSocketToken } from "@/components/providers/socket-auth-provider";
+import { boardKey } from "@/hooks/queries/use-candidates";
 import { createAuthedSocket } from "@/lib/socket";
 
 export function useCandidateSocket() {
@@ -15,6 +16,7 @@ export function useCandidateSocket() {
     const socket = createAuthedSocket(token);
 
     socket.on("candidate_applied", (data: { jobId: number }) => {
+      queryClient.invalidateQueries({ queryKey: boardKey(data.jobId) });
       queryClient.invalidateQueries({
         predicate: (query) => {
           const key = query.queryKey as unknown[];
@@ -44,6 +46,7 @@ export function useCandidateSocket() {
     socket.on(
       "candidate_stage_changed",
       (data: { candidateId: number; jobId: number; stageId: number }) => {
+        queryClient.invalidateQueries({ queryKey: boardKey(data.jobId) });
         queryClient.invalidateQueries({
           queryKey: ["candidates", data.candidateId],
         });

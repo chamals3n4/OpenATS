@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { reportService } from "./report.service";
+import { attentionService } from "./attention.service";
 import logger from "../../utils/logger";
 import { getErrorMessage } from "../../utils/error.utils";
 
@@ -66,5 +67,25 @@ export const exportReportsAnalytics = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error(`Failed to export analytics report - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to export analytics report" });
+  }
+};
+
+export const getAttention = async (req: Request, res: Response) => {
+  try {
+    const parsed = z
+      .object({ departmentId: z.coerce.number().int().positive().optional() })
+      .safeParse(req.query);
+    if (!parsed.success) {
+      res.status(400).json({
+        error: "Validation failed",
+        details: parsed.error.flatten().fieldErrors,
+      });
+      return;
+    }
+    const result = await attentionService.get(parsed.data.departmentId);
+    res.status(200).json({ data: result });
+  } catch (error) {
+    logger.error(`Failed to fetch overview attention items: ${getErrorMessage(error)}`);
+    res.status(500).json({ error: "Failed to fetch what needs attention" });
   }
 };

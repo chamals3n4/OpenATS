@@ -47,6 +47,9 @@ export const candidates = pgTable(
 
     status: candidateStatus("status").notNull().default("active"),
 
+    // Order of the card within its pipeline stage (0 is the top). Ties fall back to newest first.
+    stagePosition: integer("stage_position").notNull().default(0),
+
     appliedAt: timestamp("applied_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

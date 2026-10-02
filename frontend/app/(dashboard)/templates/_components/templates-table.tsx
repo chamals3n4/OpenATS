@@ -59,7 +59,7 @@ export function TemplatesTable({
 
   return (
     <div className="px-6 py-4">
-      <div className="border border-slate-200 dark:border-neutral-800 rounded-md bg-white dark:bg-neutral-950 shadow-none overflow-hidden">
+      <div className="overflow-hidden rounded-md border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-900">
         <BulkSelectionBar
           selectedCount={selection.selectedCount}
           label="template"
@@ -77,7 +77,7 @@ export function TemplatesTable({
         />
         <Table>
           <TableHeader>
-            <TableRow className="border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-950 hover:bg-transparent">
+            <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-slate-100/70 dark:bg-neutral-800/60 hover:bg-slate-100/70 dark:hover:bg-neutral-800/60">
               <BulkSelectHeaderCell
                 className="h-11"
                 checked={selection.allVisibleSelected}
@@ -85,19 +85,19 @@ export function TemplatesTable({
                 disabled={isLoading || templates.length === 0}
                 onCheckedChange={selection.toggleVisible}
               />
-              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                 Template Name
               </TableHead>
-              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                 Type
               </TableHead>
-              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                 Created By
               </TableHead>
-              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                 Last Edited
               </TableHead>
-              <TableHead className="h-11 px-6 w-40 text-right font-semibold text-slate-900 dark:text-neutral-100 text-sm">
+              <TableHead className="h-11 px-6 w-40 text-right font-semibold text-slate-900 dark:text-neutral-100 text-[15px]">
                 Actions
               </TableHead>
             </TableRow>

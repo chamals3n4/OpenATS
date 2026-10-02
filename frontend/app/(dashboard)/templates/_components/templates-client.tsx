@@ -2,6 +2,7 @@
 
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import {
   useTemplatesList,
   useDeleteTemplate,
@@ -14,6 +15,7 @@ import { TemplatesFilters } from "./templates-filters";
 import { TemplatesTable } from "./templates-table";
 import { TemplateTypePicker } from "./type-picker";
 import { TemplateDeleteDialog } from "./delete-dialog";
+import { DuplicateTemplateDialog } from "./duplicate-dialog";
 
 const PAGE_LIMIT = 15;
 
@@ -53,7 +55,8 @@ export default function TemplatesPageClient() {
   const [pickedType, setPickedType] = useState<string | null>(null);
 
   const handleOpenTypePicker = useCallback(() => {
-    setPickedType(null);
+    // Most templates are emails, so start there; one click to change it.
+    setPickedType("email");
     setTypePickerOpen(true);
   }, []);
 
@@ -65,16 +68,35 @@ export default function TemplatesPageClient() {
   }, [pickedType, router]);
 
   // ── Duplicate ──────────────────────────────────────────────
-  const handleDuplicate = useCallback(
-    (template: Template) => {
-      createMutation.mutate({
-        name: `${template.name} (Copy)`,
-        type: template.type,
-        subject: template.subject,
-        bodyJson: template.bodyJson,
-      });
+  // Asks for a name first, so a copy is never made by accident or left unnamed.
+  const [duplicateTarget, setDuplicateTarget] = useState<Template | null>(null);
+
+  const handleConfirmDuplicate = useCallback(
+    (name: string) => {
+      if (!duplicateTarget) return;
+      createMutation.mutate(
+        {
+          name,
+          type: duplicateTarget.type,
+          subject: duplicateTarget.subject,
+          bodyJson: duplicateTarget.bodyJson,
+        },
+        {
+          onSuccess: (res) => {
+            setDuplicateTarget(null);
+            toast.success(`Created "${name}"`, {
+              action: {
+                label: "Open",
+                onClick: () => router.push(`/templates/${res.data.id}/edit`),
+              },
+            });
+          },
+          onError: (error) =>
+            toast.error(error.message || "Failed to duplicate the template"),
+        },
+      );
     },
-    [createMutation],
+    [duplicateTarget, createMutation, router],
   );
 
   // ── Bulk Delete ────────────────────────────────────────────
@@ -125,7 +147,7 @@ export default function TemplatesPageClient() {
           templates={templates}
           isLoading={isLoading}
           onRowClick={(template) => router.push(`/templates/${template.id}/edit`)}
-          onDuplicate={handleDuplicate}
+          onDuplicate={setDuplicateTarget}
           onDelete={setDeleteId}
           onDeleteSelected={handleDeleteSelected}
           isDeletingSelected={bulkDeleteMutation.isPending}
@@ -140,6 +162,13 @@ export default function TemplatesPageClient() {
         onPickType={setPickedType}
         onClose={() => setTypePickerOpen(false)}
         onContinue={handleContinue}
+      />
+
+      <DuplicateTemplateDialog
+        template={duplicateTarget}
+        isPending={createMutation.isPending}
+        onClose={() => setDuplicateTarget(null)}
+        onConfirm={handleConfirmDuplicate}
       />
 
       <TemplateDeleteDialog

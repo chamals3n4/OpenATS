@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildJobPayload } from "@/lib/jobs-utils";
+import { buildJobPayload, buildUpdateJobPayload } from "@/lib/jobs-utils";
 
 const base = {
   title: "  Senior Engineer  ",
@@ -97,5 +97,33 @@ describe("buildJobPayload", () => {
     });
 
     expect(payload.salaryFixed).toBeNull();
+  });
+});
+
+describe("buildUpdateJobPayload", () => {
+  it("sends empty text fields as null so they are cleared, and keeps the given status", () => {
+    const payload = buildUpdateJobPayload({ ...base, status: "published" });
+
+    expect(payload.title).toBe("Senior Engineer");
+    expect(payload.location).toBeNull();
+    expect(payload.description).toBeNull();
+    expect(payload.status).toBe("published");
+  });
+
+  it("builds the same salary fields as the create payload", () => {
+    const salary = {
+      ...base,
+      isSalaryInfoIncluded: true,
+      salaryType: "range" as const,
+      salaryMin: "50,000",
+      salaryMax: "80,000",
+    };
+
+    const update = buildUpdateJobPayload({ ...salary, status: "draft" });
+    const create = buildJobPayload(salary);
+
+    expect(update.salaryType).toBe(create.salaryType);
+    expect(update.salaryMin).toBe(50000);
+    expect(update.salaryMax).toBe(80000);
   });
 });

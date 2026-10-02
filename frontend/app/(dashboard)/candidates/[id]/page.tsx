@@ -33,7 +33,7 @@ import { JobFitSection } from "./_components/sections/job-fit-section";
 import { AnswersSection } from "./_components/sections/answer-section";
 import { HistorySection } from "./_components/sections/history-section";
 import { OfferSection } from "./_components/sections/offer-section";
-import { InterviewsSection } from "./_components/sections/inerviews-section";
+import { InterviewsSection } from "./_components/sections/interviews-section";
 import { RejectionSection } from "./_components/sections/rejection-section";
 import { EmailSection } from "./_components/sections/email-section";
 import { ScoresSection } from "./_components/sections/scores-section";
@@ -242,7 +242,7 @@ export default function CandidateDetailPage({
               }
             />
 
-            <div className="rounded-md border border-slate-200 bg-white shadow-sm dark:border-neutral-800 dark:bg-neutral-950">
+            <div className="rounded-md border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-950">
               {activeSection === "job-fit" && (
                 <JobFitSection
                   resumeUrl={candidate.resumeUrl}
@@ -277,6 +277,8 @@ export default function CandidateDetailPage({
                 <RejectionSection
                   candidate={candidate}
                   candidateId={candidateId}
+                  stageMap={stageMap}
+                  emailTemplates={emailTemplates}
                   unrejectMutation={unrejectMutation}
                   onReject={() => setIsRejectDialogOpen(true)}
                 />
@@ -336,6 +338,7 @@ export default function CandidateDetailPage({
         onOpenChange={setIsRejectDialogOpen}
         candidate={candidate}
         candidateId={candidateId}
+        stageName={candidate.currentStageId ? stageMap[candidate.currentStageId] : null}
         emailTemplates={emailTemplates}
         rejectMutation={rejectMutation}
       />

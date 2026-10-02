@@ -1,6 +1,6 @@
 import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
-import { AnalyticsReport, AnalyticsExportPayload } from "@/types";
+import { AnalyticsReport, AnalyticsExportPayload, AttentionReport } from "@/types";
 
 export function useAnalyticsReport(
   period: "7d" | "30d" | "90d",
@@ -15,9 +15,27 @@ export function useAnalyticsReport(
         `/reports/analytics?${params.toString()}`,
       );
     },
-    staleTime: 1000 * 60 * 5,
+    staleTime: 1000 * 60,
     placeholderData: keepPreviousData,
-    refetchOnMount: false,
+  });
+}
+
+/** Interviews, offers and candidates that need a manager's attention. Managers only. */
+export function useAttentionReport(departmentId?: number, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["reports", "attention", departmentId ?? "all"],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (departmentId) params.set("departmentId", String(departmentId));
+      const query = params.toString();
+      return serverFetch<{ data: AttentionReport }>(
+        `/reports/attention${query ? `?${query}` : ""}`,
+      );
+    },
+    enabled: options?.enabled !== false,
+    staleTime: 1000 * 30,
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: true,
   });
 }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { Textarea } from "@/components/ui/textarea";
 import { useRef, useState, FormEvent } from "react";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
@@ -60,7 +61,7 @@ function formatSalary(job: JobDetail): string | null {
 }
 
 const fieldInput =
-  "h-11 bg-slate-100 dark:bg-neutral-800/60 border border-slate-300 dark:border-neutral-700 rounded-md shadow-none focus-visible:ring-0 focus-visible:border-slate-900 dark:focus-visible:border-neutral-100 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500";
+  "h-11 bg-slate-100 dark:bg-neutral-800/60 border border-slate-300 dark:border-neutral-700 rounded-md shadow-none focus-visible:ring-0 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500";
 
 type Answer = { answerText?: string; optionIds?: number[] };
 
@@ -359,13 +360,25 @@ export function JobApplicationForm({
                         />
                       )}
 
+                      {q.questionType === "url" && (
+                        <Input
+                          type="url"
+                          inputMode="url"
+                          placeholder="https://"
+                          required={q.isRequired}
+                          value={answers[q.id]?.answerText ?? ""}
+                          onChange={(e) => setTextAnswer(q.id, e.target.value)}
+                          className={fieldInput}
+                        />
+                      )}
+
                       {q.questionType === "long_answer" && (
-                        <textarea
+                        <Textarea
                           required={q.isRequired}
                           value={answers[q.id]?.answerText ?? ""}
                           onChange={(e) => setTextAnswer(q.id, e.target.value)}
                           rows={4}
-                          className="w-full rounded-md border border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800/60 px-3 py-2.5 text-sm text-slate-700 dark:text-neutral-300 focus:outline-none focus-visible:border-slate-900 dark:focus-visible:border-neutral-100 resize-none transition-colors"
+                          className="w-full rounded-md border border-slate-300 dark:border-neutral-700 bg-slate-100 dark:bg-neutral-800/60 px-3 py-2.5 text-sm text-slate-700 dark:text-neutral-300 min-h-24 resize-none"
                         />
                       )}
 

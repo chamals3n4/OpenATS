@@ -153,7 +153,7 @@ export function useCreateQuestion(jobId: number) {
   return useMutation({
     mutationFn: (data: {
       title: string;
-      questionType: "short_answer" | "long_answer" | "checkbox" | "radio";
+      questionType: "short_answer" | "long_answer" | "url" | "checkbox" | "radio";
       isRequired: boolean;
       position: number;
       options?: { label: string; isCorrect: boolean; position: number }[];
@@ -178,9 +178,11 @@ export function useUpdateQuestion(jobId: number) {
       questionId: number;
       data: {
         title?: string;
-        questionType?: "short_answer" | "long_answer" | "checkbox" | "radio";
+        questionType?: "short_answer" | "long_answer" | "url" | "checkbox" | "radio";
         isRequired?: boolean;
         position?: number;
+        /** Replaces every existing option; send [] to clear them. */
+        options?: { label: string; isCorrect: boolean; position: number }[];
       };
     }) =>
       serverFetch<{ data: CustomQuestion }>(

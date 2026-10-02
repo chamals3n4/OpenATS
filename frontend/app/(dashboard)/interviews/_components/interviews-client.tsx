@@ -26,6 +26,14 @@ import { InterviewList } from "./interview-list";
 import FeedbackDialog from "./feedback-dialog";
 import { EditDialog } from "./edit-dialog";
 
+const STATUS_FILTER_OPTIONS = [
+  { value: "all", label: "All Statuses" },
+  { value: "pending_schedule", label: "Awaiting Slot" },
+  { value: "scheduled", label: "Confirmed" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
+
 export default function InterviewsClient() {
   const [view, setView] = useState<"list" | "calendar">("calendar");
   const [search, setSearch] = useState("");
@@ -63,7 +71,7 @@ export default function InterviewsClient() {
     search || statusFilter !== "all" || departmentFilter !== "all";
 
   const inputCls =
-    "h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0";
+    "h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0";
 
   const handleFeedback = (iv: InterviewListItem) => {
     setFeedbackTarget(iv);
@@ -130,10 +138,14 @@ export default function InterviewsClient() {
         </div>
 
         <Select
+          items={[
+            { value: "all", label: "All Departments" },
+            ...departments.map((d) => ({ value: String(d.id), label: d.name })),
+          ]}
           value={departmentFilter}
           onValueChange={(v) => setDepartmentFilter(v ?? "all")}
         >
-          <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
+          <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-800 dark:text-neutral-200 text-sm focus:ring-0 focus-visible:ring-0 px-3">
             <SelectValue placeholder="All Departments" />
           </SelectTrigger>
           <SelectContent className="rounded-md shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
@@ -147,18 +159,19 @@ export default function InterviewsClient() {
         </Select>
 
         <Select
+          items={STATUS_FILTER_OPTIONS}
           value={statusFilter}
           onValueChange={(v) => setStatusFilter(v ?? "all")}
         >
-          <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
+          <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-800 dark:text-neutral-200 text-sm focus:ring-0 focus-visible:ring-0 px-3">
             <SelectValue placeholder="All Statuses" />
           </SelectTrigger>
           <SelectContent className="rounded-md shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="pending_schedule">Awaiting Slot</SelectItem>
-            <SelectItem value="scheduled">Confirmed</SelectItem>
-            <SelectItem value="completed">Completed</SelectItem>
-            <SelectItem value="cancelled">Cancelled</SelectItem>
+            {STATUS_FILTER_OPTIONS.map((opt) => (
+              <SelectItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
 

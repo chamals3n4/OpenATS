@@ -21,7 +21,9 @@ export function useUpdateSettingsAllowedOrigins() {
           body: JSON.stringify({ origins }),
         },
       ),
-    onSuccess: () => {
+    onSuccess: (res) => {
+      // Show what the server saved straight away, then confirm it with a refetch.
+      queryClient.setQueryData(["settings", "allowed-origins"], res);
       queryClient.invalidateQueries({
         queryKey: ["settings", "allowed-origins"],
       });

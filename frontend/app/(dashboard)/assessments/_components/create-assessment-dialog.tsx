@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 interface CreateAssessmentDialogProps {
@@ -69,7 +70,7 @@ export function CreateAssessmentDialog({ open, onOpenChange }: CreateAssessmentD
           </div>
           <div>
             <Label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-neutral-300">Description <span className="font-normal text-slate-400">(optional)</span></Label>
-            <textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What should this assessment evaluate?" rows={3} className="w-full resize-y rounded-md border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-900 shadow-none placeholder:text-slate-400 focus:border-theme focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100" />
+            <Textarea value={description} onChange={(event) => setDescription(event.target.value)} placeholder="What should this assessment evaluate?" rows={3} className="resize-y border-slate-200 bg-slate-50 shadow-none dark:border-neutral-700 dark:bg-neutral-950" />
           </div>
           <div className="w-44">
             <Label className="mb-1.5 block text-sm font-medium text-slate-700 dark:text-neutral-300">Time limit (minutes)</Label>
@@ -78,7 +79,7 @@ export function CreateAssessmentDialog({ open, onOpenChange }: CreateAssessmentD
         </div>
 
         <DialogFooter>
-          <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={createAssessment.isPending} className="h-9 border-slate-200 shadow-none dark:border-neutral-700">Cancel</Button>
+          <Button variant="cancel" onClick={() => handleOpenChange(false)} disabled={createAssessment.isPending} className="h-9">Cancel</Button>
           <Button onClick={handleContinue} disabled={createAssessment.isPending} className="h-9 gap-2 bg-theme text-white hover:bg-theme-hover">
             {createAssessment.isPending && <Spinner className="size-3.5" />}
             {createAssessment.isPending ? "Saving" : "Save and continue"}

@@ -24,8 +24,8 @@ export function QuestionSidebar({
   onMove,
 }: QuestionSidebarProps) {
   return (
-    <div className="w-[280px] border-r border-slate-100 dark:border-neutral-800 flex flex-col shrink-0 bg-white dark:bg-neutral-950">
-      <div className="px-5 py-4 border-b border-slate-100 dark:border-neutral-800">
+    <div className="w-[280px] border-r border-slate-300 dark:border-neutral-700 flex flex-col shrink-0 bg-white dark:bg-neutral-950">
+      <div className="px-5 py-4 border-b border-slate-300 dark:border-neutral-700">
         <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
           Questions ({questions.length})
         </span>

@@ -464,7 +464,7 @@ function SidebarMenuItem({ className, ...props }: React.ComponentProps<"li">) {
 }
 
 const sidebarMenuButtonVariants = cva(
-  "hover:bg-sidebar-hover gap-3.5 rounded-md pl-4 pr-4 py-1.5 text-left text-[15px] font-medium transition-colors group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! peer/menu-button flex w-full items-center overflow-hidden outline-hidden group/menu-button disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:transition-colors data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground data-active:hover:bg-sidebar-accent data-active:font-semibold data-active:[&_svg]:text-sidebar-accent-foreground",
+  "hover:bg-sidebar-hover gap-3.5 rounded-md pl-4 pr-4 py-1.5 text-left text-[17px] font-medium transition-colors group-has-data-[sidebar=menu-action]/menu-item:pr-8 group-data-[collapsible=icon]:size-8! group-data-[collapsible=icon]:p-2! peer/menu-button flex w-full items-center overflow-hidden outline-hidden group/menu-button disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&_svg]:size-5 [&_svg]:shrink-0 [&_svg]:transition-colors data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground data-active:hover:bg-sidebar-accent data-active:font-semibold data-active:[&_svg]:text-sidebar-accent-foreground",
   {
     variants: {
       variant: {
@@ -472,7 +472,7 @@ const sidebarMenuButtonVariants = cva(
         outline: "bg-background shadow-[0_0_0_1px_hsl(var(--sidebar-border))]",
       },
       size: {
-        default: "h-9.5 text-[15px]",
+        default: "h-10 text-[17px]",
         sm: "h-8 text-xs",
         lg: "h-12 text-base group-data-[collapsible=icon]:p-0!",
       },
@@ -667,7 +667,7 @@ function SidebarMenuSubButton({
     props: mergeProps<"a">(
       {
         className: cn(
-          "text-sidebar-foreground hover:bg-sidebar-hover h-7.5 gap-2.5 rounded-md px-2.5 data-[size=md]:text-[15px] data-[size=sm]:text-xs font-medium flex min-w-0 -translate-x-px items-center overflow-hidden outline-hidden group-data-[collapsible=icon]:hidden disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:shrink-0 [&>svg]:transition-colors data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground data-active:hover:bg-sidebar-accent data-active:font-semibold data-active:[&>svg]:text-sidebar-accent-foreground",
+          "text-sidebar-foreground hover:bg-sidebar-hover h-8 gap-2.5 rounded-md px-2.5 data-[size=md]:text-[15px] data-[size=sm]:text-xs font-medium flex min-w-0 -translate-x-px items-center overflow-hidden outline-hidden group-data-[collapsible=icon]:hidden disabled:pointer-events-none disabled:opacity-50 aria-disabled:pointer-events-none aria-disabled:opacity-50 [&>span:last-child]:truncate [&>svg]:shrink-0 [&>svg]:transition-colors data-active:bg-sidebar-accent data-active:text-sidebar-accent-foreground data-active:hover:bg-sidebar-accent data-active:font-semibold data-active:[&>svg]:text-sidebar-accent-foreground",
           className,
         ),
       },

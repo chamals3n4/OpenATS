@@ -1,13 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PlusSignIcon, Delete02Icon } from "@hugeicons/core-free-icons";
+import { Delete01Icon, PlusSignIcon } from "@hugeicons/core-free-icons";
+import { FormField, inputCls } from "@/components/form/form-field";
 import { Button } from "@/components/ui/button";
+import { DateTimePicker } from "@/components/ui/date-time-picker";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
-import { DateTimePicker } from "@/components/ui/date-time-picker";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -15,20 +26,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogClose,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { serverFetch } from "@/lib/auth-action";
-import { toast } from "sonner";
-import { useUsers } from "@/hooks/queries/use-user";
 import { useUserIntegrationStatus } from "@/hooks/queries/use-integrations";
 import { useAllocatedSlots } from "@/hooks/queries/use-interviews";
+import { useUsers } from "@/hooks/queries/use-user";
+import {
+  currentTime,
+  hasScheduleErrors,
+  isFutureSlot,
+  parseTemplate,
+  validateSchedule,
+  type EventType,
+  type LinkMode,
+} from "../lib/scheduler-utils";
 
 interface Template {
   id: number;
@@ -47,409 +57,426 @@ interface Props {
   onSuccess?: () => void;
 }
 
-const inputCls =
-  "h-9 bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 rounded-md shadow-none text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors";
-
 const selectTriggerCls =
-  "w-full h-9! rounded-md bg-gray-50 dark:bg-neutral-800 border-slate-200 dark:border-neutral-700 shadow-none px-3! py-0! text-sm focus-visible:ring-0 focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors";
+  "h-10! w-full rounded-md border border-slate-300 bg-gray-100 px-3! py-0! text-sm text-slate-900 shadow-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100";
 
-const labelCls =
-  "text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block";
-
-/** Find selected template name for display in SelectValue */
-function findTemplateName(templates: Template[], id: string): string | null {
-  return templates.find((t) => String(t.id) === id)?.name ?? null;
+function Section({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-4 border-t border-slate-200 px-6 py-5 first:border-t-0 dark:border-neutral-800">
+      <div>
+        <h3 className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
+          {title}
+        </h3>
+        {description && (
+          <p className="mt-0.5 text-sm text-slate-500 dark:text-neutral-400">
+            {description}
+          </p>
+        )}
+      </div>
+      {children}
+    </section>
+  );
 }
 
-/** Find selected interviewer's display name for SelectValue */
-function findUserName(
-  users: { id: number; firstName: string; lastName: string }[],
-  id: number,
-): string | null {
-  const u = users.find((u) => u.id === id);
-  return u ? `${u.firstName} ${u.lastName}` : null;
-}
-
-/** A slot is usable only if it parses and is still in the future. */
-function isFutureSlot(datetime: string): boolean {
-  const d = new Date(datetime);
-  return !Number.isNaN(d.getTime()) && d.getTime() > Date.now();
-}
-
-export function InterviewSchedulerDialog({
+function SchedulerForm({
   candidateId,
   candidateName,
-  open,
-  onOpenChange,
   templates,
   pipelineStageId,
   onSuccess,
-}: Props) {
+  onClose,
+}: Omit<Props, "open" | "onOpenChange"> & { onClose: () => void }) {
   const eventTemplates = templates.filter((t) => t.type === "event");
   const { data: usersData } = useUsers();
   const users = usersData?.data ?? [];
 
-  // Whether we're using a pre-made template
-  const [useTemplate, setUseTemplate] = useState("");
-  const templateSelected = !!useTemplate;
-
-  // Find selected template config
-  const selectedTpl = templateSelected
-    ? eventTemplates.find((t) => String(t.id) === useTemplate)
-    : null;
-
-  const [eventName, setEventName] = useState("");
-  const [eventType, setEventType] = useState<"virtual" | "onsite">("virtual");
+  const [templateId, setTemplateId] = useState("");
+  const [interviewerId, setInterviewerId] = useState<number | null>(null);
+  const [eventType, setEventType] = useState<EventType>("virtual");
+  const [linkChoice, setLinkChoice] = useState<LinkMode>("manual");
   const [meetingUrl, setMeetingUrl] = useState("");
   const [location, setLocation] = useState("");
   const [bodyText, setBodyText] = useState("");
-  const [timeSlots, setTimeSlots] = useState([{ datetime: "" }]);
+  const [slots, setSlots] = useState<string[]>([""]);
   const [saving, setSaving] = useState(false);
-  const [interviewerId, setInterviewerId] = useState<number | null>(null);
-  const [linkMode, setLinkMode] = useState<"manual" | "auto">("manual");
+  const [showErrors, setShowErrors] = useState(false);
+  // "Now" for judging whether a time has passed; refreshed whenever the form is submitted.
+  const [now, setNow] = useState(currentTime);
 
-  const { data: interviewerStatusData } = useUserIntegrationStatus(interviewerId);
-  const interviewerGoogleConnected =
-    interviewerStatusData?.data.find((s) => s.provider === "google_meet")?.connected ?? false;
+  const { data: statusData } = useUserIntegrationStatus(interviewerId);
+  const googleConnected =
+    statusData?.data.find((s) => s.provider === "google_meet")?.connected ?? false;
+  // A Google link can only be created for an interviewer who has connected Google.
+  const linkMode: LinkMode = linkChoice === "auto" && googleConnected ? "auto" : "manual";
 
-  const { data: allocatedSlotsData } = useAllocatedSlots(open);
+  const { data: allocatedData } = useAllocatedSlots(true);
   const allocatedTimes = new Set(
-    (allocatedSlotsData?.data ?? []).map((s) => new Date(s.datetime).getTime()),
+    (allocatedData?.data ?? []).map((s) => new Date(s.datetime).getTime()),
   );
-  const isAllocated = (datetime: string) => {
-    if (!datetime) return false;
-    const t = new Date(datetime).getTime();
+  const isAllocated = (slot: string) => {
+    if (!slot) return false;
+    const t = new Date(slot).getTime();
     return !Number.isNaN(t) && allocatedTimes.has(t);
   };
 
-  const handleTemplateSelect = (id: string | null) => {
-    const val = id ?? "";
-    setUseTemplate(val);
-    if (!val) {
-      setEventName("");
-      setEventType("virtual");
-      setMeetingUrl("");
-      setLinkMode("manual");
-      setLocation("");
-      setTimeSlots([{ datetime: "" }]);
-      setBodyText("");
-      return;
+  const scheduleInput = { templateId, interviewerId, bodyText, slots, eventType, linkMode, meetingUrl };
+  const errors = validateSchedule(scheduleInput, now);
+
+  const templateItems = eventTemplates.map((t) => ({ value: String(t.id), label: t.name }));
+  const interviewerItems = users.map((u) => ({
+    value: String(u.id),
+    label: `${u.firstName} ${u.lastName}`.trim(),
+  }));
+
+  const handleTemplate = (id: string | null) => {
+    const value = id ?? "";
+    setTemplateId(value);
+    const template = eventTemplates.find((t) => String(t.id) === value);
+    if (!template) return;
+
+    const config = parseTemplate(template, now);
+    setEventType(config.eventType);
+    setLinkChoice(config.autoGenerate ? "auto" : "manual");
+    setMeetingUrl(config.meetingUrl);
+    setLocation(config.location);
+    setSlots(config.timeSlots.length > 0 ? config.timeSlots : [""]);
+    setBodyText(config.bodyText);
+    if (config.skippedPastSlots > 0) {
+      toast.info("Some of this template's times have already passed. Add new ones.");
     }
-    const tpl = eventTemplates.find((t) => String(t.id) === val);
-    if (!tpl) return;
-    setEventName(tpl.name);
-    setEventType("virtual");
-    setMeetingUrl("");
-    setLinkMode("manual");
-    setLocation("");
-    const blocks = (tpl.bodyJson as Array<{ content?: string }>) ?? [];
-    // Read event config from bodyJson (stored as JSON text block)
-    const configBlock = blocks.find((b: { content?: string }) =>
-      b.content?.startsWith("{"),
-    );
-    if (configBlock) {
-      try {
-        const config = JSON.parse(configBlock.content!);
-        setEventType(config.eventType || "virtual");
-        setMeetingUrl(config.meetingUrl || "");
-        // Downgraded back to manual by the effect below if the interviewer isn't connected
-        setLinkMode(config.autoGenerateMeet ? "auto" : "manual");
-        setLocation(config.location || "");
-        const futureSlots: string[] = (config.timeSlots ?? []).filter(
-          (dt: string) => isFutureSlot(dt),
-        );
-        if (futureSlots.length > 0) {
-          setTimeSlots(futureSlots.map((dt) => ({ datetime: dt })));
-        } else {
-          setTimeSlots([{ datetime: "" }]);
-        }
-        if ((config.timeSlots?.length ?? 0) > futureSlots.length) {
-          toast.info(
-            "Some of this template's time slots have already passed and were skipped — add fresh ones.",
-          );
-        }
-      } catch {
-        setTimeSlots([{ datetime: "" }]);
-      }
-    }
-    // Email body from first non-JSON text block
-    const textBlock = blocks.find(
-      (b: { content?: string }) => b.content && !b.content.startsWith("{"),
-    );
-    setBodyText(textBlock?.content ?? "");
   };
 
-  // Auto links need a connected Google account, so fall back to manual.
-  if (linkMode === "auto" && !interviewerGoogleConnected) {
-    setLinkMode("manual");
-  }
-
-  const addSlot = () => setTimeSlots([...timeSlots, { datetime: "" }]);
-
-  const resetForm = () => {
-    setEventName("");
-    setMeetingUrl("");
-    setLocation("");
-    setBodyText("");
-    setTimeSlots([{ datetime: "" }]);
-    setUseTemplate("");
-    setInterviewerId(null);
-    setLinkMode("manual");
-  };
+  const setSlot = (index: number, value: string) =>
+    setSlots((prev) => prev.map((s, i) => (i === index ? value : s)));
 
   const handleSubmit = async () => {
-    const name = eventName.trim();
-    if (!useTemplate || !name || !bodyText.trim() || !interviewerId) return;
-    const validSlots = timeSlots.filter(
-      (s: { datetime: string }) => s.datetime && isFutureSlot(s.datetime),
-    );
-    if (validSlots.length === 0) {
-      toast.error("Add at least one time slot in the future.");
+    const submittedAt = currentTime();
+    setNow(submittedAt);
+    setShowErrors(true);
+    if (hasScheduleErrors(validateSchedule(scheduleInput, submittedAt))) {
+      toast.error("Fill in the highlighted fields first.");
       return;
     }
-    const autoGenerate = eventType === "virtual" && linkMode === "auto" && interviewerGoogleConnected;
-    if (eventType === "virtual" && !autoGenerate && !meetingUrl.trim()) {
-      toast.error(
-        "Virtual interviews need a meeting link — auto-generate one or paste a URL.",
-      );
-      return;
-    }
+
+    const autoGenerate = eventType === "virtual" && linkMode === "auto";
+    const usable = slots.filter((s) => s && isFutureSlot(s, submittedAt));
+
     setSaving(true);
     try {
       await serverFetch(`/candidates/${candidateId}/schedule`, {
         method: "POST",
         body: JSON.stringify({
-          eventName: name,
+          eventName: eventTemplates.find((t) => String(t.id) === templateId)?.name.trim(),
           eventType,
-          meetingUrl: eventType === "virtual" && !autoGenerate ? meetingUrl || null : null,
+          meetingUrl: eventType === "virtual" && !autoGenerate ? meetingUrl.trim() || null : null,
           meetingProvider: autoGenerate ? "google_meet" : undefined,
           interviewerId,
-          location: eventType === "onsite" ? location || null : null,
+          location: eventType === "onsite" ? location.trim() || null : null,
           bodyText: bodyText || null,
           stageId: pipelineStageId,
-          timeSlots: validSlots.map((s) => ({
-            datetime: new Date(s.datetime).toISOString(),
+          timeSlots: usable.map((s) => ({
+            datetime: new Date(s).toISOString(),
             selected: false,
           })),
         }),
       });
-      toast.success("Interview scheduled — email sent to candidate.");
+      toast.success(`Interview scheduled. ${candidateName} has been emailed.`);
       onSuccess?.();
-      onOpenChange(false);
-      resetForm();
+      onClose();
     } catch (err: unknown) {
-      toast.error((err as Error).message || "Failed to schedule");
+      toast.error((err as Error).message || "Failed to schedule the interview");
     } finally {
       setSaving(false);
     }
   };
 
+  const err = <K extends keyof typeof errors>(key: K) =>
+    showErrors ? (errors[key] as string | undefined) ?? null : null;
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="!max-w-2xl rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg p-0 max-h-[90vh] flex flex-col">
-        <DialogHeader className="px-6 py-4 border-b border-slate-200 dark:border-neutral-800 shrink-0">
-          <DialogTitle className="text-sm font-semibold text-slate-900 dark:text-neutral-100">
-            Schedule Interview{" "}
-            <span className="font-normal text-slate-400 dark:text-neutral-500">
-              — {candidateName}
-            </span>
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            Schedule an interview for {candidateName}
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      <DialogHeader className="shrink-0 gap-1 border-b border-slate-200 px-6 py-5 dark:border-neutral-800">
+        <DialogTitle className="text-lg font-semibold text-slate-900 dark:text-neutral-100">
+          Schedule interview
+        </DialogTitle>
+        <DialogDescription className="text-sm text-slate-600 dark:text-neutral-400">
+          Invite {candidateName} to choose a time. They get an email with the
+          options you add here.
+        </DialogDescription>
+      </DialogHeader>
 
-        <div className="px-6 pt-3 pb-5 grid grid-cols-2 gap-x-5 gap-y-5 overflow-y-auto">
-          {/* Template selector */}
-          <div>
-            <Label className={labelCls}>Event Template</Label>
-            {eventTemplates.length > 0 ? (
-              <Select value={useTemplate} onValueChange={handleTemplateSelect}>
-                <SelectTrigger className={selectTriggerCls}>
-                  <SelectValue placeholder="Select event template">
-                    {useTemplate
-                      ? findTemplateName(eventTemplates, useTemplate)
-                      : null}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  {eventTemplates.map((t) => (
-                    <SelectItem key={t.id} value={String(t.id)}>
-                      {t.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            ) : (
-              <p className="text-xs text-slate-400 dark:text-neutral-500 mt-2.5">
-                No event templates yet. Create one in Settings → Templates.
-              </p>
-            )}
-          </div>
-
-          {/* Interviewer */}
-          <div>
-            <Label className={labelCls}>Interviewer</Label>
+      <div className="grid overflow-y-auto lg:grid-cols-2">
+        <div className="lg:border-r lg:border-slate-200 lg:dark:border-neutral-800">
+        <Section title="Interview">
+          <FormField
+            label="Event template"
+            htmlFor="sched-template"
+            required
+            error={err("template")}
+            hint={
+              eventTemplates.length === 0
+                ? "No event templates yet. Create one under Templates."
+                : templateId
+                  ? undefined
+                  : "The template sets the format, times and message to start from."
+            }
+          >
             <Select
-              value={interviewerId ? String(interviewerId) : ""}
-              onValueChange={(val) => setInterviewerId(val ? Number(val) : null)}
+              items={templateItems}
+              value={templateId}
+              onValueChange={handleTemplate}
+              disabled={eventTemplates.length === 0}
             >
-              <SelectTrigger className={selectTriggerCls}>
-                <SelectValue placeholder="Select interviewer">
-                  {interviewerId ? findUserName(users, interviewerId) : null}
-                </SelectValue>
+              <SelectTrigger id="sched-template" className={selectTriggerCls}>
+                <SelectValue placeholder="Choose an event template" />
               </SelectTrigger>
               <SelectContent>
-                {users.map((u) => (
-                  <SelectItem key={u.id} value={String(u.id)}>
-                    {u.firstName} {u.lastName}
+                {templateItems.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
+          </FormField>
 
-          {templateSelected && selectedTpl && (
-            <div className="col-span-2 rounded-md border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 px-3.5 py-3 text-sm space-y-0.5">
-              <p className="font-medium text-slate-700 dark:text-neutral-300">
-                {selectedTpl.name}
-              </p>
-              <p className="text-xs text-slate-500 dark:text-neutral-400">
-                {eventType === "virtual" ? "Virtual" : "On-site"}
-                {eventType === "onsite" && location ? ` — ${location}` : ""}
-                {eventType === "virtual" && linkMode === "auto"
-                  ? " — Google Meet link auto-generated"
-                  : ""}
-                {eventType === "virtual" && linkMode === "manual" && meetingUrl
-                  ? ` — ${meetingUrl}`
-                  : ""}
-              </p>
+          <FormField
+            label="Interviewer"
+            htmlFor="sched-interviewer"
+            required
+            error={err("interviewer")}
+            hint={
+              interviewerId
+                ? googleConnected
+                  ? "Google Meet is connected for this person."
+                  : "Google Meet is not connected for this person."
+                : undefined
+            }
+          >
+            <Select
+              items={interviewerItems}
+              value={interviewerId ? String(interviewerId) : ""}
+              onValueChange={(v) => setInterviewerId(v ? Number(v) : null)}
+            >
+              <SelectTrigger id="sched-interviewer" className={selectTriggerCls}>
+                <SelectValue placeholder="Choose the interviewer" />
+              </SelectTrigger>
+              <SelectContent>
+                {interviewerItems.map((u) => (
+                  <SelectItem key={u.value} value={u.value}>
+                    {u.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+
+          {templateId && eventType === "virtual" && (
+            <div className="space-y-2.5">
+              <Label className="text-sm font-medium text-slate-800 dark:text-neutral-200">
+                Meeting link
+              </Label>
+              <RadioGroup
+                value={linkMode}
+                onValueChange={(v) => setLinkChoice(v as LinkMode)}
+                className="gap-2.5"
+              >
+                <label
+                  className={`flex items-start gap-3 text-sm ${
+                    googleConnected ? "cursor-pointer" : "cursor-not-allowed opacity-60"
+                  }`}
+                >
+                  <RadioGroupItem
+                    variant="theme"
+                    value="auto"
+                    disabled={!googleConnected}
+                    className="mt-0.5"
+                  />
+                  <span>
+                    <span className="font-medium text-slate-900 dark:text-neutral-100">
+                      Create a Google Meet link
+                    </span>
+                    <span className="block text-slate-500 dark:text-neutral-400">
+                      {googleConnected
+                        ? "Made automatically once the candidate picks a time."
+                        : "Choose an interviewer who has connected Google Meet to use this."}
+                    </span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3 text-sm">
+                  <RadioGroupItem variant="theme" value="manual" className="mt-0.5" />
+                  <span className="font-medium text-slate-900 dark:text-neutral-100">
+                    Use my own link
+                  </span>
+                </label>
+              </RadioGroup>
+
+              {linkMode === "manual" && (
+                <FormField
+                  label="Link"
+                  htmlFor="sched-link"
+                  required
+                  error={err("meetingUrl")}
+                >
+                  <Input
+                    id="sched-link"
+                    value={meetingUrl}
+                    onChange={(e) => setMeetingUrl(e.target.value)}
+                    placeholder="https://meet.google.com/..., Zoom or Teams link"
+                    className={inputCls}
+                  />
+                </FormField>
+              )}
             </div>
           )}
 
-          {/* Fallback when auto-generate isn't possible and no manual link exists */}
-          {templateSelected && eventType === "virtual" && linkMode === "manual" && !meetingUrl && (
-            <div className="col-span-2">
-              <Label className={labelCls}>Meeting Link</Label>
-              <p className="text-xs text-amber-600 dark:text-amber-500 mb-1.5">
-                {interviewerId
-                  ? "Selected interviewer hasn't connected Google Meet — paste a link instead."
-                  : "Select an interviewer, or paste a meeting link."}
-              </p>
+          {templateId && eventType === "onsite" && (
+            <FormField label="Location" htmlFor="sched-location" hint="Where the candidate should go.">
               <Input
-                value={meetingUrl}
-                onChange={(e) => setMeetingUrl(e.target.value)}
-                placeholder="Zoom / Teams / Meet link"
+                id="sched-location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                placeholder="Office address and floor"
                 className={inputCls}
               />
-            </div>
+            </FormField>
           )}
-
-          {templateSelected && (
-            <>
-              {/* Time slots */}
-              <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <Label className={`${labelCls} mb-0`}>Time Slots</Label>
-                  <button
-                    onClick={addSlot}
-                    className="inline-flex items-center gap-1 text-xs font-medium text-[var(--theme-color)] hover:underline"
-                  >
-                    <HugeiconsIcon icon={PlusSignIcon} className="size-3" strokeWidth={3} />
-                    Add Time Slot
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {timeSlots.map((s, i) => {
-                    const taken = isAllocated(s.datetime);
-                    return (
-                      <div key={i}>
-                        <div
-                          className={`flex items-center gap-2 rounded-md border pl-2.5 pr-1.5 py-0.5 ${
-                            taken
-                              ? "border-amber-300 dark:border-amber-700 bg-amber-50 dark:bg-amber-950/20"
-                              : "border-slate-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800"
-                          }`}
-                        >
-                          <DateTimePicker
-                            value={s.datetime}
-                            onChange={(datetime) => {
-                              const n = [...timeSlots];
-                              n[i].datetime = datetime;
-                              setTimeSlots(n);
-                            }}
-                            className="h-8 flex-1 min-w-0 text-sm"
-                          />
-                          {taken && (
-                            <span className="shrink-0 inline-flex items-center rounded-full bg-amber-100 dark:bg-amber-950/40 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-                              Already allocated
-                            </span>
-                          )}
-                          {timeSlots.length > 1 && (
-                            <button
-                              onClick={() =>
-                                setTimeSlots(timeSlots.filter((_, j) => j !== i))
-                              }
-                              className="size-9 shrink-0 flex items-center justify-center rounded-md hover:bg-red-50 dark:hover:bg-red-950/30 text-slate-400 hover:text-red-500"
-                            >
-                              <HugeiconsIcon icon={Delete02Icon} className="size-4" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              {/* Email body */}
-              <div>
-                <Label className={labelCls}>Email Body</Label>
-                <textarea
-                  value={bodyText}
-                  onChange={(e) => setBodyText(e.target.value)}
-                  placeholder="Write the message the candidate will receive..."
-                  className="min-h-[90px] w-full rounded-md border border-slate-200 dark:border-neutral-700 bg-gray-50 dark:bg-neutral-800 px-3 py-2 text-sm shadow-none resize-none placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus:outline-none focus-visible:border-slate-400 dark:focus-visible:border-neutral-600 transition-colors"
-                />
-              </div>
-            </>
-          )}
+        </Section>
         </div>
 
-        <DialogFooter className="px-6 py-4 border-t border-slate-200 dark:border-neutral-800 gap-2 flex flex-col-reverse sm:flex-row sm:justify-end shrink-0">
-          <DialogClose
-            render={
+        <div>
+        {!templateId && (
+          <p className="m-6 rounded-md border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-neutral-700 dark:text-neutral-400">
+            Choose an event template to set the times and the message.
+          </p>
+        )}
+        {templateId && (
+          <>
+            <Section
+              title="Times to offer"
+              description="Add a few times. The candidate picks the one that suits them."
+            >
+              <div className="space-y-3">
+                {slots.map((slot, i) => {
+                  const slotError = showErrors ? errors.slotErrors[i] : undefined;
+                  return (
+                    <div key={i} className="space-y-1.5">
+                      <div
+                        className={`flex items-center gap-2 rounded-md border px-2.5 py-1 ${
+                          slotError
+                            ? "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
+                            : isAllocated(slot)
+                              ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/20"
+                              : "border-slate-300 bg-gray-100 dark:border-neutral-600 dark:bg-neutral-800"
+                        }`}
+                      >
+                        <DateTimePicker
+                          value={slot}
+                          onChange={(value) => setSlot(i, value)}
+                          className="h-9 min-w-0 flex-1 text-sm"
+                        />
+                        {isAllocated(slot) && (
+                          <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                            Already booked
+                          </span>
+                        )}
+                        {slots.length > 1 && (
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            aria-label={`Remove time ${i + 1}`}
+                            onClick={() => setSlots((prev) => prev.filter((_, j) => j !== i))}
+                            className="size-8 shrink-0 rounded-md p-0 text-slate-500 hover:bg-red-50 hover:text-red-700 dark:text-neutral-400 dark:hover:bg-red-950/40 dark:hover:text-red-400"
+                          >
+                            <HugeiconsIcon icon={Delete01Icon} className="size-4" strokeWidth={1.75} />
+                          </Button>
+                        )}
+                      </div>
+                      {slotError && (
+                        <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                          {slotError}
+                        </p>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              {err("slots") && (
+                <p className="text-xs font-medium text-red-600 dark:text-red-400">
+                  {err("slots")}
+                </p>
+              )}
+
               <Button
-                variant="ghost"
-                disabled={saving}
-                className="h-9 px-4 text-sm shadow-none border-none text-slate-600 dark:text-neutral-400 hover:bg-transparent hover:text-slate-900 dark:hover:text-neutral-100 w-full sm:w-auto"
-              />
-            }
-          >
-            Cancel
-          </DialogClose>
-          <Button
-            onClick={handleSubmit}
-            disabled={
-              !useTemplate ||
-              !bodyText.trim() ||
-              !timeSlots.some(
-                (s: { datetime: string }) =>
-                  s.datetime && isFutureSlot(s.datetime),
-              ) ||
-              !interviewerId ||
-              (eventType === "virtual" &&
-                linkMode === "manual" &&
-                !meetingUrl.trim()) ||
-              saving
-            }
-            className="h-9 px-4 rounded-md text-white font-semibold text-sm shadow-none border-none w-full sm:w-auto disabled:opacity-50 inline-flex items-center justify-center gap-2"
-            style={{ backgroundColor: "var(--theme-color)" }}
-          >
-            {saving && <Spinner className="size-3.5" />}
-            {saving ? "Sending" : "Send to Candidate"}
-          </Button>
-        </DialogFooter>
+                type="button"
+                variant="cancel"
+                onClick={() => setSlots((prev) => [...prev, ""])}
+                className="h-9 gap-2 border-dashed px-3.5 text-sm"
+              >
+                <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2} />
+                Add another time
+              </Button>
+            </Section>
+
+            <Section title="Message">
+              <FormField
+                label="Email to the candidate"
+                htmlFor="sched-body"
+                required
+                error={err("body")}
+              >
+                <Textarea
+                  id="sched-body"
+                  value={bodyText}
+                  onChange={(e) => setBodyText(e.target.value)}
+                  placeholder="Write the message the candidate will receive"
+                  rows={5}
+                  className="resize-y border-slate-300 bg-gray-100 text-sm shadow-none dark:border-neutral-600 dark:bg-neutral-800"
+                />
+              </FormField>
+            </Section>
+          </>
+        )}
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-6 py-4 dark:border-neutral-800 dark:bg-neutral-950/50">
+        <Button
+          variant="cancel"
+          onClick={onClose}
+          disabled={saving}
+          className="h-9 px-4 text-sm"
+        >
+          Cancel
+        </Button>
+        <Button
+          onClick={handleSubmit}
+          disabled={saving || !templateId}
+          className="h-9 gap-2 border-none bg-theme px-4 text-sm font-semibold text-white hover:bg-theme-hover"
+        >
+          {saving && <Spinner className="size-3.5" />}
+          {saving ? "Sending" : "Send to candidate"}
+        </Button>
+      </div>
+    </>
+  );
+}
+
+export function InterviewSchedulerDialog({ open, onOpenChange, ...formProps }: Props) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="flex max-h-[92vh] max-w-[calc(100%-2rem)] flex-col gap-0 rounded-xl border-slate-200 bg-white p-0 sm:max-w-5xl dark:border-neutral-800 dark:bg-neutral-900">
+        {/* Mounted only while open, so every interview starts from a blank form. */}
+        <SchedulerForm {...formProps} onClose={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
   );

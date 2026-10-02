@@ -1,5 +1,6 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -130,12 +131,13 @@ export function EditDialog({
         </div>
 
         <DialogFooter className="gap-2 mt-2">
-          <button
+          <Button
+            variant="cancel"
             onClick={() => onOpenChange(false)}
-            className="h-8 rounded-md border-none bg-neutral-700 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-neutral-600 cursor-pointer transition-colors"
+            className="h-8 px-4 text-sm"
           >
             Cancel
-          </button>
+          </Button>
           <button
             onClick={async () => {
               if (!target) return;

@@ -1,0 +1,1 @@
+ALTER TABLE "candidates" ADD COLUMN "stage_position" integer DEFAULT 0 NOT NULL;

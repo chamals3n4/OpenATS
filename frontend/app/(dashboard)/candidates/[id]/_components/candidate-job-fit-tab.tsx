@@ -1,230 +1,98 @@
 "use client";
 
-import { Cell, Pie, PieChart, ResponsiveContainer } from "recharts";
-import { useTheme } from "next-themes";
-import { HugeiconsIcon } from "@hugeicons/react";
+import { Spinner } from "@/components/ui/spinner";
 import {
-  Loading03Icon,
-  AiBeautifyIcon,
-  CheckmarkBadge01Icon,
-  AlertCircleIcon,
-  InformationCircleIcon,
-} from "@hugeicons/core-free-icons";
+  VERDICT_LABELS,
+  breakdownRows,
+  normalizeScore,
+  resolveVerdict,
+  toneForVerdict,
+  type Tone,
+} from "../lib/job-fit-utils";
+import type { CandidateCvAnalysisPayload } from "@/types";
 
-import type { AiSummary, CandidateCvAnalysisPayload } from "@/types";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
+const card =
+  "rounded-md border border-slate-300 bg-white dark:border-neutral-700 dark:bg-neutral-900";
 
-const DONUT_MATCH = "#22c55e";
-const DONUT_TRACK_LIGHT = "#e2e8f0";
-const DONUT_TRACK_DARK = "#3f3f46";
-
-const BREAKDOWN = [
-  { key: "skills", label: "Skills vs job requirements", max: 55 },
-  { key: "experience", label: "Experience fit", max: 25 },
-  { key: "level", label: "Seniority level", max: 15 },
-  { key: "certs", label: "Certifications", max: 5 },
-] as const;
-
-const BAR_COLORS: Record<(typeof BREAKDOWN)[number]["key"], string> = {
-  skills: "#22c55e",
-  experience: "#14b8a6",
-  level: "#f59e0b",
-  certs: "#ec4899",
+const TONE: Record<Tone, { text: string; bar: string; pill: string }> = {
+  good: {
+    text: "text-emerald-700 dark:text-emerald-400",
+    bar: "bg-emerald-500",
+    pill: "border-emerald-300 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-300",
+  },
+  fair: {
+    text: "text-amber-700 dark:text-amber-400",
+    bar: "bg-amber-500",
+    pill: "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300",
+  },
+  poor: {
+    text: "text-rose-700 dark:text-rose-400",
+    bar: "bg-rose-500",
+    pill: "border-rose-300 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-300",
+  },
 };
 
-const VERDICT_CONFIG = {
-  strong_fit: {
-    label: "Strong Fit",
-    color: "text-emerald-700 dark:text-emerald-400",
-    bg: "bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800/50",
-    dot: "bg-emerald-500",
-  },
-  moderate_fit: {
-    label: "Moderate Fit",
-    color: "text-amber-700 dark:text-amber-400",
-    bg: "bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800/50",
-    dot: "bg-amber-500",
-  },
-  weak_fit: {
-    label: "Weak Fit",
-    color: "text-orange-700 dark:text-orange-400",
-    bg: "bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800/50",
-    dot: "bg-orange-500",
-  },
-  not_recommended: {
-    label: "Not Recommended",
-    color: "text-rose-700 dark:text-rose-400",
-    bg: "bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/50",
-    dot: "bg-rose-500",
-  },
-} as const;
-
-function scoreTone(score: number): string {
-  if (score >= 75) return "text-emerald-600 dark:text-emerald-400";
-  if (score >= 50) return "text-amber-600 dark:text-amber-400";
-  return "text-rose-600 dark:text-rose-400";
+function Panel({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className={`${card} px-5 py-4`}>
+      <h3 className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
+        {title}
+      </h3>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
 }
 
-function SkillsAlignmentSection({
-  matchedSkills,
-  missingSkills,
+function SkillGroup({
+  title,
+  skills,
+  chip,
 }: {
-  matchedSkills: string[];
-  missingSkills: string[];
+  title: string;
+  skills: string[];
+  chip: string;
 }) {
-  if (matchedSkills.length === 0 && missingSkills.length === 0) return null;
+  if (skills.length === 0) return null;
   return (
-    <div className="space-y-3.5">
-      {matchedSkills.length > 0 && (
-        <div>
-          <h3 className="text-xs font-medium uppercase tracking-wide text-emerald-700/90 dark:text-emerald-400/90 mb-2">
-            Strong alignment
-          </h3>
-          <div className="flex flex-wrap gap-1.5">
-            {matchedSkills.map((s) => (
-              <span
-                key={s}
-                className="text-sm font-normal px-2.5 py-1 rounded-md bg-emerald-50 dark:bg-emerald-950/35 text-emerald-900 dark:text-emerald-200 border border-emerald-200/70 dark:border-emerald-800/50"
-              >
-                {s}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-      {missingSkills.length > 0 && (
-        <div>
-          <h3 className="text-xs font-medium uppercase tracking-wide text-rose-700/90 dark:text-rose-400/90 mb-2">
-            Gaps vs this job
-          </h3>
-          <div className="flex flex-wrap gap-1.5">
-            {missingSkills.map((s) => (
-              <span
-                key={s}
-                className="text-sm font-normal px-2.5 py-1 rounded-md bg-rose-50 dark:bg-rose-950/30 text-rose-900 dark:text-rose-200 border border-rose-200/70 dark:border-rose-900/45"
-              >
-                {s}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
+    <div>
+      <h4 className="mb-2 text-sm font-medium text-slate-600 dark:text-neutral-400">
+        {title} ({skills.length})
+      </h4>
+      <ul className="flex flex-wrap gap-2">
+        {skills.map((skill) => (
+          <li
+            key={skill}
+            className={`rounded-md border px-2.5 py-1 text-sm font-medium ${chip}`}
+          >
+            {skill}
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }
 
-function AiOverviewDialog({
-  aiSummary,
-  score,
-}: {
-  aiSummary: AiSummary;
-  score: number;
-}) {
-  const verdict = VERDICT_CONFIG[aiSummary.verdict] ?? VERDICT_CONFIG.moderate_fit;
-
+function BulletList({ items }: { items: string[] }) {
   return (
-    <DialogContent
-      className="sm:max-w-[720px] gap-0 p-0 overflow-hidden"
-      showCloseButton
-    >
-      {/* Header */}
-      <div className="px-6 pt-6 pb-4 border-b border-slate-100 dark:border-neutral-800">
-        <DialogHeader>
-          <DialogTitle className="text-slate-700 dark:text-neutral-300 font-medium mb-2">
-            AI Candidate Overview
-          </DialogTitle>
-          <p className="text-slate-600 dark:text-neutral-400 font-normal leading-relaxed">
-            {aiSummary.quickSummary}
-          </p>
-        </DialogHeader>
-      </div>
-
-      <div className="px-6 py-5 space-y-5">
-        {/* Verdict badge */}
-        <div
-          className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border font-medium ${verdict.bg} ${verdict.color}`}
-        >
-          <span className={`size-1.5 rounded-full ${verdict.dot}`} />
-          {verdict.label} — {score}/100 match
-        </div>
-
-        {/* Strengths */}
-        {aiSummary.strengths.length > 0 && (
-          <div>
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <HugeiconsIcon
-                icon={CheckmarkBadge01Icon}
-                className="size-3.5 text-slate-500 dark:text-neutral-400"
-                strokeWidth={2}
-              />
-              <h4 className="font-medium text-slate-700 dark:text-neutral-300">
-                Strengths
-              </h4>
-            </div>
-            <ul className="space-y-1.5">
-              {aiSummary.strengths.map((s, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="mt-1.5 size-1 rounded-full bg-slate-400 dark:bg-neutral-500 shrink-0" />
-                  <span className="text-slate-600 dark:text-neutral-400 font-normal leading-relaxed">
-                    {s}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Gaps */}
-        {aiSummary.gaps.length > 0 && (
-          <div>
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <HugeiconsIcon
-                icon={AlertCircleIcon}
-                className="size-3.5 text-slate-500 dark:text-neutral-400"
-                strokeWidth={2}
-              />
-              <h4 className="font-medium text-slate-700 dark:text-neutral-300">
-                Gaps & Considerations
-              </h4>
-            </div>
-            <ul className="space-y-1.5">
-              {aiSummary.gaps.map((g, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <span className="mt-1.5 size-1 rounded-full bg-slate-400 dark:bg-neutral-500 shrink-0" />
-                  <span className="text-slate-600 dark:text-neutral-400 font-normal leading-relaxed">
-                    {g}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Hiring Signal */}
-        <div className="rounded-lg bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 p-3.5">
-          <div className="flex items-center gap-1.5 mb-1.5">
-            <HugeiconsIcon
-              icon={InformationCircleIcon}
-              className="size-3.5 text-slate-500 dark:text-neutral-400"
-              strokeWidth={2}
-            />
-            <span className="font-medium text-slate-700 dark:text-neutral-300">
-              Hiring Signal
-            </span>
-          </div>
-          <p className="text-slate-600 dark:text-neutral-400 font-normal leading-relaxed">
-            {aiSummary.hiringSignal}
-          </p>
-        </div>
-      </div>
-    </DialogContent>
+    <ul className="space-y-2.5">
+      {items.map((item, i) => (
+        <li key={i} className="flex items-start gap-2.5">
+          <span
+            aria-hidden
+            className="mt-2 size-1.5 shrink-0 rounded-full bg-slate-400 dark:bg-neutral-500"
+          />
+          <span className="text-[15px] leading-relaxed text-slate-800 dark:text-neutral-200">
+            {item}
+          </span>
+        </li>
+      ))}
+    </ul>
   );
 }
 
@@ -235,16 +103,12 @@ export function CandidateJobFitTab({
   resumeUrl: string | null;
   cv: CandidateCvAnalysisPayload | null;
 }) {
-  const { resolvedTheme } = useTheme();
-  const donutTrack =
-    resolvedTheme === "dark" ? DONUT_TRACK_DARK : DONUT_TRACK_LIGHT;
-
   if (!resumeUrl) {
     return (
-      <div className="rounded-md border border-dashed border-slate-200 dark:border-neutral-700 bg-slate-50/50 dark:bg-neutral-900/40 px-4 py-8 text-center">
-        <p className="text-sm font-normal text-slate-600 dark:text-neutral-400 leading-relaxed">
-          No resume on file. Upload a resume on apply to get an automatic job
-          fit summary.
+      <div className="rounded-md border border-dashed border-slate-300 bg-slate-50/50 px-4 py-8 text-center dark:border-neutral-700 dark:bg-neutral-900/40">
+        <p className="text-[15px] leading-relaxed text-slate-600 dark:text-neutral-400">
+          No resume on file. Upload a resume when applying to get an automatic
+          job fit summary.
         </p>
       </div>
     );
@@ -252,8 +116,8 @@ export function CandidateJobFitTab({
 
   if (!cv) {
     return (
-      <div className="rounded-md border border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/40 px-4 py-8 text-center">
-        <p className="text-sm font-normal text-slate-600 dark:text-neutral-400 leading-relaxed">
+      <div className="rounded-md border border-slate-300 bg-slate-50/50 px-4 py-8 text-center dark:border-neutral-700 dark:bg-neutral-900/40">
+        <p className="text-[15px] text-slate-600 dark:text-neutral-400">
           Job fit has not run for this candidate yet.
         </p>
       </div>
@@ -262,18 +126,15 @@ export function CandidateJobFitTab({
 
   if (cv.status === "pending") {
     return (
-      <div className="flex flex-col items-center justify-center gap-4 py-16 text-center px-4">
-        <HugeiconsIcon
-          icon={Loading03Icon}
-          className="size-10 text-emerald-600 animate-spin"
-        />
+      <div className="flex flex-col items-center justify-center gap-3 px-4 py-16 text-center">
+        <Spinner className="size-8" />
         <div>
-          <p className="text-sm font-medium text-slate-800 dark:text-neutral-200">
-            Running analysis…
+          <p className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
+            Analysing the resume
           </p>
-          <p className="text-sm font-normal text-slate-500 dark:text-neutral-500 mt-1 max-w-[280px] mx-auto">
-            Parsing the resume and comparing it to this job. Usually finishes
-            in a few seconds.
+          <p className="mx-auto mt-1 max-w-[300px] text-sm text-slate-500 dark:text-neutral-400">
+            It is being compared with this job. This usually takes a few
+            seconds.
           </p>
         </div>
       </div>
@@ -282,168 +143,159 @@ export function CandidateJobFitTab({
 
   if (cv.status === "failed") {
     return (
-      <div className="rounded-md border border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/25 px-4 py-4">
-        <p className="text-xs font-medium text-red-600 dark:text-red-400 uppercase tracking-wide">
-          Could not complete analysis
+      <div
+        role="alert"
+        className="rounded-md border border-red-300 bg-red-50 px-4 py-4 dark:border-red-900/50 dark:bg-red-950/25"
+      >
+        <p className="text-[15px] font-semibold text-red-800 dark:text-red-300">
+          We couldn&apos;t analyse this resume
         </p>
-        <p className="text-sm font-normal text-red-800 dark:text-red-200/90 mt-2 leading-relaxed">
-          {cv.errorMessage ?? "An error occurred while analyzing this resume."}
+        <p className="mt-1 text-sm leading-relaxed text-red-800 dark:text-red-200/90">
+          {cv.errorMessage ?? "Something went wrong while reading it."}
         </p>
       </div>
     );
   }
 
-  const score = cv.matchScore != null ? Math.round(Number(cv.matchScore)) : 0;
-  const gap = Math.max(0, 100 - score);
-
-  const pieData =
-    score >= 100
-      ? [{ name: "Match", value: 100 }]
-      : score <= 0
-        ? [{ name: "Gap", value: 100 }]
-        : [
-            { name: "Match", value: score },
-            { name: "Gap", value: gap },
-          ];
-
-  const pieFills =
-    score >= 100
-      ? [DONUT_MATCH]
-      : score <= 0
-        ? [donutTrack]
-        : [DONUT_MATCH, donutTrack];
-
-  const bd = cv.scoreBreakdown;
+  const score = normalizeScore(cv.matchScore);
+  const summary = cv.aiSummary;
+  const verdict = resolveVerdict(score, summary?.verdict);
+  const tone = TONE[toneForVerdict(verdict)];
   const matched = cv.matchedSkills ?? [];
   const missing = cv.missingSkills ?? [];
+  const rows = cv.scoreBreakdown ? breakdownRows(cv.scoreBreakdown) : [];
 
   return (
-    <div className="grid gap-5 font-normal xl:grid-cols-[minmax(0,0.95fr)_minmax(320px,0.75fr)]">
-      <div className="space-y-5">
-        <SkillsAlignmentSection
-          matchedSkills={matched}
-          missingSkills={missing}
-        />
-
-        {bd && (
-          <div className="rounded-md border border-slate-200 bg-slate-50/70 p-4 dark:border-neutral-800 dark:bg-neutral-900/40">
-            <h3 className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-neutral-400 mb-3">
-              How the score breaks down
-            </h3>
-            <ul className="space-y-3">
-              {BREAKDOWN.map(({ key, label, max }) => {
-                const pts = bd[key];
-                const pct = max > 0 ? Math.min(100, (pts / max) * 100) : 0;
-                const color = BAR_COLORS[key];
-                return (
-                  <li key={key}>
-                    <div className="flex items-center justify-between gap-2 text-sm font-normal mb-1.5">
-                      <span className="text-slate-700 dark:text-neutral-300 truncate">
-                        {label}
-                      </span>
-                      <span className="tabular-nums text-slate-500 dark:text-neutral-500 shrink-0">
-                        <span className="font-medium text-slate-800 dark:text-neutral-200">
-                          {pts}
-                        </span>
-                        /{max}
-                      </span>
-                    </div>
-                    <div className="h-1.5 overflow-hidden rounded-full bg-slate-200/80 dark:bg-neutral-800">
-                      <div
-                        className="h-full rounded-full transition-all duration-500"
-                        style={{
-                          width: `${pct}%`,
-                          backgroundColor: color,
-                        }}
-                      />
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        )}
-      </div>
-
-      <div className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-gradient-to-b from-slate-50/80 to-white dark:from-neutral-900/50 dark:to-neutral-950 px-5 py-5 xl:sticky xl:top-5 xl:self-start">
-        <div className="flex items-center justify-between mb-1">
-          <p className="text-xs font-medium uppercase tracking-wider text-slate-500 dark:text-neutral-400">
-            Overall match
-          </p>
-          {cv.aiSummary && (
-            <Dialog>
-              <DialogTrigger
-                render={
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="gap-1.5 text-xs cursor-pointer bg-white dark:bg-transparent border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-300 hover:bg-violet-50 hover:border-violet-200 hover:text-violet-700 dark:hover:bg-violet-950/30 dark:hover:border-violet-800 dark:hover:text-violet-300 transition-colors"
-                  />
-                }
-              >
-                <HugeiconsIcon
-                  icon={AiBeautifyIcon}
-                  className="size-3.5"
-                  strokeWidth={1.5}
-                />
-                AI Overview
-              </DialogTrigger>
-              <AiOverviewDialog aiSummary={cv.aiSummary} score={score} />
-            </Dialog>
-          )}
-        </div>
-        <div className="relative mx-auto h-[220px] w-full max-w-[270px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <PieChart margin={{ top: 4, right: 4, bottom: 4, left: 4 }}>
-              <Pie
-                data={pieData}
-                cx="50%"
-                cy="50%"
-                innerRadius="88%"
-                outerRadius="100%"
-                startAngle={90}
-                endAngle={-270}
-                dataKey="value"
-                strokeWidth={0}
-                isAnimationActive
-              >
-                {pieFills.map((fill, i) => (
-                  <Cell key={i} fill={fill} />
-                ))}
-              </Pie>
-            </PieChart>
-          </ResponsiveContainer>
-          <div
-            className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center pr-1"
-            aria-hidden
-          >
+    // Container queries: the same tab sits in a wide page and in a narrow side panel.
+    <div className="@container space-y-4">
+      <section className={`${card} px-5 py-5`}>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <p className="flex items-baseline gap-1.5">
             <span
-              className={`text-[2rem] font-semibold tabular-nums leading-none ${scoreTone(score)}`}
+              className={`text-4xl font-semibold leading-none tabular-nums ${tone.text}`}
             >
               {score}
             </span>
-            <span className="text-xs font-normal text-slate-500 dark:text-neutral-500 mt-1">
-              out of 100
+            <span className="text-base text-slate-500 dark:text-neutral-400">
+              / 100
             </span>
-          </div>
-        </div>
-        <div className="flex justify-center gap-6 mt-2 text-xs font-normal text-slate-600 dark:text-neutral-400">
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="size-2.5 rounded-full shrink-0"
-              style={{ backgroundColor: DONUT_MATCH }}
-            />
-            Earned
-          </span>
-          <span className="inline-flex items-center gap-1.5">
-            <span
-              className="size-2.5 rounded-full shrink-0"
-              style={{ backgroundColor: donutTrack }}
-            />
-            Remaining
+          </p>
+          <span
+            className={`inline-flex items-center rounded-full border px-3 py-1 text-sm font-semibold ${tone.pill}`}
+          >
+            {VERDICT_LABELS[verdict]}
           </span>
         </div>
+
+        <div
+          role="progressbar"
+          aria-label="Overall match"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={score}
+          className="mt-4 h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-neutral-700"
+        >
+          <div
+            className={`h-full rounded-full ${tone.bar}`}
+            style={{ width: `${score}%` }}
+          />
+        </div>
+
+        {summary?.quickSummary && (
+          <p className="mt-4 text-[15px] leading-relaxed text-slate-800 dark:text-neutral-200">
+            {summary.quickSummary}
+          </p>
+        )}
+      </section>
+
+      <div className="grid gap-4 @2xl:grid-cols-2">
+        {(matched.length > 0 || missing.length > 0) && (
+          <Panel title="Skills match">
+            <div className="space-y-4">
+              <SkillGroup
+                title="Matching skills"
+                skills={matched}
+                chip="border-emerald-300 bg-emerald-50 text-emerald-900 dark:border-emerald-800 dark:bg-emerald-950/30 dark:text-emerald-200"
+              />
+              <SkillGroup
+                title="Missing skills"
+                skills={missing}
+                chip="border-rose-300 bg-rose-50 text-rose-900 dark:border-rose-800 dark:bg-rose-950/30 dark:text-rose-200"
+              />
+            </div>
+          </Panel>
+        )}
+
+        {rows.length > 0 && (
+          <Panel title="How the score breaks down">
+            <ul className="space-y-3.5">
+              {rows.map((row) => (
+                <li key={row.key}>
+                  <div className="mb-1.5 flex items-baseline justify-between gap-3">
+                    <span className="text-sm text-slate-700 dark:text-neutral-300">
+                      {row.label}
+                    </span>
+                    <span className="shrink-0 text-sm tabular-nums text-slate-500 dark:text-neutral-400">
+                      <span className="font-semibold text-slate-900 dark:text-neutral-100">
+                        {row.points}
+                      </span>
+                      /{row.max}
+                    </span>
+                  </div>
+                  <div
+                    role="progressbar"
+                    aria-label={row.label}
+                    aria-valuemin={0}
+                    aria-valuemax={row.max}
+                    aria-valuenow={row.points}
+                    className="h-1.5 overflow-hidden rounded-full bg-slate-200 dark:bg-neutral-700"
+                  >
+                    <div
+                      className="h-full rounded-full bg-slate-700 dark:bg-neutral-300"
+                      style={{ width: `${row.percent}%` }}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Panel>
+        )}
       </div>
+
+      {summary && (
+        <>
+          {(summary.strengths.length > 0 || summary.gaps.length > 0) && (
+            <div className="grid gap-4 @2xl:grid-cols-2">
+              {summary.strengths.length > 0 && (
+                <Panel title="Strengths">
+                  <BulletList items={summary.strengths} />
+                </Panel>
+              )}
+              {summary.gaps.length > 0 && (
+                <Panel title="Gaps and things to check">
+                  <BulletList items={summary.gaps} />
+                </Panel>
+              )}
+            </div>
+          )}
+
+          {summary.hiringSignal && (
+            <section className="rounded-md border border-slate-300 bg-slate-50 px-5 py-4 dark:border-neutral-700 dark:bg-neutral-950/40">
+              <h3 className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
+                Hiring signal
+              </h3>
+              <p className="mt-1.5 text-[15px] leading-relaxed text-slate-800 dark:text-neutral-200">
+                {summary.hiringSignal}
+              </p>
+            </section>
+          )}
+        </>
+      )}
+
+      <p className="text-sm text-slate-500 dark:text-neutral-400">
+        Generated automatically from the resume and this job&apos;s
+        requirements. Read the CV before you decide.
+      </p>
     </div>
   );
 }

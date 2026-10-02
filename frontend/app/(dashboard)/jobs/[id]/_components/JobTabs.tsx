@@ -17,11 +17,10 @@ import type {
 import type {
   useCreateQuestion,
   useDeleteQuestion,
+  useUpdateQuestion,
   useRemoveHiringTeamMember,
 } from "@/hooks/queries/use-jobs";
-import type { useAttachAssessment } from "@/hooks/queries/use-assessments";
-
-type CustomQuestionType = CustomQuestion["questionType"];
+import type { useAttachAssessment, useDetachAssessment } from "@/hooks/queries/use-assessments";
 
 interface JobTabsProps {
   activeJobTab: string;
@@ -47,38 +46,14 @@ interface JobTabsProps {
   setStageDeleteTarget: (target: { id: number; name: string } | null) => void;
   handleStageReorder: (from: number, to: number) => void;
   questions: CustomQuestion[];
-  setIsAddingMode: (mode: boolean) => void;
-  isAddingMode: boolean;
-  editingQuestionId: number | null;
-  setEditingQuestionId: (id: number | null) => void;
-  editQuestionType: CustomQuestionType;
-  setEditQuestionType: (type: CustomQuestionType) => void;
-  editQuestionText: string;
-  setEditQuestionText: (text: string) => void;
-  editQuestionRequired: boolean;
-  setEditQuestionRequired: (req: boolean) => void;
-  handleSaveQuestion: (id: number) => void;
-  updateQuestionMutationPending: boolean;
-  openEditQuestion: (q: CustomQuestion) => void;
   deleteQuestionMutation: ReturnType<typeof useDeleteQuestion>;
+  updateQuestionMutation: ReturnType<typeof useUpdateQuestion>;
   handleQuestionReorder: (from: number, to: number) => void;
-  newQuestionType: CustomQuestionType;
-  setNewQuestionType: (type: CustomQuestionType) => void;
-  newQuestionText: string;
-  setNewQuestionText: (text: string) => void;
-  newQuestionRequired: boolean;
-  setNewQuestionRequired: (req: boolean) => void;
   createQuestionMutation: ReturnType<typeof useCreateQuestion>;
-  isAssessmentDialogOpen: boolean;
-  setIsAssessmentDialogOpen: (open: boolean) => void;
   attachedAssessments: JobAssessment[];
   allAssessments: Assessment[];
-  setDetachTarget: (id: number | null) => void;
   attachAssessmentMutation: ReturnType<typeof useAttachAssessment>;
-  assessmentSelectId: string;
-  setAssessmentSelectId: (id: string) => void;
-  triggerStageSelectId: string;
-  setTriggerStageSelectId: (id: string) => void;
+  detachAssessmentMutation: ReturnType<typeof useDetachAssessment>;
 }
 
 export function JobTabs({
@@ -105,38 +80,14 @@ export function JobTabs({
   setStageDeleteTarget,
   handleStageReorder,
   questions,
-  setIsAddingMode,
-  isAddingMode,
-  editingQuestionId,
-  setEditingQuestionId,
-  editQuestionType,
-  setEditQuestionType,
-  editQuestionText,
-  setEditQuestionText,
-  editQuestionRequired,
-  setEditQuestionRequired,
-  handleSaveQuestion,
-  updateQuestionMutationPending,
-  openEditQuestion,
   deleteQuestionMutation,
+  updateQuestionMutation,
   handleQuestionReorder,
-  newQuestionType,
-  setNewQuestionType,
-  newQuestionText,
-  setNewQuestionText,
-  newQuestionRequired,
-  setNewQuestionRequired,
   createQuestionMutation,
-  isAssessmentDialogOpen,
-  setIsAssessmentDialogOpen,
   attachedAssessments,
   allAssessments,
-  setDetachTarget,
   attachAssessmentMutation,
-  assessmentSelectId,
-  setAssessmentSelectId,
-  triggerStageSelectId,
-  setTriggerStageSelectId,
+  detachAssessmentMutation,
 }: JobTabsProps) {
   return (
     <div className="pb-20 w-full">
@@ -184,48 +135,24 @@ export function JobTabs({
 
       <TabsContent
         value="custom-questions"
-        className="pt-2 space-y-8 animate-in fade-in duration-300"
+        className="pt-2"
       >
         <CustomQuestionsTab
           questions={questions}
-          setIsAddingMode={setIsAddingMode}
-          isAddingMode={isAddingMode}
-          editingQuestionId={editingQuestionId}
-          setEditingQuestionId={setEditingQuestionId}
-          editQuestionType={editQuestionType}
-          setEditQuestionType={setEditQuestionType}
-          editQuestionText={editQuestionText}
-          setEditQuestionText={setEditQuestionText}
-          editQuestionRequired={editQuestionRequired}
-          setEditQuestionRequired={setEditQuestionRequired}
-          handleSaveQuestion={handleSaveQuestion}
-          updateQuestionMutationPending={updateQuestionMutationPending}
-          openEditQuestion={openEditQuestion}
           deleteQuestionMutation={deleteQuestionMutation}
+          updateQuestionMutation={updateQuestionMutation}
           handleQuestionReorder={handleQuestionReorder}
-          newQuestionType={newQuestionType}
-          setNewQuestionType={setNewQuestionType}
-          newQuestionText={newQuestionText}
-          setNewQuestionText={setNewQuestionText}
-          newQuestionRequired={newQuestionRequired}
-          setNewQuestionRequired={setNewQuestionRequired}
           createQuestionMutation={createQuestionMutation}
         />
       </TabsContent>
 
       <TabsContent value="assessments" className="pt-2 space-y-5">
         <AssessmentsTab
-          isAssessmentDialogOpen={isAssessmentDialogOpen}
-          setIsAssessmentDialogOpen={setIsAssessmentDialogOpen}
           attachedAssessments={attachedAssessments}
           allAssessments={allAssessments}
           stages={stages}
-          setDetachTarget={setDetachTarget}
           attachAssessmentMutation={attachAssessmentMutation}
-          assessmentSelectId={assessmentSelectId}
-          setAssessmentSelectId={setAssessmentSelectId}
-          triggerStageSelectId={triggerStageSelectId}
-          setTriggerStageSelectId={setTriggerStageSelectId}
+          detachAssessmentMutation={detachAssessmentMutation}
         />
       </TabsContent>
     </div>

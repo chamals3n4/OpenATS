@@ -1,25 +1,49 @@
-import type { Integration } from "@/app/(dashboard)/settings/integrations/_components/integration-card";
+import type { IntegrationStatus } from "@/hooks/queries/use-integrations";
 
-export const integrations: Integration[] = [
+export type IntegrationState = "connected" | "not_connected" | "coming_soon";
+
+export type Integration = {
+  /** Matches the provider the API reports on, for the ones that are wired up. */
+  key: "google_meet" | "zoom" | "teams";
+  name: string;
+  description: string;
+  logo: string;
+  /** False for apps that are listed but cannot be connected yet. */
+  available: boolean;
+};
+
+export const VIDEO_MEETING_INTEGRATIONS: Integration[] = [
   {
+    key: "google_meet",
     name: "Google Meet",
-    description: "Automatically create Google Meet links for scheduled interviews.",
+    description: "Create a Google Meet link, and a calendar event, whenever you schedule an interview.",
     logo: "/integrations/meet.webp",
-    url: "https://meet.google.com",
-    provider: "google_meet",
+    available: true,
   },
   {
+    key: "zoom",
     name: "Zoom",
-    description: "Automatically create Zoom meetings for scheduled interviews.",
+    description: "Create a Zoom meeting automatically for each scheduled interview.",
     logo: "/integrations/zoom.webp",
-    url: "https://zoom.us",
-    availability: "coming_soon",
+    available: false,
   },
   {
+    key: "teams",
     name: "Microsoft Teams",
-    description: "Automatically create Microsoft Teams meetings for scheduled interviews.",
+    description: "Create a Teams meeting automatically for each scheduled interview.",
     logo: "/integrations/teams.webp",
-    url: "https://www.microsoft.com/en/microsoft-teams/group-chat-software",
-    availability: "coming_soon",
+    available: false,
   },
 ];
+
+/** What to show for one integration, from what the API says is connected. */
+export function stateOf(
+  integration: Pick<Integration, "key" | "available">,
+  statuses: IntegrationStatus[] | undefined,
+): { state: IntegrationState; accountEmail: string | null } {
+  if (!integration.available) return { state: "coming_soon", accountEmail: null };
+  const status = statuses?.find((s) => s.provider === integration.key);
+  return status?.connected
+    ? { state: "connected", accountEmail: status.accountEmail }
+    : { state: "not_connected", accountEmail: null };
+}

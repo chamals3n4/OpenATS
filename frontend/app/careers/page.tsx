@@ -1,20 +1,9 @@
-import type { Job } from "@/types";
-import { CareersJobsList } from "./_components/careers-jobs-list";
-
-type CareerJobRow = {
-  id: number;
-  slug: string;
-  title: string;
-  employmentType: Job["employmentType"];
-  location: string | null;
-  departmentName: string;
-  createdAt: string;
-};
+import { CareersJobsList, CareersTitleBar } from "./_components/careers-jobs-list";
+import type { CareerJobRow } from "./lib/careers-utils";
 
 type CompanyInfo = {
   name: string;
   logoUrl: string | null;
-  description: string | null;
 };
 
 function getApiBase() {
@@ -58,39 +47,28 @@ export default async function CareersIndexPage() {
     getPublishedJobs(),
     getCompanyInfo(),
   ]);
+  const brand = company
+    ? { name: company.name, logoUrl: company.logoUrl }
+    : null;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-neutral-950 transition-colors duration-300">
-      <div className="max-w-3xl mx-auto px-6 py-14">
-        {company && (
-          <div className="mb-10 flex flex-col items-center text-center">
-            {company.logoUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={company.logoUrl}
-                alt={company.name}
-                className="mb-4 h-8 w-auto max-w-[160px] object-contain"
-              />
-            )}
-            {company.description && (
-              <p className="mt-2 max-w-3xl text-sm text-slate-500 dark:text-neutral-400 leading-relaxed">
-                {company.description}
-              </p>
-            )}
-          </div>
-        )}
-
-        <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100 mb-6">
-          Open roles
-        </h2>
-
+    <div className="min-h-screen bg-white transition-colors duration-300 dark:bg-neutral-950">
+      <div className="mx-auto max-w-[960px] px-6 pb-24 pt-14 sm:px-8">
         {jobs.length === 0 ? (
-          <p className="text-sm text-slate-500 dark:text-neutral-400 py-8 text-center">
-            There are no open positions at the moment. Please check back
-            later.
-          </p>
+          <>
+            <CareersTitleBar brand={brand} />
+            <hr className="my-5 border-t border-slate-200 dark:border-neutral-800" />
+            <div className="rounded-lg border border-dashed border-slate-300 px-6 py-14 text-center dark:border-neutral-700">
+              <p className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
+                No open roles right now
+              </p>
+              <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
+                New roles are posted here as they open. Please check back soon.
+              </p>
+            </div>
+          </>
         ) : (
-          <CareersJobsList jobs={jobs} />
+          <CareersJobsList jobs={jobs} brand={brand} />
         )}
       </div>
     </div>

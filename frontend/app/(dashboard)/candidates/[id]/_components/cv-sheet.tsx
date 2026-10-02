@@ -2,6 +2,7 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon, File01Icon } from "@hugeicons/core-free-icons";
+import { Button } from "@/components/ui/button";
 import {
   Sheet,
   SheetContent,
@@ -23,31 +24,39 @@ export function CvSheet({ open, onOpenChange, candidate }: CvSheetProps) {
       <SheetContent
         side="right"
         showCloseButton={false}
-        className="w-full gap-0 border-slate-200 p-0 dark:border-neutral-800 sm:max-w-none lg:w-[min(920px,72vw)]"
+        // About one A4 (794px) or Legal (816px) page. The sheet sets its own width through the
+        // data-side selector, so that is the one that has to be overridden.
+        className="gap-0 border-slate-200 p-0 data-[side=right]:w-[min(840px,100vw)] sm:max-w-none dark:border-neutral-800"
       >
         <SheetHeader className="flex-row items-center justify-between gap-3 border-b border-slate-200 px-4 py-3 dark:border-neutral-800">
           <SheetTitle className="truncate text-sm font-semibold text-slate-900 dark:text-neutral-100">
             {candidate.firstName} {candidate.lastName} CV
           </SheetTitle>
           <div className="flex shrink-0 items-center gap-2">
-            {candidate.resumeUrl && (
-              <a
-                href={`/api/candidates/${candidate.id}/resume`}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex h-8 items-center gap-1.5 rounded-md bg-[var(--theme-color)] px-3 text-sm font-semibold text-white hover:bg-[var(--theme-color-hover)]"
-              >
-                Open in New Tab
-              </a>
-            )}
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              className="inline-flex size-8 cursor-pointer items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600 dark:text-neutral-500 dark:hover:bg-neutral-800 dark:hover:text-neutral-300"
-              aria-label="Collapse CV preview"
+          {candidate.resumeUrl && (
+            <Button
+              render={
+                <a
+                  href={`/api/candidates/${candidate.id}/resume`}
+                  target="_blank"
+                  rel="noreferrer"
+                />
+              }
+              className="h-9 border-none bg-theme px-4 text-sm font-semibold text-white hover:bg-theme-hover"
             >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-5" />
-            </button>
+              Open in new tab
+            </Button>
+          )}
+          <Button
+            type="button"
+            variant="ghost"
+            aria-label="Close CV preview"
+            title="Close"
+            onClick={() => onOpenChange(false)}
+            className="size-9 rounded-full p-0 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+          >
+            <HugeiconsIcon icon={Cancel01Icon} className="size-5" />
+          </Button>
           </div>
         </SheetHeader>
         {candidate.resumeUrl ? (

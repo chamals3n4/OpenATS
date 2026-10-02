@@ -19,6 +19,8 @@ const buttonVariants = cva(
           "bg-[var(--theme-color)] text-white hover:bg-[var(--theme-color-hover)]",
         outline:
           "border-transparent bg-neutral-700 text-white hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 aria-expanded:bg-neutral-600 aria-expanded:text-white shadow-none",
+        cancel:
+          "border-slate-300 bg-transparent font-medium text-slate-700 shadow-none hover:bg-slate-50 hover:text-slate-900 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-800 aria-expanded:bg-slate-50",
         secondary:
           "bg-neutral-700 text-white hover:bg-neutral-600 dark:bg-neutral-700 dark:hover:bg-neutral-600 aria-expanded:bg-neutral-600 aria-expanded:text-white",
         ghost:

@@ -1,27 +1,18 @@
 "use client";
 
+import { ConfirmDeleteDialog, ConfirmDeleteName } from "@/components/ui/confirm-delete-dialog";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { useParams } from "next/navigation";
 import { serverFetch } from "@/lib/auth-action";
 import { Tabs } from "@/components/ui/tabs";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Spinner } from "@/components/ui/spinner";
 
 import { JobHeader } from "./_components/JobHeader";
 import { JobTabs } from "./_components/JobTabs";
 import { DiscussionsPanel } from "./_components/DiscussionsPanel";
 import { AddStageDialog } from "./_components/dialogs/AddStageDialog";
 
+import { moveItem, positionChanges } from "./lib/question-utils";
 import {
   useJob,
   useCustomQuestions,
@@ -217,12 +208,6 @@ export default function JobDetailsPage() {
   } | null>(null);
 
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
-  const [isAddingMode, setIsAddingMode] = useState(false);
-  const [newQuestionType, setNewQuestionType] = useState<
-    "short_answer" | "long_answer" | "checkbox" | "radio"
-  >("short_answer");
-  const [newQuestionText, setNewQuestionText] = useState("");
-  const [newQuestionRequired, setNewQuestionRequired] = useState(false);
 
   // Seed the editable copy whenever the query returns a new list.
   const [seededQuestions, setSeededQuestions] = useState<
@@ -269,37 +254,6 @@ export default function JobDetailsPage() {
     );
   };
 
-  const [editingQuestionId, setEditingQuestionId] = useState<number | null>(
-    null,
-  );
-  const [editQuestionText, setEditQuestionText] = useState("");
-  const [editQuestionType, setEditQuestionType] = useState<
-    "short_answer" | "long_answer" | "checkbox" | "radio"
-  >("short_answer");
-  const [editQuestionRequired, setEditQuestionRequired] = useState(false);
-
-  const openEditQuestion = (q: CustomQuestion) => {
-    setEditingQuestionId(q.id);
-    setEditQuestionText(q.title);
-    setEditQuestionType(q.questionType);
-    setEditQuestionRequired(q.isRequired);
-  };
-
-  const handleSaveQuestion = (questionId: number) => {
-    if (!editQuestionText.trim()) return;
-    updateQuestionMutation.mutate(
-      {
-        questionId,
-        data: {
-          title: editQuestionText.trim(),
-          questionType: editQuestionType,
-          isRequired: editQuestionRequired,
-        },
-      },
-      { onSuccess: () => setEditingQuestionId(null) },
-    );
-  };
-
   const [stages, setStages] = useState<(PipelineStage & { color: string })[]>(
     [],
   );
@@ -321,14 +275,10 @@ export default function JobDetailsPage() {
   const [addStageOpen, setAddStageOpen] = useState(false);
   const [newStageName, setNewStageName] = useState("");
   const [newStageType, setNewStageType] = useState("screening");
-  const [isAssessmentDialogOpen, setIsAssessmentDialogOpen] = useState(false);
-  const [detachTarget, setDetachTarget] = useState<number | null>(null);
   const [stageDeleteTarget, setStageDeleteTarget] = useState<{
     id: number;
     name: string;
   } | null>(null);
-  const [assessmentSelectId, setAssessmentSelectId] = useState("");
-  const [triggerStageSelectId, setTriggerStageSelectId] = useState("");
 
   const handleAddStage = () => {
     if (!newStageName.trim()) return;
@@ -370,22 +320,14 @@ export default function JobDetailsPage() {
 
   const questionReorderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const handleQuestionReorder = (from: number, to: number) => {
-    const reordered = [...questions];
-    const [moved] = reordered.splice(from, 1);
-    reordered.splice(to, 0, moved);
+    const reordered = moveItem(questions, from, to);
     setQuestions(reordered);
 
     if (questionReorderTimeoutRef.current)
       clearTimeout(questionReorderTimeoutRef.current);
     questionReorderTimeoutRef.current = setTimeout(() => {
-      reordered.forEach((question, index) => {
-        const newPosition = index + 1;
-        if (question.position !== newPosition) {
-          updateQuestionMutation.mutate({
-            questionId: question.id,
-            data: { position: newPosition },
-          });
-        }
+      positionChanges(reordered).forEach(({ id, position }) => {
+        updateQuestionMutation.mutate({ questionId: id, data: { position } });
       });
     }, 500);
   };
@@ -413,16 +355,16 @@ export default function JobDetailsPage() {
               onValueChange={setActiveJobTab}
               className="w-full"
             >
-              <div className="mb-5">
-                <div className="flex w-fit max-w-full gap-1.5 overflow-x-auto rounded-lg border border-slate-300 bg-white p-1.5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
+              <div className="mb-4">
+                <div className="flex w-fit max-w-full gap-1 overflow-x-auto rounded-lg border border-slate-300 bg-transparent p-1 shadow-none dark:border-neutral-700 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
                   {JOB_TABS.map(({ value, label }) => (
                     <button
                       key={value}
                       onClick={() => setActiveJobTab(value)}
-                      className={`inline-flex h-[34px] shrink-0 cursor-pointer items-center gap-2 rounded-md border px-4 text-[14px] font-semibold leading-none transition-colors ${
+                      className={`inline-flex h-8 shrink-0 cursor-pointer items-center gap-1.5 rounded-md border px-3 text-sm font-medium leading-none transition-colors ${
                         activeJobTab === value
                           ? "border-none bg-[var(--theme-color)] text-white shadow-none hover:bg-[var(--theme-color-hover)]"
-                          : "border-none bg-neutral-100 text-slate-700 hover:bg-neutral-200 hover:text-slate-950 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700 dark:hover:text-white"
+                          : "border-none bg-slate-200/70 text-slate-800 hover:bg-slate-200 hover:text-slate-950 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700 dark:hover:text-white"
                       }`}
                     >
                       {label}
@@ -455,38 +397,14 @@ export default function JobDetailsPage() {
                 setStageDeleteTarget={setStageDeleteTarget}
                 handleStageReorder={handleStageReorder}
                 questions={questions}
-                setIsAddingMode={setIsAddingMode}
-                isAddingMode={isAddingMode}
-                editingQuestionId={editingQuestionId}
-                setEditingQuestionId={setEditingQuestionId}
-                editQuestionType={editQuestionType}
-                setEditQuestionType={setEditQuestionType}
-                editQuestionText={editQuestionText}
-                setEditQuestionText={setEditQuestionText}
-                editQuestionRequired={editQuestionRequired}
-                setEditQuestionRequired={setEditQuestionRequired}
-                handleSaveQuestion={handleSaveQuestion}
-                updateQuestionMutationPending={updateQuestionMutation.isPending}
-                openEditQuestion={openEditQuestion}
                 deleteQuestionMutation={deleteQuestionMutation}
+                updateQuestionMutation={updateQuestionMutation}
                 handleQuestionReorder={handleQuestionReorder}
-                newQuestionType={newQuestionType}
-                setNewQuestionType={setNewQuestionType}
-                newQuestionText={newQuestionText}
-                setNewQuestionText={setNewQuestionText}
-                newQuestionRequired={newQuestionRequired}
-                setNewQuestionRequired={setNewQuestionRequired}
                 createQuestionMutation={createQuestionMutation}
-                isAssessmentDialogOpen={isAssessmentDialogOpen}
-                setIsAssessmentDialogOpen={setIsAssessmentDialogOpen}
                 attachedAssessments={attachedAssessments}
                 allAssessments={allAssessments}
-                setDetachTarget={setDetachTarget}
                 attachAssessmentMutation={attachAssessmentMutation}
-                assessmentSelectId={assessmentSelectId}
-                setAssessmentSelectId={setAssessmentSelectId}
-                triggerStageSelectId={triggerStageSelectId}
-                setTriggerStageSelectId={setTriggerStageSelectId}
+                detachAssessmentMutation={detachAssessmentMutation}
               />
             </Tabs>
 
@@ -525,116 +443,38 @@ export default function JobDetailsPage() {
         />
       )}
 
-      <AlertDialog
+      <ConfirmDeleteDialog
         open={stageDeleteTarget !== null}
-        onOpenChange={(o) => !o && setStageDeleteTarget(null)}
-      >
-        <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-[19px] font-semibold text-slate-900 dark:text-neutral-100">
-              Delete this stage?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-[14px] text-slate-500 dark:text-neutral-400 leading-relaxed">
-              This will permanently delete{" "}
-              <span className="font-medium">
-                {stageDeleteTarget?.name ?? "this stage"}
-              </span>
-              .
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel variant="ghost" className="h-10 rounded-md border border-slate-200 !bg-white px-6 text-[14px] font-medium !text-slate-700 shadow-none hover:!bg-slate-50 dark:border-neutral-800 dark:!bg-neutral-900 dark:!text-neutral-200 dark:hover:!bg-neutral-800 cursor-pointer">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (!stageDeleteTarget) return;
-                deleteStageMutation.mutate(stageDeleteTarget.id, {
-                  onSuccess: () => setStageDeleteTarget(null),
-                });
-              }}
-              disabled={deleteStageMutation.isPending || !stageDeleteTarget}
-              className="h-10 px-6 rounded-md bg-red-700 hover:bg-red-800 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {deleteStageMutation.isPending ? (
-                <span className="inline-flex items-center gap-2">
-                  <Spinner className="text-white" />
-                  Deleting…
-                </span>
-              ) : (
-                "Delete"
-              )}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="Delete this stage?"
+        description={
+          <>
+            <ConfirmDeleteName>
+              {stageDeleteTarget?.name ?? "This stage"}
+            </ConfirmDeleteName>{" "}
+            will be permanently deleted. This cannot be undone.
+          </>
+        }
+        isPending={deleteStageMutation.isPending}
+        onClose={() => setStageDeleteTarget(null)}
+        onConfirm={() => {
+          if (!stageDeleteTarget) return;
+          deleteStageMutation.mutate(stageDeleteTarget.id, {
+            onSuccess: () => setStageDeleteTarget(null),
+          });
+        }}
+      />
 
-      <AlertDialog
-        open={detachTarget !== null}
-        onOpenChange={(o) => !o && setDetachTarget(null)}
-      >
-        <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
-              Remove this assessment?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
-              Candidates moved to this stage will no longer receive the
-              assessment automatically.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-10 px-6 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[14px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (detachTarget !== null) {
-                  detachAssessmentMutation.mutate(detachTarget, {
-                    onSuccess: () => setDetachTarget(null),
-                  });
-                }
-              }}
-              disabled={detachAssessmentMutation.isPending}
-              className="h-10 px-6 rounded-md bg-red-700 hover:bg-red-800 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              {detachAssessmentMutation.isPending ? "Removing…" : "Remove"}
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog
+      <ConfirmDeleteDialog
         open={noteDeleteTarget !== null}
-        onOpenChange={(o) => !o && setNoteDeleteTarget(null)}
-      >
-        <AlertDialogContent className="max-w-sm rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-[17px] font-semibold text-slate-900 dark:text-neutral-100">
-              Delete this note?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-[13px] text-slate-500 dark:text-neutral-400 leading-relaxed">
-              This will permanently remove the note.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-10 px-6 rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-[14px] font-medium shadow-none hover:bg-slate-50 dark:hover:bg-neutral-800 cursor-pointer">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={() => {
-                if (!me || !noteDeleteTarget) return;
-                deleteMessage(noteDeleteTarget.id);
-                setNoteDeleteTarget(null);
-              }}
-              disabled={!me || !noteDeleteTarget}
-              className="h-10 px-6 rounded-md bg-red-700 hover:bg-red-800 text-white text-[14px] font-medium shadow-none border-none cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed"
-            >
-              Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        title="Delete this note?"
+        description="This note will be permanently deleted. This cannot be undone."
+        onClose={() => setNoteDeleteTarget(null)}
+        onConfirm={() => {
+          if (!me || !noteDeleteTarget) return;
+          deleteMessage(noteDeleteTarget.id);
+          setNoteDeleteTarget(null);
+        }}
+      />
     </div>
   );
 }

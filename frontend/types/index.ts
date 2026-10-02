@@ -57,7 +57,7 @@ export type CustomQuestion = {
   id: number;
   jobId: number;
   title: string;
-  questionType: "short_answer" | "long_answer" | "checkbox" | "radio";
+  questionType: "short_answer" | "long_answer" | "url" | "checkbox" | "radio";
   isRequired: boolean;
   position: number;
   createdAt: string;
@@ -114,6 +114,7 @@ export type AssessmentOption = {
 export type QuestionType =
   | "short_answer"
   | "long_answer"
+  | "url"
   | "checkbox"
   | "radio"
   | "multiple_choice";
@@ -139,6 +140,8 @@ export type Assessment = {
   createdBy: string;
   createdAt: string;
   updatedAt: string;
+  /** Sent by the list endpoint, which doesn't include the questions themselves. */
+  questionCount?: number;
   questions?: AssessmentQuestion[];
 };
 
@@ -208,6 +211,23 @@ export type Candidate = {
   jobTitle: string | null;
 };
 
+/** What the pipeline board needs about a candidate: the light row from `/candidates/jobs/:id/board`. */
+export type BoardCandidate = Pick<
+  Candidate,
+  | "id"
+  | "firstName"
+  | "lastName"
+  | "email"
+  | "jobId"
+  | "currentStageId"
+  | "status"
+  | "appliedAt"
+  | "updatedAt"
+> & {
+  /** When the candidate entered their current stage. Null when there is no record of it. */
+  stageEnteredAt: string | null;
+};
+
 /** Mirrors API `stageAutomation` on candidate stage move. */
 export type StageAutomationFlags = {
   assessmentInvite?: "sent" | "skipped_active_invite";
@@ -244,6 +264,9 @@ export type CandidateDetail = Candidate & {
     candidateId: number;
     questionId: number;
     questionTitle?: string | null;
+    /** Where the question sits on the application form (sent by newer API versions). */
+    questionPosition?: number | null;
+    questionType?: string | null;
     answerText: string | null;
     createdAt: string;
   }[];
@@ -252,6 +275,8 @@ export type CandidateDetail = Candidate & {
     candidateId: number;
     questionId: number;
     questionTitle?: string | null;
+    questionPosition?: number | null;
+    questionType?: string | null;
     optionId: number;
     optionLabel?: string | null;
     createdAt: string;
@@ -428,13 +453,21 @@ export type PublicOfferView = {
 export type AnalyticsReport = {
   summary: {
     totalCandidates: number;
-    totalCandidatesDeltaPct: number;
+    /** Applications received in the period. */
+    newCandidates: number;
+    /** Change against the previous period, null when there was nothing to compare with. */
+    totalCandidatesDeltaPct: number | null;
     openPositions: number;
     openPositionsDelta: number;
-    avgTimeToHireDays: number;
-    avgTimeToHireDeltaDays: number;
-    offerAcceptanceRate: number;
-    offerAcceptanceRateDeltaPct: number;
+    /** Null when no offer was accepted in the period. */
+    avgTimeToHireDays: number | null;
+    /** Days faster than the previous period (negative is slower), null without both periods. */
+    avgTimeToHireDeltaDays: number | null;
+    /** Offers sent in the period. */
+    offersSent: number;
+    /** Null when no offer was sent in the period. */
+    offerAcceptanceRate: number | null;
+    offerAcceptanceRateDeltaPct: number | null;
   };
   pipelineReport: {
     stage: string;
@@ -461,9 +494,56 @@ export type AnalyticsReport = {
   }[];
 };
 
+/** What needs a hiring manager's attention right now. Managers only. */
+export type AttentionReport = {
+  newApplicants: { last24h: number };
+  offersAwaitingAnswer: {
+    count: number;
+    items: {
+      offerId: number;
+      candidateId: number;
+      candidateName: string;
+      jobTitle: string;
+      sentAt: string;
+    }[];
+  };
+  upcomingInterviews: {
+    count: number;
+    items: {
+      interviewId: number;
+      candidateId: number;
+      candidateName: string;
+      jobTitle: string;
+      startsAt: string;
+    }[];
+  };
+  stalledCandidates: {
+    count: number;
+    afterDays: number;
+    items: {
+      candidateId: number;
+      candidateName: string;
+      jobTitle: string;
+      stageName: string;
+      days: number;
+    }[];
+  };
+};
+
 export type AnalyticsExportPayload = {
   format: "csv" | "json";
   fileName: string;
   mimeType: string;
   content: string;
+};
+
+/** An email sent to a candidate from the Send Email tab. */
+export type CandidateEmail = {
+  id: number;
+  candidateId: number;
+  subject: string;
+  bodyHtml: string;
+  recipientEmail: string;
+  sentAt: string;
+  sentByName: string | null;
 };

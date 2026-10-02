@@ -6,11 +6,11 @@ import {
   CallIcon,
   Mail01Icon,
   Clock01Icon,
+  Edit02Icon,
   File01Icon,
-  PencilEdit01Icon,
-  Delete02Icon,
 } from "@hugeicons/core-free-icons";
 import { Badge } from "@/components/ui/badge";
+import { RowDeleteButton } from "@/components/table/row-actions";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import {
@@ -65,6 +65,10 @@ export function CandidateHeader({
   const selectedStage = pipelineStages.find(
     (stage) => String(stage.id) === effectiveSelectedStageId,
   );
+  const stageItems = pipelineStages.map((stage) => ({
+    value: String(stage.id),
+    label: stage.name,
+  }));
   const selectedStageName =
     selectedStage?.name ?? candidate.stageName ?? "Select stage";
 
@@ -111,21 +115,21 @@ export function CandidateHeader({
               >
                 <HugeiconsIcon
                   icon={Mail01Icon}
-                  className="size-4 shrink-0 text-slate-400 dark:text-neutral-500"
+                  className="size-5 shrink-0 text-theme dark:text-primary"
                 />
                 <span className="truncate">{candidate.email}</span>
               </a>
               <div className="inline-flex items-center gap-2 font-medium">
                 <HugeiconsIcon
                   icon={CallIcon}
-                  className="size-4 text-slate-400 dark:text-neutral-500"
+                  className="size-5 shrink-0 text-theme dark:text-primary"
                 />
                 <span>{candidate.phone ?? "No phone"}</span>
               </div>
               <div className="inline-flex items-center gap-2 font-medium">
                 <HugeiconsIcon
                   icon={Clock01Icon}
-                  className="size-4 text-slate-400 dark:text-neutral-500"
+                  className="size-5 shrink-0 text-theme dark:text-primary"
                 />
                 <span>Applied {formatDate(candidate.appliedAt)}</span>
               </div>
@@ -134,84 +138,84 @@ export function CandidateHeader({
 
           <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
             <Button
-              size="sm"
+              variant="cancel"
               disabled={!candidate.resumeUrl}
-              className="h-8 cursor-pointer rounded-md border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 shadow-none hover:bg-slate-50 hover:text-slate-800 disabled:border-slate-200 disabled:bg-slate-100 disabled:text-slate-400 disabled:opacity-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
               onClick={onViewCv}
+              className="h-9 gap-2 px-3.5 text-sm"
             >
-              <HugeiconsIcon icon={File01Icon} className="size-3" />
+              <HugeiconsIcon icon={File01Icon} className="size-4" strokeWidth={1.75} />
               View CV
             </Button>
+
             <Select
+              items={stageItems}
               value={effectiveSelectedStageId}
               onValueChange={(value) => onStageChange(value ?? "")}
               disabled={
                 !isManager || pipelineStages.length === 0 || moveStageMutation.isPending
               }
             >
-              <SelectTrigger className="h-8 rounded-md border border-slate-200 bg-slate-50 px-3 text-sm font-medium text-slate-700 shadow-none hover:bg-white focus:ring-0 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800">
+              <SelectTrigger
+                aria-label="Pipeline stage"
+                className="h-9! rounded-md border border-slate-300 bg-transparent px-3 text-sm font-medium text-slate-700 shadow-none hover:bg-slate-50 focus:ring-0 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-800"
+              >
                 <SelectValue>{selectedStageName}</SelectValue>
               </SelectTrigger>
-              <SelectContent className="rounded-[6px] border-slate-200 bg-white shadow-lg dark:border-neutral-700 dark:bg-neutral-900">
-                {pipelineStages.map((stage) => (
-                  <SelectItem
-                    key={stage.id}
-                    value={String(stage.id)}
-                    className="text-sm"
-                  >
-                    {stage.name}
+              <SelectContent>
+                {stageItems.map((stage) => (
+                  <SelectItem key={stage.value} value={stage.value}>
+                    {stage.label}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
+
             {hasStageChange && (
               <>
                 <Button
                   type="button"
-                  size="sm"
+                  variant="cancel"
                   disabled={moveStageMutation.isPending}
                   onClick={onCancelStageChange}
-                  className="h-8 cursor-pointer rounded-md border-2 border-slate-300 bg-transparent px-3 text-sm font-medium text-slate-600 shadow-none hover:bg-slate-50 dark:border-neutral-600 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                  className="h-9 px-3.5 text-sm"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="button"
-                  size="sm"
                   disabled={moveStageMutation.isPending}
                   onClick={onSaveStageChange}
-                  className="h-8 cursor-pointer gap-2 rounded-md border-none bg-[var(--theme-color)] px-3 text-sm font-medium text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                  className="h-9 gap-2 border-none bg-theme px-3.5 text-sm font-semibold text-white hover:bg-theme-hover"
                 >
                   {moveStageMutation.isPending && <Spinner className="size-3.5" />}
                   {moveStageMutation.isPending ? "Saving" : "Save"}
                 </Button>
               </>
             )}
+
+            {isManager && (
+              <>
+                <Button
+                  variant="cancel"
+                  onClick={onEdit}
+                  className="h-9 gap-2 px-3.5 text-sm"
+                >
+                  <HugeiconsIcon icon={Edit02Icon} className="size-4" strokeWidth={1.75} />
+                  Edit
+                </Button>
+                <RowDeleteButton onClick={onDelete} className="h-9 px-3.5" />
+              </>
+            )}
+
+            <span aria-hidden className="mx-1 hidden h-6 w-px bg-slate-300 lg:block dark:bg-neutral-700" />
             <Button
-              size="sm"
-              className="h-8 cursor-pointer rounded-md border border-transparent bg-transparent px-2 text-sm font-medium text-slate-500 shadow-none hover:bg-slate-100 hover:text-slate-800 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+              variant="ghost"
+              aria-label="Close"
+              title="Close"
               onClick={onClose}
+              className="size-9 rounded-full p-0 text-slate-500 hover:bg-slate-100 hover:text-slate-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
             >
-              <HugeiconsIcon icon={Cancel01Icon} className="size-3" />
-              Close
-            </Button>
-            <Button
-              size="sm"
-              disabled={!isManager}
-              className="h-8 cursor-pointer rounded-md border border-[var(--theme-color)]/20 bg-[var(--theme-color)]/[0.08] px-3 text-sm font-medium text-[var(--theme-color)] shadow-none hover:bg-[var(--theme-color)]/[0.14] disabled:cursor-not-allowed"
-              onClick={onEdit}
-            >
-              <HugeiconsIcon icon={PencilEdit01Icon} className="size-3" />
-              Edit
-            </Button>
-            <Button
-              size="sm"
-              disabled={!isManager}
-              className="h-8 cursor-pointer gap-1.5 rounded-md border border-red-600 bg-red-600 px-2.5 text-[13px] font-medium text-white shadow-none hover:border-red-700 hover:bg-red-700 disabled:cursor-not-allowed"
-              onClick={onDelete}
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="size-3" />
-              Delete
+              <HugeiconsIcon icon={Cancel01Icon} className="size-5" />
             </Button>
           </div>
         </div>

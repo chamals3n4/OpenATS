@@ -104,10 +104,3 @@ export const SECTIONS = [
     icon: ChartEvaluationIcon,
   },
 ];
-
-export type SentEmail = {
-  id: number;
-  subject: string;
-  body: string;
-  sentAt: string;
-};

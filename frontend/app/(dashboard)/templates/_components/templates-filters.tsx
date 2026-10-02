@@ -12,6 +12,12 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
+const TYPE_OPTIONS = [
+  { value: "all", label: "All Types" },
+  { value: "email", label: "Email" },
+  { value: "event", label: "Interview Event" },
+];
+
 interface TemplatesFiltersProps {
   search: string;
   onSearchChange: (value: string) => void;
@@ -30,7 +36,7 @@ export function TemplatesFilters({
   const hasFilters = search || filterType !== "all";
 
   return (
-    <div className="border-b border-slate-200 dark:border-neutral-800 px-6 py-2.5 flex items-center gap-2">
+    <div className="border-b border-slate-300 dark:border-neutral-700 px-6 py-2.5 flex items-center gap-2">
       <div className="relative w-64">
         <HugeiconsIcon
           icon={Search01Icon}
@@ -40,23 +46,26 @@ export function TemplatesFilters({
           placeholder="Search templates..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
+          className="pl-9 h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0"
         />
       </div>
 
       <Select
+        items={TYPE_OPTIONS}
         value={filterType}
         onValueChange={(value) => {
           if (value !== null) onFilterTypeChange(value);
         }}
       >
-        <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
+        <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-800 dark:text-neutral-200 text-sm focus:ring-0 focus-visible:ring-0 px-3">
           <SelectValue placeholder="All Types" />
         </SelectTrigger>
-        <SelectContent className="rounded-md shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-          <SelectItem value="all">All Types</SelectItem>
-          <SelectItem value="email">Email</SelectItem>
-          <SelectItem value="event">Interview Event</SelectItem>
+        <SelectContent className="rounded-md shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          {TYPE_OPTIONS.map((opt) => (
+            <SelectItem key={opt.value} value={opt.value}>
+              {opt.label}
+            </SelectItem>
+          ))}
         </SelectContent>
       </Select>
 

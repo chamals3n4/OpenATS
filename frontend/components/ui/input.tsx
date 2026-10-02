@@ -5,8 +5,7 @@ import { motion } from "motion/react";
 import { cn } from "@/lib/utils";
 
 const inputInteraction =
-  "motion-reduce:transition-none " +
-  "transition-[border-color_380ms_cubic-bezier(0.4,0,0.2,1),box-shadow_380ms_cubic-bezier(0.4,0,0.2,1),color_200ms_ease-in-out,background-color_200ms_ease-in-out,opacity_200ms_ease-in-out]";
+  "transition-[border-color,box-shadow,color,background-color,opacity] duration-300 ease-in-out motion-reduce:transition-none";
 
 function Input({ className, type, render, ...props }: InputPrimitive.Props) {
   return (
@@ -24,7 +23,7 @@ function Input({ className, type, render, ...props }: InputPrimitive.Props) {
       className={cn(
         "dark:bg-input/30 border-input h-9 rounded-md border bg-transparent px-2.5 py-1 text-base shadow-xs md:text-sm file:h-7 file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground w-full min-w-0 outline-none file:inline-flex file:border-0 file:bg-transparent disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-50",
         inputInteraction,
-        "focus-visible:border-ring focus-visible:ring-0 focus-visible:ring-offset-0",
+        "focus-visible:border-theme focus-visible:ring-0 focus-visible:ring-offset-0",
         "aria-invalid:border-destructive dark:aria-invalid:border-destructive/50 aria-invalid:ring-0",
         className,
       )}

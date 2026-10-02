@@ -55,7 +55,7 @@ export function OfferFilters({
           placeholder="Search Offers"
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-9 h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:border-slate-300 dark:focus-visible:border-neutral-600 focus-visible:ring-0"
+          className="pl-9 h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0"
         />
       </div>
 
@@ -63,7 +63,7 @@ export function OfferFilters({
         value={selectedJobId ? String(selectedJobId) : "all"}
         onValueChange={(v) => onJobChange(v === "all" ? undefined : Number(v))}
       >
-        <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
+        <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-800 dark:text-neutral-200 text-sm focus:ring-0 focus-visible:ring-0 px-3">
           <SelectValue>
             {selectedJobId
               ? (jobs.find((j) => j.id === selectedJobId)?.title ??
@@ -82,12 +82,13 @@ export function OfferFilters({
       </Select>
 
       <Select
+        items={STATUS_OPTIONS}
         value={statusFilter}
         onValueChange={(value) => {
           if (value !== null) onStatusChange(value);
         }}
       >
-        <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-500 dark:text-neutral-400 text-sm focus:ring-0 focus-visible:ring-0 px-3">
+        <SelectTrigger className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-800 dark:text-neutral-200 text-sm focus:ring-0 focus-visible:ring-0 px-3">
           <SelectValue placeholder="Status" />
         </SelectTrigger>
         <SelectContent className="rounded-md shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">

@@ -6,7 +6,15 @@ import { ThemeButton } from "@/components/theme/theme-button";
 import { useIsManager } from "@/hooks/use-role";
 import { AssessmentSearchBar } from "./search-bar";
 
-export function AssessmentHeader({ onCreate }: { onCreate: () => void }) {
+export function AssessmentHeader({
+  onCreate,
+  searchTerm,
+  onSearchChange,
+}: {
+  onCreate: () => void;
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+}) {
   const isManager = useIsManager();
   return (
     <div className="px-6 pt-4 pb-3 flex items-center justify-between gap-3 flex-wrap">
@@ -15,7 +23,7 @@ export function AssessmentHeader({ onCreate }: { onCreate: () => void }) {
       </h1>
 
       <div className="flex items-center gap-2 flex-wrap">
-        <AssessmentSearchBar />
+        <AssessmentSearchBar value={searchTerm} onChange={onSearchChange} />
 
         {isManager && (
           <ThemeButton

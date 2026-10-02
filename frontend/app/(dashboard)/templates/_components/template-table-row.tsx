@@ -1,9 +1,7 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Delete02Icon } from "@hugeicons/core-free-icons";
+import { RowDeleteButton, RowEditButton } from "@/components/table/row-actions";
 import { TableRow, TableCell } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
 import type { Template } from "@/types";
 import { getTypeMeta, formatDate } from "../lib/templates-utils";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
@@ -32,50 +30,37 @@ export function TemplateTableRow({
   return (
     <TableRow
       onClick={() => onRowClick(template)}
-      className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50/50 dark:hover:bg-neutral-900/50"
+      className="border-b border-slate-300 dark:border-neutral-700 last:border-0 font-medium cursor-pointer hover:bg-slate-50 dark:hover:bg-neutral-800/50 transition-colors"
     >
       {onSelectedChange && (
         <BulkSelectRowCell checked={isSelected} onCheckedChange={onSelectedChange} />
       )}
-      <TableCell className="h-10 px-6 py-0">
-        <span className="text-slate-700 dark:text-neutral-300 font-medium">
+      <TableCell className="h-12 px-6 py-0">
+        <span className="text-slate-900 dark:text-neutral-100 font-medium">
           {template.name}
         </span>
       </TableCell>
-      <TableCell className="h-10 px-6 py-0">
+      <TableCell className="h-12 px-6 py-0">
         <span
-          className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${meta.badge}`}
+          className={`text-[13px] font-semibold px-2.5 py-0.5 rounded-full ${meta.badge}`}
         >
           {meta.label}
         </span>
       </TableCell>
-      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         System
       </TableCell>
-      <TableCell className="h-10 px-6 py-0 text-slate-600 dark:text-neutral-400 font-normal">
+      <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         {formatDate(template.updatedAt)}
       </TableCell>
       <TableCell
-        className="h-10 px-6 py-0"
+        className="h-12 px-6 py-0"
         onClick={(e) => e.stopPropagation()}
       >
         {isManager && (
           <div className="flex items-center justify-end gap-2">
-            <Button
-              size="sm"
-              className="h-8 rounded-md border border-slate-300 dark:border-neutral-600 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900/50 px-4 text-sm font-semibold leading-none text-slate-700 dark:text-neutral-300 shadow-none cursor-pointer"
-              onClick={() => onDuplicate(template)}
-            >
-              Duplicate
-            </Button>
-            <Button
-              size="sm"
-              className="h-8 rounded-md border-none bg-red-500 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
-              onClick={() => onDelete(template.id)}
-            >
-              <HugeiconsIcon icon={Delete02Icon} className="size-3.5 mr-1" />
-              Delete
-            </Button>
+            <RowEditButton onClick={() => onDuplicate(template)}>Duplicate</RowEditButton>
+            <RowDeleteButton onClick={() => onDelete(template.id)} />
           </div>
         )}
       </TableCell>

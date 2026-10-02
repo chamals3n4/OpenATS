@@ -115,8 +115,9 @@ export function HiringTeamTab({
               </div>
               <DialogFooter className="mt-2 gap-2">
                 <Button
+                  variant="cancel"
                   onClick={() => setAddTeamMemberOpen(false)}
-                  className="h-9 rounded-lg border-none bg-neutral-100 dark:bg-neutral-800 px-5 text-[13px] font-semibold text-slate-700 dark:text-neutral-300 shadow-none hover:bg-neutral-200 dark:hover:bg-neutral-700"
+                  className="h-9 px-5 text-[13px]"
                 >
                   Cancel
                 </Button>

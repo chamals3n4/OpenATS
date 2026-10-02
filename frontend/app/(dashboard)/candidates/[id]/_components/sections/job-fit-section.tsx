@@ -17,8 +17,7 @@ export function JobFitSection({
           Job Fit Analysis
         </h3>
         <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5">
-          AI-powered match between the candidate&apos;s resume and job
-          requirements
+          How well the candidate&apos;s resume matches this job
         </p>
       </div>
       <CandidateJobFitTab resumeUrl={resumeUrl} cv={cvAnalysis} />

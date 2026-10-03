@@ -1,4 +1,4 @@
-name: Tests
+name: CI
 
 on:
   pull_request:
@@ -75,6 +75,11 @@ jobs:
       - name: Type-check backend tests
         working-directory: backend
         run: pnpm exec tsc --noEmit -p tsconfig.test.json
+
+      # Frontend unit tests already run in `pnpm test` above.
+      - name: Type-check frontend
+        working-directory: frontend
+        run: pnpm exec tsc --noEmit
 
       - name: Build backend
         run: pnpm --filter ./backend build

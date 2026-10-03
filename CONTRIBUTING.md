@@ -317,14 +317,48 @@ git push origin feature/task-name
 
 ### Create Pull Request on GitHub
 
-Go to GitHub and create a PR from your branch to the main repository.
+Go to GitHub and create a PR from your branch to `main` of the main repository.
+
+**The PR title matters.** We squash merge, so your whole PR becomes one commit on `main` and the PR title becomes the commit message. Use this format:
+
+```
+type: short description
+```
+
+| Type | Use it for | Example |
+|---|---|---|
+| `feat` | A new feature | `feat: add bulk candidate import` |
+| `fix` | A bug fix | `fix: resume upload fails on large files` |
+| `docs` | Documentation only | `docs: update IAM setup guide` |
+| `refactor` | Code change with no behavior change | `refactor: simplify CV parser` |
+| `test` | Adding or fixing tests | `test: add pipeline stage tests` |
+| `chore` | Tooling, deps, config | `chore: update eslint config` |
+
+For a breaking change, add `!` after the type, like `feat!: change job API response shape`.
+
+Your individual commit messages inside the PR can be anything, since they get squashed.
+
+### After your PR is merged
+
+Delete your branch and start fresh for the next task. Don't keep working on a merged branch, because the squashed commit on `main` won't match it and you'll get conflicts.
+
+```bash
+git checkout main
+git pull upstream main
+git branch -D feature/task-name
+```
+
+## Releases
+
+Releases are automated. Please don't edit `CHANGELOG.md` or bump version numbers in your PR. The changelog and version are generated from PR titles when a release is cut.
 
 ## Important Rules
 
-- NEVER push directly to main
+- NEVER push directly to main (it's protected, so it won't work anyway)
 - ALWAYS pull from upstream before starting work
-- Create a NEW branch for each task
-- Keep commits small and focused
+- Create a NEW branch for each task, and don't reuse a branch after it's merged
+- One PR, one change. Don't mix a feature and an unrelated fix
+- Use the PR title format above (`feat: ...`, `fix: ...`)
 - Run `pnpm test` before pushing
 - If you modify the database schema, always run `make migrate` and commit the generated migration files along with your schema changes
 

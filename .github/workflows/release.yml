@@ -74,7 +74,7 @@ jobs:
   test:
     name: Tests
     needs: resolve
-    uses: ./.github/workflows/test.yml
+    uses: ./.github/workflows/ci.yml
 
   release:
     name: Release

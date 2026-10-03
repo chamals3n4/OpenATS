@@ -1,0 +1,102 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: "Version bump (ignored when version is given)"
+        type: choice
+        options: [minor, patch, major]
+        default: minor
+      version:
+        description: "Exact version, e.g. v1.0.0-beta (optional)"
+        type: string
+        default: ""
+      prerelease:
+        description: "Mark as a pre-release"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  resolve:
+    name: Resolve version
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      previous: ${{ steps.version.outputs.previous }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Determine release version
+        id: version
+        env:
+          VERSION_INPUT: ${{ inputs.version }}
+          BUMP_TYPE: ${{ inputs.bump_type }}
+        run: |
+          previous=$(git tag --sort=-v:refname | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' | head -1 || true)
+          if [ -z "$previous" ]; then
+            echo "::error::No existing vX.Y.Z tag found"
+            exit 1
+          fi
+
+          if [ -n "$VERSION_INPUT" ]; then
+            next="$VERSION_INPUT"
+            [[ $next == v* ]] || next="v$next"
+          else
+            IFS=. read -r major minor patch <<< "${previous#v}"
+            case "$BUMP_TYPE" in
+              major) major=$((major + 1)); minor=0; patch=0 ;;
+              minor) minor=$((minor + 1)); patch=0 ;;
+              patch) patch=$((patch + 1)) ;;
+            esac
+            next="v$major.$minor.$patch"
+          fi
+
+          if ! [[ $next =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Version '$next' is not in the format vX.Y.Z or vX.Y.Z-suffix"
+            exit 1
+          fi
+          if git rev-parse "$next" >/dev/null 2>&1; then
+            echo "::error::Tag '$next' already exists"
+            exit 1
+          fi
+
+          echo "Releasing $next (previous release: $previous)"
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "previous=$previous" >> "$GITHUB_OUTPUT"
+
+  test:
+    name: Tests
+    needs: resolve
+    uses: ./.github/workflows/test.yml
+
+  release:
+    name: Release
+    needs: [resolve, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Create tag and GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+          PREVIOUS: ${{ needs.resolve.outputs.previous }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: |
+          args=()
+          if [ "$PRERELEASE" = "true" ]; then
+            args+=(--prerelease)
+          fi
+          gh release create "$VERSION" \
+            --target "$GITHUB_SHA" \
+            --title "$VERSION" \
+            --generate-notes \
+            --notes-start-tag "$PREVIOUS" \
+            "${args[@]}"

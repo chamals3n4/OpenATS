@@ -81,7 +81,7 @@ See `docs/TESTING.md` for the full guide. In short:
 - `backend/.env.test` is committed on purpose. It holds no secrets, only dummy values, so that tests pass on pull requests from forks (GitHub never gives secrets to those).
 - E2E tests also use the 5433 database, via `webServer.env` in `playwright.config.ts`. `reuseExistingServer` is `false` so an already-running `make dev` cannot be adopted, which would silently point tests at the dev database. **Stop `make dev` before running E2E.**
 - Commands: `pnpm test` (backend then frontend unit tests), `pnpm test:frontend`, `pnpm test:coverage` (v8 coverage on the backend), `pnpm test:e2e` (Playwright), `pnpm exec tsc --noEmit` (type-check the E2E specs, which Playwright does not do).
-- CI runs tests, type-check, and the backend build on every pull request (`.github/workflows/test.yml`). It deliberately uses no secrets.
+- CI runs tests, type-check, and the backend build on every pull request (`.github/workflows/ci.yml`). It deliberately uses no secrets.
 - **Frontend tests** use a separate Vitest install in `frontend/` with jsdom and Testing Library, in `frontend/tests/`. They cover pure helpers and rendered components; there is no network or router mocking set up yet.
 
 ## Roadmap

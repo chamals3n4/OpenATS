@@ -1,63 +1,17 @@
-## Purpose
+### Purpose
+<!-- What problem does this solve or what does it add? Add screenshots for UI changes. -->
 
-Briefly describe the purpose of this PR and the problem it solves.
+### Approach
+<!-- How is it implemented, and why this way? -->
 
-## Type of Change
+### Breaking changes
+<!-- Delete this section if there are none. Otherwise: what breaks, who is affected, and how to migrate. -->
 
-* [ ] Feature
-* [ ] Bug fix
-* [ ] Refactor
-* [ ] Documentation
-* [ ] Test improvement
-* [ ] CI/CD
-* [ ] Other
+### Related issues
+- N/A
 
-## Changes Made
-
-*
-*
-*
-
-## Screenshots (if applicable)
-
-<!-- Add screenshots, recordings, or GIFs for UI changes -->
-
-## Testing
-
-Describe how you tested these changes.
-
-### Test Steps
-
-1.
-2.
-3.
-
-### Results
-
-* [ ] All existing tests pass
-* [ ] New tests added (if applicable)
-* [ ] Manually verified functionality
-
-## Breaking Changes
-
-* [ ] No breaking changes
-* [ ] This PR introduces breaking changes
-
-If yes, describe them:
-
-## Checklist
-
-* [ ] Code follows project conventions
-* [ ] Self-review completed
-* [ ] Documentation updated (if needed)
-* [ ] Tests added/updated (if needed)
-* [ ] No sensitive data or secrets included
-* [ ] Related issues linked
-
-## Related Issues
-
-Closes #
-
-## Additional Notes
-
-<!-- Anything reviewers should know -->
+### Checklist
+- [ ] `pnpm test` passes locally.
+- [ ] Schema changes include the generated migration files.
+- [ ] Documentation is updated if behaviour changed.
+- [ ] No keys, passwords or tokens are committed.

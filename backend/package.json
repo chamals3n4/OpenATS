@@ -29,7 +29,7 @@
     "@google/genai": "^1.46.0",
     "bullmq": "^5.78.1",
     "cors": "^2.8.6",
-    "dotenv": "^17.2.4",
+    "dotenv": "^18.0.4",
     "drizzle-orm": "^0.45.1",
     "express": "^5.2.1",
     "express-rate-limit": "^8.5.2",

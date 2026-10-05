@@ -25,7 +25,7 @@
     "ext": "ts,json"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1143.0",
+    "@aws-sdk/client-s3": "^3.1146.0",
     "@google/genai": "^2.24.0",
     "bullmq": "^6.3.10",
     "cors": "^2.8.6",
@@ -40,7 +40,7 @@
     "morgan": "^1.12.1",
     "multer": "^2.4.0",
     "pg": "^8.23.1",
-    "resend": "^6.31.0",
+    "resend": "^6.32.0",
     "socket.io": "^4.8.4",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.19.0",
@@ -64,7 +64,7 @@
     "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.5",
     "nodemon": "^3.1.11",
-    "supertest": "^7.3.0",
+    "supertest": "^7.3.1",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.71.0",

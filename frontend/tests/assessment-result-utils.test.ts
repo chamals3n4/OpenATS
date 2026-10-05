@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  earnedPoints,
   formatDuration,
   getQuestionState,
   summarizeQuestions,
@@ -31,12 +32,17 @@ describe("getQuestionState", () => {
     expect(getQuestionState(choice([1], [2]))).toBe("incorrect");
   });
 
-  it("is incorrect when only some of several correct options were chosen", () => {
-    expect(getQuestionState(choice([1], [1, 2]))).toBe("incorrect");
+  it("is partly correct when only some of several correct options were chosen", () => {
+    expect(getQuestionState(choice([1], [1, 2]))).toBe("partial");
   });
 
-  it("is incorrect when an extra option was chosen as well", () => {
+  it("is incorrect when an extra option was chosen alongside the only correct one", () => {
     expect(getQuestionState(choice([1, 2], [1]))).toBe("incorrect");
+  });
+
+  it("takes credit away for a wrong pick among several correct ones", () => {
+    expect(getQuestionState(choice([1, 2, 3], [1, 2]))).toBe("partial");
+    expect(getQuestionState(choice([1, 3], [1, 2]))).toBe("incorrect");
   });
 
   it("is unanswered when nothing was selected", () => {
@@ -45,6 +51,15 @@ describe("getQuestionState", () => {
 
   it("never calls a written answer incorrect, because the backend does not grade them", () => {
     expect(getQuestionState(written("Some answer"))).toBe("review");
+  });
+
+  it("calls a written answer graded once a reviewer has given it points", () => {
+    const q = written("An answer");
+    q.answer!.pointsEarned = "0.50";
+    expect(getQuestionState(q)).toBe("graded");
+    expect(earnedPoints(q)).toBe(0.5);
+    q.answer!.pointsEarned = 0;
+    expect(getQuestionState(q)).toBe("graded");
   });
 
   it("treats a blank written answer as unanswered", () => {
@@ -64,6 +79,8 @@ describe("summarizeQuestions", () => {
     expect(summary).toEqual({
       total: 4,
       correct: 1,
+      partial: 0,
+      graded: 0,
       incorrect: 1,
       review: 1,
       unanswered: 1,

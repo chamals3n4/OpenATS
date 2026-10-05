@@ -1,6 +1,12 @@
 import { formatElapsed } from "./format-elapsed";
 
-export type QuestionState = "correct" | "incorrect" | "review" | "unanswered";
+export type QuestionState =
+  | "correct"
+  | "partial"
+  | "incorrect"
+  | "review"
+  | "graded"
+  | "unanswered";
 
 /** The parts of a question in the attempt results that grading needs. */
 export interface GradableQuestion {
@@ -10,6 +16,8 @@ export interface GradableQuestion {
   answer: {
     answerText: string | null;
     selectedOptionIds: number[];
+    /** Points a reviewer awarded to a written answer; empty until graded. */
+    pointsEarned?: number | string | null;
   } | null;
 }
 
@@ -19,28 +27,52 @@ export function isWrittenQuestion(questionType: string) {
 }
 
 /**
- * Mirrors the backend grader: a choice question is correct only when the selected
- * options are exactly the correct options. Written answers are never scored
- * automatically, so an answered one is "review", not "incorrect".
+ * Mirrors the backend grader: each correct option picked earns an equal share, each wrong one
+ * takes a share away, and the result never goes below zero. Returns the fraction 0-1.
+ */
+export function choiceFraction(q: GradableQuestion): number {
+  const correct = q.options.filter((o) => o.isCorrect).map((o) => o.id);
+  if (correct.length === 0) return 0;
+  const selected = new Set(q.answer?.selectedOptionIds ?? []);
+  let right = 0;
+  let wrong = 0;
+  for (const id of selected) {
+    if (correct.includes(id)) right += 1;
+    else wrong += 1;
+  }
+  return Math.max(0, (right - wrong) / correct.length);
+}
+
+const hasGrade = (q: GradableQuestion) =>
+  q.answer?.pointsEarned !== null && q.answer?.pointsEarned !== undefined;
+
+/**
+ * Where a question stands. A written answer is "review" until a reviewer grades it, then
+ * "graded"; it is never "incorrect". A choice answer is correct, partly correct or incorrect.
  */
 export function getQuestionState(q: GradableQuestion): QuestionState {
   if (isWrittenQuestion(q.questionType)) {
-    return q.answer?.answerText?.trim() ? "review" : "unanswered";
+    if (!q.answer?.answerText?.trim()) return "unanswered";
+    return hasGrade(q) ? "graded" : "review";
   }
 
-  const selected = q.answer?.selectedOptionIds ?? [];
-  if (selected.length === 0) return "unanswered";
+  if ((q.answer?.selectedOptionIds ?? []).length === 0) return "unanswered";
+  const fraction = choiceFraction(q);
+  if (fraction >= 1) return "correct";
+  return fraction > 0 ? "partial" : "incorrect";
+}
 
-  const correct = q.options.filter((o) => o.isCorrect).map((o) => o.id);
-  const isExactMatch =
-    correct.length === selected.length &&
-    correct.every((id) => selected.includes(id));
-  return isExactMatch ? "correct" : "incorrect";
+/** Points the question has earned so far; a written answer counts only once graded. */
+export function earnedPoints(q: GradableQuestion): number {
+  if (isWrittenQuestion(q.questionType)) return hasGrade(q) ? Number(q.answer?.pointsEarned) : 0;
+  return Math.round(q.points * choiceFraction(q) * 100) / 100;
 }
 
 export interface QuestionSummary {
   total: number;
   correct: number;
+  partial: number;
+  graded: number;
   incorrect: number;
   review: number;
   unanswered: number;
@@ -50,6 +82,8 @@ export function summarizeQuestions(questions: GradableQuestion[]): QuestionSumma
   const summary: QuestionSummary = {
     total: questions.length,
     correct: 0,
+    partial: 0,
+    graded: 0,
     incorrect: 0,
     review: 0,
     unanswered: 0,

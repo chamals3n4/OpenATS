@@ -10,6 +10,7 @@ import {
   getAssessments,
   attachAssessment,
   detachAssessment,
+  updateAssessmentPassMark,
 } from "./job.controller";
 import {
   getPipeline,
@@ -23,6 +24,7 @@ import {
   addTeamMember,
   removeTeamMember,
 } from "../hiring-team/hiring-team.controller";
+import { getScorecard, putScorecard } from "../scoring/scoring.controller";
 import customQuestionRoutes from "../custom-question/custom-question.routes";
 import { requireManager } from "../../middlewares/role.middleware";
 
@@ -48,7 +50,11 @@ router.delete("/:jobId/team/:userId", requireManager, removeTeamMember);
 
 router.get("/:id/assessments", getAssessments);
 router.post("/:id/assessments", requireManager, attachAssessment);
+router.patch("/:id/assessments/:attachmentId", requireManager, updateAssessmentPassMark);
 router.delete("/:id/assessments/:attachmentId", requireManager, detachAssessment);
+
+router.get("/:jobId/scorecard", getScorecard);
+router.put("/:jobId/scorecard", requireManager, putScorecard);
 
 router.use("/:jobId/questions", customQuestionRoutes);
 

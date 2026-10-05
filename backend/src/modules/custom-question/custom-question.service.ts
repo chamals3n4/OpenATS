@@ -11,6 +11,8 @@ import { cleanObject as clean } from "../../utils/object.utils";
 export interface OptionInput {
   label: string;
   isCorrect?: boolean | undefined;
+  points?: number | undefined;
+  isKnockout?: boolean | undefined;
   position: number;
 }
 
@@ -33,11 +35,21 @@ export interface UpdateCustomQuestionInput {
 export interface AttachAssessmentInput {
   assessmentId: number;
   triggerStageId: number;
+  passMark?: number | undefined;
 }
 
 
 
 export const customQuestionService = {
+  /** What an applicant is shown: the options only, never the points or knockout flags. */
+  async getForApplicant(jobId: number) {
+    const questions = await customQuestionService.getByJobId(jobId);
+    return questions.map((q) => ({
+      ...q,
+      options: q.options.map(({ points: _p, isKnockout: _k, isCorrect: _c, ...o }) => o),
+    }));
+  },
+
   async getByJobId(jobId: number) {
     const questions = await db
       .select()
@@ -76,6 +88,8 @@ export const customQuestionService = {
             questionId: question.id,
             label: o.label,
             isCorrect: o.isCorrect ?? false,
+            points: o.points ?? 0,
+            isKnockout: o.isKnockout ?? false,
             position: o.position,
           })),
         );
@@ -122,6 +136,8 @@ export const customQuestionService = {
               questionId,
               label: o.label,
               isCorrect: o.isCorrect ?? false,
+              points: o.points ?? 0,
+              isKnockout: o.isKnockout ?? false,
               position: o.position,
             })),
           );
@@ -179,13 +195,17 @@ export const customQuestionService = {
         jobId,
         assessmentId: input.assessmentId,
         triggerStageId: input.triggerStageId,
+        passMark: input.passMark,
       }))
       .onConflictDoUpdate({
         target: [
           jobAssessmentAttachments.jobId,
           jobAssessmentAttachments.triggerStageId,
         ],
-        set: { assessmentId: input.assessmentId },
+        set: {
+          assessmentId: input.assessmentId,
+          ...(input.passMark !== undefined && { passMark: input.passMark }),
+        },
       })
       .returning();
 

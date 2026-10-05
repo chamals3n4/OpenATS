@@ -1,9 +1,9 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { QuestionType } from "@/app/(dashboard)/jobs/[id]/lib/question-utils";
+import type { OptionDraft, QuestionType } from "@/app/(dashboard)/jobs/[id]/lib/question-utils";
 import { QuestionDialog, QuestionForm } from "@/app/(dashboard)/jobs/[id]/_components/questions/question-form";
 
-type Initial = { title: string; type: QuestionType; required: boolean; options: string[] };
+type Initial = { title: string; type: QuestionType; required: boolean; options: OptionDraft[] };
 const blank: Initial = { title: "", type: "short_answer", required: false, options: [] };
 
 afterEach(cleanup);
@@ -66,8 +66,8 @@ describe("QuestionForm", () => {
       expect.objectContaining({
         questionType: "radio",
         options: [
-          { label: "React", isCorrect: false, position: 1 },
-          { label: "Vue", isCorrect: false, position: 2 },
+          { label: "React", isCorrect: false, points: 0, isKnockout: false, position: 1 },
+          { label: "Vue", isCorrect: false, points: 0, isKnockout: false, position: 2 },
         ],
       }),
     );

@@ -5,6 +5,7 @@ import { cleanObject as clean, asEnum } from "../../utils/object.utils";
 import logger from "../../utils/logger";
 import { getErrorCode, getErrorMessage} from "../../utils/error.utils";
 import { jobs } from "../../db/schema";
+import { scoringService } from "../scoring/scoring.service";
 
 const employmentTypeEnum = z.enum([
   "full_time",
@@ -21,6 +22,20 @@ const payFrequencyEnum = z.enum([
   "monthly",
   "yearly",
 ]);
+
+const weight = z.number().int().min(0).max(100);
+const scoreWeightsShape = {
+  scoreWeightQuestions: weight.optional(),
+  scoreWeightAssessment: weight.optional(),
+  scoreWeightRating: weight.optional(),
+  scoreWeightInterview: weight.optional(),
+};
+/** Weights come as a set: all four or none, and not all zero. */
+const weightsValid = (d: Partial<Record<keyof typeof scoreWeightsShape, number | undefined>>) => {
+  const values = Object.keys(scoreWeightsShape).map((k) => d[k as keyof typeof scoreWeightsShape]);
+  if (values.every((v) => v === undefined)) return true;
+  return values.every((v) => v !== undefined) && values.some((v) => (v ?? 0) > 0);
+};
 
 const createJobSchema = z
   .object({
@@ -39,7 +54,9 @@ const createJobSchema = z
     status: z
       .enum(["draft", "inactive", "published", "closed", "archived"])
       .optional(),
+    ...scoreWeightsShape,
   })
+  .refine(weightsValid, { message: "Send all four score weights, at least one above 0" })
   .refine(
     (data) => {
       if (data.salaryType && (!data.currency || !data.payFrequency))
@@ -56,7 +73,9 @@ const createJobSchema = z
     },
   );
 
-const updateJobSchema = z.object({
+const updateJobSchema = z
+  .object({
+  ...scoreWeightsShape,
   title: z.union([z.string().min(1).max(255), z.undefined()]).optional(),
   departmentId: z
     .union([z.number().int().positive(), z.undefined()])
@@ -74,7 +93,8 @@ const updateJobSchema = z.object({
   status: z
     .enum(["draft", "inactive", "published", "closed", "archived"])
     .optional(),
-});
+  })
+  .refine(weightsValid, { message: "Send all four score weights, at least one above 0" });
 
 export const listPublishedCareersJobs = async (
   _req: Request,
@@ -181,7 +201,16 @@ export const getPublicJobById = async (req: Request, res: Response) => {
       return;
     }
 
-    const { hiringTeam, pipelineStages, createdBy, ...data } = result;
+    const {
+      hiringTeam,
+      pipelineStages,
+      createdBy,
+      scoreWeightQuestions,
+      scoreWeightAssessment,
+      scoreWeightRating,
+      scoreWeightInterview,
+      ...data
+    } = result;
     res.status(200).json({ data });
   } catch (error) {
     logger.error(`Failed to fetch public job id=${req.params.id}: ${getErrorMessage(error)}`);
@@ -272,6 +301,12 @@ export const updateJob = async (req: Request, res: Response) => {
       return;
     }
 
+    if (Object.keys(scoreWeightsShape).some((k) => k in filteredData)) {
+      void scoringService
+        .recomputeJob(id)
+        .catch((e) => logger.error(`Failed to re-score job ${id}: ${getErrorMessage(e)}`));
+    }
+
     logger.info(`Job updated: id=${id}, status=${result.status}, updatedBy=${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
@@ -329,6 +364,30 @@ export const getAssessments = async (req: Request, res: Response) => {
   }
 };
 
+const clampPercent = (v: unknown) => Math.min(100, Math.max(0, Math.round(Number(v)) || 0));
+
+export const updateAssessmentPassMark = async (req: Request, res: Response) => {
+  try {
+    const jobId = parseInt((req.params.id ?? "").toString());
+    const attachmentId = parseInt((req.params.attachmentId ?? "").toString());
+    const parsed = z.object({ passMark: z.number().int().min(0).max(100) }).safeParse(req.body);
+    if (isNaN(jobId) || isNaN(attachmentId) || !parsed.success) {
+      res.status(400).json({ error: "A pass mark between 0 and 100 is required" });
+      return;
+    }
+    const result = await jobService.updateAttachmentPassMark(jobId, attachmentId, parsed.data.passMark);
+    if (!result) {
+      res.status(404).json({ error: "Attachment not found" });
+      return;
+    }
+    void scoringService.regradeJob(jobId).catch((e) => logger.error(`Failed to regrade job ${jobId}: ${getErrorMessage(e)}`));
+    res.status(200).json({ data: result });
+  } catch (error) {
+    logger.error(`Failed to update pass mark - user ${req.user?.id}: ${getErrorMessage(error)}`);
+    res.status(500).json({ error: "Failed to update pass mark" });
+  }
+};
+
 export const attachAssessment = async (req: Request, res: Response) => {
   try {
     const jobId = parseInt((req.params.id ?? "").toString());
@@ -337,7 +396,7 @@ export const attachAssessment = async (req: Request, res: Response) => {
       return;
     }
 
-    const { assessmentId, triggerStageId } = req.body;
+    const { assessmentId, triggerStageId, passMark } = req.body;
     if (!assessmentId || !triggerStageId) {
       res
         .status(400)
@@ -349,6 +408,7 @@ export const attachAssessment = async (req: Request, res: Response) => {
       jobId,
       assessmentId: parseInt(assessmentId),
       triggerStageId: parseInt(triggerStageId),
+      ...(passMark !== undefined && { passMark: clampPercent(passMark) }),
     });
 
     logger.info(`Assessment attached to job: jobId=${jobId}, assessmentId=${assessmentId}, triggerStageId=${triggerStageId} by user ${req.user?.id}`);

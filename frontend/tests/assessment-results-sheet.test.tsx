@@ -1,7 +1,10 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import { cleanup, render, screen, within } from "@testing-library/react";
 
+vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
+vi.mock("@/hooks/use-role", () => ({ useIsManager: () => true }));
 vi.mock("@/hooks/queries/use-assessments", () => ({
+  useGradeAnswer: () => ({ mutate: vi.fn(), isPending: false }),
   useAttemptResults: () => ({
     isLoading: false,
     isError: false,
@@ -25,6 +28,7 @@ vi.mock("@/hooks/queries/use-assessments", () => ({
           candidateName: "Sanka Chaturanga",
           candidateEmail: "sanka@example.com",
         },
+        pendingReview: 1,
         questions: [
           {
             id: 10,
@@ -60,7 +64,7 @@ vi.mock("@/hooks/queries/use-assessments", () => ({
             points: 1,
             position: 3,
             options: [],
-            answer: { answerText: "Resources over HTTP.", selectedOptionIds: [], pointsEarned: 0 },
+            answer: { answerText: "Resources over HTTP.", selectedOptionIds: [], pointsEarned: null },
           },
           {
             id: 13,
@@ -108,9 +112,9 @@ describe("AssessmentResultsSheetContent", () => {
     expect(within(incorrect).getByText("Correct answer")).toBeTruthy();
   });
 
-  it("warns that written answers are not scored, and shows the response", () => {
+  it("says the score waits on written answers, and shows the response", () => {
     render(<AssessmentResultsSheetContent attemptId={1} />);
-    expect(screen.getByText(/not scored automatically/i)).toBeTruthy();
+    expect(screen.getByText(/1 written answer is waiting for you to grade it/i)).toBeTruthy();
     expect(screen.getByText("Resources over HTTP.")).toBeTruthy();
     expect(screen.getByText("No answer submitted")).toBeTruthy();
   });
@@ -120,5 +124,15 @@ describe("AssessmentResultsSheetContent", () => {
     const nav = screen.getByRole("navigation", { name: "Jump to a question" });
     expect(within(nav).getAllByRole("button")).toHaveLength(4);
     expect(within(nav).getByLabelText("Question 2, Incorrect")).toBeTruthy();
+  });
+
+  it("lets a manager grade a written answer, within the question's points", () => {
+    render(<AssessmentResultsSheetContent attemptId={1} />);
+    const cards = screen.getAllByRole("article");
+    const input = within(cards[2]).getByLabelText("Points") as HTMLInputElement;
+    expect(input.max).toBe("1");
+    expect(within(cards[2]).getByRole("button", { name: "Save grade" })).toHaveProperty("disabled", true);
+    // An unanswered written question has nothing to grade.
+    expect(within(cards[3]).queryByLabelText("Points")).toBeNull();
   });
 });

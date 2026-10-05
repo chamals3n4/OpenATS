@@ -24,11 +24,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "OpenATS",
   description: "Open Source Applicant Tracking System",
+  // Black mark by default; FaviconSwitcher swaps in the white one in dark mode.
+  icons: { icon: "/icon-light.png" },
 };
 
 export const dynamic = "force-dynamic";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { FaviconSwitcher } from "@/components/theme/favicon-switcher";
 import { ThemeInitializer } from "@/components/theme/theme-initializer";
 
 export default function RootLayout({
@@ -52,6 +55,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ThemeInitializer />
+          <FaviconSwitcher />
           <AsgardeoProvider>{children}</AsgardeoProvider>
         </ThemeProvider>
       </body>

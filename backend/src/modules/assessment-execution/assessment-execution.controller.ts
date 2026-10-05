@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { assessmentExecutionService } from "./assessment-execution.service";
+import { assessmentExecutionService, GradingError } from "./assessment-execution.service";
 import { mailService } from "../../shared/services/mail.service";
 import { socketService } from "../../shared/services/socket.service";
 import logger from "../../utils/logger";
@@ -263,5 +263,35 @@ export const getAttemptResults = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error(`Failed to fetch attempt results for id=${req.params.attemptId}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch attempt results" });
+  }
+};
+
+const gradeSchema = z.object({
+  questionId: z.number().int().positive(),
+  points: z.number().min(0),
+});
+
+export const gradeWrittenAnswer = async (req: Request, res: Response) => {
+  try {
+    const attemptId = parseInt((req.params.attemptId ?? "").toString());
+    const parsed = gradeSchema.safeParse(req.body);
+    if (isNaN(attemptId) || !parsed.success) {
+      res.status(400).json({ error: "A question and its points are required" });
+      return;
+    }
+    const attempt = await assessmentExecutionService.gradeWrittenAnswer(
+      attemptId,
+      parsed.data.questionId,
+      parsed.data.points,
+    );
+    logger.info(`Written answer graded: attemptId=${attemptId}, questionId=${parsed.data.questionId}, points=${parsed.data.points} by user ${req.user?.id}`);
+    res.status(200).json({ data: attempt });
+  } catch (error) {
+    if (error instanceof GradingError) {
+      res.status(error.status).json({ error: error.message });
+      return;
+    }
+    logger.error(`Failed to grade answer for attempt ${req.params.attemptId} - user ${req.user?.id}: ${getErrorMessage(error)}`);
+    res.status(500).json({ error: "Failed to save the grade" });
   }
 };

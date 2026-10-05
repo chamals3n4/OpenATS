@@ -184,6 +184,7 @@ export const getCandidates = async (req: Request, res: Response) => {
         | "hired"
         | "withdrawn"
         | undefined,
+      sort: req.query.sort === "score" ? ("score" as const) : undefined,
       page,
       limit,
       teamUserId: req.user.role === "interviewer" ? req.user.id : undefined,

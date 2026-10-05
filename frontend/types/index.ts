@@ -22,6 +22,11 @@ export type Job = {
   createdAt: string;
   updatedAt: string;
   skills: string[];
+  /** How much each score part counts for this job. Relative, not necessarily a sum of 100. */
+  scoreWeightQuestions?: number;
+  scoreWeightAssessment?: number;
+  scoreWeightRating?: number;
+  scoreWeightInterview?: number;
 };
 
 export type PipelineStage = {
@@ -67,6 +72,10 @@ export type CustomQuestion = {
     questionId: number;
     label: string;
     isCorrect: boolean;
+    /** Points for picking this option (the Questions score). */
+    points: number;
+    /** Picking it flags the candidate as not meeting the requirements. */
+    isKnockout: boolean;
     position: number;
   }[];
 };
@@ -150,7 +159,16 @@ export type JobAssessment = {
   jobId?: number;
   assessmentId: number;
   triggerStageId: number | null;
+  /** Percentage needed to pass. */
+  passMark: number;
   createdAt: string;
+};
+
+export type ScorecardCriterion = {
+  id: number;
+  jobId: number;
+  name: string;
+  position: number;
 };
 
 export type CandidateRejection = {
@@ -209,6 +227,18 @@ export type Candidate = {
   updatedAt: string;
   stageName: string | null;
   jobTitle: string | null;
+  /** Score parts, 0-100. Postgres `numeric` reaches us as a string; null until that part exists. */
+  questionsScore?: string | null;
+  assessmentScore?: string | null;
+  ratingScore?: string | null;
+  interviewScore?: string | null;
+  totalScore?: string | null;
+  /** How many of the job's weighted parts have a score yet. */
+  scoredParts?: number;
+  /** Picked a knockout answer. */
+  knockedOut?: boolean;
+  /** Latest finished assessment against its pass mark; null if none finished. */
+  assessmentPassed?: boolean | null;
 };
 
 /** What the pipeline board needs about a candidate: the light row from `/candidates/jobs/:id/board`. */
@@ -258,6 +288,8 @@ export type CandidateCvAnalysisPayload = {
 };
 
 export type CandidateDetail = Candidate & {
+  weights?: { questions: number; assessment: number; rating: number; interview: number };
+  ratings?: { userId: number; rating: number }[];
   cvAnalysis: CandidateCvAnalysisPayload | null;
   answers: {
     id: number;
@@ -358,7 +390,7 @@ export type Offer = {
 export type NewAssessmentQuestion = {
   title: string;
   description: string | null;
-  questionType: QuestionType;
+  questionType: Exclude<QuestionType, "url">;
   points: number;
   position: number;
   options?: { label: string; isCorrect: boolean; position: number }[];

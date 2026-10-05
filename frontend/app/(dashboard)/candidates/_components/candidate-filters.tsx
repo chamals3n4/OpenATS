@@ -22,8 +22,17 @@ interface CandidateFiltersProps {
   selectedStatus: CandidateStatusFilter;
   onStatusChange: (status: CandidateStatusFilter) => void;
   jobs: Job[];
+  sort: CandidateSort;
+  onSortChange: (sort: CandidateSort) => void;
   onClear: () => void;
 }
+
+export type CandidateSort = "newest" | "score";
+
+const SORT_LABELS: Record<CandidateSort, string> = {
+  newest: "Newest first",
+  score: "Highest score",
+};
 
 const STATUS_OPTIONS: CandidateStatusFilter[] = ["all", "active", "rejected"];
 
@@ -35,6 +44,8 @@ export function CandidateFilters({
   selectedStatus,
   onStatusChange,
   jobs,
+  sort,
+  onSortChange,
   onClear,
 }: CandidateFiltersProps) {
   return (
@@ -87,6 +98,22 @@ export function CandidateFilters({
           {STATUS_OPTIONS.map((status) => (
             <SelectItem key={status} value={status}>
               {getStatusLabel(status)}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+
+      <Select value={sort} onValueChange={(value) => onSortChange(value as CandidateSort)}>
+        <SelectTrigger
+          aria-label="Sort candidates"
+          className="w-40 h-8! bg-gray-100 cursor-pointer dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-slate-800 dark:text-neutral-200 text-sm focus:ring-0 focus-visible:ring-0 px-3"
+        >
+          <SelectValue>{SORT_LABELS[sort]}</SelectValue>
+        </SelectTrigger>
+        <SelectContent className="rounded-lg shadow-lg border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900">
+          {(Object.keys(SORT_LABELS) as CandidateSort[]).map((value) => (
+            <SelectItem key={value} value={value}>
+              {SORT_LABELS[value]}
             </SelectItem>
           ))}
         </SelectContent>

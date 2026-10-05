@@ -9,7 +9,7 @@ import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
 import { useAssessmentQuestions } from "../hooks/use-assessment-questions";
-import { formatQuestionsForApi } from "../lib/assessment-builder-utils";
+import { firstQuestionProblem, formatQuestionsForApi } from "../lib/assessment-builder-utils";
 import { AssessmentMetaSection } from "../../_components/assessment-meta-section";
 import { QuestionSidebar } from "./question-sidebar";
 import { QuestionEditor } from "./question-editor";
@@ -45,6 +45,9 @@ export default function CreateAssessmentPageClient() {
     if (!assessmentTitle.trim()) {
       return toast.warning("Assessment title is required.");
     }
+
+    const problem = firstQuestionProblem(questions);
+    if (problem) return toast.warning(problem);
 
     const payload = {
       title: assessmentTitle,

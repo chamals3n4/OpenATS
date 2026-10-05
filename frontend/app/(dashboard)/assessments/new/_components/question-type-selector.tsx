@@ -14,8 +14,10 @@ import { Label } from "@/components/ui/label";
 
 const QUESTION_TYPES: QuestionType[] = [
   "Multiple Choice",
-  "Short Answer",
+  "Multiple Select",
   "True/False",
+  "Short Answer",
+  "Long Answer",
 ];
 
 interface QuestionTypeSelectorProps {

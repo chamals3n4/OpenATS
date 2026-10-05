@@ -47,15 +47,30 @@ describe("validateQuestion", () => {
 
 describe("toApiOptions", () => {
   it("drops blanks, trims, and numbers from 1 in the order shown", () => {
-    expect(toApiOptions([" React ", "", "Vue", "  "])).toEqual([
-      { label: "React", isCorrect: false, position: 1 },
-      { label: "Vue", isCorrect: false, position: 2 },
+    const o = (label: string, points = 0, isKnockout = false) => ({ label, points, isKnockout });
+    expect(toApiOptions([o(" React "), o(""), o("Vue"), o("  ")])).toEqual([
+      { label: "React", isCorrect: false, points: 0, isKnockout: false, position: 1 },
+      { label: "Vue", isCorrect: false, points: 0, isKnockout: false, position: 2 },
+    ]);
+  });
+
+  it("keeps the scoring and clamps points into range", () => {
+    expect(
+      toApiOptions([
+        { label: "Yes", points: 10, isKnockout: false },
+        { label: "No", points: -5, isKnockout: true },
+        { label: "Maybe", points: 500, isKnockout: false },
+      ]),
+    ).toEqual([
+      { label: "Yes", isCorrect: false, points: 10, isKnockout: false, position: 1 },
+      { label: "No", isCorrect: false, points: 0, isKnockout: true, position: 2 },
+      { label: "Maybe", isCorrect: false, points: 100, isKnockout: false, position: 3 },
     ]);
   });
 });
 
 describe("optionLabelsOf", () => {
-  const opt = (label: string, position: number) => ({ id: position, questionId: 1, label, isCorrect: false, position });
+  const opt = (label: string, position: number) => ({ id: position, questionId: 1, label, isCorrect: false, points: 0, isKnockout: false, position });
 
   it("lists saved options in order", () => {
     expect(optionLabelsOf({ options: [opt("B", 2), opt("A", 1), opt("C", 3)] })).toEqual(["A", "B", "C"]);

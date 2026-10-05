@@ -98,3 +98,10 @@ export const cvAnalysisStatus = pgEnum("cv_analysis_status", [
 ]);
 
 export const meetingProvider = pgEnum("meeting_provider", ["google_meet"]);
+
+export const interviewRecommendation = pgEnum("interview_recommendation", [
+  "strong_no",
+  "no",
+  "yes",
+  "strong_yes",
+]);

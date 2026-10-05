@@ -39,6 +39,8 @@ export function useCandidates(
     stageId?: number;
     search?: string;
     status?: "active" | "rejected" | "offered" | "hired" | "withdrawn";
+    /** "score": highest total first, candidates with a knockout answer last. */
+    sort?: "score";
     page?: number;
     limit?: number;
   },
@@ -49,6 +51,7 @@ export function useCandidates(
   if (filters?.stageId) params.set("stageId", String(filters.stageId));
   if (filters?.search) params.set("search", filters.search);
   if (filters?.status) params.set("status", filters.status);
+  if (filters?.sort) params.set("sort", filters.sort);
   if (filters?.page) params.set("page", String(filters.page));
   if (filters?.limit) params.set("limit", String(filters.limit));
 
@@ -58,7 +61,7 @@ export function useCandidates(
     ? `/candidates/jobs/${jobId}${query}`
     : `/candidates${query}`;
 
-  const hasFilters = !!(filters?.stageId || filters?.search);
+  const hasFilters = !!(filters?.stageId || filters?.search || filters?.sort);
   const seedInitialData =
     jobId && !hasFilters
       ? () => {
@@ -283,6 +286,38 @@ export function useRejectCandidate() {
       serverFetch<{ data: CandidateRejection }>(`/candidates/${id}/reject`, {
         method: "POST",
         body: JSON.stringify(data),
+      }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["candidates", variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+  });
+}
+
+/** Rejects several candidates with one reason and no email, e.g. the ones flagged by a knockout answer. */
+export function useBulkRejectCandidates() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { candidateIds: number[]; reason: string }) =>
+      serverFetch<{ data: { rejected: number[]; failed: { id: number; error: string }[] } }>(
+        "/candidates/bulk/reject",
+        { method: "POST", body: JSON.stringify(data) },
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+      queryClient.invalidateQueries({ queryKey: ["pipeline-board"] });
+    },
+  });
+}
+
+/** Sets the signed-in user's 1-5 star rating of a candidate; null clears it. */
+export function useRateCandidate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, rating }: { id: number; rating: number | null }) =>
+      serverFetch(`/candidates/${id}/rating`, {
+        method: "PUT",
+        body: JSON.stringify({ rating }),
       }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ["candidates", variables.id] });

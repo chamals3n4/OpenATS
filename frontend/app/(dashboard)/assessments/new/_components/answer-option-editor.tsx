@@ -28,7 +28,8 @@ export function AnswerOptionsEditor({
   onUpdateOptionText,
   onToggleCorrect,
 }: AnswerOptionsEditorProps) {
-  const correctLabel = question.options.find((o) => o.isCorrect)?.text ?? null;
+  const isMulti = question.type === "Multiple Select";
+  const correctLabels = question.options.filter((o) => o.isCorrect).map((o) => o.text);
 
   return (
     <div className="border border-slate-200 dark:border-neutral-800 rounded-xl p-6 space-y-4">
@@ -37,8 +38,9 @@ export function AnswerOptionsEditor({
           Answer Options
         </h3>
         <span className="text-xs text-slate-400">
-          Click {isTrueFalse ? "True or False" : "the circle"} to mark correct
-          answer
+          {isMulti
+            ? "Click every circle that is a correct answer"
+            : `Click ${isTrueFalse ? "True or False" : "the circle"} to mark the correct answer`}
         </span>
       </div>
 
@@ -113,14 +115,22 @@ export function AnswerOptionsEditor({
         </Button>
       )}
 
-      {correctLabel && (
+      {isMulti && (
+        <p className="text-xs text-slate-400 dark:text-neutral-500">
+          Candidates can pick several options. Each correct pick earns an equal share of the points and
+          each wrong pick takes one share away, down to zero.
+        </p>
+      )}
+
+      {correctLabels.length > 0 && (
         <div className="flex items-center gap-2 pt-1">
           <HugeiconsIcon
             icon={TickDouble01Icon}
             className="size-4 text-emerald-500"
           />
           <span className="text-xs text-emerald-600 font-medium">
-            Correct answer set to: <strong>{correctLabel}</strong>
+            Correct {correctLabels.length === 1 ? "answer" : "answers"} set to:{" "}
+            <strong>{correctLabels.join(", ")}</strong>
           </span>
         </div>
       )}

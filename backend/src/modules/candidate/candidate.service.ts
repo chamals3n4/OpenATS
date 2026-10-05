@@ -21,6 +21,7 @@ import type { Candidate } from "../../db/schema/candidates";
 import { assessmentExecutionService } from "../assessment-execution/assessment-execution.service";
 import { candidateActivityService } from "./candidate-activity.service";
 import { socketService } from "../../shared/services/socket.service";
+import { scoringService } from "../scoring/scoring.service";
 import { rejectionService } from "../rejection/rejection.service";
 import { mailService } from "../../shared/services/mail.service";
 import { cleanObject as clean } from "../../utils/object.utils";
@@ -76,6 +77,8 @@ export interface CandidateFilters {
     | "hired"
     | "withdrawn"
     | undefined;
+  /** "score" puts the highest total first and candidates with a knockout answer last. */
+  sort?: "score" | undefined;
   page?: number;
   limit?: number;
   teamUserId?: number;
@@ -118,6 +121,24 @@ function buildCandidateWhere(
 
   return conditions.length > 0 ? and(...conditions) : undefined;
 }
+
+/** The stored score parts, 0-100, null until a part exists. */
+const scoreColumns = {
+  questionsScore: candidates.questionsScore,
+  assessmentScore: candidates.assessmentScore,
+  ratingScore: candidates.ratingScore,
+  interviewScore: candidates.interviewScore,
+  totalScore: candidates.totalScore,
+  scoredParts: candidates.scoredParts,
+  knockedOut: candidates.knockedOut,
+  assessmentPassed: candidates.assessmentPassed,
+};
+
+const SCORE_ORDER = [
+  asc(candidates.knockedOut),
+  sql`${candidates.totalScore} desc nulls last`,
+  desc(candidates.appliedAt),
+];
 
 /** Returned with move-stage so the UI can toast automation outcomes. */
 export type StageAutomationFlags = {
@@ -311,7 +332,8 @@ export const candidateService = {
           }
         }
 
-        return candidate;
+        // Questions score and knockout flag, from the options they picked.
+        return (await scoringService.recompute(candidate.id, tx)) ?? candidate;
       }).then((candidate) => {
         socketService.notifyCandidateApplied(jobId);
         void sendApplicationConfirmationEmail(candidate, jobId);
@@ -347,6 +369,7 @@ export const candidateService = {
           updatedAt: candidates.updatedAt,
           stageName: jobPipelineStages.name,
           jobTitle: jobs.title,
+          ...scoreColumns,
         })
         .from(candidates)
         .leftJoin(
@@ -355,7 +378,7 @@ export const candidateService = {
         )
         .leftJoin(jobs, eq(candidates.jobId, jobs.id))
         .where(where)
-        .orderBy(desc(candidates.appliedAt))
+        .orderBy(...(rest.sort === "score" ? SCORE_ORDER : [desc(candidates.appliedAt)]))
         .limit(limit)
         .offset(offset),
 
@@ -390,6 +413,9 @@ export const candidateService = {
         status: candidates.status,
         appliedAt: candidates.appliedAt,
         updatedAt: candidates.updatedAt,
+        totalScore: candidates.totalScore,
+        knockedOut: candidates.knockedOut,
+        assessmentPassed: candidates.assessmentPassed,
         // When the candidate entered their current stage, for "time in stage".
         stageEnteredAt: sql<string | null>`(
           select max(${candidateStageHistory.movedAt})
@@ -421,6 +447,13 @@ export const candidateService = {
         updatedAt: candidates.updatedAt,
         stageName: jobPipelineStages.name,
         jobTitle: jobs.title,
+        ...scoreColumns,
+        weights: {
+          questions: jobs.scoreWeightQuestions,
+          assessment: jobs.scoreWeightAssessment,
+          rating: jobs.scoreWeightRating,
+          interview: jobs.scoreWeightInterview,
+        },
       })
       .from(candidates)
       .leftJoin(
@@ -553,9 +586,11 @@ export const candidateService = {
       .orderBy(desc(candidateInterviews.createdAt));
 
     const activities = await candidateActivityService.getByCandidate(id);
+    const ratings = await scoringService.getRatings(id);
 
     return {
       ...candidate,
+      ratings,
       answers,
       selections,
       history,

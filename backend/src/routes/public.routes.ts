@@ -7,7 +7,7 @@ import {
 } from "../modules/job/job.controller";
 import { getPublicCompany } from "../modules/company/company.controller";
 import { checkOrigins } from "../middlewares/allowedOrigins.middleware";
-import { getCustomQuestions } from "../modules/custom-question/custom-question.controller";
+import { getPublicCustomQuestions } from "../modules/custom-question/custom-question.controller";
 import { applyForJob } from "../modules/candidate/candidate.controller";
 import { uploadFile } from "../modules/upload/upload.controller";
 import {
@@ -97,7 +97,7 @@ const publicReadLimiter = rateLimit({
 router.get("/company", checkOrigins, getPublicCompany);
 router.get("/jobs", checkOrigins, listPublishedCareersJobs);
 router.get("/jobs/:id", checkOrigins, getPublicJobById);
-router.get("/jobs/:jobId/questions", checkOrigins, getCustomQuestions);
+router.get("/jobs/:jobId/questions", checkOrigins, getPublicCustomQuestions);
 router.post("/jobs/:jobId/apply", checkOrigins, applyLimiter, applyForJob);
 router.post(
   "/upload/resume",

@@ -382,10 +382,24 @@ router.delete("/interviews/:id", requireManager, async (req, res) => {
   }
 });
 
-const feedbackSchema = z.object({
-  content: z.string().min(1, "Feedback content is required"),
-  rating: z.number().int().min(1).max(5).optional().nullable(),
-});
+const feedbackSchema = z
+  .object({
+    content: z.string().default(""),
+    rating: z.number().int().min(1).max(5).optional().nullable(),
+    recommendation: z.enum(["strong_no", "no", "yes", "strong_yes"]).optional().nullable(),
+    ratings: z
+      .array(
+        z.object({
+          criterionId: z.number().int().positive(),
+          rating: z.number().int().min(1).max(5),
+        }),
+      )
+      .optional(),
+  })
+  .refine(
+    (d) => d.content.trim().length > 0 || (d.ratings?.length ?? 0) > 0 || d.recommendation,
+    "Add notes, a recommendation or at least one score",
+  );
 
 router.post("/interviews/:id/feedback", async (req, res) => {
   try {
@@ -402,14 +416,12 @@ router.post("/interviews/:id/feedback", async (req, res) => {
       });
       return;
     }
-    const feedback = await interviewService.addFeedback(
-      interviewId,
-      req.user.id,
-      parsed.data.content,
-      parsed.data.rating,
-    );
+    const feedback = await interviewService.addFeedback(interviewId, req.user.id, {
+      ...parsed.data,
+      content: parsed.data.content.trim(),
+    });
     if (!feedback) {
-      res.status(500).json({ error: "Failed to create feedback" });
+      res.status(404).json({ error: "Interview not found" });
       return;
     }
     const [interview] = await db
@@ -435,8 +447,8 @@ router.get("/interviews/:id/feedback", async (req, res) => {
       res.status(400).json({ error: "Invalid interview ID" });
       return;
     }
-    const feedback = await interviewService.getFeedback(interviewId);
-    res.status(200).json({ data: feedback });
+    const { data, meta } = await interviewService.getFeedback(interviewId, req.user);
+    res.status(200).json({ data, meta });
   } catch (error) {
     logger.error(`Failed to fetch feedback: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch feedback" });

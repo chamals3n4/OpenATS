@@ -2,10 +2,24 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 
 const addMutate = vi.fn();
-let feedbackRows: { id: number; interviewId: number; content: string; rating: number | null; createdAt: string; updatedAt: string; authorName: string }[] = [];
+type Row = {
+  id: number; interviewId: number; authorId: number; content: string; rating: number | null;
+  recommendation: "strong_no" | "no" | "yes" | "strong_yes" | null;
+  createdAt: string; updatedAt: string; authorName: string;
+  ratings: { criterionId: number; name: string; rating: number }[];
+};
+let feedbackRows: Row[] = [];
+let feedbackMeta: { hasSubmitted: boolean; hiddenCount: number } | undefined;
+let criteria: { id: number; jobId: number; name: string; position: number }[] = [];
 
+vi.mock("@/hooks/queries/use-jobs", () => ({
+  useScorecard: () => ({ data: { data: criteria } }),
+}));
+vi.mock("@/hooks/queries/use-user", () => ({
+  useCurrentUser: () => ({ data: { data: { id: 7, role: "hiring_manager" } } }),
+}));
 vi.mock("@/hooks/queries/use-interview-feedback", () => ({
-  useInterviewFeedback: () => ({ data: { data: feedbackRows }, isLoading: false }),
+  useInterviewFeedback: () => ({ data: { data: feedbackRows, meta: feedbackMeta }, isLoading: false }),
   useAddInterviewFeedback: () => ({ mutate: addMutate, isPending: false }),
   useDeleteInterviewFeedback: () => ({ mutate: vi.fn(), isPending: false }),
 }));
@@ -53,6 +67,8 @@ const render_ = (interviews: CandidateInterview[], onSchedule = vi.fn()) =>
 beforeEach(() => {
   vi.clearAllMocks();
   feedbackRows = [];
+  feedbackMeta = undefined;
+  criteria = [];
   vi.useFakeTimers({ toFake: ["Date"] });
   vi.setSystemTime(new Date("2026-09-09T12:00:00"));
 });
@@ -135,23 +151,59 @@ describe("feedback", () => {
     cleanup();
 
     feedbackRows = [
-      { id: 1, interviewId: 1, content: "Strong", rating: 5, createdAt: "2026-09-09T10:00:00Z", updatedAt: "", authorName: "Chamal" },
+      { id: 1, interviewId: 1, authorId: 3, content: "Strong", rating: 5, recommendation: null, createdAt: "2026-09-09T10:00:00Z", updatedAt: "2026-09-09T10:00:00Z", authorName: "Chamal", ratings: [] },
     ];
     render_([interview()]);
     expect(screen.getByRole("button", { name: "Feedback (1)" })).toBeTruthy();
   });
 
-  it("adds feedback from the candidate page, without leaving it", () => {
+  it("submits a scorecard from the candidate page, without leaving it", () => {
+    criteria = [
+      { id: 11, jobId: 1, name: "Technical skill", position: 1 },
+      { id: 12, jobId: 1, name: "Communication", position: 2 },
+    ];
     render_([interview()]);
     fireEvent.click(screen.getByRole("button", { name: "Add feedback" }));
     const dialog = screen.getByRole("dialog");
 
-    const save = within(dialog).getByRole("button", { name: "Save feedback" }) as HTMLButtonElement;
-    expect(save.disabled).toBe(true);
+    const submit = within(dialog).getByRole("button", { name: "Submit scorecard" }) as HTMLButtonElement;
+    expect(submit.disabled).toBe(true);
 
-    fireEvent.change(within(dialog).getByLabelText("Add feedback"), { target: { value: "  Great communicator  " } });
-    fireEvent.click(save);
-    expect(addMutate).toHaveBeenCalledWith({ interviewId: 1, content: "Great communicator" }, expect.anything());
+    const technical = within(dialog).getByRole("radiogroup", { name: "Technical skill" });
+    fireEvent.click(within(technical).getByRole("radio", { name: /^4 of 5/ }));
+    fireEvent.click(within(dialog).getByRole("radio", { name: "Yes" }));
+    fireEvent.change(within(dialog).getByLabelText("Notes"), { target: { value: "  Great communicator  " } });
+    fireEvent.click(submit);
+
+    expect(addMutate).toHaveBeenCalledWith(
+      {
+        interviewId: 1,
+        content: "Great communicator",
+        rating: null,
+        recommendation: "yes",
+        ratings: [{ criterionId: 11, rating: 4 }],
+      },
+      expect.anything(),
+    );
+  });
+
+  it("falls back to one overall rating when the job has no criteria", () => {
+    render_([interview()]);
+    fireEvent.click(screen.getByRole("button", { name: "Add feedback" }));
+    const dialog = screen.getByRole("dialog");
+    fireEvent.click(within(within(dialog).getByRole("radiogroup", { name: "Overall rating" })).getByRole("radio", { name: /^5 of 5/ }));
+    fireEvent.click(within(dialog).getByRole("button", { name: "Submit scorecard" }));
+    expect(addMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ rating: 5, ratings: [] }),
+      expect.anything(),
+    );
+  });
+
+  it("hides other scorecards from an interviewer who has not submitted theirs", () => {
+    feedbackMeta = { hasSubmitted: false, hiddenCount: 2 };
+    render_([interview()]);
+    fireEvent.click(screen.getByRole("button", { name: "Add feedback" }));
+    expect(within(screen.getByRole("dialog")).getByText(/2 scorecards are hidden/)).toBeTruthy();
   });
 });
 

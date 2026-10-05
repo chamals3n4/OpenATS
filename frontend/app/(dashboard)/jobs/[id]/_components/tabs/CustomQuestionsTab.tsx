@@ -16,7 +16,8 @@ import type {
   useDeleteQuestion,
   useUpdateQuestion,
 } from "@/hooks/queries/use-jobs";
-import { optionLabelsOf } from "../../lib/question-utils";
+import { optionDraftsOf } from "../../lib/question-utils";
+import type { OptionDraft } from "../../lib/question-utils";
 import { QuestionDialog, QuestionForm, type QuestionValues } from "../questions/question-form";
 import { QuestionRow } from "../questions/question-row";
 
@@ -32,7 +33,7 @@ const NEW_QUESTION = {
   title: "",
   type: "short_answer" as const,
   required: false,
-  options: [] as string[],
+  options: [] as OptionDraft[],
 };
 
 export function CustomQuestionsTab({
@@ -168,7 +169,7 @@ export function CustomQuestionsTab({
               title: editing.title,
               type: editing.questionType,
               required: editing.isRequired,
-              options: optionLabelsOf(editing),
+              options: optionDraftsOf(editing),
             }}
             isPending={updateQuestionMutation.isPending}
             onSubmit={(values) => handleSave(editing.id, values)}

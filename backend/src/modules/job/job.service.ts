@@ -1,5 +1,6 @@
 import { eq, desc, ilike, inArray, and, sql } from "drizzle-orm";
 import { db, NewJob } from "../../db";
+import { cleanObject as clean } from "../../utils/object.utils";
 import {
   jobs,
   jobSkills,
@@ -40,6 +41,10 @@ export type CreateJobInput = {
   salaryMin?: number | null;
   salaryMax?: number | null;
   status?: "draft" | "inactive" | "published" | "closed" | "archived";
+  scoreWeightQuestions?: number;
+  scoreWeightAssessment?: number;
+  scoreWeightRating?: number;
+  scoreWeightInterview?: number;
   createdBy: number;
 };
 
@@ -62,6 +67,10 @@ export type UpdateJobInput = {
   salaryMin?: number | null;
   salaryMax?: number | null;
   status?: "draft" | "inactive" | "published" | "closed" | "archived";
+  scoreWeightQuestions?: number;
+  scoreWeightAssessment?: number;
+  scoreWeightRating?: number;
+  scoreWeightInterview?: number;
 };
 
 function generateSlug(title: string): string {
@@ -239,6 +248,12 @@ export const jobService = {
         salaryMin: jobData.salaryMin ?? null,
         salaryMax: jobData.salaryMax ?? null,
         status: jobData.status ?? "draft",
+        ...clean({
+          scoreWeightQuestions: jobData.scoreWeightQuestions,
+          scoreWeightAssessment: jobData.scoreWeightAssessment,
+          scoreWeightRating: jobData.scoreWeightRating,
+          scoreWeightInterview: jobData.scoreWeightInterview,
+        }),
         createdBy: jobData.createdBy,
       };
 
@@ -336,6 +351,7 @@ export const jobService = {
         id: jobAssessmentAttachments.id,
         assessmentId: jobAssessmentAttachments.assessmentId,
         triggerStageId: jobAssessmentAttachments.triggerStageId,
+        passMark: jobAssessmentAttachments.passMark,
         createdAt: jobAssessmentAttachments.createdAt,
       })
       .from(jobAssessmentAttachments)
@@ -346,6 +362,7 @@ export const jobService = {
     jobId: number;
     assessmentId: number;
     triggerStageId: number;
+    passMark?: number;
   }) {
     const [attached] = await db
       .insert(jobAssessmentAttachments)
@@ -353,9 +370,24 @@ export const jobService = {
         jobId: input.jobId,
         assessmentId: input.assessmentId,
         triggerStageId: input.triggerStageId,
+        ...(input.passMark !== undefined && { passMark: input.passMark }),
       })
       .returning();
     return attached;
+  },
+
+  async updateAttachmentPassMark(jobId: number, attachmentId: number, passMark: number) {
+    const [updated] = await db
+      .update(jobAssessmentAttachments)
+      .set({ passMark })
+      .where(
+        and(
+          eq(jobAssessmentAttachments.id, attachmentId),
+          eq(jobAssessmentAttachments.jobId, jobId),
+        ),
+      )
+      .returning();
+    return updated ?? null;
   },
 
   async detachAssessment(attachmentId: number) {

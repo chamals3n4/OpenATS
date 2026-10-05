@@ -92,13 +92,15 @@ export function useDeleteAssessment() {
   });
 }
 
+export type AssessmentQuestionKind = "short_answer" | "long_answer" | "multiple_choice" | "radio" | "checkbox";
+
 export function useCreateAssessmentQuestion(assessmentId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: {
       title: string;
       description?: string | null;
-      questionType: "short_answer" | "multiple_choice";
+      questionType: AssessmentQuestionKind;
       points?: number;
       position: number;
       options?: { label: string; isCorrect?: boolean; position: number }[];
@@ -129,7 +131,7 @@ export function useUpdateAssessmentQuestion(assessmentId: number) {
       data: {
         title?: string;
         description?: string | null;
-        questionType?: "short_answer" | "multiple_choice";
+        questionType?: AssessmentQuestionKind;
         points?: number;
         position?: number;
         options?: { label: string; isCorrect?: boolean; position: number }[];
@@ -177,6 +179,7 @@ export function useJobAssessments(jobId: number) {
           id: number;
           assessmentId: number;
           triggerStageId: number;
+          passMark: number;
           createdAt: string;
         }[];
       }>(`/jobs/${jobId}/assessments`),
@@ -187,7 +190,7 @@ export function useJobAssessments(jobId: number) {
 export function useAttachAssessment(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { assessmentId: number; triggerStageId: number }) =>
+    mutationFn: (data: { assessmentId: number; triggerStageId: number; passMark?: number }) =>
       serverFetch<{ data: JobAssessment }>(`/jobs/${jobId}/assessments`, {
         method: "POST",
         body: JSON.stringify(data),
@@ -196,6 +199,21 @@ export function useAttachAssessment(jobId: number) {
       queryClient.invalidateQueries({
         queryKey: ["jobs", jobId, "assessments"],
       });
+    },
+  });
+}
+
+export function useUpdatePassMark(jobId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ attachmentId, passMark }: { attachmentId: number; passMark: number }) =>
+      serverFetch<{ data: JobAssessment }>(`/jobs/${jobId}/assessments/${attachmentId}`, {
+        method: "PATCH",
+        body: JSON.stringify({ passMark }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });
 }
@@ -282,6 +300,8 @@ export function useAttemptResults(attemptId: number, options?: { enabled?: boole
             candidateName: string;
             candidateEmail: string;
           };
+          /** Written answers still waiting for a reviewer to grade them. */
+          pendingReview: number;
           questions: {
             id: number;
             title: string;
@@ -297,11 +317,28 @@ export function useAttemptResults(attemptId: number, options?: { enabled?: boole
             answer: {
               answerText: string | null;
               selectedOptionIds: number[];
-              pointsEarned: number | null;
+              pointsEarned: number | string | null;
             } | null;
           }[];
         };
       }>(`/assessment-execution/attempts/${attemptId}/results`),
     enabled: (options?.enabled ?? true) && !!attemptId,
+  });
+}
+
+/** A reviewer's points for one written answer. The score appears once every one is graded. */
+export function useGradeAnswer(attemptId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ questionId, points }: { questionId: number; points: number }) =>
+      serverFetch(`/assessment-execution/attempts/${attemptId}/grade`, {
+        method: "PUT",
+        body: JSON.stringify({ questionId, points }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["attempt-results", attemptId] });
+      queryClient.invalidateQueries({ queryKey: ["candidate-assessments"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
   });
 }

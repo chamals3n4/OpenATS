@@ -100,7 +100,7 @@ export const SECTIONS = [
   { id: "email" as SectionId, label: "Send Email", icon: Mail01Icon },
   {
     id: "scores" as SectionId,
-    label: "Assessments",
+    label: "Scores",
     icon: ChartEvaluationIcon,
   },
 ];

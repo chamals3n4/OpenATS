@@ -3,12 +3,13 @@
 import { ConfirmDeleteDialog, ConfirmDeleteName } from "@/components/ui/confirm-delete-dialog";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQueryClient, type QueryKey } from "@tanstack/react-query";
-import { useParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { serverFetch } from "@/lib/auth-action";
 import { Tabs } from "@/components/ui/tabs";
 
 import { JobHeader } from "./_components/JobHeader";
 import { JobTabs } from "./_components/JobTabs";
+import { JobSetupAlert } from "./_components/JobSetupAlert";
 import { DiscussionsPanel } from "./_components/DiscussionsPanel";
 import { AddStageDialog } from "./_components/dialogs/AddStageDialog";
 
@@ -61,6 +62,7 @@ const JOB_TABS = [
   { value: "hiring-process", label: "Hiring Process" },
   { value: "custom-questions", label: "Custom Questions" },
   { value: "assessments", label: "Assessments" },
+  { value: "scoring", label: "Scoring" },
 ];
 
 function timeAgo(dateStr: string) {
@@ -86,6 +88,10 @@ export default function JobDetailsPage() {
   const params = useParams();
   const jobId = Number(params.id);
   const queryClient = useQueryClient();
+  const router = useRouter();
+  // A freshly created job arrives with ?setup=1, which shows the next-steps alert once.
+  const showSetupAlert = useSearchParams().get("setup") === "1";
+  const dismissSetupAlert = () => router.replace(`/jobs/${jobId}`, { scroll: false });
 
   useEffect(() => {
     if (!jobId) return;
@@ -372,6 +378,20 @@ export default function JobDetailsPage() {
                   ))}
                 </div>
               </div>
+
+              {showSetupAlert && (
+                <JobSetupAlert
+                  onAddQuestions={() => {
+                    setActiveJobTab("custom-questions");
+                    dismissSetupAlert();
+                  }}
+                  onSetUpScoring={() => {
+                    setActiveJobTab("scoring");
+                    dismissSetupAlert();
+                  }}
+                  onDismiss={dismissSetupAlert}
+                />
+              )}
 
               <JobTabs
                 activeJobTab={activeJobTab}

@@ -13,20 +13,20 @@ const optionSchema = z.object({
 const baseQuestionSchema = z.object({
   title: z.string().min(1, "Question title is required").max(500),
   description: z.string().optional().nullable(),
-  questionType: z.enum(["short_answer", "multiple_choice"]),
-  points: z.number().positive().default(1),
+  questionType: z.enum(["short_answer", "long_answer", "multiple_choice", "radio", "checkbox"]),
+  points: z.number().positive().max(1000).default(1),
   position: z.number().int().positive(),
   options: z.array(optionSchema).optional(),
 });
 
 const questionSchema = baseQuestionSchema.refine(
   (data) => {
-    if (data.questionType === "multiple_choice") {
+    if (["multiple_choice", "radio", "checkbox"].includes(data.questionType)) {
       return data.options && data.options.length >= 2;
     }
     return true;
   },
-  { message: "Multiple choice questions must have at least 2 options" },
+  { message: "Choice questions must have at least 2 options" },
 );
 
 const createAssessmentSchema = z.object({

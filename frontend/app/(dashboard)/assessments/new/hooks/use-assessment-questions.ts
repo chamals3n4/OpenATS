@@ -6,6 +6,7 @@ import {
   makeQuestion,
   moveItem,
   getDefaultOptionsForType,
+  toggleCorrectOption as toggleCorrect,
 } from "../lib/assessment-builder-utils";
 
 export function useAssessmentQuestions() {
@@ -125,13 +126,7 @@ export function useAssessmentQuestions() {
     setQuestions((prev) =>
       prev.map((q) => {
         if (q.uid !== qId) return q;
-        return {
-          ...q,
-          options: q.options.map((o) => ({
-            ...o,
-            isCorrect: o.id === optId ? !o.isCorrect : false,
-          })),
-        };
+        return { ...q, options: toggleCorrect(q, optId) };
       }),
     );
   }, []);

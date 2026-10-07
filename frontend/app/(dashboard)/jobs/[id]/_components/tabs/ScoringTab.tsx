@@ -30,8 +30,17 @@ import {
   validateCriteria,
   weightsOfJob,
   type CriterionDraft,
+  type ScorePart,
   type Weights,
 } from "../../lib/scoring-utils";
+
+/** One colour per score part, shared by its tile dot and its slice of the share bar. */
+const PART_COLOR: Record<ScorePart, string> = {
+  questions: "bg-emerald-600",
+  assessment: "bg-sky-500",
+  rating: "bg-amber-500",
+  interview: "bg-indigo-500",
+};
 
 const sectionCls =
   "rounded-lg border border-slate-300 bg-white p-5 dark:border-neutral-700 dark:bg-neutral-900";
@@ -86,18 +95,28 @@ function WeightsCard({ job }: { job: JobDetail }) {
         )}
       </div>
 
-      <ul className="mt-5 space-y-3">
+      <ul className="mt-5 grid gap-3 sm:grid-cols-2">
         {SCORE_PARTS.map((part) => (
-          <li key={part.id} className="grid items-center gap-x-4 gap-y-1 sm:grid-cols-[1fr_6rem_3.5rem]">
-            <div className="min-w-0">
+          <li
+            key={part.id}
+            className="rounded-md border border-slate-200 bg-slate-50/60 p-3.5 dark:border-neutral-700 dark:bg-neutral-950/40"
+          >
+            <div className="flex items-center justify-between gap-2">
               <label
                 htmlFor={`weight-${part.id}`}
-                className="text-sm font-medium text-slate-900 dark:text-neutral-100"
+                className="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-neutral-100"
               >
+                <span aria-hidden className={`size-2.5 rounded-full ${PART_COLOR[part.id]}`} />
                 {part.label}
               </label>
-              <p className="text-xs text-slate-500 dark:text-neutral-400">{part.hint}</p>
+              <span
+                aria-label={`${part.label} share`}
+                className="text-sm font-semibold tabular-nums text-slate-700 dark:text-neutral-300"
+              >
+                {shares[part.id]}%
+              </span>
             </div>
+            <p className="mt-1 min-h-8 text-xs text-slate-500 dark:text-neutral-400">{part.hint}</p>
             <Input
               id={`weight-${part.id}`}
               type="number"
@@ -107,14 +126,8 @@ function WeightsCard({ job }: { job: JobDetail }) {
               disabled={!isManager}
               value={weights[part.id]}
               onChange={(e) => setWeights((w) => ({ ...w, [part.id]: clampWeight(Number(e.target.value)) }))}
-              className={`${inputCls} w-24`}
+              className={`${inputCls} mt-2 w-full`}
             />
-            <span
-              aria-label={`${part.label} share`}
-              className="text-sm font-semibold tabular-nums text-slate-700 dark:text-neutral-300"
-            >
-              {shares[part.id]}%
-            </span>
           </li>
         ))}
       </ul>
@@ -122,13 +135,13 @@ function WeightsCard({ job }: { job: JobDetail }) {
       <div
         role="img"
         aria-label="Share of each part"
-        className="mt-4 flex h-2 overflow-hidden rounded-full bg-slate-200 dark:bg-neutral-700"
+        className="mt-4 flex h-2.5 overflow-hidden rounded-full bg-slate-200 dark:bg-neutral-700"
       >
-        {SCORE_PARTS.map((part, i) => (
+        {SCORE_PARTS.map((part) => (
           <div
             key={part.id}
             style={{ width: `${shares[part.id]}%` }}
-            className={["bg-slate-700", "bg-slate-500", "bg-slate-400", "bg-slate-300"][i]}
+            className={`${PART_COLOR[part.id]} transition-[width] duration-200`}
           />
         ))}
       </div>
@@ -301,16 +314,18 @@ export function ScoringTab({ job }: { job: JobDetail | undefined }) {
   const weightsKey = Object.values(weightsOfJob(job)).join("-");
 
   return (
-    <div className="flex max-w-3xl flex-col gap-5">
+    <div className="flex flex-col gap-5">
       <div>
         <h2 className="text-lg font-semibold text-slate-900 dark:text-neutral-100">Scoring</h2>
-        <p className="mt-0.5 text-sm text-slate-500 dark:text-neutral-400">
+        <p className="mt-0.5 max-w-3xl text-sm text-slate-500 dark:text-neutral-400">
           How candidates for this role are ranked. Points on application answers are set in Custom
           Questions, and the pass mark for a test in Assessments.
         </p>
       </div>
-      <WeightsCard key={weightsKey} job={job} />
-      <CriteriaCard key={criteriaKey} jobId={job.id} initial={criteria} />
+      <div className="grid items-start gap-5 lg:grid-cols-2">
+        <WeightsCard key={weightsKey} job={job} />
+        <CriteriaCard key={criteriaKey} jobId={job.id} initial={criteria} />
+      </div>
     </div>
   );
 }

@@ -5,8 +5,9 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  ArrowLeft02Icon,
-  Task01Icon,
+  ArrowRight02Icon,
+  Cancel01Icon,
+  Edit02Icon,
   Link01Icon,
   Chatting01Icon,
   UserMultiple02Icon,
@@ -66,7 +67,7 @@ const STATUS_ACTIONS: Record<JobStatus, StatusAction[]> = {
       label: "Deactivate",
       pendingLabel: "Deactivating",
       icon: PauseIcon,
-      className: "bg-slate-700 hover:bg-slate-800",
+      className: "bg-amber-600 hover:bg-amber-700",
     },
     {
       to: "closed",
@@ -271,6 +272,15 @@ export function JobHeader({
 
               {/* Second row: salary · candidates · careers link */}
               <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[13px] text-slate-600 dark:text-neutral-300">
+                {isManager && (
+                  <Link
+                    href={`/jobs/${jobId}/pipeline`}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-md border border-theme/50 bg-theme/15 px-3 text-[13px] font-semibold text-theme transition-colors hover:bg-theme/25 dark:text-primary"
+                  >
+                    Go to Hiring Pipeline
+                    <HugeiconsIcon icon={ArrowRight02Icon} className="size-4" strokeWidth={2} />
+                  </Link>
+                )}
                 {salaryStr && (
                   <div className="inline-flex items-center gap-2 font-medium">
                     <HugeiconsIcon
@@ -311,72 +321,61 @@ export function JobHeader({
             </div>
           </div>
 
-          {/* Right: action buttons */}
+          {/* Right: action buttons, styled like the candidate profile's */}
           <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
             {isManager && primaryAction && (
               <Button
-                size="sm"
                 onClick={() => setPendingStatus(primaryAction.to)}
-                className={`h-[34px] cursor-pointer rounded-md border-none px-4 text-[14px] font-semibold leading-none text-white shadow-none ${primaryAction.className}`}
+                className={`h-9 cursor-pointer border-none px-4 text-sm font-semibold text-white shadow-none ${primaryAction.className}`}
               >
                 {primaryAction.label}
               </Button>
             )}
             {isManager && secondaryAction && (
               <Button
-                size="sm"
                 variant="outline"
                 onClick={() => setPendingStatus(secondaryAction.to)}
-                className={`h-[34px] cursor-pointer rounded-md px-4 text-[14px] font-semibold leading-none shadow-none ${
+                className={`h-9 cursor-pointer px-4 text-sm font-semibold shadow-none ${
                   secondaryAction.to === "closed"
-                    ? "border-red-200 bg-white text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:bg-neutral-950 dark:text-red-400 dark:hover:bg-red-950/30"
-                    : "border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+                    ? "border-red-200 bg-red-50 text-red-700 hover:bg-red-100 dark:border-red-900/50 dark:bg-red-950/30 dark:text-red-300 dark:hover:bg-red-950/50"
+                    : "border-slate-300 bg-slate-100 text-slate-700 hover:bg-slate-200 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
                 }`}
               >
                 {secondaryAction.label}
               </Button>
             )}
+
             <Button
-              size="sm"
+              variant="outline"
+              aria-pressed={isNotesOpen}
               onClick={() => setIsNotesOpen(!isNotesOpen)}
-              className="h-[34px] cursor-pointer rounded-md border border-blue-200 bg-blue-50 px-4 text-[14px] font-semibold leading-none text-blue-700 shadow-none hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/50"
+              className={`h-9 cursor-pointer gap-2 px-3.5 text-sm font-semibold shadow-none ${
+                isNotesOpen
+                  ? "border-blue-400 bg-blue-100 text-blue-800 dark:border-blue-700 dark:bg-blue-950/60 dark:text-blue-200"
+                  : "border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-300 dark:hover:bg-blue-950/50"
+              }`}
             >
-              <HugeiconsIcon
-                icon={Chatting01Icon}
-                className="size-4"
-                strokeWidth={2}
-              />
+              <HugeiconsIcon icon={Chatting01Icon} className="size-4" strokeWidth={1.75} />
               Discussions
             </Button>
-            {isManager ? (
-              <Link href={`/jobs/${jobId}/pipeline`}>
+
+            {isManager && (
+              <Link href={`/jobs/${jobId}/edit`}>
                 <Button
-                  size="sm"
-                  className="h-[34px] cursor-pointer rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none hover:bg-[var(--theme-color-hover)]"
+                  variant="outline"
+                  className="h-9 cursor-pointer gap-2 border-theme/30 bg-theme/10 px-3.5 text-sm font-semibold text-theme shadow-none hover:bg-theme/20 dark:text-primary"
                 >
-                  <HugeiconsIcon icon={Task01Icon} className="size-4" />
-                  Hiring Pipeline
+                  <HugeiconsIcon icon={Edit02Icon} className="size-4" strokeWidth={1.75} />
+                  Edit
                 </Button>
               </Link>
-            ) : (
-              <Button
-                size="sm"
-                disabled
-                className="h-[34px] rounded-md border-none bg-[var(--theme-color)] px-4 text-[14px] font-semibold leading-none text-white shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <HugeiconsIcon icon={Task01Icon} className="size-4" />
-                Hiring Pipeline
-              </Button>
             )}
-            <Link href="/jobs">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-[34px] cursor-pointer rounded-md px-2 text-[14px] font-medium leading-none text-slate-500 shadow-none hover:bg-slate-100 hover:text-slate-800 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
-              >
-                <HugeiconsIcon icon={ArrowLeft02Icon} className="size-4" />
-                Back
-              </Button>
+
+            <span aria-hidden className="mx-1 hidden h-6 w-px bg-slate-300 lg:block dark:bg-neutral-700" />
+            <Link href="/jobs" aria-label="Back to jobs" title="Back to jobs">
+              <span className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100">
+                <HugeiconsIcon icon={Cancel01Icon} className="size-5" />
+              </span>
             </Link>
           </div>
         </div>

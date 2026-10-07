@@ -204,3 +204,24 @@ body::-webkit-scrollbar {
   font-weight: 400;
   font-style: normal;
 }
+
+/* A dragged board card: lifts off the column and settles into a slight tilt, like a card picked up. */
+@keyframes card-pickup {
+  from {
+    transform: rotate(0deg) scale(1);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.08);
+  }
+  to {
+    transform: rotate(2.5deg) scale(1.03);
+    box-shadow: 0 14px 28px -8px rgb(0 0 0 / 0.28), 0 6px 10px -6px rgb(0 0 0 / 0.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  @keyframes card-pickup {
+    from,
+    to {
+      transform: none;
+    }
+  }
+}

@@ -132,6 +132,11 @@ const scoreColumns = {
   scoredParts: candidates.scoredParts,
   knockedOut: candidates.knockedOut,
   assessmentPassed: candidates.assessmentPassed,
+  /** How many parts the job weights above zero, so "2 of 4 scored" knows the 4. */
+  weightedParts: sql<number>`(
+    (${jobs.scoreWeightQuestions} > 0)::int + (${jobs.scoreWeightAssessment} > 0)::int
+    + (${jobs.scoreWeightRating} > 0)::int + (${jobs.scoreWeightInterview} > 0)::int
+  )`.as("weighted_parts"),
 };
 
 const SCORE_ORDER = [
@@ -414,6 +419,8 @@ export const candidateService = {
         appliedAt: candidates.appliedAt,
         updatedAt: candidates.updatedAt,
         totalScore: candidates.totalScore,
+        scoredParts: candidates.scoredParts,
+        weightedParts: scoreColumns.weightedParts,
         knockedOut: candidates.knockedOut,
         assessmentPassed: candidates.assessmentPassed,
         // When the candidate entered their current stage, for "time in stage".
@@ -425,6 +432,7 @@ export const candidateService = {
         )`.as("stage_entered_at"),
       })
       .from(candidates)
+      .innerJoin(jobs, eq(candidates.jobId, jobs.id))
       .where(and(eq(candidates.jobId, jobId), ne(candidates.status, "rejected")))
       .orderBy(asc(candidates.stagePosition), desc(candidates.appliedAt))
       .limit(BOARD_MAX_CANDIDATES);
@@ -587,10 +595,12 @@ export const candidateService = {
 
     const activities = await candidateActivityService.getByCandidate(id);
     const ratings = await scoringService.getRatings(id);
+    const interviewSpread = await scoringService.getInterviewSpread(id);
 
     return {
       ...candidate,
       ratings,
+      interviewSpread,
       answers,
       selections,
       history,

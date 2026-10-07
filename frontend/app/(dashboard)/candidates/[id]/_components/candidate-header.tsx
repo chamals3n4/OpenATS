@@ -10,6 +10,7 @@ import {
   File01Icon,
 } from "@hugeicons/core-free-icons";
 import { Badge } from "@/components/ui/badge";
+import { ScoreBadge } from "@/components/score-badge";
 import { RowDeleteButton } from "@/components/table/row-actions";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
@@ -37,6 +38,8 @@ interface CandidateHeaderProps {
   onCancelStageChange: () => void;
   onSaveStageChange: () => void;
   onViewCv: () => void;
+  /** Opens the Scores tab. */
+  onViewScores?: () => void;
   onClose: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -54,6 +57,7 @@ export function CandidateHeader({
   onCancelStageChange,
   onSaveStageChange,
   onViewCv,
+  onViewScores,
   onClose,
   onEdit,
   onDelete,
@@ -99,6 +103,22 @@ export function CandidateHeader({
               >
                 {candidate.status}
               </Badge>
+              <button
+                type="button"
+                onClick={onViewScores}
+                disabled={!onViewScores}
+                title="See the score breakdown"
+                className="cursor-pointer rounded-md disabled:cursor-default"
+              >
+                <ScoreBadge
+                  size="full"
+                  total={candidate.totalScore}
+                  scoredParts={candidate.scoredParts}
+                  weightedParts={candidate.weightedParts}
+                  knockedOut={candidate.knockedOut}
+                  assessmentPassed={candidate.assessmentPassed}
+                />
+              </button>
               {offer && (
                 <Badge
                   className={`${offerStyle?.bg} ${offerStyle?.text} rounded-md border-none px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider shadow-none`}

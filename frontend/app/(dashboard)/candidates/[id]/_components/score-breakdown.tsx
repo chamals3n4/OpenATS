@@ -27,6 +27,8 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
   const total = toNumber(candidate.totalScore);
 
   const ratings = candidate.ratings ?? [];
+  const isInterviewer = me?.data?.role === "interviewer";
+  const spread = candidate.interviewSpread;
   const myRating = ratings.find((r) => r.userId === me?.data?.id)?.rating ?? null;
 
   const handleRate = (value: number | null) =>
@@ -41,7 +43,7 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
         <div>
           <h3 className="text-base font-bold text-slate-900 dark:text-neutral-100">Score</h3>
           <p className="mt-0.5 text-[15px] text-slate-500 dark:text-neutral-400">
-            {candidate.scoredParts ?? 0} of {weightedParts} parts scored so far
+            {candidate.scoredParts ?? 0} of {weightedParts} {weightedParts === 1 ? "part" : "parts"} scored so far
           </p>
         </div>
         <div className="text-right">
@@ -98,8 +100,23 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
                 )}
               </div>
               <span className="text-sm tabular-nums text-slate-700 sm:text-right dark:text-neutral-300">
-                {unused ? "—" : score === null ? "Not yet" : `${formatScore(score)} / 100`}
+                {unused
+                  ? "—"
+                  : score === null
+                    ? part.id === "interview" && isInterviewer
+                      ? "Hidden for now"
+                      : "Not yet"
+                    : `${formatScore(score)} / 100`}
               </span>
+              {part.id === "interview" && !unused && (score !== null || isInterviewer) && (
+                <p className="text-xs text-slate-500 sm:col-span-3 dark:text-neutral-400">
+                  {score === null
+                    ? "Interview scores show after you submit your own scorecard."
+                    : spread && spread.count > 1
+                      ? `${spread.count} scorecards, from ${formatScore(spread.min)} to ${formatScore(spread.max)}`
+                      : "1 scorecard so far"}
+                </p>
+              )}
             </li>
           );
         })}

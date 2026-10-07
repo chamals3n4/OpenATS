@@ -5,6 +5,9 @@ import {
   computeQuestionsScore,
   computeRatingScore,
   computeTotal,
+  interviewSpread,
+  scorecardScores,
+  withholdInterviewScores,
   type PartScores,
 } from "../../src/modules/scoring/scoring";
 
@@ -105,5 +108,39 @@ describe("computeInterviewScore", () => {
         { criterionRatings: [], overall: null },
       ]),
     ).toBe(100);
+  });
+});
+
+describe("interviewSpread", () => {
+  it("shows how far apart the interviewers were", () => {
+    const cards = [
+      { criterionRatings: [5, 5], overall: null }, // 100
+      { criterionRatings: [2, 2], overall: null }, // 40
+      { criterionRatings: [], overall: 3 }, // 60
+    ];
+    expect(scorecardScores(cards)).toEqual([100, 40, 60]);
+    expect(interviewSpread(cards)).toEqual({ count: 3, min: 40, max: 100 });
+  });
+
+  it("is null before any scorecard", () => {
+    expect(interviewSpread([])).toBeNull();
+    expect(interviewSpread([{ criterionRatings: [], overall: null }])).toBeNull();
+  });
+});
+
+describe("withholdInterviewScores", () => {
+  it("hides the Interview part and the total, and takes the interview off the parts count", () => {
+    const row = { id: 1, questionsScore: "90.00", interviewScore: "73.33", totalScore: "80.50", scoredParts: 4 };
+    expect(withholdInterviewScores(row)).toEqual({
+      id: 1,
+      questionsScore: "90.00",
+      interviewScore: null,
+      totalScore: null,
+      scoredParts: 3,
+    });
+  });
+
+  it("leaves the parts count alone when there was no interview score", () => {
+    expect(withholdInterviewScores({ interviewScore: null, totalScore: "90", scoredParts: 1 }).scoredParts).toBe(1);
   });
 });

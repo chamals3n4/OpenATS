@@ -223,6 +223,7 @@ export default function CandidateDetailPage({
         onCancelStageChange={() => setSelectedStageId("")}
         onSaveStageChange={saveStageChange}
         onViewCv={() => setIsCvExpanded(true)}
+        onViewScores={() => setActiveSection("scores")}
         onClose={handleClose}
         onEdit={openEditDialog}
         onDelete={() => setDeleteTarget(true)}

@@ -94,4 +94,52 @@ describe("QuestionForm", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onCancel).toHaveBeenCalled();
   });
+
+  it("keeps scoring off until asked, and sends zero points then", async () => {
+    const { onSubmit, user } = setup({ ...blank, type: "radio" });
+    expect(screen.queryByLabelText("Points for option 1")).toBeNull();
+    await user.type(screen.getByLabelText(/^Question/), "Stack?");
+    await user.type(screen.getByLabelText("Option 1"), "React");
+    await user.type(screen.getByLabelText("Option 2"), "Vue");
+    await user.click(screen.getByRole("button", { name: "Add question" }));
+    expect(onSubmit.mock.calls[0]![0].options.every((o: { points: number; isKnockout: boolean }) => o.points === 0 && !o.isKnockout)).toBe(true);
+  });
+
+  it("shows points and knockout once scoring is switched on, and sends them", async () => {
+    const { onSubmit, user } = setup({ ...blank, type: "radio" });
+    await user.click(screen.getByRole("switch", { name: "Score this question" }));
+    await user.type(screen.getByLabelText(/^Question/), "Years?");
+    await user.type(screen.getByLabelText("Option 1"), "0-1");
+    await user.type(screen.getByLabelText("Option 2"), "5+");
+    await user.type(screen.getByLabelText("Points for option 2"), "10");
+    await user.click(screen.getAllByRole("checkbox", { name: "Knockout" })[0]!);
+    await user.click(screen.getByRole("button", { name: "Add question" }));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: [
+          { label: "0-1", isCorrect: false, points: 0, isKnockout: true, position: 1 },
+          { label: "5+", isCorrect: false, points: 10, isKnockout: false, position: 2 },
+        ],
+      }),
+    );
+  });
+
+  it("opens an already-scored question with scoring on", () => {
+    setup({
+      title: "Years?",
+      type: "radio",
+      required: false,
+      options: [
+        { label: "A", points: 5, isKnockout: false },
+        { label: "B", points: 0, isKnockout: false },
+      ],
+    }, "edit");
+    expect(screen.getByRole("switch", { name: "Score this question" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByLabelText("Points for option 1")).toHaveValue(5);
+  });
+
+  it("explains that typed answers cannot be scored", () => {
+    setup();
+    expect(screen.getByText(/switch the answer type to Single choice or Multiple choice/i)).toBeInTheDocument();
+  });
 });

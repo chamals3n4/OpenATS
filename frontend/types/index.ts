@@ -235,6 +235,8 @@ export type Candidate = {
   totalScore?: string | null;
   /** How many of the job's weighted parts have a score yet. */
   scoredParts?: number;
+  /** How many parts the job weights above zero: the "4" in "2 of 4 scored". */
+  weightedParts?: number;
   /** Picked a knockout answer. */
   knockedOut?: boolean;
   /** Latest finished assessment against its pass mark; null if none finished. */
@@ -253,6 +255,11 @@ export type BoardCandidate = Pick<
   | "status"
   | "appliedAt"
   | "updatedAt"
+  | "totalScore"
+  | "scoredParts"
+  | "weightedParts"
+  | "knockedOut"
+  | "assessmentPassed"
 > & {
   /** When the candidate entered their current stage. Null when there is no record of it. */
   stageEnteredAt: string | null;
@@ -289,6 +296,8 @@ export type CandidateCvAnalysisPayload = {
 
 export type CandidateDetail = Candidate & {
   weights?: { questions: number; assessment: number; rating: number; interview: number };
+  /** How far apart the interviewers' scorecards were (0-100); null before any, or while hidden. */
+  interviewSpread?: { count: number; min: number; max: number } | null;
   ratings?: { userId: number; rating: number }[];
   cvAnalysis: CandidateCvAnalysisPayload | null;
   answers: {

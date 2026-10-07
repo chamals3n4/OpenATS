@@ -17,6 +17,8 @@ import {
 import {
   computeInterviewScore,
   computeQuestionsScore,
+  interviewSpread,
+  type Scorecard,
   computeRatingScore,
   computeTotal,
   type ScoreWeights,
@@ -42,7 +44,49 @@ export const weightsOf = (job: {
   interview: job.scoreWeightInterview,
 });
 
+/** Every scorecard submitted for a candidate's interviews, as the scoring maths wants them. */
+async function loadScorecards(executor: Executor, candidateId: number): Promise<Scorecard[]> {
+  const feedbackRows = await executor
+    .select({ id: interviewFeedback.id, rating: interviewFeedback.rating })
+    .from(interviewFeedback)
+    .innerJoin(candidateInterviews, eq(interviewFeedback.interviewId, candidateInterviews.id))
+    .where(eq(candidateInterviews.candidateId, candidateId));
+  const feedbackIds = feedbackRows.map((f) => f.id);
+  const criterionRows =
+    feedbackIds.length > 0
+      ? await executor
+          .select()
+          .from(interviewFeedbackRatings)
+          .where(inArray(interviewFeedbackRatings.feedbackId, feedbackIds))
+      : [];
+  return feedbackRows.map((f) => ({
+    overall: f.rating,
+    criterionRatings: criterionRows.filter((c) => c.feedbackId === f.id).map((c) => c.rating),
+  }));
+}
+
 export const scoringService = {
+  /** Lowest, highest and number of the interviewers' scores, or null before any scorecard. */
+  async getInterviewSpread(candidateId: number) {
+    return interviewSpread(await loadScorecards(db, candidateId));
+  },
+
+  /** Which of these candidates the user has already submitted a scorecard for. */
+  async candidatesScoredBy(userId: number, candidateIds: number[]): Promise<Set<number>> {
+    if (candidateIds.length === 0) return new Set();
+    const rows = await db
+      .selectDistinct({ candidateId: candidateInterviews.candidateId })
+      .from(interviewFeedback)
+      .innerJoin(candidateInterviews, eq(interviewFeedback.interviewId, candidateInterviews.id))
+      .where(
+        and(
+          eq(interviewFeedback.authorId, userId),
+          inArray(candidateInterviews.candidateId, candidateIds),
+        ),
+      );
+    return new Set(rows.map((r) => r.candidateId));
+  },
+
   /** Rebuilds a candidate's stored score parts from their answers, ratings, attempts and scorecards. */
   async recompute(candidateId: number, executor: Executor = db) {
     const [row] = await executor
@@ -107,36 +151,13 @@ export const scoringService = {
       .from(candidateRatings)
       .where(eq(candidateRatings.candidateId, candidateId));
 
-    // Interview scorecards
-    const feedbackRows = await executor
-      .select({ id: interviewFeedback.id, rating: interviewFeedback.rating })
-      .from(interviewFeedback)
-      .innerJoin(
-        candidateInterviews,
-        eq(interviewFeedback.interviewId, candidateInterviews.id),
-      )
-      .where(eq(candidateInterviews.candidateId, candidateId));
-    const feedbackIds = feedbackRows.map((f) => f.id);
-    const criterionRows =
-      feedbackIds.length > 0
-        ? await executor
-            .select()
-            .from(interviewFeedbackRatings)
-            .where(inArray(interviewFeedbackRatings.feedbackId, feedbackIds))
-        : [];
+    const scorecards = await loadScorecards(executor, candidateId);
 
     const scores = {
       questions: questions.score,
       assessment: assessmentScore,
       rating: computeRatingScore(ratingRows.map((r) => r.rating)),
-      interview: computeInterviewScore(
-        feedbackRows.map((f) => ({
-          overall: f.rating,
-          criterionRatings: criterionRows
-            .filter((c) => c.feedbackId === f.id)
-            .map((c) => c.rating),
-        })),
-      ),
+      interview: computeInterviewScore(scorecards),
     };
     const { total, scoredParts } = computeTotal(scores, weightsOf(job));
 

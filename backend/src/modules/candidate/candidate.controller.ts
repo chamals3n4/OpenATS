@@ -7,6 +7,8 @@ import {
 import { jobService } from "../job/job.service";
 import { r2Service } from "../../shared/services/r2.service";
 import { socketService } from "../../shared/services/socket.service";
+import { scoringService } from "../scoring/scoring.service";
+import { withholdInterviewScores } from "../scoring/scoring";
 import { canAccessCandidate } from "../../shared/auth/job-access";
 import logger from "../../utils/logger";
 
@@ -63,6 +65,19 @@ const bulkDeleteCandidatesSchema = z.object({
     .enum(["active", "rejected", "offered", "hired", "withdrawn"])
     .optional(),
 });
+
+/**
+ * An interviewer sees no Interview part or total for a candidate until they have submitted their
+ * own scorecard for them, so other interviewers' scorecards cannot sway them. Other roles see all.
+ */
+async function blindForInterviewer<T extends { id: number; interviewScore?: unknown; totalScore?: unknown; scoredParts?: number }>(
+  user: { id: number; role: string },
+  rows: T[],
+): Promise<T[]> {
+  if (user.role !== "interviewer") return rows;
+  const scored = await scoringService.candidatesScoredBy(user.id, rows.map((r) => r.id));
+  return rows.map((r) => (scored.has(r.id) ? r : withholdInterviewScores(r)));
+}
 
 export const applyForJob = async (req: Request, res: Response) => {
   try {
@@ -184,7 +199,11 @@ export const getCandidates = async (req: Request, res: Response) => {
         | "hired"
         | "withdrawn"
         | undefined,
-      sort: req.query.sort === "score" ? ("score" as const) : undefined,
+      // Ranking by total would reveal the hidden Interview part to an interviewer.
+      sort:
+        req.query.sort === "score" && req.user.role !== "interviewer"
+          ? ("score" as const)
+          : undefined,
       page,
       limit,
       teamUserId: req.user.role === "interviewer" ? req.user.id : undefined,
@@ -192,7 +211,7 @@ export const getCandidates = async (req: Request, res: Response) => {
 
     const result = await candidateService.getAll(jobId, filters);
     res.status(200).json({
-      data: result.rows,
+      data: await blindForInterviewer(req.user, result.rows),
       pagination: {
         total: result.total,
         page: result.page,
@@ -246,7 +265,11 @@ export const getCandidateById = async (req: Request, res: Response) => {
       });
     }
 
-    res.status(200).json({ data: result });
+    const [blinded] = await blindForInterviewer(req.user, [result]);
+    const hidden = blinded !== result;
+    res.status(200).json({
+      data: hidden ? { ...blinded, interviewSpread: null } : result,
+    });
   } catch (error) {
     logger.error(
       `Failed to fetch candidate id=${req.params.id}: ${getErrorMessage(error)}`,

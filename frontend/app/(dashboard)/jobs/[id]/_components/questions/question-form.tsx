@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -73,6 +74,8 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
   const [type, setType] = useState<QuestionType>(initial.type);
   const [required, setRequired] = useState(initial.required);
   const [options, setOptions] = useState<OptionDraft[]>(() => padOptions(initial.options));
+  // Scoring is optional: an unscored choice question is just for information.
+  const [scored, setScored] = useState(() => isScored(initial.options));
   const [showErrors, setShowErrors] = useState(false);
   // Which option row should take focus once it has rendered (a row added with Enter).
   const focusOption = useRef<number | null>(null);
@@ -111,7 +114,9 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
       title: title.trim(),
       questionType: type,
       isRequired: required,
-      options: isChoice ? toApiOptions(options) : [],
+      options: isChoice
+        ? toApiOptions(scored ? options : options.map((o) => ({ ...o, points: 0, isKnockout: false })))
+        : [],
     });
   };
 
@@ -195,15 +200,44 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
           </div>
         </div>
 
+        {!isChoice && (
+          <p className="text-xs text-slate-500 dark:text-neutral-400">
+            To give points or a knockout, switch the answer type to Single choice or Multiple choice.
+            Typed answers are saved for you to read and can&apos;t be scored.
+          </p>
+        )}
+
         {isChoice && (
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium text-slate-800 dark:text-neutral-200">
               Options <span className="ml-0.5 text-red-600">*</span>
             </legend>
             <p className="text-xs text-slate-500 dark:text-neutral-400">
-              What candidates choose from. Add at least {MIN_OPTIONS}. Give an option points to
-              score the answer, or mark it knockout to flag candidates who pick it.
+              What candidates choose from. Add at least {MIN_OPTIONS}.
             </p>
+
+            <div className="flex items-start gap-3 rounded-md border border-slate-300 px-3.5 py-3 dark:border-neutral-600">
+              <Switch
+                id="question-scored"
+                checked={scored}
+                onCheckedChange={setScored}
+                aria-label="Score this question"
+                className="mt-0.5"
+              />
+              <div className="min-w-0">
+                <Label
+                  htmlFor="question-scored"
+                  className="cursor-pointer text-sm font-medium text-slate-900 dark:text-neutral-100"
+                >
+                  Score this question
+                </Label>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">
+                  {scored
+                    ? "Give each option points, or mark it as a knockout to flag candidates who pick it."
+                    : "Off: the answer is saved and shown on the candidate, but adds nothing to their score."}
+                </p>
+              </div>
+            </div>
 
             <ul className="space-y-2">
               {options.map((option, i) => {
@@ -229,6 +263,8 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
                         placeholder={`Option ${i + 1}`}
                         className={`${inputCls} min-w-48 flex-1`}
                       />
+                      {scored && (
+                        <>
                       <Input
                         type="number"
                         inputMode="numeric"
@@ -255,6 +291,8 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
                           Knockout
                         </Label>
                       </div>
+                        </>
+                      )}
                       <Button
                         type="button"
                         variant="ghost"
@@ -277,7 +315,7 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
               })}
             </ul>
 
-            {!isScored(options) && (
+            {scored && !isScored(options) && (
               <p className="text-xs text-slate-500 dark:text-neutral-400">
                 No points yet, so this question will not count toward the candidate&apos;s score.
               </p>

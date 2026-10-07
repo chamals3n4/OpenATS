@@ -34,3 +34,19 @@ export function formatScore(value: string | number | null | undefined): string {
   const n = Number(value);
   return Number.isFinite(n) ? String(Math.round(n)) : "—";
 }
+
+export type ScoreTone = "none" | "high" | "mid" | "low";
+
+/** A rough band for colouring a 0-100 score. The number is always shown too. */
+export function scoreTone(value: string | number | null | undefined): ScoreTone {
+  if (value === null || value === undefined) return "none";
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "none";
+  return n >= 70 ? "high" : n >= 40 ? "mid" : "low";
+}
+
+/** "2 of 4 parts scored", or null when the job's weighted parts are not known. */
+export function describeParts(scored: number | undefined, weighted: number | undefined): string | null {
+  if (scored === undefined || weighted === undefined || weighted <= 0) return null;
+  return `${scored} of ${weighted} ${weighted === 1 ? "part" : "parts"} scored`;
+}

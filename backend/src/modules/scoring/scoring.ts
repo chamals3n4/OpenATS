@@ -93,18 +93,54 @@ export function computeRatingScore(ratings: number[]): number | null {
   return avg === null ? null : round2(avg * 20);
 }
 
+export interface Scorecard {
+  criterionRatings: number[];
+  overall: number | null;
+}
+
 /**
- * Average of the submitted scorecards. A scorecard is the mean of its criterion scores, or its
- * single overall star rating when the job has no criteria. Scorecards with neither are skipped.
+ * Each submitted scorecard as a 0-100 score. A scorecard is the mean of its criterion scores, or
+ * its single overall star rating when the job has no criteria. Scorecards with neither are skipped.
  */
-export function computeInterviewScore(
-  scorecards: { criterionRatings: number[]; overall: number | null }[],
-): number | null {
+export function scorecardScores(scorecards: Scorecard[]): number[] {
   const perCard: number[] = [];
   for (const card of scorecards) {
     const avg = average(card.criterionRatings) ?? card.overall;
-    if (avg !== null) perCard.push(avg * 20);
+    if (avg !== null) perCard.push(round2(avg * 20));
   }
+  return perCard;
+}
+
+/** The Interview part: the average of the submitted scorecards. */
+export function computeInterviewScore(scorecards: Scorecard[]): number | null {
+  const perCard = scorecardScores(scorecards);
   const avg = average(perCard);
   return avg === null ? null : round2(avg);
+}
+
+/** How far apart the interviewers were, so an average of 60 can be told from 5 and 100. */
+export function interviewSpread(
+  scorecards: Scorecard[],
+): { count: number; min: number; max: number } | null {
+  const perCard = scorecardScores(scorecards);
+  if (perCard.length === 0) return null;
+  return { count: perCard.length, min: Math.min(...perCard), max: Math.max(...perCard) };
+}
+
+/**
+ * What an interviewer who has not yet submitted their own scorecard may see. The Interview part
+ * and the total both include other interviewers' scorecards, so both are withheld.
+ */
+export function withholdInterviewScores<
+  T extends { interviewScore?: unknown; totalScore?: unknown; scoredParts?: number },
+>(row: T): T {
+  const hadInterview = row.interviewScore !== null && row.interviewScore !== undefined;
+  return {
+    ...row,
+    interviewScore: null,
+    totalScore: null,
+    ...(row.scoredParts !== undefined && {
+      scoredParts: Math.max(0, row.scoredParts - (hadInterview ? 1 : 0)),
+    }),
+  };
 }

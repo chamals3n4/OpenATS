@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { z } from "zod";
 import { requireManager } from "../../middlewares/role.middleware";
-import { interviewService } from "./interview.service";
+import { interviewService, FeedbackValidationError } from "./interview.service";
 import { mailService } from "../../shared/services/mail.service";
 import { socketService } from "../../shared/services/socket.service";
 import { db } from "../../db";
@@ -436,6 +436,10 @@ router.post("/interviews/:id/feedback", async (req, res) => {
     }
     res.status(201).json({ data: feedback });
   } catch (error) {
+    if (error instanceof FeedbackValidationError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     res.status(500).json({ error: getErrorMessage(error) || "Failed to add feedback" });
   }
 });

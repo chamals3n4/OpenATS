@@ -3,6 +3,7 @@ import { z } from "zod";
 import {
   candidateService,
   DuplicateApplicationError,
+  InvalidAnswerError,
 } from "./candidate.service";
 import { jobService } from "../job/job.service";
 import { r2Service } from "../../shared/services/r2.service";
@@ -122,6 +123,10 @@ export const applyForJob = async (req: Request, res: Response) => {
 
     res.status(201).json({ data: result });
   } catch (error: unknown) {
+    if (error instanceof InvalidAnswerError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     if (error instanceof DuplicateApplicationError) {
       logger.warn(
         `Duplicate application attempt: email="${req.body?.email}", jobId=${req.params.jobId}`,

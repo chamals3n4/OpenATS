@@ -17,6 +17,14 @@ import { mailService } from "../../shared/services/mail.service";
 import logger from "../../utils/logger";
 import { getErrorMessage } from "../../utils/error.utils";
 
+/** A scorecard that cannot be saved because of what was submitted, not because of a fault. */
+export class FeedbackValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "FeedbackValidationError";
+  }
+}
+
 export interface CreateInterviewInput {
   candidateId: number;
   stageId?: number;
@@ -378,7 +386,7 @@ export const interviewService = {
           ),
         );
       if (valid.length !== new Set(ratings.map((r) => r.criterionId)).size) {
-        throw new Error("Unknown scorecard criterion");
+        throw new FeedbackValidationError("Unknown scorecard criterion");
       }
     }
 

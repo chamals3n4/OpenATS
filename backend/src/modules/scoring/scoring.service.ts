@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, sql } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, max, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   candidates,
@@ -31,6 +31,23 @@ export const DEFAULT_PASS_MARK = 60;
 
 const sqlPassed = (passMark: number) =>
   sql<boolean>`${candidateAssessmentAttempts.scorePercentage} >= ${passMark}`;
+
+/**
+ * The pass mark for an assessment on a job. The same assessment can be attached at more than one
+ * stage, each with its own mark, so the strictest (highest) one applies everywhere.
+ */
+export async function passMarkFor(executor: Executor, jobId: number, assessmentId: number): Promise<number> {
+  const [row] = await executor
+    .select({ passMark: max(jobAssessmentAttachments.passMark) })
+    .from(jobAssessmentAttachments)
+    .where(
+      and(
+        eq(jobAssessmentAttachments.jobId, jobId),
+        eq(jobAssessmentAttachments.assessmentId, assessmentId),
+      ),
+    );
+  return row?.passMark ?? DEFAULT_PASS_MARK;
+}
 
 export const weightsOf = (job: {
   scoreWeightQuestions: number;
@@ -189,17 +206,23 @@ export const scoringService = {
 
   /** After scoring options or an attachment's pass mark change, re-grade the job's candidates. */
   async regradeJob(jobId: number) {
-    const attachments = await db
-      .select()
+    // One mark per assessment, so attachments at several stages cannot overwrite each other.
+    const marks = await db
+      .select({
+        assessmentId: jobAssessmentAttachments.assessmentId,
+        passMark: max(jobAssessmentAttachments.passMark),
+      })
       .from(jobAssessmentAttachments)
-      .where(eq(jobAssessmentAttachments.jobId, jobId));
-    for (const a of attachments) {
+      .where(eq(jobAssessmentAttachments.jobId, jobId))
+      .groupBy(jobAssessmentAttachments.assessmentId);
+    for (const { assessmentId, passMark } of marks) {
+      if (passMark === null) continue;
       await db
         .update(candidateAssessmentAttempts)
-        .set({ passed: sqlPassed(a.passMark) })
+        .set({ passed: sqlPassed(passMark) })
         .where(
           and(
-            eq(candidateAssessmentAttempts.assessmentId, a.assessmentId),
+            eq(candidateAssessmentAttempts.assessmentId, assessmentId),
             eq(candidateAssessmentAttempts.status, "completed"),
             inArray(
               candidateAssessmentAttempts.candidateId,

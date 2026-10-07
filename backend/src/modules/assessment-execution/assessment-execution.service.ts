@@ -12,7 +12,7 @@ import {
   jobAssessmentAttachments,
 } from "../../db/schema";
 
-import { DEFAULT_PASS_MARK, scoringService } from "../scoring/scoring.service";
+import { DEFAULT_PASS_MARK, passMarkFor, scoringService } from "../scoring/scoring.service";
 import { gradeChoiceQuestion, hasPassed, isWrittenType, scorePercentage } from "./grading";
 import { mailService } from "../../shared/services/mail.service";
 
@@ -430,16 +430,13 @@ export const assessmentExecutionService = {
     const scoreRaw = answers.reduce((sum, a) => sum + Number(a.pointsEarned), 0);
     const percentage = scorePercentage(scoreRaw, scoreTotal);
 
-    const [attachment] = await tx
-      .select({ passMark: jobAssessmentAttachments.passMark })
-      .from(jobAssessmentAttachments)
-      .innerJoin(candidates, eq(candidates.jobId, jobAssessmentAttachments.jobId))
-      .where(
-        and(
-          eq(candidates.id, attempt.candidateId),
-          eq(jobAssessmentAttachments.assessmentId, attempt.assessmentId),
-        ),
-      );
+    const [owner] = await tx
+      .select({ jobId: candidates.jobId })
+      .from(candidates)
+      .where(eq(candidates.id, attempt.candidateId));
+    const passMark = owner
+      ? await passMarkFor(tx, owner.jobId, attempt.assessmentId)
+      : DEFAULT_PASS_MARK;
 
     const [done] = await tx
       .update(candidateAssessmentAttempts)
@@ -447,13 +444,22 @@ export const assessmentExecutionService = {
         scoreRaw,
         scoreTotal,
         scorePercentage: percentage,
-        passed: hasPassed(percentage, attachment?.passMark ?? DEFAULT_PASS_MARK),
+        passed: hasPassed(percentage, passMark),
         updatedAt: new Date(),
       })
       .where(eq(candidateAssessmentAttempts.id, attemptId))
       .returning();
     await scoringService.recompute(attempt.candidateId, tx);
     return done;
+  },
+
+  /** Whose attempt this is, so a request about it can be checked against that candidate's job. */
+  async getAttemptCandidateId(attemptId: number): Promise<number | null> {
+    const [row] = await db
+      .select({ candidateId: candidateAssessmentAttempts.candidateId })
+      .from(candidateAssessmentAttempts)
+      .where(eq(candidateAssessmentAttempts.id, attemptId));
+    return row?.candidateId ?? null;
   },
 
   /** A reviewer's points for one written answer, from 0 up to the question's points. */

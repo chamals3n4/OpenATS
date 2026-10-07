@@ -3,6 +3,7 @@ import {
   hasQuestionErrors,
   isChoiceType,
   moveItem,
+  optionDraftsOf,
   optionLabelsOf,
   positionChanges,
   toApiOptions,
@@ -54,6 +55,18 @@ describe("toApiOptions", () => {
     ]);
   });
 
+  it("carries an option's id through, so an edit keeps the candidates' picks of it", () => {
+    expect(
+      toApiOptions([
+        { id: 41, label: "Yes", points: 5, isKnockout: false },
+        { label: "New", points: 0, isKnockout: false },
+      ]),
+    ).toEqual([
+      { id: 41, label: "Yes", isCorrect: false, points: 5, isKnockout: false, position: 1 },
+      { label: "New", isCorrect: false, points: 0, isKnockout: false, position: 2 },
+    ]);
+  });
+
   it("keeps the scoring and clamps points into range", () => {
     expect(
       toApiOptions([
@@ -74,6 +87,14 @@ describe("optionLabelsOf", () => {
 
   it("lists saved options in order", () => {
     expect(optionLabelsOf({ options: [opt("B", 2), opt("A", 1), opt("C", 3)] })).toEqual(["A", "B", "C"]);
+  });
+
+  it("keeps each saved option's id when opening an edit", () => {
+    const withId = (label: string, position: number, id: number) => ({ ...opt(label, position), id });
+    expect(optionDraftsOf({ options: [withId("B", 2, 22), withId("A", 1, 21)] }).map((o) => [o.id, o.label])).toEqual([
+      [21, "A"],
+      [22, "B"],
+    ]);
   });
 
   it("pads to the minimum so there are always two rows to fill in", () => {

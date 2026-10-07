@@ -52,6 +52,14 @@ export class DuplicateApplicationError extends Error {
   }
 }
 
+/** An application answer that cannot be right for its question, e.g. two picks on a single choice. */
+export class InvalidAnswerError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "InvalidAnswerError";
+  }
+}
+
 export interface CustomAnswerInput {
   questionId: number;
   answerText?: string | null | undefined;
@@ -316,6 +324,10 @@ export const candidateService = {
               );
 
             if (!question) continue;
+
+            if (question.questionType === "radio" && (answer.optionIds?.length ?? 0) > 1) {
+              throw new InvalidAnswerError(`Pick only one option for "${question.title}"`);
+            }
 
             if (answer.answerText !== undefined) {
               await tx.insert(candidateCustomAnswers).values({
@@ -789,18 +801,9 @@ export const candidateService = {
     },
     rejectedBy: number | null = null,
   ) {
-    const [candidate] = await db
-      .select()
-      .from(candidates)
-      .where(eq(candidates.id, candidateId));
-
-    if (!candidate) throw new Error("Candidate not found");
-
     return rejectionService.reject(
       {
         candidateId,
-        jobId: candidate.jobId,
-        fromStageId: candidate.currentStageId,
         reason: input.reason ?? null,
         templateId: input.templateId ?? null,
         emailStatus: input.emailStatus,

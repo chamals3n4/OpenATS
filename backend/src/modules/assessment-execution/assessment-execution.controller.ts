@@ -3,6 +3,7 @@ import { z } from "zod";
 import { assessmentExecutionService, GradingError } from "./assessment-execution.service";
 import { mailService } from "../../shared/services/mail.service";
 import { socketService } from "../../shared/services/socket.service";
+import { canAccessCandidate } from "../../shared/auth/job-access";
 import logger from "../../utils/logger";
 import { getErrorMessage} from "../../utils/error.utils";
 
@@ -279,6 +280,18 @@ export const gradeWrittenAnswer = async (req: Request, res: Response) => {
       res.status(400).json({ error: "A question and its points are required" });
       return;
     }
+    // Grading changes a candidate's score, so it needs access to that candidate's job, not only the manager role.
+    const candidateId = await assessmentExecutionService.getAttemptCandidateId(attemptId);
+    if (candidateId === null) {
+      res.status(404).json({ error: "Attempt not found" });
+      return;
+    }
+    if (!(await canAccessCandidate(req.user, candidateId))) {
+      logger.warn(`[access] user ${req.user.id} denied grading for candidate ${candidateId}`);
+      res.status(403).json({ error: "You do not have access to this resource" });
+      return;
+    }
+
     const attempt = await assessmentExecutionService.gradeWrittenAnswer(
       attemptId,
       parsed.data.questionId,

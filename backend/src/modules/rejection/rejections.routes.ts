@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireManager } from "../../middlewares/role.middleware";
 import { z } from "zod";
-import { rejectionService } from "./rejection.service";
+import { rejectionService, RejectionError } from "./rejection.service";
 import { templateEngineService } from "../template/template-engine.service";
 import { variableService } from "../template/variable.service";
 import { db } from "../../db";
@@ -46,13 +46,9 @@ router.post("/candidates/bulk/reject", requireManager, async (req, res) => {
   const failed: { id: number; error: string }[] = [];
   for (const id of new Set(parsed.data.candidateIds)) {
     try {
-      const [candidate] = await db.select().from(candidates).where(eq(candidates.id, id));
-      if (!candidate) throw new Error("Candidate not found");
       await rejectionService.reject(
         {
           candidateId: id,
-          jobId: candidate.jobId,
-          fromStageId: candidate.currentStageId,
           reason: parsed.data.reason,
           internalNote: null,
           templateId: null,
@@ -62,7 +58,13 @@ router.post("/candidates/bulk/reject", requireManager, async (req, res) => {
       );
       rejected.push(id);
     } catch (error) {
-      failed.push({ id, error: getErrorMessage(error) || "Failed to reject candidate" });
+      // Say why a candidate was skipped when that is expected; keep database errors out of the reply.
+      if (error instanceof RejectionError) {
+        failed.push({ id, error: error.message });
+      } else {
+        logger.error(`Bulk rejection failed for candidate ${id} - user ${req.user.id}: ${getErrorMessage(error)}`);
+        failed.push({ id, error: "Failed to reject candidate" });
+      }
     }
   }
   logger.info(`Bulk rejection: rejected=${rejected.length}, failed=${failed.length} by user ${req.user.id}`);
@@ -123,8 +125,6 @@ router.post("/candidates/:id/reject", requireManager, async (req, res) => {
     const rejection = await rejectionService.reject(
       {
         candidateId: id,
-        jobId: candidate.jobId,
-        fromStageId: candidate.currentStageId,
         reason: parsed.data.reason,
         internalNote: parsed.data.internalNote ?? null,
         templateId: parsed.data.templateId ?? null,

@@ -11,10 +11,16 @@ import { mailService } from "../../shared/services/mail.service";
 import { variableService } from "../template/variable.service";
 import { templateEngineService } from "../template/template-engine.service";
 
+/** A rejection that cannot go ahead for a reason the caller may be told, as opposed to a fault. */
+export class RejectionError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "RejectionError";
+  }
+}
+
 export interface RejectInput {
   candidateId: number;
-  jobId: number;
-  fromStageId?: number | null;
   reason?: string | null;
   internalNote?: string | null;
   templateId?: number | null;
@@ -29,9 +35,9 @@ export const rejectionService = {
         .from(candidates)
         .where(eq(candidates.id, input.candidateId));
 
-      if (!candidate) throw new Error("Candidate not found");
+      if (!candidate) throw new RejectionError("Candidate not found");
       if (candidate.status === "rejected") {
-        throw new Error("Candidate is already rejected");
+        throw new RejectionError("Candidate is already rejected");
       }
 
       await tx
@@ -47,8 +53,10 @@ export const rejectionService = {
         .insert(candidateRejections)
         .values({
           candidateId: input.candidateId,
-          jobId: input.jobId,
-          fromStageId: input.fromStageId ?? candidate.currentStageId ?? null,
+          // From the row read in this transaction, so a stage move that raced the caller's own
+          // read cannot leave the record pointing at the wrong job or stage.
+          jobId: candidate.jobId,
+          fromStageId: candidate.currentStageId ?? null,
           rejectedBy,
           reason: input.reason,
           internalNote: input.internalNote ?? null,

@@ -7,6 +7,7 @@ import logger from "../../utils/logger";
 import { getErrorCode, getErrorMessage} from "../../utils/error.utils";
 
 const optionSchema = z.object({
+  id: z.number().int().positive().optional(),
   label: z.string().min(1, "Option label is required").max(500),
   isCorrect: z.boolean().default(false),
   points: z.number().int().min(0).max(100).default(0),

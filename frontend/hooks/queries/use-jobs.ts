@@ -11,6 +11,8 @@ import type {
 import type { PaginationInfo } from "@/components/table/table-footer";
 
 export type QuestionOptionInput = {
+  /** Present for an option that already exists; omit it for a new one. */
+  id?: number;
   label: string;
   isCorrect: boolean;
   points: number;

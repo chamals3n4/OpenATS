@@ -27,6 +27,8 @@ export const POINTS_MAX = 100;
 
 /** One option as it is edited: the label plus how it scores. */
 export interface OptionDraft {
+  /** Set for a saved option, so editing keeps the candidates' picks of it. */
+  id?: number;
   label: string;
   points: number;
   /** Picking it flags the candidate as not meeting the requirements. */
@@ -95,6 +97,7 @@ export function toApiOptions(options: OptionDraft[]) {
     .map((o) => ({ ...o, label: o.label.trim() }))
     .filter((o) => o.label)
     .map((o, i) => ({
+      ...(o.id !== undefined && { id: o.id }),
       label: o.label,
       isCorrect: false,
       points: Math.min(POINTS_MAX, Math.max(0, Math.round(o.points) || 0)),
@@ -114,9 +117,9 @@ export function optionLabelsOf(question: Pick<CustomQuestion, "options">): strin
 
 /** Options to start an edit from, with their scoring: saved ones in order, padded to the minimum. */
 export function optionDraftsOf(question: Pick<CustomQuestion, "options">): OptionDraft[] {
-  const drafts = [...question.options]
+  const drafts: OptionDraft[] = [...question.options]
     .sort((a, b) => a.position - b.position)
-    .map((o) => ({ label: o.label, points: o.points ?? 0, isKnockout: o.isKnockout ?? false }));
+    .map((o) => ({ id: o.id, label: o.label, points: o.points ?? 0, isKnockout: o.isKnockout ?? false }));
   while (drafts.length < MIN_OPTIONS) drafts.push(emptyOption());
   return drafts;
 }

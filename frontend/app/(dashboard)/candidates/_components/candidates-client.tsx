@@ -79,7 +79,8 @@ export default function CandidatesPageClient() {
         const { data } = await bulkRejectMutation.mutateAsync({ candidateIds: ids, reason });
         if (data.failed.length > 0) {
           toast.error(`Rejected ${data.rejected.length}, but ${data.failed.length} could not be rejected`);
-          return false;
+          // Only the ones that failed stay selected, so a retry cannot hit the rest again.
+          return data.failed.map((f) => f.id);
         }
         toast.success(`Rejected ${data.rejected.length} ${data.rejected.length === 1 ? "candidate" : "candidates"}`);
       } catch {

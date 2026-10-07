@@ -77,7 +77,14 @@ export function computeQuestionsScore(
     const max = maxPoints(q);
     if (max <= 0) continue;
     possible += max;
-    const got = chosen.reduce((sum, o) => sum + Math.max(o.points, 0), 0);
+    // Only a checkbox can earn from several options; any other type counts its best pick.
+    const picks = chosen.map((o) => Math.max(o.points, 0));
+    const got =
+      q.questionType === "checkbox"
+        ? picks.reduce((sum, p) => sum + p, 0)
+        : picks.length > 0
+          ? Math.max(...picks)
+          : 0;
     earned += Math.min(got, max);
   }
 

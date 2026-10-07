@@ -76,6 +76,13 @@ describe("computeQuestionsScore", () => {
     expect(computeQuestionsScore([radio], new Map()).score).toBe(0);
   });
 
+  it("counts only the best pick on a single-answer question, but sums a checkbox", () => {
+    // More than one radio pick is rejected at apply time; if it ever got through it must not stack.
+    expect(computeQuestionsScore([radio], new Map([[1, [10, 11]]])).score).toBe(100);
+    expect(computeQuestionsScore([checkbox], new Map([[2, [20, 21]]])).score).toBe(100);
+    expect(computeQuestionsScore([checkbox], new Map([[2, [20]]])).score).toBe(40);
+  });
+
   it("is null when no option carries points", () => {
     const free = { id: 3, questionType: "radio", options: [{ id: 30, points: 0, isKnockout: false }] };
     expect(computeQuestionsScore([free], new Map([[3, [30]]])).score).toBeNull();

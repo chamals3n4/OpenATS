@@ -225,6 +225,13 @@
       "when": 1791550178918,
       "tag": "0031_chief_professor_monster",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791555374382,
+      "tag": "0032_quick_piledriver",
+      "breakpoints": true
     }
   ]
 }

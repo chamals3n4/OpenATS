@@ -225,7 +225,7 @@ A test that is only **waiting** (the link is still valid, or the candidate has f
 
 This is for the first impression of the CV. Anyone on the team who can see the candidate can give one.
 
-1. Open the candidate and select **View CV**. The **Job Fit** tab can also show an automatic CV analysis.
+1. Open the candidate and select **View CV**. If your team has turned on AI CV analysis, the **AI analysis** tab also has notes on the CV. Those notes are not part of the score.
 2. Open the **Scores** tab.
 3. Under **Your rating**, click the stars. The stars change on screen right away, but **nothing is saved yet**.
 4. Select **Update score** (top right of the Score card). This button is greyed out until you change something.
@@ -379,6 +379,34 @@ On the **Candidates** page, set the sort menu to **Highest score**. The order is
 
 Dilan has a score of 95, but he is flagged, so he sits at the bottom whatever his score is.
 
+### Filtering the candidates list
+
+Sorting puts the best first. Filters narrow the list down. At the top of the **Candidates** page there is a search box, a **Position** button, a **Filters** button and the sort menu.
+
+**Position.** Select **Position** to open a list of your jobs. Type to search it, then pick one. The position then appears as a **chip** under the search box, for example `Software Engineering Intern ×`, and the list shows only that job's candidates. The chip stays there until you remove it with the **×**, so you always see what the list is narrowed by.
+
+**Filters.** The **Filters** button opens a small menu. A number on the button shows how many of its filters are on.
+
+| Filter | What it does | Example |
+| --- | --- | --- |
+| **Status** | Shows all, active or rejected candidates | Choose **Active** to hide rejected candidates. |
+| **Flags** | Shows only candidates with a certain flag: *Flagged* (any flag), *Does not meet requirements*, *Failed assessment*, *Assessment expired*, or *No flags* | Choose **No flags** to see only clean candidates. |
+| **Minimum score** | Shows only candidates whose total score is at least the number you type. Candidates with no score yet are left out. | Type `70` to see only candidates scoring 70 or more. |
+| **All parts scored** | Hides candidates whose score is built from fewer parts than the job uses | Tick it to see only candidates who have been through every scored step. |
+
+Every filter that is on shows as a chip, and each chip has its own **×**. **Clear all** removes everything at once.
+
+A common combination is **Min score 70**, **No flags** and **All parts scored**, sorted by **Highest score**: strong candidates, with nothing against them, whose score rests on everything the job measures.
+
+:::tip Your filters are remembered
+The position and filters are saved in your browser and in the page address. They are still there if you open a candidate and close their profile, reload the page, or visit another page such as Jobs and come back later. You can also copy the address to share a filtered view with a teammate. They stay until you remove them with the **×** on each chip, or **Clear all**. Only what you typed in the search box is not kept.
+:::
+
+:::note
+- While a score or flag filter is on, the **Select all matching** shortcut for deleting is switched off. You can still tick individual rows. This stops a delete from reaching candidates that the filtered list is not showing.
+- **Interviewers** can use only the Position, Status and Flags filters. The score filters are hidden for them, because the total includes scorecards they are not allowed to see yet.
+:::
+
 ## When does the score change?
 
 Scores update by themselves. You never press a "calculate" button.
@@ -436,6 +464,7 @@ No. Scores are only for your team.
 | Fill in an interview scorecard | Candidate → **Interviews** → **Add feedback** |
 | Grade a written test answer | Candidate → **Scores** → **View answers** |
 | Sort by best candidates | **Candidates** → sort menu → **Highest score** |
+| Show only one job, or only candidates above a score or without flags | **Candidates** → **Position**, then **Filters** (Flags, Minimum score, All parts scored) |
 | Reject everyone who did not meet requirements | **Candidates** → "do not meet the requirements" bar → **Select them** → **Reject selected** |
 
 ## For administrators

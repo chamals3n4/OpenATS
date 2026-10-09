@@ -17,6 +17,8 @@ interface ScoreBadgeProps {
   assessmentExpired?: boolean | undefined;
   /** "full" is for a candidate's header; "compact" for list rows and board cards. */
   size?: "compact" | "full";
+  /** Leave the flag pills out, for places that show the flags another way (an icon, a dialog). */
+  hideFlags?: boolean;
   /** Render nothing for a candidate with no score and no flags, e.g. on crowded board cards. */
   hideWhenUnscored?: boolean;
   className?: string;
@@ -35,12 +37,14 @@ export function ScoreBadge({
   assessmentExpired,
   size = "compact",
   hideWhenUnscored,
+  hideFlags,
   className,
 }: ScoreBadgeProps) {
   const parts = describeParts(scoredParts, weightedParts);
   const full = size === "full";
   const unscored = total === null || total === undefined;
-  if (hideWhenUnscored && unscored && !knockedOut && assessmentPassed !== false && !assessmentExpired) return null;
+  const hasFlag = !!knockedOut || assessmentPassed === false || !!assessmentExpired;
+  if (hideWhenUnscored && unscored && (hideFlags || !hasFlag)) return null;
   const flags = [
     knockedOut ? "Does not meet requirements" : null,
     assessmentPassed === false ? "Failed assessment" : null,
@@ -70,7 +74,7 @@ export function ScoreBadge({
           {scoredParts}/{weightedParts}
         </span>
       )}
-      {knockedOut && (
+      {!hideFlags && knockedOut && (
         <span
           className={cn(
             "rounded-full bg-red-50 font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-400",
@@ -80,7 +84,7 @@ export function ScoreBadge({
           {full ? "Does not meet requirements" : "Knockout"}
         </span>
       )}
-      {assessmentPassed === false && (
+      {!hideFlags && assessmentPassed === false && (
         <span
           className={cn(
             "rounded-full bg-amber-50 font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
@@ -90,7 +94,7 @@ export function ScoreBadge({
           {full ? "Failed assessment" : "Failed test"}
         </span>
       )}
-      {assessmentExpired && (
+      {!hideFlags && assessmentExpired && (
         <span
           className={cn(
             "rounded-full bg-amber-50 font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300",

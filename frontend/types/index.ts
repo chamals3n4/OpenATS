@@ -273,28 +273,35 @@ export type StageAutomationFlags = {
   assessmentInvite?: "sent" | "skipped_active_invite";
 };
 
+/** Notes written by the AI for a person to read. There is no score, rating or verdict. */
 export type AiSummary = {
   quickSummary: string;
   strengths: string[];
   gaps: string[];
-  hiringSignal: string;
-  verdict: "strong_fit" | "moderate_fit" | "weak_fit" | "not_recommended";
 };
 
+/**
+ * The AI's reading of a candidate's CV. Only sent while AI CV analysis is turned on in Settings;
+ * otherwise the candidate has `cvAnalysis: null`.
+ */
 export type CandidateCvAnalysisPayload = {
   status: "pending" | "done" | "failed";
-  matchScore: number | null;
+  /** The job's required skills that the CV shows, and the ones it does not. */
   matchedSkills: string[] | null;
   missingSkills: string[] | null;
-  scoreBreakdown: {
-    skills: number;
-    experience: number;
-    level: number;
-    certs: number;
-  } | null;
   aiSummary: AiSummary | null;
   errorMessage: string | null;
   updatedAt: string;
+};
+
+/** Whether candidates' CVs are sent to Google Gemini, as set in Settings. */
+export type AiSettings = {
+  /** What was chosen in Settings. */
+  cvAnalysisEnabled: boolean;
+  /** Whether the server has a Gemini API key. Without one the setting cannot be turned on. */
+  geminiConfigured: boolean;
+  /** Both of the above. CVs are analysed, and the analysis shown, only when this is true. */
+  active: boolean;
 };
 
 export type CandidateDetail = Candidate & {

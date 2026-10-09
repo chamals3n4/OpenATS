@@ -4,7 +4,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  ChartEvaluationIcon,
+  Quiz03Icon,
   CheckmarkCircle01Icon,
   Link01Icon,
 } from "@hugeicons/core-free-icons";
@@ -260,7 +260,7 @@ export function ScoresSection({
         <div className="rounded-md border border-dashed border-slate-300 bg-slate-50/50 px-6 py-12 text-center dark:border-neutral-700 dark:bg-neutral-900/30">
           <div className="mx-auto mb-3 flex size-12 items-center justify-center rounded-full bg-slate-100 dark:bg-neutral-800">
             <HugeiconsIcon
-              icon={ChartEvaluationIcon}
+              icon={Quiz03Icon}
               className="size-5 text-slate-400 dark:text-neutral-500"
             />
           </div>

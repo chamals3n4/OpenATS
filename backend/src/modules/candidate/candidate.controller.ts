@@ -4,10 +4,14 @@ import {
   candidateService,
   DuplicateApplicationError,
   InvalidAnswerError,
+  CANDIDATE_FLAG_FILTERS,
+  type CandidateFlagFilter,
 } from "./candidate.service";
 import { jobService } from "../job/job.service";
 import { r2Service } from "../../shared/services/r2.service";
 import { socketService } from "../../shared/services/socket.service";
+import { parseMinScore } from "./candidate-query";
+import { aiSettingsService } from "../settings/ai-settings.service";
 import { scoringService } from "../scoring/scoring.service";
 import { withholdInterviewScores } from "../scoring/scoring";
 import { canAccessCandidate } from "../../shared/auth/job-access";
@@ -192,7 +196,17 @@ export const getCandidates = async (req: Request, res: Response) => {
       ? Math.min(200, Math.max(1, parseInt(req.query.limit.toString()) || 25))
       : undefined;
 
+    // The Interview part is part of the total, so an interviewer filtering on score or on "all
+    // parts scored" could work out scores they are not meant to see yet. They get the flag filter only.
+    const scoreFiltersAllowed = req.user.role !== "interviewer";
+    const flagParam = req.query.flag?.toString();
+
     const filters = {
+      minScore: scoreFiltersAllowed ? parseMinScore(req.query.minScore) : undefined,
+      flag: (CANDIDATE_FLAG_FILTERS as readonly string[]).includes(flagParam ?? "")
+        ? (flagParam as CandidateFlagFilter)
+        : undefined,
+      fullyScored: scoreFiltersAllowed && req.query.fullyScored === "true" ? true : undefined,
       stageId: req.query.stageId
         ? parseInt(req.query.stageId.toString())
         : undefined,
@@ -272,8 +286,14 @@ export const getCandidateById = async (req: Request, res: Response) => {
 
     const [blinded] = await blindForInterviewer(req.user, [result]);
     const hidden = blinded !== result;
+    // While AI CV analysis is off, a saved analysis is kept but not sent, so it is hidden in fact
+    // and not only by the page choosing not to draw it.
+    const aiActive = await aiSettingsService.isCvAnalysisActive();
     res.status(200).json({
-      data: hidden ? { ...blinded, interviewSpread: null } : result,
+      data: {
+        ...(hidden ? { ...blinded, interviewSpread: null } : result),
+        ...(aiActive ? {} : { cvAnalysis: null }),
+      },
     });
   } catch (error) {
     logger.error(

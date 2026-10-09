@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const envSchema = z.object({
+export const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   REDIS_URL: z.string().min(1).default("redis://localhost:6379"),
 
@@ -19,7 +19,8 @@ const envSchema = z.object({
   RESEND_API_KEY: z.string().min(1, "RESEND_API_KEY is required"),
   RESEND_FROM_EMAIL: z.string().min(1, "RESEND_FROM_EMAIL is required"),
 
-  GEMINI_API_KEY: z.string().min(1, "GEMINI_API_KEY is required"),
+  // Optional. Without it the app runs normally and AI CV analysis cannot be turned on.
+  GEMINI_API_KEY: z.string().optional(),
 
   PORT: z.coerce.number().int().positive().default(8080),
 });

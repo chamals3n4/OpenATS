@@ -8,7 +8,7 @@ import {
   ArrowRight02Icon,
   Cancel01Icon,
   Edit02Icon,
-  Link01Icon,
+  LinkIcon,
   Chatting01Icon,
   UserMultiple02Icon,
   RocketIcon,
@@ -308,7 +308,7 @@ export function JobHeader({
                   className="inline-flex items-center gap-2 font-medium hover:text-[var(--theme-color)]"
                 >
                   <HugeiconsIcon
-                    icon={Link01Icon}
+                    icon={LinkIcon}
                     className="size-5 shrink-0 text-theme dark:text-primary"
                   />
                   <span className="truncate">

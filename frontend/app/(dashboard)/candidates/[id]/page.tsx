@@ -24,12 +24,13 @@ import { useDeleteInterview } from "@/hooks/queries/use-interviews";
 import { useTemplates } from "@/hooks/queries/use-templates";
 import { InterviewSchedulerDialog } from "@/app/(dashboard)/interviews/_components/interview-scheduler-dialog";
 
-import { type SectionId, OFFER_STATUS_STYLES } from "./_components/constants";
+import { type SectionId, OFFER_STATUS_STYLES, SECTIONS } from "./_components/constants";
+import { useAiSettings } from "@/hooks/queries/use-settings";
 import { CandidateHeader } from "./_components/candidate-header";
 import { SectionTabs } from "./_components/section-tabs";
 import { CvSheet } from "./_components/cv-sheet";
 import { AssessmentSheet } from "./_components/assessment-sheet";
-import { JobFitSection } from "./_components/sections/job-fit-section";
+import { AiAnalysisSection } from "./_components/sections/ai-analysis-section";
 import { AnswersSection } from "./_components/sections/answer-section";
 import { HistorySection } from "./_components/sections/history-section";
 import { OfferSection } from "./_components/sections/offer-section";
@@ -53,6 +54,9 @@ export default function CandidateDetailPage({
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const fromParam = searchParams.get("from");
+  // The Candidates list passes its filters along, so closing returns to the same filtered list.
+  // Re-serialised, so only plain query values can come back out of it.
+  const backParam = new URLSearchParams(searchParams.get("back") ?? "").toString();
   const unwrappedParams = use(params);
   const candidateId = parseInt(unwrappedParams.id, 10);
 
@@ -75,7 +79,19 @@ export default function CandidateDetailPage({
   const deleteMutation = useDeleteCandidate();
   const updateMutation = useUpdateCandidateBasicDetails();
 
-  const [activeSection, setActiveSection] = useState<SectionId>("job-fit");
+  // The AI analysis tab exists only while AI CV analysis is turned on in Settings. When it is off
+  // the tab is not listed at all, and the page opens on the next one.
+  const { data: aiSettingsData, isLoading: aiSettingsLoading } = useAiSettings();
+  const aiActive = aiSettingsData?.data?.active ?? false;
+  const sections = useMemo(
+    () => SECTIONS.filter((section) => section.id !== "ai-analysis" || aiActive),
+    [aiActive],
+  );
+  const [pickedSection, setActiveSection] = useState<SectionId | null>(null);
+  const activeSection =
+    pickedSection && sections.some((section) => section.id === pickedSection)
+      ? pickedSection
+      : sections[0]!.id;
   const [deleteTarget, setDeleteTarget] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
   const [editFirstName, setEditFirstName] = useState("");
@@ -165,11 +181,14 @@ export default function CandidateDetailPage({
         ? "/interviews"
         : fromParam === "pipeline" && isManager
           ? `/jobs/${candidate?.jobId}/pipeline`
-          : "/candidates";
+          : fromParam === "candidates" && backParam
+            ? `/candidates?${backParam}`
+            : "/candidates";
     router.push(back);
   };
 
-  if (isLoading) {
+  // Wait for the setting too, so the tabs do not appear and then change under the reader.
+  if (isLoading || aiSettingsLoading) {
     return (
       <div className="flex flex-1 items-center justify-center bg-slate-50/50 dark:bg-neutral-950">
         <div className="flex flex-col items-center gap-3">
@@ -233,6 +252,7 @@ export default function CandidateDetailPage({
         <div className="px-4 py-5 sm:px-6">
           <main className="min-w-0">
             <SectionTabs
+              sections={sections}
               activeSection={activeSection}
               onSectionChange={setActiveSection}
               cvAnalysis={cvAnalysis}
@@ -245,8 +265,8 @@ export default function CandidateDetailPage({
             />
 
             <div className="rounded-md border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-950">
-              {activeSection === "job-fit" && (
-                <JobFitSection
+              {activeSection === "ai-analysis" && (
+                <AiAnalysisSection
                   resumeUrl={candidate.resumeUrl}
                   cvAnalysis={cvAnalysis}
                 />

@@ -22,6 +22,7 @@ import { assessmentExecutionService } from "../assessment-execution/assessment-e
 import { candidateActivityService } from "./candidate-activity.service";
 import { socketService } from "../../shared/services/socket.service";
 import { scoringService } from "../scoring/scoring.service";
+import { toAiSummary } from "./cv-analysis.service";
 import { rejectionService } from "../rejection/rejection.service";
 import { mailService } from "../../shared/services/mail.service";
 import { cleanObject as clean } from "../../utils/object.utils";
@@ -75,6 +76,32 @@ export interface CandidateApplyInput {
   customAnswers?: CustomAnswerInput[] | undefined;
 }
 
+export const CANDIDATE_FLAG_FILTERS = [
+  "flagged",
+  "knocked_out",
+  "failed_assessment",
+  "assessment_expired",
+  "none",
+] as const;
+export type CandidateFlagFilter = (typeof CANDIDATE_FLAG_FILTERS)[number];
+
+/** The SQL for each flag filter, built from the flags stored on the candidate. */
+function flagCondition(flag: CandidateFlagFilter) {
+  const failed = eq(candidates.assessmentPassed, false);
+  switch (flag) {
+    case "knocked_out":
+      return eq(candidates.knockedOut, true);
+    case "failed_assessment":
+      return failed;
+    case "assessment_expired":
+      return eq(candidates.assessmentExpired, true);
+    case "flagged":
+      return or(eq(candidates.knockedOut, true), failed, eq(candidates.assessmentExpired, true));
+    case "none":
+      return sql`NOT (${candidates.knockedOut} OR coalesce(${candidates.assessmentPassed} = false, false) OR ${candidates.assessmentExpired})`;
+  }
+}
+
 export interface CandidateFilters {
   stageId?: number | undefined;
   search?: string | undefined;
@@ -87,6 +114,12 @@ export interface CandidateFilters {
     | undefined;
   /** "score" puts the highest total first and candidates with a knockout answer last. */
   sort?: "score" | undefined;
+  /** Only candidates whose total score is at least this (0-100). Unscored candidates are left out. */
+  minScore?: number | undefined;
+  /** Only candidates with this flag. "none" is the ones with no flag at all. */
+  flag?: CandidateFlagFilter | undefined;
+  /** Only candidates scored on every part the job uses. */
+  fullyScored?: boolean | undefined;
   page?: number;
   limit?: number;
   teamUserId?: number;
@@ -117,6 +150,19 @@ function buildCandidateWhere(
         ilike(candidates.email, `%${filters.search}%`),
       ),
     );
+  }
+  if (filters.minScore !== undefined) {
+    conditions.push(sql`${candidates.totalScore} >= ${filters.minScore}`);
+  }
+  if (filters.flag) conditions.push(flagCondition(filters.flag));
+  if (filters.fullyScored) {
+    // Scored on every part the candidate's job weights above zero. A subquery, so it also works
+    // in the count query, which does not join the jobs table.
+    conditions.push(sql`${candidates.scoredParts} >= (
+      select (jw.score_weight_questions > 0)::int + (jw.score_weight_assessment > 0)::int
+        + (jw.score_weight_rating > 0)::int + (jw.score_weight_interview > 0)::int
+      from jobs jw where jw.id = ${candidates.jobId}
+    )`);
   }
   if (filters.teamUserId) {
     conditions.push(
@@ -559,15 +605,14 @@ export const candidateService = {
       .from(candidateCvAnalysis)
       .where(eq(candidateCvAnalysis.candidateId, id));
 
+    // Notes only: the summary, strengths and gaps, and which required skills the CV shows. Rows
+    // analysed before the score and verdict were removed still hold them; they are not returned.
     const cvAnalysis = cvRow
       ? {
           status: cvRow.status,
-          matchScore:
-            cvRow.matchScore != null ? Number(cvRow.matchScore) : null,
           matchedSkills: cvRow.matchedSkills,
           missingSkills: cvRow.missingSkills,
-          scoreBreakdown: cvRow.scoreBreakdown,
-          aiSummary: cvRow.aiSummary ?? null,
+          aiSummary: toAiSummary(cvRow.aiSummary),
           errorMessage: cvRow.errorMessage,
           updatedAt: cvRow.updatedAt,
         }

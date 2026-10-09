@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   useBulkDeleteCandidates,
   useBulkRejectCandidates,
@@ -12,7 +12,21 @@ import {
 import { toast } from "sonner";
 import { useJobs } from "@/hooks/queries/use-jobs";
 import type { Candidate } from "@/types";
-import { CandidateFilters, type CandidateSort } from "./candidate-filters";
+import { CandidateFilters } from "./candidate-filters";
+import {
+  readStoredFilters,
+  subscribeStoredFilters,
+  writeStoredFilters,
+} from "../lib/candidate-filter-storage";
+import {
+  EMPTY_FILTERS,
+  hasFilterParams,
+  parseFilterState,
+  resolveFilterState,
+  toFilterParams,
+  type CandidateFilterState,
+} from "../lib/candidate-filter-state";
+import { useCurrentUser } from "@/hooks/queries/use-user";
 import { CandidatesTable } from "./candidates-table";
 import { CandidateEditDialog } from "./candidate-edit-dialog";
 import { CandidateDeleteDialog } from "./candidate-delete-dialog";
@@ -21,21 +35,51 @@ import {
   candidateToFormData,
   buildUpdateFormData,
 } from "../lib/candidate-types";
-import { CandidateStatusFilter } from "../lib/candidate-utils";
 
 const PAGE_LIMIT = 15;
 
 export default function CandidatesPageClient() {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   // ── Filter State ───────────────────────────────────────────
-  const [selectedJobId, setSelectedJobId] = useState<number | undefined>();
-  const [selectedStatus, setSelectedStatus] =
-    useState<CandidateStatusFilter>("all");
+  // The position and the other filters live in the address, and are also saved in the browser. So
+  // they are still there after opening a candidate, after a reload, after visiting another page
+  // and coming back, and in a link you share. Only search is local.
+  const stored = useSyncExternalStore(subscribeStoredFilters, readStoredFilters, () => null);
+  // False while the page is first drawn on the server and hydrated, so nothing is fetched until
+  // the saved filters have been read, rather than fetching the whole list and then the filtered one.
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
+  const filters = useMemo(
+    () => resolveFilterState(new URLSearchParams(searchParams.toString()), stored),
+    [searchParams, stored],
+  );
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  const [sort, setSort] = useState<CandidateSort>("newest");
   const [page, setPage] = useState(1);
+  const { data: me } = useCurrentUser();
+  const isInterviewer = me?.data?.role === "interviewer";
+
+  // Filters that arrive in the address (a shared link) become the saved ones too.
+  useEffect(() => {
+    const url = new URLSearchParams(searchParams.toString());
+    if (hasFilterParams(url)) writeStoredFilters(toFilterParams(parseFilterState(url)).toString());
+  }, [searchParams]);
+
+  const setFilters = useCallback(
+    (next: CandidateFilterState) => {
+      const query = toFilterParams(next).toString();
+      writeStoredFilters(query);
+      router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+      setPage(1);
+    },
+    [router, pathname],
+  );
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -45,14 +89,24 @@ export default function CandidatesPageClient() {
     return () => clearTimeout(t);
   }, [search]);
 
+  const selectedJobId = filters.jobId;
+  const selectedStatus = filters.status;
+  // Interviewers cannot use the score filters, so a stale value in the address is ignored for them.
+  const scoreFilter = isInterviewer ? undefined : filters.minScore;
+  const onlyFullyScored = isInterviewer ? false : filters.fullyScored;
+  const hasScoreFilters = scoreFilter !== undefined || onlyFullyScored || filters.flag !== "any";
+
   // ── Data ───────────────────────────────────────────────────
   const { data: candidatesData, isLoading } = useCandidates(selectedJobId, {
     search: debouncedSearch || undefined,
     status: selectedStatus === "all" ? undefined : selectedStatus,
-    sort: sort === "score" ? "score" : undefined,
+    sort: filters.sort === "score" ? "score" : undefined,
+    minScore: scoreFilter,
+    flag: filters.flag === "any" ? undefined : filters.flag,
+    fullyScored: onlyFullyScored || undefined,
     page,
     limit: PAGE_LIMIT,
-  });
+  }, { enabled: hydrated });
   const { data: jobsData } = useJobs();
 
   const candidates = candidatesData?.data ?? [];
@@ -108,22 +162,13 @@ export default function CandidatesPageClient() {
   ]);
 
   const selectionScopeKey = useMemo(
-    () => `${selectedJobId ?? "all"}|${selectedStatus}|${debouncedSearch}|${sort}`,
-    [debouncedSearch, selectedJobId, selectedStatus, sort],
+    () =>
+      `${selectedJobId ?? "all"}|${selectedStatus}|${debouncedSearch}|${filters.sort}|${scoreFilter ?? ""}|${filters.flag}|${onlyFullyScored}`,
+    [debouncedSearch, selectedJobId, selectedStatus, filters.sort, scoreFilter, filters.flag, onlyFullyScored],
   );
 
   const handleSearchChange = useCallback((value: string) => {
     setSearch(value);
-  }, []);
-
-  const handleJobChange = useCallback((jobId: number | undefined) => {
-    setSelectedJobId(jobId);
-    setPage(1);
-  }, []);
-
-  const handleStatusChange = useCallback((status: CandidateStatusFilter) => {
-    setSelectedStatus(status);
-    setPage(1);
   }, []);
 
   const handleConfirmDelete = useCallback(() => {
@@ -158,23 +203,17 @@ export default function CandidatesPageClient() {
 
   const handleRowClick = useCallback(
     (candidate: Candidate) => {
-      router.push(`/candidates/${candidate.id}?from=candidates`);
+      // The filters ride along, so closing the candidate returns to the same filtered list.
+      const back = searchParams.toString();
+      router.push(`/candidates/${candidate.id}?from=candidates${back ? `&back=${encodeURIComponent(back)}` : ""}`);
     },
-    [router],
+    [router, searchParams],
   );
 
   const handleClearFilters = useCallback(() => {
     setSearch("");
-    setSelectedJobId(undefined);
-    setSelectedStatus("all");
-    setSort("newest");
-    setPage(1);
-  }, []);
-
-  const handleSortChange = useCallback((next: CandidateSort) => {
-    setSort(next);
-    setPage(1);
-  }, []);
+    setFilters(EMPTY_FILTERS);
+  }, [setFilters]);
 
   return (
     // min-h-0 lets this flex child shrink below its content size so the
@@ -193,13 +232,10 @@ export default function CandidatesPageClient() {
         <CandidateFilters
           search={search}
           onSearchChange={handleSearchChange}
-          selectedJobId={selectedJobId}
-          onJobChange={handleJobChange}
-          selectedStatus={selectedStatus}
-          onStatusChange={handleStatusChange}
           jobs={jobs}
-          sort={sort}
-          onSortChange={handleSortChange}
+          value={filters}
+          onChange={setFilters}
+          hideScoreFilters={isInterviewer}
           onClear={handleClearFilters}
         />
       </div>
@@ -209,14 +245,16 @@ export default function CandidatesPageClient() {
         <CandidatesTable
           key={selectionScopeKey}
           candidates={candidates}
-          isLoading={isLoading}
+          isLoading={isLoading || !hydrated}
           onRowClick={handleRowClick}
           onEdit={openEditDialog}
           onDelete={setDeleteTarget}
           pagination={pagination}
           onPageChange={setPage}
           onDeleteSelected={handleDeleteSelected}
-          onDeleteAllMatching={handleDeleteAllMatchingCandidates}
+          // "Delete all matching" only knows job, search and status, so with a score or flag filter
+          // on it would delete people the list is not showing. Picking rows still works.
+          onDeleteAllMatching={hasScoreFilters ? undefined : handleDeleteAllMatchingCandidates}
           isDeletingSelected={
             deleteMutation.isPending || bulkDeleteMutation.isPending
           }

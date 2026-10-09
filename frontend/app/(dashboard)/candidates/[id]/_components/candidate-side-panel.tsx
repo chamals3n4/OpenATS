@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-import { CandidateJobFitTab } from "@/app/(dashboard)/candidates/[id]/_components/candidate-job-fit-tab";
+import { CandidateAiAnalysis } from "@/app/(dashboard)/candidates/[id]/_components/candidate-ai-analysis";
 import type { Offer } from "@/types";
 import {
   useCandidate,
@@ -229,7 +229,7 @@ export function CandidateSidePanel({
   const cvAnalysis = candidate.cvAnalysis;
 
   const TABS = [
-    { value: "job-fit", label: "Job fit" },
+    { value: "ai-analysis", label: "AI analysis" },
     { value: "answers", label: "Answers" },
     { value: "history", label: "Stage History" },
     { value: "offer", label: "Offer" },
@@ -299,7 +299,7 @@ export function CandidateSidePanel({
       </div>
 
       <Tabs
-        defaultValue="job-fit"
+        defaultValue="ai-analysis"
         className="flex-1 flex flex-col overflow-hidden m-0 min-h-0"
       >
         <div
@@ -312,7 +312,7 @@ export function CandidateSidePanel({
               {TABS.map(({ value, label }) => (
                 <TabsTrigger key={value} value={value} className={triggerBase}>
                   {label}
-                  {value === "job-fit" && cvAnalysis?.status === "pending" && (
+                  {value === "ai-analysis" && cvAnalysis?.status === "pending" && (
                     <span className="ml-1 text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400">
                       …
                     </span>
@@ -331,10 +331,10 @@ export function CandidateSidePanel({
         </div>
 
         <TabsContent
-          value="job-fit"
+          value="ai-analysis"
           className="flex-1 overflow-y-auto p-5 outline-none min-h-0 thin-scrollbar-panel"
         >
-          <CandidateJobFitTab resumeUrl={candidate.resumeUrl} cv={cvAnalysis} />
+          <CandidateAiAnalysis resumeUrl={candidate.resumeUrl} cv={cvAnalysis} />
         </TabsContent>
 
         <TabsContent

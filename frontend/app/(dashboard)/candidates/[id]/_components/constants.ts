@@ -1,14 +1,14 @@
 "use client";
 
 import {
-  Target01Icon,
+  AiScanTextIcon,
   QuestionIcon,
   Clock01Icon,
-  Award01Icon,
-  Calendar02Icon,
+  TelegramIcon,
+  CoPresentIcon,
   UserRemove01Icon,
   Mail01Icon,
-  ChartEvaluationIcon,
+  Quiz03Icon,
 } from "@hugeicons/core-free-icons";
 
 export function timeAgo(dateStr: string) {
@@ -81,7 +81,7 @@ export const REJECTION_REASONS = [
 ] as const;
 
 export type SectionId =
-  | "job-fit"
+  | "ai-analysis"
   | "answers"
   | "history"
   | "offer"
@@ -91,16 +91,17 @@ export type SectionId =
   | "scores";
 
 export const SECTIONS = [
-  { id: "job-fit" as SectionId, label: "Job Fit", icon: Target01Icon },
+  // Listed only while AI CV analysis is turned on in Settings; see the candidate page.
+  { id: "ai-analysis" as SectionId, label: "AI analysis", icon: AiScanTextIcon },
   { id: "answers" as SectionId, label: "Answers", icon: QuestionIcon },
   { id: "history" as SectionId, label: "Stage History", icon: Clock01Icon },
-  { id: "offer" as SectionId, label: "Offer", icon: Award01Icon },
-  { id: "interviews" as SectionId, label: "Interviews", icon: Calendar02Icon },
+  { id: "offer" as SectionId, label: "Offer", icon: TelegramIcon },
+  { id: "interviews" as SectionId, label: "Interviews", icon: CoPresentIcon },
   { id: "rejection" as SectionId, label: "Rejection", icon: UserRemove01Icon },
   { id: "email" as SectionId, label: "Send Email", icon: Mail01Icon },
   {
     id: "scores" as SectionId,
     label: "Scores",
-    icon: ChartEvaluationIcon,
+    icon: Quiz03Icon,
   },
 ];

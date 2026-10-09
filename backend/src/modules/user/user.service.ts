@@ -75,7 +75,7 @@ export const userService = {
   },
 
   async update(id: number, input: UpdateUserInput) {
-    const updateData: any = { ...clean(input), updatedAt: new Date() };
+    const updateData: Partial<typeof users.$inferInsert> = { ...clean(input), updatedAt: new Date() };
 
     if (input.firstName !== undefined || input.lastName !== undefined) {
       const user = await this.getById(id);

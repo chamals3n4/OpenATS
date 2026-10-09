@@ -1,13 +1,17 @@
 "use client";
 
-import { memo, useCallback, useEffect, useRef, type KeyboardEvent, type MouseEvent } from "react";
+import { memo, useCallback, useEffect, useRef, useState, type KeyboardEvent, type MouseEvent } from "react";
 import { useDrag } from "react-dnd";
 import { getEmptyImage } from "react-dnd-html5-backend";
 import { Checkbox } from "@/components/ui/checkbox";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Alert02Icon } from "@hugeicons/core-free-icons";
 import { ScoreBadge } from "@/components/score-badge";
+import { candidateFlags } from "@/lib/scoring";
 import type { BoardCandidate, PipelineStage } from "@/types";
 import { fullName, timeAgo } from "../lib/board-utils";
 import { CardMenu } from "./card-menu";
+import { FlagsDialog } from "./flags-dialog";
 
 export const CARD_TYPE = "PIPELINE_CARD";
 
@@ -45,15 +49,17 @@ export const BoardCard = memo(function BoardCard({
   const name = fullName(candidate);
   const applied = timeAgo(candidate.appliedAt, now);
   const nodeRef = useRef<HTMLDivElement | null>(null);
+  const flags = candidateFlags(candidate);
+  const [flagsOpen, setFlagsOpen] = useState(false);
 
   const [{ isDragging }, dragRef, previewRef] = useDrag<DragItem, unknown, { isDragging: boolean }>(
     {
       type: CARD_TYPE,
-      item: { id: candidate.id, name, subtitle: `Applied ${applied}` },
+      item: { id: candidate.id, name: candidate.firstName, subtitle: `Applied ${applied}` },
       canDrag: !isMoving,
       collect: (monitor) => ({ isDragging: monitor.isDragging() }),
     },
-    [candidate.id, name, applied, isMoving],
+    [candidate.id, candidate.firstName, applied, isMoving],
   );
 
   useEffect(() => {
@@ -116,7 +122,9 @@ export const BoardCard = memo(function BoardCard({
       </div>
 
       <div className="min-w-0 flex-1">
-        <p className="truncate text-sm font-medium text-slate-900 dark:text-neutral-100">{name}</p>
+        <p title={name} className="truncate text-sm font-medium text-slate-900 dark:text-neutral-100">
+          {candidate.firstName}
+        </p>
         <p className="truncate text-xs text-slate-500 dark:text-neutral-400">
           Applied {applied}
         </p>
@@ -130,8 +138,34 @@ export const BoardCard = memo(function BoardCard({
         assessmentPassed={candidate.assessmentPassed}
         assessmentExpired={candidate.assessmentExpired}
         hideWhenUnscored
+        hideFlags
         className="shrink-0"
       />
+
+      {flags.length > 0 && (
+        <>
+          {/* The flags are an icon, not pills, so they cannot squeeze the name in a narrow column. */}
+          <button
+            type="button"
+            aria-label={`Flags for ${name}: ${flags.map((f) => f.label).join(", ")}`}
+            title={flags.map((f) => f.label).join(" · ")}
+            onClick={(e) => {
+              e.stopPropagation();
+              setFlagsOpen(true);
+            }}
+            className="flex size-7 shrink-0 cursor-pointer items-center justify-center rounded-md text-amber-600 outline-none transition-colors hover:bg-amber-50 focus-visible:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30 dark:focus-visible:bg-amber-950/30"
+          >
+            <HugeiconsIcon icon={Alert02Icon} className="size-4" strokeWidth={2} />
+          </button>
+          <FlagsDialog
+            candidate={candidate}
+            name={name}
+            open={flagsOpen}
+            onOpenChange={setFlagsOpen}
+            onOpenProfile={onOpen}
+          />
+        </>
+      )}
 
       <CardMenu
         candidate={candidate}

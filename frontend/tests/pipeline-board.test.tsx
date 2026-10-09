@@ -70,7 +70,9 @@ describe("BoardColumn", () => {
     setup([cand(1, "Ada", "Lovelace"), cand(2, "Grace", "Hopper")]);
     expect(screen.getByRole("heading", { name: "Applied" })).toBeInTheDocument();
     expect(screen.getByText("2")).toBeInTheDocument();
-    expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
+    // The card shows the first name only; the full name stays in its tooltip and labels.
+    expect(screen.getByText("Ada")).toBeInTheDocument();
+    expect(screen.queryByText("Ada Lovelace")).toBeNull();
     expect(screen.getAllByText("Applied 3h ago")).toHaveLength(2);
     expect(screen.queryByText("AL")).toBeNull();
   });

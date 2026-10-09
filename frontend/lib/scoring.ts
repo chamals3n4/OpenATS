@@ -50,3 +50,42 @@ export function describeParts(scored: number | undefined, weighted: number | und
   if (scored === undefined || weighted === undefined || weighted <= 0) return null;
   return `${scored} of ${weighted} ${weighted === 1 ? "part" : "parts"} scored`;
 }
+
+export interface CandidateFlag {
+  key: "knockout" | "failed_assessment" | "assessment_expired";
+  label: string;
+  /** Plain-English reason, and what it does and does not do. */
+  explanation: string;
+}
+
+/** The flags a candidate has, with what each one means. */
+export function candidateFlags(c: {
+  knockedOut?: boolean | undefined;
+  assessmentPassed?: boolean | null | undefined;
+  assessmentExpired?: boolean | undefined;
+}): CandidateFlag[] {
+  const flags: CandidateFlag[] = [];
+  if (c.knockedOut) {
+    flags.push({
+      key: "knockout",
+      label: "Does not meet requirements",
+      explanation:
+        "They picked an answer marked as a knockout on the application form. This does not change their score.",
+    });
+  }
+  if (c.assessmentPassed === false) {
+    flags.push({
+      key: "failed_assessment",
+      label: "Failed assessment",
+      explanation: "They scored below the pass mark on the test. They are not rejected automatically.",
+    });
+  }
+  if (c.assessmentExpired) {
+    flags.push({
+      key: "assessment_expired",
+      label: "Assessment expired",
+      explanation: "The test link ran out unused, so the Assessment part counts as 0.",
+    });
+  }
+  return flags;
+}

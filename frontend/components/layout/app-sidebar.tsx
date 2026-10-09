@@ -3,14 +3,14 @@
 import * as React from "react";
 import {
   Home01Icon,
-  Briefcase01Icon,
-  UserGroupIcon,
+  BriefcaseBusinessIcon,
+  UsersRoundIcon,
   SearchList02Icon,
   Settings02Icon,
-  ArtboardToolIcon,
-  Quiz02Icon,
-  Agreement02Icon,
-  Calendar02Icon,
+  Layout03Icon,
+  Quiz03Icon,
+  TelegramIcon,
+  CoPresentIcon,
 } from "@hugeicons/core-free-icons";
 
 import { usePathname } from "next/navigation";
@@ -28,32 +28,32 @@ const navMainData = [
   {
     title: "Manage Jobs",
     url: "/jobs",
-    icon: Briefcase01Icon,
+    icon: BriefcaseBusinessIcon,
   },
   {
     title: "Candidates",
     url: "/candidates",
-    icon: UserGroupIcon,
+    icon: UsersRoundIcon,
   },
   {
     title: "Interviews",
     url: "/interviews",
-    icon: Calendar02Icon,
+    icon: CoPresentIcon,
   },
   {
     title: "Assessments",
     url: "/assessments",
-    icon: Quiz02Icon,
+    icon: Quiz03Icon,
   },
   {
     title: "Manage Offers",
     url: "/offers",
-    icon: Agreement02Icon,
+    icon: TelegramIcon,
   },
   {
     title: "Templates",
     url: "/templates",
-    icon: ArtboardToolIcon,
+    icon: Layout03Icon,
   },
   {
     title: "Settings",

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { PlusSignIcon, Task01Icon } from "@hugeicons/core-free-icons";
+import { PlusSignIcon, Quiz03Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
 import { FormField } from "@/components/form/form-field";
 import { RowDeleteButton } from "@/components/table/row-actions";
@@ -332,7 +332,7 @@ export function AssessmentsTab({
                 className="flex items-center gap-4 rounded-lg border border-slate-300 bg-white px-4 py-4 dark:border-neutral-700 dark:bg-neutral-900"
               >
                 <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-slate-100 text-slate-700 dark:bg-neutral-800 dark:text-neutral-200">
-                  <HugeiconsIcon icon={Task01Icon} className="size-4" strokeWidth={1.75} />
+                  <HugeiconsIcon icon={Quiz03Icon} className="size-4" strokeWidth={1.75} />
                 </span>
 
                 <div className="min-w-0 flex-1">

@@ -54,11 +54,11 @@ function NavCollapsibleSection({
           render={
             <SidebarMenuButton
               isActive={item.isActive}
-              className={`h-8 text-sm rounded-sm px-2 w-full cursor-pointer ${buttonPress}`}
+              className={`h-9 text-[15px] rounded-sm px-2 w-full cursor-pointer ${buttonPress}`}
             >
-              <HugeiconsIcon icon={item.icon} className="!size-4 shrink-0" />
+              <HugeiconsIcon icon={item.icon} className="!size-[18px] shrink-0" />
               <span className="flex-1">{item.title}</span>
-              <ChevronRight className="size-3.5 shrink-0 text-sidebar-foreground/50 transition-transform duration-200 group-data-open/collapsible:-rotate-90" />
+              <ChevronRight className="size-4 shrink-0 text-sidebar-foreground/50 transition-transform duration-200 group-data-open/collapsible:-rotate-90" />
             </SidebarMenuButton>
           }
         />
@@ -68,7 +68,7 @@ function NavCollapsibleSection({
             {item.items.map((subItem) => (
               <SidebarMenuSubItem key={subItem.title}>
                 <SidebarMenuSubButton
-                  className={`h-7 rounded-sm text-xs px-2 ${buttonPress}`}
+                  className={`h-8 rounded-sm text-[13px] px-2 ${buttonPress}`}
                   render={<Link href={subItem.url} />}
                 >
                   <span>{subItem.title}</span>
@@ -96,10 +96,10 @@ export function NavMain({ items }: { items: NavItem[] }) {
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
                 isActive={item.isActive}
-                className={`h-8 text-sm px-2 rounded-sm ${buttonPress}`}
+                className={`h-9 text-[15px] px-2 rounded-sm ${buttonPress}`}
                 render={<Link href={item.url} />}
               >
-                <HugeiconsIcon icon={item.icon} className="!size-4 shrink-0" />
+                <HugeiconsIcon icon={item.icon} className="!size-[18px] shrink-0" />
                 <span>{item.title}</span>
               </SidebarMenuButton>
             </SidebarMenuItem>

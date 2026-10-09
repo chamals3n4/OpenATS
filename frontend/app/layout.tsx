@@ -9,6 +9,10 @@ const googleSans = Google_Sans({
   subsets: ["latin", "latin-ext"],
   variable: "--font-google-sans",
   display: "swap",
+  // next/font has no size metrics for Google Sans, so it cannot build a matching fallback font and
+  // warns on every build. Skip that adjustment and name the fallback ourselves instead.
+  adjustFontFallback: false,
+  fallback: ["system-ui", "Segoe UI", "Roboto", "Arial", "sans-serif"],
 });
 const changaOne = Changa_One({
   subsets: ["latin"],

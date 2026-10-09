@@ -10,6 +10,7 @@ import {
 import { jobService } from "../job/job.service";
 import { r2Service } from "../../shared/services/r2.service";
 import { socketService } from "../../shared/services/socket.service";
+import { parseMinScore } from "./candidate-query";
 import { scoringService } from "../scoring/scoring.service";
 import { withholdInterviewScores } from "../scoring/scoring";
 import { canAccessCandidate } from "../../shared/auth/job-access";
@@ -197,14 +198,10 @@ export const getCandidates = async (req: Request, res: Response) => {
     // The Interview part is part of the total, so an interviewer filtering on score or on "all
     // parts scored" could work out scores they are not meant to see yet. They get the flag filter only.
     const scoreFiltersAllowed = req.user.role !== "interviewer";
-    const minScoreParam = Number(req.query.minScore);
     const flagParam = req.query.flag?.toString();
 
     const filters = {
-      minScore:
-        scoreFiltersAllowed && req.query.minScore !== undefined && Number.isFinite(minScoreParam)
-          ? Math.min(100, Math.max(0, minScoreParam))
-          : undefined,
+      minScore: scoreFiltersAllowed ? parseMinScore(req.query.minScore) : undefined,
       flag: (CANDIDATE_FLAG_FILTERS as readonly string[]).includes(flagParam ?? "")
         ? (flagParam as CandidateFlagFilter)
         : undefined,

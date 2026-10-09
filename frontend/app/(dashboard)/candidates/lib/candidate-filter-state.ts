@@ -119,3 +119,17 @@ export function clearFilter(state: CandidateFilterState, key: FilterChip["key"])
       return { ...state, fullyScored: false };
   }
 }
+
+const FILTER_PARAM_KEYS = ["job", "status", "sort", "minScore", "flag", "fullyScored"] as const;
+
+/** Whether the address carries any filter at all. */
+export const hasFilterParams = (params: URLSearchParams) => FILTER_PARAM_KEYS.some((key) => params.has(key));
+
+/**
+ * The filters to use: those in the address when it has any, otherwise the ones saved last time, so
+ * coming back to the page from anywhere restores them. Clearing every filter saves nothing, which
+ * is what makes the list unfiltered again.
+ */
+export function resolveFilterState(url: URLSearchParams, stored: string | null): CandidateFilterState {
+  return parseFilterState(hasFilterParams(url) ? url : new URLSearchParams(stored ?? ""));
+}

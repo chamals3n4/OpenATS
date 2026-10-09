@@ -399,7 +399,7 @@ Every filter that is on shows as a chip, and each chip has its own **×**. **Cle
 A common combination is **Min score 70**, **No flags** and **All parts scored**, sorted by **Highest score**: strong candidates, with nothing against them, whose score rests on everything the job measures.
 
 :::tip Your filters are remembered
-The position and filters are kept in the page address. If you open a candidate and then close their profile, you come back to the **same filtered list**. The same happens after you reload the page, and you can copy the address to share a filtered view with a teammate. Only what you typed in the search box is not kept.
+The position and filters are saved in your browser and in the page address. They are still there if you open a candidate and close their profile, reload the page, or visit another page such as Jobs and come back later. You can also copy the address to share a filtered view with a teammate. They stay until you remove them with the **×** on each chip, or **Clear all**. Only what you typed in the search box is not kept.
 :::
 
 :::note

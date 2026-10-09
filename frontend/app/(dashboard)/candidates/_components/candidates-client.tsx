@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
+import { useState, useEffect, useCallback, useMemo, useSyncExternalStore } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   useBulkDeleteCandidates,
@@ -14,8 +14,15 @@ import { useJobs } from "@/hooks/queries/use-jobs";
 import type { Candidate } from "@/types";
 import { CandidateFilters } from "./candidate-filters";
 import {
+  readStoredFilters,
+  subscribeStoredFilters,
+  writeStoredFilters,
+} from "../lib/candidate-filter-storage";
+import {
   EMPTY_FILTERS,
+  hasFilterParams,
   parseFilterState,
+  resolveFilterState,
   toFilterParams,
   type CandidateFilterState,
 } from "../lib/candidate-filter-state";
@@ -37,11 +44,20 @@ export default function CandidatesPageClient() {
   const searchParams = useSearchParams();
 
   // ── Filter State ───────────────────────────────────────────
-  // The position and the other filters live in the address, so they are still there after opening
-  // a candidate and coming back, after a reload, and in a link you share. Only search is local.
+  // The position and the other filters live in the address, and are also saved in the browser. So
+  // they are still there after opening a candidate, after a reload, after visiting another page
+  // and coming back, and in a link you share. Only search is local.
+  const stored = useSyncExternalStore(subscribeStoredFilters, readStoredFilters, () => null);
+  // False while the page is first drawn on the server and hydrated, so nothing is fetched until
+  // the saved filters have been read, rather than fetching the whole list and then the filtered one.
+  const hydrated = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false,
+  );
   const filters = useMemo(
-    () => parseFilterState(new URLSearchParams(searchParams.toString())),
-    [searchParams],
+    () => resolveFilterState(new URLSearchParams(searchParams.toString()), stored),
+    [searchParams, stored],
   );
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
@@ -49,9 +65,16 @@ export default function CandidatesPageClient() {
   const { data: me } = useCurrentUser();
   const isInterviewer = me?.data?.role === "interviewer";
 
+  // Filters that arrive in the address (a shared link) become the saved ones too.
+  useEffect(() => {
+    const url = new URLSearchParams(searchParams.toString());
+    if (hasFilterParams(url)) writeStoredFilters(toFilterParams(parseFilterState(url)).toString());
+  }, [searchParams]);
+
   const setFilters = useCallback(
     (next: CandidateFilterState) => {
       const query = toFilterParams(next).toString();
+      writeStoredFilters(query);
       router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
       setPage(1);
     },
@@ -83,7 +106,7 @@ export default function CandidatesPageClient() {
     fullyScored: onlyFullyScored || undefined,
     page,
     limit: PAGE_LIMIT,
-  });
+  }, { enabled: hydrated });
   const { data: jobsData } = useJobs();
 
   const candidates = candidatesData?.data ?? [];
@@ -222,7 +245,7 @@ export default function CandidatesPageClient() {
         <CandidatesTable
           key={selectionScopeKey}
           candidates={candidates}
-          isLoading={isLoading}
+          isLoading={isLoading || !hydrated}
           onRowClick={handleRowClick}
           onEdit={openEditDialog}
           onDelete={setDeleteTarget}

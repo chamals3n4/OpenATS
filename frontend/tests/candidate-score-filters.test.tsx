@@ -27,18 +27,19 @@ const jobs = [
 function setup(value: CandidateFilterState = EMPTY_FILTERS, over: { hideScoreFilters?: boolean } = {}) {
   const onChange = vi.fn();
   const onClear = vi.fn();
-  render(
+  const element = (v: CandidateFilterState) => (
     <CandidateFilters
       search=""
       onSearchChange={vi.fn()}
       jobs={jobs}
-      value={value}
+      value={v}
       onChange={onChange}
       onClear={onClear}
       {...over}
-    />,
+    />
   );
-  return { onChange, onClear };
+  const { rerender } = render(element(value));
+  return { onChange, onClear, update: (v: CandidateFilterState) => rerender(element(v)) };
 }
 
 const open = (el: HTMLElement) => {
@@ -122,5 +123,28 @@ describe("the filter bar", () => {
     await screen.findByText("Flags");
     expect(screen.queryByLabelText("Minimum score")).toBeNull();
     expect(screen.queryByText("All parts scored")).toBeNull();
+  });
+
+  it("drops the typed minimum score when the filter is cleared from outside, and never reapplies it", async () => {
+    const { onChange, update } = setup({ ...EMPTY_FILTERS, minScore: 70 });
+    open(screen.getByRole("button", { name: /^Filters/ }));
+    const input = (await screen.findByLabelText("Minimum score")) as HTMLInputElement;
+    expect(input.value).toBe("70");
+
+    // The chip is removed (or Clear all pressed) while the menu is open.
+    update(EMPTY_FILTERS);
+    await waitFor(() => expect((screen.getByLabelText("Minimum score") as HTMLInputElement).value).toBe(""));
+    await new Promise((resolve) => setTimeout(resolve, 450));
+    expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("leaves what you are typing alone while the filter itself has not changed", async () => {
+    const { update } = setup({ ...EMPTY_FILTERS, status: "active" });
+    open(screen.getByRole("button", { name: /^Filters/ }));
+    const input = (await screen.findByLabelText("Minimum score")) as HTMLInputElement;
+    fireEvent.change(input, { target: { value: "6" } });
+    // Something unrelated changes, so the page renders again with the same minimum score.
+    update({ ...EMPTY_FILTERS, status: "rejected" });
+    expect((screen.getByLabelText("Minimum score") as HTMLInputElement).value).toBe("6");
   });
 });

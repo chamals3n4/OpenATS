@@ -4,7 +4,9 @@ import {
   activeFilterChips,
   clearFilter,
   filtersMenuCount,
+  hasFilterParams,
   parseFilterState,
+  resolveFilterState,
   toFilterParams,
 } from "@/app/(dashboard)/candidates/lib/candidate-filter-state";
 
@@ -67,5 +69,29 @@ describe("filter chips", () => {
   it("counts only the filters that live inside the Filters menu", () => {
     expect(filtersMenuCount({ ...EMPTY_FILTERS, jobId: 3, sort: "score" })).toBe(0);
     expect(filtersMenuCount({ ...EMPTY_FILTERS, status: "active", minScore: 0, fullyScored: true })).toBe(3);
+  });
+});
+
+describe("restoring saved filters", () => {
+  it("uses the address when it has filters, and ignores what was saved", () => {
+    const state = resolveFilterState(new URLSearchParams("job=3"), "job=4&flag=none");
+    expect(state).toEqual({ ...EMPTY_FILTERS, jobId: 3 });
+  });
+
+  it("falls back to the saved filters when the address has none", () => {
+    expect(resolveFilterState(new URLSearchParams(""), "job=4&flag=none")).toEqual({
+      ...EMPTY_FILTERS,
+      jobId: 4,
+      flag: "none",
+    });
+  });
+
+  it("is unfiltered when nothing is in the address or saved, which is what clearing leaves behind", () => {
+    expect(resolveFilterState(new URLSearchParams(""), null)).toEqual(EMPTY_FILTERS);
+  });
+
+  it("knows whether the address carries any filter", () => {
+    expect(hasFilterParams(new URLSearchParams("job=3"))).toBe(true);
+    expect(hasFilterParams(new URLSearchParams("from=candidates"))).toBe(false);
   });
 });

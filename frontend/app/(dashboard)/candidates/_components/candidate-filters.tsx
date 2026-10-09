@@ -139,7 +139,16 @@ function MinScoreField({
   value: number | undefined;
   onChange: (value: number | undefined) => void;
 }) {
-  const [draft, setDraft] = useState(value === undefined ? "" : String(value));
+  const text = (v: number | undefined) => (v === undefined ? "" : String(v));
+  const [draft, setDraft] = useState(text(value));
+  const [seen, setSeen] = useState(value);
+  // When the filter changes from outside (its chip removed, Clear all), show that instead of the
+  // old typing, which would otherwise be applied again. Typing alone does not change `value`, so
+  // edits in progress are left alone.
+  if (value !== seen) {
+    setSeen(value);
+    setDraft(text(value));
+  }
 
   useEffect(() => {
     const t = setTimeout(() => {

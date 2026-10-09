@@ -53,6 +53,9 @@ export default function CandidateDetailPage({
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const fromParam = searchParams.get("from");
+  // The Candidates list passes its filters along, so closing returns to the same filtered list.
+  // Re-serialised, so only plain query values can come back out of it.
+  const backParam = new URLSearchParams(searchParams.get("back") ?? "").toString();
   const unwrappedParams = use(params);
   const candidateId = parseInt(unwrappedParams.id, 10);
 
@@ -165,7 +168,9 @@ export default function CandidateDetailPage({
         ? "/interviews"
         : fromParam === "pipeline" && isManager
           ? `/jobs/${candidate?.jobId}/pipeline`
-          : "/candidates";
+          : fromParam === "candidates" && backParam
+            ? `/candidates?${backParam}`
+            : "/candidates";
     router.push(back);
   };
 

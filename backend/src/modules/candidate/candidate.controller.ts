@@ -4,6 +4,8 @@ import {
   candidateService,
   DuplicateApplicationError,
   InvalidAnswerError,
+  CANDIDATE_FLAG_FILTERS,
+  type CandidateFlagFilter,
 } from "./candidate.service";
 import { jobService } from "../job/job.service";
 import { r2Service } from "../../shared/services/r2.service";
@@ -192,7 +194,21 @@ export const getCandidates = async (req: Request, res: Response) => {
       ? Math.min(200, Math.max(1, parseInt(req.query.limit.toString()) || 25))
       : undefined;
 
+    // The Interview part is part of the total, so an interviewer filtering on score or on "all
+    // parts scored" could work out scores they are not meant to see yet. They get the flag filter only.
+    const scoreFiltersAllowed = req.user.role !== "interviewer";
+    const minScoreParam = Number(req.query.minScore);
+    const flagParam = req.query.flag?.toString();
+
     const filters = {
+      minScore:
+        scoreFiltersAllowed && req.query.minScore !== undefined && Number.isFinite(minScoreParam)
+          ? Math.min(100, Math.max(0, minScoreParam))
+          : undefined,
+      flag: (CANDIDATE_FLAG_FILTERS as readonly string[]).includes(flagParam ?? "")
+        ? (flagParam as CandidateFlagFilter)
+        : undefined,
+      fullyScored: scoreFiltersAllowed && req.query.fullyScored === "true" ? true : undefined,
       stageId: req.query.stageId
         ? parseInt(req.query.stageId.toString())
         : undefined,

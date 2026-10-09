@@ -33,27 +33,50 @@ export type CandidateBulkDeleteFilters = {
   status?: "active" | "rejected" | "offered" | "hired" | "withdrawn";
 };
 
-export function useCandidates(
-  jobId?: number,
-  filters?: {
-    stageId?: number;
-    search?: string;
-    status?: "active" | "rejected" | "offered" | "hired" | "withdrawn";
-    /** "score": highest total first, candidates with a knockout answer last. */
-    sort?: "score";
-    page?: number;
-    limit?: number;
-  },
-  options?: { enabled?: boolean },
-) {
-  const queryClient = useQueryClient();
+export type CandidateFlagFilter =
+  | "flagged"
+  | "knocked_out"
+  | "failed_assessment"
+  | "assessment_expired"
+  | "none";
+
+export type CandidateListFilters = {
+  stageId?: number;
+  search?: string;
+  status?: "active" | "rejected" | "offered" | "hired" | "withdrawn";
+  /** "score": highest total first, candidates with a knockout answer last. */
+  sort?: "score";
+  /** Only candidates whose total score is at least this (0-100). */
+  minScore?: number;
+  flag?: CandidateFlagFilter;
+  /** Only candidates scored on every part the job uses. */
+  fullyScored?: boolean;
+  page?: number;
+  limit?: number;
+};
+
+/** The query string for the candidate list. Only filters that are set are sent. */
+export function candidateListParams(filters?: CandidateListFilters): URLSearchParams {
   const params = new URLSearchParams();
   if (filters?.stageId) params.set("stageId", String(filters.stageId));
   if (filters?.search) params.set("search", filters.search);
   if (filters?.status) params.set("status", filters.status);
   if (filters?.sort) params.set("sort", filters.sort);
+  if (filters?.minScore !== undefined) params.set("minScore", String(filters.minScore));
+  if (filters?.flag) params.set("flag", filters.flag);
+  if (filters?.fullyScored) params.set("fullyScored", "true");
   if (filters?.page) params.set("page", String(filters.page));
   if (filters?.limit) params.set("limit", String(filters.limit));
+  return params;
+}
+
+export function useCandidates(
+  jobId?: number,
+  filters?: CandidateListFilters,
+  options?: { enabled?: boolean },
+) {
+  const queryClient = useQueryClient();
+  const params = candidateListParams(filters);
 
   const query = params.toString() ? `?${params.toString()}` : "";
 
@@ -61,7 +84,14 @@ export function useCandidates(
     ? `/candidates/jobs/${jobId}${query}`
     : `/candidates${query}`;
 
-  const hasFilters = !!(filters?.stageId || filters?.search || filters?.sort);
+  const hasFilters = !!(
+    filters?.stageId ||
+    filters?.search ||
+    filters?.sort ||
+    filters?.minScore !== undefined ||
+    filters?.flag ||
+    filters?.fullyScored
+  );
   const seedInitialData =
     jobId && !hasFilters
       ? () => {

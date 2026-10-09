@@ -11,7 +11,7 @@ export interface UpdateUserInput {
 }
 
 export interface CreateUserInput {
-  asgardeoUserId: string;
+  asgardeoUserId?: string | null;
   firstName: string;
   lastName: string;
   email: string;
@@ -40,6 +40,7 @@ export const userService = {
   },
 
   async create(input: CreateUserInput) {
+    const name = `${input.firstName} ${input.lastName}`.trim();
     // Reactivate soft-deleted row on re-creation rather than inserting a duplicate.
     const [existing] = await db
       .select()
@@ -47,7 +48,7 @@ export const userService = {
       .where(
         or(
           eq(users.email, input.email),
-          eq(users.asgardeoUserId, input.asgardeoUserId),
+          input.asgardeoUserId ? eq(users.asgardeoUserId, input.asgardeoUserId) : undefined,
         ),
       )
       .limit(1);
@@ -57,6 +58,7 @@ export const userService = {
         .update(users)
         .set({
           asgardeoUserId: input.asgardeoUserId,
+          name,
           firstName: input.firstName,
           lastName: input.lastName,
           email: input.email,
@@ -68,14 +70,25 @@ export const userService = {
       return reactivated;
     }
 
-    const [created] = await db.insert(users).values(input).returning();
+    const [created] = await db.insert(users).values({ ...input, name }).returning();
     return created;
   },
 
   async update(id: number, input: UpdateUserInput) {
+    const updateData: any = { ...clean(input), updatedAt: new Date() };
+
+    if (input.firstName !== undefined || input.lastName !== undefined) {
+      const user = await this.getById(id);
+      if (user) {
+        const firstName = input.firstName ?? user.firstName;
+        const lastName = input.lastName ?? user.lastName;
+        updateData.name = `${firstName} ${lastName}`.trim();
+      }
+    }
+
     const [updated] = await db
       .update(users)
-      .set({ ...clean(input), updatedAt: new Date() })
+      .set(updateData)
       .where(eq(users.id, id))
       .returning();
     return updated ?? null;

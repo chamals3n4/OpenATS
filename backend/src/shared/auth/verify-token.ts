@@ -130,9 +130,10 @@ export async function verifyAccessToken(
 
   if (!user) {
     // JIT provision — genuinely first login for this email
+    const name = `${firstName} ${lastName}`.trim();
     [user] = await db
       .insert(users)
-      .values({ asgardeoUserId: sub, firstName, lastName, email })
+      .values({ asgardeoUserId: sub, name, firstName, lastName, email })
       .returning();
 
     if (!user) {

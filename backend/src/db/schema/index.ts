@@ -17,3 +17,4 @@ export * from "./scoring";
 export * from "./page-settings";
 export * from "./app-settings";
 export * from "./integrations";
+export * from "./auth";

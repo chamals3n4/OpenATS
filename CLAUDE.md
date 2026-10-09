@@ -52,6 +52,7 @@ pnpm lint     # eslint
 - Logger is winston with console transport only (file transports commented out).
 - `exactOptionalPropertyTypes: false` in tsconfig — deliberate.
 - **Redis + BullMQ**: CV analysis runs as a background job queue, colocated under `backend/src/queues/cv-analysis/` (`queue.ts`, `worker.ts`, `events.ts`); shared Redis connection factory is `backend/src/config/redis.ts`. Connection is read from `REDIS_URL` (defaults to `redis://localhost:6379`). A dedicated connection is created per Queue/Worker (BullMQ best practice), not a shared singleton.
+- **AI CV analysis is optional and off by default.** It sends CVs to Google Gemini, so it runs only when the `app_settings.ai_cv_analysis_enabled` switch is on (Settings → General) **and** `GEMINI_API_KEY` is set; `modules/settings/ai-settings.service.ts` (`isCvAnalysisActive`) is the single check. `requestCvAnalysis` in `queues/cv-analysis/queue.ts` is the only way a CV is queued and it enforces that check, and the worker checks again before sending. The Gemini client is created lazily so the server starts without a key. The analysis produces notes only (summary, strengths, gaps, matched/missing skills): there is deliberately no AI score or verdict, and it is never part of the candidate score. While it is off the API returns `cvAnalysis: null` and the candidate page hides the "AI analysis" tab; saved analyses are kept.
 
 ### Database
 
@@ -95,7 +96,7 @@ See `docs/TESTING.md` for the full guide. In short:
 
 Two separate `.env` files are required (copy from `.env.example` in each directory):
 
-- `backend/.env` — `DATABASE_URL`, `REDIS_URL`, `R2_*`, `RESEND_*`, `ASGARDEO_*`, `GEMINI_API_KEY`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_CALENDAR_ID`
+- `backend/.env` — `DATABASE_URL`, `REDIS_URL`, `R2_*`, `RESEND_*`, `ASGARDEO_*`, `GEMINI_API_KEY` (optional), `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_CALENDAR_ID`
 - `frontend/.env` — `NEXT_PUBLIC_ASGARDEO_*`, `ASGARDEO_*`, `OPENATS_API_URL`, `NEXT_PUBLIC_API_URL`
 
 ## CI/CD

@@ -4,6 +4,7 @@ import { useCompany } from "@/hooks/queries/use-company";
 import type { Company } from "@/types";
 import { CompanyForm } from "./_components/company-form";
 import { DepartmentsPanel } from "./_components/departments-panel";
+import { AiAnalysisCard } from "./_components/ai-analysis-card";
 
 const NEW_COMPANY: Company = {
   id: 0,
@@ -35,7 +36,7 @@ export default function SettingsGeneralPage() {
               Company Settings
             </h1>
             <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
-              Your company profile and the departments you hire for.
+              Your company profile, the departments you hire for, and AI CV analysis.
             </p>
           </header>
 
@@ -57,8 +58,9 @@ export default function SettingsGeneralPage() {
                 company={company ?? NEW_COMPANY}
                 isNew={!company}
               />
-              <div className="xl:sticky xl:top-0">
+              <div className="space-y-6 xl:sticky xl:top-0">
                 <DepartmentsPanel company={company} />
+                <AiAnalysisCard />
               </div>
             </div>
           )}

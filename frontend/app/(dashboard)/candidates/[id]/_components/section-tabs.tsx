@@ -1,10 +1,12 @@
 "use client";
 
 import { HugeiconsIcon } from "@hugeicons/react";
-import { SECTIONS, type SectionId } from "./constants";
+import type { SECTIONS, SectionId } from "./constants";
 import type { CandidateCvAnalysisPayload } from "@/types";
 
 interface SectionTabsProps {
+  /** The tabs to show. The AI analysis tab is left out while that feature is off. */
+  sections: typeof SECTIONS;
   activeSection: SectionId;
   onSectionChange: (id: SectionId) => void;
   cvAnalysis?: CandidateCvAnalysisPayload | null;
@@ -13,6 +15,7 @@ interface SectionTabsProps {
 }
 
 export function SectionTabs({
+  sections,
   activeSection,
   onSectionChange,
   cvAnalysis,
@@ -21,10 +24,10 @@ export function SectionTabs({
 }: SectionTabsProps) {
   return (
     <div className="mb-4 flex w-fit max-w-full gap-1 overflow-x-auto rounded-lg border border-slate-300 bg-transparent p-1 shadow-none dark:border-neutral-700 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-      {SECTIONS.map((s) => {
+      {sections.map((s) => {
         const isActive = activeSection === s.id;
         const hasPendingCv =
-          s.id === "job-fit" && cvAnalysis?.status === "pending";
+          s.id === "ai-analysis" && cvAnalysis?.status === "pending";
         const showOfferDot = s.id === "offer" && hasOffer;
 
         return (

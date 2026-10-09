@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { serverFetch } from "@/lib/auth-action";
+import type { AiSettings } from "@/types";
 
 export function useSettingsAllowedOrigins() {
   return useQuery({
@@ -27,6 +28,31 @@ export function useUpdateSettingsAllowedOrigins() {
       queryClient.invalidateQueries({
         queryKey: ["settings", "allowed-origins"],
       });
+    },
+  });
+}
+
+/** Whether AI CV analysis is on. Readable by everyone, since it decides what the candidate page shows. */
+export function useAiSettings() {
+  return useQuery({
+    queryKey: ["settings", "ai"],
+    queryFn: () => serverFetch<{ data: AiSettings }>("/settings/ai"),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useUpdateAiSettings() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (cvAnalysisEnabled: boolean) =>
+      serverFetch<{ data: AiSettings }>("/settings/ai", {
+        method: "PUT",
+        body: JSON.stringify({ cvAnalysisEnabled }),
+      }),
+    onSuccess: (res) => {
+      queryClient.setQueryData(["settings", "ai"], res);
+      // Candidates carry their analysis only while it is on, so what is cached is now out of date.
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });
 }

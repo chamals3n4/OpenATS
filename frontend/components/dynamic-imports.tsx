@@ -50,11 +50,11 @@ export const CandidateSidePanel = dynamic(
   { ssr: false },
 );
 
-export const CandidateJobFitTab = dynamic(
+export const CandidateAiAnalysis = dynamic(
   () =>
-    import("@/app/(dashboard)/candidates/[id]/_components/candidate-job-fit-tab").then(
+    import("@/app/(dashboard)/candidates/[id]/_components/candidate-ai-analysis").then(
       (mod) => ({
-        default: mod.CandidateJobFitTab,
+        default: mod.CandidateAiAnalysis,
       }),
     ),
   {
@@ -62,7 +62,7 @@ export const CandidateJobFitTab = dynamic(
     loading: () => (
       <div className="flex flex-col items-center justify-center gap-4 py-16 text-center px-4">
         <p className="text-[13px] text-slate-500 dark:text-neutral-500">
-          Loading job fit analysis…
+          Loading AI analysis…
         </p>
       </div>
     ),

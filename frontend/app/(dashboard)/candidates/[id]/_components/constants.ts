@@ -1,7 +1,7 @@
 "use client";
 
 import {
-  Target01Icon,
+  AiScanTextIcon,
   QuestionIcon,
   Clock01Icon,
   Award01Icon,
@@ -81,7 +81,7 @@ export const REJECTION_REASONS = [
 ] as const;
 
 export type SectionId =
-  | "job-fit"
+  | "ai-analysis"
   | "answers"
   | "history"
   | "offer"
@@ -91,7 +91,8 @@ export type SectionId =
   | "scores";
 
 export const SECTIONS = [
-  { id: "job-fit" as SectionId, label: "Job Fit", icon: Target01Icon },
+  // Listed only while AI CV analysis is turned on in Settings; see the candidate page.
+  { id: "ai-analysis" as SectionId, label: "AI analysis", icon: AiScanTextIcon },
   { id: "answers" as SectionId, label: "Answers", icon: QuestionIcon },
   { id: "history" as SectionId, label: "Stage History", icon: Clock01Icon },
   { id: "offer" as SectionId, label: "Offer", icon: Award01Icon },

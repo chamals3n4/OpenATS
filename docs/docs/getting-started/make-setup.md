@@ -52,7 +52,7 @@ The setup script cannot create personal provider secrets. Add these values manua
 
 - Cloudflare R2 or another S3-compatible bucket for resumes and attachments
 - Resend for transactional email
-- Gemini for resume parsing, scoring, and summaries
+- Gemini for optional AI CV notes (the app runs without it, and the feature is off until turned on in Settings)
 - Google OAuth and Calendar configuration for interview scheduling
 
 The Asgardeo script prints the values it configured and leaves `NEXT_PUBLIC_ASGARDEO_SIGN_IN_URL` empty when it cannot infer it. Check the printed output and fill every remaining blank value in the matching `.env` file.

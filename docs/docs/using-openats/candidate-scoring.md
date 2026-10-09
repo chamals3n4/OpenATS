@@ -225,7 +225,7 @@ A test that is only **waiting** (the link is still valid, or the candidate has f
 
 This is for the first impression of the CV. Anyone on the team who can see the candidate can give one.
 
-1. Open the candidate and select **View CV**. The **Job Fit** tab can also show an automatic CV analysis.
+1. Open the candidate and select **View CV**. If your team has turned on AI CV analysis, the **AI analysis** tab also has notes on the CV. Those notes are not part of the score.
 2. Open the **Scores** tab.
 3. Under **Your rating**, click the stars. The stars change on screen right away, but **nothing is saved yet**.
 4. Select **Update score** (top right of the Score card). This button is greyed out until you change something.

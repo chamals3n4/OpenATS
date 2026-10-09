@@ -10,10 +10,37 @@ afterEach(() => {
 });
 
 describe("the Gemini key is optional", () => {
+  // A complete environment written out here, so the test does not depend on whatever the machine
+  // running it happens to have set (CI has only the few values in .env.test).
+  const requiredEnv = {
+    DATABASE_URL: "postgresql://u:p@localhost:5432/db",
+    ASGARDEO_JWKS_URL: "https://example.test/jwks",
+    ASGARDEO_ISSUER: "https://example.test/issuer",
+    ENCRYPTION_KEY: "key",
+    FRONTEND_URL: "http://localhost:3000",
+    R2_ENDPOINT: "https://r2.example.test",
+    R2_ACCESS_KEY_ID: "id",
+    R2_SECRET_ACCESS_KEY: "secret",
+    R2_BUCKET_NAME: "bucket",
+    R2_PUBLIC_URL: "https://files.example.test",
+    RESEND_API_KEY: "resend",
+    RESEND_FROM_EMAIL: "no-reply@example.test",
+  };
+
   it("lets the environment pass without it", () => {
-    const { GEMINI_API_KEY: _omit, ...withoutKey } = process.env;
-    const result = envSchema.safeParse(withoutKey);
+    const result = envSchema.safeParse(requiredEnv);
     expect(result.success).toBe(true);
+    expect(result.data?.GEMINI_API_KEY).toBeUndefined();
+  });
+
+  it("still accepts a key when one is given", () => {
+    const result = envSchema.safeParse({ ...requiredEnv, GEMINI_API_KEY: "abc" });
+    expect(result.data?.GEMINI_API_KEY).toBe("abc");
+  });
+
+  it("is the only thing that became optional: other required values are still required", () => {
+    const { DATABASE_URL: _omit, ...withoutDatabase } = requiredEnv;
+    expect(envSchema.safeParse(withoutDatabase).success).toBe(false);
   });
 
   it("loads the analysis code without a key, so the server can start", async () => {

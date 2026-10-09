@@ -1,6 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { toast } from "sonner";
+import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import { StarRating, RATING_LABELS } from "@/components/star-rating";
 import { useCurrentUser } from "@/hooks/queries/use-user";
 import { useRateCandidate } from "@/hooks/queries/use-candidates";
@@ -31,11 +34,21 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
   const spread = candidate.interviewSpread;
   const myRating = ratings.find((r) => r.userId === me?.data?.id)?.rating ?? null;
 
-  const handleRate = (value: number | null) =>
+  // Clicking a star only changes what is shown. Nothing is saved until Update score is pressed.
+  const [picked, setPicked] = useState<number | null | undefined>(undefined);
+  const shownRating = picked !== undefined ? picked : myRating;
+  const changed = picked !== undefined && picked !== myRating;
+
+  const handleUpdate = () => {
+    if (!changed) return;
     rate.mutate(
-      { id: candidate.id, rating: value },
-      { onError: () => toast.error("Failed to save your rating") },
+      { id: candidate.id, rating: picked },
+      {
+        onSuccess: () => setPicked(undefined),
+        onError: () => toast.error("Failed to update the score"),
+      },
     );
+  };
 
   return (
     <section aria-label="Score" className="border-b border-slate-300 p-5 sm:p-6 dark:border-neutral-700">
@@ -46,7 +59,16 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
             {candidate.scoredParts ?? 0} of {weightedParts} {weightedParts === 1 ? "part" : "parts"} scored so far
           </p>
         </div>
-        <div className="text-right">
+        <div className="flex items-center gap-4">
+          <Button
+            type="button"
+            onClick={handleUpdate}
+            disabled={!changed || rate.isPending}
+            className="h-9 gap-2 border-none bg-theme px-4 text-sm font-semibold text-white hover:bg-theme-hover"
+          >
+            {rate.isPending && <Spinner className="size-3.5" />}
+            {rate.isPending ? "Updating" : "Update score"}
+          </Button>
           <p
             aria-label="Total score"
             className="text-4xl font-semibold leading-none tabular-nums text-slate-900 dark:text-neutral-100"
@@ -131,9 +153,9 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
               `${ratings.length} ${ratings.length === 1 ? "person has" : "people have"} rated.`}
           </p>
         </div>
-        <StarRating label="Your rating" value={myRating} onChange={handleRate} disabled={rate.isPending} />
+        <StarRating label="Your rating" value={shownRating} onChange={setPicked} />
         <span className="text-sm text-slate-500 dark:text-neutral-400">
-          {myRating ? RATING_LABELS[myRating - 1] : "Not rated"}
+          {shownRating ? RATING_LABELS[shownRating - 1] : "Not rated"}
         </span>
       </div>
     </section>

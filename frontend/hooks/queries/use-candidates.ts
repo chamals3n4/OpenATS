@@ -319,10 +319,12 @@ export function useRateCandidate() {
         method: "PUT",
         body: JSON.stringify({ rating }),
       }),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({ queryKey: ["candidates", variables.id] });
-      queryClient.invalidateQueries({ queryKey: ["candidates"] });
-    },
+    // Returned, so the mutation settles only once the fresh scores have loaded.
+    onSuccess: (_, variables) =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["candidates", variables.id], exact: true }),
+        queryClient.invalidateQueries({ queryKey: ["candidates"] }),
+      ]),
   });
 }
 

@@ -11,6 +11,7 @@ import { jobService } from "../job/job.service";
 import { r2Service } from "../../shared/services/r2.service";
 import { socketService } from "../../shared/services/socket.service";
 import { parseMinScore } from "./candidate-query";
+import { aiSettingsService } from "../settings/ai-settings.service";
 import { scoringService } from "../scoring/scoring.service";
 import { withholdInterviewScores } from "../scoring/scoring";
 import { canAccessCandidate } from "../../shared/auth/job-access";
@@ -285,8 +286,14 @@ export const getCandidateById = async (req: Request, res: Response) => {
 
     const [blinded] = await blindForInterviewer(req.user, [result]);
     const hidden = blinded !== result;
+    // While AI CV analysis is off, a saved analysis is kept but not sent, so it is hidden in fact
+    // and not only by the page choosing not to draw it.
+    const aiActive = await aiSettingsService.isCvAnalysisActive();
     res.status(200).json({
-      data: hidden ? { ...blinded, interviewSpread: null } : result,
+      data: {
+        ...(hidden ? { ...blinded, interviewSpread: null } : result),
+        ...(aiActive ? {} : { cvAnalysis: null }),
+      },
     });
   } catch (error) {
     logger.error(

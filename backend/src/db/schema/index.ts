@@ -15,4 +15,5 @@ export * from "./interviews";
 export * from "./interview-feedback";
 export * from "./scoring";
 export * from "./page-settings";
+export * from "./app-settings";
 export * from "./integrations";

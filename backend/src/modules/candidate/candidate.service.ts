@@ -22,6 +22,7 @@ import { assessmentExecutionService } from "../assessment-execution/assessment-e
 import { candidateActivityService } from "./candidate-activity.service";
 import { socketService } from "../../shared/services/socket.service";
 import { scoringService } from "../scoring/scoring.service";
+import { toAiSummary } from "./cv-analysis.service";
 import { rejectionService } from "../rejection/rejection.service";
 import { mailService } from "../../shared/services/mail.service";
 import { cleanObject as clean } from "../../utils/object.utils";
@@ -604,15 +605,14 @@ export const candidateService = {
       .from(candidateCvAnalysis)
       .where(eq(candidateCvAnalysis.candidateId, id));
 
+    // Notes only: the summary, strengths and gaps, and which required skills the CV shows. Rows
+    // analysed before the score and verdict were removed still hold them; they are not returned.
     const cvAnalysis = cvRow
       ? {
           status: cvRow.status,
-          matchScore:
-            cvRow.matchScore != null ? Number(cvRow.matchScore) : null,
           matchedSkills: cvRow.matchedSkills,
           missingSkills: cvRow.missingSkills,
-          scoreBreakdown: cvRow.scoreBreakdown,
-          aiSummary: cvRow.aiSummary ?? null,
+          aiSummary: toAiSummary(cvRow.aiSummary),
           errorMessage: cvRow.errorMessage,
           updatedAt: cvRow.updatedAt,
         }

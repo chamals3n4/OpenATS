@@ -237,12 +237,12 @@ export const candidateCvAnalysis = pgTable(
       certs: number;
     }>(),
 
+    // Notes only. Rows saved before the score and verdict were dropped may still hold
+    // `hiringSignal` and `verdict`; they are never read or returned.
     aiSummary: jsonb("ai_summary").$type<{
       quickSummary: string;
       strengths: string[];
       gaps: string[];
-      hiringSignal: string;
-      verdict: "strong_fit" | "moderate_fit" | "weak_fit" | "not_recommended";
     }>(),
 
     extractedText: text("extracted_text"),

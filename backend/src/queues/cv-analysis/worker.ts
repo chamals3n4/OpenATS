@@ -5,6 +5,7 @@ import {
 } from "./queue";
 import { createRedisConnection } from "../../config/redis";
 import { cvAnalysisService } from "../../modules/candidate/cv-analysis.service";
+import { aiSettingsService } from "../../modules/settings/ai-settings.service";
 import { publishCvAnalysisEvent } from "./events";
 import logger from "../../utils/logger";
 
@@ -16,6 +17,13 @@ export function startCvAnalysisWorker(): Worker<CvAnalysisJobData> {
       logger.info(
         `[worker] processing candidate=${candidateId} attempt=${job.attemptsMade + 1}`,
       );
+      // The switch may have been turned off after this CV was queued. Check again here, right
+      // before anything is sent, and drop the waiting entry instead of leaving it pending forever.
+      if (!(await aiSettingsService.isCvAnalysisActive())) {
+        logger.info(`[worker] skipped candidate=${candidateId}: AI CV analysis is off`);
+        await cvAnalysisService.clear(candidateId);
+        return;
+      }
       await cvAnalysisService.runAnalysis(candidateId, jobId, resumeUrl);
     },
     {

@@ -15,10 +15,15 @@ const r2Client = new S3Client({
   forcePathStyle: true,
 });
 
-if (!process.env.GEMINI_API_KEY) {
-  throw new Error("GEMINI_API_KEY environment variable is not set");
+// Created on first use, not when this file loads. The API key is optional: the server has to
+// start, and everything else has to work, on an installation that never turns AI analysis on.
+let client: GoogleGenAI | null = null;
+function gemini(): GoogleGenAI {
+  const apiKey = process.env.GEMINI_API_KEY?.trim();
+  if (!apiKey) throw new Error("GEMINI_API_KEY is not set, so the CV cannot be analysed");
+  client ??= new GoogleGenAI({ apiKey });
+  return client;
 }
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 const GEMINI_TIMEOUT_MS = 30_000;
 
@@ -59,12 +64,15 @@ interface ParsedCv {
   jobLevel: JobLevel;
 }
 
+/**
+ * Notes for a person to read, and nothing more. There is deliberately no score, rating, verdict or
+ * hiring recommendation here: a number or a "not recommended" from a model reads as a decision,
+ * and sits confusingly next to the candidate's real score.
+ */
 export interface AiSummary {
   quickSummary: string;
   strengths: string[];
   gaps: string[];
-  hiringSignal: string;
-  verdict: "strong_fit" | "moderate_fit" | "weak_fit" | "not_recommended";
 }
 
 interface ParsedJd {
@@ -80,17 +88,9 @@ interface JobRequirements {
   requiredCertifications: string[];
 }
 
-interface ScoreResult {
-  matchScore: number;
+interface SkillMatch {
   matchedSkills: string[]; // green in ui
   missingSkills: string[]; // red in UI
-  scoreBreakdown: {
-    skills: number;
-    experience: number;
-    level: number;
-    certs: number;
-  };
-  aiSummary: AiSummary | null;
 }
 
 function extractKeyFromUrl(resumeUrl: string): string {
@@ -223,7 +223,7 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
     "  - jobLevel: null",
   ].join("\n");
 
-  const response = await ai.models.generateContent({
+  const response = await gemini().models.generateContent({
     model: "gemini-3-flash-preview",
     contents: [
       {
@@ -250,32 +250,6 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
   }
 
   return JSON.parse(raw) as ParsedCv;
-}
-
-function normalizeToken(s: string): string {
-  return s
-    .toLowerCase()
-    .replace(/[\u2019']/g, "")
-    .replace(/[^a-z0-9+.#\s-]/g, " ")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-function normalizeCertName(s: string): string {
-  const n = normalizeToken(s);
-  return n
-    .replace(/\baws\b/g, "amazon web services")
-    .replace(/\bgcp\b/g, "google cloud")
-    .replace(/\bazure\b/g, "microsoft azure")
-    .trim();
-}
-
-function hasCertMatch(candidateCerts: string[], requiredCert: string): boolean {
-  const req = normalizeCertName(requiredCert);
-  if (!req) return false;
-  const cand = candidateCerts.map(normalizeCertName);
-  if (cand.includes(req)) return true;
-  return cand.some((c) => c.includes(req) || req.includes(c));
 }
 
 async function parseJdWithGemini(description: string): Promise<ParsedJd> {
@@ -318,7 +292,7 @@ async function parseJdWithGemini(description: string): Promise<ParsedJd> {
     description,
   ].join("\n");
 
-  const response = await ai.models.generateContent({
+  const response = await gemini().models.generateContent({
     model: "gemini-3-flash-preview",
     contents: [{ text: prompt }],
     config: { httpOptions: { timeout: GEMINI_TIMEOUT_MS } },
@@ -408,30 +382,22 @@ function skillMatches(jobSkill: string, candidateSet: Set<string>): boolean {
 async function generateAiSummary(
   parsedCv: ParsedCv,
   jobReqs: JobRequirements,
-  score: Omit<ScoreResult, "aiSummary">,
+  match: SkillMatch,
 ): Promise<AiSummary | null> {
-  const verdictFromScore = (s: number) => {
-    if (s >= 75) return "strong_fit";
-    if (s >= 50) return "moderate_fit";
-    if (s >= 25) return "weak_fit";
-    return "not_recommended";
-  };
-
   const prompt = [
-    "You are a senior technical recruiter writing a concise candidate assessment for a hiring manager.",
-    "Analyze the candidate's fit based on the CV analysis data below.",
+    "You are helping a recruiter read a CV against a job. Write short, factual notes.",
     "Return ONLY a valid JSON object — no explanation, no markdown, no code fences.",
     "",
     "JSON schema to return:",
     "{",
-    '  "quickSummary": "1-2 sentence overall assessment of the candidate",',
+    '  "quickSummary": "1-2 sentences describing the candidate\'s background",',
     '  "strengths": ["specific strength 1", "specific strength 2", "specific strength 3"],',
-    '  "gaps": ["gap or consideration 1 with context", "gap 2"],',
-    '  "hiringSignal": "1-2 sentence hiring recommendation",',
-    `  "verdict": "${verdictFromScore(score.matchScore)}"`,
+    '  "gaps": ["gap or thing to check 1, with context", "gap 2"]',
     "}",
     "",
-    `verdict must be exactly one of: "strong_fit" (score >= 75), "moderate_fit" (score 50-74), "weak_fit" (score 25-49), "not_recommended" (score < 25)`,
+    "Do NOT give a score, a rating, a ranking, a verdict, or any recommendation about whether to",
+    "interview, hire or reject this person. Describe what the CV shows and what it leaves open.",
+    "A person makes the decision; these notes only help them read faster.",
     "",
     "== CV DATA ==",
     `Listed Skills: ${parsedCv.listedSkills.join(", ") || "none"}`,
@@ -447,26 +413,21 @@ async function generateAiSummary(
     `Required Level: ${jobReqs.jobLevel ?? "not specified"}`,
     `Required Certifications: ${jobReqs.requiredCertifications.join(", ") || "none"}`,
     "",
-    "== MATCH RESULTS ==",
-    `Overall Score: ${score.matchScore}/100`,
-    `Matched Skills: ${score.matchedSkills.join(", ") || "none"}`,
-    `Missing Skills (not found explicitly or implicitly): ${score.missingSkills.join(", ") || "none"}`,
-    `Skills Score: ${score.scoreBreakdown.skills}/55`,
-    `Experience Score: ${score.scoreBreakdown.experience}/25`,
-    `Level Score: ${score.scoreBreakdown.level}/15`,
-    `Certifications Score: ${score.scoreBreakdown.certs}/5`,
+    "== SKILLS COMPARISON ==",
+    `Required skills found in the CV: ${match.matchedSkills.join(", ") || "none"}`,
+    `Required skills not found (explicitly or implicitly): ${match.missingSkills.join(", ") || "none"}`,
     "",
     "Guidelines:",
     "- Be nuanced about gaps. If a skill appears missing but implied skills or related tools cover it, note this clearly.",
     "- Strengths must be specific and evidence-based (reference actual skills/experience from the data).",
-    "- Keep each bullet/strength/gap under 20 words.",
-    "- quickSummary should be direct and informative (no fluff).",
-    "- hiringSignal must give a concrete recommendation.",
-    "- Include 2-4 strengths and 0-3 gaps (omit gaps array items if no real gaps exist).",
+    "- Phrase a gap as something to check with the candidate, not as a reason to reject them.",
+    "- Keep each strength/gap under 20 words.",
+    "- quickSummary should be direct and informative (no fluff, no judgement of fit).",
+    "- Include 2-4 strengths and 0-3 gaps (leave gaps empty if there are no real gaps).",
   ].join("\n");
 
   try {
-    const response = await ai.models.generateContent({
+    const response = await gemini().models.generateContent({
       model: "gemini-3-flash-preview",
       contents: [{ text: prompt }],
       config: { httpOptions: { timeout: GEMINI_TIMEOUT_MS } },
@@ -480,129 +441,43 @@ async function generateAiSummary(
       raw = raw.trim();
     }
 
-    return JSON.parse(raw) as AiSummary;
+    return toAiSummary(JSON.parse(raw));
   } catch (err) {
     logger.warn(`[CV Analysis] AI summary generation failed: ${String(err)}`);
     return null;
   }
 }
 
-function scoreCV(
-  parsedCv: ParsedCv,
-  jobReqs: JobRequirements,
-): Omit<ScoreResult, "aiSummary"> {
-  /*
-    Scoring is based on four dimensions, each with a fixed weight:
-   
-      Skills      55 pts  — compares job's required skills (from jobSkills table)
-                            against ALL technologies found in the CV, including
-                            both the skills section and project descriptions.
-   
-      Experience  25 pts  — compares the minimum years required in the JD
-                            against the candidate's total work experience.
-                            Capped at 25 — having more years gives no extra points.
-   
-      Job level   15 pts  — compares the required seniority level in the JD
-                            against the candidate's inferred level from their CV.
-                            Exact match = 15, one level off = 7, two+ off = 0.
-                            Intern/entry roles penalise overqualified candidates too.
-   
-      Certs        5 pts  — compares certifications required in the JD
-                            against certifications the candidate holds.
-                            Low weight since certs are rarely hard requirements.
-   
-    If a dimension has no requirement defined (e.g. no skills added to the job,
-    or JD doesn't mention experience), that dimension gives full marks automatically.
-   
-    Final score is the sum of all four, rounded to the nearest integer (0–100).
-   */
-  const allCandidateTech = [
-    ...parsedCv.listedSkills,
-    ...parsedCv.projectTechnologies,
-    ...(parsedCv.impliedSkills ?? []),
-  ];
+const strings = (value: unknown): string[] =>
+  Array.isArray(value) ? value.filter((v): v is string => typeof v === "string") : [];
 
-  const cvSkillsSet = new Set(
-    allCandidateTech.map((s) => s.toLowerCase().trim()),
-  );
-
-  const matchedSkills = jobReqs.skills.filter((s) =>
-    skillMatches(s, cvSkillsSet),
-  );
-  const missingSkills = jobReqs.skills.filter(
-    (s) => !skillMatches(s, cvSkillsSet),
-  );
-
-  const skillsScore =
-    jobReqs.skills.length > 0
-      ? (matchedSkills.length / jobReqs.skills.length) * 55
-      : 55;
-
-  const expScore =
-    jobReqs.minExperienceYears > 0
-      ? Math.min(
-          parsedCv.totalExperienceYears / jobReqs.minExperienceYears,
-          1,
-        ) * 25
-      : 25;
-
-  const jobLevelTiers: Record<string, number> = {
-    intern: 1,
-    entry: 2,
-    junior: 3,
-    mid: 4,
-    senior: 5,
-    lead: 6,
-  };
-
-  const candidateTier = jobLevelTiers[parsedCv.jobLevel ?? ""] ?? 0;
-  const requiredTier = jobLevelTiers[jobReqs.jobLevel ?? ""] ?? 0;
-
-  let levelScore: number;
-
-  if (requiredTier === 0) {
-    levelScore = 15;
-  } else if (requiredTier <= 2) {
-    if (candidateTier === requiredTier) {
-      levelScore = 15;
-    } else if (Math.abs(candidateTier - requiredTier) === 1) {
-      levelScore = 7;
-    } else {
-      levelScore = 0;
-    }
-  } else {
-    if (candidateTier >= requiredTier) {
-      levelScore = 15;
-    } else if (candidateTier === requiredTier - 1) {
-      levelScore = 7;
-    } else {
-      levelScore = 0;
-    }
-  }
-
-  const cvCertsSet = new Set(
-    parsedCv.certifications.map((c) => normalizeCertName(c)),
-  );
-
-  const certScore =
-    jobReqs.requiredCertifications.length > 0
-      ? (jobReqs.requiredCertifications.filter((c) => {
-          const n = normalizeCertName(c);
-          return cvCertsSet.has(n) || hasCertMatch(parsedCv.certifications, c);
-        }).length /
-          jobReqs.requiredCertifications.length) *
-        5
-      : 5;
+/**
+ * Keeps only the three note fields, whatever else is there. A model can add a verdict it was told
+ * not to, and analyses saved before this change carry a score-based verdict and a hiring
+ * recommendation, so both the fresh answer and the stored one go through here.
+ */
+export function toAiSummary(raw: unknown): AiSummary | null {
+  if (!raw || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
   return {
-    matchScore: Math.round(skillsScore + expScore + levelScore + certScore),
-    matchedSkills,
-    missingSkills,
-    scoreBreakdown: {
-      skills: Math.round(skillsScore),
-      experience: Math.round(expScore),
-      level: Math.round(levelScore),
-      certs: Math.round(certScore),
-    },
+    quickSummary: typeof r.quickSummary === "string" ? r.quickSummary : "",
+    strengths: strings(r.strengths),
+    gaps: strings(r.gaps),
+  };
+}
+
+/** Which of the job's required skills the CV shows, counting equivalent names as the same skill. */
+function matchSkills(parsedCv: ParsedCv, requiredSkills: string[]): SkillMatch {
+  const cvSkills = new Set(
+    [
+      ...parsedCv.listedSkills,
+      ...parsedCv.projectTechnologies,
+      ...(parsedCv.impliedSkills ?? []),
+    ].map((s) => s.toLowerCase().trim()),
+  );
+  return {
+    matchedSkills: requiredSkills.filter((s) => skillMatches(s, cvSkills)),
+    missingSkills: requiredSkills.filter((s) => !skillMatches(s, cvSkills)),
   };
 }
 
@@ -631,6 +506,14 @@ export const cvAnalysisService = {
     logger.info(
       `[CV Analysis] Marked pending for candidate ${candidateId}, job ${jobId}`,
     );
+  },
+
+  /**
+   * Forgets a candidate's analysis. Used when their CV is replaced while analysis is off: the saved
+   * notes describe a CV that is gone, and would be wrong if analysis were turned on later.
+   */
+  async clear(candidateId: number): Promise<void> {
+    await db.delete(candidateCvAnalysis).where(eq(candidateCvAnalysis.candidateId, candidateId));
   },
 
   // Marks the row failed (called by the worker after retries are exhausted)
@@ -703,31 +586,25 @@ export const cvAnalysisService = {
       requiredCertifications: parsedJd.requiredCertifications,
     };
 
-    const scoreResult = scoreCV(parsedCv, jobReqs);
-    const { matchScore, matchedSkills, missingSkills, scoreBreakdown } =
-      scoreResult;
-
-    logger.info(
-      `[CV Analysis] Score: ${matchScore} — implied skills: ${(parsedCv.impliedSkills ?? []).join(", ") || "none"}`,
-    );
-
-    const aiSummary = await generateAiSummary(parsedCv, jobReqs, scoreResult);
+    const match = matchSkills(parsedCv, jobReqs.skills);
+    const aiSummary = await generateAiSummary(parsedCv, jobReqs, match);
 
     await db
       .update(candidateCvAnalysis)
       .set({
         status: "done",
-        matchScore,
-        matchedSkills,
-        missingSkills,
-        scoreBreakdown,
+        // No score and no breakdown are produced any more; see AiSummary.
+        matchScore: null,
+        scoreBreakdown: null,
+        matchedSkills: match.matchedSkills,
+        missingSkills: match.missingSkills,
         aiSummary,
         updatedAt: new Date(),
       })
       .where(eq(candidateCvAnalysis.candidateId, candidateId));
 
     logger.info(
-      `[CV Analysis] Done for candidate ${candidateId} — score: ${matchScore}`,
+      `[CV Analysis] Done for candidate ${candidateId} — ${match.matchedSkills.length} of ${jobReqs.skills.length} required skills found`,
     );
   },
 };

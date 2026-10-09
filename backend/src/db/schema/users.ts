@@ -4,18 +4,23 @@ import {
   serial,
   timestamp,
   varchar,
+  text,
 } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
   // `sub` claim from the Asgardeo JWT
-  asgardeoUserId: varchar("asgardeo_user_id", { length: 255 })
-    .notNull()
-    .unique(),
+  asgardeoUserId: varchar("asgardeo_user_id", { length: 255 }).unique(),
+  name: varchar("name", { length: 255 }).notNull(),
   firstName: varchar("first_name", { length: 100 }).notNull(),
   lastName: varchar("last_name", { length: 100 }).notNull(),
   email: varchar("email", { length: 255 }).notNull().unique(),
+  emailVerified: boolean("email_verified").notNull().default(false),
+  role: varchar("role", { length: 50 }).notNull().default('interviewer'),
   avatarUrl: varchar("avatar_url", { length: 1000 }),
+  banned: boolean("banned").default(false),
+  banReason: text("ban_reason"),
+  banExpires: timestamp("ban_expires", { withTimezone: true }),
   // set FALSE to deactivate without destroying historical records
   isActive: boolean("is_active").notNull().default(true),
   createdAt: timestamp("created_at").notNull().defaultNow(),

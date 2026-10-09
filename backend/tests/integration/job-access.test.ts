@@ -37,6 +37,7 @@ async function makeUser(
     .insert(users)
     .values({
       asgardeoUserId: `${SUFFIX}-${tag}`,
+      name: `${tag} Tester`,
       firstName: tag,
       lastName: "Tester",
       email: `${tag}.${SUFFIX}@example.test`,

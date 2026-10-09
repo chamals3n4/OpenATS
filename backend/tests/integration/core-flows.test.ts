@@ -77,6 +77,7 @@ beforeAll(async () => {
     .insert(users)
     .values({
       asgardeoUserId: `${SUFFIX}-manager`,
+      name: "Flow Manager",
       firstName: "Flow",
       lastName: "Manager",
       email: `manager.${SUFFIX}@example.test`,

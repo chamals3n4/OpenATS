@@ -177,6 +177,7 @@ describe("verifyAccessToken - user provisioning", () => {
     createdEmails.push(email("inactive"));
     await db.insert(users).values({
       asgardeoUserId: `${SUFFIX}-inactive`,
+      name: "In Active",
       firstName: "In",
       lastName: "Active",
       email: email("inactive"),

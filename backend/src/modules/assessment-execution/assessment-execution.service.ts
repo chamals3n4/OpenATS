@@ -9,7 +9,6 @@ import {
   assessmentQuestions,
   assessmentQuestionOptions,
   candidates,
-  jobAssessmentAttachments,
 } from "../../db/schema";
 
 import { DEFAULT_PASS_MARK, passMarkFor, scoringService } from "../scoring/scoring.service";
@@ -454,12 +453,13 @@ export const assessmentExecutionService = {
   },
 
   /** Whose attempt this is, so a request about it can be checked against that candidate's job. */
-  async getAttemptCandidateId(attemptId: number): Promise<number | null> {
+  async getAttemptOwner(attemptId: number): Promise<{ candidateId: number; jobId: number } | null> {
     const [row] = await db
-      .select({ candidateId: candidateAssessmentAttempts.candidateId })
+      .select({ candidateId: candidateAssessmentAttempts.candidateId, jobId: candidates.jobId })
       .from(candidateAssessmentAttempts)
+      .innerJoin(candidates, eq(candidateAssessmentAttempts.candidateId, candidates.id))
       .where(eq(candidateAssessmentAttempts.id, attemptId));
-    return row?.candidateId ?? null;
+    return row ?? null;
   },
 
   /** A reviewer's points for one written answer, from 0 up to the question's points. */

@@ -281,13 +281,13 @@ export const gradeWrittenAnswer = async (req: Request, res: Response) => {
       return;
     }
     // Grading changes a candidate's score, so it needs access to that candidate's job, not only the manager role.
-    const candidateId = await assessmentExecutionService.getAttemptCandidateId(attemptId);
-    if (candidateId === null) {
+    const owner = await assessmentExecutionService.getAttemptOwner(attemptId);
+    if (!owner) {
       res.status(404).json({ error: "Attempt not found" });
       return;
     }
-    if (!(await canAccessCandidate(req.user, candidateId))) {
-      logger.warn(`[access] user ${req.user.id} denied grading for candidate ${candidateId}`);
+    if (!(await canAccessCandidate(req.user, owner.candidateId))) {
+      logger.warn(`[access] user ${req.user.id} denied grading for candidate ${owner.candidateId}`);
       res.status(403).json({ error: "You do not have access to this resource" });
       return;
     }

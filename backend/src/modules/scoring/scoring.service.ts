@@ -107,12 +107,12 @@ export const scoringService = {
   /** Rebuilds a candidate's stored score parts from their answers, ratings, attempts and scorecards. */
   async recompute(candidateId: number, executor: Executor = db) {
     const [row] = await executor
-      .select({ candidate: candidates, job: jobs })
+      .select({ job: jobs })
       .from(candidates)
       .innerJoin(jobs, eq(candidates.jobId, jobs.id))
       .where(eq(candidates.id, candidateId));
     if (!row) return null;
-    const { candidate, job } = row;
+    const { job } = row;
 
     // Questions
     const questionRows = await executor

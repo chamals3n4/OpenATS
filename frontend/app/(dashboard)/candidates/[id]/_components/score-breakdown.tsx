@@ -153,7 +153,7 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
               `${ratings.length} ${ratings.length === 1 ? "person has" : "people have"} rated.`}
           </p>
         </div>
-        <StarRating label="Your rating" value={shownRating} onChange={setPicked} />
+        <StarRating label="Your rating" value={shownRating} onChange={setPicked} disabled={rate.isPending} />
         <span className="text-sm text-slate-500 dark:text-neutral-400">
           {shownRating ? RATING_LABELS[shownRating - 1] : "Not rated"}
         </span>

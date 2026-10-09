@@ -2,12 +2,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 
 const mutate = vi.fn();
+let isPending = false;
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 vi.mock("@/hooks/queries/use-user", () => ({
   useCurrentUser: () => ({ data: { data: { id: 7, role: "hiring_manager" } } }),
 }));
 vi.mock("@/hooks/queries/use-candidates", () => ({
-  useRateCandidate: () => ({ mutate, isPending: false }),
+  useRateCandidate: () => ({ mutate, isPending }),
 }));
 
 import { ScoreBreakdown } from "@/app/(dashboard)/candidates/[id]/_components/score-breakdown";
@@ -19,7 +20,10 @@ const stars = () => screen.getByRole("radiogroup", { name: "Your rating" });
 const star = (n: number) => within(stars()).getByRole("radio", { name: new RegExp(`^${n} of 5`) });
 const updateButton = () => screen.getByRole("button", { name: "Update score" });
 
-beforeEach(() => mutate.mockClear());
+beforeEach(() => {
+  mutate.mockClear();
+  isPending = false;
+});
 afterEach(cleanup);
 
 describe("your rating", () => {
@@ -60,5 +64,12 @@ describe("your rating", () => {
     expect(screen.getByText("Not rated")).toBeTruthy();
     fireEvent.click(updateButton());
     expect(mutate.mock.calls[0]![0]).toEqual({ id: 3, rating: null });
+  });
+
+  it("locks the stars while the update is being saved, so a click cannot be lost", () => {
+    isPending = true;
+    render(<ScoreBreakdown candidate={candidate([{ userId: 7, rating: 4 }])} />);
+    for (const radio of within(stars()).getAllByRole("radio")) expect(radio).toBeDisabled();
+    expect(star(4)).toHaveAttribute("aria-checked", "true");
   });
 });

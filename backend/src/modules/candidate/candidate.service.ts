@@ -140,6 +140,7 @@ const scoreColumns = {
   scoredParts: candidates.scoredParts,
   knockedOut: candidates.knockedOut,
   assessmentPassed: candidates.assessmentPassed,
+  assessmentExpired: candidates.assessmentExpired,
   /** How many parts the job weights above zero, so "2 of 4 scored" knows the 4. */
   weightedParts: sql<number>`(
     (${jobs.scoreWeightQuestions} > 0)::int + (${jobs.scoreWeightAssessment} > 0)::int
@@ -147,8 +148,11 @@ const scoreColumns = {
   )`.as("weighted_parts"),
 };
 
+// Flagged candidates last, then whoever is furthest along the pipeline, then the highest score. A
+// half-scored candidate at the first stage should not outrank one who has been through every stage.
 const SCORE_ORDER = [
   asc(candidates.knockedOut),
+  sql`${jobPipelineStages.position} desc nulls last`,
   sql`${candidates.totalScore} desc nulls last`,
   desc(candidates.appliedAt),
 ];
@@ -435,6 +439,7 @@ export const candidateService = {
         weightedParts: scoreColumns.weightedParts,
         knockedOut: candidates.knockedOut,
         assessmentPassed: candidates.assessmentPassed,
+        assessmentExpired: candidates.assessmentExpired,
         // When the candidate entered their current stage, for "time in stage".
         stageEnteredAt: sql<string | null>`(
           select max(${candidateStageHistory.movedAt})

@@ -115,7 +115,10 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
       questionType: type,
       isRequired: required,
       options: isChoice
-        ? toApiOptions(scored ? options : options.map((o) => ({ ...o, points: 0, isKnockout: false })))
+        ? toApiOptions(
+            scored ? options : options.map((o) => ({ ...o, points: 0, isKnockout: false })),
+            type === "checkbox",
+          )
         : [],
     });
   };
@@ -233,7 +236,9 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
                 </Label>
                 <p className="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">
                   {scored
-                    ? "Give each option points, or mark it as a knockout to flag candidates who pick it."
+                    ? type === "checkbox"
+                      ? "Give each option points. Use negative points for a wrong tick, so ticking everything is not full marks. Or mark it as a knockout to flag candidates who pick it."
+                      : "Give each option points, or mark it as a knockout to flag candidates who pick it."
                     : "Off: the answer is saved and shown on the candidate, but adds nothing to their score."}
                 </p>
               </div>
@@ -268,7 +273,7 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
                       <Input
                         type="number"
                         inputMode="numeric"
-                        min={0}
+                        min={type === "checkbox" ? -POINTS_MAX : 0}
                         max={POINTS_MAX}
                         aria-label={`Points for option ${i + 1}`}
                         title="Points"

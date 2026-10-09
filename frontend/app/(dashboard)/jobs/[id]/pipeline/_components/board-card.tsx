@@ -128,6 +128,7 @@ export const BoardCard = memo(function BoardCard({
         weightedParts={candidate.weightedParts}
         knockedOut={candidate.knockedOut}
         assessmentPassed={candidate.assessmentPassed}
+        assessmentExpired={candidate.assessmentExpired}
         hideWhenUnscored
         className="shrink-0"
       />

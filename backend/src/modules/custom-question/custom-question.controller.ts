@@ -10,7 +10,8 @@ const optionSchema = z.object({
   id: z.number().int().positive().optional(),
   label: z.string().min(1, "Option label is required").max(500),
   isCorrect: z.boolean().default(false),
-  points: z.number().int().min(0).max(100).default(0),
+  // Negative points only mean something on a "tick any" (checkbox) question.
+  points: z.number().int().min(-100).max(100).default(0),
   isKnockout: z.boolean().default(false),
   position: z.number().int().positive(),
 });

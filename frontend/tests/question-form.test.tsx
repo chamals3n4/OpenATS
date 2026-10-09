@@ -142,4 +142,14 @@ describe("QuestionForm", () => {
     setup();
     expect(screen.getByText(/switch the answer type to Single choice or Multiple choice/i)).toBeInTheDocument();
   });
+
+  it("allows negative points on a tick-any question, but not on a single choice", async () => {
+    const { user } = setup({ ...blank, type: "checkbox" });
+    await user.click(screen.getByRole("switch", { name: "Score this question" }));
+    expect(screen.getByLabelText("Points for option 1")).toHaveAttribute("min", "-100");
+    cleanup();
+    const second = setup({ ...blank, type: "radio" });
+    await second.user.click(screen.getByRole("switch", { name: "Score this question" }));
+    expect(screen.getByLabelText("Points for option 1")).toHaveAttribute("min", "0");
+  });
 });

@@ -433,8 +433,9 @@ export const interviewService = {
   },
 
   /**
-   * The scorecards on an interview. An interviewer sees nobody else's until they have submitted
-   * their own, so they are not swayed by it; managers and admins see all of them.
+   * The scorecards on an interview. An interviewer, or whoever is assigned to this interview,
+   * sees nobody else's until they have submitted their own, so they are not swayed by it.
+   * Managers and admins who are not interviewing see all of them.
    */
   async getFeedback(interviewId: number, viewer: { id: number; role: string }) {
     const rows = await db
@@ -458,7 +459,13 @@ export const interviewService = {
       .orderBy(desc(interviewFeedback.createdAt));
 
     const hasSubmitted = rows.some((r) => r.authorId === viewer.id);
-    const blind = viewer.role === "interviewer" && !hasSubmitted;
+    // Interviewers are always blind until they submit, and so is anyone assigned to this interview.
+    const [assignment] = await db
+      .select({ interviewerId: candidateInterviews.interviewerId })
+      .from(candidateInterviews)
+      .where(eq(candidateInterviews.id, interviewId));
+    const isAssigned = assignment?.interviewerId === viewer.id;
+    const blind = (viewer.role === "interviewer" || isAssigned) && !hasSubmitted;
     const visible = blind ? [] : rows;
 
     const criterionRows =

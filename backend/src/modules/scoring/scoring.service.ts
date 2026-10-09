@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, max, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, max, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   candidates,
@@ -15,6 +15,7 @@ import {
   jobs,
 } from "../../db/schema";
 import {
+  computeAssessmentResult,
   computeInterviewScore,
   computeQuestionsScore,
   interviewSpread,
@@ -88,6 +89,29 @@ export const scoringService = {
     return interviewSpread(await loadScorecards(db, candidateId));
   },
 
+  /**
+   * The candidates whose Interview part and total this user must not see yet: an interviewer's
+   * view of anyone they have not scored, and anyone else's view of a candidate they are the
+   * assigned interviewer for but have not scored. A manager who is not interviewing sees all.
+   */
+  async candidatesToWithhold(user: { id: number; role: string }, candidateIds: number[]): Promise<Set<number>> {
+    if (candidateIds.length === 0) return new Set();
+    const scored = await scoringService.candidatesScoredBy(user.id, candidateIds);
+    if (user.role === "interviewer") {
+      return new Set(candidateIds.filter((id) => !scored.has(id)));
+    }
+    const assigned = await db
+      .selectDistinct({ candidateId: candidateInterviews.candidateId })
+      .from(candidateInterviews)
+      .where(
+        and(
+          eq(candidateInterviews.interviewerId, user.id),
+          inArray(candidateInterviews.candidateId, candidateIds),
+        ),
+      );
+    return new Set(assigned.map((r) => r.candidateId).filter((id) => !scored.has(id)));
+  },
+
   /** Which of these candidates the user has already submitted a scorecard for. */
   async candidatesScoredBy(userId: number, candidateIds: number[]): Promise<Set<number>> {
     if (candidateIds.length === 0) return new Set();
@@ -147,20 +171,21 @@ export const scoringService = {
       selected,
     );
 
-    // Assessment: the latest finished attempt
-    const [attempt] = await executor
+    // Assessment: every test they were sent, by its latest attempt
+    const attemptRows = await executor
       .select()
       .from(candidateAssessmentAttempts)
-      .where(
-        and(
-          eq(candidateAssessmentAttempts.candidateId, candidateId),
-          eq(candidateAssessmentAttempts.status, "completed"),
-        ),
-      )
-      .orderBy(desc(candidateAssessmentAttempts.completedAt))
-      .limit(1);
-    const assessmentScore =
-      attempt?.scorePercentage != null ? Number(attempt.scorePercentage) : null;
+      .where(eq(candidateAssessmentAttempts.candidateId, candidateId));
+    const assessment = computeAssessmentResult(
+      attemptRows.map((a) => ({
+        assessmentId: a.assessmentId,
+        status: a.status,
+        expiresAt: a.expiresAt,
+        createdAt: a.createdAt,
+        scorePercentage: a.scorePercentage != null ? Number(a.scorePercentage) : null,
+        passed: a.passed,
+      })),
+    );
 
     // Rating
     const ratingRows = await executor
@@ -172,7 +197,7 @@ export const scoringService = {
 
     const scores = {
       questions: questions.score,
-      assessment: assessmentScore,
+      assessment: assessment.score,
       rating: computeRatingScore(ratingRows.map((r) => r.rating)),
       interview: computeInterviewScore(scorecards),
     };
@@ -188,7 +213,8 @@ export const scoringService = {
         totalScore: total,
         scoredParts,
         knockedOut: questions.knockedOut,
-        assessmentPassed: attempt?.passed ?? null,
+        assessmentPassed: assessment.passed,
+        assessmentExpired: assessment.expired,
       })
       .where(eq(candidates.id, candidateId))
       .returning();

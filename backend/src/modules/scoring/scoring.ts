@@ -77,15 +77,14 @@ export function computeQuestionsScore(
     const max = maxPoints(q);
     if (max <= 0) continue;
     possible += max;
-    // Only a checkbox can earn from several options; any other type counts its best pick.
-    const picks = chosen.map((o) => Math.max(o.points, 0));
+    // A checkbox adds up every pick, and a wrong pick can carry negative points, so ticking every
+    // box is not a free maximum. A question never scores below zero. Any other type counts only
+    // its best pick, and negative points mean nothing there.
     const got =
       q.questionType === "checkbox"
-        ? picks.reduce((sum, p) => sum + p, 0)
-        : picks.length > 0
-          ? Math.max(...picks)
-          : 0;
-    earned += Math.min(got, max);
+        ? chosen.reduce((sum, o) => sum + o.points, 0)
+        : Math.max(0, ...chosen.map((o) => o.points));
+    earned += Math.min(Math.max(got, 0), max);
   }
 
   return { score: possible > 0 ? round2((earned / possible) * 100) : null, knockedOut };
@@ -94,10 +93,13 @@ export function computeQuestionsScore(
 const average = (values: number[]) =>
   values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
 
-/** 1-5 stars from the team, as 20-100. */
+/** 1 star is 0 and 5 stars is 100, so one star means "no" rather than still adding points. */
+export const starsToScore = (stars: number) => round2(((stars - 1) / 4) * 100);
+
+/** The Rating part: the team's average stars, as 0-100. */
 export function computeRatingScore(ratings: number[]): number | null {
   const avg = average(ratings);
-  return avg === null ? null : round2(avg * 20);
+  return avg === null ? null : starsToScore(avg);
 }
 
 export interface Scorecard {
@@ -113,7 +115,7 @@ export function scorecardScores(scorecards: Scorecard[]): number[] {
   const perCard: number[] = [];
   for (const card of scorecards) {
     const avg = average(card.criterionRatings) ?? card.overall;
-    if (avg !== null) perCard.push(round2(avg * 20));
+    if (avg !== null) perCard.push(starsToScore(avg));
   }
   return perCard;
 }
@@ -149,5 +151,54 @@ export function withholdInterviewScores<
     ...(row.scoredParts !== undefined && {
       scoredParts: Math.max(0, row.scoredParts - (hadInterview ? 1 : 0)),
     }),
+  };
+}
+
+export interface AttemptSummary {
+  assessmentId: number;
+  status: string;
+  expiresAt: Date;
+  createdAt: Date;
+  scorePercentage: number | null;
+  passed: boolean | null;
+}
+
+/**
+ * The Assessment part across every test the candidate was sent. Each test counts once, by its
+ * latest attempt, and the part is the average of those results:
+ * - finished and graded: its score;
+ * - finished but waiting on a reviewer, or invited and still open: not counted yet;
+ * - the link expired unused: counted as 0 and flagged, so skipping a test cannot help.
+ * `passed` is false if any graded test failed, true if every graded one passed, else null.
+ */
+export function computeAssessmentResult(
+  attempts: AttemptSummary[],
+  now: Date = new Date(),
+): { score: number | null; passed: boolean | null; expired: boolean } {
+  const latest = new Map<number, AttemptSummary>();
+  for (const a of attempts) {
+    const seen = latest.get(a.assessmentId);
+    if (!seen || a.createdAt > seen.createdAt) latest.set(a.assessmentId, a);
+  }
+
+  const scores: number[] = [];
+  const results: boolean[] = [];
+  let expired = false;
+  for (const a of latest.values()) {
+    if (a.status === "completed") {
+      if (a.scorePercentage === null) continue;
+      scores.push(a.scorePercentage);
+      if (a.passed !== null) results.push(a.passed);
+    } else if (a.status === "expired" || (a.status === "pending" && a.expiresAt <= now)) {
+      scores.push(0);
+      expired = true;
+    }
+  }
+
+  const avg = average(scores);
+  return {
+    score: avg === null ? null : round2(avg),
+    passed: results.length === 0 ? null : results.every(Boolean),
+    expired,
   };
 }

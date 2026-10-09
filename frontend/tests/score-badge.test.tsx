@@ -39,6 +39,19 @@ describe("ScoreBadge", () => {
     expect(screen.getByText("Failed test")).toBeTruthy();
   });
 
+  it("flags a test whose link ran out unused", () => {
+    render(<ScoreBadge total="40" assessmentExpired />);
+    expect(screen.getByText("Test expired")).toBeTruthy();
+    cleanup();
+    render(<ScoreBadge size="full" total="40" assessmentExpired />);
+    expect(screen.getByText("Assessment expired")).toBeTruthy();
+  });
+
+  it("is never hidden for an expired test, even with no score", () => {
+    const { container } = render(<ScoreBadge total={null} assessmentExpired hideWhenUnscored />);
+    expect(container.textContent).toMatch(/Test expired/);
+  });
+
   it("spells the flags out in the full size, and shows none for a pass", () => {
     render(<ScoreBadge size="full" total="10" knockedOut assessmentPassed />);
     expect(screen.getByText("Does not meet requirements")).toBeTruthy();

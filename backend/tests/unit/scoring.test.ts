@@ -4,6 +4,7 @@ import {
   computeInterviewScore,
   computeQuestionsScore,
   computeRatingScore,
+  computeAssessmentResult,
   computeTotal,
   interviewSpread,
   scorecardScores,
@@ -90,8 +91,10 @@ describe("computeQuestionsScore", () => {
 });
 
 describe("computeRatingScore", () => {
-  it("maps the average of 1-5 stars to 0-100", () => {
-    expect(computeRatingScore([5, 3])).toBe(80);
+  it("maps the average of 1-5 stars to 0-100, with one star worth nothing", () => {
+    expect(computeRatingScore([5, 3])).toBe(75);
+    expect(computeRatingScore([1])).toBe(0);
+    expect(computeRatingScore([5])).toBe(100);
   });
   it("is null with no ratings", () => {
     expect(computeRatingScore([])).toBeNull();
@@ -102,10 +105,10 @@ describe("computeInterviewScore", () => {
   it("averages scorecards, each the mean of its criteria", () => {
     expect(
       computeInterviewScore([
-        { criterionRatings: [5, 3], overall: null }, // 4 -> 80
-        { criterionRatings: [2, 2], overall: null }, // 2 -> 40
+        { criterionRatings: [5, 3], overall: null }, // 4 -> 75
+        { criterionRatings: [2, 2], overall: null }, // 2 -> 25
       ]),
-    ).toBe(60);
+    ).toBe(50);
   });
 
   it("falls back to the overall star rating, and skips empty scorecards", () => {
@@ -122,11 +125,11 @@ describe("interviewSpread", () => {
   it("shows how far apart the interviewers were", () => {
     const cards = [
       { criterionRatings: [5, 5], overall: null }, // 100
-      { criterionRatings: [2, 2], overall: null }, // 40
-      { criterionRatings: [], overall: 3 }, // 60
+      { criterionRatings: [2, 2], overall: null }, // 25
+      { criterionRatings: [], overall: 3 }, // 50
     ];
-    expect(scorecardScores(cards)).toEqual([100, 40, 60]);
-    expect(interviewSpread(cards)).toEqual({ count: 3, min: 40, max: 100 });
+    expect(scorecardScores(cards)).toEqual([100, 25, 50]);
+    expect(interviewSpread(cards)).toEqual({ count: 3, min: 25, max: 100 });
   });
 
   it("is null before any scorecard", () => {
@@ -149,5 +152,86 @@ describe("withholdInterviewScores", () => {
 
   it("leaves the parts count alone when there was no interview score", () => {
     expect(withholdInterviewScores({ interviewScore: null, totalScore: "90", scoredParts: 1 }).scoredParts).toBe(1);
+  });
+});
+
+describe("a checkbox question with negative points", () => {
+  const tick = {
+    id: 5,
+    questionType: "checkbox",
+    options: [
+      { id: 50, points: 5, isKnockout: false },
+      { id: 51, points: 5, isKnockout: false },
+      { id: 52, points: -5, isKnockout: false }, // a wrong answer
+    ],
+  };
+
+  it("does not hand out full marks for ticking everything", () => {
+    expect(computeQuestionsScore([tick], new Map([[5, [50, 51, 52]]])).score).toBe(50);
+    expect(computeQuestionsScore([tick], new Map([[5, [50, 51]]])).score).toBe(100);
+  });
+
+  it("never scores a question below zero", () => {
+    expect(computeQuestionsScore([tick], new Map([[5, [52]]])).score).toBe(0);
+  });
+
+  it("ignores negative points on a single-answer question", () => {
+    const radio = {
+      id: 6,
+      questionType: "radio",
+      options: [
+        { id: 60, points: 10, isKnockout: false },
+        { id: 61, points: -10, isKnockout: false },
+      ],
+    };
+    expect(computeQuestionsScore([radio], new Map([[6, [61]]])).score).toBe(0);
+  });
+});
+
+describe("computeAssessmentResult", () => {
+  const now = new Date("2026-10-10T12:00:00Z");
+  const past = new Date("2026-10-01T00:00:00Z");
+  const future = new Date("2026-10-20T00:00:00Z");
+  let seq = 0;
+  const attempt = (over: Partial<Parameters<typeof computeAssessmentResult>[0][number]> = {}) => ({
+    assessmentId: 1,
+    status: "completed",
+    expiresAt: future,
+    createdAt: new Date(2026, 9, 2 + seq++),
+    scorePercentage: 50 as number | null,
+    passed: false as boolean | null,
+    ...over,
+  });
+
+  it("counts a finished test by its score and result", () => {
+    expect(computeAssessmentResult([attempt({ scorePercentage: 80, passed: true })], now)).toEqual({
+      score: 80,
+      passed: true,
+      expired: false,
+    });
+  });
+
+  it("leaves out a test that is still open or waiting on a reviewer", () => {
+    expect(computeAssessmentResult([attempt({ status: "pending", scorePercentage: null, passed: null })], now).score).toBeNull();
+    expect(computeAssessmentResult([attempt({ status: "started", scorePercentage: null, passed: null })], now).score).toBeNull();
+    expect(computeAssessmentResult([attempt({ scorePercentage: null, passed: null })], now).score).toBeNull();
+  });
+
+  it("counts a test whose link ran out unused as 0 and flags it", () => {
+    const unused = attempt({ status: "pending", expiresAt: past, scorePercentage: null, passed: null });
+    expect(computeAssessmentResult([unused], now)).toEqual({ score: 0, passed: null, expired: true });
+    expect(computeAssessmentResult([attempt({ status: "expired", scorePercentage: null, passed: null })], now).score).toBe(0);
+  });
+
+  it("uses only the latest attempt of each test", () => {
+    const old = attempt({ status: "expired", scorePercentage: null, passed: null });
+    const retry = attempt({ scorePercentage: 90, passed: true });
+    expect(computeAssessmentResult([old, retry], now)).toEqual({ score: 90, passed: true, expired: false });
+  });
+
+  it("averages several tests, and fails the candidate if any one failed", () => {
+    const a = attempt({ assessmentId: 1, scorePercentage: 90, passed: true });
+    const b = attempt({ assessmentId: 2, scorePercentage: 50, passed: false });
+    expect(computeAssessmentResult([a, b], now)).toEqual({ score: 70, passed: false, expired: false });
   });
 });

@@ -1,0 +1,1 @@
+ALTER TABLE "candidates" ADD COLUMN "assessment_expired" boolean DEFAULT false NOT NULL;

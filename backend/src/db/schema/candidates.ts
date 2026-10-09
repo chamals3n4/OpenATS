@@ -63,6 +63,8 @@ export const candidates = pgTable(
     knockedOut: boolean("knocked_out").notNull().default(false),
     // Result of the latest finished assessment against its pass mark; null if none finished.
     assessmentPassed: boolean("assessment_passed"),
+    // An assessment link ran out unused. It counts as 0 and is flagged, so skipping the test cannot help.
+    assessmentExpired: boolean("assessment_expired").notNull().default(false),
 
     appliedAt: timestamp("applied_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),

@@ -1,4 +1,4 @@
-import { eq, and, or, gt, sql, desc } from "drizzle-orm";
+import { eq, and, or, gt, lt, sql, desc } from "drizzle-orm";
 import crypto from "node:crypto";
 import { db } from "../../db";
 import {
@@ -450,6 +450,28 @@ export const assessmentExecutionService = {
       .returning();
     await scoringService.recompute(attempt.candidateId, tx);
     return done;
+  },
+
+  /**
+   * Marks invitations whose link ran out unused as expired, and re-scores those candidates, so a
+   * test that was never taken counts as 0 instead of being quietly left out. Safe to run often and
+   * from several servers at once.
+   */
+  async expireStaleInvites(now: Date = new Date()): Promise<number> {
+    const expired = await db
+      .update(candidateAssessmentAttempts)
+      .set({ status: "expired", updatedAt: now })
+      .where(
+        and(
+          eq(candidateAssessmentAttempts.status, "pending"),
+          lt(candidateAssessmentAttempts.expiresAt, now),
+        ),
+      )
+      .returning({ candidateId: candidateAssessmentAttempts.candidateId });
+    for (const candidateId of new Set(expired.map((e) => e.candidateId))) {
+      await scoringService.recompute(candidateId);
+    }
+    return expired.length;
   },
 
   /** Whose attempt this is, so a request about it can be checked against that candidate's job. */

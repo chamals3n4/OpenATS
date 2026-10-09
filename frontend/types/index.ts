@@ -241,6 +241,8 @@ export type Candidate = {
   knockedOut?: boolean;
   /** Latest finished assessment against its pass mark; null if none finished. */
   assessmentPassed?: boolean | null;
+  /** A test link ran out unused. It counts as 0 and is flagged. */
+  assessmentExpired?: boolean;
 };
 
 /** What the pipeline board needs about a candidate: the light row from `/candidates/jobs/:id/board`. */
@@ -260,6 +262,7 @@ export type BoardCandidate = Pick<
   | "weightedParts"
   | "knockedOut"
   | "assessmentPassed"
+  | "assessmentExpired"
 > & {
   /** When the candidate entered their current stage. Null when there is no record of it. */
   stageEnteredAt: string | null;

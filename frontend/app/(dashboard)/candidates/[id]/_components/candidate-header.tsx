@@ -117,6 +117,7 @@ export function CandidateHeader({
                   weightedParts={candidate.weightedParts}
                   knockedOut={candidate.knockedOut}
                   assessmentPassed={candidate.assessmentPassed}
+                  assessmentExpired={candidate.assessmentExpired}
                 />
               </button>
               {offer && (

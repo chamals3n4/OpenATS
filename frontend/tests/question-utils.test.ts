@@ -67,6 +67,13 @@ describe("toApiOptions", () => {
     ]);
   });
 
+  it("keeps negative points only when told they are allowed (a tick-any question)", () => {
+    const wrong = [{ label: "Wrong", points: -5, isKnockout: false }, { label: "Right", points: 5, isKnockout: false }];
+    expect(toApiOptions(wrong, true).map((o) => o.points)).toEqual([-5, 5]);
+    expect(toApiOptions(wrong).map((o) => o.points)).toEqual([0, 5]);
+    expect(toApiOptions([{ label: "X", points: -500, isKnockout: false }], true)[0]!.points).toBe(-100);
+  });
+
   it("keeps the scoring and clamps points into range", () => {
     expect(
       toApiOptions([

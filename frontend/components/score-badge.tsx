@@ -14,6 +14,7 @@ interface ScoreBadgeProps {
   weightedParts?: number | undefined;
   knockedOut?: boolean | undefined;
   assessmentPassed?: boolean | null | undefined;
+  assessmentExpired?: boolean | undefined;
   /** "full" is for a candidate's header; "compact" for list rows and board cards. */
   size?: "compact" | "full";
   /** Render nothing for a candidate with no score and no flags, e.g. on crowded board cards. */
@@ -31,6 +32,7 @@ export function ScoreBadge({
   weightedParts,
   knockedOut,
   assessmentPassed,
+  assessmentExpired,
   size = "compact",
   hideWhenUnscored,
   className,
@@ -38,10 +40,11 @@ export function ScoreBadge({
   const parts = describeParts(scoredParts, weightedParts);
   const full = size === "full";
   const unscored = total === null || total === undefined;
-  if (hideWhenUnscored && unscored && !knockedOut && assessmentPassed !== false) return null;
+  if (hideWhenUnscored && unscored && !knockedOut && assessmentPassed !== false && !assessmentExpired) return null;
   const flags = [
     knockedOut ? "Does not meet requirements" : null,
     assessmentPassed === false ? "Failed assessment" : null,
+    assessmentExpired ? "Assessment expired" : null,
   ].filter((f): f is string => f !== null);
 
   return (
@@ -85,6 +88,16 @@ export function ScoreBadge({
           )}
         >
           {full ? "Failed assessment" : "Failed test"}
+        </span>
+      )}
+      {assessmentExpired && (
+        <span
+          className={cn(
+            "rounded-full bg-amber-50 font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300",
+            full ? "px-2 py-0.5 text-xs" : "px-1.5 py-px text-[10px]",
+          )}
+        >
+          {full ? "Assessment expired" : "Test expired"}
         </span>
       )}
     </span>

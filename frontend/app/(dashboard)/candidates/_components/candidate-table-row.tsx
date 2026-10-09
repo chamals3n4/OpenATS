@@ -63,6 +63,7 @@ export function CandidateTableRow({
           weightedParts={candidate.weightedParts}
           knockedOut={candidate.knockedOut}
           assessmentPassed={candidate.assessmentPassed}
+          assessmentExpired={candidate.assessmentExpired}
         />
       </TableCell>
       <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">

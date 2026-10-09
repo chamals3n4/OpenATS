@@ -68,16 +68,16 @@ const bulkDeleteCandidatesSchema = z.object({
 });
 
 /**
- * An interviewer sees no Interview part or total for a candidate until they have submitted their
- * own scorecard for them, so other interviewers' scorecards cannot sway them. Other roles see all.
+ * Anyone interviewing a candidate, whatever their role, sees no Interview part or total for them
+ * until they have submitted their own scorecard, so other interviewers' scorecards cannot sway
+ * them. A manager or admin who is not interviewing that candidate sees everything.
  */
 async function blindForInterviewer<T extends { id: number; interviewScore?: unknown; totalScore?: unknown; scoredParts?: number }>(
   user: { id: number; role: string },
   rows: T[],
 ): Promise<T[]> {
-  if (user.role !== "interviewer") return rows;
-  const scored = await scoringService.candidatesScoredBy(user.id, rows.map((r) => r.id));
-  return rows.map((r) => (scored.has(r.id) ? r : withholdInterviewScores(r)));
+  const hidden = await scoringService.candidatesToWithhold(user, rows.map((r) => r.id));
+  return hidden.size === 0 ? rows : rows.map((r) => (hidden.has(r.id) ? withholdInterviewScores(r) : r));
 }
 
 export const applyForJob = async (req: Request, res: Response) => {

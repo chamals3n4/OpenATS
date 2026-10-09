@@ -79,7 +79,7 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
         </div>
       </div>
 
-      {(candidate.knockedOut || candidate.assessmentPassed === false) && (
+      {(candidate.knockedOut || candidate.assessmentPassed === false || candidate.assessmentExpired) && (
         <ul className="mt-4 flex flex-wrap gap-2" aria-label="Flags">
           {candidate.knockedOut && (
             <li className="rounded-full bg-red-50 px-2.5 py-1 text-xs font-semibold text-red-700 dark:bg-red-950/40 dark:text-red-400">
@@ -89,6 +89,11 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
           {candidate.assessmentPassed === false && (
             <li className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
               Failed assessment
+            </li>
+          )}
+          {candidate.assessmentExpired && (
+            <li className="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+              Assessment expired (counted as 0)
             </li>
           )}
         </ul>

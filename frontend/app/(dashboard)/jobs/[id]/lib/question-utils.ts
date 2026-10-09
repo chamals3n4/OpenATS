@@ -39,7 +39,7 @@ export const emptyOption = (): OptionDraft => ({ label: "", points: 0, isKnockou
 
 /** Whether any option scores, so the question counts toward a candidate's Questions score. */
 export function isScored(options: Pick<OptionDraft, "points" | "isKnockout">[]) {
-  return options.some((o) => o.points > 0 || o.isKnockout);
+  return options.some((o) => o.points !== 0 || o.isKnockout);
 }
 
 export interface QuestionDraft {
@@ -91,8 +91,12 @@ export function hasQuestionErrors(errors: QuestionErrors) {
   return Boolean(errors.title || errors.options || Object.keys(errors.optionErrors).length > 0);
 }
 
-/** The options as the API wants them: blanks dropped, numbered from 1 in the order shown. */
-export function toApiOptions(options: OptionDraft[]) {
+/**
+ * The options as the API wants them: blanks dropped, numbered from 1 in the order shown. Negative
+ * points only mean something on a "tick any" (checkbox) question, where they make a wrong tick
+ * cost points; anywhere else they are sent as 0.
+ */
+export function toApiOptions(options: OptionDraft[], allowNegative = false) {
   return options
     .map((o) => ({ ...o, label: o.label.trim() }))
     .filter((o) => o.label)
@@ -100,7 +104,7 @@ export function toApiOptions(options: OptionDraft[]) {
       ...(o.id !== undefined && { id: o.id }),
       label: o.label,
       isCorrect: false,
-      points: Math.min(POINTS_MAX, Math.max(0, Math.round(o.points) || 0)),
+      points: Math.min(POINTS_MAX, Math.max(allowNegative ? -POINTS_MAX : 0, Math.round(o.points) || 0)),
       isKnockout: o.isKnockout,
       position: i + 1,
     }));

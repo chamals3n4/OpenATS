@@ -72,7 +72,7 @@ describe("BoardColumn", () => {
     expect(screen.getByText("2")).toBeInTheDocument();
     expect(screen.getByText("Ada Lovelace")).toBeInTheDocument();
     expect(screen.getAllByText("Applied 3h ago")).toHaveLength(2);
-    expect(screen.getByText("AL")).toBeInTheDocument();
+    expect(screen.queryByText("AL")).toBeNull();
   });
 
   it("says so when the stage is empty, and shows skeletons, not 'empty', while loading", () => {
@@ -128,6 +128,19 @@ describe("selection", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Select Ada Lovelace" }));
     expect(onToggleSelect).toHaveBeenCalledWith(7);
     expect(onOpen).not.toHaveBeenCalled();
+  });
+
+  it("shows no avatar, and outlines a selected card with a single theme border", () => {
+    setup(two, { selectedIds: [7] });
+    const selected = screen.getByRole("button", { name: /Ada Lovelace, applied/ });
+    expect(selected.className).toMatch(/border-theme/);
+    expect(selected.className).not.toMatch(/ring-/);
+    expect(screen.getByRole("button", { name: /Grace Hopper, applied/ }).className).not.toMatch(/border-theme/);
+  });
+
+  it("always shows the select box, so a click cannot leave it stuck half-hidden", () => {
+    setup(two);
+    expect(screen.getByRole("checkbox", { name: "Select Ada Lovelace" }).className).not.toMatch(/opacity-0/);
   });
 
   it("toggles instead of opening once something is selected", () => {

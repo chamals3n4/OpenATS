@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireManager } from "../../middlewares/role.middleware";
 import { z } from "zod";
-import { rejectionService } from "./rejection.service";
+import { rejectionService, RejectionError } from "./rejection.service";
 import { templateEngineService } from "../template/template-engine.service";
 import { variableService } from "../template/variable.service";
 import { db } from "../../db";
@@ -25,6 +25,51 @@ const rejectSchema = z
     path: ["templateId"],
     message: "Template is required when sending email",
   });
+
+const bulkRejectSchema = z.object({
+  candidateIds: z
+    .array(z.number().int().positive())
+    .min(1, "Pick at least one candidate")
+    .max(200, "Reject at most 200 candidates at a time"),
+  reason: z.string().trim().min(1, "Reason is required").max(255),
+});
+
+// POST /candidates/bulk/reject — reject several candidates with one reason, sending no email.
+// Each is its own transaction, so one that cannot be rejected does not stop the rest.
+router.post("/candidates/bulk/reject", requireManager, async (req, res) => {
+  const parsed = bulkRejectSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Validation failed", details: parsed.error.flatten().fieldErrors });
+    return;
+  }
+  const rejected: number[] = [];
+  const failed: { id: number; error: string }[] = [];
+  for (const id of new Set(parsed.data.candidateIds)) {
+    try {
+      await rejectionService.reject(
+        {
+          candidateId: id,
+          reason: parsed.data.reason,
+          internalNote: null,
+          templateId: null,
+          emailStatus: "not_sent",
+        },
+        req.user.id,
+      );
+      rejected.push(id);
+    } catch (error) {
+      // Say why a candidate was skipped when that is expected; keep database errors out of the reply.
+      if (error instanceof RejectionError) {
+        failed.push({ id, error: error.message });
+      } else {
+        logger.error(`Bulk rejection failed for candidate ${id} - user ${req.user.id}: ${getErrorMessage(error)}`);
+        failed.push({ id, error: "Failed to reject candidate" });
+      }
+    }
+  }
+  logger.info(`Bulk rejection: rejected=${rejected.length}, failed=${failed.length} by user ${req.user.id}`);
+  res.status(200).json({ data: { rejected, failed } });
+});
 
 // POST /candidates/:id/reject — reject a candidate
 router.post("/candidates/:id/reject", requireManager, async (req, res) => {
@@ -80,8 +125,6 @@ router.post("/candidates/:id/reject", requireManager, async (req, res) => {
     const rejection = await rejectionService.reject(
       {
         candidateId: id,
-        jobId: candidate.jobId,
-        fromStageId: candidate.currentStageId,
         reason: parsed.data.reason,
         internalNote: parsed.data.internalNote ?? null,
         templateId: parsed.data.templateId ?? null,

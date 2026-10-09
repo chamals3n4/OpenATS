@@ -10,9 +10,14 @@ import {
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { useAttemptResults } from "@/hooks/queries/use-assessments";
+import { useState } from "react";
+import { toast } from "sonner";
+import { Input } from "@/components/ui/input";
+import { useIsManager } from "@/hooks/use-role";
+import { useAttemptResults, useGradeAnswer } from "@/hooks/queries/use-assessments";
 import { formatDate } from "./constants";
 import {
+  earnedPoints,
   formatDuration,
   getQuestionState,
   isWrittenQuestion,
@@ -40,6 +45,18 @@ const STATE_STYLES: Record<
     pill: "bg-red-50 text-red-800 dark:bg-red-950/30 dark:text-red-300",
     chip: "border-red-300 bg-red-50 text-red-800 dark:border-red-800 dark:bg-red-950/30 dark:text-red-300",
     icon: CancelCircleIcon,
+  },
+  partial: {
+    label: "Partly correct",
+    pill: "bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300",
+    chip: "border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-300",
+    icon: CheckmarkCircle01Icon,
+  },
+  graded: {
+    label: "Graded",
+    pill: "bg-green-50 text-green-800 dark:bg-green-950/30 dark:text-green-300",
+    chip: "border-green-300 bg-green-50 text-green-800 dark:border-green-800 dark:bg-green-950/30 dark:text-green-300",
+    icon: CheckmarkCircle02Icon,
   },
   review: {
     label: "Needs review",
@@ -126,6 +143,8 @@ function Summary({ results }: { results: Results }) {
                 </span>
               )}
             </div>
+          ) : results.pendingReview > 0 ? (
+            <span className="text-amber-700 dark:text-amber-400">Pending review</span>
           ) : (
             <span className="text-slate-400">No score</span>
           )}
@@ -152,8 +171,8 @@ function Summary({ results }: { results: Results }) {
           </Tile>
         )}
 
-        {summary.review > 0 && (
-          <Tile label="Written answers">{summary.review} to review</Tile>
+        {results.pendingReview > 0 && (
+          <Tile label="Written answers">{results.pendingReview} to grade</Tile>
         )}
 
         <Tile label="Completed" sub={duration ? `Took ${duration}` : null}>
@@ -161,15 +180,18 @@ function Summary({ results }: { results: Results }) {
         </Tile>
       </dl>
 
-      {summary.review > 0 && (
+      {results.pendingReview > 0 && (
         <p className="flex items-start gap-2.5 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-950/30 dark:text-amber-200">
           <HugeiconsIcon
             icon={Alert02Icon}
             className="mt-0.5 size-4 shrink-0"
           />
           <span>
-            Written answers are not scored automatically, so they add 0 points
-            to the score above. Read them below to judge them yourself.
+            {results.pendingReview === 1
+              ? "1 written answer is waiting for you to grade it."
+              : `${results.pendingReview} written answers are waiting for you to grade them.`}{" "}
+            The score and the pass or fail result appear once every one is graded, and until then
+            this assessment does not count toward the candidate&apos;s total.
           </span>
         </p>
       )}
@@ -273,17 +295,81 @@ function OptionRow({
   );
 }
 
+/** Where a reviewer gives a written answer its points, from 0 up to the question's points. */
+function GradeForm({ attemptId, question }: { attemptId: number; question: ResultQuestion }) {
+  const grade = useGradeAnswer(attemptId);
+  const saved = question.answer?.pointsEarned;
+  const [value, setValue] = useState(saved === null || saved === undefined ? "" : String(Number(saved)));
+
+  const points = Number(value);
+  const valid = value.trim() !== "" && Number.isFinite(points) && points >= 0 && points <= question.points;
+
+  const submit = () => {
+    if (!valid || grade.isPending) return;
+    grade.mutate(
+      { questionId: question.id, points },
+      {
+        onSuccess: () => toast.success("Grade saved"),
+        onError: (e) => toast.error(e.message || "Failed to save the grade"),
+      },
+    );
+  };
+
+  return (
+    <form
+      onSubmit={(e) => {
+        e.preventDefault();
+        submit();
+      }}
+      className="flex flex-wrap items-center gap-2"
+    >
+      <label htmlFor={`grade-${question.id}`} className="text-sm font-medium text-slate-800 dark:text-neutral-200">
+        Points
+      </label>
+      <Input
+        id={`grade-${question.id}`}
+        type="number"
+        inputMode="decimal"
+        min={0}
+        max={question.points}
+        step={0.5}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="h-9 w-24 rounded-md border-slate-300 bg-gray-100 text-sm shadow-none dark:border-neutral-600 dark:bg-neutral-800"
+      />
+      <span className="text-sm text-slate-500 dark:text-neutral-400">out of {question.points}</span>
+      <Button
+        type="submit"
+        disabled={!valid || grade.isPending}
+        className="h-9 gap-2 border-none bg-theme px-4 text-sm font-semibold text-white hover:bg-theme-hover"
+      >
+        {grade.isPending && <Spinner className="size-3.5" />}
+        {saved === null || saved === undefined ? "Save grade" : "Update grade"}
+      </Button>
+      {!valid && value.trim() !== "" && (
+        <span className="text-xs font-medium text-red-600 dark:text-red-400">
+          Enter 0 to {question.points}.
+        </span>
+      )}
+    </form>
+  );
+}
+
 function QuestionCard({
   question,
   index,
+  attemptId,
 }: {
   question: ResultQuestion;
   index: number;
+  attemptId: number;
 }) {
+  const isManager = useIsManager();
   const state = getQuestionState(question);
   const style = STATE_STYLES[state];
   const isWritten = isWrittenQuestion(question.questionType);
-  const earned = state === "correct" ? question.points : 0;
+  const earned = earnedPoints(question);
+  const canGrade = isManager && isWritten && (state === "review" || state === "graded");
 
   return (
     <article
@@ -295,7 +381,7 @@ function QuestionCard({
           Question {index + 1}
         </span>
         <div className="flex items-center gap-2.5">
-          {!isWritten && (
+          {(!isWritten || state === "graded") && (
             <span className="text-sm text-slate-600 dark:text-neutral-400">
               {earned}/{question.points} {question.points === 1 ? "pt" : "pts"}
             </span>
@@ -348,6 +434,8 @@ function QuestionCard({
             ))}
           </ul>
         )}
+
+        {canGrade && <GradeForm key={String(question.answer?.pointsEarned)} attemptId={attemptId} question={question} />}
       </div>
     </article>
   );
@@ -404,7 +492,7 @@ export function AssessmentResultsSheetContent({
       <QuestionNavigator questions={results.questions} />
       <div className="space-y-4 px-6 py-5">
         {results.questions.map((q, idx) => (
-          <QuestionCard key={q.id} question={q} index={idx} />
+          <QuestionCard key={q.id} question={q} index={idx} attemptId={results.attempt.id} />
         ))}
       </div>
     </div>

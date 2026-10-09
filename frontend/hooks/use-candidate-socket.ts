@@ -15,6 +15,15 @@ export function useCandidateSocket() {
 
     const socket = createAuthedSocket(token);
 
+    // What the candidate page shows is marked out of date, but not fetched while it is open: it
+    // loads fresh the next time the candidate is opened, and after your own saves.
+    const candidateChanged = (candidateId: number) => {
+      queryClient.invalidateQueries({ queryKey: ["candidates", candidateId], exact: true, refetchType: "none" });
+      queryClient.invalidateQueries({ queryKey: ["candidate-assessments", candidateId], refetchType: "none" });
+      queryClient.invalidateQueries({ queryKey: ["attempt-results"], refetchType: "none" });
+      queryClient.invalidateQueries({ queryKey: ["interview-feedback"], refetchType: "none" });
+    };
+
     socket.on("candidate_applied", (data: { jobId: number }) => {
       queryClient.invalidateQueries({ queryKey: boardKey(data.jobId) });
       queryClient.invalidateQueries({
@@ -29,9 +38,7 @@ export function useCandidateSocket() {
     socket.on(
       "cv_analysis_updated",
       (data: { candidateId: number; jobId: number; status: string }) => {
-        queryClient.invalidateQueries({
-          queryKey: ["candidates", data.candidateId],
-        });
+        candidateChanged(data.candidateId);
 
         queryClient.invalidateQueries({
           predicate: (query) => {
@@ -47,9 +54,7 @@ export function useCandidateSocket() {
       "candidate_stage_changed",
       (data: { candidateId: number; jobId: number; stageId: number }) => {
         queryClient.invalidateQueries({ queryKey: boardKey(data.jobId) });
-        queryClient.invalidateQueries({
-          queryKey: ["candidates", data.candidateId],
-        });
+        candidateChanged(data.candidateId);
 
         queryClient.invalidateQueries({
           predicate: (query) => {
@@ -65,9 +70,7 @@ export function useCandidateSocket() {
       "offer_changed",
       (data: { offerId: number; candidateId: number; jobId: number }) => {
         queryClient.invalidateQueries({ queryKey: ["offers"] });
-        queryClient.invalidateQueries({
-          queryKey: ["candidates", data.candidateId],
-        });
+        candidateChanged(data.candidateId);
       },
     );
 
@@ -75,27 +78,14 @@ export function useCandidateSocket() {
       "interview_changed",
       (data: { interviewId: number; candidateId: number }) => {
         queryClient.invalidateQueries({ queryKey: ["interviews"] });
-        queryClient.invalidateQueries({
-          queryKey: ["interview-feedback", data.interviewId],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["candidates", data.candidateId],
-        });
+        candidateChanged(data.candidateId);
       },
     );
 
     socket.on(
       "assessment_progress_updated",
       (data: { candidateId: number; attemptId: number }) => {
-        queryClient.invalidateQueries({
-          queryKey: ["candidate-assessments", data.candidateId],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["attempt-results", data.attemptId],
-        });
-        queryClient.invalidateQueries({
-          queryKey: ["candidates", data.candidateId],
-        });
+        candidateChanged(data.candidateId);
       },
     );
 

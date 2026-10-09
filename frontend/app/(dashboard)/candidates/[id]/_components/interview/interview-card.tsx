@@ -211,6 +211,7 @@ export function InterviewCard({
       <InterviewFeedbackDialog
         interviewId={interview.id}
         interviewName={name}
+        jobId={interview.jobId}
         open={feedbackOpen}
         onOpenChange={setFeedbackOpen}
       />

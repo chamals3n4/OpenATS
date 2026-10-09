@@ -3,6 +3,7 @@ import {
   hasQuestionErrors,
   isChoiceType,
   moveItem,
+  optionDraftsOf,
   optionLabelsOf,
   positionChanges,
   toApiOptions,
@@ -47,18 +48,60 @@ describe("validateQuestion", () => {
 
 describe("toApiOptions", () => {
   it("drops blanks, trims, and numbers from 1 in the order shown", () => {
-    expect(toApiOptions([" React ", "", "Vue", "  "])).toEqual([
-      { label: "React", isCorrect: false, position: 1 },
-      { label: "Vue", isCorrect: false, position: 2 },
+    const o = (label: string, points = 0, isKnockout = false) => ({ label, points, isKnockout });
+    expect(toApiOptions([o(" React "), o(""), o("Vue"), o("  ")])).toEqual([
+      { label: "React", isCorrect: false, points: 0, isKnockout: false, position: 1 },
+      { label: "Vue", isCorrect: false, points: 0, isKnockout: false, position: 2 },
+    ]);
+  });
+
+  it("carries an option's id through, so an edit keeps the candidates' picks of it", () => {
+    expect(
+      toApiOptions([
+        { id: 41, label: "Yes", points: 5, isKnockout: false },
+        { label: "New", points: 0, isKnockout: false },
+      ]),
+    ).toEqual([
+      { id: 41, label: "Yes", isCorrect: false, points: 5, isKnockout: false, position: 1 },
+      { label: "New", isCorrect: false, points: 0, isKnockout: false, position: 2 },
+    ]);
+  });
+
+  it("keeps negative points only when told they are allowed (a tick-any question)", () => {
+    const wrong = [{ label: "Wrong", points: -5, isKnockout: false }, { label: "Right", points: 5, isKnockout: false }];
+    expect(toApiOptions(wrong, true).map((o) => o.points)).toEqual([-5, 5]);
+    expect(toApiOptions(wrong).map((o) => o.points)).toEqual([0, 5]);
+    expect(toApiOptions([{ label: "X", points: -500, isKnockout: false }], true)[0]!.points).toBe(-100);
+  });
+
+  it("keeps the scoring and clamps points into range", () => {
+    expect(
+      toApiOptions([
+        { label: "Yes", points: 10, isKnockout: false },
+        { label: "No", points: -5, isKnockout: true },
+        { label: "Maybe", points: 500, isKnockout: false },
+      ]),
+    ).toEqual([
+      { label: "Yes", isCorrect: false, points: 10, isKnockout: false, position: 1 },
+      { label: "No", isCorrect: false, points: 0, isKnockout: true, position: 2 },
+      { label: "Maybe", isCorrect: false, points: 100, isKnockout: false, position: 3 },
     ]);
   });
 });
 
 describe("optionLabelsOf", () => {
-  const opt = (label: string, position: number) => ({ id: position, questionId: 1, label, isCorrect: false, position });
+  const opt = (label: string, position: number) => ({ id: position, questionId: 1, label, isCorrect: false, points: 0, isKnockout: false, position });
 
   it("lists saved options in order", () => {
     expect(optionLabelsOf({ options: [opt("B", 2), opt("A", 1), opt("C", 3)] })).toEqual(["A", "B", "C"]);
+  });
+
+  it("keeps each saved option's id when opening an edit", () => {
+    const withId = (label: string, position: number, id: number) => ({ ...opt(label, position), id });
+    expect(optionDraftsOf({ options: [withId("B", 2, 22), withId("A", 1, 21)] }).map((o) => [o.id, o.label])).toEqual([
+      [21, "A"],
+      [22, "B"],
+    ]);
   });
 
   it("pads to the minimum so there are always two rows to fill in", () => {

@@ -5,6 +5,7 @@ import { OverviewTab } from "./tabs/OverviewTab";
 import { HiringTeamTab } from "./tabs/HiringTeamTab";
 import { HiringProcessTab } from "./tabs/HiringProcessTab";
 import { CustomQuestionsTab } from "./tabs/CustomQuestionsTab";
+import { ScoringTab } from "./tabs/ScoringTab";
 import { AssessmentsTab } from "./tabs/AssessmentsTab";
 import type {
   JobDetail,
@@ -146,8 +147,13 @@ export function JobTabs({
         />
       </TabsContent>
 
+      <TabsContent value="scoring" className="pt-2">
+        <ScoringTab job={job} />
+      </TabsContent>
+
       <TabsContent value="assessments" className="pt-2 space-y-5">
         <AssessmentsTab
+          jobId={job?.id ?? 0}
           attachedAssessments={attachedAssessments}
           allAssessments={allAssessments}
           stages={stages}

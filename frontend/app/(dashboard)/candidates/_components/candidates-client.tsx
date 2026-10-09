@@ -4,13 +4,15 @@ import { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import {
   useBulkDeleteCandidates,
+  useBulkRejectCandidates,
   useCandidates,
   useDeleteCandidate,
   useUpdateCandidateBasicDetails,
 } from "@/hooks/queries/use-candidates";
+import { toast } from "sonner";
 import { useJobs } from "@/hooks/queries/use-jobs";
 import type { Candidate } from "@/types";
-import { CandidateFilters } from "./candidate-filters";
+import { CandidateFilters, type CandidateSort } from "./candidate-filters";
 import { CandidatesTable } from "./candidates-table";
 import { CandidateEditDialog } from "./candidate-edit-dialog";
 import { CandidateDeleteDialog } from "./candidate-delete-dialog";
@@ -32,6 +34,7 @@ export default function CandidatesPageClient() {
     useState<CandidateStatusFilter>("all");
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sort, setSort] = useState<CandidateSort>("newest");
   const [page, setPage] = useState(1);
 
   useEffect(() => {
@@ -46,6 +49,7 @@ export default function CandidatesPageClient() {
   const { data: candidatesData, isLoading } = useCandidates(selectedJobId, {
     search: debouncedSearch || undefined,
     status: selectedStatus === "all" ? undefined : selectedStatus,
+    sort: sort === "score" ? "score" : undefined,
     page,
     limit: PAGE_LIMIT,
   });
@@ -68,6 +72,25 @@ export default function CandidatesPageClient() {
     [deleteMutation],
   );
 
+  const bulkRejectMutation = useBulkRejectCandidates();
+  const handleRejectSelected = useCallback(
+    async (ids: number[], reason: string) => {
+      try {
+        const { data } = await bulkRejectMutation.mutateAsync({ candidateIds: ids, reason });
+        if (data.failed.length > 0) {
+          toast.error(`Rejected ${data.rejected.length}, but ${data.failed.length} could not be rejected`);
+          // Only the ones that failed stay selected, so a retry cannot hit the rest again.
+          return data.failed.map((f) => f.id);
+        }
+        toast.success(`Rejected ${data.rejected.length} ${data.rejected.length === 1 ? "candidate" : "candidates"}`);
+      } catch {
+        toast.error("Failed to reject the candidates");
+        return false;
+      }
+    },
+    [bulkRejectMutation],
+  );
+
   const handleDeleteAllMatchingCandidates = useCallback(async () => {
     const total = pagination?.total ?? 0;
     if (total === 0) return false;
@@ -85,8 +108,8 @@ export default function CandidatesPageClient() {
   ]);
 
   const selectionScopeKey = useMemo(
-    () => `${selectedJobId ?? "all"}|${selectedStatus}|${debouncedSearch}`,
-    [debouncedSearch, selectedJobId, selectedStatus],
+    () => `${selectedJobId ?? "all"}|${selectedStatus}|${debouncedSearch}|${sort}`,
+    [debouncedSearch, selectedJobId, selectedStatus, sort],
   );
 
   const handleSearchChange = useCallback((value: string) => {
@@ -144,6 +167,12 @@ export default function CandidatesPageClient() {
     setSearch("");
     setSelectedJobId(undefined);
     setSelectedStatus("all");
+    setSort("newest");
+    setPage(1);
+  }, []);
+
+  const handleSortChange = useCallback((next: CandidateSort) => {
+    setSort(next);
     setPage(1);
   }, []);
 
@@ -169,6 +198,8 @@ export default function CandidatesPageClient() {
           selectedStatus={selectedStatus}
           onStatusChange={handleStatusChange}
           jobs={jobs}
+          sort={sort}
+          onSortChange={handleSortChange}
           onClear={handleClearFilters}
         />
       </div>
@@ -189,6 +220,8 @@ export default function CandidatesPageClient() {
           isDeletingSelected={
             deleteMutation.isPending || bulkDeleteMutation.isPending
           }
+          onRejectSelected={handleRejectSelected}
+          isRejectingSelected={bulkRejectMutation.isPending}
         />
       </div>
 

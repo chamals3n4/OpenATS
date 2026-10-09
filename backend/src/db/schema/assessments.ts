@@ -78,6 +78,10 @@ export const jobCustomQuestionOptions = pgTable("job_custom_question_options", {
     .references(() => jobCustomQuestions.id, { onDelete: "cascade" }),
   label: varchar("label", { length: 500 }).notNull(),
   isCorrect: boolean("is_correct").notNull().default(false),
+  // Points a candidate earns for picking this option (the Questions score).
+  points: integer("points").notNull().default(0),
+  // Picking this option flags the candidate as not meeting the requirements.
+  isKnockout: boolean("is_knockout").notNull().default(false),
   position: integer("position").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
@@ -95,6 +99,8 @@ export const jobAssessmentAttachments = pgTable(
     triggerStageId: integer("trigger_stage_id")
       .notNull()
       .references(() => jobPipelineStages.id, { onDelete: "cascade" }),
+    // Minimum percentage the candidate needs to pass this assessment.
+    passMark: integer("pass_mark").notNull().default(60),
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [unique().on(t.jobId, t.triggerStageId)],

@@ -29,9 +29,11 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import type { Assessment, JobAssessment, PipelineStage } from "@/types";
-import type {
-  useAttachAssessment,
-  useDetachAssessment,
+import { Input } from "@/components/ui/input";
+import {
+  useUpdatePassMark,
+  type useAttachAssessment,
+  type useDetachAssessment,
 } from "@/hooks/queries/use-assessments";
 import { useIsManager } from "@/hooks/use-role";
 import {
@@ -41,11 +43,61 @@ import {
 } from "../../lib/assessment-attach-utils";
 
 interface AssessmentsTabProps {
+  jobId: number;
   attachedAssessments: JobAssessment[];
   allAssessments: Assessment[];
   stages: (PipelineStage & { color: string })[];
   attachAssessmentMutation: ReturnType<typeof useAttachAssessment>;
   detachAssessmentMutation: ReturnType<typeof useDetachAssessment>;
+}
+
+const DEFAULT_PASS_MARK = 60;
+
+/** The percentage a candidate needs; saved when the field loses focus with a changed value. */
+function PassMarkField({ jobId, attachment, canEdit }: { jobId: number; attachment: JobAssessment; canEdit: boolean }) {
+  const update = useUpdatePassMark(jobId);
+  const [value, setValue] = useState(String(attachment.passMark ?? DEFAULT_PASS_MARK));
+
+  const commit = () => {
+    const next = Math.min(100, Math.max(0, Math.round(Number(value)) || 0));
+    setValue(String(next));
+    if (next === attachment.passMark) return;
+    update.mutate(
+      { attachmentId: attachment.id, passMark: next },
+      {
+        onSuccess: () => toast.success("Pass mark saved"),
+        onError: (e) => {
+          setValue(String(attachment.passMark));
+          toast.error(e.message || "Failed to save the pass mark");
+        },
+      },
+    );
+  };
+
+  return (
+    <div className="flex shrink-0 items-center gap-2">
+      <label
+        htmlFor={`pass-mark-${attachment.id}`}
+        className="text-sm text-slate-500 dark:text-neutral-400"
+      >
+        Pass mark
+      </label>
+      <Input
+        id={`pass-mark-${attachment.id}`}
+        type="number"
+        inputMode="numeric"
+        min={0}
+        max={100}
+        disabled={!canEdit || update.isPending}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={commit}
+        onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+        className="h-9 w-20 rounded-md border-slate-300 bg-gray-100 text-sm shadow-none dark:border-neutral-600 dark:bg-neutral-800"
+      />
+      <span className="text-sm text-slate-500 dark:text-neutral-400">%</span>
+    </div>
+  );
 }
 
 const selectTriggerCls =
@@ -63,9 +115,10 @@ function AttachForm({
   allAssessments: Assessment[];
   stages: (PipelineStage & { color: string })[];
   isPending: boolean;
-  onSubmit: (assessmentId: number, stageId: number) => void;
+  onSubmit: (assessmentId: number, stageId: number, passMark: number) => void;
   onCancel: () => void;
 }) {
+  const [passMark, setPassMark] = useState(String(DEFAULT_PASS_MARK));
   const [assessmentId, setAssessmentId] = useState("");
   const [stageId, setStageId] = useState("");
   const [showErrors, setShowErrors] = useState(false);
@@ -96,7 +149,11 @@ function AttachForm({
         e.preventDefault();
         setShowErrors(true);
         if (assessmentError || stageError || isPending) return;
-        onSubmit(Number(assessmentId), Number(stageId));
+        onSubmit(
+          Number(assessmentId),
+          Number(stageId),
+          Math.min(100, Math.max(0, Math.round(Number(passMark)) || 0)),
+        );
       }}
     >
       <DialogHeader className="px-6 pt-6">
@@ -157,6 +214,23 @@ function AttachForm({
             </SelectContent>
           </Select>
         </FormField>
+
+        <FormField
+          label="Pass mark (%)"
+          htmlFor="attach-pass-mark"
+          hint="Candidates scoring below this are flagged as having failed the assessment. You decide whether to reject them."
+        >
+          <Input
+            id="attach-pass-mark"
+            type="number"
+            inputMode="numeric"
+            min={0}
+            max={100}
+            value={passMark}
+            onChange={(e) => setPassMark(e.target.value)}
+            className="h-10 w-28 rounded-md border-slate-300 bg-gray-100 text-sm shadow-none dark:border-neutral-600 dark:bg-neutral-800"
+          />
+        </FormField>
       </div>
 
       <DialogFooter className="border-t border-slate-300 bg-slate-50 px-6 py-4 dark:border-neutral-700 dark:bg-neutral-950/50">
@@ -183,6 +257,7 @@ function AttachForm({
 }
 
 export function AssessmentsTab({
+  jobId,
   attachedAssessments,
   allAssessments,
   stages,
@@ -197,9 +272,9 @@ export function AssessmentsTab({
   const titleOf = (id: number) =>
     allAssessments.find((a) => a.id === id)?.title ?? "Deleted assessment";
 
-  const handleAttach = (assessmentId: number, triggerStageId: number) =>
+  const handleAttach = (assessmentId: number, triggerStageId: number, passMark: number) =>
     attachAssessmentMutation.mutate(
-      { assessmentId, triggerStageId },
+      { assessmentId, triggerStageId, passMark },
       {
         onSuccess: () => {
           setIsAttaching(false);
@@ -288,6 +363,8 @@ export function AssessmentsTab({
                     )}
                   </p>
                 </div>
+
+                <PassMarkField jobId={jobId} attachment={attachment} canEdit={isManager} />
 
                 {isManager && (
                   <RowDeleteButton onClick={() => setRemoveTarget(attachment)}>

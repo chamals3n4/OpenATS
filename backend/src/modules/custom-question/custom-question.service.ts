@@ -1,4 +1,4 @@
-import { eq, and } from "drizzle-orm";
+import { eq, and, inArray } from "drizzle-orm";
 import { db } from "../../db";
 import {
   jobCustomQuestions,
@@ -9,8 +9,12 @@ import {
 import { cleanObject as clean } from "../../utils/object.utils";
 
 export interface OptionInput {
+  /** Set when editing an existing option, so candidates' picks of it are kept. */
+  id?: number | undefined;
   label: string;
   isCorrect?: boolean | undefined;
+  points?: number | undefined;
+  isKnockout?: boolean | undefined;
   position: number;
 }
 
@@ -33,11 +37,21 @@ export interface UpdateCustomQuestionInput {
 export interface AttachAssessmentInput {
   assessmentId: number;
   triggerStageId: number;
+  passMark?: number | undefined;
 }
 
 
 
 export const customQuestionService = {
+  /** What an applicant is shown: the options only, never the points or knockout flags. */
+  async getForApplicant(jobId: number) {
+    const questions = await customQuestionService.getByJobId(jobId);
+    return questions.map((q) => ({
+      ...q,
+      options: q.options.map(({ points: _p, isKnockout: _k, isCorrect: _c, ...o }) => o),
+    }));
+  },
+
   async getByJobId(jobId: number) {
     const questions = await db
       .select()
@@ -76,6 +90,8 @@ export const customQuestionService = {
             questionId: question.id,
             label: o.label,
             isCorrect: o.isCorrect ?? false,
+            points: o.points ?? 0,
+            isKnockout: o.isKnockout ?? false,
             position: o.position,
           })),
         );
@@ -112,19 +128,44 @@ export const customQuestionService = {
       if (!updated) return null;
 
       if (options !== undefined) {
-        await tx
-          .delete(jobCustomQuestionOptions)
+        // Edit options in place rather than recreating them: deleting an option also deletes the
+        // candidates' recorded picks of it, and with them their score.
+        const existing = await tx
+          .select({ id: jobCustomQuestionOptions.id })
+          .from(jobCustomQuestionOptions)
           .where(eq(jobCustomQuestionOptions.questionId, questionId));
+        const existingIds = new Set(existing.map((o) => o.id));
+        const kept = new Set<number>();
 
-        if (options.length > 0) {
-          await tx.insert(jobCustomQuestionOptions).values(
-            options.map((o) => ({
-              questionId,
-              label: o.label,
-              isCorrect: o.isCorrect ?? false,
-              position: o.position,
-            })),
-          );
+        for (const o of options) {
+          const values = {
+            label: o.label,
+            isCorrect: o.isCorrect ?? false,
+            points: o.points ?? 0,
+            isKnockout: o.isKnockout ?? false,
+            position: o.position,
+          };
+          // An id that is not one of this question's options is treated as a new option.
+          if (o.id !== undefined && existingIds.has(o.id) && !kept.has(o.id)) {
+            kept.add(o.id);
+            await tx
+              .update(jobCustomQuestionOptions)
+              .set(values)
+              .where(eq(jobCustomQuestionOptions.id, o.id));
+          } else {
+            const [inserted] = await tx
+              .insert(jobCustomQuestionOptions)
+              .values({ questionId, ...values })
+              .returning({ id: jobCustomQuestionOptions.id });
+            if (inserted) kept.add(inserted.id);
+          }
+        }
+
+        const removed = [...existingIds].filter((id) => !kept.has(id));
+        if (removed.length > 0) {
+          await tx
+            .delete(jobCustomQuestionOptions)
+            .where(inArray(jobCustomQuestionOptions.id, removed));
         }
       }
 
@@ -179,13 +220,17 @@ export const customQuestionService = {
         jobId,
         assessmentId: input.assessmentId,
         triggerStageId: input.triggerStageId,
+        passMark: input.passMark,
       }))
       .onConflictDoUpdate({
         target: [
           jobAssessmentAttachments.jobId,
           jobAssessmentAttachments.triggerStageId,
         ],
-        set: { assessmentId: input.assessmentId },
+        set: {
+          assessmentId: input.assessmentId,
+          ...(input.passMark !== undefined && { passMark: input.passMark }),
+        },
       })
       .returning();
 

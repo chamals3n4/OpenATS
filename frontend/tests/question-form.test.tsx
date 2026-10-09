@@ -1,9 +1,9 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { QuestionType } from "@/app/(dashboard)/jobs/[id]/lib/question-utils";
+import type { OptionDraft, QuestionType } from "@/app/(dashboard)/jobs/[id]/lib/question-utils";
 import { QuestionDialog, QuestionForm } from "@/app/(dashboard)/jobs/[id]/_components/questions/question-form";
 
-type Initial = { title: string; type: QuestionType; required: boolean; options: string[] };
+type Initial = { title: string; type: QuestionType; required: boolean; options: OptionDraft[] };
 const blank: Initial = { title: "", type: "short_answer", required: false, options: [] };
 
 afterEach(cleanup);
@@ -66,8 +66,8 @@ describe("QuestionForm", () => {
       expect.objectContaining({
         questionType: "radio",
         options: [
-          { label: "React", isCorrect: false, position: 1 },
-          { label: "Vue", isCorrect: false, position: 2 },
+          { label: "React", isCorrect: false, points: 0, isKnockout: false, position: 1 },
+          { label: "Vue", isCorrect: false, points: 0, isKnockout: false, position: 2 },
         ],
       }),
     );
@@ -93,5 +93,63 @@ describe("QuestionForm", () => {
     expect(screen.getByRole("button", { name: "Save changes" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "Cancel" }));
     expect(onCancel).toHaveBeenCalled();
+  });
+
+  it("keeps scoring off until asked, and sends zero points then", async () => {
+    const { onSubmit, user } = setup({ ...blank, type: "radio" });
+    expect(screen.queryByLabelText("Points for option 1")).toBeNull();
+    await user.type(screen.getByLabelText(/^Question/), "Stack?");
+    await user.type(screen.getByLabelText("Option 1"), "React");
+    await user.type(screen.getByLabelText("Option 2"), "Vue");
+    await user.click(screen.getByRole("button", { name: "Add question" }));
+    expect(onSubmit.mock.calls[0]![0].options.every((o: { points: number; isKnockout: boolean }) => o.points === 0 && !o.isKnockout)).toBe(true);
+  });
+
+  it("shows points and knockout once scoring is switched on, and sends them", async () => {
+    const { onSubmit, user } = setup({ ...blank, type: "radio" });
+    await user.click(screen.getByRole("switch", { name: "Score this question" }));
+    await user.type(screen.getByLabelText(/^Question/), "Years?");
+    await user.type(screen.getByLabelText("Option 1"), "0-1");
+    await user.type(screen.getByLabelText("Option 2"), "5+");
+    await user.type(screen.getByLabelText("Points for option 2"), "10");
+    await user.click(screen.getAllByRole("checkbox", { name: "Knockout" })[0]!);
+    await user.click(screen.getByRole("button", { name: "Add question" }));
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({
+        options: [
+          { label: "0-1", isCorrect: false, points: 0, isKnockout: true, position: 1 },
+          { label: "5+", isCorrect: false, points: 10, isKnockout: false, position: 2 },
+        ],
+      }),
+    );
+  });
+
+  it("opens an already-scored question with scoring on", () => {
+    setup({
+      title: "Years?",
+      type: "radio",
+      required: false,
+      options: [
+        { label: "A", points: 5, isKnockout: false },
+        { label: "B", points: 0, isKnockout: false },
+      ],
+    }, "edit");
+    expect(screen.getByRole("switch", { name: "Score this question" })).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByLabelText("Points for option 1")).toHaveValue(5);
+  });
+
+  it("explains that typed answers cannot be scored", () => {
+    setup();
+    expect(screen.getByText(/switch the answer type to Single choice or Multiple choice/i)).toBeInTheDocument();
+  });
+
+  it("allows negative points on a tick-any question, but not on a single choice", async () => {
+    const { user } = setup({ ...blank, type: "checkbox" });
+    await user.click(screen.getByRole("switch", { name: "Score this question" }));
+    expect(screen.getByLabelText("Points for option 1")).toHaveAttribute("min", "-100");
+    cleanup();
+    const second = setup({ ...blank, type: "radio" });
+    await second.user.click(screen.getByRole("switch", { name: "Score this question" }));
+    expect(screen.getByLabelText("Points for option 1")).toHaveAttribute("min", "0");
   });
 });

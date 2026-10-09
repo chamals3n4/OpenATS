@@ -50,6 +50,22 @@ export const candidates = pgTable(
     // Order of the card within its pipeline stage (0 is the top). Ties fall back to newest first.
     stagePosition: integer("stage_position").notNull().default(0),
 
+    // Score parts, 0-100, null until that part exists. Kept in step by scoring.service so the
+    // candidate list can sort on `totalScore` in SQL.
+    questionsScore: numeric("questions_score", { precision: 5, scale: 2 }).$type<number>(),
+    assessmentScore: numeric("assessment_score", { precision: 5, scale: 2 }).$type<number>(),
+    ratingScore: numeric("rating_score", { precision: 5, scale: 2 }).$type<number>(),
+    interviewScore: numeric("interview_score", { precision: 5, scale: 2 }).$type<number>(),
+    totalScore: numeric("total_score", { precision: 5, scale: 2 }).$type<number>(),
+    // How many of the job's weighted parts have a score yet.
+    scoredParts: integer("scored_parts").notNull().default(0),
+    // Picked a knockout answer: "does not meet requirements".
+    knockedOut: boolean("knocked_out").notNull().default(false),
+    // Result of the latest finished assessment against its pass mark; null if none finished.
+    assessmentPassed: boolean("assessment_passed"),
+    // An assessment link ran out unused. It counts as 0 and is flagged, so skipping the test cannot help.
+    assessmentExpired: boolean("assessment_expired").notNull().default(false),
+
     appliedAt: timestamp("applied_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

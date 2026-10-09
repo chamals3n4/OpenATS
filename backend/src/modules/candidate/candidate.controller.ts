@@ -3,10 +3,13 @@ import { z } from "zod";
 import {
   candidateService,
   DuplicateApplicationError,
+  InvalidAnswerError,
 } from "./candidate.service";
 import { jobService } from "../job/job.service";
 import { r2Service } from "../../shared/services/r2.service";
 import { socketService } from "../../shared/services/socket.service";
+import { scoringService } from "../scoring/scoring.service";
+import { withholdInterviewScores } from "../scoring/scoring";
 import { canAccessCandidate } from "../../shared/auth/job-access";
 import logger from "../../utils/logger";
 
@@ -64,6 +67,19 @@ const bulkDeleteCandidatesSchema = z.object({
     .optional(),
 });
 
+/**
+ * Anyone interviewing a candidate, whatever their role, sees no Interview part or total for them
+ * until they have submitted their own scorecard, so other interviewers' scorecards cannot sway
+ * them. A manager or admin who is not interviewing that candidate sees everything.
+ */
+async function blindForInterviewer<T extends { id: number; interviewScore?: unknown; totalScore?: unknown; scoredParts?: number }>(
+  user: { id: number; role: string },
+  rows: T[],
+): Promise<T[]> {
+  const hidden = await scoringService.candidatesToWithhold(user, rows.map((r) => r.id));
+  return hidden.size === 0 ? rows : rows.map((r) => (hidden.has(r.id) ? withholdInterviewScores(r) : r));
+}
+
 export const applyForJob = async (req: Request, res: Response) => {
   try {
     const jobId = parseInt((req.params.jobId ?? "").toString());
@@ -107,6 +123,10 @@ export const applyForJob = async (req: Request, res: Response) => {
 
     res.status(201).json({ data: result });
   } catch (error: unknown) {
+    if (error instanceof InvalidAnswerError) {
+      res.status(400).json({ error: error.message });
+      return;
+    }
     if (error instanceof DuplicateApplicationError) {
       logger.warn(
         `Duplicate application attempt: email="${req.body?.email}", jobId=${req.params.jobId}`,
@@ -184,6 +204,11 @@ export const getCandidates = async (req: Request, res: Response) => {
         | "hired"
         | "withdrawn"
         | undefined,
+      // Ranking by total would reveal the hidden Interview part to an interviewer.
+      sort:
+        req.query.sort === "score" && req.user.role !== "interviewer"
+          ? ("score" as const)
+          : undefined,
       page,
       limit,
       teamUserId: req.user.role === "interviewer" ? req.user.id : undefined,
@@ -191,7 +216,7 @@ export const getCandidates = async (req: Request, res: Response) => {
 
     const result = await candidateService.getAll(jobId, filters);
     res.status(200).json({
-      data: result.rows,
+      data: await blindForInterviewer(req.user, result.rows),
       pagination: {
         total: result.total,
         page: result.page,
@@ -245,7 +270,11 @@ export const getCandidateById = async (req: Request, res: Response) => {
       });
     }
 
-    res.status(200).json({ data: result });
+    const [blinded] = await blindForInterviewer(req.user, [result]);
+    const hidden = blinded !== result;
+    res.status(200).json({
+      data: hidden ? { ...blinded, interviewSpread: null } : result,
+    });
   } catch (error) {
     logger.error(
       `Failed to fetch candidate id=${req.params.id}: ${getErrorMessage(error)}`,

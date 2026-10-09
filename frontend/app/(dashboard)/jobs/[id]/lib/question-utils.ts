@@ -23,6 +23,25 @@ export const TITLE_MAX = 500;
 export const OPTION_MAX = 500;
 export const MIN_OPTIONS = 2;
 
+export const POINTS_MAX = 100;
+
+/** One option as it is edited: the label plus how it scores. */
+export interface OptionDraft {
+  /** Set for a saved option, so editing keeps the candidates' picks of it. */
+  id?: number;
+  label: string;
+  points: number;
+  /** Picking it flags the candidate as not meeting the requirements. */
+  isKnockout: boolean;
+}
+
+export const emptyOption = (): OptionDraft => ({ label: "", points: 0, isKnockout: false });
+
+/** Whether any option scores, so the question counts toward a candidate's Questions score. */
+export function isScored(options: Pick<OptionDraft, "points" | "isKnockout">[]) {
+  return options.some((o) => o.points !== 0 || o.isKnockout);
+}
+
 export interface QuestionDraft {
   title: string;
   type: QuestionType;
@@ -72,12 +91,23 @@ export function hasQuestionErrors(errors: QuestionErrors) {
   return Boolean(errors.title || errors.options || Object.keys(errors.optionErrors).length > 0);
 }
 
-/** The options as the API wants them: blanks dropped, numbered from 1 in the order shown. */
-export function toApiOptions(labels: string[]) {
-  return labels
-    .map((l) => l.trim())
-    .filter(Boolean)
-    .map((label, i) => ({ label, isCorrect: false, position: i + 1 }));
+/**
+ * The options as the API wants them: blanks dropped, numbered from 1 in the order shown. Negative
+ * points only mean something on a "tick any" (checkbox) question, where they make a wrong tick
+ * cost points; anywhere else they are sent as 0.
+ */
+export function toApiOptions(options: OptionDraft[], allowNegative = false) {
+  return options
+    .map((o) => ({ ...o, label: o.label.trim() }))
+    .filter((o) => o.label)
+    .map((o, i) => ({
+      ...(o.id !== undefined && { id: o.id }),
+      label: o.label,
+      isCorrect: false,
+      points: Math.min(POINTS_MAX, Math.max(allowNegative ? -POINTS_MAX : 0, Math.round(o.points) || 0)),
+      isKnockout: o.isKnockout,
+      position: i + 1,
+    }));
 }
 
 /** Options to start an edit from: the saved ones in order, padded to the minimum. */
@@ -87,6 +117,15 @@ export function optionLabelsOf(question: Pick<CustomQuestion, "options">): strin
     .map((o) => o.label);
   while (labels.length < MIN_OPTIONS) labels.push("");
   return labels;
+}
+
+/** Options to start an edit from, with their scoring: saved ones in order, padded to the minimum. */
+export function optionDraftsOf(question: Pick<CustomQuestion, "options">): OptionDraft[] {
+  const drafts: OptionDraft[] = [...question.options]
+    .sort((a, b) => a.position - b.position)
+    .map((o) => ({ id: o.id, label: o.label, points: o.points ?? 0, isKnockout: o.isKnockout ?? false }));
+  while (drafts.length < MIN_OPTIONS) drafts.push(emptyOption());
+  return drafts;
 }
 
 export function moveItem<T>(list: T[], from: number, to: number): T[] {

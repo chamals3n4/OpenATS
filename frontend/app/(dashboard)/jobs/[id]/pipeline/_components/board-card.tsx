@@ -4,7 +4,7 @@ import { memo, useCallback, useEffect, useRef, type KeyboardEvent, type MouseEve
 import { useDrag } from "react-dnd";
 import { getEmptyImage } from "react-dnd-html5-backend";
 import { Checkbox } from "@/components/ui/checkbox";
-import { initialsOf } from "@/lib/initials";
+import { ScoreBadge } from "@/components/score-badge";
 import type { BoardCandidate, PipelineStage } from "@/types";
 import { fullName, timeAgo } from "../lib/board-utils";
 import { CardMenu } from "./card-menu";
@@ -22,7 +22,7 @@ interface BoardCardProps {
   /** True while a search is active: every card shown is a match, so it gets the theme border. */
   isMatch: boolean;
   isSelected: boolean;
-  /** True once anything is selected: checkboxes stay visible and a click toggles instead of opening. */
+  /** True once anything is selected: a click toggles instead of opening. */
   selectionMode: boolean;
   onToggleSelect: (id: number) => void;
   onOpen: (id: number) => void;
@@ -93,36 +93,25 @@ export const BoardCard = memo(function BoardCard({
       aria-pressed={selectionMode ? isSelected : undefined}
       onClick={open}
       onKeyDown={openWithKey}
-      className={`group flex cursor-pointer select-none items-center gap-3 rounded-md border bg-white px-3 py-2.5 outline-none transition-colors focus-visible:border-neutral-900 dark:bg-neutral-900 dark:focus-visible:border-neutral-300 ${
+      className={`group flex cursor-pointer select-none items-center gap-3 rounded-md border bg-white px-3 py-2.5 outline-none transition-[color,background-color,border-color,opacity] duration-200 focus-visible:border-neutral-900 dark:bg-neutral-900 dark:focus-visible:border-neutral-300 ${
         isDragging
           ? "border-dashed border-slate-400 opacity-40 dark:border-neutral-500"
           : isMoving
             ? "border-slate-300 opacity-60 dark:border-neutral-700"
             : isSelected
-              ? "border-theme bg-theme/10 ring-1 ring-theme"
+              ? "border-theme bg-theme/10"
               : isMatch
               ? "border-theme bg-theme/5 ring-1 ring-theme/40 hover:border-theme"
               : "border-slate-300 hover:border-slate-400 dark:border-neutral-700 dark:hover:border-neutral-500"
       }`}
     >
-      {/* The avatar and the checkbox share one slot: hover, focus or selecting swaps them. */}
-      <div className="relative size-8 shrink-0" onClick={(e) => e.stopPropagation()}>
-        <span
-          aria-hidden
-          className={`absolute inset-0 flex items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-700 group-focus-within:opacity-0 group-hover:opacity-0 dark:bg-neutral-800 dark:text-neutral-200 ${
-            selectionMode || isSelected ? "opacity-0" : ""
-          }`}
-        >
-          {initialsOf(candidate.firstName, candidate.lastName)}
-        </span>
+      <div className="shrink-0" onClick={(e) => e.stopPropagation()}>
         <Checkbox
           variant="theme"
           aria-label={`Select ${name}`}
           checked={isSelected}
           onCheckedChange={() => onToggleSelect(candidate.id)}
-          className={`absolute inset-1.5 size-5 bg-white group-focus-within:opacity-100 group-hover:opacity-100 dark:bg-neutral-900 ${
-            selectionMode || isSelected ? "opacity-100" : "opacity-0"
-          }`}
+          className="size-5 bg-white dark:bg-neutral-900"
         />
       </div>
 
@@ -132,6 +121,17 @@ export const BoardCard = memo(function BoardCard({
           Applied {applied}
         </p>
       </div>
+
+      <ScoreBadge
+        total={candidate.totalScore}
+        scoredParts={candidate.scoredParts}
+        weightedParts={candidate.weightedParts}
+        knockedOut={candidate.knockedOut}
+        assessmentPassed={candidate.assessmentPassed}
+        assessmentExpired={candidate.assessmentExpired}
+        hideWhenUnscored
+        className="shrink-0"
+      />
 
       <CardMenu
         candidate={candidate}

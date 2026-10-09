@@ -22,6 +22,11 @@ export type Job = {
   createdAt: string;
   updatedAt: string;
   skills: string[];
+  /** How much each score part counts for this job. Relative, not necessarily a sum of 100. */
+  scoreWeightQuestions?: number;
+  scoreWeightAssessment?: number;
+  scoreWeightRating?: number;
+  scoreWeightInterview?: number;
 };
 
 export type PipelineStage = {
@@ -67,6 +72,10 @@ export type CustomQuestion = {
     questionId: number;
     label: string;
     isCorrect: boolean;
+    /** Points for picking this option (the Questions score). */
+    points: number;
+    /** Picking it flags the candidate as not meeting the requirements. */
+    isKnockout: boolean;
     position: number;
   }[];
 };
@@ -150,7 +159,16 @@ export type JobAssessment = {
   jobId?: number;
   assessmentId: number;
   triggerStageId: number | null;
+  /** Percentage needed to pass. */
+  passMark: number;
   createdAt: string;
+};
+
+export type ScorecardCriterion = {
+  id: number;
+  jobId: number;
+  name: string;
+  position: number;
 };
 
 export type CandidateRejection = {
@@ -209,6 +227,22 @@ export type Candidate = {
   updatedAt: string;
   stageName: string | null;
   jobTitle: string | null;
+  /** Score parts, 0-100. Postgres `numeric` reaches us as a string; null until that part exists. */
+  questionsScore?: string | null;
+  assessmentScore?: string | null;
+  ratingScore?: string | null;
+  interviewScore?: string | null;
+  totalScore?: string | null;
+  /** How many of the job's weighted parts have a score yet. */
+  scoredParts?: number;
+  /** How many parts the job weights above zero: the "4" in "2 of 4 scored". */
+  weightedParts?: number;
+  /** Picked a knockout answer. */
+  knockedOut?: boolean;
+  /** Latest finished assessment against its pass mark; null if none finished. */
+  assessmentPassed?: boolean | null;
+  /** A test link ran out unused. It counts as 0 and is flagged. */
+  assessmentExpired?: boolean;
 };
 
 /** What the pipeline board needs about a candidate: the light row from `/candidates/jobs/:id/board`. */
@@ -223,6 +257,12 @@ export type BoardCandidate = Pick<
   | "status"
   | "appliedAt"
   | "updatedAt"
+  | "totalScore"
+  | "scoredParts"
+  | "weightedParts"
+  | "knockedOut"
+  | "assessmentPassed"
+  | "assessmentExpired"
 > & {
   /** When the candidate entered their current stage. Null when there is no record of it. */
   stageEnteredAt: string | null;
@@ -258,6 +298,10 @@ export type CandidateCvAnalysisPayload = {
 };
 
 export type CandidateDetail = Candidate & {
+  weights?: { questions: number; assessment: number; rating: number; interview: number };
+  /** How far apart the interviewers' scorecards were (0-100); null before any, or while hidden. */
+  interviewSpread?: { count: number; min: number; max: number } | null;
+  ratings?: { userId: number; rating: number }[];
   cvAnalysis: CandidateCvAnalysisPayload | null;
   answers: {
     id: number;
@@ -358,7 +402,7 @@ export type Offer = {
 export type NewAssessmentQuestion = {
   title: string;
   description: string | null;
-  questionType: QuestionType;
+  questionType: Exclude<QuestionType, "url">;
   points: number;
   position: number;
   options?: { label: string; isCorrect: boolean; position: number }[];

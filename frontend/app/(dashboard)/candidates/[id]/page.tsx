@@ -36,6 +36,7 @@ import { OfferSection } from "./_components/sections/offer-section";
 import { InterviewsSection } from "./_components/sections/interviews-section";
 import { RejectionSection } from "./_components/sections/rejection-section";
 import { EmailSection } from "./_components/sections/email-section";
+import { ScoreBreakdown } from "./_components/score-breakdown";
 import { ScoresSection } from "./_components/sections/scores-section";
 import { CandidateEditDialog } from "../_components/candidate-edit-dialog";
 import { CandidateDeleteDialog } from "../_components/candidate-delete-dialog";
@@ -222,6 +223,7 @@ export default function CandidateDetailPage({
         onCancelStageChange={() => setSelectedStageId("")}
         onSaveStageChange={saveStageChange}
         onViewCv={() => setIsCvExpanded(true)}
+        onViewScores={() => setActiveSection("scores")}
         onClose={handleClose}
         onEdit={openEditDialog}
         onDelete={() => setDeleteTarget(true)}
@@ -287,10 +289,13 @@ export default function CandidateDetailPage({
                 <EmailSection candidate={candidate} />
               )}
               {activeSection === "scores" && (
-                <ScoresSection
-                  assessmentsData={assessmentsData}
-                  onViewAttempt={setViewAttemptId}
-                />
+                <>
+                  <ScoreBreakdown candidate={candidate} />
+                  <ScoresSection
+                    assessmentsData={assessmentsData}
+                    onViewAttempt={setViewAttemptId}
+                  />
+                </>
               )}
             </div>
           </main>

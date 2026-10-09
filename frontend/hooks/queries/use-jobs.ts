@@ -4,10 +4,21 @@ import type {
   Job,
   JobDetail,
   CustomQuestion,
+  ScorecardCriterion,
   HiringTeamMembership,
   User,
 } from "@/types";
 import type { PaginationInfo } from "@/components/table/table-footer";
+
+export type QuestionOptionInput = {
+  /** Present for an option that already exists; omit it for a new one. */
+  id?: number;
+  label: string;
+  isCorrect: boolean;
+  points: number;
+  isKnockout: boolean;
+  position: number;
+};
 
 export type JobListParams = {
   page?: number;
@@ -156,7 +167,7 @@ export function useCreateQuestion(jobId: number) {
       questionType: "short_answer" | "long_answer" | "url" | "checkbox" | "radio";
       isRequired: boolean;
       position: number;
-      options?: { label: string; isCorrect: boolean; position: number }[];
+      options?: QuestionOptionInput[];
     }) =>
       serverFetch<{ data: CustomQuestion }>(`/jobs/${jobId}/questions`, {
         method: "POST",
@@ -182,7 +193,7 @@ export function useUpdateQuestion(jobId: number) {
         isRequired?: boolean;
         position?: number;
         /** Replaces every existing option; send [] to clear them. */
-        options?: { label: string; isCorrect: boolean; position: number }[];
+        options?: QuestionOptionInput[];
       };
     }) =>
       serverFetch<{ data: CustomQuestion }>(
@@ -246,6 +257,52 @@ export function useRemoveHiringTeamMember(jobId: number) {
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "team"] });
+    },
+  });
+}
+
+export function useScorecard(jobId: number) {
+  return useQuery({
+    queryKey: ["jobs", jobId, "scorecard"],
+    queryFn: () => serverFetch<{ data: ScorecardCriterion[] }>(`/jobs/${jobId}/scorecard`),
+    enabled: !!jobId,
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useSaveScorecard(jobId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (criteria: { id?: number; name: string }[]) =>
+      serverFetch<{ data: ScorecardCriterion[] }>(`/jobs/${jobId}/scorecard`, {
+        method: "PUT",
+        body: JSON.stringify({ criteria }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs", jobId, "scorecard"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+  });
+}
+
+export type ScoreWeights = {
+  scoreWeightQuestions: number;
+  scoreWeightAssessment: number;
+  scoreWeightRating: number;
+  scoreWeightInterview: number;
+};
+
+export function useSaveScoreWeights(jobId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (weights: ScoreWeights) =>
+      serverFetch<{ data: JobDetail }>(`/jobs/${jobId}`, {
+        method: "PUT",
+        body: JSON.stringify(weights),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["jobs", jobId] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });
 }

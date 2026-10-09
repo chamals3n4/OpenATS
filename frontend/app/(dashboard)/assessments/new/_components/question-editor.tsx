@@ -9,6 +9,8 @@ import type { Question, QuestionType } from "../lib/assessment-builder-types";
 import { inputCls, textareaCls } from "../lib/assessment-builder-constants";
 import { QuestionTypeSelector } from "./question-type-selector";
 import { AnswerOptionsEditor } from "./answer-option-editor";
+import { PointsField } from "./points-field";
+import { isWrittenType } from "../lib/assessment-builder-utils";
 
 interface QuestionEditorProps {
   question: Question;
@@ -35,7 +37,7 @@ export function QuestionEditor({
   onRemoveQuestion,
   canRemove,
 }: QuestionEditorProps) {
-  const isShortAnswer = question.type === "Short Answer";
+  const isWritten = isWrittenType(question.type);
   const isTrueFalse = question.type === "True/False";
 
   return (
@@ -85,16 +87,30 @@ export function QuestionEditor({
           />
         </div>
 
-        <QuestionTypeSelector
-          question={question}
-          onChangeType={onChangeType}
-        />
+        <div className="flex flex-wrap items-start gap-5">
+          <div className="w-56">
+            <QuestionTypeSelector
+              question={question}
+              onChangeType={onChangeType}
+            />
+          </div>
+          <PointsField
+            id={`points-${question.uid}`}
+            value={question.points}
+            written={isWritten}
+            multiSelect={question.type === "Multiple Select"}
+            onChange={(points) => onUpdate(question.uid, { points })}
+          />
+        </div>
       </div>
 
-      {isShortAnswer ? (
+      {isWritten ? (
         <div className="border border-slate-300 dark:border-neutral-700 rounded-xl p-6">
           <p className="text-sm text-slate-500 dark:text-neutral-400">
-            Short answer questions are reviewed manually by the hiring team.
+            {question.type === "Long Answer" ? "Long" : "Short"} answers are reviewed by the hiring team.
+            After a candidate finishes, a reviewer awards up to {question.points}{" "}
+            {question.points === 1 ? "point" : "points"} for each one. The candidate&apos;s score is
+            held back until every written answer is graded.
           </p>
         </div>
       ) : (

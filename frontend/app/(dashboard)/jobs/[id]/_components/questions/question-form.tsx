@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -26,6 +27,10 @@ import {
 import {
   MIN_OPTIONS,
   OPTION_MAX,
+  POINTS_MAX,
+  emptyOption,
+  isScored,
+  type OptionDraft,
   QUESTION_TYPES,
   TITLE_MAX,
   hasQuestionErrors,
@@ -40,12 +45,12 @@ export interface QuestionValues {
   questionType: QuestionType;
   isRequired: boolean;
   /** Only meaningful for the two choice types. */
-  options: { label: string; isCorrect: boolean; position: number }[];
+  options: ReturnType<typeof toApiOptions>;
 }
 
 interface QuestionFormProps {
   mode: "add" | "edit";
-  initial: { title: string; type: QuestionType; required: boolean; options: string[] };
+  initial: { title: string; type: QuestionType; required: boolean; options: OptionDraft[] };
   isPending: boolean;
   onSubmit: (values: QuestionValues) => void;
   onCancel: () => void;
@@ -54,9 +59,9 @@ interface QuestionFormProps {
 const selectTriggerCls =
   "h-10! w-full rounded-md border border-slate-300 bg-gray-100 px-3! py-0! text-sm text-slate-900 shadow-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100";
 
-const padOptions = (options: string[]) => {
+const padOptions = (options: OptionDraft[]) => {
   const padded = [...options];
-  while (padded.length < MIN_OPTIONS) padded.push("");
+  while (padded.length < MIN_OPTIONS) padded.push(emptyOption());
   return padded;
 };
 
@@ -68,7 +73,9 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
   const [title, setTitle] = useState(initial.title);
   const [type, setType] = useState<QuestionType>(initial.type);
   const [required, setRequired] = useState(initial.required);
-  const [options, setOptions] = useState<string[]>(() => padOptions(initial.options));
+  const [options, setOptions] = useState<OptionDraft[]>(() => padOptions(initial.options));
+  // Scoring is optional: an unscored choice question is just for information.
+  const [scored, setScored] = useState(() => isScored(initial.options));
   const [showErrors, setShowErrors] = useState(false);
   // Which option row should take focus once it has rendered (a row added with Enter).
   const focusOption = useRef<number | null>(null);
@@ -80,15 +87,15 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
     focusOption.current = null;
   }, [options]);
 
-  const errors = validateQuestion({ title, type, options });
+  const errors = validateQuestion({ title, type, options: options.map((o) => o.label) });
   const isChoice = isChoiceType(type);
 
-  const setOption = (index: number, value: string) =>
-    setOptions((prev) => prev.map((o, i) => (i === index ? value : o)));
+  const patchOption = (index: number, patch: Partial<OptionDraft>) =>
+    setOptions((prev) => prev.map((o, i) => (i === index ? { ...o, ...patch } : o)));
 
   const addOption = (afterIndex = options.length - 1) => {
     focusOption.current = afterIndex + 1;
-    setOptions((prev) => [...prev.slice(0, afterIndex + 1), "", ...prev.slice(afterIndex + 1)]);
+    setOptions((prev) => [...prev.slice(0, afterIndex + 1), emptyOption(), ...prev.slice(afterIndex + 1)]);
   };
 
   const removeOption = (index: number) =>
@@ -107,7 +114,12 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
       title: title.trim(),
       questionType: type,
       isRequired: required,
-      options: isChoice ? toApiOptions(options) : [],
+      options: isChoice
+        ? toApiOptions(
+            scored ? options : options.map((o) => ({ ...o, points: 0, isKnockout: false })),
+            type === "checkbox",
+          )
+        : [],
     });
   };
 
@@ -191,6 +203,13 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
           </div>
         </div>
 
+        {!isChoice && (
+          <p className="text-xs text-slate-500 dark:text-neutral-400">
+            To give points or a knockout, switch the answer type to Single choice or Multiple choice.
+            Typed answers are saved for you to read and can&apos;t be scored.
+          </p>
+        )}
+
         {isChoice && (
           <fieldset className="space-y-2">
             <legend className="text-sm font-medium text-slate-800 dark:text-neutral-200">
@@ -200,30 +219,85 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
               What candidates choose from. Add at least {MIN_OPTIONS}.
             </p>
 
+            <div className="flex items-start gap-3 rounded-md border border-slate-300 px-3.5 py-3 dark:border-neutral-600">
+              <Switch
+                id="question-scored"
+                checked={scored}
+                onCheckedChange={setScored}
+                aria-label="Score this question"
+                className="mt-0.5"
+              />
+              <div className="min-w-0">
+                <Label
+                  htmlFor="question-scored"
+                  className="cursor-pointer text-sm font-medium text-slate-900 dark:text-neutral-100"
+                >
+                  Score this question
+                </Label>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">
+                  {scored
+                    ? type === "checkbox"
+                      ? "Give each option points. Use negative points for a wrong tick, so ticking everything is not full marks. Or mark it as a knockout to flag candidates who pick it."
+                      : "Give each option points, or mark it as a knockout to flag candidates who pick it."
+                    : "Off: the answer is saved and shown on the candidate, but adds nothing to their score."}
+                </p>
+              </div>
+            </div>
+
             <ul className="space-y-2">
-              {options.map((label, i) => {
+              {options.map((option, i) => {
                 const optionError = showErrors ? errors.optionErrors[i] : undefined;
                 return (
                   <li key={i}>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <Input
                         aria-label={`Option ${i + 1}`}
                         ref={(el) => {
                           optionInputs.current[i] = el;
                         }}
-                        value={label}
+                        value={option.label}
                         maxLength={OPTION_MAX}
-                        onChange={(e) => setOption(i, e.target.value)}
+                        onChange={(e) => patchOption(i, { label: e.target.value })}
                         onKeyDown={(e) => {
                           // Enter moves on to the next option instead of submitting the form.
                           if (e.key === "Enter") {
                             e.preventDefault();
-                            if (label.trim()) addOption(i);
+                            if (option.label.trim()) addOption(i);
                           }
                         }}
                         placeholder={`Option ${i + 1}`}
-                        className={`${inputCls} flex-1`}
+                        className={`${inputCls} min-w-48 flex-1`}
                       />
+                      {scored && (
+                        <>
+                      <Input
+                        type="number"
+                        inputMode="numeric"
+                        min={type === "checkbox" ? -POINTS_MAX : 0}
+                        max={POINTS_MAX}
+                        aria-label={`Points for option ${i + 1}`}
+                        title="Points"
+                        value={option.points}
+                        onChange={(e) => patchOption(i, { points: Number(e.target.value) })}
+                        className={`${inputCls} w-20 shrink-0`}
+                      />
+                      <span className="-ml-1 text-sm text-slate-500 dark:text-neutral-400">pts</span>
+                      <div className="flex h-10 shrink-0 items-center gap-2 rounded-md border border-slate-300 px-3 dark:border-neutral-600">
+                        <Checkbox
+                          id={`option-knockout-${i}`}
+                          variant="theme"
+                          checked={option.isKnockout}
+                          onCheckedChange={(v) => patchOption(i, { isKnockout: !!v })}
+                        />
+                        <Label
+                          htmlFor={`option-knockout-${i}`}
+                          className="cursor-pointer text-sm font-normal text-slate-800 dark:text-neutral-200"
+                        >
+                          Knockout
+                        </Label>
+                      </div>
+                        </>
+                      )}
                       <Button
                         type="button"
                         variant="ghost"
@@ -245,6 +319,12 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
                 );
               })}
             </ul>
+
+            {scored && !isScored(options) && (
+              <p className="text-xs text-slate-500 dark:text-neutral-400">
+                No points yet, so this question will not count toward the candidate&apos;s score.
+              </p>
+            )}
 
             {showErrors && errors.options && (
               <p className="text-xs font-medium text-red-600 dark:text-red-400">

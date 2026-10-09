@@ -49,7 +49,8 @@ export default function CreateNewJobPage() {
           staleTime: 1000 * 60 * 3,
         });
 
-        router.push(`/jobs/${jobId}`);
+        // `setup` makes the job page offer the next steps (questions, scoring).
+        router.push(`/jobs/${jobId}?setup=1`);
       },
     });
   };

@@ -9,6 +9,10 @@ const googleSans = Google_Sans({
   subsets: ["latin", "latin-ext"],
   variable: "--font-google-sans",
   display: "swap",
+  // next/font has no size metrics for Google Sans, so it cannot build a matching fallback font and
+  // warns on every build. Skip that adjustment and name the fallback ourselves instead.
+  adjustFontFallback: false,
+  fallback: ["system-ui", "Segoe UI", "Roboto", "Arial", "sans-serif"],
 });
 const changaOne = Changa_One({
   subsets: ["latin"],
@@ -24,11 +28,14 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "OpenATS",
   description: "Open Source Applicant Tracking System",
+  // Black mark by default; FaviconSwitcher swaps in the white one in dark mode.
+  icons: { icon: "/icon-light.png" },
 };
 
 export const dynamic = "force-dynamic";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
+import { FaviconSwitcher } from "@/components/theme/favicon-switcher";
 import { ThemeInitializer } from "@/components/theme/theme-initializer";
 
 export default function RootLayout({
@@ -52,6 +59,7 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <ThemeInitializer />
+          <FaviconSwitcher />
           <AsgardeoProvider>{children}</AsgardeoProvider>
         </ThemeProvider>
       </body>

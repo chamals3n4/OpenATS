@@ -7,6 +7,7 @@ import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 import type { Candidate } from "@/types";
 import { timeAgo } from "../lib/candidate-utils";
 import { useIsManager } from "@/hooks/use-role";
+import { ScoreBadge } from "@/components/score-badge";
 
 interface CandidateTableRowProps {
   candidate: Candidate;
@@ -54,6 +55,16 @@ export function CandidateTableRow({
       </TableCell>
       <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         {candidate.jobTitle ?? "—"}
+      </TableCell>
+      <TableCell className="h-12 px-6 py-0">
+        <ScoreBadge
+          total={candidate.totalScore}
+          scoredParts={candidate.scoredParts}
+          weightedParts={candidate.weightedParts}
+          knockedOut={candidate.knockedOut}
+          assessmentPassed={candidate.assessmentPassed}
+          assessmentExpired={candidate.assessmentExpired}
+        />
       </TableCell>
       <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
         {timeAgo(candidate.appliedAt)}

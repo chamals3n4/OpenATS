@@ -20,6 +20,7 @@ pnpm vitest run tests/unit/object.util.test.ts                 # run one test fi
 pnpm drizzle-kit generate   # generate migration SQL (always commit output)
 pnpm drizzle-kit migrate    # apply migrations to DB
 pnpm tsx src/db/seed.ts     # seed pipeline stages (required on first setup)
+pnpm tsx src/db/backfill-scores.ts   # re-score every candidate (run after changing how scores are calculated)
 docker compose up -d        # local Postgres (5432) + Redis (6379), see docker-compose.yml at the repo root
 ```
 

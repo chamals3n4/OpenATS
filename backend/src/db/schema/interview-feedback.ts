@@ -8,6 +8,7 @@ import {
 } from "drizzle-orm/pg-core";
 import { candidateInterviews } from "./interviews";
 import { users } from "./users";
+import { interviewRecommendation } from "./enums";
 
 export const interviewFeedback = pgTable(
   "interview_feedback",
@@ -20,7 +21,8 @@ export const interviewFeedback = pgTable(
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
     content: text("content").notNull(),
-    rating: integer("rating"), // 1-5 star rating (optional)
+    rating: integer("rating"), // 1-5 star rating (optional), used when the job has no scorecard criteria
+    recommendation: interviewRecommendation("recommendation"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },

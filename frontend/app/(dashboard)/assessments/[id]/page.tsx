@@ -41,49 +41,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-
-type QuestionType = "Multiple Choice" | "Short Answer" | "True/False";
-
-interface AnswerOption {
-  id: number;
-  text: string;
-  isCorrect: boolean;
-}
-
-interface Question {
-  uid: number;
-  dbId?: number;
-  title: string;
-  description: string;
-  type: QuestionType;
-  options: AnswerOption[];
-}
-
-let idCounter = 100;
-
-const makeOption = (text: string): AnswerOption => ({
-  id: ++idCounter,
-  text,
-  isCorrect: false,
-});
-
-const makeQuestion = (): Question => ({
-  uid: ++idCounter,
-  dbId: undefined,
-  title: "",
-  description: "",
-  type: "Multiple Choice",
-  options: [
-    makeOption("Option 1"),
-    makeOption("Option 2"),
-    makeOption("Option 3"),
-  ],
-});
-
-const TRUE_FALSE_OPTIONS: AnswerOption[] = [
-  { id: -1, text: "True", isCorrect: false },
-  { id: -2, text: "False", isCorrect: false },
-];
+import type { Question, QuestionType } from "../new/lib/assessment-builder-types";
+import {
+  firstQuestionProblem,
+  getDefaultOptionsForType,
+  isWrittenType,
+  makeOption,
+  makeQuestion,
+  questionFromApi,
+  questionToApi,
+  toggleCorrectOption,
+} from "../new/lib/assessment-builder-utils";
+import { PointsField } from "../new/_components/points-field";
 
 export default function EditAssessmentPage({
   params,
@@ -127,32 +96,7 @@ export default function EditAssessmentPage({
     // eslint-disable-next-line react-hooks/set-state-in-effect
 
     if (data.questions && data.questions.length > 0) {
-      const loaded: Question[] = data.questions.map((dbQ) => {
-        let type: QuestionType = "Multiple Choice";
-        if (dbQ.questionType === "short_answer") {
-          type = "Short Answer";
-        } else if (
-          dbQ.options?.length === 2 &&
-          dbQ.options[0]?.label === "True" &&
-          dbQ.options[1]?.label === "False"
-        ) {
-          type = "True/False";
-        }
-
-        return {
-          uid: ++idCounter,
-          dbId: dbQ.id,
-          title: dbQ.title ?? "",
-          description: dbQ.description ?? "",
-          type,
-          options:
-            dbQ.options?.map((opt) => ({
-              id: opt.id ?? ++idCounter,
-              text: opt.label,
-              isCorrect: opt.isCorrect,
-            })) ?? [],
-        };
-      });
+      const loaded: Question[] = data.questions.map(questionFromApi);
 
       originalDbIds.current = loaded.map((q) => q.dbId!);
       setQuestions(loaded);
@@ -172,6 +116,12 @@ export default function EditAssessmentPage({
     // `questions` via the useEffect before all saves complete.
     const savedQuestions = questions;
 
+    const problem = firstQuestionProblem(savedQuestions);
+    if (problem) {
+      alert(problem);
+      return;
+    }
+
     setIsSaving(true);
     try {
       const currentDbIds = new Set(
@@ -186,23 +136,7 @@ export default function EditAssessmentPage({
       }
 
       for (const [idx, q] of savedQuestions.entries()) {
-        const isMultipleChoice = q.type !== "Short Answer";
-        const questionData = {
-          title: q.title || `Question ${idx + 1}`,
-          description: q.description || null,
-          questionType: (isMultipleChoice
-            ? "multiple_choice"
-            : "short_answer") as "multiple_choice" | "short_answer",
-          points: 1,
-          position: idx + 1,
-          options: isMultipleChoice
-            ? q.options.map((opt, oIdx) => ({
-                label: opt.text || `Option ${oIdx + 1}`,
-                isCorrect: opt.isCorrect,
-                position: oIdx + 1,
-              }))
-            : undefined,
-        };
+        const questionData = questionToApi(q, idx);
 
         if (q.dbId) {
           await updateQuestionMutation.mutateAsync({
@@ -265,20 +199,11 @@ export default function EditAssessmentPage({
 
   const changeType = (qId: number, type: QuestionType) => {
     setQuestions((prev) =>
-      prev.map((q) => {
-        if (q.uid !== qId) return q;
-        let options = q.options;
-        if (type === "True/False") {
-          options = TRUE_FALSE_OPTIONS.map((o) => ({ ...o }));
-        } else if (q.type === "True/False") {
-          options = [
-            makeOption("Option 1"),
-            makeOption("Option 2"),
-            makeOption("Option 3"),
-          ];
-        }
-        return { ...q, type, options };
-      }),
+      prev.map((q) =>
+        q.uid === qId
+          ? { ...q, type, options: getDefaultOptionsForType(q.type, type, q.options) }
+          : q,
+      ),
     );
   };
 
@@ -325,21 +250,15 @@ export default function EditAssessmentPage({
 
   const toggleCorrect = (qId: number, optId: number) => {
     setQuestions((prev) =>
-      prev.map((q) => {
-        if (q.uid !== qId) return q;
-        const options = q.options.map((o) => ({
-          ...o,
-          isCorrect: o.id === optId ? !o.isCorrect : false,
-        }));
-        return { ...q, options };
-      }),
+      prev.map((q) => (q.uid === qId ? { ...q, options: toggleCorrectOption(q, optId) } : q)),
     );
   };
 
   const currentQ = questions.find((q) => q.uid === selectedQ) || questions[0];
   const isTrueFalse = currentQ?.type === "True/False";
-  const isShortAnswer = currentQ?.type === "Short Answer";
-  const correctLabel = currentQ?.options.find((o) => o.isCorrect)?.text ?? null;
+  const isWritten = currentQ ? isWrittenType(currentQ.type) : false;
+  const isMulti = currentQ?.type === "Multiple Select";
+  const correctLabels = currentQ?.options.filter((o) => o.isCorrect).map((o) => o.text) ?? [];
 
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 overflow-hidden">
@@ -577,17 +496,31 @@ export default function EditAssessmentPage({
                   </SelectTrigger>
                   <SelectContent className="rounded-md shadow-lg border-slate-300 dark:border-neutral-600 bg-white dark:bg-neutral-900">
                     <SelectItem value="Multiple Choice">Multiple Choice</SelectItem>
-                    <SelectItem value="Short Answer">Short Answer</SelectItem>
+                    <SelectItem value="Multiple Select">Multiple Select</SelectItem>
                     <SelectItem value="True/False">True / False</SelectItem>
+                    <SelectItem value="Short Answer">Short Answer</SelectItem>
+                    <SelectItem value="Long Answer">Long Answer</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
+
+              <PointsField
+                id={`points-${currentQ.uid}`}
+                value={currentQ.points}
+                written={isWritten}
+                multiSelect={isMulti}
+                disabled={!isManager}
+                onChange={(points) => updateQuestion(selectedQ, { points })}
+              />
             </div>
 
-            {isShortAnswer ? (
+            {isWritten ? (
               <div className="border border-slate-300 dark:border-neutral-700 rounded-xl p-5">
                 <p className="text-sm text-slate-500 dark:text-neutral-400">
-                  Short answer questions are reviewed manually by the hiring team.
+                  {currentQ.type === "Long Answer" ? "Long" : "Short"} answers are reviewed by the hiring
+                  team. After a candidate finishes, a reviewer awards up to {currentQ.points}{" "}
+                  {currentQ.points === 1 ? "point" : "points"} for each one. The candidate&apos;s score is
+                  held back until every written answer is graded.
                 </p>
               </div>
             ) : (
@@ -597,8 +530,9 @@ export default function EditAssessmentPage({
                     Answer Options
                   </h3>
                   <span className="text-xs text-slate-400">
-                    Click {isTrueFalse ? "True or False" : "the circle"} to mark
-                    correct answer
+                    {isMulti
+                      ? "Click every circle that is a correct answer"
+                      : `Click ${isTrueFalse ? "True or False" : "the circle"} to mark the correct answer`}
                   </span>
                 </div>
 
@@ -679,14 +613,22 @@ export default function EditAssessmentPage({
                   </Button>
                 )}
 
-                {correctLabel && (
+                {isMulti && (
+                  <p className="text-xs text-slate-400 dark:text-neutral-500">
+                    Candidates can pick several options. Each correct pick earns an equal share of the
+                    points and each wrong pick takes one share away, down to zero.
+                  </p>
+                )}
+
+                {correctLabels.length > 0 && (
                   <div className="flex items-center gap-2 pt-1">
                     <HugeiconsIcon
                       icon={TickDouble01Icon}
                       className="size-4 text-emerald-500"
                     />
                     <span className="text-xs text-emerald-600 font-medium">
-                      Correct answer set to: <strong>{correctLabel}</strong>
+                      Correct {correctLabels.length === 1 ? "answer" : "answers"} set to:{" "}
+                      <strong>{correctLabels.join(", ")}</strong>
                     </span>
                   </div>
                 )}

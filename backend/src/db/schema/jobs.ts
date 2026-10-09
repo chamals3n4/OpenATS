@@ -52,6 +52,13 @@ export const jobs = pgTable(
 
     status: jobStatus("status").notNull().default("draft"),
 
+    // How much each part counts toward a candidate's total score. They are relative: the total
+    // divides by the weights of the parts that have a score, so they need not add up to 100.
+    scoreWeightQuestions: integer("score_weight_questions").notNull().default(30),
+    scoreWeightAssessment: integer("score_weight_assessment").notNull().default(30),
+    scoreWeightRating: integer("score_weight_rating").notNull().default(10),
+    scoreWeightInterview: integer("score_weight_interview").notNull().default(30),
+
     applicationEmailTemplateId: integer("application_email_template_id").references(
       () => templates.id,
       { onDelete: "set null" },
@@ -80,6 +87,10 @@ export const jobs = pgTable(
     check(
       "chk_salary_min_max",
       sql`${t.salaryMin} IS NULL OR ${t.salaryMax} IS NULL OR ${t.salaryMax} >= ${t.salaryMin}`,
+    ),
+    check(
+      "chk_score_weights",
+      sql`${t.scoreWeightQuestions} BETWEEN 0 AND 100 AND ${t.scoreWeightAssessment} BETWEEN 0 AND 100 AND ${t.scoreWeightRating} BETWEEN 0 AND 100 AND ${t.scoreWeightInterview} BETWEEN 0 AND 100`,
     ),
     index("idx_jobs_department_id").on(t.departmentId),
     index("idx_jobs_created_by").on(t.createdBy),

@@ -1,13 +1,18 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { customQuestionService } from "./custom-question.service";
+import { scoringService } from "../scoring/scoring.service";
 import { jobService } from "../job/job.service";
 import logger from "../../utils/logger";
 import { getErrorCode, getErrorMessage} from "../../utils/error.utils";
 
 const optionSchema = z.object({
+  id: z.number().int().positive().optional(),
   label: z.string().min(1, "Option label is required").max(500),
   isCorrect: z.boolean().default(false),
+  // Negative points only mean something on a "tick any" (checkbox) question.
+  points: z.number().int().min(-100).max(100).default(0),
+  isKnockout: z.boolean().default(false),
   position: z.number().int().positive(),
 });
 
@@ -34,7 +39,15 @@ const updateCustomQuestionSchema = baseCustomQuestionSchema.partial();
 const attachAssessmentSchema = z.object({
   assessmentId: z.number().int().positive("Assessment ID is required"),
   triggerStageId: z.number().int().positive("Trigger stage ID is required"),
+  passMark: z.number().int().min(0).max(100).optional(),
 });
+
+/** Scores follow the options' points, so a change re-scores the job's candidates in the background. */
+function rescoreJob(jobId: number) {
+  void scoringService
+    .recomputeJob(jobId)
+    .catch((e) => logger.error(`Failed to re-score job ${jobId}: ${getErrorMessage(e)}`));
+}
 
 async function getJobOrFail(res: Response, jobId: number) {
   const job = await jobService.getById(jobId);
@@ -45,7 +58,7 @@ async function getJobOrFail(res: Response, jobId: number) {
   return job;
 }
 
-export const getCustomQuestions = async (req: Request, res: Response) => {
+const questionsHandler = (forApplicant: boolean) => async (req: Request, res: Response) => {
   try {
     const jobId = parseInt((req.params.jobId ?? "").toString());
     if (isNaN(jobId)) {
@@ -53,19 +66,28 @@ export const getCustomQuestions = async (req: Request, res: Response) => {
       return;
     }
 
-    const job = await jobService.getPublishedById(jobId);
+    // Staff can read the questions of a job that is not published yet.
+    const job = forApplicant
+      ? await jobService.getPublishedById(jobId)
+      : await jobService.getById(jobId);
     if (!job) {
       res.status(404).json({ error: "Job not found" });
       return;
     }
 
-    const result = await customQuestionService.getByJobId(jobId);
+    const result = forApplicant
+      ? await customQuestionService.getForApplicant(jobId)
+      : await customQuestionService.getByJobId(jobId);
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(`Failed to fetch custom questions for job id=${req.params.jobId}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch custom questions" });
   }
 };
+
+export const getCustomQuestions = questionsHandler(false);
+/** For `/public/*`: the scoring (points, knockouts, correct answers) never reaches applicants. */
+export const getPublicCustomQuestions = questionsHandler(true);
 
 export const createCustomQuestion = async (req: Request, res: Response) => {
   try {
@@ -89,6 +111,7 @@ export const createCustomQuestion = async (req: Request, res: Response) => {
     }
 
     const result = await customQuestionService.create(jobId, parsed.data);
+    rescoreJob(jobId);
     logger.info(`Custom question created: id=${result.id}, type="${result.questionType}", jobId=${jobId} by user ${req.user?.id}`);
     res.status(201).json({ data: result });
   } catch (error) {
@@ -128,6 +151,7 @@ export const updateCustomQuestion = async (req: Request, res: Response) => {
       return;
     }
 
+    rescoreJob(jobId);
     logger.info(`Custom question updated: id=${questionId}, jobId=${jobId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
@@ -155,6 +179,7 @@ export const deleteCustomQuestion = async (req: Request, res: Response) => {
       return;
     }
 
+    rescoreJob(jobId);
     logger.info(`Custom question deleted: id=${questionId}, jobId=${jobId} by user ${req.user?.id}`);
     res.status(200).json({ data: result });
   } catch (error) {
@@ -206,6 +231,7 @@ export const attachAssessment = async (req: Request, res: Response) => {
       jobId,
       parsed.data,
     );
+    void scoringService.regradeJob(jobId).catch((e) => logger.error(`Failed to regrade job ${jobId}: ${getErrorMessage(e)}`));
     logger.info(`Assessment attached to job application form: jobId=${jobId}, assessmentId=${parsed.data.assessmentId}, triggerStageId=${parsed.data.triggerStageId} by user ${req.user?.id}`);
     res.status(201).json({ data: result });
   } catch (error) {

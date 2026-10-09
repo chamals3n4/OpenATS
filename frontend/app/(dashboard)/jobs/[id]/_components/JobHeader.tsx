@@ -360,15 +360,15 @@ export function JobHeader({
             </Button>
 
             {isManager && (
-              <Link href={`/jobs/${jobId}/edit`}>
-                <Button
-                  variant="outline"
-                  className="h-9 cursor-pointer gap-2 border-theme/30 bg-theme/10 px-3.5 text-sm font-semibold text-theme shadow-none hover:bg-theme/20 dark:text-primary"
-                >
-                  <HugeiconsIcon icon={Edit02Icon} className="size-4" strokeWidth={1.75} />
-                  Edit
-                </Button>
-              </Link>
+              <Button
+                variant="outline"
+                nativeButton={false}
+                render={<Link href={`/jobs/${jobId}/edit`} />}
+                className="h-9 cursor-pointer gap-2 border-theme/30 bg-theme/10 px-3.5 text-sm font-semibold text-theme shadow-none hover:bg-theme/20 dark:text-primary"
+              >
+                <HugeiconsIcon icon={Edit02Icon} className="size-4" strokeWidth={1.75} />
+                Edit
+              </Button>
             )}
 
             <span aria-hidden className="mx-1 hidden h-6 w-px bg-slate-300 lg:block dark:bg-neutral-700" />

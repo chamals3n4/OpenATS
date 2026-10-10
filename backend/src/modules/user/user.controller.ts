@@ -16,13 +16,6 @@ const updateUserSchema = z.object({
   isActive: z.boolean().optional(),
 });
 
-const createUserSchema = z.object({
-  asgardeoUserId: z.string().min(1),
-  firstName: z.string().min(1).max(100),
-  lastName: z.string().min(1).max(100),
-  email: z.string().email().max(255),
-});
-
 export const getCurrentUser = async (req: Request, res: Response) => {
   res.status(200).json({ data: req.user });
 };
@@ -101,29 +94,6 @@ export const updateUser = async (req: Request, res: Response) => {
   } catch (error) {
     logger.error(`[updateUser] error:`, error);
     res.status(500).json({ error: "Failed to update user" });
-  }
-};
-
-export const createUser = async (req: Request, res: Response) => {
-  try {
-    if (req.user.role !== "super_admin") {
-      res.status(403).json({ error: "Only a super admin can create users" });
-      return;
-    }
-
-    const parsed = createUserSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({
-        error: "Validation failed",
-        details: parsed.error.flatten().fieldErrors,
-      });
-      return;
-    }
-    const result = await userService.create(parsed.data);
-    res.status(201).json({ data: result });
-  } catch (error) {
-    logger.error(`Failed to create user: ${getErrorMessage(error)}`);
-    res.status(500).json({ error: "Failed to create user" });
   }
 };
 

@@ -53,12 +53,6 @@ let offerId: number;
 
 beforeAll(async () => {
   await initTestKeys();
-  auth = await bearer({
-    sub: `${SUFFIX}-manager`,
-    email: `manager.${SUFFIX}@example.test`,
-    role: "super_admin",
-  });
-
   const [co] = await db
     .insert(company)
     .values({ name: `Co ${SUFFIX}`, email: `co.${SUFFIX}@example.test` })
@@ -71,19 +65,19 @@ beforeAll(async () => {
     .returning({ id: departments.id });
   departmentId = dept!.id;
 
-  // The token provisions this user on first request, so create it up front to
-  // own the job.
+  // The token only carries the user id, so the row has to exist first.
   const [manager] = await db
     .insert(users)
     .values({
-      asgardeoUserId: `${SUFFIX}-manager`,
       name: "Flow Manager",
       firstName: "Flow",
       lastName: "Manager",
       email: `manager.${SUFFIX}@example.test`,
+      role: "super_admin",
     })
     .returning({ id: users.id });
   managerId = manager!.id;
+  auth = await bearer(managerId);
 
   const [job] = await db
     .insert(jobs)

@@ -1,11 +1,10 @@
-import { User } from "../db";
-
-type AppRole = "super_admin" | "hiring_manager" | "interviewer";
+import type { AuthenticatedUser } from "../shared/auth/verify-token";
 
 declare global {
   namespace Express {
     interface Request {
-      user: User & { role: AppRole };
+      // The `users` row, with `role` narrowed to AppRole.
+      user: AuthenticatedUser;
     }
   }
 }

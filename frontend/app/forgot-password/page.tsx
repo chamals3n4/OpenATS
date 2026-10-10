@@ -7,6 +7,7 @@ import { ArrowLeft01Icon, MailSend01Icon } from "@hugeicons/core-free-icons";
 import { authClient } from "@/lib/auth-client";
 import { isRateLimited, signInErrorMessage } from "@/lib/auth-errors";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { authInputClass } from "@/components/auth/input-class";
 import { FormAlert } from "@/components/auth/form-alert";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -17,7 +18,7 @@ function BackToSignIn() {
   return (
     <Link
       href="/login"
-      className="inline-flex items-center justify-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
+      className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
     >
       <HugeiconsIcon icon={ArrowLeft01Icon} className="size-4" strokeWidth={2} />
       Back to sign in
@@ -62,12 +63,14 @@ export default function ForgotPasswordPage() {
         title="Check your email"
         description="If an account exists for that email, we have sent a link to reset your password. The link expires in 24 hours."
       >
-        <div className="flex flex-col items-center gap-6">
-          <HugeiconsIcon
-            icon={MailSend01Icon}
-            className="size-10 text-theme"
-            strokeWidth={1.5}
-          />
+        <div className="flex flex-col items-start gap-6">
+          <span className="flex size-12 items-center justify-center rounded-full bg-muted text-foreground">
+            <HugeiconsIcon
+              icon={MailSend01Icon}
+              className="size-6"
+              strokeWidth={1.75}
+            />
+          </span>
           <BackToSignIn />
         </div>
       </AuthShell>
@@ -92,13 +95,20 @@ export default function ForgotPasswordPage() {
               autoComplete="email"
               autoFocus
               required
+              placeholder="you@company.com"
+              className={authInputClass}
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               disabled={submitting}
             />
           </Field>
 
-          <Button type="submit" size="lg" disabled={submitting}>
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full"
+            disabled={submitting}
+          >
             {submitting ? <Spinner /> : null}
             Send reset link
           </Button>

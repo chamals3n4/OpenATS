@@ -2,16 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { useQueryClient } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  ComputerIcon,
-  Logout01Icon,
-  MoreHorizontalIcon,
-  Sun01Icon,
-  Moon02Icon,
-} from "@hugeicons/core-free-icons";
+import { Logout01Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -36,6 +29,7 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/queries/use-user";
 import { initialsOf } from "@/lib/initials";
+import { ThemeSwitch } from "@/components/theme/theme-switch";
 
 export type SidebarUserMenuProps = {
   variant?: "header" | "sidebar";
@@ -45,17 +39,9 @@ export function SidebarUserMenu({
   variant = "header",
 }: SidebarUserMenuProps) {
   const router = useRouter();
-  const { theme, setTheme } = useTheme();
   const { state } = useSidebar();
   const queryClient = useQueryClient();
   const [confirmLogoutOpen, setConfirmLogoutOpen] = React.useState(false);
-
-  // Theme is client-only, so hold the toggle back until after hydration.
-  const mounted = React.useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
 
   const collapsed = state === "collapsed";
   const showProfileRow = variant === "sidebar" && !collapsed;
@@ -155,43 +141,7 @@ export function SidebarUserMenu({
           onPointerDown={(e) => e.preventDefault()}
         >
           <span className="text-sm text-popover-foreground">Theme</span>
-          {mounted ? (
-            <div className="flex h-8 shrink-0 items-center rounded-full border border-border bg-muted/60 p-0.5 dark:bg-muted/40">
-              {(
-                [
-                  { id: "system", icon: ComputerIcon, label: "System" },
-                  { id: "light", icon: Sun01Icon, label: "Light" },
-                  { id: "dark", icon: Moon02Icon, label: "Dark" },
-                ] as const
-              ).map((mode) => {
-                const active = theme === mode.id;
-                return (
-                  <button
-                    key={mode.id}
-                    type="button"
-                    title={mode.label}
-                    aria-label={mode.label}
-                    aria-pressed={active}
-                    onClick={() => setTheme(mode.id)}
-                    className={cn(
-                      "flex size-7 cursor-pointer items-center justify-center rounded-full transition-colors",
-                      active
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <HugeiconsIcon
-                      icon={mode.icon}
-                      className="size-4"
-                      strokeWidth={1.75}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="h-8 w-[88px] shrink-0 rounded-full bg-muted/50" />
-          )}
+          <ThemeSwitch />
         </div>
 
         <div className="p-1">

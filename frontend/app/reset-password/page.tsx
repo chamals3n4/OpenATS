@@ -32,12 +32,10 @@ function InvalidLink() {
       title="This link is no longer valid"
       description="The link is invalid, has expired, or has already been used. Request a new one to continue."
     >
-      <div className="flex flex-col items-center gap-6">
-        <HugeiconsIcon
-          icon={Unlink03Icon}
-          className="size-10 text-muted-foreground"
-          strokeWidth={1.5}
-        />
+      <div className="flex flex-col items-start gap-6">
+        <span className="flex size-12 items-center justify-center rounded-full bg-muted text-muted-foreground">
+          <HugeiconsIcon icon={Unlink03Icon} className="size-6" strokeWidth={1.75} />
+        </span>
         <Link
           href="/forgot-password"
           className={buttonVariants({ size: "lg", className: "w-full" })}
@@ -55,12 +53,14 @@ function PasswordSaved() {
       title="Password saved"
       description="You can now sign in with your new password."
     >
-      <div className="flex flex-col items-center gap-6">
-        <HugeiconsIcon
-          icon={CheckmarkCircle02Icon}
-          className="size-10 text-theme"
-          strokeWidth={1.5}
-        />
+      <div className="flex flex-col items-start gap-6">
+        <span className="flex size-12 items-center justify-center rounded-full bg-muted text-foreground">
+          <HugeiconsIcon
+            icon={CheckmarkCircle02Icon}
+            className="size-6"
+            strokeWidth={1.75}
+          />
+        </span>
         <Link
           href="/login"
           className={buttonVariants({ size: "lg", className: "w-full" })}
@@ -163,7 +163,12 @@ function ResetPasswordForm() {
             />
           </Field>
 
-          <Button type="submit" size="lg" disabled={submitting}>
+          <Button
+            type="submit"
+            size="lg"
+            className="w-full"
+            disabled={submitting}
+          >
             {submitting ? <Spinner /> : null}
             Save password
           </Button>

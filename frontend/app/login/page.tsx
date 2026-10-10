@@ -10,6 +10,7 @@ import {
   type SignInFieldErrors,
 } from "@/lib/auth-errors";
 import { AuthShell } from "@/components/auth/auth-shell";
+import { authInputClass } from "@/components/auth/input-class";
 import { FormAlert } from "@/components/auth/form-alert";
 import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
@@ -62,8 +63,11 @@ export default function LoginPage() {
   };
 
   return (
-    <>
-      <AuthShell title="Sign in to OpenATS">
+    <AuthShell
+      title="Sign in"
+      description="Use your OpenATS account to continue."
+    >
+      <div className="flex flex-col gap-6">
         <form onSubmit={handleSubmit} noValidate>
           <FieldGroup>
             <FormAlert message={error} />
@@ -76,6 +80,8 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 autoFocus
+                placeholder="you@company.com"
+                className={authInputClass}
                 aria-invalid={fieldErrors.email ? true : undefined}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -89,7 +95,7 @@ export default function LoginPage() {
                 <FieldLabel htmlFor="password">Password</FieldLabel>
                 <Link
                   href="/forgot-password"
-                  className="text-sm text-theme hover:underline underline-offset-3"
+                  className="text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
                 >
                   Forgot password?
                 </Link>
@@ -106,14 +112,27 @@ export default function LoginPage() {
               <FieldError>{fieldErrors.password}</FieldError>
             </Field>
 
-            <Button type="submit" size="lg" disabled={submitting}>
+            <Button
+              type="submit"
+              size="lg"
+              className="w-full"
+              disabled={submitting}
+            >
               {submitting ? <Spinner /> : null}
-              Sign in
+              {submitting ? "Signing in…" : "Sign in"}
             </Button>
           </FieldGroup>
         </form>
-      </AuthShell>
-      <DemoCredentials />
-    </>
+
+        <DemoCredentials
+          onUse={(demoEmail, demoPassword) => {
+            setEmail(demoEmail);
+            setPassword(demoPassword);
+            setError(null);
+            setFieldErrors({});
+          }}
+        />
+      </div>
+    </AuthShell>
   );
 }

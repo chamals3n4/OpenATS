@@ -1,53 +1,50 @@
 "use client";
 
-import { useState } from "react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Copy01Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
+import { Button } from "@/components/ui/button";
 
 // Public demo only. A self-hosted install leaves the flag unset and shows nothing.
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 const DEMO_EMAIL = process.env.NEXT_PUBLIC_DEMO_EMAIL ?? "";
 const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? "";
 
-function CredentialRow({ label, value }: { label: string; value: string }) {
-  const [copied, setCopied] = useState(false);
-
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
-  };
-
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <span className="text-sm font-medium text-muted-foreground">{label}</span>
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="inline-flex cursor-pointer items-center gap-1.5 text-sm font-semibold text-foreground transition-colors hover:text-theme"
-      >
-        {value}
-        <HugeiconsIcon
-          icon={copied ? CheckmarkCircle02Icon : Copy01Icon}
-          className={`size-4.5 ${copied ? "text-theme" : "text-muted-foreground"}`}
-          strokeWidth={2}
-        />
-      </button>
-    </div>
-  );
-}
-
-export function DemoCredentials() {
+export function DemoCredentials({
+  onUse,
+}: {
+  /** Fills the sign-in form with the demo account. */
+  onUse: (email: string, password: string) => void;
+}) {
   if (!DEMO_MODE || !DEMO_EMAIL || !DEMO_PASSWORD) return null;
 
   return (
-    <div className="fixed top-6 right-6 hidden w-96 rounded-xl border border-theme/30 bg-theme/5 p-6 lg:block">
-      <p className="mb-3 text-[15px] font-semibold tracking-wider text-theme">
-        Demo credentials
-      </p>
-      <div className="flex flex-col gap-2">
-        <CredentialRow label="Email" value={DEMO_EMAIL} />
-        <CredentialRow label="Password" value={DEMO_PASSWORD} />
+    <div className="rounded-lg border border-border bg-muted/40 p-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-foreground">
+            Demo credentials
+          </p>
+          <dl className="mt-2 space-y-1 text-sm">
+            <div className="flex gap-2">
+              <dt className="w-20 shrink-0 text-muted-foreground">Email</dt>
+              <dd className="truncate font-medium text-foreground">
+                {DEMO_EMAIL}
+              </dd>
+            </div>
+            <div className="flex gap-2">
+              <dt className="w-20 shrink-0 text-muted-foreground">Password</dt>
+              <dd className="truncate font-medium text-foreground">
+                {DEMO_PASSWORD}
+              </dd>
+            </div>
+          </dl>
+        </div>
+        <Button
+          type="button"
+          variant="cancel"
+          size="sm"
+          onClick={() => onUse(DEMO_EMAIL, DEMO_PASSWORD)}
+        >
+          Fill in
+        </Button>
       </div>
     </div>
   );

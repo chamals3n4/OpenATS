@@ -1,6 +1,8 @@
 import Image from "next/image";
+import { ThemeSwitch } from "@/components/theme/theme-switch";
 
-// Shared frame for the sign-in, forgot password and reset password pages.
+// Shared frame for the sign-in, forgot password and reset password pages:
+// one centered card, with the theme switch in the corner.
 export function AuthShell({
   title,
   description,
@@ -11,27 +13,35 @@ export function AuthShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-svh items-center justify-center bg-background p-6 md:p-8">
-      <div className="flex w-full max-w-sm flex-col gap-6">
-        <div className="flex flex-col items-center gap-4 text-center">
+    <div className="relative flex min-h-svh items-center justify-center bg-muted/40 p-4 sm:p-6 dark:bg-background">
+      <ThemeSwitch className="absolute right-4 top-4 sm:right-6 sm:top-6" />
+
+      <div className="w-full max-w-[400px]">
+        <div className="mb-8 flex items-center justify-center gap-3 text-4xl font-semibold tracking-tight text-foreground">
           <Image
             src="/assets/openats-logo.png"
-            alt="OpenATS"
-            width={40}
-            height={40}
-            className="size-10 object-contain dark:brightness-0 dark:invert"
+            alt=""
+            width={52}
+            height={52}
+            className="size-[52px] object-contain dark:brightness-0 dark:invert"
             priority
           />
-          <div className="flex flex-col gap-1.5">
-            <h1 className="text-xl font-semibold text-foreground">{title}</h1>
+          OpenATS
+        </div>
+
+        <div className="rounded-xl border border-slate-300 bg-card p-6 shadow-none sm:p-8 dark:border-neutral-700">
+          <div className="mb-6 flex flex-col gap-1.5">
+            <h1 className="text-xl font-semibold tracking-tight text-foreground">
+              {title}
+            </h1>
             {description ? (
-              <p className="text-sm text-muted-foreground text-balance">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 {description}
               </p>
             ) : null}
           </div>
+          {children}
         </div>
-        {children}
       </div>
     </div>
   );

@@ -1,4 +1,7 @@
 import { generateKeyPair, SignJWT } from "jose";
+import { db } from "../../src/db";
+import { users } from "../../src/db/schema/users";
+import type { User } from "../../src/db/schema/users";
 import { jwks } from "./jwks-holder";
 
 export { jwks };
@@ -33,9 +36,29 @@ export async function signToken(
     .sign((opts.key ?? privateKey) as Parameters<SignJWT["sign"]>[0]);
 }
 
-// A token the auth middleware accepts. The user row must already exist: the
-// token only carries its id, and role and status come from the row.
-export async function bearer(userId: number) {
-  const token = await signToken({ sub: String(userId) });
-  return `Bearer ${token}`;
+// Creates a user and a token the auth middleware accepts for them. Users are
+// no longer provisioned on first use, so the row is inserted here; the token
+// only carries its id, and role and status are read from the row.
+export async function bearer(opts: {
+  email: string;
+  role?: string;
+  firstName?: string;
+  lastName?: string;
+}): Promise<{ authorization: string; user: User }> {
+  const firstName = opts.firstName ?? "Test";
+  const lastName = opts.lastName ?? "User";
+
+  const [user] = await db
+    .insert(users)
+    .values({
+      name: `${firstName} ${lastName}`,
+      firstName,
+      lastName,
+      email: opts.email,
+      role: opts.role ?? "super_admin",
+    })
+    .returning();
+
+  const token = await signToken({ sub: String(user!.id) });
+  return { authorization: `Bearer ${token}`, user: user! };
 }

@@ -4,12 +4,21 @@ import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { authClient } from "@/lib/auth-client";
-import { signInErrorMessage } from "@/lib/auth-errors";
+import {
+  signInErrorMessage,
+  validateSignIn,
+  type SignInFieldErrors,
+} from "@/lib/auth-errors";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { FormAlert } from "@/components/auth/form-alert";
 import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+  Field,
+  FieldError,
+  FieldGroup,
+  FieldLabel,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { DemoCredentials } from "./_components/demo-credentials";
@@ -19,15 +28,24 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<SignInFieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     setError(null);
+
+    const invalid = validateSignIn({ email, password });
+    setFieldErrors(invalid);
+    if (invalid.email || invalid.password) return;
+
     setSubmitting(true);
 
     try {
-      const result = await authClient.signIn.email({ email, password });
+      const result = await authClient.signIn.email({
+        email: email.trim(),
+        password,
+      });
       if (result.error) {
         setError(signInErrorMessage(result.error));
         setSubmitting(false);
@@ -46,7 +64,7 @@ export default function LoginPage() {
   return (
     <>
       <AuthShell title="Sign in to OpenATS">
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} noValidate>
           <FieldGroup>
             <FormAlert message={error} />
 
@@ -58,11 +76,12 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 autoFocus
-                required
+                aria-invalid={fieldErrors.email ? true : undefined}
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={submitting}
               />
+              <FieldError>{fieldErrors.email}</FieldError>
             </Field>
 
             <Field>
@@ -79,11 +98,12 @@ export default function LoginPage() {
                 id="password"
                 name="password"
                 autoComplete="current-password"
-                required
+                aria-invalid={fieldErrors.password ? true : undefined}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={submitting}
               />
+              <FieldError>{fieldErrors.password}</FieldError>
             </Field>
 
             <Button type="submit" size="lg" disabled={submitting}>

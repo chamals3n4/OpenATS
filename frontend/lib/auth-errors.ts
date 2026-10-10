@@ -33,6 +33,31 @@ export function signInErrorMessage(error: AuthClientError): string {
   return GENERIC;
 }
 
+export type SignInFieldErrors = { email?: string; password?: string };
+
+/** Checked before the request is sent; empty when the form can be submitted. */
+export function validateSignIn(values: {
+  email: string;
+  password: string;
+}): SignInFieldErrors {
+  const errors: SignInFieldErrors = {};
+  const email = values.email.trim();
+
+  if (!email) {
+    errors.email = "Enter your email.";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    errors.email = "Enter a valid email address.";
+  }
+
+  // Length rules are not applied here: they belong to setting a password, and
+  // saying so on sign-in would only help someone guessing.
+  if (!values.password) {
+    errors.password = "Enter your password.";
+  }
+
+  return errors;
+}
+
 export function isInvalidResetToken(error: AuthClientError) {
   return error?.code === "INVALID_TOKEN" || error?.code === "USER_NOT_FOUND";
 }

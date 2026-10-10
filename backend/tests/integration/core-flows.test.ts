@@ -65,19 +65,15 @@ beforeAll(async () => {
     .returning({ id: departments.id });
   departmentId = dept!.id;
 
-  // The token only carries the user id, so the row has to exist first.
-  const [manager] = await db
-    .insert(users)
-    .values({
-      name: "Flow Manager",
-      firstName: "Flow",
-      lastName: "Manager",
-      email: `manager.${SUFFIX}@example.test`,
-      role: "super_admin",
-    })
-    .returning({ id: users.id });
-  managerId = manager!.id;
-  auth = await bearer(managerId);
+  // bearer() inserts the user row, which then owns the job.
+  const manager = await bearer({
+    email: `manager.${SUFFIX}@example.test`,
+    role: "super_admin",
+    firstName: "Flow",
+    lastName: "Manager",
+  });
+  auth = manager.authorization;
+  managerId = manager.user.id;
 
   const [job] = await db
     .insert(jobs)

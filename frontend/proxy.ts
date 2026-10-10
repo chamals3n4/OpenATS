@@ -12,6 +12,7 @@ const isPublicRoute = createRouteMatcher([
   "/interview/*",
   "/offer/*",
   "/api/public/*",
+  "/api/auth/*",
 ]);
 
 export const proxy = asgardeoMiddleware(

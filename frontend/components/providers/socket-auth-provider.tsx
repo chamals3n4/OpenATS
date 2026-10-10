@@ -3,7 +3,7 @@
 import { createContext, useContext } from "react";
 
 /**
- * Carries the Asgardeo access token from the dashboard layout (a server
+ * Carries the API access token from the dashboard layout (a server
  * component, where the token lives) down to the client hooks that open
  * socket connections. The backend rejects sockets without it.
  */

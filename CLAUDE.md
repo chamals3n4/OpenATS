@@ -64,12 +64,13 @@ pnpm lint     # eslint
 
 ### Frontend
 
-- **Next.js** with `force-dynamic` on the root layout (`frontend/app/layout.tsx`) — the entire app is SSR-disabled because `AsgardeoProvider` requires request context.
+- **Next.js** with `force-dynamic` on the root layout (`frontend/app/layout.tsx`).
+- **Session and API token**: `frontend/lib/session.ts` (`getSession`, `getApiToken`, `requireRole`) is the only place server code reads the Better Auth session or issues the JWT sent to Express. `frontend/proxy.ts` only checks that a session cookie exists; the dashboard layout does the real check with `getSession()`.
 - Heavy components are code-split with `ssr: false` via `frontend/components/dynamic-imports.tsx`.
 - **Tailwind v4** — CSS-first config (`@tailwindcss/postcss`), no `tailwind.config.ts`. Theme defined via `@theme` in CSS globals.
 - **shadcn/ui** with `base-vega` style. Icon library is **hugeicons** (not lucide or heroicons).
 - Path alias: `@/*` → `./*` (configured in both `tsconfig.json` and Next.js config).
-- **Server-side data fetching**: `serverFetch` in `frontend/lib/auth-action.ts` using `React.cache()` for auth context.
+- **Server-side data fetching**: `serverFetch` in `frontend/lib/auth-action.ts`, which attaches the token from `getApiToken()`.
 - **Client-side data fetching**: `useApi` hook + React Query hooks in `frontend/hooks/queries/`.
 - **Component placement convention**: components/hooks/utils scoped to one route live colocated under that route using Next.js's underscore-prefixed folders (excluded from routing) — `_components/` (nest further for large features, e.g. `templates/_components/template-form/email-builder/`), `lib/` (singular — not `libs/`), `hooks/`. Only truly shared code goes in the top-level `frontend/components/` (shadcn primitives in `components/ui`, shared `components/table`), `frontend/lib/`, and `frontend/hooks/queries/`.
 

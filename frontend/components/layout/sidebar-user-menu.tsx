@@ -32,7 +32,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { useAsgardeo } from "@asgardeo/nextjs";
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 function initialsFromName(name: string) {
   const parts = name.trim().split(/\s+/).filter(Boolean);
@@ -70,7 +71,7 @@ export function SidebarUserMenu({
   variant = "header",
   accessToken,
 }: SidebarUserMenuProps) {
-  const { signOut, isLoading } = useAsgardeo();
+  const router = useRouter();
   const { theme, setTheme } = useTheme();
   const { state } = useSidebar();
   const queryClient = useQueryClient();
@@ -130,7 +131,7 @@ export function SidebarUserMenu({
           <>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-sidebar-foreground">
-                {isLoading ? "…" : displayName}
+                {displayName}
               </p>
             </div>
             <HugeiconsIcon
@@ -161,7 +162,7 @@ export function SidebarUserMenu({
             </Avatar>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[15px] font-semibold leading-snug text-popover-foreground">
-                {isLoading ? "Loading…" : displayName}
+                {displayName}
               </p>
               {email ? (
                 <p className="mt-0.5 truncate text-xs font-normal leading-5 text-muted-foreground">
@@ -246,7 +247,10 @@ export function SidebarUserMenu({
               variant="destructive"
               onClick={() => {
                 queryClient.clear();
-                void signOut();
+                void authClient.signOut().finally(() => {
+                  router.push("/login");
+                  router.refresh();
+                });
               }}
             >
               Log out

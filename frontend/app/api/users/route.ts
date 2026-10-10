@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { serverFetch } from "@/lib/auth-action";
-import { requireRole } from "@/lib/require-role";
+import { requireRole } from "@/lib/session";
 import { assignAsgardeoRole } from "@/lib/asgardeo-roles";
 import {
   getAsgardeoApiBase,

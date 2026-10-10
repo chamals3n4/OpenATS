@@ -246,8 +246,8 @@ export function SidebarUserMenu({
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                queryClient.clear();
                 void authClient.signOut().finally(() => {
+                  queryClient.clear();
                   router.push("/login");
                   router.refresh();
                 });

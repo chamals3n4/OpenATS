@@ -1,4 +1,5 @@
 import type { BetterAuthOptions } from "better-auth";
+import { APIError } from "better-auth/api";
 import { admin, jwt } from "better-auth/plugins";
 import { ac, roles } from "./auth-permissions";
 import { pool } from "./db";
@@ -64,6 +65,27 @@ export const authOptions = {
       expiresAt: "expires_at",
       createdAt: "created_at",
       updatedAt: "updated_at",
+    },
+  },
+  databaseHooks: {
+    session: {
+      create: {
+        // A deactivated user (is_active = false) cannot start a session.
+        // Express rejects them on every request anyway; this stops the
+        // sign-in itself and gives the login page a reason to show.
+        async before(session, ctx) {
+          if (!ctx) return;
+          const user = await ctx.context.internalAdapter.findUserById(
+            session.userId,
+          );
+          if (user && (user as { isActive?: boolean }).isActive === false) {
+            throw APIError.from("FORBIDDEN", {
+              message: "This account has been deactivated.",
+              code: "ACCOUNT_DEACTIVATED",
+            });
+          }
+        },
+      },
     },
   },
   plugins: [

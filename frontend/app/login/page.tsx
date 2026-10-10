@@ -1,72 +1,99 @@
 "use client";
 
 import { useState } from "react";
-import { SignInButton, SignIn } from "@asgardeo/nextjs";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Copy01Icon, CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { authClient } from "@/lib/auth-client";
+import { signInErrorMessage } from "@/lib/auth-errors";
+import { AuthShell } from "@/components/auth/auth-shell";
+import { FormAlert } from "@/components/auth/form-alert";
+import { PasswordInput } from "@/components/auth/password-input";
+import { Button } from "@/components/ui/button";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { Spinner } from "@/components/ui/spinner";
+import { DemoCredentials } from "./_components/demo-credentials";
 
-const DEMO_USERNAME = "demo@openats.dev";
-const DEMO_PASSWORD = "Demo@123#";
+export default function LoginPage() {
+  const router = useRouter();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-function CredentialRow({ label, value }: { label: string; value: string }) {
-  const [copied, setCopied] = useState(false);
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setError(null);
+    setSubmitting(true);
 
-  const handleCopy = async () => {
-    await navigator.clipboard.writeText(value);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1500);
+    try {
+      const result = await authClient.signIn.email({ email, password });
+      if (result.error) {
+        setError(signInErrorMessage(result.error));
+        setSubmitting(false);
+        return;
+      }
+
+      // Stay in the submitting state while the dashboard loads.
+      router.push("/");
+      router.refresh();
+    } catch {
+      setError(signInErrorMessage(null));
+      setSubmitting(false);
+    }
   };
 
   return (
-    <div className="flex items-center justify-between">
-      <span className="text-[14px] font-medium text-slate-600">{label}</span>
-      <button
-        type="button"
-        onClick={handleCopy}
-        className="inline-flex items-center gap-1.5 text-[14px] font-semibold text-slate-900 cursor-pointer hover:text-theme transition-colors"
-      >
-        {value}
-        <HugeiconsIcon
-          icon={copied ? CheckmarkCircle02Icon : Copy01Icon}
-          className={`size-4.5 ${copied ? "text-theme" : "text-slate-600"}`}
-          strokeWidth={2}
-        />
-      </button>
-    </div>
-  );
-}
+    <>
+      <AuthShell title="Sign in to OpenATS">
+        <form onSubmit={handleSubmit}>
+          <FieldGroup>
+            <FormAlert message={error} />
 
-export default function LoginPage() {
-  return (
-    <div className="flex min-h-svh items-center justify-center p-6 md:p-8 bg-white">
-      <div className="w-full max-w-sm flex flex-col items-center gap-6">
-        <style jsx>{`
-          :global(.custom-signin h2) {
-            font-size: 0;
-          }
-          :global(.custom-signin h2::after) {
-            content: "Sign in to OpenATS";
-            font-size: 1.375rem;
-          }
-        `}</style>
-        <SignIn
-          size="small"
-          variant="outlined"
-          className="custom-signin"
-          onSuccess={() => {}}
-          onError={() => {}}
-        />
-      </div>
+            <Field>
+              <FieldLabel htmlFor="email">Email</FieldLabel>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                autoFocus
+                required
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={submitting}
+              />
+            </Field>
 
-      <div className="fixed top-6 right-6 w-96 rounded-xl border border-theme/30 bg-theme/5 p-6">
-        <p className="text-[15px] font-semibold tracking-wider text-theme mb-3">
-          Demo credentials
-        </p>
-        <div className="flex flex-col gap-2">
-          <CredentialRow label="Username" value={DEMO_USERNAME} />
-          <CredentialRow label="Password" value={DEMO_PASSWORD} />
-        </div>
-      </div>
-    </div>
+            <Field>
+              <div className="flex items-center justify-between">
+                <FieldLabel htmlFor="password">Password</FieldLabel>
+                <Link
+                  href="/forgot-password"
+                  className="text-sm text-theme hover:underline underline-offset-3"
+                >
+                  Forgot password?
+                </Link>
+              </div>
+              <PasswordInput
+                id="password"
+                name="password"
+                autoComplete="current-password"
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={submitting}
+              />
+            </Field>
+
+            <Button type="submit" size="lg" disabled={submitting}>
+              {submitting ? <Spinner /> : null}
+              Sign in
+            </Button>
+          </FieldGroup>
+        </form>
+      </AuthShell>
+      <DemoCredentials />
+    </>
   );
 }

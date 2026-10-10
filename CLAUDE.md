@@ -30,6 +30,7 @@ docker compose up -d        # local Postgres (5432) + Redis (6379), see docker-c
 pnpm dev      # next dev --turbo, port 3000
 pnpm build    # next build
 pnpm lint     # eslint
+pnpm exec tsx scripts/create-admin.ts   # create or reset a super admin (also `make admin` at the root)
 ```
 
 ## Architecture

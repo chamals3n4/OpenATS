@@ -36,11 +36,11 @@ async function makeUser(
   const [row] = await db
     .insert(users)
     .values({
-      asgardeoUserId: `${SUFFIX}-${tag}`,
       name: `${tag} Tester`,
       firstName: tag,
       lastName: "Tester",
       email: `${tag}.${SUFFIX}@example.test`,
+      role,
     })
     .returning();
   return { ...row!, role };

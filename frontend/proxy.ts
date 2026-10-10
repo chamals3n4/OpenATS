@@ -1,35 +1,52 @@
-import {
-  asgardeoMiddleware,
-  createRouteMatcher,
-} from "@asgardeo/nextjs/middleware";
 import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+import { getSessionCookie } from "better-auth/cookies";
+import { auth } from "@/lib/auth";
 
-const isPublicRoute = createRouteMatcher([
+const PUBLIC_PATHS = new Set([
   "/login",
+  "/forgot-password",
+  "/reset-password",
   "/careers",
-  "/careers/*",
-  "/assessment/*",
-  "/interview/*",
-  "/offer/*",
-  "/api/public/*",
 ]);
 
-export const proxy = asgardeoMiddleware(
-  async (asgardeo, request) => {
-    if (request.nextUrl.pathname === "/login" && asgardeo.isSignedIn()) {
+const PUBLIC_PREFIXES = [
+  "/careers/",
+  "/assessment/",
+  "/interview/",
+  "/offer/",
+  "/api/public/",
+  "/api/auth/",
+];
+
+function isPublicRoute(pathname: string) {
+  return (
+    PUBLIC_PATHS.has(pathname) ||
+    PUBLIC_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  );
+}
+
+// An optimistic check only: getSessionCookie says a cookie exists, not that
+// the session behind it is valid. The dashboard layout does the real check.
+export async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  const hasSessionCookie = Boolean(getSessionCookie(request));
+
+  if (pathname === "/login" && hasSessionCookie) {
+    // Verified for real here. A stale cookie would otherwise bounce between
+    // this redirect and the dashboard layout's redirect back to /login.
+    const session = await auth.api.getSession({ headers: request.headers });
+    if (session) {
       return NextResponse.redirect(new URL("/", request.url));
     }
+  }
 
-    if (!isPublicRoute(request)) {
-      const protectionResult = await asgardeo.protectRoute();
+  if (!hasSessionCookie && !isPublicRoute(pathname)) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
 
-      if (protectionResult) {
-        return protectionResult;
-      }
-    }
-  },
-  { signInUrl: "/login" },
-);
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [

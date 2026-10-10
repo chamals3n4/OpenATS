@@ -15,7 +15,7 @@ const job = (id: number, over: Partial<CareerJobRow> = {}): CareerJobRow => ({
 });
 
 // Like the dev data: two published roles, both in Engineering.
-const brand = { name: "WSO2", logoUrl: "https://example.com/logo.png" };
+const brand = { name: "Acme", logoUrl: "https://example.com/logo.png" };
 
 const small = [
   job(2, { title: "Senior QA Engineer", createdAt: "2026-09-02T17:08:00.000Z" }),
@@ -143,7 +143,7 @@ describe("top row", () => {
     render(<CareersJobsList jobs={small} brand={brand} />);
     const title = screen.getByRole("heading", { level: 1, name: "Open roles" });
     const bar = title.parentElement!;
-    expect(within(bar).getByRole("img", { name: "WSO2" })).toBeTruthy();
+    expect(within(bar).getByRole("img", { name: "Acme" })).toBeTruthy();
 
     const row = bar.parentElement!;
     expect(row.className).toContain("flex-wrap");
@@ -152,8 +152,8 @@ describe("top row", () => {
   });
 
   it("falls back to the company name when there is no logo, and to just the title with no company", () => {
-    render(<CareersJobsList jobs={small} brand={{ name: "WSO2", logoUrl: null }} />);
-    expect(screen.getByText("WSO2")).toBeTruthy();
+    render(<CareersJobsList jobs={small} brand={{ name: "Acme", logoUrl: null }} />);
+    expect(screen.getByText("Acme")).toBeTruthy();
     cleanup();
 
     render(<CareersJobsList jobs={small} brand={null} />);

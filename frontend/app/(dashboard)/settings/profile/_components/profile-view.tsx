@@ -5,14 +5,14 @@ export interface ProfileViewProps {
   lastName: string | null;
   fullName: string;
   email: string | null;
-  username: string | null;
-  country: string | null;
   avatarUrl: string | null;
   /** Already in plain words, e.g. "Hiring manager". */
   roles: string[];
   memberSince: string | null;
   /** Null when the app could not say. */
   isActive: boolean | null;
+  /** Extra sections shown under the account card, such as "Change password". */
+  children?: React.ReactNode;
 }
 
 function Detail({ label, children }: { label: string; children: React.ReactNode }) {
@@ -33,12 +33,11 @@ export function ProfileView({
   lastName,
   fullName,
   email,
-  username,
-  country,
   avatarUrl,
   roles,
   memberSince,
   isActive,
+  children,
 }: ProfileViewProps) {
   return (
     <div className="flex flex-1 flex-col bg-slate-50/70 dark:bg-neutral-950">
@@ -96,8 +95,6 @@ export function ProfileView({
             </div>
 
             <dl className="divide-y divide-slate-200 border-t border-slate-300 dark:divide-neutral-800 dark:border-neutral-700">
-              {username && <Detail label="Username">{username}</Detail>}
-              {country && <Detail label="Country">{country}</Detail>}
               {memberSince && <Detail label="Member since">{memberSince}</Detail>}
               {isActive !== null && (
                 <Detail label="Account status">
@@ -114,10 +111,12 @@ export function ProfileView({
           </section>
 
           <p className="text-sm leading-relaxed text-slate-500 dark:text-neutral-400">
-            Your name, email and username come from the account you sign in
-            with, so they can&apos;t be changed here. To update them, change
-            them in your sign-in account.
+            Your name, email and role are managed by your administrator, so
+            they can&apos;t be changed here. Ask a super admin to update them
+            in Settings &gt; User management.
           </p>
+
+          {children}
         </div>
       </div>
     </div>

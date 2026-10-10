@@ -4,6 +4,11 @@ info:
   description: |
     Comprehensive API documentation for the OpenATS Applicant Tracking System.
     This API handles everything from job creation and candidate management to technical assessments and offer generation.
+
+    Protected routes (`/api/*`) take an `Authorization: Bearer <token>` header. The token is an
+    OpenATS-issued JWT: a short-lived token signed by the OpenATS frontend (`GET /api/auth/token`
+    on the frontend origin) and verified here against its JWKS. Users are created through user
+    management in the app, not through this API.
   version: 1.0.0
   contact:
     name: OpenATS Repo
@@ -154,30 +159,6 @@ paths:
       responses:
         "200":
           description: Success
-    post:
-      tags: [Users]
-      summary: Create a user
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [asgardeoUserId, firstName, lastName, email]
-              properties:
-                asgardeoUserId: { type: string }
-                firstName: { type: string }
-                lastName: { type: string }
-                email: { type: string, format: email }
-                role:
-                  {
-                    type: string,
-                    enum: [super_admin, hiring_manager, interviewer],
-                    default: interviewer,
-                  }
-      responses:
-        "201":
-          description: User created
   /users/me:
     get:
       tags: [Users]
@@ -1319,6 +1300,14 @@ paths:
           description: Assessment completed
 
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: |
+        OpenATS-issued JWT. Short-lived (15 minutes), signed with EdDSA by the OpenATS frontend.
+        `sub` is the user id; role and account status are read from the database on every request.
   schemas:
     # ── Job Schemas ──────────────────────────────────────────────────────────
     CreateJob:

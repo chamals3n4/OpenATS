@@ -1,18 +1,12 @@
 import { NextResponse } from "next/server";
-import { asgardeo } from "@asgardeo/nextjs/server";
+import { getApiToken } from "@/lib/session";
 
 export const dynamic = "force-dynamic";
 
 // Gives the browser a current access token for the socket handshake.
 export async function GET() {
   try {
-    const client = await asgardeo();
-    const sessionId = await client.getSessionId();
-    if (!sessionId) {
-      return NextResponse.json({ token: null }, { status: 401 });
-    }
-
-    const token = await client.getAccessToken(sessionId);
+    const token = await getApiToken();
     if (!token) {
       return NextResponse.json({ token: null }, { status: 401 });
     }

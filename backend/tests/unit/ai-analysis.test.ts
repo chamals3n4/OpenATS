@@ -14,8 +14,8 @@ describe("the Gemini key is optional", () => {
   // running it happens to have set (CI has only the few values in .env.test).
   const requiredEnv = {
     DATABASE_URL: "postgresql://u:p@localhost:5432/db",
-    ASGARDEO_JWKS_URL: "https://example.test/jwks",
-    ASGARDEO_ISSUER: "https://example.test/issuer",
+    AUTH_JWKS_URL: "https://example.test/jwks",
+    AUTH_ISSUER: "https://example.test/issuer",
     ENCRYPTION_KEY: "key",
     FRONTEND_URL: "http://localhost:3000",
     R2_ENDPOINT: "https://r2.example.test",

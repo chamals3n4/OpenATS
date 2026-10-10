@@ -239,6 +239,13 @@
       "when": 1791574351374,
       "tag": "0033_huge_thunderbolt_ross",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791639938889,
+      "tag": "0034_curious_redwing",
+      "breakpoints": true
     }
   ]
 }

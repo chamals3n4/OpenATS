@@ -10,7 +10,7 @@ const analysis = (over: Partial<CandidateCvAnalysisPayload> = {}): CandidateCvAn
   missingSkills: ["Go"],
   aiSummary: {
     quickSummary: "An intern with a full-stack foundation.",
-    strengths: ["Direct match for TypeScript.", "Certified in WSO2."],
+    strengths: ["Direct match for TypeScript.", "Certified in Kubernetes."],
     gaps: ["No professional experience with Go."],
   },
   errorMessage: null,

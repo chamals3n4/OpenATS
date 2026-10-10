@@ -30,6 +30,7 @@ docker compose up -d        # local Postgres (5432) + Redis (6379), see docker-c
 pnpm dev      # next dev --turbo, port 3000
 pnpm build    # next build
 pnpm lint     # eslint
+pnpm exec tsx scripts/create-admin.ts   # create or reset a super admin (also `make admin` at the root)
 ```
 
 ## Architecture
@@ -39,15 +40,15 @@ pnpm lint     # eslint
 - **Express 5** (not 4) with TypeScript compiled to CommonJS (`"module": "commonjs"` in tsconfig). `tsx` handles dev transpilation.
 - **Feature-first layout**: code is organized by feature under `backend/src/modules/<feature>/`, each holding that feature's `*.controller.ts`, `*.service.ts`, and `*.routes.ts` together (e.g. `modules/candidate/candidate.controller.ts`). There are no top-level `controllers/`, `services/`, or per-feature `routes/` directories — put new feature code in its module, not in a layer folder.
 - **Request flow**: `backend/src/server.ts` → `backend/src/app.ts` → `backend/src/routes/index.ts` → each module's routes file → that module's controller → service.
-- **Shared code**: `backend/src/shared/auth/verify-token.ts` is the single Asgardeo JWT verification path, used by both `auth.middleware.ts` and the Socket.IO handshake so the two transports cannot drift on who counts as authenticated; `backend/src/shared/services/` holds services used by 2+ modules (`mail`, `socket`, `r2`, `google-calendar`); `backend/src/shared/integrations/` holds external-provider infra (`connection.service`, `registry`, `crypto`, `google-meet.provider`) — distinct from the `modules/integrations/` feature, which is CRUD for a company's configured integrations. Cross-module imports (e.g. `offer` → `../template/template-engine.service`) are fine; only promote to `shared/` when 2+ unrelated modules need it.
+- **Shared code**: `backend/src/shared/auth/verify-token.ts` is the single JWT verification path (tokens are issued by Better Auth in the Next.js server and verified against `AUTH_JWKS_URL`), used by both `auth.middleware.ts` and the Socket.IO handshake so the two transports cannot drift on who counts as authenticated; `backend/src/shared/services/` holds services used by 2+ modules (`mail`, `socket`, `r2`, `google-calendar`); `backend/src/shared/integrations/` holds external-provider infra (`connection.service`, `registry`, `crypto`, `google-meet.provider`) — distinct from the `modules/integrations/` feature, which is CRUD for a company's configured integrations. Cross-module imports (e.g. `offer` → `../template/template-engine.service`) are fine; only promote to `shared/` when 2+ unrelated modules need it.
 - `backend/src/routes/` keeps only `index.ts` (mounts every module router) and `public.routes.ts` (cross-cutting `/public/*` aggregator that spans several modules). `modules/job/job.routes.ts` also mounts the `pipeline`, `hiring-team`, and `custom-question` modules as sub-routes under `/jobs`.
 - Imports are plain relative paths (no `@/` alias — `module: commonjs` + `moduleResolution: node` would emit unresolvable `require("@/…")` into `dist/`). Depth stays at `../../` at most.
-- **Auth middleware** (`backend/src/middlewares/auth.middleware.ts`): verifies WSO2 Asgardeo JWTs, maps roles (`super_admin`, `hiring_manager`, `interviewer`), and auto-provisions users on first login.
+- **Auth middleware** (`backend/src/middlewares/auth.middleware.ts`): verifies OpenATS-issued JWTs through `verify-token.ts`. The token's `sub` is the `users.id`; role (`super_admin`, `hiring_manager`, `interviewer`), `is_active` and `banned` are read from the row on every request, so changes apply immediately. Users are never provisioned from a token — an unknown id is a 401.
 - **Public routes** (`/public/*`) use origin-based access control, not auth middleware. Assessment endpoints (`/public/assessment/:token`) use token-based auth.
 - **Rate limiting**: `/public/*` has its own IP-keyed limiters in `public.routes.ts`. The authenticated API is limited by `middlewares/rate-limit.middleware.ts`, keyed by **user id** rather than IP so one office behind a NAT does not share a budget — `apiLimiter` is mounted on all of `/api`, and `expensiveLimiter` on uploads. Both are tunable with `RATE_LIMIT_API` / `RATE_LIMIT_EXPENSIVE`.
 - **Per-job authorization**: `middlewares/job-access.middleware.ts` (`requireJobAccess`, `requireCandidateAccess`) gates HTTP routes on hiring-team membership using the same `shared/auth/job-access.ts` rule as the sockets. Job creation adds the creator to the hiring team, and `job.service.getAll` already filters by it, so membership is the app-wide notion of "your jobs".
 - **`req.user`** is available via augmentation in `backend/src/types/express.d.ts`.
-- **Socket.IO** runs on the same HTTP server. Connections require a valid Asgardeo JWT in `handshake.auth.token`, verified by an `io.use()` middleware before any handler runs; the verified user is on `socket.data.user`. Chat handlers take the sender from that user, never from the client payload. Dashboard-wide events are emitted to the `staff` room (which every authenticated socket joins), not with a bare `io.emit()`. CORS is restricted to `FRONTEND_URL`.
+- **Socket.IO** runs on the same HTTP server. Connections require a valid OpenATS-issued JWT in `handshake.auth.token`, verified by an `io.use()` middleware before any handler runs; the verified user is on `socket.data.user`. Chat handlers take the sender from that user, never from the client payload. Dashboard-wide events are emitted to the `staff` room (which every authenticated socket joins), not with a bare `io.emit()`. CORS is restricted to `FRONTEND_URL`.
 - **Socket authorization** is separate from authentication: `join_job` / `join_candidate` are gated by `shared/auth/job-access.ts` (hiring-team membership, with `super_admin` exempt), and the chat write handlers require the socket to already be in that room — so a client cannot skip the join and write to an arbitrary job. Client sockets are created by `frontend/lib/socket.ts`, which re-fetches a token from `/api/socket-token` on every connect attempt so reconnects survive token expiry.
 - Logger is winston with console transport only (file transports commented out).
 - `exactOptionalPropertyTypes: false` in tsconfig — deliberate.
@@ -64,12 +65,15 @@ pnpm lint     # eslint
 
 ### Frontend
 
-- **Next.js** with `force-dynamic` on the root layout (`frontend/app/layout.tsx`) — the entire app is SSR-disabled because `AsgardeoProvider` requires request context.
+- **Next.js** with `force-dynamic` on the root layout (`frontend/app/layout.tsx`).
+- **Session and API token**: `frontend/lib/session.ts` (`getSession`, `getApiToken`, `requireRole`) is the only place server code reads the Better Auth session or issues the JWT sent to Express. `frontend/proxy.ts` only checks that a session cookie exists; the dashboard layout does the real check with `getSession()`.
+- **Auth hardening** lives in `frontend/lib/auth-options.ts`: rate limits stored in `auth_rate_limits` (so they hold across server instances), `trustedOrigins` limited to `BETTER_AUTH_URL`, 7-day sessions, secure cookies in production. `frontend/instrumentation.ts` runs `lib/env.ts` at server start and exits when `DATABASE_URL`, `BETTER_AUTH_SECRET` (32+ characters) or `BETTER_AUTH_URL` is missing.
+- **User management** (`frontend/app/api/users/*`) goes through the Better Auth admin API (`auth.api.createUser`, `adminUpdateUser`, `setRole`, `banUser`, `setUserPassword`), always with the caller's headers so Better Auth checks the role itself. Users are never hard-deleted: deactivating bans the user and then soft-deletes through Express. `frontend/lib/user-rules.ts` holds the input parsing and the guards that stop the last super admin being removed.
 - Heavy components are code-split with `ssr: false` via `frontend/components/dynamic-imports.tsx`.
 - **Tailwind v4** — CSS-first config (`@tailwindcss/postcss`), no `tailwind.config.ts`. Theme defined via `@theme` in CSS globals.
 - **shadcn/ui** with `base-vega` style. Icon library is **hugeicons** (not lucide or heroicons).
 - Path alias: `@/*` → `./*` (configured in both `tsconfig.json` and Next.js config).
-- **Server-side data fetching**: `serverFetch` in `frontend/lib/auth-action.ts` using `React.cache()` for auth context.
+- **Server-side data fetching**: `serverFetch` in `frontend/lib/auth-action.ts`, which attaches the token from `getApiToken()`.
 - **Client-side data fetching**: `useApi` hook + React Query hooks in `frontend/hooks/queries/`.
 - **Component placement convention**: components/hooks/utils scoped to one route live colocated under that route using Next.js's underscore-prefixed folders (excluded from routing) — `_components/` (nest further for large features, e.g. `templates/_components/template-form/email-builder/`), `lib/` (singular — not `libs/`), `hooks/`. Only truly shared code goes in the top-level `frontend/components/` (shadcn primitives in `components/ui`, shared `components/table`), `frontend/lib/`, and `frontend/hooks/queries/`.
 
@@ -96,8 +100,8 @@ See `docs/TESTING.md` for the full guide. In short:
 
 Two separate `.env` files are required (copy from `.env.example` in each directory):
 
-- `backend/.env` — `DATABASE_URL`, `REDIS_URL`, `R2_*`, `RESEND_*`, `ASGARDEO_*`, `GEMINI_API_KEY` (optional), `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_CALENDAR_ID`
-- `frontend/.env` — `NEXT_PUBLIC_ASGARDEO_*`, `ASGARDEO_*`, `OPENATS_API_URL`, `NEXT_PUBLIC_API_URL`
+- `backend/.env` — `DATABASE_URL`, `REDIS_URL`, `R2_*`, `RESEND_*`, `AUTH_JWKS_URL`, `AUTH_ISSUER`, `GEMINI_API_KEY` (optional), `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_CALENDAR_ID`
+- `frontend/.env` — `OPENATS_API_URL`, `NEXT_PUBLIC_API_URL`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RESEND_API_KEY` / `RESEND_FROM_EMAIL` (optional; invite and reset emails are sent from the Next.js server by `frontend/lib/auth-mail.ts`)
 
 ## CI/CD
 

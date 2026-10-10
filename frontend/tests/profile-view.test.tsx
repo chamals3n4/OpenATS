@@ -10,8 +10,6 @@ const base: ProfileViewProps = {
   lastName: "Senarathna",
   fullName: "Chamal Senarathna",
   email: "chamals004@gmail.com",
-  username: "chamals004",
-  country: "Sri Lanka",
   avatarUrl: null,
   roles: ["Super admin"],
   memberSince: "September 2026",
@@ -34,16 +32,12 @@ describe("ProfileView", () => {
 
   it("lists the account details that exist", () => {
     renderView();
-    expect(screen.getByText("Username")).toBeTruthy();
-    expect(screen.getByText("Sri Lanka")).toBeTruthy();
     expect(screen.getByText("September 2026")).toBeTruthy();
     expect(screen.getByText("Active")).toBeTruthy();
   });
 
   it("leaves out details it does not have, instead of filling the page with dashes", () => {
-    renderView({ username: null, country: null, memberSince: null, isActive: null });
-    expect(screen.queryByText("Username")).toBeNull();
-    expect(screen.queryByText("Country")).toBeNull();
+    renderView({ memberSince: null, isActive: null });
     expect(screen.queryByText("Member since")).toBeNull();
     expect(screen.queryByText("Account status")).toBeNull();
     expect(screen.queryByText("—")).toBeNull();
@@ -72,7 +66,22 @@ describe("ProfileView", () => {
 
   it("explains why the name and email cannot be edited here", () => {
     renderView();
-    expect(screen.getByText(/come from the account you sign in with/)).toBeTruthy();
+    expect(screen.getByText(/managed by your administrator/)).toBeTruthy();
+  });
+
+  it("no longer shows the username and country that came from the old sign-in provider", () => {
+    renderView();
+    expect(screen.queryByText("Username")).toBeNull();
+    expect(screen.queryByText("Country")).toBeNull();
+  });
+
+  it("renders extra sections under the account card", () => {
+    render(
+      <ProfileView {...base}>
+        <section aria-label="Change password" />
+      </ProfileView>,
+    );
+    expect(screen.getByRole("region", { name: "Change password" })).toBeTruthy();
   });
 
   it("shows several roles as separate pills", () => {

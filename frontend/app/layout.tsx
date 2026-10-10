@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Changa_One, Geist_Mono, Google_Sans } from "next/font/google";
-import { AsgardeoProvider } from "@asgardeo/nextjs/server";
 import "./globals.css";
 
 // Variable font (wght 400-700). next/font self-hosts it at build time, so there is
@@ -60,7 +59,7 @@ export default function RootLayout({
         >
           <ThemeInitializer />
           <FaviconSwitcher />
-          <AsgardeoProvider>{children}</AsgardeoProvider>
+          {children}
         </ThemeProvider>
       </body>
     </html>

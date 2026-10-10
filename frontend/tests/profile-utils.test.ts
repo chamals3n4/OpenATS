@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   formatMemberSince,
+  fullNameOf,
   humanizeRole,
-  identityFromClaims,
   initialsOf,
 } from "@/app/(dashboard)/settings/profile/lib/profile-utils";
 
@@ -43,37 +43,14 @@ describe("formatMemberSince", () => {
   });
 });
 
-describe("identityFromClaims", () => {
-  it("reads the name, email, username and country", () => {
-    const id = identityFromClaims({
-      given_name: "Chamal",
-      family_name: "Senarathna",
-      email: "chamal@example.com",
-      username: "chamals",
-      address: { country: "Sri Lanka" },
-      roles: ["hiring_manager"],
-    });
-    expect(id).toMatchObject({
-      firstName: "Chamal",
-      lastName: "Senarathna",
-      fullName: "Chamal Senarathna",
-      email: "chamal@example.com",
-      username: "chamals",
-      country: "Sri Lanka",
-      roles: ["hiring_manager"],
-    });
+describe("fullNameOf", () => {
+  it("joins the first and last name", () => {
+    expect(fullNameOf("Chamal", "Senarathna")).toBe("Chamal Senarathna");
+    expect(fullNameOf(" Chamal ", null)).toBe("Chamal");
   });
 
-  it("falls back to the username, then the subject, when there is no name", () => {
-    expect(identityFromClaims({ username: "chamals" }).fullName).toBe("chamals");
-    expect(identityFromClaims({ sub: "abc-123" }).fullName).toBe("abc-123");
-    expect(identityFromClaims({}).fullName).toBe("User");
-  });
-
-  it("treats blank claims as missing, and ignores a roles claim that is not a list of strings", () => {
-    const id = identityFromClaims({ address: { country: "  " }, profile: "", roles: "admin" });
-    expect(id.country).toBeNull();
-    expect(id.avatarUrl).toBeNull();
-    expect(id.roles).toEqual([]);
+  it("falls back when there is no name at all", () => {
+    expect(fullNameOf(null, "", "chamal@example.com")).toBe("chamal@example.com");
+    expect(fullNameOf(null, null)).toBe("User");
   });
 });

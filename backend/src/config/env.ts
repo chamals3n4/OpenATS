@@ -4,8 +4,8 @@ export const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   REDIS_URL: z.string().min(1).default("redis://localhost:6379"),
 
-  ASGARDEO_JWKS_URL: z.string().url("ASGARDEO_JWKS_URL must be a valid URL"),
-  ASGARDEO_ISSUER: z.string().min(1, "ASGARDEO_ISSUER is required"),
+  AUTH_JWKS_URL: z.string().url("AUTH_JWKS_URL must be a valid URL"),
+  AUTH_ISSUER: z.string().min(1, "AUTH_ISSUER is required"),
 
   ENCRYPTION_KEY: z.string().min(1, "ENCRYPTION_KEY is required"),
   FRONTEND_URL: z.string().min(1, "FRONTEND_URL is required"),

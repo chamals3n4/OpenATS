@@ -1,20 +1,18 @@
 "use server";
 
 import { cache } from "react";
-import { asgardeo } from "@asgardeo/nextjs/server";
 import { headers } from "next/headers";
 import { apiFetch } from "./api";
+import { getApiToken } from "./session";
 
 /**
- * Cached auth context — deduplicates the async asgardeo / token / headers
+ * Cached auth context — deduplicates the async token / headers
  * calls so that multiple `serverFetch` calls within the same server-render
  * (RSC request or server-action) share a single token lookup.
  */
 const getAuthContext = cache(async () => {
-  const client = await asgardeo();
-  const sessionId = await client.getSessionId();
-  if (!sessionId) throw new Error("Not authenticated");
-  const token = await client.getAccessToken(sessionId);
+  const token = await getApiToken();
+  if (!token) throw new Error("Not authenticated");
 
   const incomingHeaders = await headers();
   const forwardedHeaders: Record<string, string> = {};

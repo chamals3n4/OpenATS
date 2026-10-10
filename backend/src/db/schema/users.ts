@@ -9,8 +9,6 @@ import {
 
 export const users = pgTable("users", {
   id: serial("id").primaryKey(),
-  // `sub` claim from the Asgardeo JWT
-  asgardeoUserId: varchar("asgardeo_user_id", { length: 255 }).unique(),
   name: varchar("name", { length: 255 }).notNull(),
   firstName: varchar("first_name", { length: 100 }).notNull(),
   lastName: varchar("last_name", { length: 100 }).notNull(),

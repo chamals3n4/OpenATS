@@ -6,7 +6,8 @@
  *
  * Public sign-up is disabled, so this is how a fresh install gets its first
  * account. It is also the recovery path for a locked-out install, and how an
- * install upgrading from Asgardeo gives an existing user a password.
+ * install upgrading from an external identity provider gives an existing
+ * user a password.
  *
  * Anything not passed as a flag is asked for. The password is read without
  * echo and is never printed or logged.
@@ -135,8 +136,8 @@ async function main() {
   const auth = betterAuth(authOptions);
 
   try {
-    // Matched without regard to case: rows that came from Asgardeo may hold a
-    // mixed-case email, which Better Auth's own lookup would miss.
+    // Matched without regard to case: rows from before built-in sign-in may
+    // hold a mixed-case email, which Better Auth's own lookup would miss.
     const existing = await pool.query<{ id: number }>(
       "select id from users where lower(email) = $1",
       [email],
@@ -182,7 +183,7 @@ async function main() {
     if (await ctx.internalAdapter.findCredentialAccount(userId)) {
       await ctx.internalAdapter.updatePassword(userId, hash);
     } else {
-      // Every user that came from Asgardeo: they never had a password here.
+      // Every user from before built-in sign-in: they never had a password here.
       await ctx.internalAdapter.linkAccount({
         userId,
         providerId: "credential",

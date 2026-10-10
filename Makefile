@@ -7,11 +7,10 @@
 #   make migrate       run pending database migrations
 #   make seed          seed the default pipeline stages
 #   make admin         create a super admin, or reset one (also the lockout recovery path)
-#   make asgardeo       re-run just the Asgardeo tenant setup
 #   make build          build both packages
 #   make clean          remove all node_modules
 
-.PHONY: setup dev infra-up infra-down wait-for-db migrate seed admin asgardeo encryption-key auth-env build lint clean
+.PHONY: setup dev infra-up infra-down wait-for-db migrate seed admin encryption-key auth-env build lint clean
 
 setup:
 	@echo "📦 Installing dependencies (backend + frontend)..."
@@ -105,9 +104,6 @@ dev: infra-up
 admin:
 	@echo "👤 Creating the super admin account..."
 	@pnpm --filter ./frontend exec tsx scripts/create-admin.ts $(ARGS)
-
-asgardeo:
-	./setup-asgardeo.sh
 
 build:
 	pnpm build

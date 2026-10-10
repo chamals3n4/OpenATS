@@ -66,6 +66,7 @@ pnpm lint     # eslint
 
 - **Next.js** with `force-dynamic` on the root layout (`frontend/app/layout.tsx`).
 - **Session and API token**: `frontend/lib/session.ts` (`getSession`, `getApiToken`, `requireRole`) is the only place server code reads the Better Auth session or issues the JWT sent to Express. `frontend/proxy.ts` only checks that a session cookie exists; the dashboard layout does the real check with `getSession()`.
+- **Auth hardening** lives in `frontend/lib/auth-options.ts`: rate limits stored in `auth_rate_limits` (so they hold across server instances), `trustedOrigins` limited to `BETTER_AUTH_URL`, 7-day sessions, secure cookies in production. `frontend/instrumentation.ts` runs `lib/env.ts` at server start and exits when `DATABASE_URL`, `BETTER_AUTH_SECRET` (32+ characters) or `BETTER_AUTH_URL` is missing.
 - Heavy components are code-split with `ssr: false` via `frontend/components/dynamic-imports.tsx`.
 - **Tailwind v4** — CSS-first config (`@tailwindcss/postcss`), no `tailwind.config.ts`. Theme defined via `@theme` in CSS globals.
 - **shadcn/ui** with `base-vega` style. Icon library is **hugeicons** (not lucide or heroicons).

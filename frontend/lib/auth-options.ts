@@ -20,13 +20,46 @@ async function hasPassword(userId: string): Promise<boolean> {
   return result.rowCount !== null && result.rowCount > 0;
 }
 
+const DAY_IN_SECONDS = 60 * 60 * 24;
+
+// Optional. Comma-separated proxy addresses or CIDR ranges that sit in front
+// of the app and append to X-Forwarded-For (for example a load balancer's
+// subnet). Rate limits are per client IP; with a multi-hop X-Forwarded-For
+// and no trusted proxies, Better Auth cannot pick the client address and
+// falls back to one bucket shared by everyone.
+const trustedProxies = (process.env.AUTH_TRUSTED_PROXIES ?? "")
+  .split(",")
+  .map((entry) => entry.trim())
+  .filter(Boolean);
+
 // Plain options object. nextCookies() is deliberately not added here (see
 // lib/auth.ts) so scripts can import this file outside Next.js.
 export const authOptions = {
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
   database: pool,
-  advanced: { database: { generateId: "serial" } },
+  // Requests to /api/auth/* from any other origin are rejected.
+  trustedOrigins: [process.env.BETTER_AUTH_URL].filter(
+    (origin): origin is string => Boolean(origin),
+  ),
+  advanced: {
+    database: { generateId: "serial" },
+    useSecureCookies: process.env.NODE_ENV === "production",
+    ...(trustedProxies.length > 0 ? { ipAddress: { trustedProxies } } : {}),
+  },
+  // Kept in Postgres rather than in memory, so the limits hold across
+  // separate server instances (each serverless instance has its own memory).
+  rateLimit: {
+    enabled: true,
+    storage: "database",
+    modelName: "auth_rate_limits",
+    fields: { lastRequest: "last_request" },
+    customRules: {
+      // Brute-force targets get a much smaller budget than the default.
+      "/sign-in/email": { window: 60, max: 5 },
+      "/request-password-reset": { window: 300, max: 3 },
+    },
+  },
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
@@ -67,6 +100,10 @@ export const authOptions = {
   },
   session: {
     modelName: "auth_sessions",
+    // Signed out after 7 days without use; the expiry is pushed forward at
+    // most once a day.
+    expiresIn: 7 * DAY_IN_SECONDS,
+    updateAge: DAY_IN_SECONDS,
     cookieCache: { enabled: true, maxAge: 300 },
     fields: {
       userId: "user_id",

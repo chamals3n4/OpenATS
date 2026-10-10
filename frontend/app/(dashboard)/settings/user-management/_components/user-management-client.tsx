@@ -10,21 +10,31 @@ import { toast } from "sonner";
 import { Copy, Eye, EyeOff } from "lucide-react";
 import {
   Add01Icon,
+  LockPasswordIcon,
+  MailSend01Icon,
+  MoreHorizontalIcon,
   Search01Icon,
 } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 
-import type { User as AsgardeoUser } from "@/types";
+import type { User } from "@/types";
 import {
+  createUser,
   deleteUser,
   fetchUsers,
-  inviteUser,
+  sendPasswordResetLink,
+  setUserPassword,
   updateUser,
 } from "@/lib/users-api";
-import type {
-  CreateUserPayload as InviteUserPayload,
-  UpdateUserPayload,
-} from "@/lib/users-api";
+import type { CreateUserPayload, UpdateUserPayload } from "@/lib/users-api";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "@/lib/auth-errors";
+import { isValidPassword } from "@/lib/user-rules";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -76,33 +86,28 @@ const ROLES = [
 type Role = (typeof ROLES)[number]["value"];
 type PasswordMethod = "invite" | "set";
 
-function getDisplayName(u: AsgardeoUser) {
+function getDisplayName(u: User) {
   return [u.firstName, u.lastName].filter(Boolean).join(" ") || u.email;
 }
 
-function generatePassword(length = 12) {
-  const lower = "abcdefghijklmnopqrstuvwxyz";
-  const upper = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-  const numbers = "0123456789";
-  const symbols = "!@#$%^&*()-_=+[]{};:,.?";
-  const all = lower + upper + numbers + symbols;
-  const pick = (s: string) => s[Math.floor(Math.random() * s.length)];
-  const chars = [pick(lower), pick(upper), pick(numbers), pick(symbols)];
-  for (let i = chars.length; i < length; i++) chars.push(pick(all));
-  for (let i = chars.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [chars[i], chars[j]] = [chars[j], chars[i]];
+const PASSWORD_LENGTH_RULE = `Must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters`;
+
+// From the browser's cryptographic generator, not Math.random: this becomes
+// a real account password.
+function generatePassword(length = 16) {
+  const alphabet =
+    "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%^&*-_=+";
+  // Reject values that would skew the pick towards the start of the alphabet.
+  const limit = 256 - (256 % alphabet.length);
+  const chars: string[] = [];
+  while (chars.length < length) {
+    for (const byte of crypto.getRandomValues(new Uint8Array(length))) {
+      if (byte < limit && chars.length < length) {
+        chars.push(alphabet[byte % alphabet.length]);
+      }
+    }
   }
   return chars.join("");
-}
-
-function passwordChecks(pw: string) {
-  return {
-    length: pw.length >= 8 && pw.length <= 64,
-    upper: /[A-Z]/.test(pw),
-    lower: /[a-z]/.test(pw),
-    number: /\d/.test(pw),
-  };
 }
 
 async function copyToClipboard(text: string) {
@@ -160,7 +165,7 @@ export function UserManagementClient({
     isLoading: loading,
     refetch: reloadUsers,
   } = useQuery({
-    queryKey: ["asgardeo-users"],
+    queryKey: ["user-management"],
     queryFn: async () => {
       try {
         return await fetchUsers();
@@ -172,12 +177,19 @@ export function UserManagementClient({
   });
   const [query, setQuery] = useState("");
 
-  const [editUser, setEditUser] = useState<AsgardeoUser | null>(null);
+  const [editUser, setEditUser] = useState<User | null>(null);
   const [editForm, setEditForm] = useState<UpdateUserPayload>({});
   const [saving, setSaving] = useState(false);
 
-  const [deleteTarget, setDeleteTarget] = useState<AsgardeoUser | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<User | null>(null);
   const [deleting, setDeleting] = useState(false);
+
+  const [passwordTarget, setPasswordTarget] = useState<User | null>(null);
+  const [newPassword, setNewPassword] = useState("");
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [settingPassword, setSettingPassword] = useState(false);
+
+  const currentUserId = currentUserRes?.data?.id;
 
   const [createOpen, setCreateOpen] = useState(false);
   const [creating, setCreating] = useState(false);
@@ -198,7 +210,7 @@ export function UserManagementClient({
     });
   }, [query, users]);
 
-  const openEdit = (u: AsgardeoUser) => {
+  const openEdit = (u: User) => {
     setEditUser(u);
     setEditForm({
       firstName: u.firstName ?? "",
@@ -212,7 +224,7 @@ export function UserManagementClient({
     if (!editUser) return;
     setSaving(true);
     try {
-      await updateUser(editUser.id, { ...editForm, oldRole: editUser.role });
+      await updateUser(editUser.id, editForm);
       toast.success("User updated");
       setEditUser(null);
       await reloadUsers();
@@ -238,6 +250,42 @@ export function UserManagementClient({
     }
   };
 
+  const handleSendResetLink = async (u: User) => {
+    try {
+      await sendPasswordResetLink(u.id);
+      toast.success(`Password reset link sent to ${u.email}`);
+    } catch (e) {
+      toast.error(
+        e instanceof Error ? e.message : "Failed to send the reset link",
+      );
+    }
+  };
+
+  const openSetPassword = (u: User) => {
+    setNewPassword("");
+    setShowNewPassword(false);
+    setPasswordTarget(u);
+  };
+
+  const handleSetPassword = async () => {
+    if (!passwordTarget) return;
+    if (!isValidPassword(newPassword)) {
+      toast.error(`Password: ${PASSWORD_LENGTH_RULE.toLowerCase()}.`);
+      return;
+    }
+    setSettingPassword(true);
+    try {
+      await setUserPassword(passwordTarget.id, newPassword);
+      toast.success("Password updated. The user has been signed out.");
+      setPasswordTarget(null);
+      setNewPassword("");
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Failed to set the password");
+    } finally {
+      setSettingPassword(false);
+    }
+  };
+
   const openCreate = () => {
     setPasswordMethod(defaultPasswordMethod);
     setShowPassword(false);
@@ -260,32 +308,30 @@ export function UserManagementClient({
         toast.error("Password is required.");
         return;
       }
-      const c = passwordChecks(password);
-      if (!c.length) {
-        toast.error("Password must be between 8 and 64 characters.");
-        return;
-      }
-      if (!c.upper || !c.lower || !c.number) {
-        toast.error("Password must include uppercase, lowercase and a number.");
+      if (!isValidPassword(password)) {
+        toast.error(`Password: ${PASSWORD_LENGTH_RULE.toLowerCase()}.`);
         return;
       }
     }
 
-    const payload: InviteUserPayload = {
+    const payload: CreateUserPayload = {
       email,
-      userName: email,
       firstName,
       lastName,
       role: createForm.role,
-      askPassword: passwordMethod === "invite",
+      method: passwordMethod,
       ...(passwordMethod === "set" ? { password } : {}),
     };
 
     setCreating(true);
     try {
-      await inviteUser(payload);
+      const result = await createUser(payload);
       toast.success(
-        passwordMethod === "invite" ? "Invitation sent" : "User created",
+        result.reactivated
+          ? "User reactivated"
+          : passwordMethod === "invite"
+            ? "Invitation sent"
+            : "User created",
       );
       setCreateOpen(false);
       await reloadUsers();
@@ -397,7 +443,44 @@ export function UserManagementClient({
                     >
                       <div className="flex items-center justify-end gap-2">
                         <RowEditButton onClick={() => openEdit(u)} />
-                        <RowDeleteButton onClick={() => setDeleteTarget(u)} />
+                        <RowDeleteButton
+                          disabled={u.id === currentUserId}
+                          title={
+                            u.id === currentUserId
+                              ? "You cannot remove your own account"
+                              : undefined
+                          }
+                          onClick={() => setDeleteTarget(u)}
+                        />
+                        <DropdownMenu>
+                          <DropdownMenuTrigger
+                            aria-label={`More actions for ${getDisplayName(u)}`}
+                            className="inline-flex size-8 cursor-pointer items-center justify-center rounded-md border border-slate-300 text-slate-700 hover:bg-slate-50 dark:border-neutral-600 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                          >
+                            <HugeiconsIcon
+                              icon={MoreHorizontalIcon}
+                              className="size-4"
+                              strokeWidth={2}
+                            />
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-60">
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              disabled={!inviteEmailEnabled}
+                              onClick={() => void handleSendResetLink(u)}
+                            >
+                              <HugeiconsIcon icon={MailSend01Icon} />
+                              Send password reset link
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              className="cursor-pointer"
+                              onClick={() => openSetPassword(u)}
+                            >
+                              <HugeiconsIcon icon={LockPasswordIcon} />
+                              Set new password
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </TableCell>
                   </TableRow>
@@ -583,7 +666,7 @@ export function UserManagementClient({
                         onClick={() =>
                           setCreateForm((f) => ({
                             ...f,
-                            password: generatePassword(12),
+                            password: generatePassword(),
                           }))
                         }
                       >
@@ -601,43 +684,25 @@ export function UserManagementClient({
                       </Button>
                     </div>
                   </div>
-                  {(() => {
-                    const c = passwordChecks(createForm.password);
-                    const item = (ok: boolean, label: string) => (
-                      <div
-                        key={label}
-                        className="flex items-center gap-2 text-xs mt-2"
-                      >
-                        <span
-                          className={
-                            "inline-block size-2 rounded-full " +
-                            (ok
-                              ? "bg-theme"
-                              : "bg-slate-200 dark:bg-neutral-800")
-                          }
-                        />
-                        <span
-                          className={
-                            ok
-                              ? "text-slate-700 dark:text-neutral-300"
-                              : "text-slate-500 dark:text-neutral-500"
-                          }
-                        >
-                          {label}
-                        </span>
-                      </div>
-                    );
-                    return (
-                      <div className="mt-2">
-                        {item(c.length, "Must be between 8 and 64 characters")}
-                        {item(
-                          c.upper,
-                          "At least 1 uppercase and 1 lowercase letter",
-                        )}
-                        {item(c.number, "At least 1 number")}
-                      </div>
-                    );
-                  })()}
+                  <div className="flex items-center gap-2 text-xs mt-4">
+                    <span
+                      className={
+                        "inline-block size-2 rounded-full " +
+                        (isValidPassword(createForm.password)
+                          ? "bg-theme"
+                          : "bg-slate-200 dark:bg-neutral-800")
+                      }
+                    />
+                    <span
+                      className={
+                        isValidPassword(createForm.password)
+                          ? "text-slate-700 dark:text-neutral-300"
+                          : "text-slate-500 dark:text-neutral-500"
+                      }
+                    >
+                      {PASSWORD_LENGTH_RULE}
+                    </span>
+                  </div>
                 </div>
               )}
             </div>
@@ -764,6 +829,102 @@ export function UserManagementClient({
         </DialogContent>
       </Dialog>
 
+      {/* Set New Password Dialog */}
+      <Dialog
+        open={!!passwordTarget}
+        onOpenChange={(open) => !open && setPasswordTarget(null)}
+      >
+        <DialogContent className="max-w-lg rounded-xl border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
+              Set new password
+            </DialogTitle>
+          </DialogHeader>
+
+          <div>
+            <p className="mb-4 text-sm text-slate-600 dark:text-neutral-400">
+              {passwordTarget
+                ? `${getDisplayName(passwordTarget)} will be signed out everywhere and must use this password to sign in. Share it with them yourself: it is not emailed.`
+                : null}
+            </p>
+            <Label
+              htmlFor="new-user-password"
+              className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block"
+            >
+              New password *
+            </Label>
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div className="relative flex-1 w-full">
+                <Input
+                  id="new-user-password"
+                  type={showNewPassword ? "text" : "password"}
+                  autoComplete="new-password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  placeholder="Enter the password"
+                  className={inputCls + " pr-10"}
+                />
+                <button
+                  type="button"
+                  aria-label={showNewPassword ? "Hide password" : "Show password"}
+                  onClick={() => setShowNewPassword((s) => !s)}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300"
+                >
+                  {showNewPassword ? (
+                    <EyeOff className="size-4" />
+                  ) : (
+                    <Eye className="size-4" />
+                  )}
+                </button>
+              </div>
+              <div className="flex gap-2 w-full sm:w-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 px-4 rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 shadow-none flex-1 sm:flex-none"
+                  onClick={() => {
+                    setNewPassword(generatePassword());
+                    setShowNewPassword(true);
+                  }}
+                >
+                  Generate
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={!newPassword}
+                  className="h-10 px-3 rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 shadow-none flex-1 sm:flex-none"
+                  onClick={() => copyToClipboard(newPassword)}
+                >
+                  <Copy className="size-4 mr-2" />
+                  Copy
+                </Button>
+              </div>
+            </div>
+            <p className="mt-2 text-xs text-slate-500 dark:text-neutral-500">
+              {PASSWORD_LENGTH_RULE}
+            </p>
+          </div>
+
+          <DialogFooter className="gap-2">
+            <DialogClose
+              disabled={settingPassword}
+              className="h-9 px-5 rounded-lg border cursor-pointer border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 text-sm font-medium hover:bg-slate-50 dark:hover:bg-neutral-800"
+            >
+              Cancel
+            </DialogClose>
+            <Button
+              onClick={handleSetPassword}
+              disabled={settingPassword}
+              className="h-9 px-5 cursor-pointer rounded-lg text-white text-sm font-semibold shadow-none border-none"
+              style={{ backgroundColor: "var(--theme-color)" }}
+            >
+              {settingPassword ? "Saving…" : "Set password"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       {/* Delete Dialog */}
       <ConfirmDeleteDialog
         open={!!deleteTarget}
@@ -772,7 +933,9 @@ export function UserManagementClient({
           deleteTarget ? (
             <>
               <ConfirmDeleteName>{getDisplayName(deleteTarget)}</ConfirmDeleteName>{" "}
-              will lose access to OpenATS. This cannot be undone.
+              will be signed out and will no longer be able to sign in. Their
+              history is kept, and creating a user with the same email
+              restores the account.
             </>
           ) : (
             "Are you sure?"

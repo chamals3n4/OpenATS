@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
+import { headers } from "next/headers";
+import { auth } from "@/lib/auth";
 import { serverFetch } from "@/lib/auth-action";
-import { requireRole } from "@/lib/session";
-import { assignAsgardeoRole, removeAsgardeoRole } from "@/lib/asgardeo-roles";
+import { lockoutReason, parseUpdateUser } from "@/lib/user-rules";
 import {
-  getAsgardeoApiBase,
-  getScimAccessToken,
-  scimRequestHeaders,
-} from "@/lib/asgardeo-scim-token";
-import type { User } from "@/types";
+  activeUsers,
+  badRequest,
+  errorResponse,
+  getUser,
+  parseUserId,
+  requireSuperAdmin,
+} from "@/lib/user-admin";
 
 const ROUTE_LOG = "[API /users/[id]]";
 
@@ -15,153 +18,110 @@ type RouteContext = {
   params: Promise<{ id: string }>;
 };
 
+async function superAdminIds(): Promise<number[]> {
+  return (await activeUsers())
+    .filter((user) => user.role === "super_admin")
+    .map((user) => user.id);
+}
+
 export async function GET(_req: NextRequest, context: RouteContext) {
   const { id } = await context.params;
-  console.log(`${ROUTE_LOG} GET /api/users/${id}`);
   try {
-    const data = await serverFetch<{ data: User }>(`/users/${id}`);
-    return NextResponse.json(data.data);
+    const userId = parseUserId(id);
+    if (userId === null) return badRequest("Invalid user ID");
+    return NextResponse.json(await getUser(userId));
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    console.error(`${ROUTE_LOG} GET error:`, msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return errorResponse(`${ROUTE_LOG} GET`, e);
   }
 }
 
 export async function PATCH(req: NextRequest, context: RouteContext) {
   const { id } = await context.params;
-  console.log(`${ROUTE_LOG} PATCH /api/users/${id}`);
   try {
-    await requireRole("super_admin");
-    const scimToken = await getScimAccessToken();
-    const body = await req.json();
-    const base = getAsgardeoApiBase();
+    const actorId = await requireSuperAdmin();
+    const userId = parseUserId(id);
+    if (userId === null) return badRequest("Invalid user ID");
 
-    const existing = await serverFetch<{
-      data: User & { asgardeoUserId: string };
-    }>(`/users/${id}`);
-    const { asgardeoUserId } = existing.data;
-    const oldRole = body.oldRole as string | undefined;
-    console.log(
-      `${ROUTE_LOG} updating asgardeoUserId=${asgardeoUserId}, oldRole=${oldRole}`,
-    );
+    const parsed = parseUpdateUser(await req.json().catch(() => null));
+    if (!parsed.ok) return badRequest(parsed.error);
+    const { firstName, lastName, email, role } = parsed.value;
 
-    const operations: { op: string; path: string; value: unknown }[] = [];
-    if (body.firstName !== undefined)
-      operations.push({
-        op: "replace",
-        path: "name.givenName",
-        value: body.firstName,
+    const target = await getUser(userId);
+    const requestHeaders = await headers();
+
+    if (role !== undefined && role !== target.role) {
+      const reason = lockoutReason({
+        actorId,
+        target,
+        activeSuperAdminIds: await superAdminIds(),
+        change: role,
       });
-    if (body.lastName !== undefined)
-      operations.push({
-        op: "replace",
-        path: "name.familyName",
-        value: body.lastName,
-      });
-    if (body.email !== undefined)
-      operations.push({
-        op: "replace",
-        path: "emails",
-        value: [{ primary: true, value: body.email }],
-      });
-
-    if (operations.length > 0) {
-      const scimUrl = `${base}/scim2/Users/${asgardeoUserId}`;
-      console.log(
-        `${ROUTE_LOG} PATCH ${scimUrl} with ${operations.length} operation(s)`,
-      );
-
-      const scimRes = await fetch(scimUrl, {
-        method: "PATCH",
-        headers: scimRequestHeaders(scimToken, true),
-        body: JSON.stringify({
-          schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
-          Operations: operations,
-        }),
-      });
-
-      if (!scimRes.ok) {
-        const errBody = await scimRes.text();
-        console.error(
-          `${ROUTE_LOG} SCIM PATCH failed — HTTP ${scimRes.status}: ${errBody}`,
-        );
-        return NextResponse.json(
-          { error: errBody },
-          { status: scimRes.status },
-        );
-      }
-      console.log(`${ROUTE_LOG} SCIM PATCH successful`);
-    } else {
-      console.log(`${ROUTE_LOG} no profile fields to update in Asgardeo`);
+      if (reason) return badRequest(reason, 409);
     }
 
-    if (body.role !== undefined && body.role !== oldRole) {
-      console.log(
-        `${ROUTE_LOG} role changed from "${oldRole}" → "${body.role}"`,
-      );
-      if (oldRole) await removeAsgardeoRole(scimToken, asgardeoUserId, oldRole);
-      await assignAsgardeoRole(scimToken, asgardeoUserId, body.role);
+    const data: Record<string, string> = {};
+    if (firstName !== undefined) data.firstName = firstName;
+    if (lastName !== undefined) data.lastName = lastName;
+    if (firstName !== undefined || lastName !== undefined) {
+      data.name =
+        `${firstName ?? target.firstName} ${lastName ?? target.lastName}`.trim();
+    }
+    if (email !== undefined && email !== target.email) data.email = email;
+
+    if (Object.keys(data).length > 0) {
+      await auth.api.adminUpdateUser({
+        body: { userId: String(userId), data },
+        headers: requestHeaders,
+      });
     }
 
-    const updated = await serverFetch<{ data: User }>(`/users/${id}`, {
-      method: "PUT",
-      body: JSON.stringify({
-        ...(body.firstName !== undefined && { firstName: body.firstName }),
-        ...(body.lastName !== undefined && { lastName: body.lastName }),
-      }),
-    });
+    // Read from the row by Express on every request, so this applies to the
+    // user's next request without a new sign-in.
+    if (role !== undefined && role !== target.role) {
+      await auth.api.setRole({
+        body: { userId: String(userId), role },
+        headers: requestHeaders,
+      });
+      console.log(`${ROUTE_LOG} user ${userId} role ${target.role} -> ${role}`);
+    }
 
-    console.log(`${ROUTE_LOG} user ${id} updated successfully`);
-    return NextResponse.json(updated.data);
+    return NextResponse.json(await getUser(userId));
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    const status = msg === "Unauthorized" ? 401 : 500;
-    console.error(`${ROUTE_LOG} PATCH error (id=${id}):`, msg);
-    return NextResponse.json({ error: msg }, { status });
+    return errorResponse(`${ROUTE_LOG} PATCH (id=${id})`, e);
   }
 }
 
 export async function DELETE(_req: NextRequest, context: RouteContext) {
   const { id } = await context.params;
-  console.log(`${ROUTE_LOG} DELETE /api/users/${id}`);
   try {
-    await requireRole("super_admin");
-    const scimToken = await getScimAccessToken();
-    const base = getAsgardeoApiBase();
+    const actorId = await requireSuperAdmin();
+    const userId = parseUserId(id);
+    if (userId === null) return badRequest("Invalid user ID");
 
-    const existing = await serverFetch<{
-      data: User & { asgardeoUserId: string };
-    }>(`/users/${id}`);
-    const { asgardeoUserId } = existing.data;
-    console.log(`${ROUTE_LOG} deleting asgardeoUserId=${asgardeoUserId}`);
+    const target = await getUser(userId);
 
-    const scimUrl = `${base}/scim2/Users/${asgardeoUserId}`;
-    console.log(`${ROUTE_LOG} DELETE ${scimUrl}`);
+    const reason = lockoutReason({
+      actorId,
+      target,
+      activeSuperAdminIds: await superAdminIds(),
+      change: "deactivate",
+    });
+    if (reason) return badRequest(reason, 409);
 
-    const scimRes = await fetch(scimUrl, {
-      method: "DELETE",
-      headers: scimRequestHeaders(scimToken, false),
+    // Blocks sign-in and revokes every session. The row is never removed:
+    // jobs, offers, templates and assessments point at it through created_by
+    // with no ON DELETE rule, so a hard delete would fail or destroy history.
+    await auth.api.banUser({
+      body: { userId: String(userId), banReason: "Deactivated by an administrator" },
+      headers: await headers(),
     });
 
-    if (!scimRes.ok) {
-      const errBody = await scimRes.text();
-      console.error(
-        `${ROUTE_LOG} SCIM DELETE failed — HTTP ${scimRes.status}: ${errBody}`,
-      );
-      return NextResponse.json({ error: errBody }, { status: scimRes.status });
-    }
+    // Soft delete (is_active = false), which also drops them from user lists.
+    await serverFetch(`/users/${userId}`, { method: "DELETE" });
 
-    console.log(`${ROUTE_LOG} Asgardeo user deleted (HTTP 204)`);
-
-    await serverFetch(`/users/${id}`, { method: "DELETE" });
-
-    console.log(`${ROUTE_LOG} user ${id} soft-deleted in DB`);
+    console.log(`${ROUTE_LOG} user ${userId} deactivated`);
     return NextResponse.json({ success: true });
   } catch (e: unknown) {
-    const msg = e instanceof Error ? e.message : String(e);
-    const status = msg === "Unauthorized" ? 401 : 500;
-    console.error(`${ROUTE_LOG} DELETE error (id=${id}):`, msg);
-    return NextResponse.json({ error: msg }, { status });
+    return errorResponse(`${ROUTE_LOG} DELETE (id=${id})`, e);
   }
 }

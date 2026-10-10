@@ -60,7 +60,7 @@ export default function ForgotPasswordPage() {
     return (
       <AuthShell
         title="Check your email"
-        description="If an account exists for that email, we have sent a link to reset your password. The link expires in 1 hour."
+        description="If an account exists for that email, we have sent a link to reset your password. The link expires in 24 hours."
       >
         <div className="flex flex-col items-center gap-6">
           <HugeiconsIcon

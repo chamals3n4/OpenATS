@@ -1,8 +1,24 @@
 import type { BetterAuthOptions } from "better-auth";
 import { APIError } from "better-auth/api";
 import { admin, jwt } from "better-auth/plugins";
+import {
+  PASSWORD_LINK_EXPIRES_IN_SECONDS,
+  sendPasswordLinkEmail,
+} from "./auth-mail";
 import { ac, roles } from "./auth-permissions";
 import { pool } from "./db";
+
+// A user created by invite has no password yet, so the same Better Auth
+// "reset password" link doubles as their "set your password" link.
+async function hasPassword(userId: string): Promise<boolean> {
+  const result = await pool.query(
+    `select 1 from auth_accounts
+     where user_id = $1 and provider_id = 'credential' and password is not null
+     limit 1`,
+    [Number(userId)],
+  );
+  return result.rowCount !== null && result.rowCount > 0;
+}
 
 // Plain options object. nextCookies() is deliberately not added here (see
 // lib/auth.ts) so scripts can import this file outside Next.js.
@@ -11,7 +27,24 @@ export const authOptions = {
   secret: process.env.BETTER_AUTH_SECRET,
   database: pool,
   advanced: { database: { generateId: "serial" } },
-  emailAndPassword: { enabled: true, disableSignUp: true },
+  emailAndPassword: {
+    enabled: true,
+    disableSignUp: true,
+    // 24 hours rather than the default hour, so an invite is still usable
+    // the next day.
+    resetPasswordTokenExpiresIn: PASSWORD_LINK_EXPIRES_IN_SECONDS,
+    revokeSessionsOnPasswordReset: true,
+    // Better Auth builds `url` as /api/auth/reset-password/<token>, which
+    // redirects to /reset-password?token=<token>.
+    sendResetPassword: async ({ user, url }) => {
+      await sendPasswordLinkEmail({
+        kind: (await hasPassword(user.id)) ? "reset" : "invite",
+        to: user.email,
+        name: user.name,
+        url,
+      });
+    },
+  },
   user: {
     modelName: "users",
     fields: {

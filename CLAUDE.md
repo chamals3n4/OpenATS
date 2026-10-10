@@ -98,7 +98,7 @@ See `docs/TESTING.md` for the full guide. In short:
 Two separate `.env` files are required (copy from `.env.example` in each directory):
 
 - `backend/.env` — `DATABASE_URL`, `REDIS_URL`, `R2_*`, `RESEND_*`, `AUTH_JWKS_URL`, `AUTH_ISSUER`, `GEMINI_API_KEY` (optional), `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_CALENDAR_ID`
-- `frontend/.env` — `NEXT_PUBLIC_ASGARDEO_*`, `ASGARDEO_*`, `OPENATS_API_URL`, `NEXT_PUBLIC_API_URL`
+- `frontend/.env` — `NEXT_PUBLIC_ASGARDEO_*`, `ASGARDEO_*`, `OPENATS_API_URL`, `NEXT_PUBLIC_API_URL`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RESEND_API_KEY` / `RESEND_FROM_EMAIL` (optional; invite and reset emails are sent from the Next.js server by `frontend/lib/auth-mail.ts`)
 
 ## CI/CD
 

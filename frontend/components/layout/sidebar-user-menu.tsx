@@ -34,42 +34,15 @@ import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
-
-function initialsFromName(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-function decodeJWT(token: string) {
-  try {
-    const payload = token.split(".")[1];
-    return JSON.parse(atob(payload));
-  } catch {
-    return null;
-  }
-}
-
-type Claims = {
-  given_name?: string;
-  family_name?: string;
-  email?: string;
-  username?: string;
-  sub?: string;
-  profile?: string;
-  org_name?: string;
-  roles?: string[];
-};
+import { useCurrentUser } from "@/hooks/queries/use-user";
+import { initialsOf } from "@/lib/initials";
 
 export type SidebarUserMenuProps = {
   variant?: "header" | "sidebar";
-  accessToken?: string;
 };
 
 export function SidebarUserMenu({
   variant = "header",
-  accessToken,
 }: SidebarUserMenuProps) {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
@@ -87,14 +60,18 @@ export function SidebarUserMenu({
   const collapsed = state === "collapsed";
   const showProfileRow = variant === "sidebar" && !collapsed;
 
-  const claims: Claims | null = accessToken ? decodeJWT(accessToken) : null;
+  // The signed-in user's row from the API, shared with the rest of the
+  // dashboard through the ["me"] query.
+  const { data: currentUser, isLoading } = useCurrentUser();
+  const me = currentUser?.data;
 
-  const displayName = claims?.given_name
-    ? `${claims.given_name} ${claims.family_name ?? ""}`.trim()
-    : (claims?.username ?? claims?.sub ?? "User");
-
-  const email = claims?.email ?? claims?.username ?? claims?.sub ?? "";
-  const avatarSrc = claims?.profile ?? undefined;
+  const displayName =
+    [me?.firstName, me?.lastName].filter(Boolean).join(" ") ||
+    me?.email ||
+    "User";
+  const email = me?.email ?? "";
+  const avatarSrc = me?.avatarUrl ?? undefined;
+  const initials = initialsOf(me?.firstName, me?.lastName, displayName);
 
   return (
     <DropdownMenu>
@@ -124,14 +101,14 @@ export function SidebarUserMenu({
                 : "bg-sidebar-accent text-sidebar-accent-foreground",
             )}
           >
-            {initialsFromName(displayName)}
+            {initials}
           </AvatarFallback>
         </Avatar>
         {showProfileRow && (
           <>
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-semibold text-sidebar-foreground">
-                {displayName}
+                {isLoading ? "…" : displayName}
               </p>
             </div>
             <HugeiconsIcon
@@ -157,12 +134,12 @@ export function SidebarUserMenu({
             <Avatar className="size-8 shrink-0 border border-border">
               {avatarSrc ? <AvatarImage src={avatarSrc} alt="" /> : null}
               <AvatarFallback className="text-xs font-semibold bg-slate-200 text-slate-700 dark:bg-neutral-700 dark:text-neutral-100">
-                {initialsFromName(displayName)}
+                {initials}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
               <p className="truncate text-[15px] font-semibold leading-snug text-popover-foreground">
-                {displayName}
+                {isLoading ? "Loading…" : displayName}
               </p>
               {email ? (
                 <p className="mt-0.5 truncate text-xs font-normal leading-5 text-muted-foreground">

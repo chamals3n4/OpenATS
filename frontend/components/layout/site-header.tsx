@@ -8,7 +8,7 @@ import { Notification03Icon } from "@hugeicons/core-free-icons";
 import { SidebarUserMenu } from "@/components/layout/sidebar-user-menu";
 import { Button } from "@/components/ui/button";
 
-export function SiteHeader({ accessToken }: { accessToken?: string }) {
+export function SiteHeader() {
   return (
     <header className="bg-sidebar sticky top-0 z-50 flex w-full items-center border-b border-sidebar-border">
       <div className="flex h-(--header-height) w-full items-center justify-between gap-4 px-6">
@@ -34,7 +34,7 @@ export function SiteHeader({ accessToken }: { accessToken?: string }) {
           >
             <HugeiconsIcon icon={Notification03Icon} className="size-5" />
           </Button>
-          <SidebarUserMenu variant="header" accessToken={accessToken} />
+          <SidebarUserMenu variant="header" />
         </div>
       </div>
     </header>

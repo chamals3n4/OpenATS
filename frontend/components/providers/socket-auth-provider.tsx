@@ -3,9 +3,10 @@
 import { createContext, useContext } from "react";
 
 /**
- * Carries the API access token from the dashboard layout (a server
- * component, where the token lives) down to the client hooks that open
- * socket connections. The backend rejects sockets without it.
+ * Carries a short-lived OpenATS JWT from the dashboard layout (a server
+ * component, where it is issued) down to the client hooks that open socket
+ * connections. The backend rejects sockets without it. This handshake is the
+ * only reason the token reaches client components.
  */
 const SocketTokenContext = createContext<string | undefined>(undefined);
 

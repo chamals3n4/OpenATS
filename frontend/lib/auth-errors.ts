@@ -76,6 +76,23 @@ export function resetPasswordErrorMessage(error: AuthClientError): string {
   return GENERIC;
 }
 
+export function changePasswordErrorMessage(error: AuthClientError): string {
+  if (!error) return GENERIC;
+  if (isRateLimited(error)) return TOO_MANY_ATTEMPTS;
+
+  if (error.code === "INVALID_PASSWORD") {
+    return "Your current password is incorrect.";
+  }
+  if (
+    error.code === "PASSWORD_TOO_SHORT" ||
+    error.code === "PASSWORD_TOO_LONG"
+  ) {
+    return PASSWORD_RULE;
+  }
+
+  return GENERIC;
+}
+
 /** Client-side check of the rules shown to the user; null when it passes. */
 export function validateNewPassword(
   password: string,

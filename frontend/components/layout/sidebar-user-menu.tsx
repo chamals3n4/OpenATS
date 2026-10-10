@@ -2,16 +2,9 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import { useQueryClient } from "@tanstack/react-query";
 import { HugeiconsIcon } from "@hugeicons/react";
-import {
-  ComputerIcon,
-  Logout01Icon,
-  MoreHorizontalIcon,
-  Sun01Icon,
-  Moon02Icon,
-} from "@hugeicons/core-free-icons";
+import { Logout01Icon, MoreHorizontalIcon } from "@hugeicons/core-free-icons";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -32,68 +25,39 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { useAsgardeo } from "@asgardeo/nextjs";
-
-function initialsFromName(name: string) {
-  const parts = name.trim().split(/\s+/).filter(Boolean);
-  if (parts.length === 0) return "?";
-  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
-  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
-}
-
-function decodeJWT(token: string) {
-  try {
-    const payload = token.split(".")[1];
-    return JSON.parse(atob(payload));
-  } catch {
-    return null;
-  }
-}
-
-type Claims = {
-  given_name?: string;
-  family_name?: string;
-  email?: string;
-  username?: string;
-  sub?: string;
-  profile?: string;
-  org_name?: string;
-  roles?: string[];
-};
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
+import { useCurrentUser } from "@/hooks/queries/use-user";
+import { initialsOf } from "@/lib/initials";
+import { ThemeSwitch } from "@/components/theme/theme-switch";
 
 export type SidebarUserMenuProps = {
   variant?: "header" | "sidebar";
-  accessToken?: string;
 };
 
 export function SidebarUserMenu({
   variant = "header",
-  accessToken,
 }: SidebarUserMenuProps) {
-  const { signOut, isLoading } = useAsgardeo();
-  const { theme, setTheme } = useTheme();
+  const router = useRouter();
   const { state } = useSidebar();
   const queryClient = useQueryClient();
   const [confirmLogoutOpen, setConfirmLogoutOpen] = React.useState(false);
 
-  // Theme is client-only, so hold the toggle back until after hydration.
-  const mounted = React.useSyncExternalStore(
-    () => () => {},
-    () => true,
-    () => false,
-  );
-
   const collapsed = state === "collapsed";
   const showProfileRow = variant === "sidebar" && !collapsed;
 
-  const claims: Claims | null = accessToken ? decodeJWT(accessToken) : null;
+  // The signed-in user's row from the API, shared with the rest of the
+  // dashboard through the ["me"] query.
+  const { data: currentUser, isLoading } = useCurrentUser();
+  const me = currentUser?.data;
 
-  const displayName = claims?.given_name
-    ? `${claims.given_name} ${claims.family_name ?? ""}`.trim()
-    : (claims?.username ?? claims?.sub ?? "User");
-
-  const email = claims?.email ?? claims?.username ?? claims?.sub ?? "";
-  const avatarSrc = claims?.profile ?? undefined;
+  const displayName =
+    [me?.firstName, me?.lastName].filter(Boolean).join(" ") ||
+    me?.email ||
+    "User";
+  const email = me?.email ?? "";
+  const avatarSrc = me?.avatarUrl ?? undefined;
+  const initials = initialsOf(me?.firstName, me?.lastName, displayName);
 
   return (
     <DropdownMenu>
@@ -123,7 +87,7 @@ export function SidebarUserMenu({
                 : "bg-sidebar-accent text-sidebar-accent-foreground",
             )}
           >
-            {initialsFromName(displayName)}
+            {initials}
           </AvatarFallback>
         </Avatar>
         {showProfileRow && (
@@ -156,7 +120,7 @@ export function SidebarUserMenu({
             <Avatar className="size-8 shrink-0 border border-border">
               {avatarSrc ? <AvatarImage src={avatarSrc} alt="" /> : null}
               <AvatarFallback className="text-xs font-semibold bg-slate-200 text-slate-700 dark:bg-neutral-700 dark:text-neutral-100">
-                {initialsFromName(displayName)}
+                {initials}
               </AvatarFallback>
             </Avatar>
             <div className="min-w-0 flex-1">
@@ -177,43 +141,7 @@ export function SidebarUserMenu({
           onPointerDown={(e) => e.preventDefault()}
         >
           <span className="text-sm text-popover-foreground">Theme</span>
-          {mounted ? (
-            <div className="flex h-8 shrink-0 items-center rounded-full border border-border bg-muted/60 p-0.5 dark:bg-muted/40">
-              {(
-                [
-                  { id: "system", icon: ComputerIcon, label: "System" },
-                  { id: "light", icon: Sun01Icon, label: "Light" },
-                  { id: "dark", icon: Moon02Icon, label: "Dark" },
-                ] as const
-              ).map((mode) => {
-                const active = theme === mode.id;
-                return (
-                  <button
-                    key={mode.id}
-                    type="button"
-                    title={mode.label}
-                    aria-label={mode.label}
-                    aria-pressed={active}
-                    onClick={() => setTheme(mode.id)}
-                    className={cn(
-                      "flex size-7 cursor-pointer items-center justify-center rounded-full transition-colors",
-                      active
-                        ? "bg-background text-foreground shadow-sm"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <HugeiconsIcon
-                      icon={mode.icon}
-                      className="size-4"
-                      strokeWidth={1.75}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="h-8 w-[88px] shrink-0 rounded-full bg-muted/50" />
-          )}
+          <ThemeSwitch />
         </div>
 
         <div className="p-1">
@@ -245,8 +173,11 @@ export function SidebarUserMenu({
             <AlertDialogAction
               variant="destructive"
               onClick={() => {
-                queryClient.clear();
-                void signOut();
+                void authClient.signOut().finally(() => {
+                  queryClient.clear();
+                  router.push("/login");
+                  router.refresh();
+                });
               }}
             >
               Log out

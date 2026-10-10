@@ -5,16 +5,23 @@ import { users } from "../../db/schema/users";
 import type { User } from "../../db/schema/users";
 
 /**
- * Shared Asgardeo access-token verification, used by both the HTTP auth
- * middleware and the Socket.IO handshake. Keeping one implementation means
- * the two transports can never drift apart on who counts as authenticated.
+ * Shared access-token verification, used by both the HTTP auth middleware and
+ * the Socket.IO handshake. Keeping one implementation means the two
+ * transports can never drift apart on who counts as authenticated.
+ *
+ * Tokens are short-lived JWTs issued by Better Auth in the Next.js server and
+ * verified here against its JWKS endpoint.
  */
 
-const JWKS = createRemoteJWKSet(new URL(process.env.ASGARDEO_JWKS_URL!));
+// Fetched lazily on the first verification and cached, so the API can start
+// before the frontend is up.
+const JWKS = createRemoteJWKSet(new URL(process.env.AUTH_JWKS_URL!));
 
-export type AppRole = "super_admin" | "hiring_manager" | "interviewer";
+const APP_ROLES = ["super_admin", "hiring_manager", "interviewer"] as const;
 
-export type AuthenticatedUser = User & { role: AppRole };
+export type AppRole = (typeof APP_ROLES)[number];
+
+export type AuthenticatedUser = Omit<User, "role"> & { role: AppRole };
 
 /** An authentication failure with the HTTP status it maps to. */
 export class AuthError extends Error {
@@ -27,124 +34,65 @@ export class AuthError extends Error {
   }
 }
 
-export function collectRolesFromPayload(
-  payload: Record<string, unknown>,
-): string[] {
-  const out: string[] = [];
-
-  const rolesClaim = payload["roles"];
-  if (Array.isArray(rolesClaim)) {
-    for (const x of rolesClaim) {
-      if (typeof x === "string" && x.trim()) out.push(x.trim());
-    }
-  } else if (typeof rolesClaim === "string" && rolesClaim.trim()) {
-    out.push(rolesClaim.trim());
-  }
-
-  const wso2 = payload["http://wso2.org/claims/role"];
-  if (Array.isArray(wso2)) {
-    for (const x of wso2) {
-      if (typeof x === "string" && x.trim()) out.push(x.trim());
-    }
-  } else if (typeof wso2 === "string" && wso2.trim()) {
-    for (const part of wso2.split(",")) {
-      const s = part.trim();
-      if (s) out.push(s);
-    }
-  }
-
-  return out;
+function isAppRole(role: string): role is AppRole {
+  return (APP_ROLES as readonly string[]).includes(role);
 }
 
-export function mapToAppRole(names: string[]): AppRole | null {
-  const normalized = names.map((s) =>
-    s.trim().toLowerCase().replace(/_/g, " ").replace(/\s+/g, " "),
-  );
-  const has = (pred: (n: string) => boolean) => normalized.some(pred);
+// `users.id` is a Postgres serial, so anything else can never match a row.
+const MAX_SERIAL = 2147483647;
 
-  // Exact name or group path only. A substring match would grant full
-  // privileges to any role merely containing the words, e.g.
-  // "super_admin_readonly" or "ex super admin".
-  if (has((n) => n === "super admin" || n.endsWith("/super admin")))
-    return "super_admin";
-  if (has((n) => n === "hiring manager" || n.endsWith("/hiring manager")))
-    return "hiring_manager";
-  if (has((n) => n === "interviewer" || n.endsWith("/interviewer")))
-    return "interviewer";
-
-  return null;
+function parseUserId(sub: string | undefined): number | null {
+  if (!sub || !/^[1-9]\d*$/.test(sub)) return null;
+  const id = Number(sub);
+  return id <= MAX_SERIAL ? id : null;
 }
 
 /**
- * Verifies an Asgardeo JWT and resolves it to a local user.
+ * Verifies an OpenATS-issued JWT and resolves it to a local user.
  *
- * Throws `AuthError` for anything the caller should reject (bad claims, no
- * role, deactivated account) and lets `jose` errors and database errors
+ * The token only identifies the user. Role, active and banned state are read
+ * from the row on every call, so a change applies on the next request
+ * instead of after the token expires.
+ *
+ * Throws `AuthError` for anything the caller should reject (unknown user,
+ * deactivated or banned account) and lets `jose` errors and database errors
  * propagate unchanged so callers can tell a bad token from a broken server.
  */
 export async function verifyAccessToken(
   token: string,
 ): Promise<AuthenticatedUser> {
+  const issuer = process.env.AUTH_ISSUER!;
+
+  // Better Auth signs with EdDSA (Ed25519) and sets both issuer and audience
+  // to its base URL.
   const { payload } = await jwtVerify(token, JWKS, {
-    issuer: process.env.ASGARDEO_ISSUER!,
+    issuer,
+    audience: issuer,
+    algorithms: ["EdDSA"],
   });
 
-  const sub = payload.sub;
-  if (!sub) {
-    throw new AuthError(401, "Invalid token: missing sub claim");
+  const id = parseUserId(payload.sub);
+  if (id === null) {
+    throw new AuthError(401, "Invalid token: missing or malformed sub claim");
   }
 
-  // Role is the single source of truth from the JWT — never stored in DB.
-  const role = mapToAppRole(
-    collectRolesFromPayload(payload as Record<string, unknown>),
-  );
-
-  if (!role) {
-    throw new AuthError(403, "No role assigned. Contact your administrator.");
-  }
-
-  const email = payload["email"] as string | undefined;
-  const firstName = (payload["given_name"] as string | undefined) ?? "Unknown";
-  const lastName = (payload["family_name"] as string | undefined) ?? "User";
-
-  if (!email) {
-    throw new AuthError(403, "Token missing required email claim");
-  }
-
-  let [user] = await db
-    .select()
-    .from(users)
-    .where(eq(users.asgardeoUserId, sub))
-    .limit(1);
+  const [user] = await db.select().from(users).where(eq(users.id, id)).limit(1);
 
   if (!user) {
-    // The `sub` can change for an existing account when the Asgardeo tenant
-    // or user is re-provisioned. Email is the stable identity, so reconcile
-    // onto the existing row instead of colliding with its unique constraint.
-    [user] = await db
-      .update(users)
-      .set({ asgardeoUserId: sub, updatedAt: new Date() })
-      .where(eq(users.email, email))
-      .returning();
-  }
-
-  if (!user) {
-    // JIT provision — genuinely first login for this email
-    const name = `${firstName} ${lastName}`.trim();
-    [user] = await db
-      .insert(users)
-      .values({ asgardeoUserId: sub, name, firstName, lastName, email })
-      .returning();
-
-    if (!user) {
-      throw new AuthError(500, "Failed to provision user");
-    }
+    throw new AuthError(401, "Invalid token: unknown user");
   }
 
   if (!user.isActive) {
     throw new AuthError(403, "User account is deactivated");
   }
 
-  // Role comes from JWT — DB row has no role column
-  return { ...user, role };
+  if (user.banned) {
+    throw new AuthError(403, "User account is banned");
+  }
+
+  if (!isAppRole(user.role)) {
+    throw new AuthError(403, "No role assigned. Contact your administrator.");
+  }
+
+  return { ...user, role: user.role };
 }

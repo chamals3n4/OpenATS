@@ -1,65 +1,81 @@
 import type { User } from "@/types";
 
+type Role = User["role"];
+
 export interface CreateUserPayload {
   firstName: string;
   lastName: string;
-  userName: string;
   email: string;
+  role?: Role;
+  /** "invite" emails a set-password link; "set" uses `password`. */
+  method: "invite" | "set";
   password?: string;
-  askPassword?: boolean;
-  role?: "super_admin" | "hiring_manager" | "interviewer";
 }
 
 export interface UpdateUserPayload {
   firstName?: string;
   lastName?: string;
   email?: string;
-  role?: "super_admin" | "hiring_manager" | "interviewer";
-  oldRole?: "super_admin" | "hiring_manager" | "interviewer";
+  role?: Role;
 }
 
-export async function fetchUsers(): Promise<User[]> {
-  const res = await fetch("/api/users");
-  if (!res.ok) throw new Error("Failed to fetch users");
-  return res.json();
-}
-
-export async function createUser(payload: CreateUserPayload): Promise<User> {
-  const res = await fetch("/api/users", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
+async function request<T>(
+  input: string,
+  init: RequestInit | undefined,
+  fallback: string,
+): Promise<T> {
+  const res = await fetch(input, init);
   if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error ?? "Failed to create user");
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { error?: string }).error ?? fallback);
   }
-  return res.json();
+  return res.json() as Promise<T>;
 }
 
-// invite and create use the same endpoint
-export const inviteUser = createUser;
+function json(method: string, body?: unknown): RequestInit {
+  return {
+    method,
+    headers: { "Content-Type": "application/json" },
+    ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  };
+}
 
-export async function updateUser(
+export function fetchUsers(): Promise<User[]> {
+  return request("/api/users", undefined, "Failed to fetch users");
+}
+
+export function createUser(
+  payload: CreateUserPayload,
+): Promise<{ success: true; reactivated?: boolean }> {
+  return request("/api/users", json("POST", payload), "Failed to create user");
+}
+
+export function updateUser(
   id: number,
   payload: UpdateUserPayload,
 ): Promise<User> {
-  const res = await fetch(`/api/users/${id}`, {
-    method: "PATCH",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(payload),
-  });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error ?? "Failed to update user");
-  }
-  return res.json();
+  return request(`/api/users/${id}`, json("PATCH", payload), "Failed to update user");
 }
 
 export async function deleteUser(id: number): Promise<void> {
-  const res = await fetch(`/api/users/${id}`, { method: "DELETE" });
-  if (!res.ok) {
-    const err = await res.json();
-    throw new Error(err.error ?? "Failed to delete user");
-  }
+  await request(`/api/users/${id}`, { method: "DELETE" }, "Failed to remove user");
+}
+
+export async function sendPasswordResetLink(id: number): Promise<void> {
+  await request(
+    `/api/users/${id}/password-reset`,
+    { method: "POST" },
+    "Failed to send the reset link",
+  );
+}
+
+export async function setUserPassword(
+  id: number,
+  password: string,
+): Promise<void> {
+  await request(
+    `/api/users/${id}/password`,
+    json("POST", { password }),
+    "Failed to set the password",
+  );
 }

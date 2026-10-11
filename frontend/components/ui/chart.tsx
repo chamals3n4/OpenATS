@@ -5,6 +5,11 @@ import * as RechartsPrimitive from "recharts"
 
 import { cn } from "@/lib/utils"
 
+// Recharts 3 no longer puts the tooltip's own data on the Tooltip component's props, so the
+// content components take it from the default content's props instead.
+type TooltipValue = number | string | ReadonlyArray<number | string>
+type TooltipName = number | string
+
 // Format: { THEME_NAME: CSS_SELECTOR }
 const THEMES = { light: "", dark: ".dark" } as const
 
@@ -118,8 +123,9 @@ function ChartTooltipContent({
   color,
   nameKey,
   labelKey,
-}: React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
-  React.ComponentProps<"div"> & {
+}: Partial<RechartsPrimitive.DefaultTooltipContentProps<TooltipValue, TooltipName>> &
+  Omit<React.ComponentProps<"div">, "content"> & {
+    active?: boolean
     hideLabel?: boolean
     hideIndicator?: boolean
     indicator?: "line" | "dot" | "dashed"
@@ -185,7 +191,8 @@ function ChartTooltipContent({
 
             return (
               <div
-                key={item.dataKey}
+                // dataKey can be a function in Recharts 3, which React cannot use as a key.
+                key={`${key}-${index}`}
                 className={cn(
                   "[&>svg]:text-muted-foreground flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5",
                   indicator === "dot" && "items-center"
@@ -256,7 +263,7 @@ function ChartLegendContent({
   verticalAlign = "bottom",
   nameKey,
 }: React.ComponentProps<"div"> &
-  Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
+  Pick<RechartsPrimitive.DefaultLegendContentProps, "payload" | "verticalAlign"> & {
     hideIcon?: boolean
     nameKey?: string
   }) {

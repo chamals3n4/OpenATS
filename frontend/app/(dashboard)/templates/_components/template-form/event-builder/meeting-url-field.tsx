@@ -1,10 +1,17 @@
 "use client";
 
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Link01Icon } from "@hugeicons/core-free-icons";
+import { GoogleIcon, Link01Icon } from "@hugeicons/core-free-icons";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { INPUT_CLASS, LABEL_CLASS } from "../../../lib/template-form-constants";
+import { INPUT_CLASS } from "../../../lib/template-form-constants";
+import { FormField } from "../form-field";
+import { OptionCards, type CardOption } from "./option-cards";
+
+type LinkSource = "auto" | "manual";
+
+const OPTIONS: CardOption<LinkSource>[] = [
+  { value: "auto", label: "Google Meet", description: "Create a new link for each interview", icon: GoogleIcon },
+  { value: "manual", label: "My own link", description: "Zoom, Teams or any other link", icon: Link01Icon },
+];
 
 interface MeetingUrlFieldProps {
   value: string;
@@ -22,54 +29,37 @@ export function MeetingUrlField({
   readOnly = false,
 }: MeetingUrlFieldProps) {
   return (
-    <div className="space-y-1.5">
-      <Label className={LABEL_CLASS}>Meeting Link</Label>
-      <div className="flex items-center gap-4">
-        <label className="flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2.5 transition-colors border-slate-200 dark:border-neutral-700 has-[:checked]:border-[var(--theme-color)] has-[:checked]:bg-(--theme-color)/5">
-          <input
-            type="radio"
-            checked={autoGenerateMeet}
-            disabled={readOnly}
-            onChange={() => onAutoGenerateMeetChange(true)}
-            className="text-[var(--theme-color)]"
-          />
-          <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
-            Auto-generate Google Meet
-          </span>
-        </label>
-        <label className="flex cursor-pointer items-center gap-2 rounded-lg border px-4 py-2.5 transition-colors border-slate-200 dark:border-neutral-700 has-[:checked]:border-[var(--theme-color)] has-[:checked]:bg-(--theme-color)/5">
-          <input
-            type="radio"
-            checked={!autoGenerateMeet}
-            disabled={readOnly}
-            onChange={() => onAutoGenerateMeetChange(false)}
-            className="text-[var(--theme-color)]"
-          />
-          <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
-            Paste a link
-          </span>
-        </label>
-      </div>
+    <div className="space-y-3">
+      <FormField
+        label="Meeting link"
+        hint={
+          autoGenerateMeet
+            ? "The link is made with the interviewer's connected Google account when the interview is scheduled."
+            : undefined
+        }
+      >
+        <OptionCards
+          label="Meeting link"
+          value={autoGenerateMeet ? "auto" : "manual"}
+          onChange={(source) => onAutoGenerateMeetChange(source === "auto")}
+          options={OPTIONS}
+          disabled={readOnly}
+        />
+      </FormField>
+
       {!autoGenerateMeet && (
-        <div className="relative">
-          <HugeiconsIcon
-            icon={Link01Icon}
-            className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-slate-400 dark:text-neutral-500"
-          />
+        <FormField label="Link" htmlFor="template-meeting-url" hint="Every interview from this template uses the same link.">
           <Input
-            placeholder="Zoom / Teams / Meet link"
+            id="template-meeting-url"
+            type="url"
+            inputMode="url"
+            placeholder="https://"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             readOnly={readOnly}
-            className={`${INPUT_CLASS} pl-8`}
+            className={INPUT_CLASS}
           />
-        </div>
-      )}
-      {autoGenerateMeet && (
-        <p className="text-xs text-slate-400 dark:text-neutral-500">
-          The link is generated from the assigned interviewer&apos;s connected
-          Google account when the interview is scheduled.
-        </p>
+        </FormField>
       )}
     </div>
   );

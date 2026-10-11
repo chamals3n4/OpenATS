@@ -96,7 +96,6 @@ export function TemplateTypePicker({
             className="h-9 gap-2 border-none bg-theme px-4 text-sm font-semibold text-white hover:bg-theme-hover disabled:opacity-50"
           >
             Continue
-            <HugeiconsIcon icon={ArrowRight02Icon} className="size-4" strokeWidth={2} />
           </Button>
         </DialogFooter>
       </DialogContent>

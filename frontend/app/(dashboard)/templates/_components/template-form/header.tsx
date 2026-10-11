@@ -2,21 +2,21 @@
 
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowLeft01Icon } from "@hugeicons/core-free-icons";
+import { Calendar02Icon, Cancel01Icon, Mail01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
+import { Spinner } from "@/components/ui/spinner";
 import type { TemplateType } from "../../lib/template-form-types";
 
-const TYPE_BADGE: Record<TemplateType, string> = {
-  email:
-    "bg-blue-50 text-blue-700 border border-blue-200 dark:bg-blue-950/30 dark:text-blue-400 dark:border-blue-800",
-  event:
-    "bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/30 dark:text-purple-400 dark:border-purple-800",
+const TYPE_COPY: Record<TemplateType, { icon: typeof Mail01Icon; kind: string; newTitle: string }> = {
+  email: { icon: Mail01Icon, kind: "Email template", newTitle: "New email template" },
+  event: { icon: Calendar02Icon, kind: "Interview event template", newTitle: "New interview event template" },
 };
 
 interface TemplateFormHeaderProps {
   templateType: TemplateType;
   mode: "new" | "edit";
-  canSave: boolean;
+  /** The name as typed so far, shown as the title while editing. */
+  name: string;
   isPending: boolean;
   onSave: () => void;
   readOnly?: boolean;
@@ -25,50 +25,52 @@ interface TemplateFormHeaderProps {
 export function TemplateFormHeader({
   templateType,
   mode,
-  canSave,
+  name,
   isPending,
   onSave,
   readOnly = false,
 }: TemplateFormHeaderProps) {
+  const copy = TYPE_COPY[templateType];
+  const title = mode === "new" ? copy.newTitle : name.trim() || "Untitled template";
+  const subtitle = mode === "new" ? "Saved templates can be reused for any candidate." : copy.kind;
+
   return (
-    <div className="flex items-center justify-between px-7 py-3.5 border-b border-slate-200 dark:border-neutral-800 shrink-0 bg-white dark:bg-neutral-950">
-      <div className="flex items-center gap-4">
-        <Link
-          href="/templates"
-          className="text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300 transition-colors"
-        >
-          <HugeiconsIcon icon={ArrowLeft01Icon} className="size-5" />
-        </Link>
-        <div className="h-4 w-px bg-slate-200 dark:bg-neutral-800" />
-        <span
-          className={`text-xs font-semibold px-2.5 py-0.5 rounded-full ${TYPE_BADGE[templateType]}`}
-        >
-          {templateType === "email" ? "Email" : "Interview Event"}
+    <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6 dark:border-neutral-800 dark:bg-neutral-950">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-theme/10 text-theme dark:text-primary">
+          <HugeiconsIcon icon={copy.icon} className="size-5" strokeWidth={1.75} />
         </span>
-        <span className="text-sm text-slate-400 dark:text-neutral-500">
-          {readOnly ? "View template" : mode === "new" ? "New template" : "Edit template"}
-        </span>
+        <div className="min-w-0">
+          <h1 className="truncate text-lg font-semibold leading-tight text-slate-950 dark:text-neutral-50">
+            {title}
+          </h1>
+          <p className="truncate text-[13px] text-slate-500 dark:text-neutral-400">
+            {readOnly ? `${copy.kind} · View only` : subtitle}
+          </p>
+        </div>
       </div>
-      <div className="flex items-center gap-2">
-        <Link href="/templates">
-          <Button
-            type="button"
-            variant="ghost"
-            className="h-9 rounded-md px-4 text-sm font-semibold text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800"
-          >
-            {readOnly ? "Back" : "Cancel"}
-          </Button>
-        </Link>
+
+      <div className="flex shrink-0 items-center gap-2">
         {!readOnly && (
           <Button
             onClick={onSave}
-            disabled={!canSave || isPending}
-            className="h-9 rounded-md border-none bg-[var(--theme-color)] px-4 text-sm font-semibold text-white hover:bg-[var(--theme-color-hover)] disabled:opacity-50 shadow-none"
+            disabled={isPending}
+            className="h-9 cursor-pointer gap-2 border-none px-4 text-sm font-semibold text-white shadow-none"
           >
-            {isPending ? "Saving…" : mode === "new" ? "Save Template" : "Save Changes"}
+            {isPending && <Spinner className="size-3.5" />}
+            {isPending ? "Saving" : mode === "new" ? "Save template" : "Save changes"}
           </Button>
         )}
+        <span aria-hidden className="mx-1 hidden h-6 w-px bg-slate-300 sm:block dark:bg-neutral-700" />
+        <Link
+          href="/templates"
+          aria-label="Back to templates"
+          title="Back to templates"
+          className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+        >
+          <HugeiconsIcon icon={Cancel01Icon} className="size-5" />
+        </Link>
       </div>
-    </div>
+    </header>
   );
 }

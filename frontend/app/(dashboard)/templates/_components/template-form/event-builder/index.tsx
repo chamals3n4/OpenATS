@@ -1,44 +1,48 @@
 "use client";
 
+import { Video01Icon, Location01Icon } from "@hugeicons/core-free-icons";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import {
-  TEXTAREA_CLASS,
-  INPUT_CLASS,
-  LABEL_CLASS,
-} from "../../../lib/template-form-constants";
-import { EventTypeSelector } from "./event-type-selector";
+import { TEXTAREA_CLASS, INPUT_CLASS } from "../../../lib/template-form-constants";
+import type { TimeSlot } from "../../../lib/template-form-types";
+import { FormField, FormSection } from "../form-field";
+import { OptionCards, type CardOption } from "./option-cards";
 import { MeetingUrlField } from "./meeting-url-field";
 import { LocationField } from "./location-field";
+import { TimeSlotsEditor } from "./time-slots-editor";
+
+type EventType = "virtual" | "onsite";
+
+const EVENT_TYPES: CardOption<EventType>[] = [
+  { value: "virtual", label: "Virtual", description: "A video call", icon: Video01Icon },
+  { value: "onsite", label: "On-site", description: "In person, at an address", icon: Location01Icon },
+];
 
 interface EventBuilderProps {
   eventName: string;
   onEventNameChange: (value: string) => void;
+  nameError?: string | undefined;
   eventDesc: string;
   onEventDescChange: (value: string) => void;
-  eventTypeRadio: "virtual" | "onsite";
-  onEventTypeChange: (type: "virtual" | "onsite") => void;
+  eventTypeRadio: EventType;
+  onEventTypeChange: (type: EventType) => void;
   meetingUrl: string;
   onMeetingUrlChange: (value: string) => void;
   autoGenerateMeet: boolean;
   onAutoGenerateMeetChange: (value: boolean) => void;
   location: string;
   onLocationChange: (value: string) => void;
+  timeSlots: TimeSlot[];
+  onAddSlot: () => void;
+  onUpdateSlot: (index: number, datetime: string) => void;
+  onRemoveSlot: (index: number) => void;
   readOnly?: boolean;
-}
-
-function SectionHeading({ children }: { children: string }) {
-  return (
-    <h3 className="text-sm font-semibold text-slate-900 dark:text-neutral-100">
-      {children}
-    </h3>
-  );
 }
 
 export function EventBuilder({
   eventName,
   onEventNameChange,
+  nameError,
   eventDesc,
   onEventDescChange,
   eventTypeRadio,
@@ -49,48 +53,60 @@ export function EventBuilder({
   onAutoGenerateMeetChange,
   location,
   onLocationChange,
+  timeSlots,
+  onAddSlot,
+  onUpdateSlot,
+  onRemoveSlot,
   readOnly = false,
 }: EventBuilderProps) {
   return (
-    <>
-      <section className="space-y-4 pb-4 border-b border-slate-100 dark:border-neutral-800/80">
-        <SectionHeading>Details</SectionHeading>
-
-        <div className="space-y-1.5">
-          <Label className={LABEL_CLASS}>Event Name</Label>
+    <div className="divide-y divide-slate-200 dark:divide-neutral-800">
+      <FormSection title="Details">
+        <FormField
+          label="Event name"
+          htmlFor="template-name"
+          hint="Candidates see this as the title of their interview."
+          error={nameError}
+        >
           <Input
-            placeholder="e.g. Technical Interview Round 1"
+            id="template-name"
+            placeholder="e.g. Technical interview, round 1"
             value={eventName}
             onChange={(e) => onEventNameChange(e.target.value)}
             readOnly={readOnly}
+            aria-invalid={!!nameError || undefined}
             className={INPUT_CLASS}
           />
-        </div>
+        </FormField>
 
-        <div className="space-y-1.5">
-          <Label className={LABEL_CLASS}>
-            Description{" "}
-            <span className="text-slate-400 dark:text-neutral-500 font-normal">
-              (optional)
-            </span>
-          </Label>
+        <FormField
+          label="Note for your team"
+          htmlFor="template-note"
+          hint="Candidates do not see this."
+          optional
+        >
           <Textarea
+            id="template-note"
             value={eventDesc}
             onChange={(e) => onEventDescChange(e.target.value)}
             readOnly={readOnly}
             rows={2}
-            placeholder="Brief context for the hiring team"
+            placeholder="e.g. Use for backend roles"
             className={TEXTAREA_CLASS}
           />
-        </div>
-      </section>
+        </FormField>
+      </FormSection>
 
-      <section className="space-y-4">
-        <SectionHeading>Location</SectionHeading>
+      <FormSection title="Where" description="How the interview takes place.">
+        <OptionCards
+          label="Interview type"
+          value={eventTypeRadio}
+          onChange={onEventTypeChange}
+          options={EVENT_TYPES}
+          disabled={readOnly}
+        />
 
-        <EventTypeSelector value={eventTypeRadio} onChange={onEventTypeChange} readOnly={readOnly} />
-
-        {eventTypeRadio === "virtual" && (
+        {eventTypeRadio === "virtual" ? (
           <MeetingUrlField
             value={meetingUrl}
             onChange={onMeetingUrlChange}
@@ -98,12 +114,20 @@ export function EventBuilder({
             onAutoGenerateMeetChange={onAutoGenerateMeetChange}
             readOnly={readOnly}
           />
-        )}
-
-        {eventTypeRadio === "onsite" && (
+        ) : (
           <LocationField value={location} onChange={onLocationChange} readOnly={readOnly} />
         )}
-      </section>
-    </>
+      </FormSection>
+
+      <FormSection title="Time slots" description="The times you offer. Each candidate picks one.">
+        <TimeSlotsEditor
+          slots={timeSlots}
+          onAdd={onAddSlot}
+          onUpdate={onUpdateSlot}
+          onRemove={onRemoveSlot}
+          readOnly={readOnly}
+        />
+      </FormSection>
+    </div>
   );
 }

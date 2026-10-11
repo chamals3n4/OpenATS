@@ -5,19 +5,20 @@ import { EditorContent, useEditor, type Editor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 import Link from "@tiptap/extension-link";
 import Placeholder from "@tiptap/extension-placeholder";
+import { HugeiconsIcon } from "@hugeicons/react";
 import {
-  Bold,
-  Italic,
-  Link as LinkIcon,
-  Heading1,
-  Heading2,
-  Heading3,
-  List,
-  ListOrdered,
-  RectangleHorizontal,
-  ArrowUp,
-  ArrowDown,
-} from "lucide-react";
+  ArrowDown01Icon,
+  ArrowUp01Icon,
+  CursorPointer02Icon,
+  Heading01Icon,
+  Heading02Icon,
+  Heading03Icon,
+  LeftToRightListBulletIcon,
+  LeftToRightListNumberIcon,
+  Link01Icon,
+  TextBoldIcon,
+  TextItalicIcon,
+} from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -105,6 +106,38 @@ function buildSlashItems(query: string): SlashMenuItem[] {
   return items.filter((i) => i.title.toLowerCase().includes(q)).slice(0, 8);
 }
 
+const toolCls = (active: boolean) =>
+  `size-8 cursor-pointer ${active ? "bg-theme/10 text-theme dark:text-primary" : "text-slate-600 dark:text-neutral-300"}`;
+
+function ToolbarButton({
+  label,
+  icon,
+  active = false,
+  onClick,
+}: {
+  label: string;
+  icon: typeof TextBoldIcon;
+  active?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="icon"
+      aria-label={label}
+      title={label}
+      aria-pressed={active}
+      className={toolCls(active)}
+      onClick={onClick}
+    >
+      <HugeiconsIcon icon={icon} className="size-4" strokeWidth={2} />
+    </Button>
+  );
+}
+
+const Divider = () => <span aria-hidden className="mx-1 h-4 w-px bg-slate-300 dark:bg-neutral-700" />;
+
 function LinkPopover({ editor, disabled }: { editor: Editor; disabled?: boolean }) {
   const [open, setOpen] = useState(false);
   const [href, setHref] = useState("");
@@ -124,15 +157,18 @@ function LinkPopover({ editor, disabled }: { editor: Editor; disabled?: boolean 
             variant="ghost"
             size="icon"
             disabled={disabled}
-            className={`size-8 ${editor.isActive("link") ? "text-theme bg-theme/10" : "text-slate-500 dark:text-neutral-400"}`}
+            aria-label="Link"
+            title="Link"
+            className={toolCls(editor.isActive("link"))}
           />
         }
       >
-        <LinkIcon className="size-4" />
+        <HugeiconsIcon icon={Link01Icon} className="size-4" strokeWidth={2} />
       </PopoverTrigger>
       <PopoverContent className="w-72 p-3" align="start">
         <div className="space-y-2">
           <Input
+            aria-label="Link address"
             placeholder="https://..."
             value={href}
             onChange={(e) => setHref(e.target.value)}
@@ -190,10 +226,11 @@ export function EmailBodyEditor({ value, onChange, readOnly = false }: Props) {
     editorProps: {
       attributes: {
         class:
-          "min-h-[320px] p-4 text-[14px] leading-[1.5] text-slate-900 dark:text-neutral-100 bg-white dark:bg-neutral-950 focus:outline-none " +
+          "min-h-[360px] py-4 pr-4 pl-10 text-[14px] leading-[1.5] text-slate-900 dark:text-neutral-100 bg-white dark:bg-neutral-950 focus:outline-none " +
           "[&_p]:m-0 [&_p+p]:mt-2 [&_ul]:my-2 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 " +
           "[&_h1]:text-xl [&_h1]:font-bold [&_h1]:m-0 [&_h1+p]:mt-2 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:m-0 [&_h2+p]:mt-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:m-0 [&_h3+p]:mt-1.5 " +
-          "[&_a]:text-[var(--theme-color)] [&_a]:underline [&_hr]:my-4 [&_hr]:border-slate-200 dark:[&_hr]:border-neutral-700",
+          "[&_a]:text-[var(--theme-color)] [&_a]:underline [&_hr]:my-4 [&_hr]:border-slate-200 dark:[&_hr]:border-neutral-700 " +
+          "[&_p.is-editor-empty:first-child]:before:pointer-events-none [&_p.is-editor-empty:first-child]:before:float-left [&_p.is-editor-empty:first-child]:before:h-0 [&_p.is-editor-empty:first-child]:before:text-slate-400 [&_p.is-editor-empty:first-child]:before:content-[attr(data-placeholder)]",
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
@@ -228,137 +265,117 @@ export function EmailBodyEditor({ value, onChange, readOnly = false }: Props) {
 
   if (!editor) {
     return (
-      <div className="min-h-[320px] p-4 text-sm bg-white dark:bg-neutral-950 text-slate-400 dark:text-neutral-500">
+      <div className="min-h-[360px] border-t border-slate-200 p-4 text-sm text-slate-500 dark:border-neutral-800 dark:text-neutral-400">
         Loading editor…
       </div>
     );
   }
 
+  const insertButton = () =>
+    editor
+      .chain()
+      .focus()
+      .insertContent({ type: "emailButton", attrs: { label: "Click Here", href: "[url]" } })
+      .run();
+  const moveCls =
+    "flex size-5 cursor-pointer items-center justify-center rounded border border-slate-300 bg-white text-slate-500 hover:border-theme/50 hover:text-theme disabled:pointer-events-none disabled:opacity-30 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400";
+
   return (
-    <div className="border border-slate-300 dark:border-neutral-600 rounded-xl overflow-hidden shadow-none">
+    <div className="border-t border-slate-200 dark:border-neutral-800">
       {!readOnly && (
-        <div className="flex items-center gap-1 p-2 bg-[#F8FAFC]/50 dark:bg-neutral-900/50 border-b border-slate-300 dark:border-neutral-600 flex-wrap">
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={`size-8 ${editor.isActive("bold") ? "text-theme bg-theme/10" : "text-slate-500 dark:text-neutral-400"}`}
+        <div
+          role="toolbar"
+          aria-label="Formatting"
+          className="flex flex-wrap items-center gap-0.5 border-b border-slate-200 bg-slate-50 px-2 py-1.5 dark:border-neutral-800 dark:bg-neutral-900"
+        >
+          <ToolbarButton
+            label="Bold"
+            icon={TextBoldIcon}
+            active={editor.isActive("bold")}
             onClick={() => editor.chain().focus().toggleBold().run()}
-          >
-            <Bold className="size-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={`size-8 ${editor.isActive("italic") ? "text-theme bg-theme/10" : "text-slate-500 dark:text-neutral-400"}`}
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-          >
-            <Italic className="size-4" />
-          </Button>
-          <LinkPopover editor={editor} />
-
-          <div className="w-px h-4 bg-slate-200 dark:bg-neutral-700 mx-1" />
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={`size-8 ${editor.isActive("heading", { level: 1 }) ? "text-theme bg-theme/10" : "text-slate-500 dark:text-neutral-400"}`}
-            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
-          >
-            <Heading1 className="size-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={`size-8 ${editor.isActive("heading", { level: 2 }) ? "text-theme bg-theme/10" : "text-slate-500 dark:text-neutral-400"}`}
-            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
-          >
-            <Heading2 className="size-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={`size-8 ${editor.isActive("heading", { level: 3 }) ? "text-theme bg-theme/10" : "text-slate-500 dark:text-neutral-400"}`}
-            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
-          >
-            <Heading3 className="size-4" />
-          </Button>
-
-          <div className="w-px h-4 bg-slate-200 dark:bg-neutral-700 mx-1" />
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={`size-8 ${editor.isActive("bulletList") ? "text-theme bg-theme/10" : "text-slate-500 dark:text-neutral-400"}`}
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-          >
-            <List className="size-4" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className={`size-8 ${editor.isActive("orderedList") ? "text-theme bg-theme/10" : "text-slate-500 dark:text-neutral-400"}`}
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-          >
-            <ListOrdered className="size-4" />
-          </Button>
-
-          <div className="w-px h-4 bg-slate-200 dark:bg-neutral-700 mx-1" />
-
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon"
-            className="size-8 text-slate-500 dark:text-neutral-400"
-            title="Insert button"
-            onClick={() =>
-              editor
-                .chain()
-                .focus()
-                .insertContent({ type: "emailButton", attrs: { label: "Click Here", href: "[url]" } })
-                .run()
-            }
-          >
-            <RectangleHorizontal className="size-4" />
-          </Button>
-          <VariablePicker
-            onSelect={(v) =>
-              editor.chain().focus().insertContent({ type: "variableChip", attrs: { variable: v } }).run()
-            }
           />
+          <ToolbarButton
+            label="Italic"
+            icon={TextItalicIcon}
+            active={editor.isActive("italic")}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+          />
+          <LinkPopover editor={editor} />
+          <Divider />
+          <ToolbarButton
+            label="Heading 1"
+            icon={Heading01Icon}
+            active={editor.isActive("heading", { level: 1 })}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
+          />
+          <ToolbarButton
+            label="Heading 2"
+            icon={Heading02Icon}
+            active={editor.isActive("heading", { level: 2 })}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
+          />
+          <ToolbarButton
+            label="Heading 3"
+            icon={Heading03Icon}
+            active={editor.isActive("heading", { level: 3 })}
+            onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
+          />
+          <Divider />
+          <ToolbarButton
+            label="Bullet list"
+            icon={LeftToRightListBulletIcon}
+            active={editor.isActive("bulletList")}
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+          />
+          <ToolbarButton
+            label="Numbered list"
+            icon={LeftToRightListNumberIcon}
+            active={editor.isActive("orderedList")}
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          />
+          <Divider />
+          <ToolbarButton label="Insert a button" icon={CursorPointer02Icon} onClick={insertButton} />
+          <span className="ml-auto">
+            <VariablePicker
+              target="body"
+              onSelect={(v) =>
+                editor.chain().focus().insertContent({ type: "variableChip", attrs: { variable: v } }).run()
+              }
+            />
+          </span>
         </div>
       )}
 
-      <div ref={wrapperRef} className="relative" onMouseMove={!readOnly ? handleMouseMove : undefined} onMouseLeave={() => setHover(null)}>
+      <div
+        ref={wrapperRef}
+        className="relative"
+        onMouseMove={!readOnly ? handleMouseMove : undefined}
+        onMouseLeave={() => setHover(null)}
+      >
         <EditorContent editor={editor} />
 
         {!readOnly && hover && (
-          <div
-            className="absolute left-1 flex flex-col gap-0.5 -translate-y-0.5"
-            style={{ top: hover.top }}
-          >
+          <div className="absolute left-2 flex -translate-y-0.5 flex-col gap-0.5" style={{ top: hover.top }}>
             <button
               type="button"
+              aria-label="Move block up"
+              title="Move up"
               disabled={hover.index === 0}
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => moveTopLevelBlock(editor, hover.index, hover.index - 1)}
-              className="size-5 flex items-center justify-center rounded border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-400 hover:text-[var(--theme-color)] hover:border-[var(--theme-color)]/40 disabled:opacity-30 disabled:pointer-events-none"
+              className={moveCls}
             >
-              <ArrowUp className="size-3" />
+              <HugeiconsIcon icon={ArrowUp01Icon} className="size-3" strokeWidth={2.5} />
             </button>
             <button
               type="button"
+              aria-label="Move block down"
+              title="Move down"
               onMouseDown={(e) => e.preventDefault()}
               onClick={() => moveTopLevelBlock(editor, hover.index, hover.index + 1)}
-              className="size-5 flex items-center justify-center rounded border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-400 hover:text-[var(--theme-color)] hover:border-[var(--theme-color)]/40"
+              className={moveCls}
             >
-              <ArrowDown className="size-3" />
+              <HugeiconsIcon icon={ArrowDown01Icon} className="size-3" strokeWidth={2.5} />
             </button>
           </div>
         )}

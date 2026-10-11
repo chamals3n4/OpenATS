@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { Braces } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { BracesIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import {
   Popover,
@@ -21,9 +22,11 @@ import { VARS, SAMPLE } from "../../../lib/template-form-constants";
 interface VariablePickerProps {
   onSelect: (variable: string) => void;
   disabled?: boolean;
+  /** Names what the variable goes into, for screen readers: "subject" or "body". */
+  target: string;
 }
 
-export function VariablePicker({ onSelect, disabled }: VariablePickerProps) {
+export function VariablePicker({ onSelect, disabled, target }: VariablePickerProps) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -33,21 +36,21 @@ export function VariablePicker({ onSelect, disabled }: VariablePickerProps) {
           <Button
             type="button"
             variant="ghost"
-            size="icon"
             disabled={disabled}
-            className="size-8 text-slate-500 dark:text-neutral-400"
-            title="Insert variable"
+            aria-label={`Insert a variable into the ${target}`}
+            className="h-8 shrink-0 cursor-pointer gap-1.5 px-2.5 text-[13px] font-medium text-slate-600 dark:text-neutral-300"
           />
         }
       >
-        <Braces className="size-4" />
+        <HugeiconsIcon icon={BracesIcon} className="size-4" strokeWidth={1.75} />
+        Variable
       </PopoverTrigger>
-      <PopoverContent className="w-64 p-0" align="start">
+      <PopoverContent className="w-80 p-0" align="end">
         <Command>
           <CommandInput placeholder="Search variables..." />
           <CommandList>
             <CommandEmpty>No variables found.</CommandEmpty>
-            <CommandGroup heading="Variables">
+            <CommandGroup heading="Filled in for each candidate">
               {VARS.map((v) => (
                 <CommandItem
                   key={v}
@@ -58,7 +61,7 @@ export function VariablePicker({ onSelect, disabled }: VariablePickerProps) {
                   }}
                 >
                   <span className="font-mono text-xs">{`{{${v}}}`}</span>
-                  <span className="ml-auto text-[10px] text-slate-400 dark:text-neutral-500 truncate max-w-24">
+                  <span className="ml-auto max-w-32 truncate text-xs text-slate-500 dark:text-neutral-400">
                     {SAMPLE[v]}
                   </span>
                 </CommandItem>

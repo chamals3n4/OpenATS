@@ -1,61 +1,42 @@
 "use client";
 
-import { renderPreviewHtml } from "../../../lib/template-form-utils";
-import { VARS, SAMPLE } from "../../../lib/template-form-constants";
+import { fillSampleText, renderPreviewHtml } from "../../../lib/template-form-utils";
+import { SAMPLE } from "../../../lib/template-form-constants";
+import { PreviewPane } from "../preview-pane";
 
 interface EmailPreviewPanelProps {
   subject: string;
   bodyHtml: string;
 }
 
-function renderSubject(subject: string): string {
-  let out = subject;
-  VARS.forEach((key) => {
-    out = out.replaceAll(`{{${key}}}`, SAMPLE[key] ?? key);
-  });
-  return out;
-}
-
 export function EmailPreviewPanel({ subject, bodyHtml }: EmailPreviewPanelProps) {
-  const isEmpty = !bodyHtml || bodyHtml === "<p></p>";
+  const hasBody = !!bodyHtml && bodyHtml !== "<p></p>";
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Panel header */}
-      <div className="px-8 pt-7 pb-4 shrink-0">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-neutral-500">
-            Live Preview
-          </span>
-          <span className="size-1.5 rounded-full bg-green-400" />
-        </div>
+    <PreviewPane note="Highlighted values are sample data. Each candidate gets their own.">
+      <div className="border-b border-slate-200 px-6 py-4 dark:border-neutral-800">
+        <p
+          className={`text-base font-semibold leading-snug ${
+            subject ? "text-slate-900 dark:text-neutral-100" : "text-slate-400 dark:text-neutral-500"
+          }`}
+        >
+          {subject ? fillSampleText(subject) : "No subject yet"}
+        </p>
+        <p className="mt-1 text-[13px] text-slate-500 dark:text-neutral-400">To: {SAMPLE.candidate_name}</p>
       </div>
 
-      {/* Preview content */}
-      <div className="flex-1 overflow-y-auto px-8 pb-10">
-        {isEmpty && !subject ? (
-          <div className="flex flex-col items-center justify-center h-48 text-center">
-            <p className="text-sm text-slate-400 dark:text-neutral-500">
-              Start writing on the left to preview the email
-            </p>
-          </div>
+      <div className="px-6 py-5">
+        {hasBody ? (
+          <div
+            className="text-sm text-slate-700 dark:text-neutral-300 leading-relaxed [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-slate-900 dark:[&_h1]:text-neutral-100 [&_h1]:mb-2 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-slate-900 dark:[&_h2]:text-neutral-100 [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-slate-900 dark:[&_h3]:text-neutral-100 [&_h3]:mb-1.5 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_a]:text-[var(--theme-color)] [&_a]:underline [&_hr]:my-4 [&_hr]:border-slate-200 dark:[&_hr]:border-neutral-700"
+            dangerouslySetInnerHTML={{ __html: renderPreviewHtml(bodyHtml) }}
+          />
         ) : (
-          <div>
-            {subject && (
-              <>
-                <p className="text-sm font-semibold text-slate-800 dark:text-neutral-100 leading-snug mb-4">
-                  {renderSubject(subject)}
-                </p>
-                <div className="border-t border-slate-200 dark:border-neutral-700 mb-4" />
-              </>
-            )}
-            <div
-              className="text-sm text-slate-700 dark:text-neutral-300 leading-relaxed [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-slate-900 dark:[&_h1]:text-neutral-100 [&_h1]:mb-2 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-slate-900 dark:[&_h2]:text-neutral-100 [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-slate-900 dark:[&_h3]:text-neutral-100 [&_h3]:mb-1.5 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_a]:text-[var(--theme-color)] [&_a]:underline [&_hr]:my-4 [&_hr]:border-slate-200 dark:[&_hr]:border-neutral-700"
-              dangerouslySetInnerHTML={{ __html: renderPreviewHtml(bodyHtml) }}
-            />
-          </div>
+          <p className="py-10 text-center text-sm text-slate-500 dark:text-neutral-400">
+            The email body appears here as you write.
+          </p>
         )}
       </div>
-    </div>
+    </PreviewPane>
   );
 }

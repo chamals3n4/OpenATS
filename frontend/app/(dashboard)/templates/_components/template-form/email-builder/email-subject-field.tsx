@@ -1,18 +1,17 @@
 "use client";
 
 import { useRef } from "react";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { INPUT_CLASS, LABEL_CLASS } from "../../../lib/template-form-constants";
 import { VariablePicker } from "./variable-picker";
 
 interface EmailSubjectFieldProps {
   value: string;
   onChange: (value: string) => void;
+  invalid?: boolean;
   readOnly?: boolean;
 }
 
-export function EmailSubjectField({ value, onChange, readOnly = false }: EmailSubjectFieldProps) {
+/** The subject line at the top of the composer. */
+export function EmailSubjectField({ value, onChange, invalid = false, readOnly = false }: EmailSubjectFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const insertVariable = (variable: string) => {
@@ -34,19 +33,21 @@ export function EmailSubjectField({ value, onChange, readOnly = false }: EmailSu
   };
 
   return (
-    <div className="space-y-1.5">
-      <Label className={LABEL_CLASS}>Email Subject</Label>
-      <div className="flex items-center gap-1.5">
-        <Input
-          ref={inputRef}
-          placeholder="e.g. Interview Invitation — {{job_title}}"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          readOnly={readOnly}
-          className={INPUT_CLASS + " flex-1"}
-        />
-        {!readOnly && <VariablePicker onSelect={insertVariable} />}
-      </div>
+    <div className="flex items-center gap-2 py-1 pl-4 pr-2">
+      <label htmlFor="template-subject" className="shrink-0 text-sm font-medium text-slate-500 dark:text-neutral-400">
+        Subject
+      </label>
+      <input
+        id="template-subject"
+        ref={inputRef}
+        placeholder="e.g. Your interview for {{job_title}}"
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        readOnly={readOnly}
+        aria-invalid={invalid || undefined}
+        className="h-9 min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400 dark:text-neutral-100 dark:placeholder:text-neutral-500"
+      />
+      {!readOnly && <VariablePicker target="subject" onSelect={insertVariable} />}
     </div>
   );
 }

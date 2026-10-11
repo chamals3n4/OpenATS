@@ -1,11 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, Delete02Icon } from "@hugeicons/core-free-icons";
-import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { DateTimePicker } from "@/components/ui/date-time-picker";
-import { LABEL_CLASS } from "../../../lib/template-form-constants";
+import { isPastSlot } from "../../../lib/template-form-utils";
 
 interface TimeSlotsEditorProps {
   slots: { datetime: string }[];
@@ -22,62 +22,65 @@ export function TimeSlotsEditor({
   onRemove,
   readOnly = false,
 }: TimeSlotsEditorProps) {
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <Label className={LABEL_CLASS}>
-          Time Slots{"  "}
-          <span className="text-slate-400 dark:text-neutral-500 font-normal">
-            -{"  "}candidates pick one
-          </span>
-        </Label>
-        {!readOnly && (
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            onClick={onAdd}
-            className="h-7 px-2.5 text-xs font-semibold text-[var(--theme-color)] hover:text-[var(--theme-color)] hover:bg-[var(--theme-color)]/8 gap-1 shadow-none"
-          >
-            <HugeiconsIcon icon={PlusSignIcon} className="size-3" />
-            Add slot
-          </Button>
-        )}
-      </div>
+  // Fixed when the form opens, so a slot does not flip to "passed" while it is being edited.
+  const [now] = useState(() => Date.now());
 
-      {slots.length === 0 ? (
-        <p className="text-sm text-slate-400 dark:text-neutral-500 py-2">
-          No time slots yet.
-        </p>
-      ) : (
-        <div className="space-y-2">
-          {slots.map((slot, i) => (
-            <div
-              key={i}
-              className="flex items-center gap-2 rounded-lg border border-[var(--theme-color)]/30 bg-[var(--theme-color)]/5 dark:bg-[var(--theme-color)]/10 pl-3 pr-1.5 py-1"
-            >
-              <span className="flex size-6 shrink-0 items-center justify-center text-slate-400 dark:text-neutral-500 text-xs font-semibold">
-                {i + 1}
-              </span>
-              <DateTimePicker
-                value={slot.datetime}
-                onChange={(datetime) => onUpdate(i, datetime)}
-                disabled={readOnly}
-                className="h-9 flex-1 min-w-0 text-sm"
-              />
-              {!readOnly && (
-                <button
-                  type="button"
-                  onClick={() => onRemove(i)}
-                  disabled={slots.length === 1}
-                  className="size-7 flex items-center justify-center shrink-0 rounded-md text-slate-300 dark:text-neutral-600 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+  return (
+    <div className="space-y-2">
+      <ol className="space-y-2">
+        {slots.map((slot, i) => {
+          const past = isPastSlot(slot.datetime, now);
+          return (
+            <li key={i}>
+              <div className="flex items-center gap-2">
+                <span
+                  aria-hidden
+                  className="flex size-6 shrink-0 items-center justify-center rounded-full bg-slate-100 text-xs font-semibold text-slate-600 dark:bg-neutral-800 dark:text-neutral-300"
                 >
-                  <HugeiconsIcon icon={Delete02Icon} className="size-3.5" />
-                </button>
+                  {i + 1}
+                </span>
+                <DateTimePicker
+                  value={slot.datetime}
+                  onChange={(datetime) => onUpdate(i, datetime)}
+                  disabled={readOnly}
+                  placeholder="Choose a date and time"
+                  className={`h-9 min-w-0 flex-1 cursor-pointer rounded-md border bg-gray-100 px-3 text-sm dark:bg-neutral-800 ${
+                    past ? "border-amber-400 dark:border-amber-600" : "border-slate-300 dark:border-neutral-600"
+                  }`}
+                />
+                {!readOnly && (
+                  <button
+                    type="button"
+                    aria-label={`Remove time slot ${i + 1}`}
+                    title="Remove"
+                    onClick={() => onRemove(i)}
+                    disabled={slots.length === 1}
+                    className="flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-md text-slate-500 transition-colors hover:bg-red-50 hover:text-red-600 disabled:pointer-events-none disabled:opacity-30 dark:text-neutral-400 dark:hover:bg-red-950/30 dark:hover:text-red-400"
+                  >
+                    <HugeiconsIcon icon={Delete02Icon} className="size-4" />
+                  </button>
+                )}
+              </div>
+              {past && (
+                <p className="ml-8 mt-1 text-[13px] text-amber-700 dark:text-amber-400">
+                  This time has passed, so candidates will not be offered it.
+                </p>
               )}
-            </div>
-          ))}
-        </div>
+            </li>
+          );
+        })}
+      </ol>
+
+      {!readOnly && (
+        <Button
+          type="button"
+          variant="cancel"
+          onClick={onAdd}
+          className="ml-8 h-9 cursor-pointer gap-2 border-dashed px-3 text-sm"
+        >
+          <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2} />
+          Add a time slot
+        </Button>
       )}
     </div>
   );

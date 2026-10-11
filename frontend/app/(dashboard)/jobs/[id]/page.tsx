@@ -1,5 +1,7 @@
 "use client";
 
+import { toast } from "sonner";
+
 import { ConfirmDeleteDialog, ConfirmDeleteName } from "@/components/ui/confirm-delete-dialog";
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQueryClient, type QueryKey } from "@tanstack/react-query";
@@ -11,7 +13,7 @@ import { JobHeader } from "./_components/JobHeader";
 import { JobTabs } from "./_components/JobTabs";
 import { JobSetupAlert } from "./_components/JobSetupAlert";
 import { DiscussionsPanel } from "./_components/DiscussionsPanel";
-import { AddStageDialog } from "./_components/dialogs/AddStageDialog";
+import { StageDialog, type StageValues } from "./_components/dialogs/StageDialog";
 
 import { moveItem, positionChanges } from "./lib/question-utils";
 import {
@@ -179,7 +181,9 @@ export default function JobDetailsPage() {
         onSuccess: () => {
           setAddTeamMemberOpen(false);
           setNewMemberId("");
+          toast.success("Added to the hiring team");
         },
+        onError: (error) => toast.error(error.message || "Failed to add the member"),
       },
     );
   };
@@ -249,17 +253,6 @@ export default function JobDetailsPage() {
     };
   }, [isResizingNotes]);
 
-  const [editingStageId, setEditingStageId] = useState<number | null>(null);
-  const [editingStageName, setEditingStageName] = useState("");
-
-  const handleSaveStage = (stageId: number) => {
-    if (!editingStageName.trim()) return;
-    updateStageMutation.mutate(
-      { stageId, data: { name: editingStageName.trim() } },
-      { onSuccess: () => setEditingStageId(null) },
-    );
-  };
-
   const [stages, setStages] = useState<(PipelineStage & { color: string })[]>(
     [],
   );
@@ -278,32 +271,40 @@ export default function JobDetailsPage() {
     );
   }
 
-  const [addStageOpen, setAddStageOpen] = useState(false);
-  const [newStageName, setNewStageName] = useState("");
-  const [newStageType, setNewStageType] = useState("screening");
+  // The add / edit dialog: closed, adding a stage, or changing the one given.
+  const [stageDialog, setStageDialog] = useState<{ stage: PipelineStage | null } | null>(null);
   const [stageDeleteTarget, setStageDeleteTarget] = useState<{
     id: number;
     name: string;
   } | null>(null);
 
-  const handleAddStage = () => {
-    if (!newStageName.trim()) return;
+  const handleSubmitStage = (values: StageValues) => {
+    const editing = stageDialog?.stage;
+    if (editing) {
+      updateStageMutation.mutate(
+        { stageId: editing.id, data: values },
+        {
+          onSuccess: () => {
+            setStageDialog(null);
+            toast.success("Stage saved");
+          },
+          onError: (error) => toast.error(error.message || "Failed to save the stage"),
+        },
+      );
+      return;
+    }
     const nextPosition =
       stages.length === 0
         ? 1
         : Math.max(...stages.map((s) => s.position ?? 0)) + 1;
     createStageMutation.mutate(
-      {
-        name: newStageName.trim(),
-        position: nextPosition,
-        stageType: newStageType,
-      },
+      { ...values, position: nextPosition },
       {
         onSuccess: () => {
-          setNewStageName("");
-          setNewStageType("screening");
-          setAddStageOpen(false);
+          setStageDialog(null);
+          toast.success("Stage added");
         },
+        onError: (error) => toast.error(error.message || "Failed to add the stage"),
       },
     );
   };
@@ -407,13 +408,8 @@ export default function JobDetailsPage() {
                 addTeamMemberMutationPending={addTeamMemberMutation.isPending}
                 removeTeamMemberMutation={removeTeamMemberMutation}
                 stages={stages}
-                setAddStageOpen={setAddStageOpen}
-                editingStageId={editingStageId}
-                setEditingStageId={setEditingStageId}
-                editingStageName={editingStageName}
-                setEditingStageName={setEditingStageName}
-                handleSaveStage={handleSaveStage}
-                updateStageMutationPending={updateStageMutation.isPending}
+                onAddStage={() => setStageDialog({ stage: null })}
+                onEditStage={(stage) => setStageDialog({ stage })}
                 setStageDeleteTarget={setStageDeleteTarget}
                 handleStageReorder={handleStageReorder}
                 questions={questions}
@@ -428,15 +424,12 @@ export default function JobDetailsPage() {
               />
             </Tabs>
 
-            <AddStageDialog
-              open={addStageOpen}
-              onOpenChange={setAddStageOpen}
-              newStageType={newStageType}
-              setNewStageType={setNewStageType}
-              newStageName={newStageName}
-              setNewStageName={setNewStageName}
-              handleAddStage={handleAddStage}
-              isPending={createStageMutation.isPending}
+            <StageDialog
+              open={stageDialog !== null}
+              stage={stageDialog?.stage ?? null}
+              isPending={createStageMutation.isPending || updateStageMutation.isPending}
+              onSubmit={handleSubmitStage}
+              onClose={() => setStageDialog(null)}
             />
           </main>
         </div>

@@ -416,6 +416,24 @@ export type NewAssessmentQuestion = {
   options?: { label: string; isCorrect: boolean; position: number }[];
 };
 
+/**
+ * One person on a job's hiring team. `id` is the membership row; `userId` is the person, and
+ * is what adding and removing work with.
+ */
+export type HiringTeamMember = {
+  id: number;
+  jobId: number;
+  userId: number;
+  addedAt: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  avatarUrl: string | null;
+  role: User["role"];
+  /** The person who created the job. They cannot be removed from its team. */
+  isJobCreator: boolean;
+};
+
 export type HiringTeamMembership = {
   id: number;
   jobId: number;

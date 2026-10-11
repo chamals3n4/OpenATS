@@ -14,6 +14,7 @@ import type {
   CustomQuestion,
   Assessment,
   JobAssessment,
+  HiringTeamMember,
 } from "@/types";
 import type {
   useCreateQuestion,
@@ -27,7 +28,7 @@ interface JobTabsProps {
   activeJobTab: string;
   job: JobDetail | undefined;
   jobLoading: boolean;
-  team: User[];
+  team: HiringTeamMember[];
   allUsers: User[];
   addTeamMemberOpen: boolean;
   setAddTeamMemberOpen: (open: boolean) => void;
@@ -37,13 +38,8 @@ interface JobTabsProps {
   addTeamMemberMutationPending: boolean;
   removeTeamMemberMutation: ReturnType<typeof useRemoveHiringTeamMember>;
   stages: (PipelineStage & { color: string })[];
-  setAddStageOpen: (open: boolean) => void;
-  editingStageId: number | null;
-  setEditingStageId: (id: number | null) => void;
-  editingStageName: string;
-  setEditingStageName: (name: string) => void;
-  handleSaveStage: (id: number) => void;
-  updateStageMutationPending: boolean;
+  onAddStage: () => void;
+  onEditStage: (stage: PipelineStage) => void;
   setStageDeleteTarget: (target: { id: number; name: string } | null) => void;
   handleStageReorder: (from: number, to: number) => void;
   questions: CustomQuestion[];
@@ -71,13 +67,8 @@ export function JobTabs({
   addTeamMemberMutationPending,
   removeTeamMemberMutation,
   stages,
-  setAddStageOpen,
-  editingStageId,
-  setEditingStageId,
-  editingStageName,
-  setEditingStageName,
-  handleSaveStage,
-  updateStageMutationPending,
+  onAddStage,
+  onEditStage,
   setStageDeleteTarget,
   handleStageReorder,
   questions,
@@ -122,13 +113,8 @@ export function JobTabs({
       >
         <HiringProcessTab
           stages={stages}
-          setAddStageOpen={setAddStageOpen}
-          editingStageId={editingStageId}
-          setEditingStageId={setEditingStageId}
-          editingStageName={editingStageName}
-          setEditingStageName={setEditingStageName}
-          handleSaveStage={handleSaveStage}
-          updateStageMutationPending={updateStageMutationPending}
+          onAddStage={onAddStage}
+          onEditStage={onEditStage}
           setStageDeleteTarget={setStageDeleteTarget}
           handleStageReorder={handleStageReorder}
         />

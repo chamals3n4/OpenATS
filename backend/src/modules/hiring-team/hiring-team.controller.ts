@@ -24,7 +24,10 @@ export const getHiringTeam = async (req: Request, res: Response) => {
     }
 
     const members = await hiringTeamService.getByJobId(jobId);
-    res.status(200).json({ data: members });
+    // The person who created the job stays on its team, so the list says who that is.
+    res.status(200).json({
+      data: members.map((member) => ({ ...member, isJobCreator: member.userId === job.createdBy })),
+    });
   } catch (error) {
     logger.error(`Failed to fetch hiring team for job id=${req.params.jobId}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch hiring team" });

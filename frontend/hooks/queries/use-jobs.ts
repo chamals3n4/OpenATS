@@ -5,6 +5,7 @@ import type {
   JobDetail,
   CustomQuestion,
   ScorecardCriterion,
+  HiringTeamMember,
   HiringTeamMembership,
   User,
 } from "@/types";
@@ -228,7 +229,7 @@ export function useDeleteQuestion(jobId: number) {
 export function useHiringTeam(jobId: number) {
   return useQuery({
     queryKey: ["jobs", jobId, "team"],
-    queryFn: () => serverFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
+    queryFn: () => serverFetch<{ data: HiringTeamMember[] }>(`/jobs/${jobId}/team`),
     enabled: !!jobId,
   });
 }

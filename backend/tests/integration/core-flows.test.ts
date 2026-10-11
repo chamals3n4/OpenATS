@@ -298,6 +298,24 @@ describe("core hiring flow", () => {
     expect(row!.currentStageId).toBe(offerStageId);
   });
 
+  describe("the hiring team", () => {
+    it("lists each member with their role and marks the job's creator", async () => {
+      const res = await request(app).get(`/api/jobs/${jobId}/team`).set("Authorization", auth);
+
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveLength(1);
+      expect(res.body.data[0]).toMatchObject({ userId: managerId, role: "super_admin", isJobCreator: true });
+    });
+
+    it("refuses to remove the job's creator", async () => {
+      const res = await request(app).delete(`/api/jobs/${jobId}/team/${managerId}`).set("Authorization", auth);
+
+      expect(res.status).toBe(403);
+      const still = await db.select().from(jobHiringTeam).where(eq(jobHiringTeam.jobId, jobId));
+      expect(still).toHaveLength(1);
+    });
+  });
+
   describe("scheduling an interview", () => {
     const schedule = (body: object) =>
       request(app)

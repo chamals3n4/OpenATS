@@ -6,7 +6,7 @@ OpenATS backend was written using Express.js.
 
 - **Folder layout**: code is grouped by feature under `src/modules/<feature>/`, each holding that feature's `*.controller.ts`, `*.service.ts`, and `*.routes.ts` together (for example `src/modules/candidate/`). There are no top-level `controllers/` or `services/` folders. Code shared by two or more modules lives in `src/shared/services/` (mail, socket, r2, google-calendar) and `src/shared/integrations/` (external provider infra).
 - **Request flow**: `src/server.ts` starts the HTTP server, `src/app.ts` wires up middleware and routes, `src/routes/index.ts` mounts each module's routes file, which delegates to that module's controller and then its service.
-- **Authentication**: WSO2 Asgardeo JWTs are verified in `src/middlewares/auth.middleware.ts`, which maps roles (`super_admin`, `hiring_manager`, `interviewer`) and auto-provisions new users on first login.
+- **Authentication**: sign-in is built in and runs in the Next.js server (Better Auth). The API verifies its short-lived JWTs in `src/middlewares/auth.middleware.ts` against the keys at `AUTH_JWKS_URL`. The token only identifies the user: the role (`super_admin`, `hiring_manager`, `interviewer`) and whether the account is active are read from the `users` table on every request. Users are never created from a token.
 - **Public routes**: Career page and application endpoints under `/public/*` use origin-based access control instead of auth middleware. Assessment links use token-based auth.
 - **Database**: PostgreSQL via Drizzle ORM. Schema files live in `src/db/schema/`, one per domain.
 - **Background jobs**: CV analysis runs as a background job queue (BullMQ + Redis), colocated under `src/queues/cv-analysis/`. This runs in a separate worker process from the API server.
@@ -72,10 +72,10 @@ REDIS_URL=redis://localhost:6379
 
 The remaining variables are for external/cloud services and are only needed if you're working on the feature that depends on them:
 
-- `ASGARDEO_*` - WSO2 Asgardeo auth. Required for almost everything - most routes are gated behind the auth middleware.
+- `AUTH_JWKS_URL` and `AUTH_ISSUER` - where the API checks sign-in tokens. Required for almost everything, since most routes are behind the auth middleware. The defaults in `.env.example` are right for local use; the frontend must be running for the API to fetch the keys.
 - `R2_*` - Cloudflare R2 object storage, used for file uploads (e.g. resumes).
 - `RESEND_*` - Resend API, used for sending emails (e.g. application confirmations).
-- `GEMINI_API_KEY` - Used by the CV analysis service.
+- `GEMINI_API_KEY` - Optional. Used by AI CV analysis, which is also off until turned on in Settings.
 - `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_CALENDAR_ID` - used for Google Calendar integration (interview scheduling). The backend authenticates as a service account, so these are the only Google-related variables needed.
 
 ### First-time setup

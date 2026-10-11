@@ -63,12 +63,11 @@
 .technology .accent { color: var(--landing-teal-light); }
 .centeredHeader > p:last-child { color: #c2c7be; font-size: 1.02rem; line-height: 1.65; margin: 1.35rem auto 0; max-width: 610px; }
 .stackShowcase { max-width: 1160px; }
-.techGrid { display: grid; gap: .75rem; grid-template-columns: repeat(9, 1fr); margin-bottom: 2.5rem; }
+.techGrid { display: grid; gap: .75rem; grid-template-columns: repeat(8, 1fr); margin-bottom: 2.5rem; }
 .techTile { align-items: center; background: #282a27; border: 1px solid #464a44; color: #e4e7e0; cursor: pointer; display: flex; flex-direction: column; gap: .75rem; justify-content: center; min-height: 126px; padding: 1rem .5rem; text-decoration: none; transition: background .18s ease, border-color .18s ease, transform .18s ease; }
 .techTile:hover { background: #30332e; border-color: #6c746a; color: #fff; transform: translateY(-2px); }
 .techTile img { height: 40px; object-fit: contain; width: 42px; }
 .techTile img[src$="bullmq.png"] { height: 38px; width: 78px; }
-.techTile img[src$="wso2.webp"] { height: 62px; width: 90px; }
 .techTile span { font-size: .72rem; font-weight: 680; }
 .technology .inlineLink { color: var(--landing-teal-light); }
 .technology .inlineLink:hover { color: #c8eee8; }

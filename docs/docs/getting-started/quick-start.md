@@ -7,7 +7,7 @@ Use this guide when you want to set up OpenATS one step at a time. It is the man
 
 ## 1. Install prerequisites
 
-Install Node.js 22 or later, pnpm, Docker with Docker Compose, `curl`, `jq`, and `openssl`. Create accounts for WSO2 Identity Platform, Cloudflare, Resend, Google Cloud, and Google AI Studio if you intend to enable every integration.
+Install Node.js 22 or later, pnpm, Docker with Docker Compose, and `openssl`. Create accounts for Cloudflare, Resend, Google Cloud, and Google AI Studio if you intend to enable every integration. Sign-in needs no outside account.
 
 ## 2. Download OpenATS and install packages
 
@@ -37,7 +37,7 @@ cp frontend/.env.example frontend/.env
 Generate an encryption key and place it in `backend/.env`:
 
 ```sh
-openssl rand -hex 32
+openssl rand -base64 32
 ```
 
 Set `ENCRYPTION_KEY` to the output. Do not change it after storing encrypted integration credentials, or existing credentials cannot be decrypted.
@@ -56,11 +56,28 @@ OPENATS_API_URL=http://localhost:8080
 NEXT_PUBLIC_API_URL=http://localhost:8080
 ```
 
-## 5. Configure WSO2 Identity Platform
+## 5. Set up sign-in
 
-Authentication is required before you can use most of OpenATS. Follow the full [WSO2 Identity Platform setup](../administration/iam-setup) guide. It explains the Next.js application, claims, API authorizations, roles, app-native authentication, and test user.
+Sign-in is built into OpenATS, so there is nothing to register anywhere. It needs a few values in the two `.env` files.
 
-When finished, copy the frontend values (`NEXT_PUBLIC_ASGARDEO_BASE_URL`, client IDs, secrets, scopes, role IDs, and sign-in URL) into `frontend/.env`. Copy the JWKS URI and Issuer into `ASGARDEO_JWKS_URL` and `ASGARDEO_ISSUER` in `backend/.env`.
+In `frontend/.env`:
+
+```dotenv
+# The same database as the backend
+DATABASE_URL=postgresql://openats:openats@localhost:5432/openats
+# At least 32 characters. Generate one with: openssl rand -base64 32
+BETTER_AUTH_SECRET=<paste the generated value>
+BETTER_AUTH_URL=http://localhost:3000
+```
+
+In `backend/.env` (these are already correct in the example file for local use):
+
+```dotenv
+AUTH_JWKS_URL=http://localhost:3000/api/auth/jwks
+AUTH_ISSUER=http://localhost:3000
+```
+
+`AUTH_ISSUER` must be exactly the same as `BETTER_AUTH_URL`. You create the first user in step 10, after the database tables exist. The full reference is in [Sign-in and users](../administration/authentication).
 
 ## 6. Configure resume storage with Cloudflare R2
 
@@ -133,15 +150,24 @@ GOOGLE_CALENDAR_ALLOW_ATTENDEES=false
 
 Set `GOOGLE_CALENDAR_ALLOW_ATTENDEES=true` only when the service account has Domain-Wide Delegation. Without it, attendee invites are not sent. The optional `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `GOOGLE_OAUTH_REDIRECT_URI` are for OAuth-based calendar flows if your deployment uses them.
 
-## 10. Create the database schema
+## 10. Create the database schema and the first admin
 
 ```sh
 cd backend
 pnpm drizzle-kit migrate
 pnpm tsx src/db/seed.ts
+cd ..
 ```
 
-Migrations create the tables. Seeding adds the starting pipeline stages: Applied, Screening, Interviewed, Offer, and Rejected.
+Migrations create the tables, including the ones sign-in uses. Seeding adds the starting pipeline stages: Applied, Screening, Interviewed, Offer, and Rejected.
+
+There is no public sign-up, so create the first **Super Admin** from the command line:
+
+```sh
+make admin
+```
+
+It asks for an email, a name and a password. Without `make`, run `pnpm --filter ./frontend exec tsx scripts/create-admin.ts` from the repository root.
 
 ## 11. Start OpenATS
 
@@ -168,7 +194,7 @@ cd frontend
 pnpm dev
 ```
 
-Open `http://localhost:3000`, sign in as the WSO2 Super Admin test user, and create a test job. If a provider is not configured, leave its variables blank and do not use that feature until it is configured.
+Open `http://localhost:3000`, sign in with the admin you created in step 10, and create a test job. If a provider is not configured, leave its variables blank and do not use that feature until it is configured.
 
 ## 12. Verify before inviting users
 

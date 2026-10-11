@@ -41,7 +41,7 @@ setup:
 encryption-key:
 	@command -v openssl >/dev/null 2>&1 || { echo "⚠️  openssl not found, skipping ENCRYPTION_KEY generation. Set it manually."; exit 0; }
 	@if [ -f backend/.env ] && grep -qE '^ENCRYPTION_KEY=[[:space:]]*$$' backend/.env; then \
-		KEY=$$(openssl rand -hex 32); \
+		KEY=$$(openssl rand -base64 32); \
 		awk -v key="$$KEY" '{ if ($$0 ~ /^ENCRYPTION_KEY=[[:space:]]*$$/) print "ENCRYPTION_KEY="key; else print $$0 }' backend/.env > backend/.env.tmp && mv backend/.env.tmp backend/.env; \
 		echo "🔐 Generated ENCRYPTION_KEY in backend/.env"; \
 	fi

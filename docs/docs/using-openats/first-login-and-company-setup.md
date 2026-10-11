@@ -5,13 +5,12 @@ title: Company setup
 
 ## Sign in for the first time
 
-Before using the OpenATS dashboard, you need an Asgardeo user with the **Super Admin** role.
+Open OpenATS and sign in with your email and password.
 
-If you ran `make setup`, use the email address and password you entered during the Asgardeo setup step. The script creates that test user and assigns the Super Admin role when the tenant user store allows automatic provisioning.
+- **If you set OpenATS up yourself**, use the Super Admin you created at the end of `make setup` (or with `make admin`).
+- **If someone else set it up**, a Super Admin creates your account. You either receive an email with a link to choose your password, or they give you a password directly.
 
-If you created the user yourself, sign in with that account instead. In the Asgardeo console, go to **User Management > Users** to create the user, then open **User Management > Roles**, select the OpenATS **Super Admin** role, and assign the user to it. The full application and role configuration is described in the [WSO2 Identity Platform setup guide](../administration/iam-setup).
-
-There are no default OpenATS credentials. OpenATS uses the credentials managed by your Asgardeo tenant.
+There are no default credentials, and nobody can sign themselves up. If you have forgotten your password, select **Forgot password?** on the sign-in page. How accounts, roles and passwords work is explained in [Sign-in and users](../administration/authentication).
 
 ## Complete the required company setup
 

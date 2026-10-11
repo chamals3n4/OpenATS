@@ -1,6 +1,6 @@
 ## Contributing to OpenATS
 
-> 🔑 Setting up authentication? See [docs-draft/IAM_SETUP.md](docs-draft/IAM_SETUP.md) for the full WSO2 Identity Platform setup guide.
+> 🔑 Sign-in is built into OpenATS, so there is no outside account to set up. `make setup` creates your first admin. See [Sign-in and users](docs/docs/administration/authentication.md) for how accounts and roles work.
 
 - [Prerequisites](#prerequisites)
 - [Tech Stack](#tech-stack)
@@ -13,10 +13,9 @@
 - [Database Setup](#database-setup)
   - [Start Postgres and Redis with Docker](#1-start-postgres-and-redis-with-docker)
   - [Setup environment variables](#2-setup-environment-variables)
-  - [Set up your Asgardeo M2M application](#3-set-up-your-asgardeo-m2m-application)
-  - [Run the Asgardeo setup script](#4-run-the-asgardeo-setup-script)
-  - [Run database migrations](#5-run-database-migrations)
-  - [Seed the database](#6-seed-the-database)
+  - [Run database migrations](#3-run-database-migrations)
+  - [Seed the database](#4-seed-the-database)
+  - [Create your first admin](#5-create-your-first-admin)
 - [Running the Project](#running-the-project)
   - [Frontend](#frontend)
   - [Backend](#backend)
@@ -66,7 +65,7 @@ make --version
 - PostgreSQL (database)
 - Redis (job queue, via BullMQ)
 - Drizzle ORM (database ORM)
-- WSO2 Asgardeo (authentication)
+- Better Auth (sign-in, built in and running in the Next.js server)
 
 **Package Manager:** pnpm, managed as a single workspace from the repo root
 
@@ -86,13 +85,14 @@ make dev
 1. Installs dependencies for both `backend` and `frontend` from the root, using pnpm workspaces
 2. Copies `backend/.env.example` and `frontend/.env.example` into real `.env` files, if they don't exist yet
 3. Generates a random `ENCRYPTION_KEY` for you, if it's still blank
-4. Starts Postgres and Redis via Docker
-5. Walks you through setting up your own Asgardeo tenant, interactively, and prints the values it configured
+4. Fills in what sign-in needs in `frontend/.env` (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`), if they're still blank
+5. Starts Postgres and Redis via Docker
 6. Runs database migrations and seeds the default pipeline stages
+7. Asks for an email, a name and a password, and creates your first super admin
 
-`make dev` then starts the backend, frontend, and CV analysis worker together.
+`make dev` then starts the backend and frontend together. Sign in at `http://localhost:3000` with the admin you just created.
 
-You'll still need to fill in a few provider credentials by hand afterward, since these are personal secrets nobody can generate for you: Cloudflare R2, Resend, Gemini, and Google OAuth. `make setup` prints exactly which `.env` values it already configured and which ones are still blank, so you know what's left.
+You'll still need to fill in a few provider credentials by hand afterward, since these are personal secrets nobody can generate for you: Cloudflare R2 and Resend, plus Gemini and Google OAuth if you want those features. Each `.env.example` says what every value is for and which ones are optional.
 
 Prefer to see every step yourself, or something in `make setup` isn't working? The full manual walkthrough is below, and it's also the fallback if you ever need to debug a step individually.
 
@@ -186,29 +186,33 @@ DATABASE_URL=postgresql://openats:openats@localhost:5432/openats
 REDIS_URL=redis://localhost:6379
 ```
 
-### 3. Set up your Asgardeo M2M application
-
-OpenATS uses WSO2 Asgardeo for login and user management. You need your own free tenant.
-
-Follow [docs-draft/IAM_SETUP.md](docs-draft/IAM_SETUP.md) to create the application and get your Base URL, Client ID, and Client Secret. Put them in `frontend/.env` and `backend/.env` as the guide describes.
-
-### 4. Run the Asgardeo setup script
-
-This creates the roles OpenATS expects (`super_admin`, `hiring_manager`, `interviewer`) in your tenant and writes the role IDs into `backend/.env`:
+Sign-in needs three more values in `frontend/.env`, and one key in `backend/.env`. The quickest way is to let Make fill in whatever is still blank:
 
 ```bash
-make asgardeo
+make encryption-key auth-env
 ```
 
-Or run it directly with `./setup-asgardeo.sh`.
+To do it by hand instead, set these (the two secrets can each be generated with `openssl rand -base64 32`):
 
-### 5. Run database migrations
+```bash
+# backend/.env
+ENCRYPTION_KEY=<generated value>
+
+# frontend/.env
+DATABASE_URL=postgresql://openats:openats@localhost:5432/openats   # same as the backend
+BETTER_AUTH_SECRET=<generated value, at least 32 characters>
+BETTER_AUTH_URL=http://localhost:3000
+```
+
+`AUTH_JWKS_URL` and `AUTH_ISSUER` in `backend/.env` are already right for local use.
+
+### 3. Run database migrations
 
 ```bash
 make migrate
 ```
 
-### 6. Seed the database
+### 4. Seed the database
 
 This inserts the default hiring pipeline stages the app needs to work:
 
@@ -216,7 +220,17 @@ This inserts the default hiring pipeline stages the app needs to work:
 make seed
 ```
 
-You only need steps 3 to 6 **once**, when setting up for the first time.
+### 5. Create your first admin
+
+There is no public sign-up, so the first account is created from the command line. It asks for an email, a name and a password:
+
+```bash
+make admin
+```
+
+Run it after the migrations, because it needs the tables to exist. You can run it again at any time to add another super admin, or to reset one if you are locked out.
+
+You only need steps 3 to 5 **once**, when setting up for the first time.
 
 > ⚠️ If you pull changes that include schema changes, run `make migrate` again to keep your database in sync.
 
@@ -252,7 +266,7 @@ pnpm --filter ./backend dev:worker
 
 ## Testing
 
-Full guide: [docs-draft/TESTING.md](docs-draft/TESTING.md).
+Full guide: [docs/docs/developer/testing.md](docs/docs/developer/testing.md).
 
 There are three kinds of tests:
 
@@ -329,7 +343,7 @@ type: short description
 |---|---|---|
 | `feat` | A new feature | `feat: add bulk candidate import` |
 | `fix` | A bug fix | `fix: resume upload fails on large files` |
-| `docs` | Documentation only | `docs: update IAM setup guide` |
+| `docs` | Documentation only | `docs: update the sign-in guide` |
 | `refactor` | Code change with no behavior change | `refactor: simplify CV parser` |
 | `test` | Adding or fixing tests | `test: add pipeline stage tests` |
 | `chore` | Tooling, deps, config | `chore: update eslint config` |

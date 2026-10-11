@@ -9,7 +9,7 @@ OpenATS is built in the open. Contributions that improve the product, documentat
 
 Set up a working local copy before choosing a task. Follow the [Quick Start](../getting-started/make-setup) guide for the recommended setup, or use [Manual setup](../getting-started/quick-start) if you need to run each step yourself.
 
-OpenATS uses WSO2 Identity Platform for authentication. The [WSO2 Identity Platform setup guide](../administration/iam-setup) explains how to create the required applications, roles, and API permissions.
+Sign-in is built into OpenATS, so you do not need an account with any outside service. `make setup` creates your first admin. See [Sign-in and users](../administration/authentication) for how accounts and roles work.
 
 You will need Node.js 22 or later, pnpm, Git, Docker, and Make. After setup is complete, start the local application from the repository root:
 
@@ -82,4 +82,4 @@ Do not push directly to `main`. Keep commits focused, respond to review feedback
 
 ## Need help?
 
-If local setup fails, start with the [Manual setup](../getting-started/quick-start) guide. If the issue involves authentication or tenant configuration, use the [WSO2 Identity Platform setup guide](../administration/iam-setup). Include the command you ran and the full error output when asking for help.
+If local setup fails, start with the [Manual setup](../getting-started/quick-start) guide. If the issue involves sign-in, see [Sign-in and users](../administration/authentication). Include the command you ran and the full error output when asking for help.

@@ -14,12 +14,23 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useSendCandidateEmail } from "@/hooks/queries/use-candidate-emails";
 import { useCurrentUser } from "@/hooks/queries/use-user";
+import { useTemplates } from "@/hooks/queries/use-templates";
+import { useCompany } from "@/hooks/queries/use-company";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { EmailPreviewDialog } from "./email-preview-dialog";
 import {
   BODY_MAX,
   SUBJECT_MAX,
   chosenReplyTo,
+  fillTemplateText,
   splitParagraphs,
+  templateHtmlToText,
   validateEmail,
 } from "../../lib/email-utils";
 import type { CandidateDetail } from "@/types";
@@ -37,12 +48,38 @@ export function EmailComposer({ candidate }: { candidate: CandidateDetail }) {
   const [replyTo, setReplyTo] = useState("");
   const [editingReply, setEditingReply] = useState(false);
 
+  const { data: templatesData } = useTemplates();
+  const { data: companyData } = useCompany();
+  const emailTemplates = (templatesData?.data ?? []).filter((t) => t.type === "email");
+  const templateItems = emailTemplates.map((t) => ({ value: String(t.id), label: t.name }));
+  // A template picked while there is already text, waiting for a yes before it replaces it.
+  const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
+
   const fullName = `${candidate.firstName} ${candidate.lastName}`.trim();
   const errors = validateEmail({ subject, body, replyTo });
   const chosenReply = chosenReplyTo(replyTo, replyAddress);
   const effectiveReply = chosenReply ?? replyAddress;
   const hasContent = Boolean(subject.trim() || body.trim());
   const paragraphs = splitParagraphs(body);
+
+  const applyTemplate = (id: string) => {
+    const template = emailTemplates.find((t) => String(t.id) === id);
+    if (!template) return;
+    const values = {
+      candidate_name: fullName,
+      job_title: candidate.jobTitle,
+      company_name: companyData?.data?.name,
+    };
+    setSubject(fillTemplateText(template.subject, values));
+    setBody(
+      fillTemplateText(
+        templateHtmlToText(typeof template.bodyJson === "string" ? template.bodyJson : ""),
+        values,
+      ),
+    );
+    setShowErrors(false);
+    setPendingTemplateId(null);
+  };
 
   const handleSend = () => {
     setShowErrors(true);
@@ -136,6 +173,38 @@ export function EmailComposer({ candidate }: { candidate: CandidateDetail }) {
           </div>
         )}
 
+        {emailTemplates.length > 0 && (
+          <FormField
+            label="Start from a template"
+            htmlFor="email-template"
+            hint="Fills in the subject and message for you to edit. Headings and buttons become plain text."
+          >
+            <Select
+              items={templateItems}
+              value=""
+              onValueChange={(id) => {
+                if (!id) return;
+                if (hasContent) setPendingTemplateId(id);
+                else applyTemplate(id);
+              }}
+            >
+              <SelectTrigger
+                id="email-template"
+                className="h-10! w-full cursor-pointer rounded-md border border-slate-300 bg-gray-100 px-3 text-sm text-slate-900 shadow-none focus-visible:ring-0 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100"
+              >
+                <SelectValue placeholder="Choose a template" />
+              </SelectTrigger>
+              <SelectContent>
+                {templateItems.map((t) => (
+                  <SelectItem key={t.value} value={t.value}>
+                    {t.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </FormField>
+        )}
+
         <FormField
           label="Subject"
           htmlFor="email-subject"
@@ -212,6 +281,17 @@ export function EmailComposer({ candidate }: { candidate: CandidateDetail }) {
         replyTo={effectiveReply}
         subject={subject}
         paragraphs={paragraphs}
+      />
+
+      <ConfirmDeleteDialog
+        open={pendingTemplateId !== null}
+        title="Replace your message?"
+        description="The subject and message you have written will be replaced by the template."
+        confirmLabel="Replace"
+        pendingLabel="Replacing"
+        confirmClassName="bg-theme hover:bg-theme-hover"
+        onClose={() => setPendingTemplateId(null)}
+        onConfirm={() => pendingTemplateId && applyTemplate(pendingTemplateId)}
       />
 
       <ConfirmDeleteDialog

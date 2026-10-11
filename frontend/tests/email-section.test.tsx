@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 let isManager = true;
 vi.mock("@/hooks/use-role", () => ({ useIsManager: () => isManager }));
@@ -16,6 +16,13 @@ vi.mock("@/hooks/queries/use-candidate-emails", () => ({
 }));
 vi.mock("@/hooks/queries/use-user", () => ({
   useCurrentUser: () => ({ data: { data: { email: "chamal@example.com" } } }),
+}));
+let templates: unknown[] = [];
+vi.mock("@/hooks/queries/use-templates", () => ({
+  useTemplates: () => ({ data: { data: templates } }),
+}));
+vi.mock("@/hooks/queries/use-company", () => ({
+  useCompany: () => ({ data: { data: { name: "Acme Labs" } } }),
 }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
@@ -49,6 +56,7 @@ const fill = (subject: string, body: string) => {
 beforeEach(() => {
   vi.clearAllMocks();
   isManager = true;
+  templates = [];
   emailsState = { data: { data: [] }, isLoading: false, isError: false };
 });
 afterEach(cleanup);
@@ -225,5 +233,65 @@ describe("permissions", () => {
     expect(screen.queryByRole("button", { name: "Send email" })).toBeNull();
     expect(screen.getByText("Next steps")).toBeTruthy();
     expect(screen.getByText(/Only hiring managers can email candidates/)).toBeTruthy();
+  });
+});
+
+describe("starting from a template", () => {
+  const followUp = {
+    id: 5,
+    name: "Follow-up",
+    type: "email",
+    subject: "About your application for {{job_title}}",
+    bodyJson:
+      '<p>Hello <span data-variable="candidate_name">{{candidate_name}}</span>,</p><h2>Next steps</h2><ul><li>Call</li><li>Offer</li></ul><p>Regards,<br>{{company_name}}</p>',
+  };
+  // Base UI commits an option click only after the pointer hovers it.
+  const pick = async (name: string) => {
+    fireEvent.click(screen.getByRole("combobox", { name: /Start from a template/ }));
+    const item = screen.getByRole("option", { name });
+    fireEvent.pointerMove(item);
+    fireEvent.mouseMove(item);
+    fireEvent.click(item);
+  };
+  const subject = () => (screen.getByLabelText(/Subject/) as HTMLInputElement).value;
+  const message = () => (screen.getByLabelText(/Message/) as HTMLTextAreaElement).value;
+  const withJob = { ...candidate, jobTitle: "Engineer" } as CandidateDetail;
+
+  it("is not offered when there are no email templates", () => {
+    templates = [{ ...followUp, type: "event" }];
+    render(<EmailSection candidate={candidate} />);
+    expect(screen.queryByRole("combobox", { name: /Start from a template/ })).toBeNull();
+  });
+
+  it("fills the subject and message with this candidate's details, as editable text", async () => {
+    templates = [followUp];
+    render(<EmailSection candidate={withJob} />);
+    await pick("Follow-up");
+
+    await waitFor(() => expect(subject()).toBe("About your application for Engineer"));
+    expect(message()).toBe("Hello Indika Ranasinghe,\n\nNext steps\n\n- Call\n- Offer\n\nRegards,\nAcme Labs");
+  });
+
+  it("asks before replacing something already written", async () => {
+    templates = [followUp];
+    render(<EmailSection candidate={withJob} />);
+    fill("My subject", "My message");
+    await pick("Follow-up");
+
+    const dialog = await screen.findByRole("alertdialog");
+    expect(subject()).toBe("My subject");
+    fireEvent.click(within(dialog).getByRole("button", { name: "Replace" }));
+    await waitFor(() => expect(subject()).toBe("About your application for Engineer"));
+  });
+
+  it("will not send while a variable is still unfilled", async () => {
+    templates = [{ ...followUp, bodyJson: "<p>Your salary is {{salary}}.</p>" }];
+    render(<EmailSection candidate={withJob} />);
+    await pick("Follow-up");
+    await waitFor(() => expect(message()).toBe("Your salary is {{salary}}."));
+
+    fireEvent.click(screen.getByRole("button", { name: "Send email" }));
+    expect(screen.getByText("Replace {{salary}} with real text before sending.")).toBeTruthy();
+    expect(screen.queryByText("Send this email?")).toBeNull();
   });
 });

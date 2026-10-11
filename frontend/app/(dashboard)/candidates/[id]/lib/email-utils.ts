@@ -36,12 +36,56 @@ export function validateEmail({ subject, body, replyTo = "" }: EmailDraft): Emai
   if (!subject.trim()) errors.subject = "Add a subject.";
   else if (subject.trim().length > SUBJECT_MAX) {
     errors.subject = `Keep the subject under ${SUBJECT_MAX} characters.`;
+  } else if (unfilledVariables(subject).length > 0) {
+    errors.subject = unfilledMessage(unfilledVariables(subject));
   }
   if (!body.trim()) errors.body = "Write a message.";
   else if (body.trim().length > BODY_MAX) {
     errors.body = `Keep the message under ${BODY_MAX.toLocaleString("en-US")} characters.`;
+  } else if (unfilledVariables(body).length > 0) {
+    errors.body = unfilledMessage(unfilledVariables(body));
   }
   return errors;
+}
+
+const VARIABLE = /\{\{\s*([^{}]+?)\s*\}\}/g;
+
+/** The {{variables}} still in the text. Sent as they are, the candidate would see the braces. */
+export function unfilledVariables(text: string): string[] {
+  return [...new Set([...text.matchAll(VARIABLE)].map((match) => `{{${match[1]}}}`))];
+}
+
+function unfilledMessage(names: string[]) {
+  return `Replace ${names.join(", ")} with real text before sending.`;
+}
+
+/** Puts this candidate's details into a template's text. Variables with no value are left in place. */
+export function fillTemplateText(text: string, values: Record<string, string | null | undefined>): string {
+  return text.replace(VARIABLE, (whole, name: string) => values[name] || whole);
+}
+
+/**
+ * A template's HTML as the plain text the message box holds: paragraphs become blank-line
+ * separated, list items get a dash, and a button becomes its label and link. Parsed, never
+ * executed or injected.
+ */
+export function templateHtmlToText(html: string): string {
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  doc.querySelectorAll("script, style").forEach((node) => node.remove());
+  doc.querySelectorAll("a[data-email-button]").forEach((node) => {
+    const href = node.getAttribute("href") ?? "";
+    if (/^https?:\/\//.test(href)) node.append(`: ${href}`);
+  });
+  doc.querySelectorAll("br").forEach((node) => node.replaceWith("\n"));
+  doc.querySelectorAll("li").forEach((node) => node.prepend("- "));
+  doc.querySelectorAll("li").forEach((node) => node.after("\n"));
+  doc.querySelectorAll("p, h1, h2, h3, ul, ol, div, hr").forEach((node) => node.after("\n\n"));
+  return (doc.body.textContent ?? "")
+    .split("\n")
+    .map((line) => line.trim())
+    .join("\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
 }
 
 /**

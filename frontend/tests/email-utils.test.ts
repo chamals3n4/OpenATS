@@ -76,3 +76,37 @@ describe("reply address", () => {
     expect(chosenReplyTo(" hr@x.com ", "me@x.com")).toBe("hr@x.com");
   });
 });
+
+import {
+  fillTemplateText,
+  templateHtmlToText,
+  unfilledVariables,
+  validateEmail as validate,
+} from "@/app/(dashboard)/candidates/[id]/lib/email-utils";
+
+describe("using a template in a typed email", () => {
+  it("turns template HTML into paragraphs of plain text", () => {
+    expect(templateHtmlToText("<p>Hello</p><p>Line one<br>Line two</p><script>alert(1)</script>")).toBe(
+      "Hello\n\nLine one\nLine two",
+    );
+  });
+
+  it("keeps a button's label, with its link when it is a real one", () => {
+    expect(templateHtmlToText('<div><a data-email-button href="https://x.example/y">Open</a></div>')).toBe(
+      "Open: https://x.example/y",
+    );
+    expect(templateHtmlToText('<div><a data-email-button href="[url]">Open</a></div>')).toBe("Open");
+  });
+
+  it("fills what it knows and leaves the rest in place", () => {
+    expect(fillTemplateText("{{ candidate_name }} / {{salary}} / {{job_title}}", { candidate_name: "Ada", job_title: null })).toBe(
+      "Ada / {{salary}} / {{job_title}}",
+    );
+  });
+
+  it("refuses to send text that still has a variable in it", () => {
+    expect(unfilledVariables("Hi {{a}} and {{ a }} and {{b}}")).toEqual(["{{a}}", "{{b}}"]);
+    expect(validate({ subject: "About {{job_title}}", body: "Hello" }).subject).toMatch(/Replace \{\{job_title\}\}/);
+    expect(validate({ subject: "Hi", body: "Hello" })).toEqual({});
+  });
+});

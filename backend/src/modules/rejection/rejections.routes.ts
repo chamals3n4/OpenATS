@@ -100,28 +100,6 @@ router.post("/candidates/:id/reject", requireManager, async (req, res) => {
       return;
     }
 
-    // If sending email with a template, render it for preview/reference
-    let renderedSubject = "";
-    let renderedHtml = "";
-
-    if (parsed.data.templateId && parsed.data.emailStatus === "sent") {
-      const [template] = await db
-        .select()
-        .from(templates)
-        .where(eq(templates.id, parsed.data.templateId));
-
-      if (template) {
-        const context = await variableService.getContextForCandidate(id);
-        const compiled = templateEngineService.compileTemplate(
-          template.subject,
-          template.bodyJson,
-          context,
-        );
-        renderedSubject = compiled.subject;
-        renderedHtml = compiled.html;
-      }
-    }
-
     const rejection = await rejectionService.reject(
       {
         candidateId: id,
@@ -133,13 +111,7 @@ router.post("/candidates/:id/reject", requireManager, async (req, res) => {
       req.user.id,
     );
 
-    res.status(201).json({
-      data: {
-        ...rejection,
-        renderedSubject: renderedSubject || null,
-        renderedHtml: renderedHtml || null,
-      },
-    });
+    res.status(201).json({ data: rejection });
   } catch (error) {
     logger.error(`Failed to reject candidate ${req.params.id}: ${getErrorMessage(error)}`);
     res.status(400).json({ error: getErrorMessage(error) || "Failed to reject candidate" });

@@ -15,7 +15,6 @@ import {
   offers,
   candidateRejections,
   candidateInterviews,
-  company,
 } from "../../db/schema";
 import type { Candidate } from "../../db/schema/candidates";
 import { assessmentExecutionService } from "../assessment-execution/assessment-execution.service";
@@ -24,7 +23,8 @@ import { socketService } from "../../shared/services/socket.service";
 import { scoringService } from "../scoring/scoring.service";
 import { toAiSummary } from "./cv-analysis.service";
 import { rejectionService } from "../rejection/rejection.service";
-import { mailService } from "../../shared/services/mail.service";
+import { applicationReceivedEmail } from "../../shared/services/candidate-emails";
+import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { cleanObject as clean } from "../../utils/object.utils";
 import logger from "../../utils/logger";
 
@@ -301,22 +301,17 @@ async function sendApplicationConfirmationEmail(
 
     if (!job) return;
 
-    const [comp] = await db.select().from(company).limit(1);
-    const companyName = comp?.name ?? "Talent Acquisition Team";
-
-    const candidateName = `${candidate.firstName} ${candidate.lastName}`;
-    const subject = `${job.title} - Thank you for your application`;
-    const html = `
-      <div style="font-family:sans-serif;line-height:1.8;color:#333;max-width:600px">
-        <p>Dear ${candidateName},</p>
-        <p>We have successfully received your application and will review it carefully.</p>
-        <p>If your qualifications align with our requirements, we'll be in touch regarding the next steps. We appreciate your interest in joining our team.</p>
-        <br>
-        <p>Regards,<br>${companyName} Talent Acquisition Team</p>
-      </div>
-    `;
-
-    await mailService.sendEmail({ to: candidate.email, subject, html });
+    const email = applicationReceivedEmail({
+      companyName: await getCompanyName(),
+      candidateName: `${candidate.firstName} ${candidate.lastName}`,
+      jobTitle: job.title,
+    });
+    await sendCandidateEmail({
+      candidateId: candidate.id,
+      to: candidate.email,
+      kind: "application_received",
+      ...email,
+    });
   } catch (err) {
     logger.error("Failed to send application confirmation email:", err);
   }

@@ -17,7 +17,12 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { VARS, SAMPLE } from "../../../lib/template-form-constants";
+import { OFFER_ONLY_VARS, VARS, SAMPLE } from "../../../lib/template-form-constants";
+
+const GROUPS = [
+  { heading: "Works in any email", vars: VARS.filter((v) => !OFFER_ONLY_VARS.has(v)) },
+  { heading: "Offer letters only", vars: VARS.filter((v) => OFFER_ONLY_VARS.has(v)) },
+];
 
 interface VariablePickerProps {
   onSelect: (variable: string) => void;
@@ -50,23 +55,25 @@ export function VariablePicker({ onSelect, disabled, target }: VariablePickerPro
           <CommandInput placeholder="Search variables..." />
           <CommandList>
             <CommandEmpty>No variables found.</CommandEmpty>
-            <CommandGroup heading="Filled in for each candidate">
-              {VARS.map((v) => (
-                <CommandItem
-                  key={v}
-                  value={v}
-                  onSelect={() => {
-                    onSelect(v);
-                    setOpen(false);
-                  }}
-                >
-                  <span className="font-mono text-xs">{`{{${v}}}`}</span>
-                  <span className="ml-auto max-w-32 truncate text-xs text-slate-500 dark:text-neutral-400">
-                    {SAMPLE[v]}
-                  </span>
-                </CommandItem>
-              ))}
-            </CommandGroup>
+            {GROUPS.map((group) => (
+              <CommandGroup key={group.heading} heading={group.heading}>
+                {group.vars.map((v) => (
+                  <CommandItem
+                    key={v}
+                    value={v}
+                    onSelect={() => {
+                      onSelect(v);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className="font-mono text-xs">{`{{${v}}}`}</span>
+                    <span className="ml-auto max-w-32 truncate text-xs text-slate-500 dark:text-neutral-400">
+                      {SAMPLE[v]}
+                    </span>
+                  </CommandItem>
+                ))}
+              </CommandGroup>
+            ))}
           </CommandList>
         </Command>
       </PopoverContent>

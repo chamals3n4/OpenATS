@@ -1,7 +1,8 @@
 import { Request, Response } from "express";
 import { z } from "zod";
 import { assessmentExecutionService, GradingError } from "./assessment-execution.service";
-import { mailService } from "../../shared/services/mail.service";
+import { assessmentCompletedEmail } from "../../shared/services/candidate-emails";
+import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { socketService } from "../../shared/services/socket.service";
 import { canAccessCandidate } from "../../shared/auth/job-access";
 import logger from "../../utils/logger";
@@ -216,12 +217,20 @@ export const completeAssessment = async (req: Request, res: Response) => {
         attempt.id,
       );
     if (completionContext) {
-      mailService
-        .sendAssessmentCompletionEmail(
-          completionContext.candidateEmail,
-          completionContext.candidateFirstName,
-          completionContext.assessmentTitle,
-          autoSubmitReason,
+      // Not awaited: the candidate's result is saved either way.
+      void getCompanyName()
+        .then((companyName) =>
+          sendCandidateEmail({
+            candidateId: completionContext.candidateId,
+            to: completionContext.candidateEmail,
+            kind: "assessment_completed",
+            ...assessmentCompletedEmail({
+              companyName,
+              firstName: completionContext.candidateFirstName,
+              assessmentTitle: completionContext.assessmentTitle,
+              autoSubmitReason,
+            }),
+          }),
         )
         .catch((emailError) => {
           logger.error("Assessment completion email failed:", emailError);

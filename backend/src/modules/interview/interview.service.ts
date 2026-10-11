@@ -13,7 +13,8 @@ import {
 import { scoringService } from "../scoring/scoring.service";
 import { cleanObject as clean } from "../../utils/object.utils";
 import * as gcal from "../../shared/services/google-calendar.service";
-import { mailService } from "../../shared/services/mail.service";
+import { interviewCancelledEmail, interviewInviteEmail } from "../../shared/services/candidate-emails";
+import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import logger from "../../utils/logger";
 import { getErrorMessage } from "../../utils/error.utils";
 
@@ -125,34 +126,30 @@ export const interviewService = {
       }
     }
 
-    // Send interview invitation email to the candidate
+    // Tell the candidate. Not awaited: the interview is saved either way.
     if (interview.scheduledAt && interview.durationMinutes) {
-      // try {
-      //   await mailService.sendInterviewInviteEmail(
-      //     row.email,
-      //     `${row.firstName} ${row.lastName}`,
-      //     row.jobTitle ?? "",
-      //     row.stageName ?? "",
-      //     interview.scheduledAt.toISOString(),
-      //     interview.durationMinutes,
-      //   );
-      // } catch (err) {
-      //   logger.error(`Failed to send interview email: ${getErrorMessage(err)}`);
-      // }
-      if (interview.scheduledAt && interview.durationMinutes) {
-        mailService
-          .sendInterviewInviteEmail(
-            row.email,
-            `${row.firstName} ${row.lastName}`,
-            row.jobTitle ?? "",
-            row.stageName ?? "",
-            interview.scheduledAt.toISOString(),
-            interview.durationMinutes,
-          )
-          .catch((err: unknown) => {
-            logger.error(`Failed to send interview email: ${getErrorMessage(err)}`);
-          });
-      }
+      const scheduledAt = interview.scheduledAt;
+      const durationMinutes = interview.durationMinutes;
+      void getCompanyName()
+        .then((companyName) =>
+          sendCandidateEmail({
+            candidateId: input.candidateId,
+            to: row.email,
+            kind: "interview_invite",
+            sentBy: createdBy,
+            ...interviewInviteEmail({
+              companyName,
+              candidateName: `${row.firstName} ${row.lastName}`,
+              jobTitle: row.jobTitle ?? "",
+              stageName: row.stageName ?? "",
+              scheduledAt,
+              durationMinutes,
+            }),
+          }),
+        )
+        .catch((err: unknown) => {
+          logger.error(`Failed to send interview email: ${getErrorMessage(err)}`);
+        });
     }
 
     return interview;
@@ -580,12 +577,20 @@ export const interviewService = {
         .from(candidates)
         .where(eq(candidates.id, existing.candidateId));
       if (candidate) {
-        mailService
-          .sendInterviewCancellationEmail(
-            candidate.email,
-            `${candidate.firstName} ${candidate.lastName}`,
-            existing.eventName,
-            existing.scheduledAt,
+        const eventName = existing.eventName;
+        void getCompanyName()
+          .then((companyName) =>
+            sendCandidateEmail({
+              candidateId: existing.candidateId,
+              to: candidate.email,
+              kind: "interview_cancelled",
+              ...interviewCancelledEmail({
+                companyName,
+                candidateName: `${candidate.firstName} ${candidate.lastName}`,
+                eventName,
+                scheduledAt: existing.scheduledAt,
+              }),
+            }),
           )
           .catch((err: unknown) => {
             logger.error(

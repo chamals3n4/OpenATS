@@ -26,7 +26,8 @@ import { candidates, jobs, candidateInterviews, users } from "../db/schema";
 import { and, eq, ne } from "drizzle-orm";
 import rateLimit from "express-rate-limit";
 import logger from "../utils/logger";
-import { mailService } from "../shared/services/mail.service";
+import { interviewConfirmedEmail } from "../shared/services/candidate-emails";
+import { getCompanyName, sendCandidateEmail } from "../shared/services/candidate-mailer";
 import { socketService } from "../shared/services/socket.service";
 import { integrationConnectionService } from "../shared/integrations/connection.service";
 import { getProviderClient } from "../shared/integrations/registry";
@@ -411,16 +412,24 @@ router.patch(
       }
 
       if (candidate && iv.eventName) {
-        mailService
-          .sendInterviewConfirmationEmail(
-            candidate.email,
-            `${candidate.firstName} ${candidate.lastName}`,
-            iv.eventName,
-            iv.eventType ?? "virtual",
-            scheduledAt,
-            60,
-            meetingUrl,
-            iv.location ?? null,
+        const eventName = iv.eventName;
+        void getCompanyName()
+          .then((companyName) =>
+            sendCandidateEmail({
+              candidateId: iv.candidateId,
+              to: candidate.email,
+              kind: "interview_confirmed",
+              ...interviewConfirmedEmail({
+                companyName,
+                candidateName: `${candidate.firstName} ${candidate.lastName}`,
+                eventName,
+                eventType: iv.eventType ?? "virtual",
+                scheduledAt,
+                durationMinutes: 60,
+                meetingUrl,
+                location: iv.location ?? null,
+              }),
+            }),
           )
           .catch((err: unknown) => {
             logger.error(

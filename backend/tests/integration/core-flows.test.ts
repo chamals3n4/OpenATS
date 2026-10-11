@@ -15,17 +15,15 @@ vi.mock("jose", async (importOriginal) => {
   };
 });
 
-// No real email in tests. Asserted on below to prove the offer was sent.
-const sendOfferEmail = vi.fn().mockResolvedValue(undefined);
+// No real email in tests. Every email goes through sendEmail, so it is asserted on below.
 const sendEmail = vi.fn().mockResolvedValue(undefined);
 vi.mock("../../src/shared/services/mail.service", () => ({
-  mailService: {
-    sendOfferEmail: (...args: unknown[]) => sendOfferEmail(...args),
-    sendEmail: (...args: unknown[]) => sendEmail(...args),
-    sendInterviewInviteEmail: vi.fn().mockResolvedValue(undefined),
-    sendApplicationConfirmationEmail: vi.fn().mockResolvedValue(undefined),
-  },
+  mailService: { sendEmail: (...args: unknown[]) => sendEmail(...args) },
 }));
+const offerEmails = () =>
+  sendEmail.mock.calls
+    .map((call) => call[0] as { to: string; subject: string })
+    .filter((email) => email.subject.startsWith("Offer for"));
 
 import app from "../../src/app";
 import { db } from "../../src/db";
@@ -35,6 +33,8 @@ import { jobPipelineStages, jobHiringTeam } from "../../src/db/schema/pipeline";
 import { candidates } from "../../src/db/schema/candidates";
 import { candidateInterviews } from "../../src/db/schema/interviews";
 import { offers } from "../../src/db/schema/offers";
+import { templates } from "../../src/db/schema/templates";
+import { emailMessages } from "../../src/db/schema/communications";
 import { users } from "../../src/db/schema/users";
 import { initTestKeys, bearer } from "../helpers/jwt";
 
@@ -118,6 +118,7 @@ afterAll(async () => {
   await db.delete(jobs).where(eq(jobs.id, jobId));
   await db.delete(departments).where(eq(departments.id, departmentId));
   await db.delete(company).where(eq(company.id, companyId));
+  await db.delete(templates).where(eq(templates.createdBy, managerId));
   await db
     .delete(users)
     .where(inArray(users.email, [`manager.${SUFFIX}@example.test`]));
@@ -235,7 +236,7 @@ describe("core hiring flow", () => {
 
     expect(res.status).toBe(400);
     expect(res.body.error).toMatch(/reportingManager/);
-    expect(sendOfferEmail).not.toHaveBeenCalled();
+    expect(offerEmails()).toHaveLength(0);
   });
 
   it("accepts the remaining offer details", async () => {
@@ -267,10 +268,15 @@ describe("core hiring flow", () => {
       .send({});
 
     expect(res.status).toBe(200);
-    expect(sendOfferEmail).toHaveBeenCalledTimes(1);
-    expect(sendOfferEmail.mock.calls[0]![0]).toBe(
-      `ada.${SUFFIX}@example.test`,
-    );
+    expect(offerEmails()).toHaveLength(1);
+    expect(offerEmails()[0]!.to).toBe(`ada.${SUFFIX}@example.test`);
+
+    // The send is written to the candidate's email history.
+    const history = await db
+      .select()
+      .from(emailMessages)
+      .where(eq(emailMessages.candidateId, candidateId));
+    expect(history.some((m) => m.kind === "offer" && m.status === "sent")).toBe(true);
 
     const [row] = await db.select().from(offers).where(eq(offers.id, offerId));
     expect(row!.status).toBe("sent");
@@ -290,5 +296,63 @@ describe("core hiring flow", () => {
       .from(candidates)
       .where(eq(candidates.id, candidateId));
     expect(row!.currentStageId).toBe(offerStageId);
+  });
+
+  describe("rejecting with an email", () => {
+    let templateId: number;
+    const reject = (id: number) =>
+      request(app)
+        .post(`/api/candidates/${candidateId}/reject`)
+        .set("Authorization", auth)
+        .send({ reason: "Not a fit", templateId: id, emailStatus: "sent" });
+    const status = async () =>
+      (await db.select().from(candidates).where(eq(candidates.id, candidateId)))[0]!.status;
+
+    it("refuses a template that uses offer details, and rejects nobody", async () => {
+      const [offerOnly] = await db
+        .insert(templates)
+        .values({
+          name: `Offer-only ${SUFFIX}`,
+          type: "email",
+          subject: "Update",
+          bodyJson: "<p>Your salary is {{salary}}</p>",
+          createdBy: managerId,
+        })
+        .returning({ id: templates.id });
+
+      const res = await reject(offerOnly!.id);
+
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/\{\{salary\}\}/);
+      expect(await status()).not.toBe("rejected");
+    });
+
+    it("keeps the rejection when the email cannot be sent, and says so", async () => {
+      const [template] = await db
+        .insert(templates)
+        .values({
+          name: `Rejection ${SUFFIX}`,
+          type: "email",
+          subject: "Your application for {{job_title}}",
+          bodyJson: "<p>Dear {{candidate_name}}, thank you.</p>",
+          createdBy: managerId,
+        })
+        .returning({ id: templates.id });
+      templateId = template!.id;
+      sendEmail.mockRejectedValueOnce(new Error("provider down"));
+
+      const res = await reject(templateId);
+
+      expect(res.status).toBe(201);
+      expect(res.body.data.emailFailed).toBe(true);
+      expect(res.body.data.emailStatus).toBe("not_sent");
+      expect(await status()).toBe("rejected");
+
+      const history = await db
+        .select()
+        .from(emailMessages)
+        .where(eq(emailMessages.candidateId, candidateId));
+      expect(history.some((m) => m.kind === "rejection" && m.status === "failed")).toBe(true);
+    });
   });
 });

@@ -2,7 +2,8 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireManager } from "../../middlewares/role.middleware";
 import { interviewService, FeedbackValidationError } from "./interview.service";
-import { mailService } from "../../shared/services/mail.service";
+import { interviewSlotsEmail } from "../../shared/services/candidate-emails";
+import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { socketService } from "../../shared/services/socket.service";
 import { db } from "../../db";
 import {
@@ -295,17 +296,25 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
 
     const publicUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/interview/${token}`;
 
-    mailService
-      .sendInterviewSlotEmail(
-        candidate.email,
-        `${candidate.firstName} ${candidate.lastName}`,
-        parsed.data.eventName,
-        candidate.jobTitle ?? "",
-        parsed.data.eventType,
-        parsed.data.meetingUrl ?? null,
-        parsed.data.location ?? null,
-        parsed.data.bodyText ?? null,
-        publicUrl,
+    void getCompanyName()
+      .then((companyName) =>
+        sendCandidateEmail({
+          candidateId: candidate.id,
+          to: candidate.email,
+          kind: "interview_slots",
+          sentBy: req.user.id,
+          ...interviewSlotsEmail({
+            companyName,
+            candidateName: `${candidate.firstName} ${candidate.lastName}`,
+            eventName: parsed.data.eventName,
+            jobTitle: candidate.jobTitle ?? "",
+            eventType: parsed.data.eventType,
+            meetingUrl: parsed.data.meetingUrl ?? null,
+            location: parsed.data.location ?? null,
+            bodyText: parsed.data.bodyText ?? null,
+            publicUrl,
+          }),
+        }),
       )
       .catch((err: unknown) => {
         logger.error(`Failed to send interview slot email: ${getErrorMessage(err)}`);

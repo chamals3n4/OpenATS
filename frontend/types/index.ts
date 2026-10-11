@@ -171,6 +171,8 @@ export type ScorecardCriterion = {
 };
 
 export type CandidateRejection = {
+  /** Only on the reply to a reject request: the candidate was rejected but the email did not go out. */
+  emailFailed?: boolean;
   id: number;
   candidateId: number;
   jobId: number;
@@ -594,6 +596,9 @@ export type CandidateEmail = {
   subject: string;
   bodyHtml: string;
   recipientEmail: string;
+  /** What the email was for, such as "manual", "rejection" or "interview_confirmed". */
+  kind: string;
+  status: "sent" | "failed";
   sentAt: string;
   sentByName: string | null;
 };

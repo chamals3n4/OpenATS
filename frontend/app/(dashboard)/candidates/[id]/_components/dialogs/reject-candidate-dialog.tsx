@@ -112,10 +112,14 @@ function RejectForm({
         },
       },
       {
-        onSuccess: () => {
-          toast.success(
-            sendEmail ? `${fullName} rejected and emailed` : `${fullName} rejected`,
-          );
+        onSuccess: (res) => {
+          if (res.data.emailFailed) {
+            toast.warning(`${fullName} was rejected, but the email could not be sent.`);
+          } else {
+            toast.success(
+              sendEmail ? `${fullName} rejected and emailed` : `${fullName} rejected`,
+            );
+          }
           onClose();
         },
         onError: (error) => toast.error(error.message || "Failed to reject the candidate"),

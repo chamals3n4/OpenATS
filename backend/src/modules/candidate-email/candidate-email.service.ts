@@ -1,7 +1,8 @@
 import { desc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { candidates, emailMessages, users } from "../../db/schema";
-import { mailService } from "../../shared/services/mail.service";
+import { writtenEmail } from "../../shared/services/candidate-emails";
+import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 
 const escapeHtml = (value: string) =>
   value
@@ -72,6 +73,8 @@ const sentEmailColumns = {
   subject: emailMessages.subject,
   bodyHtml: emailMessages.bodyHtml,
   recipientEmail: emailMessages.recipientEmail,
+  kind: emailMessages.kind,
+  status: emailMessages.status,
   sentAt: emailMessages.sentAt,
   sentByName: users.firstName,
   sentByLastName: users.lastName,
@@ -85,10 +88,7 @@ function withSenderName<
 }
 
 export const candidateEmailService = {
-  /**
-   * Sends first and records afterwards, so the history only ever lists emails that were
-   * actually handed to the mail provider.
-   */
+  /** Sends the email. It is written to the history either way, marked as sent or failed. */
   async send(input: {
     candidateId: number;
     subject: string;
@@ -113,29 +113,25 @@ export const candidateEmailService = {
     const bodyHtml = plainTextToEmailHtml(input.body);
 
     const replyTo = resolveReplyTo(sender, input.replyTo);
-    await mailService.sendEmail({
+    const result = await sendCandidateEmail({
+      candidateId: input.candidateId,
       to: candidate.email,
+      kind: "manual",
+      sentBy: input.sentBy,
       subject,
-      html: bodyHtml,
-      ...(replyTo ? { replyTo } : {}),
+      html: writtenEmail({ companyName: await getCompanyName(), contentHtml: bodyHtml }),
+      replyTo,
     });
-
-    const [saved] = await db
-      .insert(emailMessages)
-      .values({
-        candidateId: input.candidateId,
-        sentBy: input.sentBy,
-        subject,
-        bodyHtml,
-        recipientEmail: candidate.email,
-      })
-      .returning({ id: emailMessages.id });
+    if (!result.sent || result.messageId === null) {
+      throw new Error(result.error ?? "The email could not be sent");
+    }
+    const saved = { id: result.messageId };
 
     const [row] = await db
       .select(sentEmailColumns)
       .from(emailMessages)
       .leftJoin(users, eq(emailMessages.sentBy, users.id))
-      .where(eq(emailMessages.id, saved!.id));
+      .where(eq(emailMessages.id, saved.id));
 
     return withSenderName(row!);
   },

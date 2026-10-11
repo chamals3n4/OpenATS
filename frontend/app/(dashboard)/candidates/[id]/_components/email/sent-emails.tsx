@@ -13,8 +13,23 @@ import { SandboxedHtmlPreview } from "../sandboxed-html-preview";
 import { EmailMessageDialog } from "./email-message-dialog";
 import type { CandidateEmail } from "@/types";
 
+/** Emails the app sends by itself. A message someone typed has no label. */
+const KIND_LABELS: Record<string, string> = {
+  application_received: "Application received",
+  assessment_invite: "Assessment invite",
+  assessment_completed: "Assessment completed",
+  interview_invite: "Interview invite",
+  interview_slots: "Interview: pick a time",
+  interview_confirmed: "Interview confirmed",
+  interview_cancelled: "Interview cancelled",
+  rejection: "Rejection",
+  offer: "Offer",
+};
+
 function SentEmailCard({ email }: { email: CandidateEmail }) {
   const [open, setOpen] = useState(false);
+  const kindLabel = KIND_LABELS[email.kind];
+  const failed = email.status === "failed";
 
   return (
     <article className="rounded-md border border-slate-300 bg-white px-4 py-3 dark:border-neutral-700 dark:bg-neutral-900">
@@ -28,8 +43,22 @@ function SentEmailCard({ email }: { email: CandidateEmail }) {
       </div>
       <p className="mt-0.5 text-sm text-slate-500 dark:text-neutral-400">
         {formatDateTime(email.sentAt)}
-        {email.sentByName && <span> · {email.sentByName}</span>}
+        <span> · {email.sentByName ?? "Sent automatically"}</span>
       </p>
+      {(kindLabel || failed) && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {kindLabel && (
+            <span className="rounded-md border border-slate-300 bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
+              {kindLabel}
+            </span>
+          )}
+          {failed && (
+            <span className="rounded-md border border-red-200 bg-red-50 px-2 py-0.5 text-xs font-semibold text-red-700 dark:border-red-900/60 dark:bg-red-950/40 dark:text-red-400">
+              Not delivered
+            </span>
+          )}
+        </div>
+      )}
 
       <p className="mt-2 line-clamp-2 text-sm leading-relaxed text-slate-700 dark:text-neutral-300">
         {htmlToPlainText(email.bodyHtml)}
@@ -47,8 +76,12 @@ function SentEmailCard({ email }: { email: CandidateEmail }) {
       <EmailMessageDialog
         open={open}
         onOpenChange={setOpen}
-        title="Sent email"
-        description={`Sent ${formatDateTime(email.sentAt)}.`}
+        title={failed ? "Email not delivered" : "Sent email"}
+        description={
+          failed
+            ? `Tried ${formatDateTime(email.sentAt)}, but the mail provider did not accept it.`
+            : `Sent ${formatDateTime(email.sentAt)}.`
+        }
         rows={[
           { label: "To", value: email.recipientEmail },
           ...(email.sentByName ? [{ label: "From", value: email.sentByName }] : []),

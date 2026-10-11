@@ -7,7 +7,8 @@ import {
   jobPipelineStages,
   templates,
 } from "../../db/schema";
-import { mailService } from "../../shared/services/mail.service";
+import { writtenEmail } from "../../shared/services/candidate-emails";
+import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { variableService } from "../template/variable.service";
 import { templateEngineService } from "../template/template-engine.service";
 
@@ -19,6 +20,27 @@ export class RejectionError extends Error {
   }
 }
 
+/** Builds the rejection email, or says why this template cannot be used for one. */
+async function prepareRejectionEmail(candidateId: number, templateId: number) {
+  const [template] = await db.select().from(templates).where(eq(templates.id, templateId));
+  if (!template) throw new RejectionError("That email template no longer exists. Choose another.");
+
+  const context = await variableService.getContextForCandidate(candidateId);
+  const missing = templateEngineService.missingVariables(template.subject, template.bodyJson, context);
+  if (missing.length > 0) {
+    const names = missing.map((name) => `{{${name}}}`).join(", ");
+    throw new RejectionError(
+      `The template "${template.name}" uses ${names}, which ${missing.length === 1 ? "has" : "have"} no value in a rejection email. Remove ${missing.length === 1 ? "it" : "them"} from the template or choose another.`,
+    );
+  }
+
+  const compiled = templateEngineService.compileTemplate(template.subject, template.bodyJson, context);
+  return {
+    subject: compiled.subject,
+    html: writtenEmail({ companyName: await getCompanyName(), contentHtml: compiled.html }),
+  };
+}
+
 export interface RejectInput {
   candidateId: number;
   reason?: string | null;
@@ -28,8 +50,16 @@ export interface RejectInput {
 }
 
 export const rejectionService = {
+  /**
+   * Rejects the candidate and, if asked, emails them. The email is prepared before anything
+   * is saved, so a template that cannot be used stops the rejection early, and it is sent
+   * after the rejection is saved, so a mail problem cannot undo the rejection.
+   */
   async reject(input: RejectInput, rejectedBy: number | null = null) {
-    return await db.transaction(async (tx) => {
+    const wantsEmail = !!input.templateId && input.emailStatus === "sent";
+    const prepared = wantsEmail ? await prepareRejectionEmail(input.candidateId, input.templateId!) : null;
+
+    const { rejection, email: recipient } = await db.transaction(async (tx) => {
       const [candidate] = await tx
         .select()
         .from(candidates)
@@ -68,39 +98,37 @@ export const rejectionService = {
 
       if (!rejection) throw new Error("Failed to create rejection record");
 
-      if (input.templateId && input.emailStatus === "sent") {
-        const [template] = await tx
-          .select()
-          .from(templates)
-          .where(eq(templates.id, input.templateId));
-
-        if (template) {
-          const context = await variableService.getContextForCandidate(
-            input.candidateId,
-          );
-          const { subject, html } = templateEngineService.compileTemplate(
-            template.subject,
-            template.bodyJson,
-            context,
-          );
-
-          const [candidateWithEmail] = await tx
-            .select({ email: candidates.email })
-            .from(candidates)
-            .where(eq(candidates.id, input.candidateId));
-
-          if (candidateWithEmail) {
-            await mailService.sendRejectionEmail(
-              candidateWithEmail.email,
-              subject,
-              html,
-            );
-          }
-        }
-      }
-
-      return rejection;
+      return { rejection, email: candidate.email };
     });
+
+    if (!prepared) return { ...rejection, emailFailed: false, renderedSubject: null, renderedHtml: null };
+
+    const result = await sendCandidateEmail({
+      candidateId: input.candidateId,
+      to: recipient,
+      kind: "rejection",
+      sentBy: rejectedBy,
+      templateId: input.templateId ?? null,
+      subject: prepared.subject,
+      html: prepared.html,
+    });
+
+    if (result.sent) {
+      return { ...rejection, emailFailed: false, renderedSubject: prepared.subject, renderedHtml: prepared.html };
+    }
+
+    // The candidate is rejected but got no email, so the record must not say "sent".
+    const [corrected] = await db
+      .update(candidateRejections)
+      .set({ emailStatus: "not_sent", sentAt: null })
+      .where(eq(candidateRejections.id, rejection.id))
+      .returning();
+    return {
+      ...(corrected ?? rejection),
+      emailFailed: true,
+      renderedSubject: prepared.subject,
+      renderedHtml: prepared.html,
+    };
   },
 
   async unreject(candidateId: number, unrejectedBy: number | null = null) {

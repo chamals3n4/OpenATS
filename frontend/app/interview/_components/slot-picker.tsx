@@ -219,7 +219,7 @@ export default function SlotPicker({ data, token, apiBase }: Props) {
             type="button"
             onClick={handleConfirm}
             disabled={selectedSlot === null || confirming}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-neutral-900 hover:bg-neutral-700 dark:bg-neutral-100 dark:text-neutral-900 dark:hover:bg-neutral-300 text-white px-6 h-11 font-medium text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-theme hover:bg-theme-hover text-white px-6 h-11 font-medium text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {confirming && <Spinner className="size-3.5" />}
             {confirming ? "Confirming" : "Confirm this time"}

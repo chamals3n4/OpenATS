@@ -12,7 +12,8 @@ import {
 import { cleanObject as clean } from "../../utils/object.utils";
 import { variableService } from "../template/variable.service";
 import { templateEngineService } from "../template/template-engine.service";
-import { mailService } from "../../shared/services/mail.service";
+import { offerEmail } from "../../shared/services/candidate-emails";
+import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { candidateActivityService } from "../candidate/candidate-activity.service";
 import { offerRepository } from "./offer.repository";
 
@@ -433,16 +434,6 @@ export const offerService = {
     ).replace(/\/$/, "");
     const reviewUrl = `${frontendBase}/offer/${reviewToken}`;
 
-    const subject = `Offer for ${job.title}`;
-    const mailHtml = [
-      `<p>Hello ${candidate.firstName} ${candidate.lastName},</p>`,
-      "<p>Congratulations and welcome to the next step.</p>",
-      `<p>Please review your offer using this secure link: <a href="${reviewUrl}">${reviewUrl}</a></p>`,
-      "<p>You can accept or decline directly from the page.</p>",
-      "<hr />",
-      "<p>OpenATS Hiring Team</p>",
-    ].join("\n");
-
     const updated = await offerRepository.updateById(id, {
       status: "sent",
       sentAt: new Date(),
@@ -454,7 +445,23 @@ export const offerService = {
       throw new Error("Failed to update offer before sending");
     }
 
-    await mailService.sendOfferEmail(candidate.email, subject, mailHtml);
+    const result = await sendCandidateEmail({
+      candidateId: updated.candidateId,
+      to: candidate.email,
+      kind: "offer",
+      sentBy: actorId,
+      ...offerEmail({
+        companyName: await getCompanyName(),
+        candidateName: `${candidate.firstName} ${candidate.lastName}`,
+        jobTitle: job.title,
+        reviewUrl,
+      }),
+    });
+    if (!result.sent) {
+      // Put the offer back, so it does not read as sent when the candidate got nothing.
+      await offerRepository.updateById(id, { status: offer.status, sentAt: offer.sentAt });
+      throw new Error("The offer email could not be sent. Please try again.");
+    }
 
     await candidateActivityService.create({
       candidateId: updated.candidateId,

@@ -32,6 +32,14 @@ export const emailMessages = pgTable(
       onDelete: "set null",
     }),
 
+    /** What the email was for: "manual", "rejection", "interview_confirmed" and so on. */
+    kind: varchar("kind", { length: 40 }).notNull().default("manual"),
+
+    /** "sent", or "failed" when the mail provider refused it. */
+    status: varchar("status", { length: 10 }).notNull().default("sent"),
+
+    errorMessage: text("error_message"),
+
     subject: varchar("subject", { length: 500 }).notNull(),
 
     bodyHtml: text("body_html").notNull(),

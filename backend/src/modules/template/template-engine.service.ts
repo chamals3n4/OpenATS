@@ -22,6 +22,24 @@ export const templateEngineService = {
     });
   },
 
+  /** The {{variables}} used in a template that the context has no value for. */
+  missingVariables(subject: string, body: TemplateBody, context: TemplateContext): string[] {
+    const texts = [
+      subject,
+      ...(typeof body === "string"
+        ? [body]
+        : body.map((block) => ("content" in block && typeof block.content === "string" ? block.content : ""))),
+    ];
+    const missing = new Set<string>();
+    for (const text of texts) {
+      for (const match of text.matchAll(/\{\{(.+?)\}\}/g)) {
+        const name = match[1]!.trim();
+        if (context[name] === undefined) missing.add(name);
+      }
+    }
+    return [...missing];
+  },
+
   renderJSON(body: TemplateBody, context: TemplateContext): TemplateBody {
     if (typeof body === "string") {
       return this.replaceVariables(body, context);

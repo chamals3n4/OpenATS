@@ -89,11 +89,11 @@ Two independent packages - not a monorepo, no shared `package.json` or lockfile.
 | **Backend**         | [Express 5](https://expressjs.com) · TypeScript (compiled to CommonJS) · [Socket.IO](https://socket.io) for realtime updates                                                                 |
 | **Data**            | [Drizzle ORM](https://orm.drizzle.team) · PostgreSQL ([Neon](https://neon.tech) in production, any Postgres locally)                                                                         |
 | **Jobs**            | [BullMQ](https://docs.bullmq.io) on Redis - CV analysis runs as its own worker process, not inline with the API                                                                              |
-| **AI**              | [Gemini](https://ai.google.dev) for resume parsing, scoring and candidate summaries                                                                                                          |
-| **Auth**            | [WSO2 Asgardeo](https://wso2.com/asgardeo) - JWKS-verified, role claims mapped to `super_admin` / `hiring_manager` / `interviewer`                                                           |
+| **AI**              | Optional: [Gemini](https://ai.google.dev) writes notes on CVs (a summary, strengths and gaps). Off by default, and never part of the candidate score |
+| **Auth**            | Built in, with [Better Auth](https://www.better-auth.com): email and password, no outside identity service. Roles are `super_admin` / `hiring_manager` / `interviewer` |
 | **Storage**         | Cloudflare R2 (or any S3-compatible bucket) for resumes and attachments                                                                                                                      |
 | **Email**           | [Resend](https://resend.com) for candidate and team notifications                                                                                                                            |
-| **Package manager** | pnpm, installed independently per package                                                                                                                                                    |
+| **Package manager** | pnpm, as one workspace installed from the repository root |
 
 ### Layout
 
@@ -101,45 +101,40 @@ Two independent packages - not a monorepo, no shared `package.json` or lockfile.
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `frontend/`                      | Next.js app · :3000                                                                                                        |
 | `backend/`                       | Express API · :8080                                                                                                        |
-| `backend/src/queues/cv-analysis` | The BullMQ queue, worker, and event bridge for background CV scoring                                                       |
+| `backend/src/queues/cv-analysis` | The BullMQ queue, worker, and event bridge for background CV analysis |
 | `backend/src/db/schema`          | Drizzle schema, one file per domain                                                                                        |
 | `backend/drizzle`                | Generated migration SQL - always committed, never hand-edited                                                              |
 | `e2e/`                           | Playwright end-to-end tests, at the root because they span both packages                                                   |
-| `docs/`                          | [IAM setup](./docs-draft/IAM_SETUP.md), [testing guide](./docs-draft/TESTING.md), [road to GA](./docs-draft/GA_ROADMAP.md) |
+| `docs/`                          | The documentation site: [sign-in and users](./docs/docs/administration/authentication.md), [testing guide](./docs/docs/developer/testing.md) |
 
 ## Quick start
 
-You need Node.js 22+, Docker, and pnpm (`npm install -g pnpm`).
+You need Node.js 22+, Docker, pnpm (`npm install -g pnpm`), `make` and `openssl`.
 
 ```sh
 git clone https://github.com/chamals3n4/OpenATS.git && cd OpenATS
 
-cd backend
-docker compose up -d          # Postgres on :5432, Redis on :6379
-cp .env.example .env          # fill in ASGARDEO_*, R2_*, RESEND_*, GEMINI_API_KEY
-pnpm install
-pnpm drizzle-kit generate && pnpm drizzle-kit migrate
-pnpm tsx src/db/seed.ts       # required: seeds the 5 default pipeline stages
-pnpm dev                      # API on :8080
+make setup      # installs, creates both .env files, starts Postgres and Redis,
+                # runs migrations, seeds the pipeline stages, creates your first admin
+make dev        # API on :8080, app on :3000
 ```
 
-In a second terminal, the CV analysis worker (its own process, separate from the API):
+Open `http://localhost:3000` and sign in with the admin you created during `make setup`.
+Sign-in is built in, so there is no outside account to create. Run `make admin` at any
+time to add a super admin or to get back in if you are locked out.
+
+`make setup` leaves a few provider values blank, because nobody can generate them for
+you: `R2_*` and `RESEND_*` in `backend/.env`. Fill those in before uploading CVs or
+sending email.
+
+AI CV analysis is optional. To use it, set `GEMINI_API_KEY`, turn it on under
+**Settings → General**, and run the worker in a second terminal:
 
 ```sh
-cd backend
-pnpm dev:worker
+pnpm --filter ./backend dev:worker
 ```
 
-In a third terminal:
-
-```sh
-cd frontend
-cp .env.example .env          # fill in NEXT_PUBLIC_ASGARDEO_*, OPENATS_API_URL
-pnpm install
-pnpm dev                      # app on :3000
-```
-
-Full walkthrough, including how to set up your own Asgardeo application, is in
+Prefer to run each step by hand? The full walkthrough is in
 [CONTRIBUTING.md](./CONTRIBUTING.md).
 
 ## Configuration
@@ -152,23 +147,26 @@ Each package reads its own `.env` - there's no shared root env file.
 | ---------------------------------------------------- | --------------------------------------------------------------- |
 | `DATABASE_URL`                                       | Postgres connection string                                      |
 | `REDIS_URL`                                          | Redis, for the CV analysis job queue                            |
-| `ASGARDEO_JWKS_URL` / `ASGARDEO_ISSUER`              | JWT verification - required for almost every route              |
+| `AUTH_JWKS_URL` / `AUTH_ISSUER`                      | Where the API checks sign-in tokens. `AUTH_ISSUER` must equal `BETTER_AUTH_URL` |
 | `ENCRYPTION_KEY`                                     | Encrypts stored integration credentials                         |
 | `FRONTEND_URL`                                       | Used for CORS and links in outbound emails                      |
 | `R2_*`                                               | Cloudflare R2 (or compatible) object storage for uploaded files |
 | `RESEND_*`                                           | Transactional email                                             |
-| `GEMINI_API_KEY`                                     | Powers CV parsing, scoring, and AI summaries                    |
+| `GEMINI_API_KEY`                                     | Optional - AI CV analysis, which is also off until turned on in Settings |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` / `GOOGLE_CALENDAR_ID` | Optional - interview scheduling via a Google service account    |
 
 **`frontend/.env`**
 
 | Variable                                  | What it's for                                                  |
 | ----------------------------------------- | -------------------------------------------------------------- |
-| `NEXT_PUBLIC_ASGARDEO_*` / `ASGARDEO_*`   | Sign-in against the same Asgardeo application as the backend   |
+| `DATABASE_URL`                            | The same database as the backend. Sign-in keeps its tables there |
+| `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL`  | Sign-in: a secret of 32+ characters, and the public URL of the app |
+| `RESEND_*`                                | Optional - sends invite and password reset emails               |
 | `OPENATS_API_URL` / `NEXT_PUBLIC_API_URL` | Where the backend is reachable from the server and the browser |
 
-Startup fails fast with a clear message if a required backend variable is missing,
-rather than crashing later on the first request that needs it.
+Both apps fail fast at startup, with a clear message, if a required variable is missing,
+rather than crashing later on the first request that needs it. Each `.env.example`
+says what every value is for.
 
 ## Deploying
 

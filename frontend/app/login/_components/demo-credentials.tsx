@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 
-// Public demo only. A self-hosted install leaves the flag unset and shows nothing.
 const DEMO_MODE = process.env.NEXT_PUBLIC_DEMO_MODE === "true";
 const DEMO_EMAIL = process.env.NEXT_PUBLIC_DEMO_EMAIL ?? "";
 const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? "";
@@ -10,7 +9,6 @@ const DEMO_PASSWORD = process.env.NEXT_PUBLIC_DEMO_PASSWORD ?? "";
 export function DemoCredentials({
   onUse,
 }: {
-  /** Fills the sign-in form with the demo account. */
   onUse: (email: string, password: string) => void;
 }) {
   if (!DEMO_MODE || !DEMO_EMAIL || !DEMO_PASSWORD) return null;

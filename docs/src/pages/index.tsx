@@ -22,7 +22,6 @@ const technologies = [
   ['Drizzle', 'drizzle.svg', 'https://orm.drizzle.team'],
   ['Socket.IO', 'socketdotio.svg', 'https://socket.io'],
   ['TypeScript', 'typescript.svg', 'https://www.typescriptlang.org'],
-  ['WSO2 Identity Platform', 'wso2.webp', 'https://wso2.com/identity-and-access-management/'],
 ] as const;
 
 const structuredData = {

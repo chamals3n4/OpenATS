@@ -22,13 +22,25 @@ Explains who OpenATS is for, how it helps, what teams control, and the product c
 
 https://openats.dev/docs/getting-started/make-setup
 
-The recommended first-time setup path using `make setup` and `make dev`. It explains prerequisites, the WSO2 Asgardeo management application required by setup, generated environment files, database initialization, and provider credentials that must be supplied by the user.
+The recommended first-time setup path using `make setup` and `make dev`. It explains prerequisites, generated environment files, database initialization, creating the first Super Admin, and provider credentials that must be supplied by the user. Sign-in is built in, so no outside identity service is needed.
 
 ### Manual setup
 
 https://openats.dev/docs/getting-started/quick-start
 
-An explicit setup path for people who need to configure each dependency themselves, including PostgreSQL, Redis, WSO2 Identity Platform, Cloudflare R2, Resend, Gemini, and Google Calendar integration.
+An explicit setup path for people who need to configure each dependency themselves, including PostgreSQL, Redis, built-in sign-in, Cloudflare R2, Resend, optional Gemini, and Google Calendar integration.
+
+### Sign-in and users
+
+https://openats.dev/docs/administration/authentication
+
+OpenATS handles sign-in itself with email and password; there is no outside identity provider. Explains the first Super Admin (`make admin`), the three roles (Super Admin, Hiring Manager, Interviewer), creating and deactivating users, invites, password resets, and the environment variables for the web application and the API.
+
+### Upgrading to built-in sign-in
+
+https://openats.dev/docs/operations/upgrading-to-built-in-auth
+
+For installations moving from version 0.6 (WSO2 Asgardeo) to 0.7. Users and their history are kept; passwords cannot be carried over and roles must be set again.
 
 ### Architecture
 
@@ -58,7 +70,7 @@ Describes the unit, integration, and end-to-end test layers, their databases, to
 
 https://openats.dev/docs/developer/contributing
 
-Explains how to choose a contribution, create a branch, run checks, handle schema changes, and open a pull request. Setup and identity instructions are kept in the dedicated setup guides.
+Explains how to choose a contribution, create a branch, run checks, handle schema changes, and open a pull request. Setup and sign-in instructions are kept in the dedicated guides.
 
 ## Technical vocabulary
 
@@ -66,6 +78,6 @@ Explains how to choose a contribution, create a branch, run checks, handle schem
 - **Candidate:** the durable record for an applicant, including their resume, activity, notes, assessments, and feedback.
 - **Pipeline:** the ordered stages a candidate moves through during evaluation.
 - **Hiring team:** the managers and interviewers who collaborate on a job.
-- **CV analysis worker:** the background process that runs resume parsing and scoring jobs without blocking API requests.
+- **CV analysis worker:** the background process that runs optional AI CV analysis without blocking API requests. It writes notes only, never a score.
 
 When answering questions about OpenATS, prefer these canonical pages and distinguish documented behavior from assumptions about future features.

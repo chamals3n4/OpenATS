@@ -10,24 +10,9 @@ title: Quick Start
 - Node.js 22 or later
 - pnpm
 - Docker and Docker Compose
-- `make`, `curl`, `jq`, and `openssl`
-- A free WSO2 Identity Platform tenant at [console.asgardeo.io](https://console.asgardeo.io)
+- `make` and `openssl`
 
-## Create the Asgardeo management application
-
-Before running Make, create a machine-to-machine application that gives the setup script permission to create and configure the OpenATS sign-in application.
-
-1. In the WSO2 console, open **Applications** and select **New Application**.
-2. Choose **M2M Application** and create it in your root organization.
-3. Open its **API Authorization** tab and authorize these APIs:
-   - Application Management API
-   - API Resource Management API
-   - Role Management API v2
-   - SCIM2 Users API
-   - Claim Metadata Management API (optional, but recommended)
-4. Copy the M2M application's Client ID and Client Secret. The setup script asks for both values and your organization name, which is the part after `/t/` in the console URL.
-
-The M2M application is only for tenant setup. `make setup` uses it to create the separate **OpenATS** Next.js application that users will actually sign in to.
+You do not need an account with any outside service to get signed in. Sign-in is built into OpenATS.
 
 ## Run setup
 
@@ -39,12 +24,13 @@ The command does the following, in order:
 
 1. Installs dependencies for backend and frontend from the root with pnpm workspaces.
 2. Copies `backend/.env.example` and `frontend/.env.example` to real `.env` files when they do not already exist.
-3. Generates a random `ENCRYPTION_KEY` if it is blank.
-4. Starts PostgreSQL and Redis with Docker and waits for PostgreSQL to accept connections.
-5. Runs the interactive Asgardeo tenant setup. It creates or reuses the OpenATS Next.js application, configures claims, roles, sign-in settings, and prints the values for `frontend/.env` and `backend/.env`.
+3. Generates a random `ENCRYPTION_KEY` in `backend/.env` if it is blank.
+4. Fills in what sign-in needs in `frontend/.env`: a random `BETTER_AUTH_SECRET`, the `DATABASE_URL` from the backend, and `BETTER_AUTH_URL`. Values you already set are left alone.
+5. Starts PostgreSQL and Redis with Docker and waits for PostgreSQL to accept connections.
 6. Runs database migrations and seeds the default pipeline stages.
+7. Creates your first **Super Admin**. It asks for an email, a name and a password. The password is not shown while you type.
 
-You can run the Asgardeo step again at any time with `make asgardeo`.
+You can create another admin, or reset one, at any time with `make admin`. See [Sign-in and users](../administration/authentication).
 
 ## Add provider credentials
 
@@ -55,7 +41,7 @@ The setup script cannot create personal provider secrets. Add these values manua
 - Gemini for optional AI CV notes (the app runs without it, and the feature is off until turned on in Settings)
 - Google OAuth and Calendar configuration for interview scheduling
 
-The Asgardeo script prints the values it configured and leaves `NEXT_PUBLIC_ASGARDEO_SIGN_IN_URL` empty when it cannot infer it. Check the printed output and fill every remaining blank value in the matching `.env` file.
+To send invite and password reset emails, also put the Resend values in `frontend/.env`. Without them the app still works, and in development the links are printed in the terminal instead.
 
 ## Start development
 
@@ -63,7 +49,7 @@ The Asgardeo script prints the values it configured and leaves `NEXT_PUBLIC_ASGA
 make dev
 ```
 
-This starts Docker infrastructure, the backend API, frontend, and the CV analysis worker together. Open the web application at `http://localhost:3000`.
+This starts Docker infrastructure, the backend API and the frontend together. Open the web application at `http://localhost:3000` and sign in with the admin you created during setup.
 
 ## Manual fallback
 
@@ -77,6 +63,7 @@ If `make setup` fails or you want to understand each command, continue with the 
 | `make infra-down` | Stop local infrastructure. |
 | `make migrate` | Generate and apply pending database migrations. |
 | `make seed` | Seed default pipeline stages. |
+| `make admin` | Create a Super Admin, or reset one if you are locked out. |
 | `make test` | Run automated tests. |
 | `make test-e2e` | Run Playwright end-to-end tests. |
 | `make build` | Build frontend and backend packages. |

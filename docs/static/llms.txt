@@ -22,6 +22,6 @@
 
 ## Product scope
 
-OpenATS supports job management, candidate tracking, interview coordination, hiring-team collaboration, AI-assisted resume parsing, and branded career pages. It uses WSO2 Identity Platform for authentication, PostgreSQL for persistent data, Redis and BullMQ for background work, and an S3-compatible storage provider for resumes and attachments.
+OpenATS supports job management, candidate tracking, interview coordination, hiring-team collaboration, AI-assisted resume parsing, and branded career pages. Sign-in is built in (email and password, with no outside identity service). It uses PostgreSQL for persistent data, Redis and BullMQ for background work, and an S3-compatible storage provider for resumes and attachments.
 
 For the complete, long-form documentation index, see https://openats.dev/llms-full.txt.

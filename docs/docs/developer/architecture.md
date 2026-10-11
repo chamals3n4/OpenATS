@@ -53,7 +53,7 @@ Do not create a new shared utility simply because it might be useful later. Keep
 
 ## Data and integrations
 
-PostgreSQL is the system of record for OpenATS data. Redis supports BullMQ queues and real-time worker events; it is not the source of truth for candidates or hiring decisions. Resume files and attachments are stored through the configured S3-compatible storage integration. WSO2 Identity Platform provides authentication and role claims.
+PostgreSQL is the system of record for OpenATS data. Redis supports BullMQ queues and real-time worker events; it is not the source of truth for candidates or hiring decisions. Resume files and attachments are stored through the configured S3-compatible storage integration. Sign-in is built in: Better Auth runs in the Next.js server and keeps users, sessions and roles in the same PostgreSQL database. The API checks a short-lived token on each request and reads the user's role from the database.
 
 The frontend never connects directly to PostgreSQL or Redis. It communicates with the API, and the API owns access to infrastructure and external providers.
 

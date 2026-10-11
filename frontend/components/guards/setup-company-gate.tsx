@@ -3,7 +3,6 @@
 import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 
-//import { useCompany, useDepartments } from "@/hooks/use-api";
 import { useCompany, useDepartments } from "@/hooks/queries/use-company";
 
 const ALLOWED_WITHOUT_SETUP = /^\/settings\/general(\/|$)/;

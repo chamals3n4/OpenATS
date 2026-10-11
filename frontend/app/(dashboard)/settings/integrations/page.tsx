@@ -34,7 +34,7 @@ export default async function SettingsIntegrationsPage() {
             These connections are personal. Everyone who runs interviews connects their own account.
             When an interview gets its time, it is added to the calendar of the interviewer chosen
             for it, and the candidate is invited. An interviewer who has not connected an account
-            gets no calendar entry, unless your administrator has set up a shared company calendar.
+            gets no calendar entry. The candidate is still emailed the details.
           </p>
 
           <IntegrationsList initialStatus={initialStatus} />

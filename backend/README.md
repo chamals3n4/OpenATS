@@ -76,7 +76,7 @@ The remaining variables are for external/cloud services and are only needed if y
 - `R2_*` - Cloudflare R2 object storage, used for file uploads (e.g. resumes).
 - `RESEND_*` - Resend API, used for sending emails (e.g. application confirmations).
 - `GEMINI_API_KEY` - Optional. Used by AI CV analysis, which is also off until turned on in Settings.
-- `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_CALENDAR_ID` - used for Google Calendar integration (interview scheduling). The backend authenticates as a service account, so these are the only Google-related variables needed.
+- `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` and `GOOGLE_OAUTH_REDIRECT_URI` - Optional. They let each interviewer connect their own Google account (Settings → Integrations), so their interviews go in their calendar and can get a Google Meet link.
 
 ### First-time setup
 

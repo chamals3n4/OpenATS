@@ -12,7 +12,6 @@ import {
 } from "../../db/schema";
 import { scoringService } from "../scoring/scoring.service";
 import { cleanObject as clean } from "../../utils/object.utils";
-import * as gcal from "../../shared/services/google-calendar.service";
 import { interviewCancelledEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import logger from "../../utils/logger";
@@ -221,44 +220,6 @@ export const interviewService = {
       }
     }
 
-    // Same for an entry in the shared company calendar
-    if (updated.googleEventId) {
-      try {
-        const [row] = await db
-          .select({
-            firstName: candidates.firstName,
-            lastName: candidates.lastName,
-            jobTitle: jobs.title,
-            stageName: jobPipelineStages.name,
-          })
-          .from(candidates)
-          .leftJoin(jobs, eq(candidates.jobId, jobs.id))
-          .leftJoin(
-            jobPipelineStages,
-            eq(jobPipelineStages.id, updated.stageId),
-          )
-          .where(eq(candidates.id, updated.candidateId));
-
-        if (row && updated.scheduledAt && updated.durationMinutes) {
-          await gcal.updateCalendarEvent(updated.googleEventId, {
-            interviewId: updated.id,
-            candidateName: `${row.firstName} ${row.lastName}`,
-            jobTitle: row.jobTitle ?? "",
-            stageName: row.stageName ?? "",
-            scheduledAt: updated.scheduledAt,
-            durationMinutes: updated.durationMinutes,
-            notes: updated.notes,
-            attendeeEmails: input.attendeeEmails ?? [],
-            meetingUrl: updated.meetingUrl,
-          });
-        }
-      } catch (err) {
-        logger.error(
-          `Failed to sync interview ${id} to Google Calendar: ${getErrorMessage(err)}`,
-        );
-      }
-    }
-
     return updated;
   },
 
@@ -455,17 +416,6 @@ export const interviewService = {
       } catch (err) {
         logger.error(
           `Failed to cancel provider meeting for interview ${id}: ${getErrorMessage(err)}`,
-        );
-      }
-    }
-
-    // Delete Google Calendar event if synced (sendUpdates:all notifies attendees)
-    if (existing.googleEventId) {
-      try {
-        await gcal.deleteCalendarEvent(existing.googleEventId);
-      } catch (err) {
-        logger.error(
-          `Failed to delete calendar event for interview ${id}: ${getErrorMessage(err)}`,
         );
       }
     }

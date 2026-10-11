@@ -206,7 +206,6 @@ export type CandidateInterview = {
   outcome: "pending" | "pass" | "fail";
   timeSlots: InterviewTimeSlot[] | null;
   publicToken: string | null;
-  googleEventId: string | null;
   // Joined from the pipeline stage, not stored on the interview row.
   stageType: StageType | null;
   createdBy: number | null;

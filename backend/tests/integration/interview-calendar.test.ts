@@ -19,13 +19,6 @@ const createMeeting = vi.fn();
 vi.mock("../../src/shared/integrations/registry", () => ({
   getProviderClient: () => ({ createMeeting: (...a: unknown[]) => createMeeting(...a) }),
 }));
-const createCalendarEvent = vi.fn();
-let sharedConfigured = false;
-vi.mock("../../src/shared/services/google-calendar.service", () => ({
-  createCalendarEvent: (...a: unknown[]) => createCalendarEvent(...a),
-  isSharedCalendarConfigured: () => sharedConfigured,
-}));
-
 import { db } from "../../src/db";
 import { company, departments } from "../../src/db/schema/company";
 import { jobs } from "../../src/db/schema/jobs";
@@ -34,7 +27,7 @@ import { candidates } from "../../src/db/schema/candidates";
 import { candidateInterviews } from "../../src/db/schema/interviews";
 import { users } from "../../src/db/schema/users";
 import { initTestKeys, bearer } from "../helpers/jwt";
-import { chooseCalendar, completeInterviewBooking } from "../../src/modules/interview/interview-confirm";
+import { completeInterviewBooking } from "../../src/modules/interview/interview-confirm";
 
 const SUFFIX = `cal${Date.now()}`;
 const AT = new Date(Date.now() + 3 * 86_400_000);
@@ -84,10 +77,8 @@ afterAll(async () => {
 
 beforeEach(() => {
   vi.clearAllMocks();
-  sharedConfigured = false;
   getValidAccessToken.mockResolvedValue(null);
   createMeeting.mockResolvedValue({ meetingUrl: "https://meet.google.com/new", providerMeetingId: "evt_1" });
-  createCalendarEvent.mockResolvedValue("shared_1");
 });
 
 async function book(values: Partial<typeof candidateInterviews.$inferInsert>) {
@@ -111,17 +102,8 @@ async function book(values: Partial<typeof candidateInterviews.$inferInsert>) {
   return saved!;
 }
 
-describe("chooseCalendar", () => {
-  it("never picks two calendars", () => {
-    expect(chooseCalendar({ onInterviewerCalendar: true, sharedConfigured: true })).toBe("interviewer");
-    expect(chooseCalendar({ onInterviewerCalendar: false, sharedConfigured: true })).toBe("shared");
-    expect(chooseCalendar({ onInterviewerCalendar: false, sharedConfigured: false })).toBe("none");
-  });
-});
-
 describe("where a booked interview goes", () => {
-  it("goes in the connected interviewer's calendar with a Meet link, and nowhere else", async () => {
-    sharedConfigured = true;
+  it("goes in the connected interviewer's calendar with a Meet link", async () => {
     getValidAccessToken.mockResolvedValue("token");
 
     const saved = await book({ meetingProvider: "google_meet" });
@@ -132,12 +114,7 @@ describe("where a booked interview goes", () => {
       durationMinutes: 45,
       attendeeEmails: [`ada.${SUFFIX}@example.test`],
     });
-    expect(createCalendarEvent).not.toHaveBeenCalled();
-    expect(saved).toMatchObject({
-      meetingUrl: "https://meet.google.com/new",
-      providerMeetingId: "evt_1",
-      googleEventId: null,
-    });
+    expect(saved).toMatchObject({ meetingUrl: "https://meet.google.com/new", providerMeetingId: "evt_1" });
   });
 
   it("goes in the connected interviewer's calendar without a Meet link when they use their own", async () => {
@@ -148,46 +125,28 @@ describe("where a booked interview goes", () => {
 
     expect(createMeeting.mock.calls[0]![1]).toMatchObject({ withVideoLink: false, location: "https://zoom.example/1" });
     expect(saved).toMatchObject({ meetingUrl: "https://zoom.example/1", providerMeetingId: "evt_2" });
-    expect(createCalendarEvent).not.toHaveBeenCalled();
   });
 
-  it("does not copy the event to the shared calendar when Google returns no id for it", async () => {
-    sharedConfigured = true;
-    getValidAccessToken.mockResolvedValue("token");
-    createMeeting.mockResolvedValue({ meetingUrl: "https://meet.google.com/new" });
-
-    await book({ meetingProvider: "google_meet" });
-
-    expect(createMeeting).toHaveBeenCalledTimes(1);
-    expect(createCalendarEvent).not.toHaveBeenCalled();
-  });
-
-  it("falls back to the shared calendar when the interviewer has not connected Google", async () => {
-    sharedConfigured = true;
-
+  it("adds no calendar entry for an interviewer who has not connected Google", async () => {
     const saved = await book({ meetingUrl: "https://zoom.example/1" });
 
     expect(createMeeting).not.toHaveBeenCalled();
-    expect(createCalendarEvent).toHaveBeenCalledTimes(1);
-    expect(saved.googleEventId).toBe("shared_1");
+    expect(saved).toMatchObject({ providerMeetingId: null, meetingUrl: "https://zoom.example/1", status: "scheduled" });
   });
 
-  it("falls back to the shared calendar when the interviewer's calendar refuses the event", async () => {
-    sharedConfigured = true;
+  it("keeps the booking when the interviewer's calendar refuses the event", async () => {
     getValidAccessToken.mockResolvedValue("token");
     createMeeting.mockRejectedValue(new Error("Google is down"));
 
     const saved = await book({ meetingProvider: "google_meet" });
 
-    expect(createCalendarEvent).toHaveBeenCalledTimes(1);
-    expect(saved).toMatchObject({ providerMeetingId: null, googleEventId: "shared_1" });
+    expect(saved).toMatchObject({ providerMeetingId: null, status: "scheduled" });
   });
 
-  it("adds no calendar entry when nothing is set up, without failing", async () => {
+  it("books an on-site interview with no Google at all", async () => {
     const saved = await book({ eventType: "onsite", location: "12 Park Street" });
 
     expect(createMeeting).not.toHaveBeenCalled();
-    expect(createCalendarEvent).not.toHaveBeenCalled();
-    expect(saved).toMatchObject({ providerMeetingId: null, googleEventId: null, status: "scheduled" });
+    expect(saved).toMatchObject({ providerMeetingId: null, status: "scheduled" });
   });
 });

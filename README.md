@@ -153,7 +153,7 @@ Each package reads its own `.env` - there's no shared root env file.
 | `R2_*`                                               | Cloudflare R2 (or compatible) object storage for uploaded files |
 | `RESEND_*`                                           | Transactional email                                             |
 | `GEMINI_API_KEY`                                     | Optional - AI CV analysis, which is also off until turned on in Settings |
-| `GOOGLE_SERVICE_ACCOUNT_JSON` / `GOOGLE_CALENDAR_ID` | Optional - interview scheduling via a Google service account    |
+| `GOOGLE_OAUTH_*`                                     | Optional - lets interviewers connect Google for calendar events and Meet links |
 
 **`frontend/.env`**
 

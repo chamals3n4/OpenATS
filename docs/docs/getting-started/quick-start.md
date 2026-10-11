@@ -129,26 +129,24 @@ AI CV analysis sends each candidate's CV to Google Gemini, which writes a summar
 
 Keep the CV analysis worker running when this feature is on. Never expose this key through a `NEXT_PUBLIC_` variable.
 
-## 9. Configure Google Calendar for interview scheduling
+## 9. Let interviewers connect Google (optional)
 
-Open the [Google Cloud Console](https://console.cloud.google.com/), create a project called something like `OpenATS`, and select it from the project picker.
+Interviews work without Google. With it, each interviewer can connect their own Google account, so their interviews go in their calendar and can get a Google Meet link.
 
-1. Open **APIs & Services** → **Library**, search for **Google Calendar API**, and select **Enable**.
-2. Open **IAM & Admin** → **Service Accounts**, then select **Create service account**. Give it a name such as `openats-calendar` and finish creation.
-3. Open the new service account, select the **Keys** tab, then choose **Add key** → **Create new key** → **JSON**. Download and store the JSON file safely; it is a secret.
-4. Open [Google Calendar](https://calendar.google.com/). Create a dedicated OpenATS calendar, or choose a calendar that should hold interview events.
-5. In that calendar, open **Settings and sharing** → **Share with specific people or groups**. Add the service-account email address, which ends in `iam.gserviceaccount.com`, and grant **Make changes to events** permission.
-6. In **Settings and sharing** → **Integrate calendar**, copy the calendar ID.
-
-Copy the entire downloaded JSON key into one line in `backend/.env`, and paste the calendar ID:
+1. Open the [Google Cloud Console](https://console.cloud.google.com/), create a project called something like `OpenATS`, and select it.
+2. Open **APIs & Services** → **Library**, search for **Google Calendar API**, and select **Enable**.
+3. Open **APIs & Services** → **OAuth consent screen** and set it up. While the app is in testing, add the Google accounts that will connect as test users.
+4. Open **APIs & Services** → **Credentials**, select **Create credentials** → **OAuth client ID**, and choose **Web application**.
+5. Under **Authorised redirect URIs**, add the API's address followed by `/oauth/google/callback`. Locally that is `http://localhost:8080/oauth/google/callback`.
+6. Copy the client ID and the client secret into `backend/.env`, with the same redirect URI:
 
 ```dotenv
-GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
-GOOGLE_CALENDAR_ID=your-calendar-id@group.calendar.google.com
-GOOGLE_CALENDAR_ALLOW_ATTENDEES=false
+GOOGLE_OAUTH_CLIENT_ID=<your client ID>
+GOOGLE_OAUTH_CLIENT_SECRET=<your client secret>
+GOOGLE_OAUTH_REDIRECT_URI=http://localhost:8080/oauth/google/callback
 ```
 
-Set `GOOGLE_CALENDAR_ALLOW_ATTENDEES=true` only when the service account has Domain-Wide Delegation. Without it, attendee invites are not sent. The optional `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET`, and `GOOGLE_OAUTH_REDIRECT_URI` are for OAuth-based calendar flows if your deployment uses them.
+Restart the backend. Each person then connects their own account under **Settings → Integrations**. See [Interviews and feedback](../using-openats/interviews#google-calendar-and-google-meet) for what the connection does.
 
 ## 10. Create the database schema and the first admin
 

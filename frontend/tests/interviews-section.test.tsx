@@ -46,7 +46,6 @@ const interview = (over: Partial<CandidateInterview> = {}): CandidateInterview =
   outcome: "pending",
   timeSlots: null,
   publicToken: null,
-  googleEventId: null,
   stageType: "interview",
   createdBy: 1,
   createdAt: "2026-09-09T09:00:00.000Z",

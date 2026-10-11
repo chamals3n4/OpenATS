@@ -1,0 +1,1 @@
+ALTER TABLE "candidate_interviews" DROP COLUMN "google_event_id";

@@ -55,9 +55,6 @@ export const candidateInterviews = pgTable(
     publicToken: varchar("public_token", { length: 100 }).unique(),
     tokenExpiresAt: timestamp("token_expires_at"),
 
-    // Google Calendar
-    googleEventId: varchar("google_event_id", { length: 255 }),
-
     // Provider meeting event id, used to cancel the event on delete
     providerMeetingId: varchar("provider_meeting_id", { length: 255 }),
 

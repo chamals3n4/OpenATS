@@ -636,7 +636,6 @@ export const candidateService = {
         bodyText: candidateInterviews.bodyText,
         timeSlots: candidateInterviews.timeSlots,
         publicToken: candidateInterviews.publicToken,
-        googleEventId: candidateInterviews.googleEventId,
         createdBy: candidateInterviews.createdBy,
         createdAt: candidateInterviews.createdAt,
         updatedAt: candidateInterviews.updatedAt,

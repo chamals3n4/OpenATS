@@ -23,26 +23,16 @@ An **Interviewer** runs the interview and submits feedback. An interviewer canno
 
 ## Google Calendar and Google Meet
 
-Google is optional. There are two separate ways to use it, and they do different jobs.
-
-| | Personal connection | Shared company calendar |
-| --- | --- | --- |
-| What it is | Each interviewer connects their own Google account | One calendar for the whole company |
-| Set up by | Each person, in **Settings → Integrations** | Your server administrator. There is no button for it in the app |
-| Where the event goes | That interviewer's own Google Calendar | The shared calendar |
-| Can create a Google Meet link | Yes | No |
-
-### Which one is used
+Google is optional. Each interviewer can connect their own Google account, and OpenATS then puts their interviews in their own Google Calendar.
 
 Each interview gets **one** calendar event, created when the interview gets its time.
 
 | The interviewer chosen for the interview | What happens |
 | --- | --- |
-| Has connected Google | The event goes in their own calendar and the candidate is invited. A Meet link is added only if you chose Google Meet |
-| Has not connected Google, and a shared calendar is set up | The event goes in the shared calendar |
-| Has not connected Google, and there is no shared calendar | No calendar event is created. The emails are still sent |
+| Has connected Google | The event goes in their calendar and the candidate is invited. A Google Meet link is added only if you chose Google Meet |
+| Has not connected Google | No calendar event is created. The candidate is still emailed the details |
 
-It depends on the **interviewer** chosen for that interview, not on the person who schedules it.
+It depends on the **interviewer** chosen for that interview, not on the person who schedules it. A Google Meet link can only be created for an interviewer who has connected.
 
 ### Connect your Google account
 
@@ -88,7 +78,7 @@ The interview is booked at once. There is no link for the candidate to pick from
 Either way, three things happen:
 
 1. A Google Meet link is created, if you chose Google Meet.
-2. One calendar event is created, as described above.
+2. A calendar event is created, if the interviewer has connected Google.
 3. The candidate receives the "Interview confirmed" email with the date, the time, the length, and the link or address.
 
 ## Change or cancel an interview

@@ -12,7 +12,12 @@ type RowActionProps = Omit<React.ComponentProps<typeof Button>, "children"> & {
   children?: React.ReactNode;
 };
 
-export function RowEditButton({ className, children, ...props }: RowActionProps) {
+export function RowEditButton({
+  className,
+  children,
+  icon = Edit02Icon,
+  ...props
+}: RowActionProps & { /** Shown before the label. The pencil suits "Edit"; pass another for a different action. */ icon?: typeof Edit02Icon }) {
   return (
     <Button
       size="sm"
@@ -24,7 +29,7 @@ export function RowEditButton({ className, children, ...props }: RowActionProps)
       )}
       {...props}
     >
-      <HugeiconsIcon icon={Edit02Icon} className="size-4" strokeWidth={1.75} />
+      <HugeiconsIcon icon={icon} className="size-4" strokeWidth={1.75} />
       {children ?? "Edit"}
     </Button>
   );

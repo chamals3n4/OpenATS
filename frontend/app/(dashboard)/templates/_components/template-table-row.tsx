@@ -1,5 +1,6 @@
 "use client";
 
+import { Copy01Icon } from "@hugeicons/core-free-icons";
 import { RowDeleteButton, RowEditButton } from "@/components/table/row-actions";
 import { TableRow, TableCell } from "@/components/ui/table";
 import type { Template } from "@/types";
@@ -59,7 +60,9 @@ export function TemplateTableRow({
       >
         {isManager && (
           <div className="flex items-center justify-end gap-2">
-            <RowEditButton onClick={() => onDuplicate(template)}>Duplicate</RowEditButton>
+            <RowEditButton icon={Copy01Icon} onClick={() => onDuplicate(template)}>
+              Duplicate
+            </RowEditButton>
             <RowDeleteButton onClick={() => onDelete(template.id)} />
           </div>
         )}

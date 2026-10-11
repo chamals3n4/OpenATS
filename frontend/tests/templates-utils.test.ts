@@ -99,3 +99,21 @@ describe("formatDuration", () => {
     expect(formatDuration(90)).toBe("1.5 hours");
   });
 });
+
+import { renderPreviewHtml } from "@/app/(dashboard)/templates/lib/template-form-utils";
+
+describe("renderPreviewHtml", () => {
+  it("removes scripts and event handlers, and keeps ordinary formatting", () => {
+    const html = renderPreviewHtml(
+      '<p onclick="alert(1)">Hi <strong>there</strong></p><script>alert(2)</script><img src=x onerror="alert(3)"><a href="javascript:alert(4)">x</a>',
+    );
+    expect(html).toContain("<strong>there</strong>");
+    expect(html).not.toMatch(/script|onclick|onerror|javascript:/i);
+  });
+
+  it("fills in sample values, escaped", () => {
+    const html = renderPreviewHtml("<p>Hello {{candidate_name}}</p>", { candidate_name: "<b>Ada</b>" });
+    expect(html).toContain("&lt;b&gt;Ada&lt;/b&gt;");
+    expect(html).not.toContain("<b>Ada</b>");
+  });
+});

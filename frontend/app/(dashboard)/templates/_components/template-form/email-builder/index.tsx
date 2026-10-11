@@ -1,6 +1,6 @@
 "use client";
 
-import { EmailSubjectField } from "./email-subject-field";
+import { EmailSubjectField, SUBJECT_ERROR_ID } from "./email-subject-field";
 import { EmailBodyEditor } from "./email-body-editor";
 
 interface EmailBuilderProps {
@@ -38,7 +38,7 @@ export function EmailBuilder({
         <EmailBodyEditor value={bodyHtml} onChange={onBodyHtmlChange} readOnly={readOnly} />
       </div>
       {subjectError ? (
-        <p role="alert" className="text-[13px] text-red-600 dark:text-red-400">
+        <p id={SUBJECT_ERROR_ID} role="alert" className="text-[13px] text-red-600 dark:text-red-400">
           {subjectError}
         </p>
       ) : (

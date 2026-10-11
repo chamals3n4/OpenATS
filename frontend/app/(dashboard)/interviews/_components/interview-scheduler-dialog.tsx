@@ -185,7 +185,8 @@ function SchedulerForm({
           meetingProvider: autoGenerate ? "google_meet" : undefined,
           interviewerId,
           location: eventType === "onsite" ? location.trim() || null : null,
-          bodyText: bodyText.trim() || null,
+          // The message belongs to the "pick a time" email, which a fixed time does not send.
+          bodyText: fixed ? null : bodyText.trim() || null,
           stageId: pipelineStageId,
           durationMinutes,
           ...(fixed ? { scheduledAt: new Date(fixedTime).toISOString() } : {}),

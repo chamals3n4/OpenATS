@@ -122,15 +122,21 @@ export async function completeInterviewBooking(iv: ConfirmableInterview, schedul
   }
 
   if (meetingUrl !== iv.meetingUrl || googleEventId || providerMeetingId) {
-    await db
-      .update(candidateInterviews)
-      .set({
-        meetingUrl,
-        ...(googleEventId ? { googleEventId } : {}),
-        ...(providerMeetingId ? { providerMeetingId } : {}),
-        updatedAt: new Date(),
-      })
-      .where(eq(candidateInterviews.id, iv.id));
+    try {
+      await db
+        .update(candidateInterviews)
+        .set({
+          meetingUrl,
+          ...(googleEventId ? { googleEventId } : {}),
+          ...(providerMeetingId ? { providerMeetingId } : {}),
+          updatedAt: new Date(),
+        })
+        .where(eq(candidateInterviews.id, iv.id));
+    } catch (err) {
+      logger.error(
+        `Failed to save the meeting link and calendar entry for interview ${iv.id}: ${getErrorMessage(err)}`,
+      );
+    }
   }
 
   if (candidate && iv.eventName) {

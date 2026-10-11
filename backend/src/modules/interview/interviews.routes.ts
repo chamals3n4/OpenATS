@@ -312,7 +312,12 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
     if (fixedAt) {
       // Nothing for the candidate to choose, so go straight to the link, calendar and confirmation.
       await completeInterviewBooking(interview, fixedAt);
-      res.status(201).json({ data: interview });
+      // Read it again: the booking has just saved the meeting link and the calendar entry.
+      const [booked] = await db
+        .select()
+        .from(candidateInterviews)
+        .where(eq(candidateInterviews.id, interview.id));
+      res.status(201).json({ data: booked ?? interview });
       return;
     }
 

@@ -3,6 +3,9 @@
 import { useRef } from "react";
 import { VariablePicker } from "./variable-picker";
 
+/** The id of the message shown under the composer when the subject is wrong. */
+export const SUBJECT_ERROR_ID = "template-subject-error";
+
 interface EmailSubjectFieldProps {
   value: string;
   onChange: (value: string) => void;
@@ -45,6 +48,7 @@ export function EmailSubjectField({ value, onChange, invalid = false, readOnly =
         onChange={(e) => onChange(e.target.value)}
         readOnly={readOnly}
         aria-invalid={invalid || undefined}
+        aria-describedby={invalid ? SUBJECT_ERROR_ID : undefined}
         className="h-9 min-w-0 flex-1 bg-transparent text-sm font-medium text-slate-900 outline-none placeholder:font-normal placeholder:text-slate-400 dark:text-neutral-100 dark:placeholder:text-neutral-500"
       />
       {!readOnly && <VariablePicker target="subject" onSelect={insertVariable} />}

@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 
 /** A titled group of fields. Groups are separated by a line in the form column. */
 export function FormSection({
@@ -39,19 +39,30 @@ export function FormField({
   optional?: boolean;
   children: ReactNode;
 }) {
+  // With a known control id, tie the hint or error to that control for screen readers.
+  const describedBy = htmlFor && (error || hint) ? `${htmlFor}-description` : undefined;
+  const control =
+    describedBy && isValidElement(children)
+      ? cloneElement(children as ReactElement<{ "aria-describedby"?: string }>, { "aria-describedby": describedBy })
+      : children;
+
   return (
     <div className="space-y-1.5">
       <label htmlFor={htmlFor} className="block text-sm font-medium text-slate-800 dark:text-neutral-200">
         {label}
         {optional && <span className="ml-1.5 font-normal text-slate-500 dark:text-neutral-500">Optional</span>}
       </label>
-      {children}
+      {control}
       {error ? (
-        <p role="alert" className="text-[13px] text-red-600 dark:text-red-400">
+        <p id={describedBy} role="alert" className="text-[13px] text-red-600 dark:text-red-400">
           {error}
         </p>
       ) : (
-        hint && <p className="text-[13px] text-slate-500 dark:text-neutral-400">{hint}</p>
+        hint && (
+          <p id={describedBy} className="text-[13px] text-slate-500 dark:text-neutral-400">
+            {hint}
+          </p>
+        )
       )}
     </div>
   );

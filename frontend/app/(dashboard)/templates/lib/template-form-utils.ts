@@ -1,3 +1,4 @@
+import DOMPurify from "dompurify";
 import type { EventConfig } from "./template-form-types";
 import type { TemplateBody, TemplateBodyBlock } from "@/types";
 import { SAMPLE, VARS } from "./template-form-constants";
@@ -41,16 +42,26 @@ export function fillSampleText(text: string, samples: Record<string, string> = D
 }
 
 /** Substitute {{var}} placeholders in an HTML string with styled sample-value pills, for preview only. */
+/**
+ * The result is cleaned before it is returned, because it is put straight into the page and a
+ * saved template can hold anything another person typed or pasted.
+ */
 export function renderPreviewHtml(html: string, samples: Record<string, string> = DEFAULT_SAMPLES): string {
   let out = html;
   Object.entries(samples).forEach(([key, value]) => {
     out = out.replaceAll(
       `{{${key}}}`,
-      `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:600;font-size:0.85em">${value}</span>`,
+      `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:600;font-size:0.85em">${escapeHtml(value)}</span>`,
     );
   });
-  return out;
+  // Cleaning needs a browser. On the server there is none, so nothing is rendered there
+  // rather than letting uncleaned HTML into the page.
+  if (typeof window === "undefined") return "";
+  return DOMPurify.sanitize(out);
 }
+
+const escapeHtml = (value: string) =>
+  value.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 
 export function parseEventConfig(
   bodyJson: unknown,

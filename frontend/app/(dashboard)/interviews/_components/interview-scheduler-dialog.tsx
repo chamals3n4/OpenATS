@@ -267,8 +267,8 @@ function SchedulerForm({
             hint={
               interviewerId
                 ? googleConnected
-                  ? "Google Meet is connected for this person."
-                  : "Google Meet is not connected for this person."
+                  ? "Connected to Google. The interview is added to their calendar."
+                  : "Has not connected Google, so nothing is added to their own calendar."
                 : undefined
             }
           >

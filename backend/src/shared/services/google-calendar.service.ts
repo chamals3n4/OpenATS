@@ -13,6 +13,11 @@ function getAuth() {
   });
 }
 
+/** Whether a shared company calendar has been set up for this installation. */
+export function isSharedCalendarConfigured(): boolean {
+  return !!process.env.GOOGLE_SERVICE_ACCOUNT_JSON?.trim();
+}
+
 let _calendarClient: ReturnType<typeof google.calendar> | null = null;
 
 function getCalendarClient() {

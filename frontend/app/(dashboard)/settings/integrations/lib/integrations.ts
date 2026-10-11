@@ -16,7 +16,8 @@ export const VIDEO_MEETING_INTEGRATIONS: Integration[] = [
   {
     key: "google_meet",
     name: "Google Meet",
-    description: "Create a Google Meet link, and a calendar event, whenever you schedule an interview.",
+    description:
+      "Adds each of your interviews to your Google Calendar and invites the candidate. Creates a Google Meet link when one is asked for.",
     logo: "/integrations/meet.webp",
     available: true,
   },

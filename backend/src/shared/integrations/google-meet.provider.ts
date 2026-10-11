@@ -6,6 +6,7 @@ import type {
   ExchangeCodeResult,
   MeetingProviderClient,
   RefreshTokenResult,
+  UpdateMeetingInput,
 } from "./types";
 
 const SCOPES = [
@@ -96,29 +97,58 @@ export const googleMeetProvider: MeetingProviderClient = {
       input.scheduledAt.getTime() + input.durationMinutes * 60_000,
     );
 
+    const withVideoLink = input.withVideoLink ?? true;
     const event = await calendar.events.insert({
       calendarId: "primary",
-      conferenceDataVersion: 1,
+      conferenceDataVersion: withVideoLink ? 1 : 0,
+      sendUpdates: "all",
+      requestBody: {
+        summary: input.eventName,
+        description: input.description ?? undefined,
+        location: input.location ?? undefined,
+        start: { dateTime: input.scheduledAt.toISOString(), timeZone: "UTC" },
+        end: { dateTime: endTime.toISOString(), timeZone: "UTC" },
+        attendees: input.attendeeEmails?.map((email) => ({ email })),
+        ...(withVideoLink
+          ? {
+              conferenceData: {
+                createRequest: {
+                  requestId: randomUUID(),
+                  conferenceSolutionKey: { type: "hangoutsMeet" },
+                },
+              },
+            }
+          : {}),
+      },
+    });
+
+    const meetingUrl = event.data.hangoutLink ?? null;
+    if (withVideoLink && !meetingUrl) {
+      throw new Error("Google did not return a Meet link for the created event");
+    }
+    return { meetingUrl, providerMeetingId: event.data.id ?? undefined };
+  },
+
+  async updateMeeting(
+    accessToken: string,
+    providerMeetingId: string,
+    input: UpdateMeetingInput,
+  ): Promise<void> {
+    const client = getOAuthClient();
+    client.setCredentials({ access_token: accessToken });
+    const calendar = google.calendar({ version: "v3", auth: client });
+    const endTime = new Date(input.scheduledAt.getTime() + input.durationMinutes * 60_000);
+    // patch, not update: everything else on the event (guests, the Meet link) is kept.
+    await calendar.events.patch({
+      calendarId: "primary",
+      eventId: providerMeetingId,
       sendUpdates: "all",
       requestBody: {
         summary: input.eventName,
         start: { dateTime: input.scheduledAt.toISOString(), timeZone: "UTC" },
         end: { dateTime: endTime.toISOString(), timeZone: "UTC" },
-        attendees: input.attendeeEmails?.map((email) => ({ email })),
-        conferenceData: {
-          createRequest: {
-            requestId: randomUUID(),
-            conferenceSolutionKey: { type: "hangoutsMeet" },
-          },
-        },
       },
     });
-
-    const meetingUrl = event.data.hangoutLink;
-    if (!meetingUrl) {
-      throw new Error("Google did not return a Meet link for the created event");
-    }
-    return { meetingUrl, providerMeetingId: event.data.id ?? undefined };
   },
 
   async deleteMeeting(

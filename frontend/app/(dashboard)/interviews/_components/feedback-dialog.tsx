@@ -33,7 +33,7 @@ export default function FeedbackDialog({
       <DialogContent className="max-w-lg rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-xl">
         <DialogHeader>
           <DialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
-            Add Feedback
+            Add feedback
           </DialogTitle>
           {target && (
             <p className="text-sm text-slate-500 dark:text-neutral-400 mt-0.5">
@@ -43,16 +43,21 @@ export default function FeedbackDialog({
         </DialogHeader>
 
         <div className="space-y-1.5 mt-1">
-          <Label className="text-sm font-medium text-slate-600 dark:text-neutral-400">
-            Internal notes
+          <Label htmlFor="interview-feedback" className="text-sm font-medium text-slate-800 dark:text-neutral-200">
+            Notes for your team
           </Label>
           <textarea
+            id="interview-feedback"
+            aria-describedby="interview-feedback-hint"
             value={feedbackText}
             onChange={(e) => setFeedbackText(e.target.value)}
-            placeholder="Add internal notes about this interview — only visible to your team…"
+            placeholder="How did the interview go?"
             rows={5}
-            className="w-full rounded-md border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3.5 py-2.5 text-sm text-slate-800 dark:text-neutral-200 shadow-none resize-none focus:outline-none focus:border-[var(--theme-color)] placeholder:text-slate-300 dark:placeholder:text-neutral-600 transition-colors"
+            className="w-full resize-y rounded-md border border-slate-300 bg-gray-100 px-3 py-2 text-sm leading-relaxed text-slate-900 shadow-none placeholder:text-slate-400 focus:border-theme focus:outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100 dark:placeholder:text-neutral-500"
           />
+          <p id="interview-feedback-hint" className="text-[13px] text-slate-500 dark:text-neutral-400">
+            Only your team sees this. The candidate does not.
+          </p>
         </div>
 
         <DialogFooter className="gap-2 mt-2">
@@ -82,7 +87,7 @@ export default function FeedbackDialog({
             className="h-8 rounded-md border-none px-4 text-sm font-semibold leading-none text-white shadow-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             style={{ backgroundColor: "var(--theme-color)" }}
           >
-            {addFeedbackMutation.isPending ? "Saving…" : "Save Feedback"}
+            {addFeedbackMutation.isPending ? "Saving" : "Save feedback"}
           </button>
         </DialogFooter>
       </DialogContent>

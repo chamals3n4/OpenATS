@@ -1,9 +1,28 @@
 export function fmtTime(s: string | null) {
   if (!s) return "";
   return new Date(s).toLocaleTimeString("en-US", {
-    hour: "2-digit",
+    hour: "numeric",
     minute: "2-digit",
   });
+}
+
+/** "9:30 AM – 10:15 AM" when the length is known, otherwise just the start. */
+export function fmtTimeRange(scheduledAt: string | null, durationMinutes: number | null) {
+  if (!scheduledAt) return "";
+  const start = fmtTime(scheduledAt);
+  if (!durationMinutes) return start;
+  const end = new Date(new Date(scheduledAt).getTime() + durationMinutes * 60_000);
+  return `${start} – ${fmtTime(end.toISOString())}`;
+}
+
+/** Whether an interview matches what was typed, by candidate, interview name, job or stage. */
+export function matchesInterview(
+  iv: { candidateName: string; eventName: string | null; jobTitle: string | null; stageName: string | null },
+  query: string,
+) {
+  const q = query.trim().toLowerCase();
+  if (!q) return true;
+  return [iv.candidateName, iv.eventName, iv.jobTitle, iv.stageName].some((text) => text?.toLowerCase().includes(q));
 }
 
 export function fmtDate(s: string) {

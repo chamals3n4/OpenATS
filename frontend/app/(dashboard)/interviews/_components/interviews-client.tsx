@@ -8,7 +8,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import {
   Calendar02Icon,
   Search01Icon,
-  ListViewIcon,
+  LeftToRightListBulletIcon,
+  Calendar03Icon,
 } from "@hugeicons/core-free-icons";
 
 import { Input } from "@/components/ui/input";
@@ -105,7 +106,7 @@ export default function InterviewsClient() {
                 : "text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-300"
             }`}
           >
-            <HugeiconsIcon icon={ListViewIcon} className="size-3.5" />
+            <HugeiconsIcon icon={LeftToRightListBulletIcon} className="size-4" strokeWidth={2} />
             List
           </button>
           <button
@@ -116,7 +117,7 @@ export default function InterviewsClient() {
                 : "text-slate-500 dark:text-neutral-400 hover:text-slate-700 dark:hover:text-neutral-300"
             }`}
           >
-            <HugeiconsIcon icon={Calendar02Icon} className="size-3.5" />
+            <HugeiconsIcon icon={Calendar03Icon} className="size-4" strokeWidth={2} />
             Calendar
           </button>
         </div>
@@ -193,7 +194,7 @@ export default function InterviewsClient() {
       {/* Content */}
       <div className="flex-1 overflow-y-auto px-6 py-4">
         {view === "calendar" ? (
-          <InlineCalendar interviews={interviews} />
+          <InlineCalendar interviews={interviews} onFeedback={handleFeedback} onEdit={handleEdit} />
         ) : interviews.length === 0 ? (
           <div className="rounded-md border border-dashed border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-6 py-16 text-center">
             <div className="size-12 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center mx-auto mb-3">

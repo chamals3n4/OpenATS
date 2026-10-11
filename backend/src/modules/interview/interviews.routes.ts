@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireManager } from "../../middlewares/role.middleware";
 import { interviewService, FeedbackValidationError } from "./interview.service";
+import { DEFAULT_INTERVIEW_MINUTES, completeInterviewBooking } from "./interview-confirm";
 import { interviewSlotsEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { socketService } from "../../shared/services/socket.service";
@@ -178,6 +179,11 @@ router.patch("/interviews/:id", requireManager, async (req, res) => {
   }
 });
 
+const futureDate = z.string().refine((v) => {
+  const d = new Date(v);
+  return !Number.isNaN(d.getTime()) && d.getTime() > Date.now();
+}, "Each time must be a valid date in the future");
+
 const scheduleSchema = z
   .object({
     eventName: z.string().min(1),
@@ -188,19 +194,21 @@ const scheduleSchema = z
     location: z.string().optional().nullable(),
     bodyText: z.string().optional().nullable(),
     stageId: z.number().int().optional(),
+    durationMinutes: z.number().int().min(5).max(480).default(DEFAULT_INTERVIEW_MINUTES),
+    /** Set when the hiring team has already agreed the time. Then no slots are offered. */
+    scheduledAt: futureDate.optional(),
     timeSlots: z
-      .array(
-        z.object({
-          datetime: z.string().refine((v) => {
-            const d = new Date(v);
-            return !Number.isNaN(d.getTime()) && d.getTime() > Date.now();
-          }, "Each time slot must be a valid date in the future"),
-          selected: z.boolean().default(false),
-        }),
-      )
-      .min(1, "At least one time slot is required"),
+      .array(z.object({ datetime: futureDate, selected: z.boolean().default(false) }))
+      .default([]),
   })
   .superRefine((data, ctx) => {
+    if (!data.scheduledAt && data.timeSlots.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["timeSlots"],
+        message: "Add at least one time slot, or set the time yourself",
+      });
+    }
     if (
       data.eventType === "virtual" &&
       !data.meetingProvider &&
@@ -265,6 +273,8 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
 
     const stageId = parsed.data.stageId || candidate.currentStageId || 0;
     const token = randomUUID();
+    // A time the team set themselves is final; otherwise the candidate picks from the slots.
+    const fixedAt = parsed.data.scheduledAt ? new Date(parsed.data.scheduledAt) : null;
 
     const [interview] = await db
       .insert(candidateInterviews)
@@ -279,10 +289,15 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
         interviewerId: parsed.data.interviewerId,
         location: parsed.data.location ?? null,
         bodyText: parsed.data.bodyText ?? null,
-        timeSlots: parsed.data.timeSlots,
-        status: "pending_schedule",
-        publicToken: token,
-        tokenExpiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+        durationMinutes: parsed.data.durationMinutes,
+        ...(fixedAt
+          ? { status: "scheduled", scheduledAt: fixedAt }
+          : {
+              timeSlots: parsed.data.timeSlots,
+              status: "pending_schedule",
+              publicToken: token,
+              tokenExpiresAt: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000),
+            }),
         createdBy: req.user.id,
       })
       .returning();
@@ -293,6 +308,13 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
       interviewId: interview.id,
       candidateId: candidate.id,
     });
+
+    if (fixedAt) {
+      // Nothing for the candidate to choose, so go straight to the link, calendar and confirmation.
+      await completeInterviewBooking(interview, fixedAt);
+      res.status(201).json({ data: interview });
+      return;
+    }
 
     const publicUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/interview/${token}`;
 

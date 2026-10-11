@@ -298,6 +298,53 @@ describe("core hiring flow", () => {
     expect(row!.currentStageId).toBe(offerStageId);
   });
 
+  describe("scheduling an interview", () => {
+    const schedule = (body: object) =>
+      request(app)
+        .post(`/api/candidates/${candidateId}/schedule`)
+        .set("Authorization", auth)
+        .send({
+          eventName: "Technical interview",
+          eventType: "onsite",
+          location: "12 Park Street",
+          interviewerId: managerId,
+          ...body,
+        });
+    const inDays = (days: number) => new Date(Date.now() + days * 86_400_000).toISOString();
+
+    it("needs either slots or a set time", async () => {
+      const res = await schedule({});
+      expect(res.status).toBe(400);
+      expect(res.body.details.timeSlots).toBeDefined();
+    });
+
+    it("offers slots and keeps the chosen length", async () => {
+      const res = await schedule({ durationMinutes: 45, timeSlots: [{ datetime: inDays(3) }] });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data).toMatchObject({ status: "pending_schedule", durationMinutes: 45 });
+      expect(res.body.data.publicToken).toBeTruthy();
+    });
+
+    it("books a time the team set, with no link for the candidate to pick from", async () => {
+      const at = inDays(4);
+      const res = await schedule({ durationMinutes: 30, scheduledAt: at });
+
+      expect(res.status).toBe(201);
+      expect(res.body.data).toMatchObject({ status: "scheduled", durationMinutes: 30, publicToken: null });
+      expect(new Date(res.body.data.scheduledAt).toISOString()).toBe(at);
+
+      // The confirmation is sent in the background.
+      await vi.waitFor(async () => {
+        const history = await db
+          .select()
+          .from(emailMessages)
+          .where(eq(emailMessages.candidateId, candidateId));
+        expect(history.some((m) => m.kind === "interview_confirmed")).toBe(true);
+      });
+    });
+  });
+
   describe("rejecting with an email", () => {
     let templateId: number;
     const reject = (id: number) =>

@@ -35,7 +35,7 @@ describe("validateTemplateName", () => {
   });
 });
 
-import { isPastSlot, validateTemplateForm } from "@/app/(dashboard)/templates/lib/template-form-utils";
+import { buildEventPayload, formatDuration, validateTemplateForm } from "@/app/(dashboard)/templates/lib/template-form-utils";
 
 describe("validateTemplateForm", () => {
   it("needs a name for both kinds of template", () => {
@@ -57,11 +57,45 @@ describe("validateTemplateForm", () => {
   });
 });
 
-describe("isPastSlot", () => {
-  const now = new Date("2026-10-11T12:00").getTime();
-  it("is true only for a chosen time that has passed", () => {
-    expect(isPastSlot("2026-10-11T11:59", now)).toBe(true);
-    expect(isPastSlot("2026-10-11T12:01", now)).toBe(false);
-    expect(isPastSlot("", now)).toBe(false);
+describe("buildEventPayload", () => {
+  const base = {
+    eventName: "Round 1",
+    description: "",
+    durationMinutes: 45,
+    message: "  See you soon.  ",
+    meetingUrl: "https://zoom.example/1",
+    location: "12 Park Street",
+  };
+  const saved = (config: Parameters<typeof buildEventPayload>[0]) =>
+    JSON.parse((buildEventPayload(config) as { content: string }[])[0]!.content);
+
+  it("saves the length and the message, and no dates", () => {
+    const config = saved({ ...base, eventType: "virtual", autoGenerateMeet: false });
+    expect(config).toMatchObject({ durationMinutes: 45, message: "See you soon." });
+    expect(config).not.toHaveProperty("timeSlots");
+  });
+
+  it("keeps only the place that fits the interview type", () => {
+    expect(saved({ ...base, eventType: "virtual", autoGenerateMeet: false })).toMatchObject({
+      meetingUrl: "https://zoom.example/1",
+      location: null,
+    });
+    expect(saved({ ...base, eventType: "virtual", autoGenerateMeet: true })).toMatchObject({
+      meetingUrl: null,
+      autoGenerateMeet: true,
+    });
+    expect(saved({ ...base, eventType: "onsite", autoGenerateMeet: true })).toMatchObject({
+      meetingUrl: null,
+      autoGenerateMeet: false,
+      location: "12 Park Street",
+    });
+  });
+});
+
+describe("formatDuration", () => {
+  it("reads naturally", () => {
+    expect(formatDuration(45)).toBe("45 minutes");
+    expect(formatDuration(60)).toBe("1 hour");
+    expect(formatDuration(90)).toBe("1.5 hours");
   });
 });

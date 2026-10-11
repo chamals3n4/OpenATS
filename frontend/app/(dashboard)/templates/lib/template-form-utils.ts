@@ -72,35 +72,27 @@ export function parseEmailBody(bodyJson: unknown): string {
   return typeof bodyJson === "string" ? bodyJson : "";
 }
 
-export function buildEventPayload(
-  eventName: string,
-  eventTypeRadio: "virtual" | "onsite",
-  meetingUrl: string,
-  autoGenerateMeet: boolean,
-  location: string,
-  eventDesc: string,
-  timeSlots: { datetime: string }[],
-): TemplateBody {
+export const DEFAULT_DURATION_MINUTES = 60;
+export const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120];
+
+export function formatDuration(minutes: number): string {
+  if (minutes < 60) return `${minutes} minutes`;
+  const hours = minutes / 60;
+  return hours === 1 ? "1 hour" : `${hours} hours`;
+}
+
+export function buildEventPayload(config: EventConfig): TemplateBody {
+  const virtual = config.eventType === "virtual";
   return [
     {
       type: "text" as const,
       content: JSON.stringify({
-        eventName,
-        eventType: eventTypeRadio,
-        meetingUrl:
-          eventTypeRadio === "virtual" && !autoGenerateMeet ? meetingUrl : null,
-        autoGenerateMeet: eventTypeRadio === "virtual" && autoGenerateMeet,
-        location: eventTypeRadio === "onsite" ? location : null,
-        description: eventDesc,
-        timeSlots: timeSlots.filter((s) => s.datetime).map((s) => s.datetime),
-      }),
+        ...config,
+        meetingUrl: virtual && !config.autoGenerateMeet ? config.meetingUrl : null,
+        autoGenerateMeet: virtual && config.autoGenerateMeet,
+        location: virtual ? null : config.location,
+        message: config.message.trim(),
+      } satisfies EventConfig),
     } satisfies TemplateBodyBlock,
   ];
-}
-
-/** True for a chosen time that is no longer in the future. An empty slot is not past. */
-export function isPastSlot(datetime: string, now: number): boolean {
-  if (!datetime) return false;
-  const time = new Date(datetime).getTime();
-  return Number.isFinite(time) && time <= now;
 }

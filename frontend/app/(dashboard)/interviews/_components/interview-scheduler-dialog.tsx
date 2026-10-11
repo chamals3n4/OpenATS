@@ -31,6 +31,8 @@ import { useUserIntegrationStatus } from "@/hooks/queries/use-integrations";
 import { useAllocatedSlots } from "@/hooks/queries/use-interviews";
 import { useUsers } from "@/hooks/queries/use-user";
 import {
+  DEFAULT_DURATION_MINUTES,
+  DURATION_OPTIONS,
   currentTime,
   hasScheduleErrors,
   isFutureSlot,
@@ -38,7 +40,9 @@ import {
   validateSchedule,
   type EventType,
   type LinkMode,
+  type TimeMode,
 } from "../lib/scheduler-utils";
+import { formatDuration } from "../../templates/lib/template-form-utils";
 
 interface Template {
   id: number;
@@ -106,6 +110,9 @@ function SchedulerForm({
   const [location, setLocation] = useState("");
   const [bodyText, setBodyText] = useState("");
   const [slots, setSlots] = useState<string[]>([""]);
+  const [timeMode, setTimeMode] = useState<TimeMode>("candidate");
+  const [fixedTime, setFixedTime] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState(DEFAULT_DURATION_MINUTES);
   const [saving, setSaving] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
   // "Now" for judging whether a time has passed; refreshed whenever the form is submitted.
@@ -127,7 +134,7 @@ function SchedulerForm({
     return !Number.isNaN(t) && allocatedTimes.has(t);
   };
 
-  const scheduleInput = { templateId, interviewerId, bodyText, slots, eventType, linkMode, meetingUrl };
+  const scheduleInput = { templateId, interviewerId, timeMode, slots, fixedTime, eventType, linkMode, meetingUrl };
   const errors = validateSchedule(scheduleInput, now);
 
   const templateItems = eventTemplates.map((t) => ({ value: String(t.id), label: t.name }));
@@ -142,16 +149,13 @@ function SchedulerForm({
     const template = eventTemplates.find((t) => String(t.id) === value);
     if (!template) return;
 
-    const config = parseTemplate(template, now);
+    const config = parseTemplate(template);
     setEventType(config.eventType);
     setLinkChoice(config.autoGenerate ? "auto" : "manual");
     setMeetingUrl(config.meetingUrl);
     setLocation(config.location);
-    setSlots(config.timeSlots.length > 0 ? config.timeSlots : [""]);
+    setDurationMinutes(config.durationMinutes);
     setBodyText(config.bodyText);
-    if (config.skippedPastSlots > 0) {
-      toast.info("Some of this template's times have already passed. Add new ones.");
-    }
   };
 
   const setSlot = (index: number, value: string) =>
@@ -167,7 +171,8 @@ function SchedulerForm({
     }
 
     const autoGenerate = eventType === "virtual" && linkMode === "auto";
-    const usable = slots.filter((s) => s && isFutureSlot(s, submittedAt));
+    const fixed = timeMode === "fixed";
+    const usable = fixed ? [] : slots.filter((s) => s && isFutureSlot(s, submittedAt));
 
     setSaving(true);
     try {
@@ -180,15 +185,21 @@ function SchedulerForm({
           meetingProvider: autoGenerate ? "google_meet" : undefined,
           interviewerId,
           location: eventType === "onsite" ? location.trim() || null : null,
-          bodyText: bodyText || null,
+          bodyText: bodyText.trim() || null,
           stageId: pipelineStageId,
+          durationMinutes,
+          ...(fixed ? { scheduledAt: new Date(fixedTime).toISOString() } : {}),
           timeSlots: usable.map((s) => ({
             datetime: new Date(s).toISOString(),
             selected: false,
           })),
         }),
       });
-      toast.success(`Interview scheduled. ${candidateName} has been emailed.`);
+      toast.success(
+        fixed
+          ? `Interview booked. ${candidateName} has been sent the details.`
+          : `Interview scheduled. ${candidateName} has been emailed to pick a time.`,
+      );
       onSuccess?.();
       onClose();
     } catch (err: unknown) {
@@ -208,8 +219,8 @@ function SchedulerForm({
           Schedule interview
         </DialogTitle>
         <DialogDescription className="text-sm text-slate-600 dark:text-neutral-400">
-          Invite {candidateName} to choose a time. They get an email with the
-          options you add here.
+          Let {candidateName} choose from times you offer, or set the time
+          yourself. They are emailed either way.
         </DialogDescription>
       </DialogHeader>
 
@@ -226,7 +237,7 @@ function SchedulerForm({
                 ? "No event templates yet. Create one under Templates."
                 : templateId
                   ? undefined
-                  : "The template sets the format, times and message to start from."
+                  : "The template sets the format, length and message to start from."
             }
           >
             <Select
@@ -279,6 +290,28 @@ function SchedulerForm({
             </Select>
           </FormField>
 
+          {templateId && (
+            <FormField label="Length" htmlFor="sched-duration">
+              <Select
+                value={String(durationMinutes)}
+                onValueChange={(v) => v && setDurationMinutes(Number(v))}
+              >
+                <SelectTrigger id="sched-duration" className={selectTriggerCls}>
+                  <SelectValue>{formatDuration(durationMinutes)}</SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  {[...new Set([...DURATION_OPTIONS, durationMinutes])]
+                    .sort((a, b) => a - b)
+                    .map((minutes) => (
+                      <SelectItem key={minutes} value={String(minutes)}>
+                        {formatDuration(minutes)}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
+            </FormField>
+          )}
+
           {templateId && eventType === "virtual" && (
             <div className="space-y-2.5">
               <Label className="text-sm font-medium text-slate-800 dark:text-neutral-200">
@@ -306,7 +339,7 @@ function SchedulerForm({
                     </span>
                     <span className="block text-slate-500 dark:text-neutral-400">
                       {googleConnected
-                        ? "Made automatically once the candidate picks a time."
+                        ? "Made automatically once the time is set."
                         : "Choose an interviewer who has connected Google Meet to use this."}
                     </span>
                   </span>
@@ -355,15 +388,70 @@ function SchedulerForm({
         <div>
         {!templateId && (
           <p className="m-6 rounded-md border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-neutral-700 dark:text-neutral-400">
-            Choose an event template to set the times and the message.
+            Choose an event template to set the time and the message.
           </p>
         )}
         {templateId && (
           <>
-            <Section
-              title="Times to offer"
-              description="Add a few times. The candidate picks the one that suits them."
-            >
+            <Section title="When">
+              <RadioGroup
+                aria-label="Who chooses the time"
+                value={timeMode}
+                onValueChange={(v) => setTimeMode(v as TimeMode)}
+                className="gap-2.5"
+              >
+                <label className="flex cursor-pointer items-start gap-3 text-sm">
+                  <RadioGroupItem variant="theme" value="candidate" className="mt-0.5" />
+                  <span>
+                    <span className="font-medium text-slate-900 dark:text-neutral-100">
+                      Let the candidate choose
+                    </span>
+                    <span className="block text-slate-500 dark:text-neutral-400">
+                      Offer a few times. They pick the one that suits them.
+                    </span>
+                  </span>
+                </label>
+                <label className="flex cursor-pointer items-start gap-3 text-sm">
+                  <RadioGroupItem variant="theme" value="fixed" className="mt-0.5" />
+                  <span>
+                    <span className="font-medium text-slate-900 dark:text-neutral-100">
+                      Set the time myself
+                    </span>
+                    <span className="block text-slate-500 dark:text-neutral-400">
+                      For a time you have already agreed with them.
+                    </span>
+                  </span>
+                </label>
+              </RadioGroup>
+
+              {timeMode === "fixed" && (
+                <FormField label="Date and time" htmlFor="sched-fixed" required error={err("fixedTime")}>
+                  <div
+                    className={`flex items-center gap-2 rounded-md border px-2.5 py-1 ${
+                      err("fixedTime")
+                        ? "border-red-300 bg-red-50 dark:border-red-800 dark:bg-red-950/20"
+                        : isAllocated(fixedTime)
+                          ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/20"
+                          : "border-slate-300 bg-gray-100 dark:border-neutral-600 dark:bg-neutral-800"
+                    }`}
+                  >
+                    <DateTimePicker
+                      value={fixedTime}
+                      onChange={setFixedTime}
+                      className="h-9 min-w-0 flex-1 text-sm"
+                    />
+                    {isAllocated(fixedTime) && (
+                      <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+                        Already booked
+                      </span>
+                    )}
+                  </div>
+                </FormField>
+              )}
+
+              {timeMode === "candidate" && (
+              <>
+
               <div className="space-y-3">
                 {slots.map((slot, i) => {
                   const slotError = showErrors ? errors.slotErrors[i] : undefined;
@@ -425,14 +513,16 @@ function SchedulerForm({
                 <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2} />
                 Add another time
               </Button>
+              </>
+              )}
             </Section>
 
+            {timeMode === "candidate" && (
             <Section title="Message">
               <FormField
                 label="Email to the candidate"
                 htmlFor="sched-body"
-                required
-                error={err("body")}
+                hint="Leave it empty to send the automatic “Interview: pick a time” email as it is."
               >
                 <Textarea
                   id="sched-body"
@@ -444,6 +534,7 @@ function SchedulerForm({
                 />
               </FormField>
             </Section>
+            )}
           </>
         )}
         </div>
@@ -464,7 +555,7 @@ function SchedulerForm({
           className="h-9 gap-2 border-none bg-theme px-4 text-sm font-semibold text-white hover:bg-theme-hover"
         >
           {saving && <Spinner className="size-3.5" />}
-          {saving ? "Sending" : "Send to candidate"}
+          {saving ? "Sending" : timeMode === "fixed" ? "Book interview" : "Send to candidate"}
         </Button>
       </div>
     </>

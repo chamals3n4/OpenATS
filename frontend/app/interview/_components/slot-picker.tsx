@@ -90,7 +90,11 @@ export default function SlotPicker({ data, token, apiBase }: Props) {
         </h1>
 
         <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
-          {[data.jobTitle, data.eventType === "virtual" ? "Virtual" : "On-site"]
+          {[
+            data.jobTitle,
+            data.eventType === "virtual" ? "Virtual" : "On-site",
+            data.durationMinutes ? `${data.durationMinutes} minutes` : null,
+          ]
             .filter(Boolean)
             .join(" · ")}
         </p>

@@ -89,15 +89,16 @@ export function TemplateForm({
       bodyJson:
         templateType === "email"
           ? form.emailBodyHtml
-          : buildEventPayload(
-              nameValue.trim(),
-              form.eventTypeRadio,
-              form.meetingUrl,
-              form.autoGenerateMeet,
-              form.location,
-              form.eventDesc,
-              form.timeSlots,
-            ),
+          : buildEventPayload({
+              eventName: nameValue.trim(),
+              eventType: form.eventTypeRadio,
+              meetingUrl: form.meetingUrl,
+              autoGenerateMeet: form.autoGenerateMeet,
+              location: form.location,
+              description: form.eventDesc,
+              durationMinutes: form.durationMinutes,
+              message: form.message,
+            }),
     };
     const callbacks = {
       onSuccess: () => {
@@ -202,10 +203,10 @@ export function TemplateForm({
                 onAutoGenerateMeetChange={form.setAutoGenerateMeet}
                 location={form.location}
                 onLocationChange={form.setLocation}
-                timeSlots={form.timeSlots}
-                onAddSlot={form.addSlot}
-                onUpdateSlot={form.updateSlot}
-                onRemoveSlot={form.removeSlot}
+                durationMinutes={form.durationMinutes}
+                onDurationChange={form.setDurationMinutes}
+                message={form.message}
+                onMessageChange={form.setMessage}
                 readOnly={readOnly}
               />
             )}
@@ -226,7 +227,8 @@ export function TemplateForm({
               meetingUrl={form.meetingUrl}
               autoGenerateMeet={form.autoGenerateMeet}
               location={form.location}
-              slots={form.timeSlots}
+              durationMinutes={form.durationMinutes}
+              message={form.message}
             />
           )}
         </div>

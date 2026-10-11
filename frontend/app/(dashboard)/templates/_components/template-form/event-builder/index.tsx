@@ -4,12 +4,18 @@ import { Video01Icon, Location01Icon } from "@hugeicons/core-free-icons";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { TEXTAREA_CLASS, INPUT_CLASS } from "../../../lib/template-form-constants";
-import type { TimeSlot } from "../../../lib/template-form-types";
+import { DURATION_OPTIONS, formatDuration } from "../../../lib/template-form-utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { FormField, FormSection } from "../form-field";
 import { OptionCards, type CardOption } from "./option-cards";
 import { MeetingUrlField } from "./meeting-url-field";
 import { LocationField } from "./location-field";
-import { TimeSlotsEditor } from "./time-slots-editor";
 
 type EventType = "virtual" | "onsite";
 
@@ -32,10 +38,10 @@ interface EventBuilderProps {
   onAutoGenerateMeetChange: (value: boolean) => void;
   location: string;
   onLocationChange: (value: string) => void;
-  timeSlots: TimeSlot[];
-  onAddSlot: () => void;
-  onUpdateSlot: (index: number, datetime: string) => void;
-  onRemoveSlot: (index: number) => void;
+  durationMinutes: number;
+  onDurationChange: (minutes: number) => void;
+  message: string;
+  onMessageChange: (value: string) => void;
   readOnly?: boolean;
 }
 
@@ -53,10 +59,10 @@ export function EventBuilder({
   onAutoGenerateMeetChange,
   location,
   onLocationChange,
-  timeSlots,
-  onAddSlot,
-  onUpdateSlot,
-  onRemoveSlot,
+  durationMinutes,
+  onDurationChange,
+  message,
+  onMessageChange,
   readOnly = false,
 }: EventBuilderProps) {
   return (
@@ -77,6 +83,28 @@ export function EventBuilder({
             aria-invalid={!!nameError || undefined}
             className={INPUT_CLASS}
           />
+        </FormField>
+
+        <FormField label="Length" htmlFor="template-duration">
+          <Select
+            value={String(durationMinutes)}
+            onValueChange={(v) => v && onDurationChange(Number(v))}
+            disabled={readOnly}
+          >
+            <SelectTrigger
+              id="template-duration"
+              className="h-9! w-44 cursor-pointer rounded-md border border-slate-300 bg-gray-100 px-3 text-sm text-slate-900 shadow-none focus-visible:ring-0 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100"
+            >
+              <SelectValue>{formatDuration(durationMinutes)}</SelectValue>
+            </SelectTrigger>
+            <SelectContent>
+              {DURATION_OPTIONS.map((minutes) => (
+                <SelectItem key={minutes} value={String(minutes)}>
+                  {formatDuration(minutes)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         </FormField>
 
         <FormField
@@ -119,14 +147,26 @@ export function EventBuilder({
         )}
       </FormSection>
 
-      <FormSection title="Time slots" description="The times you offer. Each candidate picks one.">
-        <TimeSlotsEditor
-          slots={timeSlots}
-          onAdd={onAddSlot}
-          onUpdate={onUpdateSlot}
-          onRemove={onRemoveSlot}
-          readOnly={readOnly}
-        />
+      <FormSection
+        title="Message to the candidate"
+        description="Sent in the email that asks them to pick a time. You can change it for each interview."
+      >
+        <FormField
+          label="Message"
+          htmlFor="template-message"
+          hint="Leave it empty to use the wording of the automatic “Interview: pick a time” email."
+          optional
+        >
+          <Textarea
+            id="template-message"
+            value={message}
+            onChange={(e) => onMessageChange(e.target.value)}
+            readOnly={readOnly}
+            rows={4}
+            placeholder="e.g. We enjoyed your application and would like to talk through your experience."
+            className={TEXTAREA_CLASS}
+          />
+        </FormField>
       </FormSection>
     </div>
   );

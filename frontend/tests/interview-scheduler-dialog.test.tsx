@@ -41,14 +41,14 @@ const future = (days: number) => {
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}T${p(d.getHours())}:00`;
 };
 
-const template = (config: Record<string, unknown>, body = "Hi, please pick a time.") => ({
+const template = (config: Record<string, unknown>) => ({
   id: 3,
   name: "Technical Interview - Round 01",
   type: "event",
-  bodyJson: [{ content: JSON.stringify(config) }, { content: body }],
+  bodyJson: [{ content: JSON.stringify({ message: "Hi, please pick a time.", durationMinutes: 45, ...config }) }],
 });
 
-const open = (templates = [template({ eventType: "virtual", meetingUrl: "https://meet.google.com/abc", timeSlots: [future(3)] })]) => {
+const open = (templates = [template({ eventType: "virtual", meetingUrl: "https://meet.google.com/abc" })]) => {
   const onSuccess = vi.fn();
   const onOpenChange = vi.fn();
   render(
@@ -88,7 +88,7 @@ describe("InterviewSchedulerDialog", () => {
     open();
     const dialog = screen.getByRole("dialog");
     expect(within(dialog).getByText("Schedule interview")).toBeTruthy();
-    expect(within(dialog).getByText(/Invite Indika Ranasinghe to choose a time/)).toBeTruthy();
+    expect(within(dialog).getByText(/Let Indika Ranasinghe choose from times you offer/)).toBeTruthy();
     expect(dialog.textContent).not.toContain("—");
   });
 
@@ -96,16 +96,17 @@ describe("InterviewSchedulerDialog", () => {
     open();
     expect(screen.getByRole("combobox", { name: /Event template/ })).toBeTruthy();
     expect(screen.getByRole("combobox", { name: /Interviewer/ })).toBeTruthy();
-    expect(screen.queryByText("Times to offer")).toBeNull();
+    expect(screen.queryByText("When")).toBeNull();
     expect((screen.getByRole("button", { name: "Send to candidate" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
-  it("fills in the format, link, times and message from the template", async () => {
+  it("fills in the format, link, length and message from the template, and leaves the times to you", async () => {
     open();
     await choose(/Event template/, "Technical Interview - Round 01");
-    expect(screen.getByText("Times to offer")).toBeTruthy();
+    expect(screen.getByText("When")).toBeTruthy();
     expect((screen.getByLabelText(/^Link/) as HTMLInputElement).value).toBe("https://meet.google.com/abc");
-    expect((screen.getByLabelText("Time") as HTMLInputElement).value).toBe(future(3));
+    expect(screen.getByRole("combobox", { name: /Length/ }).textContent).toContain("45 minutes");
+    expect((screen.getByLabelText("Time") as HTMLInputElement).value).toBe("");
     expect((screen.getByLabelText(/Email to the candidate/) as HTMLTextAreaElement).value).toBe("Hi, please pick a time.");
   });
 
@@ -120,12 +121,11 @@ describe("InterviewSchedulerDialog", () => {
   it("explains what is missing instead of failing silently", async () => {
     open();
     await choose(/Event template/, "Technical Interview - Round 01");
-    fireEvent.change(screen.getByLabelText(/Email to the candidate/), { target: { value: "" } });
     fireEvent.click(screen.getByRole("button", { name: "Send to candidate" }));
 
     expect(serverFetch).not.toHaveBeenCalled();
     expect(screen.getByText("Choose who will run the interview.")).toBeTruthy();
-    expect(screen.getByText("Write the message the candidate will receive.")).toBeTruthy();
+    expect(screen.getByText("Add at least one time the candidate can choose.")).toBeTruthy();
     expect(toast.error).toHaveBeenCalled();
   });
 
@@ -146,11 +146,12 @@ describe("InterviewSchedulerDialog", () => {
     expect(screen.getAllByLabelText("Time")).toHaveLength(1);
   });
 
-  it("sends the same payload as before once everything is filled in", async () => {
+  it("sends the times, the length and the message once everything is filled in", async () => {
     serverFetch.mockResolvedValue({});
     const { onSuccess, onOpenChange } = open();
     await choose(/Event template/, "Technical Interview - Round 01");
     await choose(/Interviewer/, "Bhanuka Harischandra");
+    fireEvent.change(screen.getByLabelText("Time"), { target: { value: future(3) } });
     fireEvent.click(screen.getByRole("button", { name: "Send to candidate" }));
 
     await waitFor(() => expect(serverFetch).toHaveBeenCalled());
@@ -165,7 +166,9 @@ describe("InterviewSchedulerDialog", () => {
       location: null,
       stageId: 9,
       bodyText: "Hi, please pick a time.",
+      durationMinutes: 45,
     });
+    expect(body).not.toHaveProperty("scheduledAt");
     expect(body.timeSlots).toEqual([{ datetime: new Date(future(3)).toISOString(), selected: false }]);
     await waitFor(() => expect(onSuccess).toHaveBeenCalled());
     expect(onOpenChange).toHaveBeenCalledWith(false);
@@ -173,16 +176,36 @@ describe("InterviewSchedulerDialog", () => {
 
   it("shows a location field for an on-site interview and sends no link", async () => {
     serverFetch.mockResolvedValue({});
-    open([template({ eventType: "onsite", location: "HQ, 3rd floor", timeSlots: [future(2)] })]);
+    open([template({ eventType: "onsite", location: "HQ, 3rd floor" })]);
     await choose(/Event template/, "Technical Interview - Round 01");
     expect((screen.getByLabelText("Location") as HTMLInputElement).value).toBe("HQ, 3rd floor");
-    expect(screen.queryByRole("radio")).toBeNull();
+    expect(screen.queryByRole("radio", { name: /Google Meet/ })).toBeNull();
 
     await choose(/Interviewer/, "Chamal Senarathna");
+    fireEvent.change(screen.getByLabelText("Time"), { target: { value: future(2) } });
     fireEvent.click(screen.getByRole("button", { name: "Send to candidate" }));
     await waitFor(() => expect(serverFetch).toHaveBeenCalled());
     const body = JSON.parse(serverFetch.mock.calls[0][1].body);
     expect(body).toMatchObject({ eventType: "onsite", meetingUrl: null, location: "HQ, 3rd floor" });
+  });
+
+  it("books a time you set yourself, with no slots and no message to write", async () => {
+    serverFetch.mockResolvedValue({});
+    open();
+    await choose(/Event template/, "Technical Interview - Round 01");
+    await choose(/Interviewer/, "Bhanuka Harischandra");
+    fireEvent.click(screen.getByRole("radio", { name: /Set the time myself/ }));
+
+    expect(screen.queryByLabelText(/Email to the candidate/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Book interview" }));
+    expect(screen.getByText("Choose the date and time.")).toBeTruthy();
+
+    fireEvent.change(screen.getByLabelText("Time"), { target: { value: future(5) } });
+    fireEvent.click(screen.getByRole("button", { name: "Book interview" }));
+    await waitFor(() => expect(serverFetch).toHaveBeenCalled());
+    const body = JSON.parse(serverFetch.mock.calls[0][1].body);
+    expect(body.scheduledAt).toBe(new Date(future(5)).toISOString());
+    expect(body.timeSlots).toEqual([]);
   });
 
   it("starts from a blank form each time it opens", async () => {
@@ -193,7 +216,7 @@ describe("InterviewSchedulerDialog", () => {
     await choose(/Event template/, "Technical Interview - Round 01");
     unmount();
     open();
-    expect(screen.queryByText("Times to offer")).toBeNull();
+    expect(screen.queryByText("When")).toBeNull();
   });
 
   it("says so when there are no event templates", () => {

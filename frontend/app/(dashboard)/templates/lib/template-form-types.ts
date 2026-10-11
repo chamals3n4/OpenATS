@@ -1,28 +1,15 @@
 export type TemplateType = "email" | "event";
 
-export interface TimeSlot {
-  datetime: string;
-}
-
+/** What an event template saves. The times are chosen later, when an interview is scheduled. */
 export interface EventConfig {
   eventName: string;
   eventType: "virtual" | "onsite";
   meetingUrl: string | null;
   autoGenerateMeet: boolean;
   location: string | null;
+  /** A note for the hiring team. */
   description: string;
-  timeSlots: string[];
-}
-
-export interface TemplateFormState {
-  name: string;
-  subject: string;
-  emailBodyHtml: string;
-  eventName: string;
-  eventDesc: string;
-  eventTypeRadio: "virtual" | "onsite";
-  meetingUrl: string;
-  autoGenerateMeet: boolean;
-  location: string;
-  timeSlots: TimeSlot[];
+  durationMinutes: number;
+  /** The message the candidate is emailed. Empty means the automatic email's wording. */
+  message: string;
 }

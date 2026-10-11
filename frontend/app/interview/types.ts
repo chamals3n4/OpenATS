@@ -11,6 +11,7 @@ export interface InterviewData {
   meetingUrl: string | null;
   location: string | null;
   bodyText: string | null;
+  durationMinutes?: number | null;
   status: string;
   jobTitle: string;
   candidateName: string;

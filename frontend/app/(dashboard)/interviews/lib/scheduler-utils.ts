@@ -10,15 +10,19 @@ export function isFutureSlot(datetime: string, now: number): boolean {
   return !Number.isNaN(t) && t > now;
 }
 
+export const DEFAULT_DURATION_MINUTES = 60;
+export const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120];
+
+/** Who decides the time: the candidate, from slots offered, or the hiring team. */
+export type TimeMode = "candidate" | "fixed";
+
 export interface TemplateConfig {
   eventType: EventType;
   meetingUrl: string;
   autoGenerate: boolean;
   location: string;
-  /** Time slots from the template that are still in the future. */
-  timeSlots: string[];
-  /** How many of the template's slots had already passed and were dropped. */
-  skippedPastSlots: number;
+  durationMinutes: number;
+  /** The message to the candidate. Empty when the template leaves it to the automatic email. */
   bodyText: string;
 }
 
@@ -28,10 +32,11 @@ interface TemplateLike {
 }
 
 /**
- * An event template stores its settings as a JSON text block and its email text as another
- * block. Read both, dropping time slots that have already passed.
+ * An event template stores its settings as one JSON text block. Templates saved before
+ * interviews had a length or a message simply lack those, and older ones may carry dates,
+ * which are ignored: times are chosen for each interview.
  */
-export function parseTemplate(template: TemplateLike, now: number): TemplateConfig {
+export function parseTemplate(template: TemplateLike): TemplateConfig {
   const blocks = (Array.isArray(template.bodyJson) ? template.bodyJson : []) as Array<{
     content?: string;
   }>;
@@ -46,26 +51,29 @@ export function parseTemplate(template: TemplateLike, now: number): TemplateConf
     }
   })();
 
-  const allSlots = Array.isArray(config.timeSlots) ? (config.timeSlots as string[]) : [];
-  const future = allSlots.filter((dt) => isFutureSlot(dt, now));
+  const duration = Number(config.durationMinutes);
 
   return {
     eventType: config.eventType === "onsite" ? "onsite" : "virtual",
     meetingUrl: typeof config.meetingUrl === "string" ? config.meetingUrl : "",
     autoGenerate: config.autoGenerateMeet === true,
     location: typeof config.location === "string" ? config.location : "",
-    timeSlots: future,
-    skippedPastSlots: allSlots.length - future.length,
-    bodyText: blocks.find((b) => b.content && !b.content.startsWith("{"))?.content ?? "",
+    durationMinutes: Number.isInteger(duration) && duration > 0 ? duration : DEFAULT_DURATION_MINUTES,
+    bodyText:
+      typeof config.message === "string" && config.message
+        ? config.message
+        : (blocks.find((b) => b.content && !b.content.startsWith("{"))?.content ?? ""),
   };
 }
 
 export interface ScheduleInput {
   templateId: string;
   interviewerId: number | null;
-  bodyText: string;
-  /** Local "YYYY-MM-DDTHH:mm" strings; blank rows are ignored. */
+  timeMode: TimeMode;
+  /** Local "YYYY-MM-DDTHH:mm" strings; blank rows are ignored. Used when the candidate picks. */
   slots: string[];
+  /** The one time, when the hiring team sets it. */
+  fixedTime: string;
   eventType: EventType;
   linkMode: LinkMode;
   meetingUrl: string;
@@ -77,8 +85,8 @@ export interface ScheduleErrors {
   slots?: string;
   /** Problems with one specific row, keyed by its index. */
   slotErrors: Record<number, string>;
+  fixedTime?: string;
   meetingUrl?: string;
-  body?: string;
 }
 
 function isWebUrl(value: string) {
@@ -96,24 +104,29 @@ export function validateSchedule(input: ScheduleInput, now: number): ScheduleErr
   if (!input.templateId) errors.template = "Choose an event template.";
   if (!input.interviewerId) errors.interviewer = "Choose who will run the interview.";
 
-  const seen = new Set<number>();
-  let usable = 0;
-  input.slots.forEach((slot, i) => {
-    if (!slot) return;
-    const t = new Date(slot).getTime();
-    if (Number.isNaN(t) || t <= now) {
-      errors.slotErrors[i] = "This time has already passed.";
-    } else if (seen.has(t)) {
-      errors.slotErrors[i] = "This time is listed twice.";
-    } else {
-      seen.add(t);
-      usable += 1;
+  if (input.timeMode === "fixed") {
+    if (!input.fixedTime) errors.fixedTime = "Choose the date and time.";
+    else if (!isFutureSlot(input.fixedTime, now)) errors.fixedTime = "This time has already passed.";
+  } else {
+    const seen = new Set<number>();
+    let usable = 0;
+    input.slots.forEach((slot, i) => {
+      if (!slot) return;
+      const t = new Date(slot).getTime();
+      if (Number.isNaN(t) || t <= now) {
+        errors.slotErrors[i] = "This time has already passed.";
+      } else if (seen.has(t)) {
+        errors.slotErrors[i] = "This time is listed twice.";
+      } else {
+        seen.add(t);
+        usable += 1;
+      }
+    });
+    if (usable === 0 && Object.keys(errors.slotErrors).length === 0) {
+      errors.slots = "Add at least one time the candidate can choose.";
+    } else if (usable === 0) {
+      errors.slots = "Add at least one time that is still in the future.";
     }
-  });
-  if (usable === 0 && Object.keys(errors.slotErrors).length === 0) {
-    errors.slots = "Add at least one time the candidate can choose.";
-  } else if (usable === 0) {
-    errors.slots = "Add at least one time that is still in the future.";
   }
 
   if (input.eventType === "virtual" && input.linkMode === "manual") {
@@ -121,8 +134,6 @@ export function validateSchedule(input: ScheduleInput, now: number): ScheduleErr
     if (!url) errors.meetingUrl = "Add the meeting link.";
     else if (!isWebUrl(url)) errors.meetingUrl = "Use a full link that starts with https://";
   }
-
-  if (!input.bodyText.trim()) errors.body = "Write the message the candidate will receive.";
 
   return errors;
 }
@@ -133,7 +144,7 @@ export function hasScheduleErrors(errors: ScheduleErrors) {
       errors.interviewer ||
       errors.slots ||
       errors.meetingUrl ||
-      errors.body ||
+      errors.fixedTime ||
       Object.keys(errors.slotErrors).length > 0,
   );
 }

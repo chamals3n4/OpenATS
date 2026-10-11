@@ -46,3 +46,26 @@ describe("expensiveLimiter", () => {
     expect(res.headers["x-ratelimit-limit"]).toBeUndefined();
   });
 });
+
+import app from "../../src/app";
+
+describe("assessment limits", () => {
+  const post = (path: string) => request(app).post(`/public/assessment/${path}`).send({});
+
+  it("lets a candidate save far more than 30 answers, since one is saved on every pick", async () => {
+    const statuses = new Set<number>();
+    for (let i = 0; i < 45; i++) {
+      statuses.add((await post("limit-test-token/answer")).status);
+    }
+    // The link does not exist, so each one is refused for that reason, never for being too many.
+    expect(statuses.has(429)).toBe(false);
+  });
+
+  it("keeps submitting possible after many answer saves, and counts each link on its own", async () => {
+    expect((await post("limit-test-token/complete")).status).not.toBe(429);
+
+    for (let i = 0; i < 30; i++) await post("busy-token/complete");
+    expect((await post("busy-token/complete")).status).toBe(429);
+    expect((await post("another-token/complete")).status).not.toBe(429);
+  });
+});

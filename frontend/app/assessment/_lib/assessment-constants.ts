@@ -1,19 +1,20 @@
-export const COLORS = {
-  DARK: "var(--assessment-dark)",
-  LIGHT_BG: "var(--assessment-bg)",
-  WHITE: "var(--assessment-white)",
-  BORDER: "var(--assessment-border)",
-  TEXT_MAIN: "var(--assessment-text-main)",
-  TEXT_MUTED: "var(--assessment-text-muted)",
-  TEXT_LIGHT: "var(--assessment-text-light)",
-  EMERALD: "#22c55e",
-  SELECTED_BG: "var(--assessment-selected-bg)",
-};
+/** Below this many seconds the clock turns red. */
+export const LOW_TIME_SECONDS = 120;
 
 export function formatTime(secs: number): string {
-  const m = Math.floor(secs / 60)
+  const safe = Math.max(0, secs);
+  const m = Math.floor(safe / 60)
     .toString()
     .padStart(2, "0");
-  const s = (secs % 60).toString().padStart(2, "0");
+  const s = (safe % 60).toString().padStart(2, "0");
   return `${m}:${s}`;
+}
+
+/** "45 minutes", "1 hour", "1 hour 30 minutes". */
+export function formatDuration(minutes: number): string {
+  const hours = Math.floor(minutes / 60);
+  const rest = minutes % 60;
+  const h = hours > 0 ? `${hours} hour${hours === 1 ? "" : "s"}` : "";
+  const m = rest > 0 || hours === 0 ? `${rest} minute${rest === 1 ? "" : "s"}` : "";
+  return [h, m].filter(Boolean).join(" ");
 }

@@ -83,6 +83,32 @@ const publicWriteLimiter = rateLimit({
   message: { error: "Too many requests. Please try again later." },
 });
 
+/**
+ * Assessments are limited per link, not per IP address, so candidates sharing an office
+ * network do not use up each other's allowance. Saving answers has its own, larger budget:
+ * an answer is saved each time one is picked, and those saves must never be able to use up
+ * the requests needed to start or to submit.
+ */
+const assessmentKey = (req: Request) => `assessment:${String(req.params.token ?? "")}`;
+
+const assessmentAnswerLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: assessmentKey,
+  message: { error: "Too many requests. Please try again later." },
+});
+
+const assessmentActionLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: assessmentKey,
+  message: { error: "Too many requests. Please try again later." },
+});
+
 const publicReadLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
@@ -106,15 +132,15 @@ router.post(
 
 // assessments for candidates ( token based)
 router.get("/assessment/:token", publicReadLimiter, getAssessmentForCandidate);
-router.post("/assessment/:token/start", publicWriteLimiter, startAssessment);
+router.post("/assessment/:token/start", assessmentActionLimiter, startAssessment);
 router.post(
   "/assessment/:token/answer",
-  publicWriteLimiter,
+  assessmentAnswerLimiter,
   submitAssessmentAnswer,
 );
 router.post(
   "/assessment/:token/complete",
-  publicWriteLimiter,
+  assessmentActionLimiter,
   completeAssessment,
 );
 

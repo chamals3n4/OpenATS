@@ -1,114 +1,31 @@
 "use client";
 
-import { COLORS } from "../../_lib/assessment-constants";
-import { BigCheckIcon } from "../icons/assessment-icons";
-import type { AttemptData, ScoreResult } from "../../_lib/assessment-types";
+import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
+import type { AttemptData } from "../../_lib/assessment-types";
+import { MessageScreen } from "./message-screen";
 
 interface SubmittedScreenProps {
   attempt: AttemptData | null;
-  scoreResult: ScoreResult | null;
   total: number;
   answered: number;
 }
 
-export function SubmittedScreen({
-  attempt,
-  total,
-  answered,
-}: SubmittedScreenProps) {
+export function SubmittedScreen({ attempt, total, answered }: SubmittedScreenProps) {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        backgroundColor: COLORS.LIGHT_BG,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        padding: "32px 16px",
-      }}
-    >
-      <div
-        style={{
-          width: "100%",
-          maxWidth: 520,
-          backgroundColor: COLORS.WHITE,
-          borderRadius: 16,
-          border: "1.5px solid #bbf7d0",
-          boxShadow: "0 1px 4px rgba(0,0,0,0.06)",
-          padding: "56px 48px",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 24,
-          textAlign: "center",
-        }}
-      >
-        <BigCheckIcon />
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          <h1
-            style={{
-              fontSize: 32,
-              fontWeight: 700,
-              color: COLORS.TEXT_MAIN,
-              margin: 0,
-            }}
-          >
-            Quiz Submitted!
-          </h1>
-          <p
-            style={{
-              fontSize: 14,
-              color: COLORS.TEXT_MUTED,
-              margin: 0,
-              lineHeight: 1.7,
-            }}
-          >
-            Thank you for completing{" "}
-            <strong>{attempt?.assessment.title}</strong>,{" "}
-            {attempt?.candidate.firstName}.
-          </p>
-        </div>
-        <div
-          style={{
-            width: "100%",
-            backgroundColor: "#f8fafc",
-            borderRadius: 12,
-            padding: "20px 32px",
-            display: "flex",
-            flexDirection: "column",
-            gap: 8,
-            textAlign: "center",
-          }}
-        >
-          <p
-            style={{
-              fontSize: 14,
-              fontWeight: 600,
-              color: COLORS.TEXT_MAIN,
-              margin: 0,
-            }}
-          >
-            Questions Answered:{" "}
-            <span style={{ color: COLORS.DARK }}>
-              {answered} of {total}
-            </span>
-          </p>
-          <p
-            style={{
-              fontSize: 13,
-              color: COLORS.TEXT_MUTED,
-              margin: 0,
-              lineHeight: 1.6,
-            }}
-          >
-            Your responses have been recorded. We will review your answers and
-            provide feedback soon.
-          </p>
-        </div>
-        <p style={{ fontSize: 13, color: COLORS.TEXT_LIGHT, margin: 0 }}>
-          A confirmation will be sent to {attempt?.candidate.email}
-        </p>
-      </div>
-    </div>
+    <MessageScreen icon={CheckmarkCircle02Icon} tone="success" title="Assessment submitted">
+      <p>
+        Thank you{attempt ? `, ${attempt.candidate.firstName}` : ""}. Your answers
+        {attempt ? ` for ${attempt.assessment.title}` : ""} have been received.
+      </p>
+      <p className="rounded-md border border-slate-300 px-4 py-3 text-slate-900 dark:border-neutral-700 dark:text-neutral-100">
+        You answered <span className="font-semibold">{answered}</span> of{" "}
+        <span className="font-semibold">{total}</span> question{total === 1 ? "" : "s"}.
+      </p>
+      <p>
+        The hiring team will review your result and contact you about the next steps.
+        {attempt && <> A confirmation has been sent to {attempt.candidate.email}.</>}
+      </p>
+      <p className="text-sm">You can close this page.</p>
+    </MessageScreen>
   );
 }

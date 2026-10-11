@@ -1,6 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { Alert02Icon, CheckmarkCircle02Icon, HourglassIcon } from "@hugeicons/core-free-icons";
+import { Spinner } from "@/components/ui/spinner";
 import {
   fetchAttempt,
   startAttempt,
@@ -8,18 +10,10 @@ import {
   completeAttempt,
 } from "./assessment-api";
 import { useAssessmentTimer } from "../hooks/use-assessment-timer";
-import { buildAnswerPayload } from "../_lib/assessment-utils";
-import type {
-  Screen,
-  AttemptData,
-  Answer,
-  ScoreResult,
-} from "../_lib/assessment-types";
-import { LoadingScreen } from "./screens/loading-screen";
-import { ErrorScreen } from "./screens/error-screen";
-import { ExpiredScreen } from "./screens/expired-screen";
-import { AlreadyCompletedScreen } from "./screens/already-completed-screen";
+import { buildAnswerPayload, countAnswered, restoreAnswers } from "../_lib/assessment-utils";
+import type { Screen, AttemptData, Answer } from "../_lib/assessment-types";
 import { IntroScreen } from "./screens/intro-screen";
+import { MessageScreen } from "./screens/message-screen";
 import { SubmittedScreen } from "./screens/submitted-screen";
 import { QuizScreen } from "./quiz/quiz-screen";
 
@@ -36,13 +30,15 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
   const [starting, setStarting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
+  const [saveFailed, setSaveFailed] = useState(false);
 
   useEffect(() => {
     if (!token) return;
     fetchAttempt(token)
       .then(({ data }) => {
         setAttempt(data);
+        // Carry on from what was already saved, for a reload or a second device.
+        setAnswers(restoreAnswers(data.assessment.questions, data.savedAnswers));
         if (data.status === "completed") {
           setScreen("already_completed");
         } else if (data.status === "started") {
@@ -65,6 +61,8 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
     setStarting(true);
     try {
       await startAttempt(token);
+      // The clock runs from this moment, which the timer reads from the attempt.
+      setAttempt((prev) => (prev ? { ...prev, status: "started", startedAt: new Date().toISOString() } : prev));
       setScreen("quiz");
     } catch (e: unknown) {
       setErrorMsg(e instanceof Error ? e.message : "Failed to start");
@@ -74,10 +72,17 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
     }
   };
 
+  /** Saves one answer. Resolves to whether it worked, and shows a notice while the latest save has failed. */
   const saveCurrentAnswer = useCallback(
     async (qId: number, answer: Answer) => {
-      const payload = buildAnswerPayload(qId, answer);
-      await saveAnswer(token, payload);
+      try {
+        await saveAnswer(token, buildAnswerPayload(qId, answer));
+        setSaveFailed(false);
+        return true;
+      } catch {
+        setSaveFailed(true);
+        return false;
+      }
     },
     [token],
   );
@@ -88,13 +93,8 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
     setSubmitError(null);
     try {
       const qs = attempt?.assessment.questions ?? [];
-      await Promise.all(
-        qs
-          .filter((q) => answers[q.id])
-          .map((q) => saveCurrentAnswer(q.id, answers[q.id]).catch(() => {})),
-      );
-      const res = await completeAttempt(token);
-      setScoreResult(res.data);
+      await Promise.all(qs.filter((q) => answers[q.id]).map((q) => saveCurrentAnswer(q.id, answers[q.id])));
+      await completeAttempt(token);
       setScreen("submitted");
     } catch (e: unknown) {
       setSubmitError(
@@ -110,24 +110,19 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
     void handleComplete();
   });
 
+  const saveShownQuestion = useCallback(async () => {
+    const q = attempt?.assessment.questions[currentQ];
+    if (q && answers[q.id]) await saveCurrentAnswer(q.id, answers[q.id]);
+  }, [attempt, currentQ, answers, saveCurrentAnswer]);
+
   const handleNavigate = useCallback(
     async (direction: "prev" | "next") => {
       if (!attempt) return;
-      const q = attempt.assessment.questions[currentQ];
-      if (q && answers[q.id]) {
-        await saveCurrentAnswer(q.id, answers[q.id]).catch(() => {});
-      }
-      if (direction === "next") {
-        if (currentQ < attempt.assessment.questions.length - 1) {
-          setCurrentQ((i) => i + 1);
-        } else {
-          await handleComplete();
-        }
-      } else {
-        if (currentQ > 0) setCurrentQ((i) => i - 1);
-      }
+      await saveShownQuestion();
+      const last = attempt.assessment.questions.length - 1;
+      setCurrentQ((i) => (direction === "next" ? Math.min(last, i + 1) : Math.max(0, i - 1)));
     },
-    [attempt, currentQ, answers, saveCurrentAnswer, handleComplete],
+    [attempt, saveShownQuestion],
   );
 
   const handleAnswerChange = useCallback(
@@ -139,25 +134,43 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
 
   const handleQuestionClick = useCallback(
     async (index: number) => {
-      if (!attempt) return;
-      const q = attempt.assessment.questions[currentQ];
-      if (q && answers[q.id]) {
-        await saveCurrentAnswer(q.id, answers[q.id]).catch(() => {});
-      }
+      await saveShownQuestion();
       setCurrentQ(index);
     },
-    [attempt, currentQ, answers, saveCurrentAnswer],
+    [saveShownQuestion],
   );
 
   switch (screen) {
     case "loading":
-      return <LoadingScreen />;
+      return (
+        <main className="flex min-h-dvh items-center justify-center bg-white dark:bg-neutral-950">
+          <div className="flex items-center gap-3 text-[15px] text-slate-600 dark:text-neutral-400">
+            <Spinner className="size-5 text-theme" />
+            Loading your assessment
+          </div>
+        </main>
+      );
     case "error":
-      return <ErrorScreen message={errorMsg} />;
+      return (
+        <MessageScreen icon={Alert02Icon} tone="error" title="This assessment could not be opened">
+          <p>{errorMsg || "Something went wrong."}</p>
+          <p>Check that you used the full link from your email. If it still does not work, contact the hiring team.</p>
+        </MessageScreen>
+      );
     case "expired":
-      return <ExpiredScreen />;
+      return (
+        <MessageScreen icon={HourglassIcon} tone="warning" title="This link has expired">
+          <p>The time allowed to take this assessment has passed.</p>
+          <p>If you still want to take it, contact the hiring team and ask for a new link.</p>
+        </MessageScreen>
+      );
     case "already_completed":
-      return <AlreadyCompletedScreen />;
+      return (
+        <MessageScreen icon={CheckmarkCircle02Icon} tone="success" title="You have already submitted this">
+          <p>Your answers were received, and an assessment can only be taken once.</p>
+          <p>The hiring team will contact you about the next steps.</p>
+        </MessageScreen>
+      );
     case "intro":
       return attempt ? (
         <IntroScreen attempt={attempt} starting={starting} onStart={handleStart} />
@@ -166,9 +179,8 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
       return (
         <SubmittedScreen
           attempt={attempt}
-          scoreResult={scoreResult}
           total={attempt?.assessment.questions.length ?? 0}
-          answered={Object.keys(answers).length}
+          answered={attempt ? countAnswered(attempt.assessment.questions, answers) : 0}
         />
       );
     case "quiz":
@@ -180,7 +192,9 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
           timeLeft={timeLeft}
           submitting={submitting}
           submitError={submitError}
+          saveFailed={saveFailed}
           onAnswerChange={handleAnswerChange}
+          onAnswerCommit={(questionId, answer) => void saveCurrentAnswer(questionId, answer)}
           onNavigate={handleNavigate}
           onQuestionClick={handleQuestionClick}
           onSubmit={handleComplete}

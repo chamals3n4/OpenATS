@@ -1,4 +1,4 @@
-import { eq, and, or, gt, lt, sql, desc } from "drizzle-orm";
+import { eq, and, or, gt, lt, sql, desc, inArray } from "drizzle-orm";
 import crypto from "node:crypto";
 import { db } from "../../db";
 import {
@@ -9,6 +9,8 @@ import {
   assessmentQuestions,
   assessmentQuestionOptions,
   candidates,
+  company,
+  jobs,
 } from "../../db/schema";
 
 import { DEFAULT_PASS_MARK, passMarkFor, scoringService } from "../scoring/scoring.service";
@@ -174,6 +176,8 @@ export const assessmentExecutionService = {
           lastName: candidates.lastName,
           email: candidates.email,
         },
+        // The position the candidate applied for, shown on their page.
+        jobTitle: jobs.title,
       })
       .from(candidateAssessmentAttempts)
       .innerJoin(
@@ -184,6 +188,7 @@ export const assessmentExecutionService = {
         candidates,
         eq(candidateAssessmentAttempts.candidateId, candidates.id),
       )
+      .leftJoin(jobs, eq(candidates.jobId, jobs.id))
       .where(eq(candidateAssessmentAttempts.token, token));
 
     if (!attempt) return null;
@@ -218,9 +223,48 @@ export const assessmentExecutionService = {
       }),
     );
 
+    // What the candidate has answered so far, so a reload or a second device carries on
+    // from the same place instead of showing every question as blank.
+    const answerRows = await db
+      .select({
+        id: candidateAssessmentAnswers.id,
+        questionId: candidateAssessmentAnswers.questionId,
+        answerText: candidateAssessmentAnswers.answerText,
+      })
+      .from(candidateAssessmentAnswers)
+      .where(eq(candidateAssessmentAnswers.attemptId, attempt.id));
+    const selectionRows =
+      answerRows.length > 0
+        ? await db
+            .select({
+              answerId: candidateAssessmentAnswerSelections.answerId,
+              optionId: candidateAssessmentAnswerSelections.optionId,
+            })
+            .from(candidateAssessmentAnswerSelections)
+            .where(
+              inArray(
+                candidateAssessmentAnswerSelections.answerId,
+                answerRows.map((a) => a.id),
+              ),
+            )
+        : [];
+    const savedAnswers = answerRows.map((a) => ({
+      questionId: a.questionId,
+      answerText: a.answerText,
+      optionIds: selectionRows.filter((s) => s.answerId === a.id).map((s) => s.optionId),
+    }));
+
+    // Who the assessment is from, shown at the top of the candidate's page.
+    const [companyRow] = await db
+      .select({ name: company.name })
+      .from(company)
+      .limit(1);
+
     return {
       ...attempt,
       assessment: { ...attempt.assessment, questions: questionsWithOptions },
+      savedAnswers,
+      company: companyRow ?? null,
     };
   },
 

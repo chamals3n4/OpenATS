@@ -13,7 +13,7 @@ import { cleanObject as clean } from "../../utils/object.utils";
 import { variableService } from "../template/variable.service";
 import { templateEngineService } from "../template/template-engine.service";
 import { offerEmail } from "../../shared/services/candidate-emails";
-import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
+import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { candidateActivityService } from "../candidate/candidate-activity.service";
 import { offerRepository } from "./offer.repository";
 
@@ -451,7 +451,7 @@ export const offerService = {
       kind: "offer",
       sentBy: actorId,
       ...offerEmail({
-        companyName: await getCompanyName(),
+        ...(await emailContext("offer")),
         candidateName: `${candidate.firstName} ${candidate.lastName}`,
         jobTitle: job.title,
         reviewUrl,

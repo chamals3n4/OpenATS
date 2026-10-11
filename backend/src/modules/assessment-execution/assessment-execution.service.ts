@@ -14,7 +14,7 @@ import {
 import { DEFAULT_PASS_MARK, passMarkFor, scoringService } from "../scoring/scoring.service";
 import { gradeChoiceQuestion, hasPassed, isWrittenType, scorePercentage } from "./grading";
 import { assessmentInviteEmail } from "../../shared/services/candidate-emails";
-import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
+import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -111,7 +111,7 @@ export const assessmentExecutionService = {
         const inviteUrl = `${frontendUrl}/assessment/${token}`;
 
         const email = assessmentInviteEmail({
-          companyName: await getCompanyName(),
+          ...(await emailContext("assessment_invite")),
           firstName: candidate.firstName,
           assessmentTitle: assessment.title,
           inviteUrl,

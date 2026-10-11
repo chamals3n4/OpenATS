@@ -104,3 +104,60 @@ describe("templateEngineService.missingVariables", () => {
     ).toEqual(["start_date"]);
   });
 });
+
+import {
+  SYSTEM_EMAILS,
+  SYSTEM_EMAIL_PURPOSES,
+  fillBodyHtml,
+  fillSubject,
+  unknownVariables,
+} from "../../src/shared/services/system-emails";
+
+describe("system email wording", () => {
+  it("only uses variables it declares, in every built-in email", () => {
+    for (const purpose of SYSTEM_EMAIL_PURPOSES) {
+      const { subject, bodyHtml } = SYSTEM_EMAILS[purpose];
+      expect(unknownVariables(purpose, subject, bodyHtml), purpose).toEqual([]);
+    }
+  });
+
+  it("names a variable an email has no value for", () => {
+    expect(unknownVariables("offer", "Hi {{candidate_name}}", "<p>{{ salary }}</p>")).toEqual(["salary"]);
+  });
+
+  it("escapes values in the message but not in the subject", () => {
+    const values = { candidate_name: "A <b>" };
+    expect(fillBodyHtml("<p>Hi {{candidate_name}}</p>", values)).toBe("<p>Hi A &lt;b&gt;</p>");
+    expect(fillSubject("Hi {{ candidate_name }}", values)).toBe("Hi A <b>");
+  });
+
+  it("uses a company's own wording and still adds the button", () => {
+    const { subject, html } = offerEmail({
+      companyName: "Acme",
+      content: { subject: "Good news, {{candidate_name}}", bodyHtml: "<p>Welcome to {{company_name}}.</p>" },
+      candidateName: "Ada",
+      jobTitle: "Engineer",
+      reviewUrl: "https://ats.example/offer/tok",
+    });
+    expect(subject).toBe("Good news, Ada");
+    expect(html).toContain("Welcome to Acme.");
+    expect(html).toContain('href="https://ats.example/offer/tok"');
+  });
+
+  it("lets a message typed while scheduling replace the usual one", () => {
+    const { html } = interviewSlotsEmail({
+      companyName: "Acme",
+      content: { subject: "x", bodyHtml: "<p>USUAL</p>" },
+      candidateName: "Ada",
+      eventName: "Technical interview",
+      jobTitle: "Engineer",
+      eventType: "virtual",
+      meetingUrl: null,
+      location: null,
+      bodyText: "Typed for Ada",
+      publicUrl: "https://ats.example/interview/abc",
+    });
+    expect(html).toContain("Typed for Ada");
+    expect(html).not.toContain("USUAL");
+  });
+});

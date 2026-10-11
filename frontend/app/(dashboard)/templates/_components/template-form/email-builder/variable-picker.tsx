@@ -17,12 +17,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
-import { OFFER_ONLY_VARS, VARS, SAMPLE } from "../../../lib/template-form-constants";
-
-const GROUPS = [
-  { heading: "Works in any email", vars: VARS.filter((v) => !OFFER_ONLY_VARS.has(v)) },
-  { heading: "Offer letters only", vars: VARS.filter((v) => OFFER_ONLY_VARS.has(v)) },
-];
+import { useVariableGroups } from "./variables-context";
 
 interface VariablePickerProps {
   onSelect: (variable: string) => void;
@@ -33,6 +28,7 @@ interface VariablePickerProps {
 
 export function VariablePicker({ onSelect, disabled, target }: VariablePickerProps) {
   const [open, setOpen] = useState(false);
+  const groups = useVariableGroups();
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -55,20 +51,20 @@ export function VariablePicker({ onSelect, disabled, target }: VariablePickerPro
           <CommandInput placeholder="Search variables..." />
           <CommandList>
             <CommandEmpty>No variables found.</CommandEmpty>
-            {GROUPS.map((group) => (
+            {groups.map((group) => (
               <CommandGroup key={group.heading} heading={group.heading}>
                 {group.vars.map((v) => (
                   <CommandItem
-                    key={v}
-                    value={v}
+                    key={v.name}
+                    value={v.name}
                     onSelect={() => {
-                      onSelect(v);
+                      onSelect(v.name);
                       setOpen(false);
                     }}
                   >
-                    <span className="font-mono text-xs">{`{{${v}}}`}</span>
+                    <span className="font-mono text-xs">{`{{${v.name}}}`}</span>
                     <span className="ml-auto max-w-32 truncate text-xs text-slate-500 dark:text-neutral-400">
-                      {SAMPLE[v]}
+                      {v.sample}
                     </span>
                   </CommandItem>
                 ))}

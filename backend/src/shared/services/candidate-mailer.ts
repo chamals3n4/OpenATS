@@ -2,6 +2,7 @@ import { db } from "../../db";
 import { company, emailMessages } from "../../db/schema";
 import logger from "../../utils/logger";
 import { mailService } from "./mail.service";
+import { getSystemEmailContent, type SystemEmailPurpose } from "./system-emails";
 
 /** What an email was for. Shown in the candidate's email history. */
 export type CandidateEmailKind =
@@ -39,6 +40,12 @@ export interface CandidateEmailResult {
 export async function getCompanyName(): Promise<string> {
   const [row] = await db.select({ name: company.name }).from(company).limit(1);
   return row?.name?.trim() || "The hiring team";
+}
+
+/** What a built-in email needs before it can be built: who it is from, and its wording. */
+export async function emailContext(purpose: SystemEmailPurpose) {
+  const [companyName, content] = await Promise.all([getCompanyName(), getSystemEmailContent(purpose)]);
+  return { companyName, content };
 }
 
 /**

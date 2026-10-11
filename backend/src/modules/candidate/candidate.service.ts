@@ -24,7 +24,7 @@ import { scoringService } from "../scoring/scoring.service";
 import { toAiSummary } from "./cv-analysis.service";
 import { rejectionService } from "../rejection/rejection.service";
 import { applicationReceivedEmail } from "../../shared/services/candidate-emails";
-import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
+import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { cleanObject as clean } from "../../utils/object.utils";
 import logger from "../../utils/logger";
 
@@ -302,7 +302,7 @@ async function sendApplicationConfirmationEmail(
     if (!job) return;
 
     const email = applicationReceivedEmail({
-      companyName: await getCompanyName(),
+      ...(await emailContext("application_received")),
       candidateName: `${candidate.firstName} ${candidate.lastName}`,
       jobTitle: job.title,
     });

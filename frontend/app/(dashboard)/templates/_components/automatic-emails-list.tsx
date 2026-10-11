@@ -1,0 +1,66 @@
+"use client";
+
+import Link from "next/link";
+import { RowEditButton } from "@/components/table/row-actions";
+import { Spinner } from "@/components/ui/spinner";
+import { useSystemEmails } from "@/hooks/queries/use-templates";
+import { useIsManager } from "@/hooks/use-role";
+
+/** The emails the app sends by itself. Each can be reworded, or left as it comes. */
+export function AutomaticEmailsList() {
+  const isManager = useIsManager();
+  const { data, isLoading, isError } = useSystemEmails();
+  const emails = data?.data ?? [];
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-16">
+        <Spinner className="size-5" />
+      </div>
+    );
+  }
+  if (isError) {
+    return (
+      <p role="alert" className="px-6 py-10 text-sm text-red-600 dark:text-red-400">
+        Could not load the automatic emails. Reload the page to try again.
+      </p>
+    );
+  }
+
+  return (
+    <div className="px-6 py-5">
+      <p className="max-w-2xl text-sm text-slate-600 dark:text-neutral-400">
+        OpenATS sends these to candidates by itself. You can change the subject and the message of each one.
+        Details such as dates, and buttons such as “Choose a time”, are always added for you.
+      </p>
+
+      <ul className="mt-4 divide-y divide-slate-200 rounded-md border border-slate-300 dark:divide-neutral-800 dark:border-neutral-700">
+        {emails.map((email) => (
+          <li key={email.purpose} className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3.5">
+            <div className="min-w-0 flex-1 basis-72">
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">{email.label}</h2>
+                <span
+                  className={`rounded-md border px-2 py-0.5 text-xs font-medium ${
+                    email.customised
+                      ? "border-theme/30 bg-theme/10 text-theme dark:text-primary"
+                      : "border-slate-300 bg-slate-100 text-slate-600 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-300"
+                  }`}
+                >
+                  {email.customised ? "Edited" : "Default"}
+                </span>
+              </div>
+              <p className="mt-0.5 text-sm text-slate-600 dark:text-neutral-400">{email.description}</p>
+            </div>
+            <RowEditButton
+              nativeButton={false}
+              render={<Link href={`/templates/automatic/${email.purpose}`} />}
+            >
+              {isManager ? "Edit" : "View"}
+            </RowEditButton>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}

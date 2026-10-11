@@ -27,7 +27,7 @@ import { and, eq, ne } from "drizzle-orm";
 import rateLimit from "express-rate-limit";
 import logger from "../utils/logger";
 import { interviewConfirmedEmail } from "../shared/services/candidate-emails";
-import { getCompanyName, sendCandidateEmail } from "../shared/services/candidate-mailer";
+import { emailContext, sendCandidateEmail } from "../shared/services/candidate-mailer";
 import { socketService } from "../shared/services/socket.service";
 import { integrationConnectionService } from "../shared/integrations/connection.service";
 import { getProviderClient } from "../shared/integrations/registry";
@@ -413,14 +413,14 @@ router.patch(
 
       if (candidate && iv.eventName) {
         const eventName = iv.eventName;
-        void getCompanyName()
-          .then((companyName) =>
+        void emailContext("interview_confirmed")
+          .then((context) =>
             sendCandidateEmail({
               candidateId: iv.candidateId,
               to: candidate.email,
               kind: "interview_confirmed",
               ...interviewConfirmedEmail({
-                companyName,
+                ...context,
                 candidateName: `${candidate.firstName} ${candidate.lastName}`,
                 eventName,
                 eventType: iv.eventType ?? "virtual",

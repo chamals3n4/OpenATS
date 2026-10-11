@@ -1,5 +1,6 @@
 "use client";
 
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar02Icon, Cancel01Icon, Mail01Icon } from "@hugeicons/core-free-icons";
@@ -20,6 +21,12 @@ interface TemplateFormHeaderProps {
   isPending: boolean;
   onSave: () => void;
   readOnly?: boolean;
+  /** Replaces the usual subtitle. */
+  subtitle?: string;
+  /** Extra buttons, shown before Save. */
+  actions?: ReactNode;
+  /** Where the close button goes. */
+  backHref?: string;
 }
 
 export function TemplateFormHeader({
@@ -29,10 +36,14 @@ export function TemplateFormHeader({
   isPending,
   onSave,
   readOnly = false,
+  subtitle: customSubtitle,
+  actions,
+  backHref = "/templates",
 }: TemplateFormHeaderProps) {
   const copy = TYPE_COPY[templateType];
   const title = mode === "new" ? copy.newTitle : name.trim() || "Untitled template";
-  const subtitle = mode === "new" ? "Saved templates can be reused for any candidate." : copy.kind;
+  const subtitle =
+    customSubtitle ?? (mode === "new" ? "Saved templates can be reused for any candidate." : copy.kind);
 
   return (
     <header className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-4 py-3 sm:px-6 dark:border-neutral-800 dark:bg-neutral-950">
@@ -45,12 +56,13 @@ export function TemplateFormHeader({
             {title}
           </h1>
           <p className="truncate text-[13px] text-slate-500 dark:text-neutral-400">
-            {readOnly ? `${copy.kind} · View only` : subtitle}
+            {readOnly ? `${customSubtitle ?? copy.kind} · View only` : subtitle}
           </p>
         </div>
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
+        {!readOnly && actions}
         {!readOnly && (
           <Button
             onClick={onSave}
@@ -63,7 +75,7 @@ export function TemplateFormHeader({
         )}
         <span aria-hidden className="mx-1 hidden h-6 w-px bg-slate-300 sm:block dark:bg-neutral-700" />
         <Link
-          href="/templates"
+          href={backHref}
           aria-label="Back to templates"
           title="Back to templates"
           className="flex size-9 items-center justify-center rounded-full text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"

@@ -1,15 +1,18 @@
 "use client";
 
 import { fillSampleText, renderPreviewHtml } from "../../../lib/template-form-utils";
-import { SAMPLE } from "../../../lib/template-form-constants";
+import { useVariableSamples } from "./variables-context";
 import { PreviewPane } from "../preview-pane";
 
 interface EmailPreviewPanelProps {
   subject: string;
   bodyHtml: string;
+  /** What the app adds after the message when it sends the email, if anything. */
+  appends?: string | null;
 }
 
-export function EmailPreviewPanel({ subject, bodyHtml }: EmailPreviewPanelProps) {
+export function EmailPreviewPanel({ subject, bodyHtml, appends }: EmailPreviewPanelProps) {
+  const samples = useVariableSamples();
   const hasBody = !!bodyHtml && bodyHtml !== "<p></p>";
 
   return (
@@ -20,20 +23,26 @@ export function EmailPreviewPanel({ subject, bodyHtml }: EmailPreviewPanelProps)
             subject ? "text-slate-900 dark:text-neutral-100" : "text-slate-400 dark:text-neutral-500"
           }`}
         >
-          {subject ? fillSampleText(subject) : "No subject yet"}
+          {subject ? fillSampleText(subject, samples) : "No subject yet"}
         </p>
-        <p className="mt-1 text-[13px] text-slate-500 dark:text-neutral-400">To: {SAMPLE.candidate_name}</p>
+        <p className="mt-1 text-[13px] text-slate-500 dark:text-neutral-400">To: {samples.candidate_name ?? "the candidate"}</p>
       </div>
 
       <div className="px-6 py-5">
         {hasBody ? (
           <div
             className="text-sm text-slate-700 dark:text-neutral-300 leading-relaxed [&_h1]:text-xl [&_h1]:font-bold [&_h1]:text-slate-900 dark:[&_h1]:text-neutral-100 [&_h1]:mb-2 [&_h2]:text-lg [&_h2]:font-bold [&_h2]:text-slate-900 dark:[&_h2]:text-neutral-100 [&_h2]:mb-2 [&_h3]:text-base [&_h3]:font-semibold [&_h3]:text-slate-900 dark:[&_h3]:text-neutral-100 [&_h3]:mb-1.5 [&_p]:mb-3 [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:mb-3 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:mb-3 [&_a]:text-[var(--theme-color)] [&_a]:underline [&_hr]:my-4 [&_hr]:border-slate-200 dark:[&_hr]:border-neutral-700"
-            dangerouslySetInnerHTML={{ __html: renderPreviewHtml(bodyHtml) }}
+            dangerouslySetInnerHTML={{ __html: renderPreviewHtml(bodyHtml, samples) }}
           />
         ) : (
           <p className="py-10 text-center text-sm text-slate-500 dark:text-neutral-400">
             The email body appears here as you write.
+          </p>
+        )}
+        {appends && (
+          <p className="mt-2 rounded-md border border-dashed border-slate-300 px-4 py-3 text-[13px] leading-relaxed text-slate-600 dark:border-neutral-700 dark:text-neutral-400">
+            <span className="font-semibold text-slate-800 dark:text-neutral-200">Added automatically here:</span>{" "}
+            {appends}
           </p>
         )}
       </div>

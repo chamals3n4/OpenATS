@@ -1,4 +1,5 @@
 import { ContentBlock, TemplateBody } from "../../db/schema/templates";
+import { escapeHtml } from "../../shared/services/email-layout";
 
 export interface TemplateContext {
   candidate_name?: string;
@@ -71,7 +72,12 @@ export const templateEngineService = {
 
   renderHTML(body: TemplateBody, context: TemplateContext): string {
     if (typeof body === "string") {
-      return this.replaceVariables(body, context);
+      // The body is HTML, and some values were typed by the candidate, so they are escaped.
+      const escaped: TemplateContext = {};
+      for (const [key, value] of Object.entries(context)) {
+        escaped[key] = value === undefined ? undefined : escapeHtml(String(value));
+      }
+      return this.replaceVariables(body, escaped);
     }
 
     const processedBlocks = this.renderJSON(body, context) as ContentBlock[];

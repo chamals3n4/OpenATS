@@ -117,3 +117,46 @@ export function usePreviewTemplate() {
       }),
   });
 }
+
+/** One of the emails the app sends by itself, with the wording currently in use. */
+export type SystemEmail = {
+  purpose: string;
+  label: string;
+  description: string;
+  /** What the app adds after the message when it is sent, or null. */
+  appends: string | null;
+  variables: { name: string; sample: string }[];
+  subject: string;
+  bodyHtml: string;
+  customised: boolean;
+  updatedAt: string | null;
+};
+
+export function useSystemEmails() {
+  return useQuery({
+    queryKey: ["templates", "system"],
+    queryFn: () => serverFetch<{ data: SystemEmail[] }>("/templates/system"),
+    staleTime: 1000 * 60 * 5,
+  });
+}
+
+export function useSaveSystemEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ purpose, data }: { purpose: string; data: { subject: string; bodyHtml: string } }) =>
+      serverFetch<{ data: { purpose: string } }>(`/templates/system/${purpose}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["templates", "system"] }),
+  });
+}
+
+export function useResetSystemEmail() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (purpose: string) =>
+      serverFetch<{ data: { purpose: string } }>(`/templates/system/${purpose}`, { method: "DELETE" }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["templates", "system"] }),
+  });
+}

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { requireManager } from "../../middlewares/role.middleware";
 import { interviewService, FeedbackValidationError } from "./interview.service";
 import { interviewSlotsEmail } from "../../shared/services/candidate-emails";
-import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
+import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { socketService } from "../../shared/services/socket.service";
 import { db } from "../../db";
 import {
@@ -296,15 +296,15 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
 
     const publicUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/interview/${token}`;
 
-    void getCompanyName()
-      .then((companyName) =>
+    void emailContext("interview_slots")
+      .then((context) =>
         sendCandidateEmail({
           candidateId: candidate.id,
           to: candidate.email,
           kind: "interview_slots",
           sentBy: req.user.id,
           ...interviewSlotsEmail({
-            companyName,
+            ...context,
             candidateName: `${candidate.firstName} ${candidate.lastName}`,
             eventName: parsed.data.eventName,
             jobTitle: candidate.jobTitle ?? "",

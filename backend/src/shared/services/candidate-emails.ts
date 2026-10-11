@@ -7,10 +7,19 @@ import {
   escapeHtml,
   renderEmailLayout,
 } from "./email-layout";
+import {
+  SYSTEM_EMAILS,
+  fillBodyHtml,
+  fillSubject,
+  type SystemEmailContent,
+  type SystemEmailPurpose,
+} from "./system-emails";
 
 /**
- * The wording of every built-in email to a candidate. Each function only builds text, so it
- * can be tested without sending anything. All values are escaped here.
+ * Every built-in email to a candidate. The subject and the message come from `content` (the
+ * company's own wording, or the built-in one when left out); the heading, details and buttons
+ * are added here. Each function only builds text, so it can be tested without sending
+ * anything. All values are escaped here.
  */
 
 export interface BuiltEmail {
@@ -35,111 +44,124 @@ function formatTime(d: Date): string {
 }
 
 const hello = (name: string) => emailParagraph(`Hello ${escapeHtml(name)},`);
-const link = (url: string) =>
-  `<a href="${escapeHtml(url)}" style="color:#145962;word-break:break-all">${escapeHtml(url)}</a>`;
 
-export function applicationReceivedEmail(input: {
+/** What every builder takes besides its own details. */
+interface Common {
   companyName: string;
-  candidateName: string;
-  jobTitle: string;
-}): BuiltEmail {
+  /** The wording to use. Left out, the built-in wording is used. */
+  content?: SystemEmailContent | undefined;
+}
+
+/** The editor writes bare <p> tags; email clients need the spacing spelled out. */
+const styleMessage = (html: string) =>
+  html.replace(/<p>/g, '<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#334155">');
+
+function compose(
+  purpose: SystemEmailPurpose,
+  common: Common,
+  values: Record<string, string>,
+  frame: { heading: string; subtitle?: string | undefined; after?: string[] },
+): BuiltEmail {
+  const content = common.content ?? SYSTEM_EMAILS[purpose];
+  const all = { ...values, company_name: common.companyName };
   return {
-    subject: `${input.jobTitle} - Thank you for your application`,
+    subject: fillSubject(content.subject, all),
     html: renderEmailLayout({
-      companyName: input.companyName,
-      heading: "We received your application",
-      subtitle: input.jobTitle,
-      bodyHtml: [
-        hello(input.candidateName),
-        emailParagraph(
-          `Thank you for applying for <strong>${escapeHtml(input.jobTitle)}</strong>. We have your application and will review it carefully.`,
-        ),
-        emailParagraph(
-          "If your experience matches what we are looking for, we will contact you about the next steps.",
-        ),
-      ].join(""),
+      companyName: common.companyName,
+      heading: frame.heading,
+      subtitle: frame.subtitle,
+      bodyHtml: styleMessage(fillBodyHtml(content.bodyHtml, all)) + (frame.after ?? []).join(""),
     }),
   };
 }
+const link = (url: string) =>
+  `<a href="${escapeHtml(url)}" style="color:#145962;word-break:break-all">${escapeHtml(url)}</a>`;
 
-export function assessmentInviteEmail(input: {
-  companyName: string;
-  firstName: string;
-  assessmentTitle: string;
-  inviteUrl: string;
-  expiresAt: Date;
-}): BuiltEmail {
-  return {
-    subject: `Assessment Invitation: ${input.assessmentTitle}`,
-    html: renderEmailLayout({
-      companyName: input.companyName,
+export function applicationReceivedEmail(input: Common & { candidateName: string; jobTitle: string }): BuiltEmail {
+  return compose(
+    "application_received",
+    input,
+    { candidate_name: input.candidateName, job_title: input.jobTitle },
+    { heading: "We received your application", subtitle: input.jobTitle },
+  );
+}
+
+export function assessmentInviteEmail(
+  input: Common & { firstName: string; assessmentTitle: string; inviteUrl: string; expiresAt: Date },
+): BuiltEmail {
+  return compose(
+    "assessment_invite",
+    input,
+    { candidate_name: input.firstName, assessment_title: input.assessmentTitle },
+    {
       heading: "You are invited to an assessment",
       subtitle: input.assessmentTitle,
-      bodyHtml: [
-        hello(input.firstName),
-        emailParagraph("As the next step in your application, please complete this assessment."),
+      after: [
         emailDetails([
           emailDetailRow("Assessment", escapeHtml(input.assessmentTitle)),
           emailDetailRow("Open until", formatDate(input.expiresAt)),
         ]),
         emailButton(input.inviteUrl, "Start the assessment"),
         emailLinkFallback(input.inviteUrl),
-      ].join(""),
-    }),
-  };
+      ],
+    },
+  );
 }
 
-export function assessmentCompletedEmail(input: {
-  companyName: string;
-  firstName: string;
-  assessmentTitle: string;
-  /** Set when the assessment was handed in for the candidate, for example when time ran out. */
-  autoSubmitReason?: string | undefined;
-}): BuiltEmail {
-  const title = `<strong>${escapeHtml(input.assessmentTitle)}</strong>`;
+export function assessmentCompletedEmail(
+  input: Common & {
+    firstName: string;
+    assessmentTitle: string;
+    /** Set when the assessment was handed in for the candidate, for example when time ran out. */
+    autoSubmitReason?: string | undefined;
+  },
+): BuiltEmail {
+  if (!input.autoSubmitReason) {
+    return compose(
+      "assessment_completed",
+      input,
+      { candidate_name: input.firstName, assessment_title: input.assessmentTitle },
+      { heading: "Assessment completed", subtitle: input.assessmentTitle },
+    );
+  }
+
+  // This one explains what happened to the candidate, so its wording is not editable.
   return {
-    subject: input.autoSubmitReason
-      ? `Assessment Auto-Submitted: ${input.assessmentTitle}`
-      : `Assessment Completed: ${input.assessmentTitle}`,
+    subject: `Assessment Auto-Submitted: ${input.assessmentTitle}`,
     html: renderEmailLayout({
       companyName: input.companyName,
-      heading: input.autoSubmitReason ? "Your assessment was submitted" : "Assessment completed",
+      heading: "Your assessment was submitted",
       subtitle: input.assessmentTitle,
       bodyHtml: [
         hello(input.firstName),
-        ...(input.autoSubmitReason
-          ? [
-              emailParagraph(`Your answers for ${title} were saved and submitted automatically.`),
-              `<p style="margin:0 0 16px;padding:12px 16px;border-left:3px solid #d97706;background:#fffbeb;font-size:15px;line-height:1.6;color:#78350f">${escapeHtml(input.autoSubmitReason)}</p>`,
-              emailParagraph("If you think this is a mistake, please contact the hiring team."),
-            ]
-          : [
-              emailParagraph(`Your answers for ${title} were saved. Thank you for completing it.`),
-              emailParagraph("The hiring team will review your result and contact you about the next steps."),
-            ]),
+        emailParagraph(
+          `Your answers for <strong>${escapeHtml(input.assessmentTitle)}</strong> were saved and submitted automatically.`,
+        ),
+        `<p style="margin:0 0 16px;padding:12px 16px;border-left:3px solid #d97706;background:#fffbeb;font-size:15px;line-height:1.6;color:#78350f">${escapeHtml(input.autoSubmitReason)}</p>`,
+        emailParagraph("If you think this is a mistake, please contact the hiring team."),
       ].join(""),
     }),
   };
 }
 
 /** An interview at a time the hiring team has already fixed. */
-export function interviewInviteEmail(input: {
-  companyName: string;
-  candidateName: string;
-  jobTitle: string;
-  stageName: string;
-  scheduledAt: Date;
-  durationMinutes: number;
-}): BuiltEmail {
-  return {
-    subject: `Interview Invitation — ${input.jobTitle}`,
-    html: renderEmailLayout({
-      companyName: input.companyName,
+export function interviewInviteEmail(
+  input: Common & {
+    candidateName: string;
+    jobTitle: string;
+    stageName: string;
+    scheduledAt: Date;
+    durationMinutes: number;
+  },
+): BuiltEmail {
+  return compose(
+    "interview_invite",
+    input,
+    { candidate_name: input.candidateName, job_title: input.jobTitle },
+    {
       heading: "Interview invitation",
       subtitle: input.jobTitle,
-      bodyHtml: [
-        hello(input.candidateName),
-        emailParagraph("You are invited to an interview. Here are the details:"),
+      after: [
         emailDetails([
           emailDetailRow("Position", escapeHtml(input.jobTitle)),
           ...(input.stageName ? [emailDetailRow("Stage", escapeHtml(input.stageName))] : []),
@@ -147,35 +169,41 @@ export function interviewInviteEmail(input: {
           emailDetailRow("Time", formatTime(input.scheduledAt)),
           emailDetailRow("Duration", `${input.durationMinutes} minutes`),
         ]),
-        emailParagraph("If you have any questions, or the time does not work, please contact the hiring team."),
-      ].join(""),
-    }),
-  };
+      ],
+    },
+  );
 }
 
 /** Asks the candidate to pick one of the offered times. */
-export function interviewSlotsEmail(input: {
-  companyName: string;
-  candidateName: string;
-  eventName: string;
-  jobTitle: string;
-  eventType: string;
-  meetingUrl: string | null;
-  location: string | null;
-  bodyText: string | null;
-  publicUrl: string;
-}): BuiltEmail {
-  return {
-    subject: `${input.eventName} — ${input.jobTitle}`,
-    html: renderEmailLayout({
-      companyName: input.companyName,
+export function interviewSlotsEmail(
+  input: Common & {
+    candidateName: string;
+    eventName: string;
+    jobTitle: string;
+    eventType: string;
+    meetingUrl: string | null;
+    location: string | null;
+    /** A message typed for this one interview. It replaces the usual message. */
+    bodyText: string | null;
+    publicUrl: string;
+  },
+): BuiltEmail {
+  const wording = input.content ?? SYSTEM_EMAILS.interview_slots;
+  const content = input.bodyText
+    ? {
+        subject: wording.subject,
+        bodyHtml: `<p>Hello {{candidate_name}},</p><p>${escapeHtml(input.bodyText).replace(/\n/g, "<br>")}</p>`,
+      }
+    : wording;
+
+  return compose(
+    "interview_slots",
+    { companyName: input.companyName, content },
+    { candidate_name: input.candidateName, event_name: input.eventName, job_title: input.jobTitle },
+    {
       heading: input.eventName,
       subtitle: input.jobTitle,
-      bodyHtml: [
-        hello(input.candidateName),
-        input.bodyText
-          ? emailParagraph(escapeHtml(input.bodyText).replace(/\n/g, "<br>"))
-          : emailParagraph("We would like to invite you to an interview. Please choose a time that suits you."),
+      after: [
         emailDetails([
           emailDetailRow("Position", escapeHtml(input.jobTitle)),
           emailDetailRow("Interview type", typeLabel(input.eventType)),
@@ -184,30 +212,30 @@ export function interviewSlotsEmail(input: {
         ]),
         emailButton(input.publicUrl, "Choose a time"),
         emailLinkFallback(input.publicUrl),
-      ].join(""),
-    }),
-  };
+      ],
+    },
+  );
 }
 
-export function interviewConfirmedEmail(input: {
-  companyName: string;
-  candidateName: string;
-  eventName: string;
-  eventType: string;
-  scheduledAt: Date;
-  durationMinutes: number;
-  meetingUrl: string | null;
-  location: string | null;
-}): BuiltEmail {
-  return {
-    subject: `Interview Confirmed — ${input.eventName}`,
-    html: renderEmailLayout({
-      companyName: input.companyName,
+export function interviewConfirmedEmail(
+  input: Common & {
+    candidateName: string;
+    eventName: string;
+    eventType: string;
+    scheduledAt: Date;
+    durationMinutes: number;
+    meetingUrl: string | null;
+    location: string | null;
+  },
+): BuiltEmail {
+  return compose(
+    "interview_confirmed",
+    input,
+    { candidate_name: input.candidateName, event_name: input.eventName },
+    {
       heading: "Your interview is confirmed",
       subtitle: `${formatDate(input.scheduledAt)} · ${formatTime(input.scheduledAt)}`,
-      bodyHtml: [
-        hello(input.candidateName),
-        emailParagraph(`Your interview <strong>${escapeHtml(input.eventName)}</strong> is confirmed. Here are the details:`),
+      after: [
         emailDetails([
           emailDetailRow("Date", formatDate(input.scheduledAt)),
           emailDetailRow("Time", formatTime(input.scheduledAt)),
@@ -218,59 +246,46 @@ export function interviewConfirmedEmail(input: {
         ...(input.meetingUrl
           ? [emailButton(input.meetingUrl, "Join the meeting"), emailLinkFallback(input.meetingUrl)]
           : []),
-        emailParagraph("If you have any questions, please contact the hiring team."),
-      ].join(""),
-    }),
-  };
+      ],
+    },
+  );
 }
 
-export function interviewCancelledEmail(input: {
-  companyName: string;
-  candidateName: string;
-  eventName: string;
-  scheduledAt: Date | null;
-}): BuiltEmail {
-  const when = input.scheduledAt
-    ? ` on <strong>${formatDate(input.scheduledAt)} at ${formatTime(input.scheduledAt)}</strong>`
-    : "";
-  return {
-    subject: `Interview Cancelled — ${input.eventName}`,
-    html: renderEmailLayout({
-      companyName: input.companyName,
+export function interviewCancelledEmail(
+  input: Common & { candidateName: string; eventName: string; scheduledAt: Date | null },
+): BuiltEmail {
+  return compose(
+    "interview_cancelled",
+    input,
+    { candidate_name: input.candidateName, event_name: input.eventName },
+    {
       heading: "Your interview was cancelled",
       subtitle: input.eventName,
-      bodyHtml: [
-        hello(input.candidateName),
-        emailParagraph(`Your interview <strong>${escapeHtml(input.eventName)}</strong>${when} has been cancelled.`),
-        emailParagraph("The hiring team will contact you if a new time is arranged. We are sorry for the inconvenience."),
-      ].join(""),
-    }),
-  };
+      after: input.scheduledAt
+        ? [
+            emailDetails([
+              emailDetailRow("Cancelled date", formatDate(input.scheduledAt)),
+              emailDetailRow("Cancelled time", formatTime(input.scheduledAt)),
+            ]),
+          ]
+        : [],
+    },
+  );
 }
 
-export function offerEmail(input: {
-  companyName: string;
-  candidateName: string;
-  jobTitle: string;
-  reviewUrl: string;
-}): BuiltEmail {
-  return {
-    subject: `Offer for ${input.jobTitle}`,
-    html: renderEmailLayout({
-      companyName: input.companyName,
+export function offerEmail(
+  input: Common & { candidateName: string; jobTitle: string; reviewUrl: string },
+): BuiltEmail {
+  return compose(
+    "offer",
+    input,
+    { candidate_name: input.candidateName, job_title: input.jobTitle },
+    {
       heading: "You have an offer",
       subtitle: input.jobTitle,
-      bodyHtml: [
-        hello(input.candidateName),
-        emailParagraph(
-          `Congratulations. We are pleased to offer you the position of <strong>${escapeHtml(input.jobTitle)}</strong>.`,
-        ),
-        emailParagraph("Please read the offer and accept or decline it on the page below."),
-        emailButton(input.reviewUrl, "Review your offer"),
-        emailLinkFallback(input.reviewUrl),
-      ].join(""),
-    }),
-  };
+      after: [emailButton(input.reviewUrl, "Review your offer"), emailLinkFallback(input.reviewUrl)],
+    },
+  );
 }
 
 /** Wraps content written by the hiring team (a template, or a typed message) in the layout. */

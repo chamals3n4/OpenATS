@@ -14,7 +14,7 @@ import { scoringService } from "../scoring/scoring.service";
 import { cleanObject as clean } from "../../utils/object.utils";
 import * as gcal from "../../shared/services/google-calendar.service";
 import { interviewCancelledEmail, interviewInviteEmail } from "../../shared/services/candidate-emails";
-import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
+import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import logger from "../../utils/logger";
 import { getErrorMessage } from "../../utils/error.utils";
 
@@ -130,15 +130,15 @@ export const interviewService = {
     if (interview.scheduledAt && interview.durationMinutes) {
       const scheduledAt = interview.scheduledAt;
       const durationMinutes = interview.durationMinutes;
-      void getCompanyName()
-        .then((companyName) =>
+      void emailContext("interview_invite")
+        .then((context) =>
           sendCandidateEmail({
             candidateId: input.candidateId,
             to: row.email,
             kind: "interview_invite",
             sentBy: createdBy,
             ...interviewInviteEmail({
-              companyName,
+              ...context,
               candidateName: `${row.firstName} ${row.lastName}`,
               jobTitle: row.jobTitle ?? "",
               stageName: row.stageName ?? "",
@@ -578,14 +578,14 @@ export const interviewService = {
         .where(eq(candidates.id, existing.candidateId));
       if (candidate) {
         const eventName = existing.eventName;
-        void getCompanyName()
-          .then((companyName) =>
+        void emailContext("interview_cancelled")
+          .then((context) =>
             sendCandidateEmail({
               candidateId: existing.candidateId,
               to: candidate.email,
               kind: "interview_cancelled",
               ...interviewCancelledEmail({
-                companyName,
+                ...context,
                 candidateName: `${candidate.firstName} ${candidate.lastName}`,
                 eventName,
                 scheduledAt: existing.scheduledAt,

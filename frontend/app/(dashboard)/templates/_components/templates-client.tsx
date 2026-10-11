@@ -16,10 +16,12 @@ import { TemplatesTable } from "./templates-table";
 import { TemplateTypePicker } from "./type-picker";
 import { TemplateDeleteDialog } from "./delete-dialog";
 import { DuplicateTemplateDialog } from "./duplicate-dialog";
+import { TemplatesTabs, type TemplatesTab } from "./templates-tabs";
+import { AutomaticEmailsList } from "./automatic-emails-list";
 
 const PAGE_LIMIT = 15;
 
-export default function TemplatesPageClient() {
+export default function TemplatesPageClient({ tab = "yours" }: { tab?: TemplatesTab }) {
   const router = useRouter();
 
   // ── Filter State ───────────────────────────────────────────
@@ -131,30 +133,39 @@ export default function TemplatesPageClient() {
   return (
     <div className="flex flex-1 flex-col min-h-0 bg-white dark:bg-neutral-950">
       <TemplatesHeader onNewTemplate={handleOpenTypePicker} />
+      <TemplatesTabs tab={tab} />
 
-      <div className="flex-shrink-0">
-        <TemplatesFilters
-          search={search}
-          onSearchChange={handleSearchChange}
-          filterType={filterType}
-          onFilterTypeChange={handleTypeChange}
-          onClear={handleClearFilters}
-        />
-      </div>
+      {tab === "automatic" ? (
+        <div className="flex-1 min-h-0 overflow-y-auto">
+          <AutomaticEmailsList />
+        </div>
+      ) : (
+        <>
+          <div className="flex-shrink-0">
+            <TemplatesFilters
+              search={search}
+              onSearchChange={handleSearchChange}
+              filterType={filterType}
+              onFilterTypeChange={handleTypeChange}
+              onClear={handleClearFilters}
+            />
+          </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto">
-        <TemplatesTable
-          templates={templates}
-          isLoading={isLoading}
-          onRowClick={(template) => router.push(`/templates/${template.id}/edit`)}
-          onDuplicate={setDuplicateTarget}
-          onDelete={setDeleteId}
-          onDeleteSelected={handleDeleteSelected}
-          isDeletingSelected={bulkDeleteMutation.isPending}
-          pagination={pagination}
-          onPageChange={setPage}
-        />
-      </div>
+          <div className="flex-1 min-h-0 overflow-y-auto">
+            <TemplatesTable
+              templates={templates}
+              isLoading={isLoading}
+              onRowClick={(template) => router.push(`/templates/${template.id}/edit`)}
+              onDuplicate={setDuplicateTarget}
+              onDelete={setDeleteId}
+              onDeleteSelected={handleDeleteSelected}
+              isDeletingSelected={bulkDeleteMutation.isPending}
+              pagination={pagination}
+              onPageChange={setPage}
+            />
+          </div>
+        </>
+      )}
 
       <TemplateTypePicker
         isOpen={typePickerOpen}

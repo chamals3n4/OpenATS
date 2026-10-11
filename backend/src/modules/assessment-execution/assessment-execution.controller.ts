@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import { assessmentExecutionService, GradingError } from "./assessment-execution.service";
 import { assessmentCompletedEmail } from "../../shared/services/candidate-emails";
-import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
+import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { socketService } from "../../shared/services/socket.service";
 import { canAccessCandidate } from "../../shared/auth/job-access";
 import logger from "../../utils/logger";
@@ -218,14 +218,14 @@ export const completeAssessment = async (req: Request, res: Response) => {
       );
     if (completionContext) {
       // Not awaited: the candidate's result is saved either way.
-      void getCompanyName()
-        .then((companyName) =>
+      void emailContext("assessment_completed")
+        .then((context) =>
           sendCandidateEmail({
             candidateId: completionContext.candidateId,
             to: completionContext.candidateEmail,
             kind: "assessment_completed",
             ...assessmentCompletedEmail({
-              companyName,
+              ...context,
               firstName: completionContext.candidateFirstName,
               assessmentTitle: completionContext.assessmentTitle,
               autoSubmitReason,

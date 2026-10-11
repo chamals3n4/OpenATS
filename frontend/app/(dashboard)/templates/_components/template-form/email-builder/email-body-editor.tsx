@@ -32,7 +32,7 @@ import { SlashCommand } from "./extensions/slash-command";
 import type { SlashMenuItem } from "./extensions/slash-menu";
 import { moveTopLevelBlock } from "./extensions/block-move";
 import { VariablePicker } from "./variable-picker";
-import { VARS } from "../../../lib/template-form-constants";
+import { useVariableGroups } from "./variables-context";
 
 type Props = {
   value: string;
@@ -44,7 +44,7 @@ function normalizeHtml(html: string) {
   return html.replace(/\s+/g, " ").trim();
 }
 
-function buildSlashItems(query: string): SlashMenuItem[] {
+function buildSlashItems(query: string, variables: string[]): SlashMenuItem[] {
   const items: SlashMenuItem[] = [
     {
       title: "Heading 1",
@@ -88,7 +88,7 @@ function buildSlashItems(query: string): SlashMenuItem[] {
     },
   ];
 
-  VARS.forEach((v) => {
+  variables.forEach((v) => {
     items.push({
       title: `{{${v}}}`,
       description: "Variable",
@@ -210,6 +210,7 @@ function LinkPopover({ editor, disabled }: { editor: Editor; disabled?: boolean 
 export function EmailBodyEditor({ value, onChange, readOnly = false }: Props) {
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [hover, setHover] = useState<{ index: number; top: number } | null>(null);
+  const variables = useVariableGroups().flatMap((group) => group.vars.map((v) => v.name));
 
   const editor = useEditor({
     extensions: [
@@ -218,7 +219,7 @@ export function EmailBodyEditor({ value, onChange, readOnly = false }: Props) {
       Placeholder.configure({ placeholder: "Write your email…" }),
       ButtonNode,
       VariableChip,
-      SlashCommand.configure({ items: buildSlashItems }),
+      SlashCommand.configure({ items: (query: string) => buildSlashItems(query, variables) }),
     ],
     content: value || "",
     editable: !readOnly,

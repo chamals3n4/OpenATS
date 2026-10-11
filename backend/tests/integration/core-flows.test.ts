@@ -355,4 +355,39 @@ describe("core hiring flow", () => {
       expect(history.some((m) => m.kind === "rejection" && m.status === "failed")).toBe(true);
     });
   });
+
+  describe("automatic emails", () => {
+    const put = (purpose: string, body: object) =>
+      request(app).put(`/api/templates/system/${purpose}`).set("Authorization", auth).send(body);
+    const offerRow = async () =>
+      (await request(app).get("/api/templates/system").set("Authorization", auth)).body.data.find(
+        (e: { purpose: string }) => e.purpose === "offer",
+      );
+
+    it("lists every automatic email with its built-in wording", async () => {
+      const row = await offerRow();
+      expect(row.customised).toBe(false);
+      expect(row.subject).toBe("Offer for {{job_title}}");
+    });
+
+    it("refuses a variable the email has no value for", async () => {
+      const res = await put("offer", { subject: "Hi", bodyHtml: "<p>{{salary}}</p>" });
+      expect(res.status).toBe(400);
+      expect(res.body.error).toMatch(/\{\{salary\}\}/);
+    });
+
+    it("saves a company's own wording, then resets it", async () => {
+      const saved = await put("offer", { subject: "Good news", bodyHtml: "<p>Hi {{candidate_name}}</p>" });
+      expect(saved.status).toBe(200);
+      expect(await offerRow()).toMatchObject({ customised: true, subject: "Good news" });
+
+      const reset = await request(app).delete("/api/templates/system/offer").set("Authorization", auth);
+      expect(reset.status).toBe(200);
+      expect(await offerRow()).toMatchObject({ customised: false, subject: "Offer for {{job_title}}" });
+    });
+
+    it("answers 404 for an email that does not exist", async () => {
+      expect((await put("nope", { subject: "a", bodyHtml: "b" })).status).toBe(404);
+    });
+  });
 });

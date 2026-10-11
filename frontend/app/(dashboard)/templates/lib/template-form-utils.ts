@@ -5,6 +5,8 @@ import { TEMPLATE_NAME_MAX } from "./templates-utils";
 
 const SUBJECT_MAX = 500;
 
+const DEFAULT_SAMPLES: Record<string, string> = Object.fromEntries(VARS.map((key) => [key, SAMPLE[key] ?? key]));
+
 export interface TemplateFormErrors {
   name?: string;
   subject?: string;
@@ -30,21 +32,21 @@ export function validateTemplateForm(input: {
 }
 
 /** Replace {{var}} placeholders with plain sample values, for text such as the subject. */
-export function fillSampleText(text: string): string {
+export function fillSampleText(text: string, samples: Record<string, string> = DEFAULT_SAMPLES): string {
   let out = text;
-  VARS.forEach((key) => {
-    out = out.replaceAll(`{{${key}}}`, SAMPLE[key] ?? key);
+  Object.entries(samples).forEach(([key, value]) => {
+    out = out.replaceAll(`{{${key}}}`, value);
   });
   return out;
 }
 
 /** Substitute {{var}} placeholders in an HTML string with styled sample-value pills, for preview only. */
-export function renderPreviewHtml(html: string): string {
+export function renderPreviewHtml(html: string, samples: Record<string, string> = DEFAULT_SAMPLES): string {
   let out = html;
-  VARS.forEach((key) => {
+  Object.entries(samples).forEach(([key, value]) => {
     out = out.replaceAll(
       `{{${key}}}`,
-      `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:600;font-size:0.85em">${SAMPLE[key] ?? key}</span>`,
+      `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:600;font-size:0.85em">${value}</span>`,
     );
   });
   return out;

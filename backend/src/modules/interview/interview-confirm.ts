@@ -73,6 +73,8 @@ export async function completeInterviewBooking(iv: ConfirmableInterview, schedul
     }
   }
 
+  // True once the event exists there, whether or not Google gave back an id for it.
+  let onInterviewerCalendar = false;
   if (accessToken) {
     try {
       const meeting = await getProviderClient(iv.meetingProvider ?? "google_meet").createMeeting(accessToken, {
@@ -84,6 +86,7 @@ export async function completeInterviewBooking(iv: ConfirmableInterview, schedul
         location: iv.eventType === "onsite" ? iv.location : iv.meetingUrl,
         description: candidate ? `Interview with ${candidate.firstName} ${candidate.lastName}` : null,
       });
+      onInterviewerCalendar = true;
       meetingUrl = meeting.meetingUrl ?? meetingUrl;
       providerMeetingId = meeting.providerMeetingId ?? null;
     } catch (err) {
@@ -100,7 +103,7 @@ export async function completeInterviewBooking(iv: ConfirmableInterview, schedul
   }
 
   const calendar = chooseCalendar({
-    onInterviewerCalendar: !!providerMeetingId,
+    onInterviewerCalendar,
     sharedConfigured: isSharedCalendarConfigured(),
   });
   if (calendar === "shared" && candidate) {

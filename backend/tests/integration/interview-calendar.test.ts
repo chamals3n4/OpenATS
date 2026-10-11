@@ -151,6 +151,17 @@ describe("where a booked interview goes", () => {
     expect(createCalendarEvent).not.toHaveBeenCalled();
   });
 
+  it("does not copy the event to the shared calendar when Google returns no id for it", async () => {
+    sharedConfigured = true;
+    getValidAccessToken.mockResolvedValue("token");
+    createMeeting.mockResolvedValue({ meetingUrl: "https://meet.google.com/new" });
+
+    await book({ meetingProvider: "google_meet" });
+
+    expect(createMeeting).toHaveBeenCalledTimes(1);
+    expect(createCalendarEvent).not.toHaveBeenCalled();
+  });
+
   it("falls back to the shared calendar when the interviewer has not connected Google", async () => {
     sharedConfigured = true;
 

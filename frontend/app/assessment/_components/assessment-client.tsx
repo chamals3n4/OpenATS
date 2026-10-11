@@ -60,9 +60,10 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
   const handleStart = async () => {
     setStarting(true);
     try {
-      await startAttempt(token);
-      // The clock runs from this moment, which the timer reads from the attempt.
-      setAttempt((prev) => (prev ? { ...prev, status: "started", startedAt: new Date().toISOString() } : prev));
+      const started = await startAttempt(token);
+      // The clock runs from the moment the server recorded, so it matches what a reload would show.
+      const startedAt = started.data?.startedAt ?? new Date().toISOString();
+      setAttempt((prev) => (prev ? { ...prev, status: "started", startedAt } : prev));
       setScreen("quiz");
     } catch (e: unknown) {
       setErrorMsg(e instanceof Error ? e.message : "Failed to start");
@@ -93,7 +94,13 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
     setSubmitError(null);
     try {
       const qs = attempt?.assessment.questions ?? [];
-      await Promise.all(qs.filter((q) => answers[q.id]).map((q) => saveCurrentAnswer(q.id, answers[q.id])));
+      const saved = await Promise.all(
+        qs.filter((q) => answers[q.id]).map((q) => saveCurrentAnswer(q.id, answers[q.id])),
+      );
+      // Submitting now would lock in the assessment without those answers, so stop and let them retry.
+      if (saved.includes(false)) {
+        throw new Error("Some of your answers could not be saved. Check your connection, then submit again.");
+      }
       await completeAttempt(token);
       setScreen("submitted");
     } catch (e: unknown) {

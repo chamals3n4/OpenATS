@@ -7,7 +7,6 @@ import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { authInputClass } from "./input-class";
 
-// Password field with a show/hide toggle.
 export function PasswordInput({
   className,
   ...props

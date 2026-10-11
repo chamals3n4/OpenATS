@@ -15,7 +15,6 @@ interface FormFieldProps {
   children: ReactNode;
 }
 
-/** A label above its control, with an optional hint and inline error underneath. */
 export function FormField({
   label,
   htmlFor,

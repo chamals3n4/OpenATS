@@ -1,8 +1,6 @@
 import Image from "next/image";
 import { ThemeSwitch } from "@/components/theme/theme-switch";
 
-// Shared frame for the sign-in, forgot password and reset password pages:
-// one centered card, with the theme switch in the corner.
 export function AuthShell({
   title,
   description,

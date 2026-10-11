@@ -5,7 +5,6 @@ import {
   Home01Icon,
   BriefcaseBusinessIcon,
   UsersRoundIcon,
-  SearchList02Icon,
   Settings02Icon,
   Layout03Icon,
   Quiz03Icon,

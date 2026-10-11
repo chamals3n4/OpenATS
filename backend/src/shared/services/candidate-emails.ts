@@ -144,36 +144,6 @@ export function assessmentCompletedEmail(
   };
 }
 
-/** An interview at a time the hiring team has already fixed. */
-export function interviewInviteEmail(
-  input: Common & {
-    candidateName: string;
-    jobTitle: string;
-    stageName: string;
-    scheduledAt: Date;
-    durationMinutes: number;
-  },
-): BuiltEmail {
-  return compose(
-    "interview_invite",
-    input,
-    { candidate_name: input.candidateName, job_title: input.jobTitle },
-    {
-      heading: "Interview invitation",
-      subtitle: input.jobTitle,
-      after: [
-        emailDetails([
-          emailDetailRow("Position", escapeHtml(input.jobTitle)),
-          ...(input.stageName ? [emailDetailRow("Stage", escapeHtml(input.stageName))] : []),
-          emailDetailRow("Date", formatDate(input.scheduledAt)),
-          emailDetailRow("Time", formatTime(input.scheduledAt)),
-          emailDetailRow("Duration", `${input.durationMinutes} minutes`),
-        ]),
-      ],
-    },
-  );
-}
-
 /** Asks the candidate to pick one of the offered times. */
 export function interviewSlotsEmail(
   input: Common & {

@@ -40,16 +40,6 @@ export const JobDescriptionEditor = dynamic(
   },
 );
 
-export const CandidateSidePanel = dynamic(
-  () =>
-    import("@/app/(dashboard)/candidates/[id]/_components/candidate-side-panel").then(
-      (mod) => ({
-        default: mod.CandidateSidePanel,
-      }),
-    ),
-  { ssr: false },
-);
-
 export const CandidateAiAnalysis = dynamic(
   () =>
     import("@/app/(dashboard)/candidates/[id]/_components/candidate-ai-analysis").then(

@@ -184,29 +184,6 @@ describe("core hiring flow", () => {
     expect(row!.currentStageId).toBe(interviewStageId);
   });
 
-  it("schedules an interview", async () => {
-    const scheduledAt = new Date(Date.now() + 86_400_000).toISOString();
-    const res = await request(app)
-      .post(`/api/candidates/${candidateId}/interviews`)
-      .set("Authorization", auth)
-      .send({
-        stageId: interviewStageId,
-        scheduledAt,
-        durationMinutes: 45,
-        interviewerId: managerId,
-      });
-
-    expect([200, 201]).toContain(res.status);
-
-    const rows = await db
-      .select()
-      .from(candidateInterviews)
-      .where(eq(candidateInterviews.candidateId, candidateId));
-
-    expect(rows).toHaveLength(1);
-    expect(rows[0]!.durationMinutes).toBe(45);
-  });
-
   it("creates an offer as a draft", async () => {
     const res = await request(app)
       .post("/api/offers")

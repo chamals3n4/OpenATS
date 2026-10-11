@@ -16,7 +16,6 @@ export const SYSTEM_EMAIL_PURPOSES = [
   "interview_slots",
   "interview_confirmed",
   "interview_cancelled",
-  "interview_invite",
   "offer",
 ] as const;
 
@@ -117,17 +116,6 @@ export const SYSTEM_EMAILS: Record<SystemEmailPurpose, SystemEmailDefinition> = 
       "Hello {{candidate_name}},",
       "Your interview <strong>{{event_name}}</strong> has been cancelled.",
       "The hiring team will contact you if a new time is arranged. We are sorry for the inconvenience.",
-    ),
-  },
-  interview_invite: {
-    label: "Interview at a fixed time",
-    description: "Sent when you log an interview at a time you have already agreed.",
-    appends: "The position, stage, date, time and duration.",
-    variables: [CANDIDATE, JOB, COMPANY],
-    subject: "Interview Invitation — {{job_title}}",
-    bodyHtml: p(
-      "Hello {{candidate_name}},",
-      "You are invited to an interview. Here are the details. If you have any questions, or the time does not work, please contact the hiring team.",
     ),
   },
   offer: {

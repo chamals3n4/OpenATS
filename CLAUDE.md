@@ -46,6 +46,7 @@ pnpm exec tsx scripts/create-admin.ts   # create or reset a super admin (also `m
 - **Auth middleware** (`backend/src/middlewares/auth.middleware.ts`): verifies OpenATS-issued JWTs through `verify-token.ts`. The token's `sub` is the `users.id`; role (`super_admin`, `hiring_manager`, `interviewer`), `is_active` and `banned` are read from the row on every request, so changes apply immediately. Users are never provisioned from a token — an unknown id is a 401.
 - **Public routes** (`/public/*`) use origin-based access control, not auth middleware. Assessment endpoints (`/public/assessment/:token`) use token-based auth.
 - **Rate limiting**: `/public/*` has its own IP-keyed limiters in `public.routes.ts`. The authenticated API is limited by `middlewares/rate-limit.middleware.ts`, keyed by **user id** rather than IP so one office behind a NAT does not share a budget — `apiLimiter` is mounted on all of `/api`, and `expensiveLimiter` on uploads. Both are tunable with `RATE_LIMIT_API` / `RATE_LIMIT_EXPENSIVE`.
+- **Assessments** have two sets of routes. The hiring team's (`modules/assessment-execution/assessment-execution.routes.ts`, under `/api`) each check `canAccessCandidate`, because answers and scores belong to one candidate. The candidate's own (`/public/assessment/:token` in `routes/public.routes.ts`) are limited per link, with a larger budget for saving answers than for starting and submitting. The time limit (`assessments.time_limit`, in **minutes**) is enforced by the server in `isPastDeadline`, not only by the clock in the browser.
 - **Per-job authorization**: `middlewares/job-access.middleware.ts` (`requireJobAccess`, `requireCandidateAccess`) gates HTTP routes on hiring-team membership using the same `shared/auth/job-access.ts` rule as the sockets. Job creation adds the creator to the hiring team, and `job.service.getAll` already filters by it, so membership is the app-wide notion of "your jobs".
 - **`req.user`** is available via augmentation in `backend/src/types/express.d.ts`.
 - **Socket.IO** runs on the same HTTP server. Connections require a valid OpenATS-issued JWT in `handshake.auth.token`, verified by an `io.use()` middleware before any handler runs; the verified user is on `socket.data.user`. Chat handlers take the sender from that user, never from the client payload. Dashboard-wide events are emitted to the `staff` room (which every authenticated socket joins), not with a bare `io.emit()`. CORS is restricted to `FRONTEND_URL`.
@@ -81,22 +82,16 @@ pnpm exec tsx scripts/create-admin.ts   # create or reset a super admin (also `m
 
 ## Testing
 
-See `docs/TESTING.md` for the full guide. In short:
+See `docs/docs/developer/testing.md` for the full guide. In short:
 
 - **Unit + integration tests** use Vitest and live in `backend/tests/` (`unit/`, `integration/`), excluded from `tsconfig.json` compilation. Config is `backend/vitest.config.mts` (`.mts` because the backend is a CommonJS package).
 - **End-to-end tests** use Playwright and live in `e2e/` at the repo root, because they span both packages. Config is `playwright.config.ts`, and `tsconfig.json` at the root covers them.
-- **Integration tests hit a real database**: a separate Postgres on port **5433** (`postgres-test` in `docker-compose.yml`), never the dev database on 5432. `backend/tests/setup.ts` loads `backend/.env.test` with `override: true` to enforce this.
+- **Integration tests hit a real database**: a separate Postgres on port **5433** (`postgres-test` in `docker-compose.test.yml`, started with `docker compose -f docker-compose.test.yml up -d`). Its data does not survive a stop, so run the migrations against it again after starting it, never the dev database on 5432. `backend/tests/setup.ts` loads `backend/.env.test` with `override: true` to enforce this.
 - `backend/.env.test` is committed on purpose. It holds no secrets, only dummy values, so that tests pass on pull requests from forks (GitHub never gives secrets to those).
 - E2E tests also use the 5433 database, via `webServer.env` in `playwright.config.ts`. `reuseExistingServer` is `false` so an already-running `make dev` cannot be adopted, which would silently point tests at the dev database. **Stop `make dev` before running E2E.**
 - Commands: `pnpm test` (backend then frontend unit tests), `pnpm test:frontend`, `pnpm test:coverage` (v8 coverage on the backend), `pnpm test:e2e` (Playwright), `pnpm exec tsc --noEmit` (type-check the E2E specs, which Playwright does not do).
 - CI runs tests, type-check, and the backend build on every pull request (`.github/workflows/ci.yml`). It deliberately uses no secrets.
 - **Frontend tests** use a separate Vitest install in `frontend/` with jsdom and Testing Library, in `frontend/tests/`. They cover pure helpers and rendered components; there is no network or router mocking set up yet.
-
-## Roadmap
-
-`docs/GA_ROADMAP.md` tracks everything remaining before v1.0, grouped by release, with a status on every item (🔴 Planned, 🟡 In progress, 🟢 Done).
-
-**When you complete work that appears on that roadmap, update the item's status in the same change.** If you finish something that is not listed, add a row for it. An out-of-date roadmap is worse than none, because it states things that are not true.
 
 ## Environment Variables
 
@@ -107,6 +102,7 @@ Two separate `.env` files are required (copy from `.env.example` in each directo
 
 ## CI/CD
 
-- `.github/workflows/deploy.yml` deploys the **backend only** to an Azure VM on push to `main` (when `backend/**` changes): SSH → git pull → pnpm install → build → pm2 restart.
-- No CI for the frontend; no automated linting or tests in CI.
-- Only `frontend/` has ESLint. The backend has no lint config.
+- `.github/workflows/ci.yml` runs on every pull request: backend lint, type-check, unit and integration tests, the backend build, the frontend tests, and a check that Better Auth's tables match the migrations. It uses no secrets.
+- `.github/workflows/release.yml` cuts a release and generates its notes from PR titles and labels (`.github/release.yml`). PRs are squash-merged, so the PR title is the commit on `main`.
+- There is no deploy workflow; deployment is done by hand.
+- Both packages have ESLint. Only the backend's is enforced in CI, because the frontend still has existing lint errors.

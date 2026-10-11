@@ -40,3 +40,20 @@ export function scorePercentage(earned: number, possible: number): number {
 }
 
 export const hasPassed = (percentage: number, passMark: number) => percentage >= passMark;
+
+/** Extra seconds allowed after the limit, for the last answers sent as the clock reaches zero. */
+export const DEADLINE_GRACE_SECONDS = 60;
+
+/**
+ * Whether an attempt has run out of time. `timeLimitMinutes` is how the limit is saved. An
+ * attempt that has not started has no deadline yet.
+ */
+export function isPastDeadline(
+  startedAt: Date | null,
+  timeLimitMinutes: number,
+  now: Date,
+  graceSeconds = DEADLINE_GRACE_SECONDS,
+): boolean {
+  if (!startedAt) return false;
+  return now.getTime() > startedAt.getTime() + timeLimitMinutes * 60_000 + graceSeconds * 1000;
+}

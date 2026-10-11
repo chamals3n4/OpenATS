@@ -20,15 +20,6 @@ import { getErrorMessage} from "../../utils/error.utils";
 
 const router: Router = Router();
 
-const createInterviewSchema = z.object({
-  stageId: z.number().int().optional(),
-  scheduledAt: z.string().optional().nullable(),
-  durationMinutes: z.number().int().positive().optional().nullable(),
-  notes: z.string().optional().nullable(),
-  attendeeEmails: z.array(z.string().email()).optional(),
-  interviewerId: z.number().int(),
-});
-
 const updateInterviewSchema = z.object({
   scheduledAt: z.string().optional().nullable(),
   durationMinutes: z.number().int().positive().optional().nullable(),
@@ -45,48 +36,6 @@ const updateInterviewSchema = z.object({
   location: z.string().optional().nullable(),
   bodyText: z.string().optional().nullable(),
   attendeeEmails: z.array(z.string().email()).optional(),
-});
-
-router.post("/candidates/:candidateId/interviews", requireManager, async (req, res) => {
-  try {
-    const candidateId = parseInt((req.params.candidateId ?? "").toString());
-    if (isNaN(candidateId)) {
-      res.status(400).json({ error: "Invalid candidate ID" });
-      return;
-    }
-
-    const parsed = createInterviewSchema.safeParse(req.body);
-    if (!parsed.success) {
-      res.status(400).json({
-        error: "Validation failed",
-        details: parsed.error.flatten().fieldErrors,
-      });
-      return;
-    }
-
-    const interview = await interviewService.create(
-      {
-        candidateId,
-        stageId: parsed.data.stageId as number | undefined,
-        scheduledAt: parsed.data.scheduledAt ?? null,
-        durationMinutes: parsed.data.durationMinutes ?? null,
-        notes: parsed.data.notes ?? null,
-        attendeeEmails: parsed.data.attendeeEmails,
-        interviewerId: parsed.data.interviewerId,
-      },
-      req.user.id,
-    );
-    socketService.notifyInterviewChanged({
-      interviewId: interview.id,
-      candidateId,
-    });
-    res.status(201).json({ data: interview });
-  } catch (error) {
-    logger.error(`Failed to create interview: ${getErrorMessage(error)}`);
-    res
-      .status(400)
-      .json({ error: getErrorMessage(error) || "Failed to create interview" });
-  }
 });
 
 router.get("/candidates/:candidateId/interviews", async (req, res) => {

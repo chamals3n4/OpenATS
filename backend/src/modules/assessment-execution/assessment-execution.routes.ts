@@ -1,10 +1,6 @@
 import { Router } from "express";
 import {
   inviteCandidateToAssessment,
-  getAssessmentForCandidate,
-  startAssessment,
-  submitAssessmentAnswer,
-  completeAssessment,
   getCandidateAttempts,
   getAttemptResults,
   gradeWrittenAnswer,
@@ -12,19 +8,13 @@ import {
 
 import { requireManager } from "../../middlewares/role.middleware";
 
+// What the hiring team does with assessments. Every route here checks that the user may see
+// the candidate. The routes a candidate uses, by link, are in routes/public.routes.ts.
 const router: Router = Router();
 
-router.post("/invite", inviteCandidateToAssessment);
+router.post("/invite", requireManager, inviteCandidateToAssessment);
 router.get("/candidate/:candidateId", getCandidateAttempts);
 router.get("/attempts/:attemptId/results", getAttemptResults);
 router.put("/attempts/:attemptId/grade", requireManager, gradeWrittenAnswer);
-
-router.get("/public/:token", getAssessmentForCandidate);
-
-router.post("/public/:token/start", startAssessment);
-
-router.post("/public/:token/answer", submitAssessmentAnswer);
-
-router.post("/public/:token/complete", completeAssessment);
 
 export default router;

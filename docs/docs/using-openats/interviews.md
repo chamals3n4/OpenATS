@@ -9,91 +9,117 @@ OpenATS keeps the interview invitation, candidate-selected time, meeting details
 
 ## Before scheduling
 
-Make sure these items are ready:
+Make sure these are ready:
 
-- The candidate exists for the job.
-- The person who will conduct the interview has been added to the job's hiring team.
-- An **Interview Event** template is available in **Templates**. The scheduler uses this template for the invitation details and time slots.
-- For automatic Google Meet links, the selected interviewer has connected Google Calendar in **Settings → Integrations**.
+- The candidate has applied for the job.
+- The person who will run the interview is on the job's hiring team.
+- An **Interview Event** template exists in [Templates](./templates#interview-event-templates). It supplies the type, the length, the link or address, and the message.
 
-### Who can do each action?
+### Who can do what
 
-**Super Admins** and **Hiring Managers** can schedule, edit, cancel, and delete interviews. They select the interviewer when creating the event.
+**Super Admins** and **Hiring Managers** schedule, edit and cancel interviews, and choose the interviewer.
 
-An **Interviewer** is the assigned participant who conducts the conversation and submits feedback. An interviewer does not schedule the event or change the candidate's hiring stage. Candidates do not need an OpenATS account.
+An **Interviewer** runs the interview and submits feedback. An interviewer cannot schedule an interview or move a candidate between stages. Candidates do not need an OpenATS account.
 
-## Connect Google Calendar
+## Google Calendar and Google Meet
 
-Google Calendar is optional. Connect it for the interviewer who should receive automatically created Google Meet events.
+Google is optional. There are two separate ways to use it, and they do different jobs.
+
+| | Personal connection | Shared company calendar |
+| --- | --- | --- |
+| What it is | Each interviewer connects their own Google account | One calendar for the whole company |
+| Set up by | Each person, in **Settings → Integrations** | Your server administrator. There is no button for it in the app |
+| Where the event goes | That interviewer's own Google Calendar | The shared calendar |
+| Can create a Google Meet link | Yes | No |
+
+### Which one is used
+
+Each interview gets **one** calendar event, created when the interview gets its time.
+
+| The interviewer chosen for the interview | What happens |
+| --- | --- |
+| Has connected Google | The event goes in their own calendar and the candidate is invited. A Meet link is added only if you chose Google Meet |
+| Has not connected Google, and a shared calendar is set up | The event goes in the shared calendar |
+| Has not connected Google, and there is no shared calendar | No calendar event is created. The emails are still sent |
+
+It depends on the **interviewer** chosen for that interview, not on the person who schedules it.
+
+### Connect your Google account
 
 1. Open **Settings → Integrations**.
-2. Find Google Calendar and select **Connect**.
-3. Sign in with the interviewer's Google account and approve the requested calendar permissions.
-4. Return to OpenATS and confirm that the integration shows as connected.
+2. Find **Google Meet** and select **Connect**.
+3. Sign in to Google and approve the calendar permission.
+4. Back in OpenATS, check that it shows **Connected**.
 
 ![Google Meet integration before connecting](/content/interviews/google-meet-integration.png)
 
-After the connection succeeds, the card shows the connected account and a **Disconnect** action:
-
 ![Connected Google Meet integration](/content/interviews/connected-integration.png)
 
-If the interviewer is not connected, choose **Paste a link** when scheduling and provide a Zoom, Microsoft Teams, or other meeting URL manually.
+Before anyone can connect, a server administrator must add the Google OAuth settings. See [Deployment](../operations/deployment#google-calendar-and-google-meet-optional).
 
 ## Schedule an interview
 
-1. Open **Candidates** from the dashboard sidebar.
-2. Select the candidate you want to interview.
-3. Open the **Interviews** tab in the candidate profile.
-4. Select **Schedule**.
-5. Choose an **Event Template**. The template supplies the event name, message, event type, meeting preference, and saved time slots.
-6. Select the **Interviewer** who will conduct the interview.
-7. Check the event name and invitation message, and update them if this interview needs different details.
-8. Choose the event type:
-   - **Virtual** for a video interview.
-   - **On-site** for an in-person interview.
-9. For a virtual interview, select **Auto-generate Google Meet** if the selected interviewer has a connected Google account. Otherwise select **Paste a link** and enter the meeting URL.
-10. For an on-site interview, enter the office address, building, room, or floor.
-11. Add at least one future time slot. Add multiple slots when you want the candidate to choose a convenient time.
-12. Select **Schedule Interview**.
+1. Open the candidate from **Candidates**.
+2. Open the **Interviews** tab and select **Schedule interview**.
+3. Choose an **Event template**. It fills in the type, the length, the link or address, and the message.
+4. Choose the **Interviewer**. A hint under the field says whether the interview will be added to their calendar.
+5. Check the **Length**, and the meeting link or address. You can change them for this interview.
+6. Under **When**, choose who decides the time:
+   - **Let the candidate choose**: add a few times. The candidate picks one.
+   - **Set the time myself**: choose one date and time that you have already agreed.
+7. Select **Send to candidate**, or **Book interview** if you set the time yourself.
 
-Every time slot must be in the future. A virtual interview must have either an automatically generated Google Meet link or a manually pasted meeting URL.
+Every time must be in the future. A virtual interview needs either Google Meet or a link you paste.
 
-![Schedule an interview with Google Meet](/content/interviews/schedule-interview-with-gmeet.png)
+### If the candidate chooses
 
-OpenATS saves the interview as awaiting a slot and sends the candidate an email containing a private scheduling link.
+OpenATS sends the "Interview: pick a time" email with a private link. The interview shows as **Awaiting Slot** until they pick.
 
-![Interview invitation email](/content/interviews/interview-email.png)
-
-## Candidate selects a time
-
-The candidate opens the private link in the invitation and selects one of the available time slots. Past or already selected slots cannot be chosen.
+The candidate opens the link, sees the times you offered, and selects one. Times that have passed, or that another interview has taken, cannot be chosen.
 
 ![Candidate selects an interview time slot](/content/interviews/timeslot-selection-by-candidate.png)
 
-After the candidate selects **Confirm this time**, OpenATS marks the interview as confirmed. The candidate receives the confirmation with the meeting link for a virtual event or the location for an on-site event.
+### If you set the time
 
-![Interview confirmation with meeting link](/content/interviews/interview-confirmation-after-timeslot-select-with-link.png)
+The interview is booked at once. There is no link for the candidate to pick from.
 
-If Google Meet was enabled, the event and meeting link are created using the selected interviewer's connected Google account. With a manually pasted link, OpenATS includes that link in the confirmation.
+### When the interview has its time
+
+Either way, three things happen:
+
+1. A Google Meet link is created, if you chose Google Meet.
+2. One calendar event is created, as described above.
+3. The candidate receives the "Interview confirmed" email with the date, the time, the length, and the link or address.
+
+## Change or cancel an interview
+
+Use **Edit** to change the name, the meeting link, the status or the outcome.
+
+Cancelling a confirmed interview removes the calendar event and sends the candidate the "Interview cancelled" email.
 
 ## View and filter interviews
 
-Open **Interviews** in the dashboard sidebar. Use **Calendar** view to see interviews by date, or switch to **List** view to review each interview in a grouped list. Search by candidate or job and filter by department or status.
+Open **Interviews** in the dashboard sidebar. Search by candidate or job, and filter by department or status.
 
-The available statuses are:
+**Calendar** view shows a month.
 
-- **Awaiting Slot**: the invitation was sent and the candidate has not selected a time.
-- **Confirmed**: the candidate selected a time slot.
-- **Completed**: the interview took place and was marked complete.
-- **Cancelled**: the interview will not take place.
+- Select a day to list its interviews on the right. Today is selected when the page opens.
+- Select the month name to jump to another month or year.
+- Use the search box on the right to find an interview on any day.
+- **Waiting for a time** lists interviews where the candidate has not picked a time yet.
 
-![Manage interviews](/content/interviews/manage-interviews-listing.png)
+**List** view shows every interview grouped by day, with the same details and actions.
+
+| Status | Meaning |
+| --- | --- |
+| **Awaiting Slot** | The invitation was sent and the candidate has not picked a time |
+| **Confirmed** | The interview has its time |
+| **Completed** | The interview took place |
+| **Cancelled** | The interview will not take place |
 
 ## Record interview feedback
 
-After the conversation, the interviewer or another authorized team member can open the interview and select **Add feedback**. Record the notes and choose an outcome such as **Pass** or **Fail**. The feedback is stored with the interview and appears in the candidate profile for the hiring team.
-
-If the event details change, use **Edit** to update the event name, meeting URL, status, outcome, or interviewer. Cancel an interview that will not happen. Keep the candidate record so the interview history remains available.
+After the conversation, the interviewer or another authorized team member can select **Feedback** on the interview, from either view on the Interviews page or from the candidate profile. Record the notes and choose an outcome such as **Pass** or **Fail**. The feedback is stored with the interview and appears in the candidate profile for the hiring team.
 
 ## What happens next
 

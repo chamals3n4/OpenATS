@@ -5,6 +5,7 @@ import { assessmentCompletedEmail } from "../../shared/services/candidate-emails
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { socketService } from "../../shared/services/socket.service";
 import { canAccessCandidate } from "../../shared/auth/job-access";
+import { isPastDeadline } from "./grading";
 import logger from "../../utils/logger";
 import { getErrorMessage} from "../../utils/error.utils";
 
@@ -42,6 +43,14 @@ async function getAttemptByTokenOrFail(res: Response, token: string) {
   return attempt;
 }
 
+/** Answers 403 and returns false when the user is not on the candidate's job. */
+async function allowCandidate(req: Request, res: Response, candidateId: number, what: string) {
+  if (await canAccessCandidate(req.user, candidateId)) return true;
+  logger.warn(`[access] user ${req.user.id} denied ${what} for candidate ${candidateId}`);
+  res.status(403).json({ error: "You do not have access to this resource" });
+  return false;
+}
+
 export const inviteCandidateToAssessment = async (
   req: Request,
   res: Response,
@@ -57,6 +66,7 @@ export const inviteCandidateToAssessment = async (
     }
 
     const { candidateId, assessmentId, expiryDays } = parsed.data;
+    if (!(await allowCandidate(req, res, candidateId, "an assessment invite"))) return;
     const { attempt, didSendInvite } =
       await assessmentExecutionService.inviteCandidate(
         candidateId,
@@ -87,6 +97,7 @@ export const getCandidateAttempts = async (req: Request, res: Response) => {
       return;
     }
 
+    if (!(await allowCandidate(req, res, candidateId, "assessment attempts"))) return;
     const result =
       await assessmentExecutionService.getAttemptsByCandidate(candidateId);
     res.status(200).json({ data: result });
@@ -148,6 +159,15 @@ export const submitAssessmentAnswer = async (req: Request, res: Response) => {
     if (attempt.status !== "started") {
       res.status(403).json({
         error: "Assessment must be in 'started' state to submit answers",
+      });
+      return;
+    }
+
+    // The clock in the browser can be stopped or changed, so the limit is checked here too.
+    if (isPastDeadline(attempt.startedAt, attempt.assessment.timeLimit, new Date())) {
+      res.status(403).json({
+        error: "The time for this assessment is up. Answers can no longer be changed.",
+        code: "TIME_UP",
       });
       return;
     }
@@ -263,6 +283,14 @@ export const getAttemptResults = async (req: Request, res: Response) => {
       return;
     }
 
+    // The answers and scores belong to one candidate, so check the job before reading them.
+    const owner = await assessmentExecutionService.getAttemptOwner(attemptId);
+    if (!owner) {
+      res.status(404).json({ error: "Attempt not found" });
+      return;
+    }
+    if (!(await allowCandidate(req, res, owner.candidateId, "assessment results"))) return;
+
     const result = await assessmentExecutionService.getAttemptResults(attemptId);
     if (!result) {
       res.status(404).json({ error: "Attempt not found" });
@@ -295,11 +323,7 @@ export const gradeWrittenAnswer = async (req: Request, res: Response) => {
       res.status(404).json({ error: "Attempt not found" });
       return;
     }
-    if (!(await canAccessCandidate(req.user, owner.candidateId))) {
-      logger.warn(`[access] user ${req.user.id} denied grading for candidate ${owner.candidateId}`);
-      res.status(403).json({ error: "You do not have access to this resource" });
-      return;
-    }
+    if (!(await allowCandidate(req, res, owner.candidateId, "grading"))) return;
 
     const attempt = await assessmentExecutionService.gradeWrittenAnswer(
       attemptId,

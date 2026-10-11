@@ -18,7 +18,19 @@ OpenATS assessments give every candidate the same structured evaluation. Create 
 
 ![Create a new assessment](/content/assessment/add-new-assessment.png)
 
-The assessment editor opens after the basic details are saved. Add questions that measure the skills required for the role. OpenATS supports **Multiple Choice**, **Short Answer**, and **True/False** questions. For multiple-choice and true/false questions, mark the correct answer so the assessment can calculate a score.
+The assessment editor opens after the basic details are saved. Add questions that measure the skills the role needs.
+
+| Question type | The candidate | How it is marked |
+| --- | --- | --- |
+| **Multiple Choice** | Picks one option | Automatically |
+| **Multiple Select** | Picks every option that applies | Automatically, with part marks |
+| **True / False** | Picks true or false | Automatically |
+| **Short Answer** | Writes a few lines | By a person |
+| **Long Answer** | Writes a longer answer | By a person |
+
+Give each question its **points**. For the first three types, mark the correct answer or answers.
+
+A Multiple Select question gives part marks: each correct option picked adds to the mark and each wrong one takes away, and the mark for a question never goes below zero.
 
 Use **Add question** to add more questions, drag questions to change their order, and save when the assessment is ready.
 
@@ -48,9 +60,19 @@ When the move is saved, OpenATS sends the assessment invitation automatically an
 
 ![Assessment invitation sent after a stage change](/content/assessment/assessment-invitation.png)
 
-The candidate receives an email containing a private assessment link. They can select **Start Assessment** in the email to open the assessment. The link is unique to that candidate and should not be shared.
+The candidate receives the "Assessment invite" email with a private link. The link is unique to that candidate and should not be shared.
 
-The candidate completes the questions within the configured time limit. When time expires, the assessment is submitted automatically. A candidate cannot complete an attempt after it has expired or already been submitted.
+## What the candidate sees
+
+1. **Before starting**: the assessment name, the position and your company, the number of questions, the time allowed, and a short list of rules. The time begins when they select **Start the assessment**.
+2. **During the assessment**: one question at a time, with a clock at the top and a numbered list of all the questions. They can move between questions and change an answer until they submit.
+3. **Before submitting**: a list of every question showing which are answered, then a final confirmation.
+
+Things worth knowing:
+
+- **The time limit is in minutes** and does not pause. When it runs out, the answers given so far are submitted automatically, and no more answers are accepted.
+- **Answers are saved as the candidate goes.** If they reload the page or lose their connection, their answers are still there when they return.
+- **An assessment can be taken once.** After it is submitted, nothing can be changed.
 
 ## Review a candidate's answers
 
@@ -61,7 +83,9 @@ After the candidate submits the assessment:
 3. Open the **Assessments** tab in the candidate profile.
 4. Find the completed assessment and select **View candidate answers**.
 
-The results view shows the candidate's responses and the calculated score. Use the answers together with the resume, interview feedback, and other hiring evidence when making a decision.
+The results view shows the candidate's answers and the score. Short Answer and Long Answer questions wait for a person to mark them: enter the points for each, and the score is completed once all of them are marked.
+
+Use the result together with the CV, interview feedback and other evidence when making a decision. See [Candidate scoring](./candidate-scoring) for how the assessment counts towards a candidate's score.
 
 ![Candidate assessment answers](/content/assessment/candidate-answer.png)
 

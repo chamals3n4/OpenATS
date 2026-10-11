@@ -9,7 +9,7 @@ import {
   saveAnswer,
   completeAttempt,
 } from "./assessment-api";
-import { useAssessmentTimer } from "../hooks/use-assessment-timer";
+import { remainingSeconds, useAssessmentTimer } from "../hooks/use-assessment-timer";
 import { buildAnswerPayload, countAnswered, restoreAnswers } from "../_lib/assessment-utils";
 import type { Screen, AttemptData, Answer } from "../_lib/assessment-types";
 import { IntroScreen } from "./screens/intro-screen";
@@ -97,8 +97,11 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
       const saved = await Promise.all(
         qs.filter((q) => answers[q.id]).map((q) => saveCurrentAnswer(q.id, answers[q.id])),
       );
-      // Submitting now would lock in the assessment without those answers, so stop and let them retry.
-      if (saved.includes(false)) {
+      // Submitting now would lock in the assessment without those answers, so stop and let them
+      // retry. Once the time is up the server no longer takes answers, so there is nothing to
+      // retry: submit what was saved in time.
+      const timeIsUp = attempt ? remainingSeconds(attempt) <= 0 : false;
+      if (saved.includes(false) && !timeIsUp) {
         throw new Error("Some of your answers could not be saved. Check your connection, then submit again.");
       }
       await completeAttempt(token);

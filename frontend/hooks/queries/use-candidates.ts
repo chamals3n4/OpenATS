@@ -372,33 +372,6 @@ export function useUnrejectCandidate() {
   });
 }
 
-export function useCreateInterview() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: ({
-      candidateId,
-      data,
-    }: {
-      candidateId: number;
-      data: {
-        stageId: number;
-        scheduledAt?: string;
-        durationMinutes?: number;
-        notes?: string;
-      };
-    }) =>
-      serverFetch<{ data: CandidateInterview }>(
-        `/candidates/${candidateId}/interviews`,
-        { method: "POST", body: JSON.stringify(data) },
-      ),
-    onSuccess: (_, variables) => {
-      queryClient.invalidateQueries({
-        queryKey: ["candidates", variables.candidateId],
-      });
-    },
-  });
-}
-
 export function useUpdateInterview() {
   const queryClient = useQueryClient();
   return useMutation({

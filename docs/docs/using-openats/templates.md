@@ -5,90 +5,108 @@ title: Templates
 
 # Templates
 
-Templates let your team prepare reusable messages and interview details once, then use them throughout recruitment. OpenATS has two template types:
+Templates hold wording and settings you reuse, so nobody types the same email or interview details twice. Open **Templates** from the dashboard sidebar. The page has two tabs:
 
-- **Email**: messages sent to candidates, such as interview invitations, rejection messages, and offer emails.
-- **Interview Event**: interview details, meeting settings, and proposed time slots used when scheduling an interview.
+| Tab | What is in it | Who uses it |
+| --- | --- | --- |
+| **Your templates** | Email templates and Interview Event templates that you create | A person picks one when rejecting, sending an offer, scheduling an interview or writing an email |
+| **Automatic emails** | The emails OpenATS sends by itself | Nobody picks these. OpenATS sends them at the right moment |
 
-The selected type controls which builder opens and which predefined variables are available.
+Hiring Managers and Super Admins can create and change templates. Interviewers can open them to read.
 
 ![Template types](/content/templates/template-type.png)
 
 ## Email templates
 
+An email template is a subject and a message. It is used in three places:
+
+- the email sent when you **reject** a candidate
+- the **offer letter** a candidate reads when you send an offer
+- as a starting point for a **manual email** to a candidate
+
 ### Create an email template
 
-1. Open **Templates** from the dashboard sidebar.
-2. Select **New Template**.
-3. Choose **Email**, then select **Continue**.
-4. Enter a clear template name, such as `Interview invitation` or `Application rejected`.
-5. Add the email subject.
-6. Write the email body in the editor.
-7. Review the live preview on the right side of the page.
-8. Select **Save Template**.
+1. Open **Templates** and select **New Template**.
+2. Choose **Email**, then **Continue**.
+3. Enter a **Template name**. Only your team sees the name.
+4. Enter the **Subject** and write the message.
+5. Check the **Preview** on the right. It fills the variables with sample data.
+6. Select **Save template**.
 
-![Create an email template](/content/templates/email-tempalte-creation.png)
+The editor supports bold and italic text, three heading sizes, bullet and numbered lists, links, dividers and buttons. Type `/` in the message to add any of these from the keyboard.
 
-The editor supports headings, bold and italic text, bullet and numbered lists, links, dividers, and buttons. Use a short subject and keep the message clear for the candidate who receives it.
+### Variables
 
-### Insert predefined variables
+A variable is a placeholder such as `{{candidate_name}}`. OpenATS replaces it with the real value when the email is sent. To add one, place the cursor where it should go and select **Variable**.
 
-Variables are replaced with the correct value when OpenATS sends the email. Do not type a candidate's details directly into a reusable template.
+| Variable | Replaced with | Works in |
+| --- | --- | --- |
+| `{{candidate_name}}` | The candidate's full name | Any email |
+| `{{job_title}}` | The job the candidate applied for | Any email |
+| `{{company_name}}` | Your company name | Any email |
+| `{{employment_type}}` | The employment type | Any email |
+| `{{start_date}}` | The start date in the offer | Offer letters only |
+| `{{salary}}` | The salary in the offer | Offer letters only |
+| `{{currency}}` | The currency of the salary | Offer letters only |
+| `{{reporting_manager}}` | The reporting manager in the offer | Offer letters only |
+| `{{benefits}}` | The benefits in the offer | Offer letters only |
+| `{{offer_review_url}}` | The candidate's private link to the offer | Offer letters only |
 
-1. Place the cursor in the subject or body where the value should appear.
-2. Select the **braces** button for the variable picker.
-3. Search for a variable or choose one from the list.
-4. Select the variable. OpenATS inserts it in the `{{variable_name}}` format.
-5. Check the preview and save the template.
-
-Available predefined variables include:
-
-| Variable | Value inserted when sent |
-| --- | --- |
-| `{{candidate_name}}` | Candidate's full name |
-| `{{job_title}}` | Job title connected to the candidate |
-| `{{company_name}}` | Your company name |
-| `{{start_date}}` | Offer start date |
-| `{{salary}}` | Offer salary |
-| `{{currency}}` | Offer currency |
-| `{{employment_type}}` | Employment type for the offer |
-| `{{reporting_manager}}` | Reporting manager in the offer |
-| `{{benefits}}` | Benefits included in the offer |
-| `{{offer_review_url}}` | Candidate's private offer-review link |
-
-Some variables only have a value in the workflow where they apply. For example, offer variables are populated for an offer email, while an interview invitation should normally use `candidate_name` and `job_title`.
-
-You can also type `/` in the email body to open the editor commands and insert headings, lists, buttons, dividers, or variables. Use the variable picker when possible so the spelling and braces are correct.
-
-### Edit, preview, and reuse a template
-
-Select an existing template from the Templates list to open it. Save changes with **Save Changes**. Use the preview panel to check the subject, spacing, links, and variable placement before using the template in a candidate workflow.
-
-Email templates are selected where an email is sent, including candidate communication, rejection messages, interview invitations, and offers. Creating a template does not send an email by itself.
+The offer-only variables have a value only when an offer is sent. If a template that uses one is chosen for a rejection, OpenATS refuses to send it and names the variable, so a candidate never receives an email with a gap in it.
 
 ## Interview Event templates
 
-An **Interview Event** template stores the details used to schedule a particular kind of interview. It can include the event name, description, event type, meeting settings, location, and proposed time slots.
+An Interview Event template describes one kind of interview, for example "Technical interview". It does **not** hold dates. You choose the times each time you schedule an interview.
+
+| Setting | What it is |
+| --- | --- |
+| **Event name** | The title of the interview. Candidates see it |
+| **Length** | How long the interview lasts, from 15 minutes to 2 hours |
+| **Note for your team** | An optional note. Candidates do not see it |
+| **Virtual** or **On-site** | A video call, or in person at an address |
+| **Meeting link** | For a virtual interview: **Google Meet** (a new link for each interview) or **My own link** (Zoom, Teams or any other link) |
+| **Address** | For an on-site interview |
+| **Message to the candidate** | Optional. Sent in the email that asks the candidate to pick a time |
 
 ### Create an Interview Event template
 
-1. Open **Templates** from the dashboard sidebar.
-2. Select **New Template**.
-3. Choose **Interview Event**, then select **Continue**.
-4. Enter the template name, such as `Technical interview`.
-5. Add an optional description for the hiring team.
-6. Choose the **Event Type**:
-   - **Virtual** for a video interview.
-   - **On-site** for an in-person interview.
-7. For a virtual event, choose one **Meeting Link** option:
-   - **Auto-generate Google Meet** creates a Meet link from the assigned interviewer's connected Google account when the interview is scheduled.
-   - **Paste a link** lets you save a Zoom, Microsoft Teams, Meet, or other meeting URL in the template.
-8. For an on-site event, enter the office address, building, room, or floor in **Location**.
-9. Add one or more future **Time Slots**. Candidates choose one of these slots when they receive the interview invitation. Use **Add slot** for additional choices and remove unused slots with the delete action.
-10. Select **Save Template**.
+1. Open **Templates** and select **New Template**.
+2. Choose **Interview Event**, then **Continue**.
+3. Fill in the settings above.
+4. Check the **Preview**, which shows what the candidate will see.
+5. Select **Save template**.
 
-![Create an Interview Event template](/content/templates/event-templat.png)
+If you leave **Message to the candidate** empty, the automatic "Interview: pick a time" email is sent with its usual wording.
 
-The saved event template can be selected while scheduling an interview. The scheduler loads its event type, meeting or location details, message, and future slots so the hiring team does not have to enter them again for every candidate. You can still adjust the details before sending an invitation.
+A Google Meet link can only be created for an interviewer who has connected their Google account. See [Interviews and feedback](./interviews#google-calendar-and-google-meet).
 
-For automatic Google Meet links, the interviewer must have Google Calendar connected in **Settings → Integrations**. If no connection is available, use **Paste a link** and provide the meeting URL manually.
+## Automatic emails
+
+OpenATS sends these emails by itself. Each has built-in wording, so they work without any setup.
+
+| Email | Sent when |
+| --- | --- |
+| **Application received** | A candidate applies |
+| **Assessment invite** | A candidate reaches a stage that has an assessment |
+| **Assessment completed** | A candidate hands in an assessment |
+| **Interview: pick a time** | You schedule an interview and let the candidate choose a time |
+| **Interview confirmed** | The interview gets its time |
+| **Interview cancelled** | You cancel an interview the candidate had confirmed |
+| **Offer** | You send an offer. It links to the offer letter |
+
+### Change the wording
+
+1. Open **Templates** and select the **Automatic emails** tab.
+2. Select **Edit** next to an email.
+3. Change the subject or the message. The variable list shows only what that email can fill in.
+4. Select **Save changes**.
+
+An email you have changed is marked **Edited**. To go back to the built-in wording, open it and select **Reset to default**.
+
+Only the subject and the message can be changed. OpenATS adds the details, such as the date and address, and the buttons, such as **Choose a time**, when it sends the email. This means a link the candidate needs can never be removed by mistake.
+
+## How emails look and where they are kept
+
+Every email to a candidate uses the same design, with your company name at the top.
+
+Every email is also saved in the candidate's **Email** tab, whether a person wrote it or OpenATS sent it. An email the mail provider did not accept is marked **Not delivered**.

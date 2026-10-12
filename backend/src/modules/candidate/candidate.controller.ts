@@ -18,6 +18,7 @@ import { canAccessCandidate } from "../../shared/auth/job-access";
 import logger from "../../utils/logger";
 
 import { requestCvAnalysis } from "../../queues/cv-analysis/queue";
+import { requestCvExtraction } from "../../queues/cv-extract/queue";
 import { getErrorMessage} from "../../utils/error.utils";
 
 const customAnswerSchema = z.object({
@@ -114,6 +115,14 @@ export const applyForJob = async (req: Request, res: Response) => {
     );
 
     if (result.resumeUrl) {
+      requestCvExtraction({
+        candidateId: result.id,
+        resumeUrl: result.resumeUrl,
+      }).catch((err) =>
+        logger.error(
+          `Failed to enqueue CV text extraction for candidateId=${result.id}: ${getErrorMessage(err)}`,
+        ),
+      );
       requestCvAnalysis({
         candidateId: result.id,
         jobId: result.jobId,
@@ -577,6 +586,14 @@ export const updateCandidateBasicDetails = async (
     }
 
     if (newResumeUrl) {
+      requestCvExtraction({
+        candidateId: updated.id,
+        resumeUrl: newResumeUrl,
+      }).catch((err) =>
+        logger.error(
+          `Failed to enqueue CV text extraction for candidateId=${updated.id}: ${getErrorMessage(err)}`,
+        ),
+      );
       requestCvAnalysis({
         candidateId: updated.id,
         jobId: updated.jobId,

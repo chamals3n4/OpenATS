@@ -21,6 +21,7 @@ pnpm drizzle-kit generate   # generate migration SQL (always commit output)
 pnpm drizzle-kit migrate    # apply migrations to DB
 pnpm tsx src/db/seed.ts     # seed pipeline stages (required on first setup)
 pnpm tsx src/db/backfill-scores.ts   # re-score every candidate (run after changing how scores are calculated)
+pnpm tsx src/db/backfill-cv-text.ts  # queue every CV whose text has not been read yet (the worker must be running)
 docker compose up -d        # local Postgres (5432) + Redis (6379), see docker-compose.yml at the repo root
 ```
 
@@ -56,6 +57,7 @@ pnpm exec tsx scripts/create-admin.ts   # create or reset a super admin (also `m
 - Logger is winston with console transport only (file transports commented out).
 - `exactOptionalPropertyTypes: false` in tsconfig — deliberate.
 - **Redis + BullMQ**: CV analysis runs as a background job queue, colocated under `backend/src/queues/cv-analysis/` (`queue.ts`, `worker.ts`, `events.ts`); shared Redis connection factory is `backend/src/config/redis.ts`. Connection is read from `REDIS_URL` (defaults to `redis://localhost:6379`). A dedicated connection is created per Queue/Worker (BullMQ best practice), not a shared singleton.
+- **CV text** is read from every uploaded CV on this server, with no AI and no outside service, and stored in `candidate_cv_text` (one row per candidate, with a generated `search_vector` for full-text search). `requestCvExtraction` in `queues/cv-extract/queue.ts` is called wherever a CV arrives or is replaced; the worker runs in the same process as the CV analysis worker (`src/worker.ts`). Reading the file is pure code in `modules/candidate/cv-text/` (`extractCvText`): the type comes from the file's bytes, `layout.ts` puts two-column pages in reading order, `clean.ts` tidies the text, and `quality.ts` marks a scan or an image-only CV as `empty` instead of storing rubbish. `normalize-search.ts` rewrites terms Postgres cannot keep (`C++`, `.NET`, `Node.js`) and must be applied to a search query as well as to the stored text. Raise `EXTRACTOR_VERSION` when a change would give a different result for the same file, then run the backfill. A result is only saved onto the row for the same `resume_url`, so a job for a replaced CV cannot overwrite the new one.
 - **AI CV analysis is optional and off by default.** It sends CVs to Google Gemini, so it runs only when the `app_settings.ai_cv_analysis_enabled` switch is on (Settings → General) **and** `GEMINI_API_KEY` is set; `modules/settings/ai-settings.service.ts` (`isCvAnalysisActive`) is the single check. `requestCvAnalysis` in `queues/cv-analysis/queue.ts` is the only way a CV is queued and it enforces that check, and the worker checks again before sending. The Gemini client is created lazily so the server starts without a key. The analysis produces notes only (summary, strengths, gaps, matched/missing skills): there is deliberately no AI score or verdict, and it is never part of the candidate score. While it is off the API returns `cvAnalysis: null` and the candidate page hides the "AI analysis" tab; saved analyses are kept.
 
 ### Database

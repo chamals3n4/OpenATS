@@ -26,6 +26,7 @@ import {
   candidateAssessmentAnswers,
   candidateAssessmentAnswerSelections,
   candidateCvAnalysis,
+  candidateCvText,
 } from "./candidates";
 import { offers } from "./offers";
 import { candidateActivities } from "./candidate-activities";
@@ -349,6 +350,16 @@ export const candidateCvAnalysisRelations = relations(
     job: one(jobs, {
       fields: [candidateCvAnalysis.jobId],
       references: [jobs.id],
+    }),
+  }),
+);
+
+export const candidateCvTextRelations = relations(
+  candidateCvText,
+  ({ one }) => ({
+    candidate: one(candidates, {
+      fields: [candidateCvText.candidateId],
+      references: [candidates.id],
     }),
   }),
 );

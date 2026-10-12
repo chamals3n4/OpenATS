@@ -267,6 +267,13 @@
       "when": 1791743623464,
       "tag": "0037_blushing_naoko",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1791804760027,
+      "tag": "0038_petite_chameleon",
+      "breakpoints": true
     }
   ]
 }

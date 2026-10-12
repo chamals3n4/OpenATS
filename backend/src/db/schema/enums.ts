@@ -97,6 +97,14 @@ export const cvAnalysisStatus = pgEnum("cv_analysis_status", [
   "failed",
 ]);
 
+// `empty`: the file was read, but there is no usable text in it (a scan, or an image-only CV).
+export const cvTextStatus = pgEnum("cv_text_status", [
+  "pending",
+  "done",
+  "empty",
+  "failed",
+]);
+
 export const meetingProvider = pgEnum("meeting_provider", ["google_meet"]);
 
 export const interviewRecommendation = pgEnum("interview_recommendation", [

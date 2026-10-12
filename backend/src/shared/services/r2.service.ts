@@ -125,6 +125,22 @@ export const r2Service = {
     );
   },
 
+  /** The stored file's bytes, whatever its type. Null when the URL is not one of ours. */
+  async getObjectByUrl(fileUrl: string): Promise<Buffer | null> {
+    const key = this.extractKeyFromUrl(fileUrl);
+    if (!key) return null;
+
+    const result = await r2Client.send(
+      new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET_NAME!,
+        Key: key,
+      }),
+    );
+    if (!result.Body) return null;
+
+    return Buffer.from(await result.Body.transformToByteArray());
+  },
+
   async getPdfByUrl(fileUrl: string): Promise<{
     body: Uint8Array;
     contentType: string;

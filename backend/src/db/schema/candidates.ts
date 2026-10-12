@@ -1,5 +1,7 @@
+import { sql, type SQL } from "drizzle-orm";
 import {
   boolean,
+  customType,
   integer,
   jsonb,
   numeric,
@@ -12,7 +14,7 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 
-import { assessmentStatus, candidateStatus, cvAnalysisStatus } from "./enums";
+import { assessmentStatus, candidateStatus, cvAnalysisStatus, cvTextStatus } from "./enums";
 import { jobs } from "./jobs";
 import { jobPipelineStages } from "./pipeline";
 import { users } from "./users";
@@ -257,6 +259,57 @@ export const candidateCvAnalysis = pgTable(
   (t) => [unique().on(t.candidateId)],
 );
 
+const tsvector = customType<{ data: string }>({
+  dataType() {
+    return "tsvector";
+  },
+});
+
+/**
+ * The text of a candidate's CV, read from the uploaded file on our own server. One row per
+ * candidate, in its own table so the large text stays out of `candidates`.
+ */
+export const candidateCvText = pgTable(
+  "candidate_cv_text",
+  {
+    id: serial("id").primaryKey(),
+    candidateId: integer("candidate_id")
+      .notNull()
+      .references(() => candidates.id, { onDelete: "cascade" }),
+
+    // The file this text came from. A result for any other file is out of date and is not saved.
+    resumeUrl: varchar("resume_url", { length: 1000 }).notNull(),
+
+    status: cvTextStatus("status").notNull().default("pending"),
+    // "text" (read from the file) or "ocr" (read from page images).
+    method: varchar("method", { length: 10 }),
+    fileType: varchar("file_type", { length: 10 }),
+
+    // Cleaned text, for people to read and for search snippets.
+    text: text("text"),
+    // The same text with terms the Postgres parser cannot keep ("C++", ".NET") rewritten. Search
+    // queries go through the same rewrite; see cv-text/normalize-search.ts.
+    searchText: text("search_text"),
+    searchVector: tsvector("search_vector").generatedAlwaysAs(
+      (): SQL => sql`to_tsvector('english', coalesce(${candidateCvText.searchText}, ''))`,
+    ),
+
+    pageCount: integer("page_count"),
+    charCount: integer("char_count"),
+    // Raised when extraction changes, so the backfill knows which rows to redo.
+    extractorVersion: integer("extractor_version").notNull().default(1),
+
+    errorMessage: text("error_message"),
+
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    unique().on(t.candidateId),
+    index("idx_candidate_cv_text_search").using("gin", t.searchVector),
+  ],
+);
+
 export type Candidate = typeof candidates.$inferSelect;
 export type NewCandidate = typeof candidates.$inferInsert;
 
@@ -280,3 +333,6 @@ export type NewCandidateAssessmentAnswer =
 
 export type CandidateCvAnalysis = typeof candidateCvAnalysis.$inferSelect;
 export type NewCandidateCvAnalysis = typeof candidateCvAnalysis.$inferInsert;
+
+export type CandidateCvText = typeof candidateCvText.$inferSelect;
+export type NewCandidateCvText = typeof candidateCvText.$inferInsert;

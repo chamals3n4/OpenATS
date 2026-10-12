@@ -22,6 +22,7 @@ import { candidateActivityService } from "./candidate-activity.service";
 import { socketService } from "../../shared/services/socket.service";
 import { scoringService } from "../scoring/scoring.service";
 import { toAiSummary } from "./cv-analysis.service";
+import { cvMatches, cvRank, cvTextService } from "./cv-text.service";
 import { rejectionService } from "../rejection/rejection.service";
 import { applicationReceivedEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
@@ -133,6 +134,26 @@ export interface CandidateBasicUpdateInput {
   resumeUrl?: string | null;
 }
 
+function nameMatches(search: string) {
+  return or(
+    ilike(candidates.firstName, `%${search}%`),
+    ilike(candidates.lastName, `%${search}%`),
+    ilike(candidates.email, `%${search}%`),
+  )!;
+}
+
+/**
+ * Search results, best first: someone found by name is who was being looked for, then the CVs
+ * that match the search most closely.
+ */
+function relevanceOrder(search: string) {
+  return [
+    sql`${nameMatches(search)} desc`,
+    sql`${cvRank(search)} desc nulls last`,
+    desc(candidates.appliedAt),
+  ];
+}
+
 function buildCandidateWhere(
   jobId: number | undefined,
   filters: Omit<CandidateFilters, "page" | "limit">,
@@ -143,13 +164,8 @@ function buildCandidateWhere(
     conditions.push(eq(candidates.currentStageId, filters.stageId));
   if (filters.status) conditions.push(eq(candidates.status, filters.status));
   if (filters.search) {
-    conditions.push(
-      or(
-        ilike(candidates.firstName, `%${filters.search}%`),
-        ilike(candidates.lastName, `%${filters.search}%`),
-        ilike(candidates.email, `%${filters.search}%`),
-      ),
-    );
+    // By name or email, or by anything written in the CV.
+    conditions.push(or(nameMatches(filters.search), cvMatches(filters.search)));
   }
   if (filters.minScore !== undefined) {
     conditions.push(sql`${candidates.totalScore} >= ${filters.minScore}`);
@@ -440,7 +456,13 @@ export const candidateService = {
         )
         .leftJoin(jobs, eq(candidates.jobId, jobs.id))
         .where(where)
-        .orderBy(...(rest.sort === "score" ? SCORE_ORDER : [desc(candidates.appliedAt)]))
+        .orderBy(
+          ...(rest.sort === "score"
+            ? SCORE_ORDER
+            : rest.search
+              ? relevanceOrder(rest.search)
+              : [desc(candidates.appliedAt)]),
+        )
         .limit(limit)
         .offset(offset),
 
@@ -450,8 +472,15 @@ export const candidateService = {
         .where(where),
     ]);
 
+    // Where in the CV the search was found, for the rows on this page only.
+    const snippets = rest.search
+      ? await cvTextService.snippets(rows.map((row) => row.id), rest.search)
+      : null;
+
     return {
-      rows,
+      rows: snippets
+        ? rows.map((row) => ({ ...row, cvSnippet: snippets.get(row.id) ?? null }))
+        : rows,
       total: countRow?.count ?? 0,
       page,
       limit,
@@ -655,6 +684,7 @@ export const candidateService = {
 
     return {
       ...candidate,
+      cvText: await cvTextService.getForCandidate(id),
       ratings,
       interviewSpread,
       answers,

@@ -6,6 +6,7 @@ import {
   getPipelineBoard,
   getCandidateById,
   getCandidateResume,
+  getCandidateCvText,
   moveCandidateStage,
   deleteCandidate,
   bulkDeleteCandidates,
@@ -33,6 +34,7 @@ router.get("/", getCandidates);
 router.get("/jobs/:jobId/board", requireManager, getPipelineBoard);
 router.get("/jobs/:jobId", getCandidates);
 router.get("/:id/resume", getCandidateResume);
+router.get("/:id/cv-text", getCandidateCvText);
 router.get("/:id", getCandidateById);
 router.put("/:id/rating", requireCandidateAccess("id"), setCandidateRating);
 router.patch("/:id", requireManager, upload.single("resume"), updateCandidateBasicDetails);

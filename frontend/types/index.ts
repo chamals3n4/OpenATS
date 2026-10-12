@@ -243,6 +243,11 @@ export type Candidate = {
   assessmentPassed?: boolean | null;
   /** A test link ran out unused. It counts as 0 and is flagged. */
   assessmentExpired?: boolean;
+  /**
+   * Sent with search results: where in the CV the search was found, with the matched words
+   * between [[ and ]]. Null when the candidate was found by name or email only.
+   */
+  cvSnippet?: string | null;
 };
 
 /** What the pipeline board needs about a candidate: the light row from `/candidates/jobs/:id/board`. */
@@ -304,7 +309,20 @@ export type AiSettings = {
   active: boolean;
 };
 
+/**
+ * The text read from a candidate's CV on the server. `empty` means the file was read but holds no
+ * usable text (a scan, or an image-only CV), so the candidate cannot be found by CV search.
+ */
+export type CandidateCvText = {
+  status: "pending" | "done" | "empty" | "failed";
+  method: string | null;
+  text: string | null;
+  pageCount: number | null;
+};
+
 export type CandidateDetail = Candidate & {
+  /** Null when the candidate has no CV, or it was uploaded before CV text was read. */
+  cvText?: CandidateCvText | null;
   weights?: { questions: number; assessment: number; rating: number; interview: number };
   /** How far apart the interviewers' scorecards were (0-100); null before any, or while hidden. */
   interviewSpread?: { count: number; min: number; max: number } | null;

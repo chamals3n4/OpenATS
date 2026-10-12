@@ -32,6 +32,7 @@ import { CvSheet } from "./_components/cv-sheet";
 import { AssessmentSheet } from "./_components/assessment-sheet";
 import { AiAnalysisSection } from "./_components/sections/ai-analysis-section";
 import { AnswersSection } from "./_components/sections/answer-section";
+import { CvTextSection } from "./_components/sections/cv-text-section";
 import { HistorySection } from "./_components/sections/history-section";
 import { OfferSection } from "./_components/sections/offer-section";
 import { InterviewsSection } from "./_components/sections/interviews-section";
@@ -273,6 +274,9 @@ export default function CandidateDetailPage({
               )}
               {activeSection === "answers" && (
                 <AnswersSection candidate={candidate} />
+              )}
+              {activeSection === "cv-text" && (
+                <CvTextSection cvText={candidate.cvText ?? null} hasResume={!!candidate.resumeUrl} />
               )}
               {activeSection === "history" && (
                 <HistorySection candidate={candidate} stageMap={stageMap} />

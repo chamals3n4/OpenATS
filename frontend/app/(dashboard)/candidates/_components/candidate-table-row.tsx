@@ -5,7 +5,7 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 import type { Candidate } from "@/types";
-import { timeAgo } from "../lib/candidate-utils";
+import { splitSnippet, timeAgo } from "../lib/candidate-utils";
 import { useIsManager } from "@/hooks/use-role";
 import { ScoreBadge } from "@/components/score-badge";
 
@@ -37,8 +37,31 @@ export function CandidateTableRow({
         checked={isSelected}
         onCheckedChange={onSelectedChange}
       />
-      <TableCell className="h-12 px-6 py-0 text-slate-900 dark:text-neutral-100 font-medium">
+      <TableCell
+        className={`px-6 text-slate-900 dark:text-neutral-100 font-medium ${
+          candidate.cvSnippet ? "py-2" : "h-12 py-0"
+        }`}
+      >
         {candidate.firstName} {candidate.lastName}
+        {candidate.cvSnippet && (
+          <p
+            className="mt-0.5 max-w-md truncate text-xs font-normal text-slate-500 dark:text-neutral-400"
+            title="Found in the CV"
+          >
+            {splitSnippet(candidate.cvSnippet).map((part, index) =>
+              part.match ? (
+                <mark
+                  key={index}
+                  className="rounded-sm bg-amber-100 px-0.5 text-slate-900 dark:bg-amber-900/50 dark:text-neutral-100"
+                >
+                  {part.text}
+                </mark>
+              ) : (
+                <span key={index}>{part.text}</span>
+              ),
+            )}
+          </p>
+        )}
       </TableCell>
       <TableCell className="h-12 px-6 py-0">
         {candidate.status === "rejected" ? (

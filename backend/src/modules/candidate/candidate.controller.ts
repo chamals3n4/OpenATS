@@ -19,6 +19,7 @@ import logger from "../../utils/logger";
 
 import { requestCvAnalysis } from "../../queues/cv-analysis/queue";
 import { requestCvExtraction } from "../../queues/cv-extract/queue";
+import { cvTextService } from "./cv-text.service";
 import { getErrorMessage} from "../../utils/error.utils";
 
 const customAnswerSchema = z.object({
@@ -309,6 +310,36 @@ export const getCandidateById = async (req: Request, res: Response) => {
       `Failed to fetch candidate id=${req.params.id}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({ error: "Failed to fetch candidate" });
+  }
+};
+
+/** The text read from the candidate's CV, for whoever may open the candidate. */
+export const getCandidateCvText = async (req: Request, res: Response) => {
+  try {
+    const id = parseInt((req.params.id ?? "").toString());
+    if (isNaN(id)) {
+      res.status(400).json({ error: "Invalid candidate ID" });
+      return;
+    }
+
+    // The same split as getCandidateById: only an interviewer is limited to their own jobs.
+    if (req.user.role === "interviewer" && !(await canAccessCandidate(req.user, id))) {
+      logger.warn(`[access] user ${req.user.id} denied candidate ${id}`);
+      res.status(403).json({ error: "You do not have access to this resource" });
+      return;
+    }
+
+    const cvText = await cvTextService.getForCandidate(id);
+    if (!cvText) {
+      res.status(404).json({ error: "This candidate has no CV text" });
+      return;
+    }
+    res.status(200).json({ data: cvText });
+  } catch (error) {
+    logger.error(
+      `Failed to fetch CV text for candidate id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`,
+    );
+    res.status(500).json({ error: "Failed to fetch CV text" });
   }
 };
 

@@ -61,6 +61,10 @@ const SECTION_TITLES: Record<string, string> = {
   other: "Other",
 };
 
+/** The heading shown for a section: the candidate's own, or ours when the CV gave none. */
+const sectionTitle = (section: { key: string; heading: string | null }) =>
+  section.heading ?? SECTION_TITLES[section.key] ?? "Other";
+
 const EDUCATION_LABELS: Record<string, string> = {
   secondary: "Secondary school",
   diploma: "Diploma",
@@ -193,7 +197,7 @@ export function CvTextSection({
   const matches = useMemo(() => {
     const contacts = cvText?.contacts;
     const shown = sections.length
-      ? sections.flatMap((section) => [section.heading ?? "", section.text])
+      ? sections.flatMap((section) => [sectionTitle(section), section.text])
       : [cvText?.text ?? ""];
     return countMatches(
       [...shown, ...(contacts ? [...contacts.emails, ...contacts.phones, ...contacts.links] : [])],
@@ -208,7 +212,11 @@ export function CvTextSection({
     const marks = body.current?.querySelectorAll<HTMLElement>("mark[data-cv-match]");
     if (!marks || marks.length === 0) return;
     marks.forEach((mark) => mark.removeAttribute("data-active"));
-    current.current = (current.current + direction + marks.length) % marks.length;
+    // Before the first step there is no current match: forward starts at the first, back at the last.
+    current.current =
+      current.current < 0
+        ? direction === 1 ? 0 : marks.length - 1
+        : (current.current + direction + marks.length) % marks.length;
     const mark = marks[current.current]!;
     mark.setAttribute("data-active", "");
     mark.scrollIntoView({ block: "center", behavior: "smooth" });
@@ -284,7 +292,7 @@ export function CvTextSection({
               {sections.map((section, index) => (
                 <section key={index} className={`px-4 py-3 ${cardCls}`}>
                   <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500 dark:text-neutral-400">
-                    <Hl>{section.heading ?? SECTION_TITLES[section.key] ?? "Other"}</Hl>
+                    <Hl>{sectionTitle(section)}</Hl>
                   </h4>
                   <div className="space-y-2">
                     {formatCvSection(section.key, section.text).map((block, blockIndex) => (

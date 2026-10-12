@@ -143,6 +143,16 @@ describe("searching candidates by what is in their CV", () => {
     expect(byEmail.body.data.map((c: any) => c.id)).toEqual([namesakeId]);
   });
 
+  it("treats % and _ as ordinary characters, not as match-anything", async () => {
+    const ids = async (query: string) =>
+      (await search(managerAuth, query, `/api/candidates/jobs/${teamJobId}`)).body.data.map((c: any) => c.id);
+
+    expect(await ids("_")).toEqual([]);
+    expect(await ids("%")).toEqual([]);
+    expect(await ids("Nim_l")).toEqual([]);
+    expect(await ids("Nimal")).toEqual([nurseId]);
+  });
+
   it("understands phrases, exclusions and C++", async () => {
     const ids = async (query: string) =>
       (await search(managerAuth, query, `/api/candidates/jobs/${teamJobId}`)).body.data.map((c: any) => c.id);

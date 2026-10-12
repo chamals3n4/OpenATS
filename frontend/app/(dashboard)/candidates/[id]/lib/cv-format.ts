@@ -34,7 +34,7 @@ function splitList(text: string): string[] {
     }
   }
   items.push(current);
-  return items.map((item) => item.trim().replace(/\.$/, "")).filter(Boolean);
+  return items.map((item) => item.trim()).filter(Boolean);
 }
 
 /** A list reads as tags only when it is one: several short items, not a sentence with commas. */

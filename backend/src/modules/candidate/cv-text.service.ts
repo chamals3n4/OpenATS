@@ -148,11 +148,11 @@ export const cvTextService = {
    */
   async reparseAll(): Promise<number> {
     const rows = await db
-      .select({ id: candidateCvText.id, text: candidateCvText.text })
+      .select({ id: candidateCvText.id, text: candidateCvText.text, resumeUrl: candidateCvText.resumeUrl })
       .from(candidateCvText)
       .where(eq(candidateCvText.status, "done"));
 
-    for (const { id, text } of rows) {
+    for (const { id, text, resumeUrl } of rows) {
       if (!text) continue;
       const profile = buildCvProfile(text);
       await db
@@ -164,7 +164,15 @@ export const cvTextService = {
           educationLevel: profile.educationLevel,
           contacts: profile.contacts,
         })
-        .where(eq(candidateCvText.id, id));
+        // The CV may have been replaced since the rows were read. These details describe the old
+        // text, so they are only written while the row is still done and still for the same file.
+        .where(
+          and(
+            eq(candidateCvText.id, id),
+            eq(candidateCvText.status, "done"),
+            eq(candidateCvText.resumeUrl, resumeUrl),
+          ),
+        );
     }
     return rows.length;
   },

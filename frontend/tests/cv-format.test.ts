@@ -49,7 +49,13 @@ describe("formatCvSection", () => {
       formatCvSection("skills", "Backend & APIs: Node.js (Express.js, Koa), Gin, Spring Boot\nTriage, Wound care, Phlebotomy."),
     ).toEqual([
       { type: "tags", label: "Backend & APIs", items: ["Node.js (Express.js, Koa)", "Gin", "Spring Boot"] },
-      { type: "tags", label: null, items: ["Triage", "Wound care", "Phlebotomy"] },
+      { type: "tags", label: null, items: ["Triage", "Wound care", "Phlebotomy."] },
+    ]);
+  });
+
+  it("keeps the full stop of an abbreviation at the end of a tag", () => {
+    expect(formatCvSection("skills", "Degrees: B.Sc., Ph.D.")).toEqual([
+      { type: "tags", label: "Degrees", items: ["B.Sc.", "Ph.D."] },
     ]);
   });
 

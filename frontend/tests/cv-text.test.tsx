@@ -170,4 +170,45 @@ describe("finding words in the CV summary", () => {
     fireEvent.change(box, { target: { value: "" } });
     expect(screen.queryByRole("status")).toBeNull();
   });
+
+  const twoSections: CandidateCvText = {
+    status: "done",
+    method: "text",
+    text: "",
+    pageCount: 1,
+    sections: [
+      { key: "header", heading: null, text: "Nimal Fernando" },
+      { key: "experience", heading: "Experience", text: "Nurse one\nNurse two\nNurse three" },
+    ],
+  };
+
+  it("counts a match in a heading the page supplies, since it is marked too", () => {
+    const { container } = render(<CvTextSection hasResume cvText={twoSections} />);
+    fireEvent.change(screen.getByLabelText("Find in this CV"), { target: { value: "top" } });
+    expect([...container.querySelectorAll("mark")].map((m) => m.textContent)).toEqual(["Top"]);
+    expect(screen.getByRole("status").textContent).toContain("1 match.");
+  });
+
+  it("steps through the matches, starting from the last one when going back", () => {
+    Element.prototype.scrollIntoView = () => {};
+    const { container } = render(<CvTextSection hasResume cvText={twoSections} />);
+    const box = screen.getByLabelText("Find in this CV");
+    const active = () => [...container.querySelectorAll("mark")].findIndex((m) => m.hasAttribute("data-active"));
+
+    fireEvent.change(box, { target: { value: "nurse" } });
+    expect(active()).toBe(-1);
+    fireEvent.keyDown(box, { key: "Enter", shiftKey: true });
+    expect(active()).toBe(2);
+    fireEvent.keyDown(box, { key: "Enter", shiftKey: true });
+    expect(active()).toBe(1);
+
+    // Typing again starts over: forward goes to the first, and the end wraps round.
+    fireEvent.change(box, { target: { value: "nurs" } });
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(active()).toBe(0);
+    fireEvent.keyDown(box, { key: "Enter", shiftKey: true });
+    expect(active()).toBe(2);
+    fireEvent.keyDown(box, { key: "Enter" });
+    expect(active()).toBe(0);
+  });
 });

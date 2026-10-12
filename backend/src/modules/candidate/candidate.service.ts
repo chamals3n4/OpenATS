@@ -137,10 +137,13 @@ export interface CandidateBasicUpdateInput {
 }
 
 function nameMatches(search: string) {
+  // "%" and "_" mean "anything" to LIKE. Typed into a search box they are ordinary characters, so
+  // a search for "_" must not match every candidate.
+  const pattern = `%${search.replace(/[\\%_]/g, "\\$&")}%`;
   return or(
-    ilike(candidates.firstName, `%${search}%`),
-    ilike(candidates.lastName, `%${search}%`),
-    ilike(candidates.email, `%${search}%`),
+    ilike(candidates.firstName, pattern),
+    ilike(candidates.lastName, pattern),
+    ilike(candidates.email, pattern),
   )!;
 }
 

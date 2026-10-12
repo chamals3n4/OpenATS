@@ -51,6 +51,8 @@ export type CandidateListFilters = {
   flag?: CandidateFlagFilter;
   /** Only candidates scored on every part the job uses. */
   fullyScored?: boolean;
+  /** Only candidates whose CV shows at least this many years of work (an estimate). */
+  minExperience?: number;
   page?: number;
   limit?: number;
 };
@@ -65,6 +67,7 @@ export function candidateListParams(filters?: CandidateListFilters): URLSearchPa
   if (filters?.minScore !== undefined) params.set("minScore", String(filters.minScore));
   if (filters?.flag) params.set("flag", filters.flag);
   if (filters?.fullyScored) params.set("fullyScored", "true");
+  if (filters?.minExperience !== undefined) params.set("minExperience", String(filters.minExperience));
   if (filters?.page) params.set("page", String(filters.page));
   if (filters?.limit) params.set("limit", String(filters.limit));
   return params;

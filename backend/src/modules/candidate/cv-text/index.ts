@@ -2,11 +2,14 @@ import { cleanCvText } from "./clean";
 import { detectFileType, type CvFileType } from "./detect";
 import { extractPdfText } from "./extract-pdf";
 import { normalizeForSearch } from "./normalize-search";
+import { buildCvProfile, type CvProfile } from "./profile";
 import { hasUsableText } from "./quality";
 
 /**
- * Raise this when a change here would give a different result for the same file, then run
- * `pnpm tsx src/db/backfill-cv-text.ts` so CVs read earlier are read again.
+ * Raise this when a change to how a file is read would give different text for the same file, then
+ * run `pnpm tsx src/db/backfill-cv-text.ts` so CVs read earlier are read again. A change to what is
+ * worked out from the text (sections, years, education, search terms) does not need it: run the
+ * backfill with `--reparse` instead.
  */
 export const EXTRACTOR_VERSION = 1;
 
@@ -21,6 +24,8 @@ export interface ExtractedCv {
   text: string;
   searchText: string;
   pageCount: number;
+  /** Null when there is no text to read it from. */
+  profile: CvProfile | null;
 }
 
 /** Reads the text of a CV. Nothing leaves the server. */
@@ -45,7 +50,7 @@ export async function extractCvText(file: Buffer): Promise<ExtractedCv> {
 
   const text = cleanCvText(extracted.text);
   if (!hasUsableText(text, extracted.pageCount)) {
-    return { status: "empty", fileType, method: "text", text: "", searchText: "", pageCount: extracted.pageCount };
+    return { status: "empty", fileType, method: "text", text: "", searchText: "", pageCount: extracted.pageCount, profile: null };
   }
 
   return {
@@ -55,5 +60,6 @@ export async function extractCvText(file: Buffer): Promise<ExtractedCv> {
     text,
     searchText: normalizeForSearch(text),
     pageCount: extracted.pageCount,
+    profile: buildCvProfile(text),
   };
 }

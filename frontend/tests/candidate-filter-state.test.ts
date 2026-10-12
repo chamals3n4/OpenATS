@@ -95,3 +95,28 @@ describe("restoring saved filters", () => {
     expect(hasFilterParams(new URLSearchParams("from=candidates"))).toBe(false);
   });
 });
+
+describe("the years of experience filter", () => {
+  it("is written to the address and read back, including 0", () => {
+    expect(toFilterParams({ ...EMPTY_FILTERS, minExperience: 3 }).toString()).toBe("minExperience=3");
+    for (const minExperience of [0, 3, 12.5]) {
+      const state = { ...EMPTY_FILTERS, minExperience };
+      expect(parseFilterState(toFilterParams(state))).toEqual(state);
+    }
+  });
+
+  it("ignores a value that is not a number and keeps one within range", () => {
+    expect(parseFilterState(new URLSearchParams("minExperience=abc")).minExperience).toBeUndefined();
+    expect(parseFilterState(new URLSearchParams("minExperience=")).minExperience).toBeUndefined();
+    expect(parseFilterState(new URLSearchParams("minExperience=900")).minExperience).toBe(60);
+    expect(parseFilterState(new URLSearchParams("minExperience=-2")).minExperience).toBe(0);
+  });
+
+  it("has a chip worded as an estimate, counts in the menu and can be cleared", () => {
+    const state = { ...EMPTY_FILTERS, minExperience: 3 };
+    expect(activeFilterChips(state, jobs)).toEqual([{ key: "minExperience", label: "About 3+ years experience" }]);
+    expect(filtersMenuCount(state)).toBe(1);
+    expect(clearFilter(state, "minExperience")).toEqual(EMPTY_FILTERS);
+    expect(hasFilterParams(toFilterParams(state))).toBe(true);
+  });
+});

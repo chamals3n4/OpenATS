@@ -129,6 +129,21 @@ describe("stored CV text", () => {
     expect(await matches("nurse")).toBe(false);
   });
 
+  it("works the details out again from the stored text, without the file", async () => {
+    await cvTextService.markPending(candidateId, OLD_URL);
+    await cvTextService.save(candidateId, OLD_URL, await extractCvText(cvFile()));
+    await db
+      .update(candidateCvText)
+      .set({ sections: null, searchText: "stale" })
+      .where(eq(candidateCvText.candidateId, candidateId));
+    expect(await matches("nurse")).toBe(false);
+
+    expect(await cvTextService.reparseAll()).toBeGreaterThanOrEqual(1);
+
+    expect(await matches("nurse")).toBe(true);
+    expect((await cvTextService.getForCandidate(candidateId))?.sections?.[0]?.key).toBe("header");
+  });
+
   it("goes when the candidate is deleted", async () => {
     await db.delete(candidates).where(eq(candidates.id, candidateId));
     expect(await cvTextService.getForCandidate(candidateId)).toBeNull();

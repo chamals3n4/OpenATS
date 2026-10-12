@@ -94,7 +94,11 @@ export default function CandidatesPageClient() {
   // Interviewers cannot use the score filters, so a stale value in the address is ignored for them.
   const scoreFilter = isInterviewer ? undefined : filters.minScore;
   const onlyFullyScored = isInterviewer ? false : filters.fullyScored;
-  const hasScoreFilters = scoreFilter !== undefined || onlyFullyScored || filters.flag !== "any";
+  const hasScoreFilters =
+    scoreFilter !== undefined ||
+    onlyFullyScored ||
+    filters.flag !== "any" ||
+    filters.minExperience !== undefined;
 
   // ── Data ───────────────────────────────────────────────────
   const { data: candidatesData, isLoading } = useCandidates(selectedJobId, {
@@ -104,6 +108,7 @@ export default function CandidatesPageClient() {
     minScore: scoreFilter,
     flag: filters.flag === "any" ? undefined : filters.flag,
     fullyScored: onlyFullyScored || undefined,
+    minExperience: filters.minExperience,
     page,
     limit: PAGE_LIMIT,
   }, { enabled: hydrated });
@@ -163,8 +168,8 @@ export default function CandidatesPageClient() {
 
   const selectionScopeKey = useMemo(
     () =>
-      `${selectedJobId ?? "all"}|${selectedStatus}|${debouncedSearch}|${filters.sort}|${scoreFilter ?? ""}|${filters.flag}|${onlyFullyScored}`,
-    [debouncedSearch, selectedJobId, selectedStatus, filters.sort, scoreFilter, filters.flag, onlyFullyScored],
+      `${selectedJobId ?? "all"}|${selectedStatus}|${debouncedSearch}|${filters.sort}|${scoreFilter ?? ""}|${filters.flag}|${onlyFullyScored}|${filters.minExperience ?? ""}`,
+    [debouncedSearch, selectedJobId, selectedStatus, filters.sort, scoreFilter, filters.flag, onlyFullyScored, filters.minExperience],
   );
 
   const handleSearchChange = useCallback((value: string) => {
@@ -252,8 +257,8 @@ export default function CandidatesPageClient() {
           pagination={pagination}
           onPageChange={setPage}
           onDeleteSelected={handleDeleteSelected}
-          // "Delete all matching" only knows job, search and status, so with a score or flag filter
-          // on it would delete people the list is not showing. Picking rows still works.
+          // "Delete all matching" only knows job, search and status, so with a score, flag or
+          // experience filter on it would delete people the list is not showing. Picking rows still works.
           onDeleteAllMatching={hasScoreFilters ? undefined : handleDeleteAllMatchingCandidates}
           isDeletingSelected={
             deleteMutation.isPending || bulkDeleteMutation.isPending

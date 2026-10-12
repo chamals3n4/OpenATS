@@ -61,6 +61,8 @@ describe("candidateListParams", () => {
   it("keeps a minimum score of 0, which is a real choice", () => {
     expect(candidateListParams({ minScore: 0 }).get("minScore")).toBe("0");
     expect(candidateListParams({ fullyScored: false }).has("fullyScored")).toBe(false);
+    expect(candidateListParams({ minExperience: 0 }).get("minExperience")).toBe("0");
+    expect(candidateListParams({}).has("minExperience")).toBe(false);
   });
 });
 

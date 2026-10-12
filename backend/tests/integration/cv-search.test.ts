@@ -17,6 +17,7 @@ import { candidates } from "../../src/db/schema/candidates";
 import { users } from "../../src/db/schema/users";
 import { cvTextService } from "../../src/modules/candidate/cv-text.service";
 import { normalizeForSearch } from "../../src/modules/candidate/cv-text/normalize-search";
+import { buildCvProfile } from "../../src/modules/candidate/cv-text/profile";
 import { initTestKeys, bearer } from "../helpers/jwt";
 
 // A word no other test's data contains, so results are only this file's candidates.
@@ -34,7 +35,12 @@ const NURSE_CV = [
   "Eight years of experience in intensive care and emergency wards.",
   "Triage, wound care, patient records and ventilator management.",
   "Built ward reporting tools in C++.",
+  "Work Experience",
+  "Staff Nurse, 2018 - 2026",
+  "Education",
+  "Diploma in Nursing",
 ].join("\n");
+// No dates, so nothing can be said about how long they have worked.
 const WELDER_CV = "Certified welder. MIG and TIG welding, structural steel, blueprint reading. Ten years on site.";
 
 async function addCandidate(jobId: number, firstName: string, lastName: string, cv: string) {
@@ -51,6 +57,7 @@ async function addCandidate(jobId: number, firstName: string, lastName: string, 
     text: cv,
     searchText: normalizeForSearch(cv),
     pageCount: 1,
+    profile: buildCvProfile(cv, new Date("2026-10-12T00:00:00Z")),
   });
   return candidate!.id;
 }
@@ -165,7 +172,48 @@ describe("searching candidates by what is in their CV", () => {
   });
 });
 
+describe("filtering by years of experience", () => {
+  const ids = async (minExperience: string) =>
+    (
+      await request(app)
+        .get(`/api/candidates/jobs/${teamJobId}`)
+        .query({ minExperience })
+        .set("Authorization", managerAuth)
+    ).body.data.map((c: any) => c.id);
+
+  it("keeps candidates whose CV shows at least that many years", async () => {
+    expect(await ids("5")).toEqual([nurseId]);
+    expect(await ids("8")).toEqual([nurseId]);
+    expect(await ids("9")).toEqual([]);
+  });
+
+  it("leaves out a candidate whose years are unknown, even at zero", async () => {
+    expect(await ids("0")).toEqual([nurseId]);
+  });
+
+  it("ignores a value that is not a number", async () => {
+    expect((await ids("abc")).sort()).toEqual([nurseId, namesakeId].sort());
+    expect((await ids("")).sort()).toEqual([nurseId, namesakeId].sort());
+  });
+});
+
 describe("reading a candidate's CV text", () => {
+  it("includes the sections and the estimates, and can return one section", async () => {
+    const own = await request(app).get(`/api/candidates/${nurseId}/cv-text`).set("Authorization", managerAuth);
+    expect(own.body.data.experienceYears).toBe(8);
+    expect(own.body.data.educationLevel).toBe("diploma");
+    expect(own.body.data.sections.map((s: any) => s.key)).toEqual(["header", "experience", "education"]);
+
+    const one = await request(app)
+      .get(`/api/candidates/${nurseId}/cv-text`)
+      .query({ section: "experience" })
+      .set("Authorization", managerAuth);
+    expect(one.body.data.sections).toEqual([
+      { key: "experience", heading: "Work Experience", text: "Staff Nurse, 2018 - 2026" },
+    ]);
+    expect(one.body.data).not.toHaveProperty("text");
+  });
+
   it("is returned with the candidate and on its own", async () => {
     const detail = await request(app).get(`/api/candidates/${nurseId}`).set("Authorization", managerAuth);
     expect(detail.status).toBe(200);

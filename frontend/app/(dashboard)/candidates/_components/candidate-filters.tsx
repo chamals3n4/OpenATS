@@ -131,11 +131,17 @@ function PositionPicker({
   );
 }
 
-/** The minimum score box. It applies once typing pauses, so "7" then "70" is one search. */
-function MinScoreField({
+/** A minimum-number box. It applies once typing pauses, so "7" then "70" is one search. */
+function MinNumberField({
+  id,
+  max,
+  placeholder,
   value,
   onChange,
 }: {
+  id: string;
+  max: number;
+  placeholder: string;
   value: number | undefined;
   onChange: (value: number | undefined) => void;
 }) {
@@ -153,20 +159,20 @@ function MinScoreField({
   useEffect(() => {
     const t = setTimeout(() => {
       const parsed = draft.trim() === "" ? NaN : Number(draft);
-      const next = Number.isFinite(parsed) ? Math.min(100, Math.max(0, parsed)) : undefined;
+      const next = Number.isFinite(parsed) ? Math.min(max, Math.max(0, parsed)) : undefined;
       if (next !== value) onChange(next);
     }, 350);
     return () => clearTimeout(t);
-  }, [draft, value, onChange]);
+  }, [draft, value, onChange, max]);
 
   return (
     <Input
-      id="filter-min-score"
+      id={id}
       type="number"
       inputMode="numeric"
       min={0}
-      max={100}
-      placeholder="e.g. 70"
+      max={max}
+      placeholder={placeholder}
       value={draft}
       onChange={(e) => setDraft(e.target.value)}
       className="h-8! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-md text-sm focus-visible:ring-0"
@@ -249,7 +255,13 @@ function FiltersMenu({
               <label htmlFor="filter-min-score" className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-neutral-400">
                 Minimum score
               </label>
-              <MinScoreField value={value.minScore} onChange={(minScore) => onChange({ ...value, minScore })} />
+              <MinNumberField
+                id="filter-min-score"
+                max={100}
+                placeholder="e.g. 70"
+                value={value.minScore}
+                onChange={(minScore) => onChange({ ...value, minScore })}
+              />
             </div>
 
             <label className="flex cursor-pointer items-center gap-2 text-sm text-slate-800 dark:text-neutral-200">
@@ -262,6 +274,22 @@ function FiltersMenu({
             </label>
           </>
         )}
+
+        <div>
+          <label htmlFor="filter-min-experience" className="mb-1.5 block text-xs font-medium text-slate-600 dark:text-neutral-400">
+            Minimum years of experience
+          </label>
+          <MinNumberField
+            id="filter-min-experience"
+            max={60}
+            placeholder="e.g. 3"
+            value={value.minExperience}
+            onChange={(minExperience) => onChange({ ...value, minExperience })}
+          />
+          <p className="mt-1.5 text-xs text-slate-500 dark:text-neutral-400">
+            Estimated from the dates in each CV. Candidates whose CV gives no dates are left out.
+          </p>
+        </div>
       </PopoverContent>
     </Popover>
   );

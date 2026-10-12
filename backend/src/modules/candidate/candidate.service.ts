@@ -22,7 +22,7 @@ import { candidateActivityService } from "./candidate-activity.service";
 import { socketService } from "../../shared/services/socket.service";
 import { scoringService } from "../scoring/scoring.service";
 import { toAiSummary } from "./cv-analysis.service";
-import { cvMatches, cvRank, cvTextService } from "./cv-text.service";
+import { cvExperienceAtLeast, cvMatches, cvRank, cvTextService } from "./cv-text.service";
 import { rejectionService } from "../rejection/rejection.service";
 import { applicationReceivedEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
@@ -121,6 +121,8 @@ export interface CandidateFilters {
   flag?: CandidateFlagFilter | undefined;
   /** Only candidates scored on every part the job uses. */
   fullyScored?: boolean | undefined;
+  /** Only candidates whose CV shows at least this many years of work (an estimate). */
+  minExperienceYears?: number | undefined;
   page?: number;
   limit?: number;
   teamUserId?: number;
@@ -169,6 +171,9 @@ function buildCandidateWhere(
   }
   if (filters.minScore !== undefined) {
     conditions.push(sql`${candidates.totalScore} >= ${filters.minScore}`);
+  }
+  if (filters.minExperienceYears !== undefined) {
+    conditions.push(cvExperienceAtLeast(filters.minExperienceYears));
   }
   if (filters.flag) conditions.push(flagCondition(filters.flag));
   if (filters.fullyScored) {

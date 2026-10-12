@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 
 import { splitSnippet } from "@/app/(dashboard)/candidates/lib/candidate-utils";
-import { CvTextSection } from "@/app/(dashboard)/candidates/[id]/_components/sections/cv-text-section";
+import { CvTextSection, experienceLabel } from "@/app/(dashboard)/candidates/[id]/_components/sections/cv-text-section";
 import type { CandidateCvText } from "@/types";
 
 afterEach(cleanup);
@@ -48,6 +48,35 @@ describe("CvTextSection", () => {
     expect(container.querySelector("img")).toBeNull();
   });
 
+  it("shows the CV by section, under the heading the candidate wrote", () => {
+    render(
+      <CvTextSection
+        hasResume
+        cvText={{
+          ...cv("done", "whole text"),
+          sections: [
+            { key: "header", heading: null, text: "Nimal Fernando" },
+            { key: "experience", heading: "EMPLOYMENT HISTORY", text: "Staff Nurse, 2018 - 2026" },
+          ],
+          experienceYears: 8.2,
+          educationLevel: "diploma",
+        }}
+      />,
+    );
+    expect(screen.getByText("Top of the CV")).toBeTruthy();
+    expect(screen.getByText("EMPLOYMENT HISTORY")).toBeTruthy();
+    expect(screen.getByText("Staff Nurse, 2018 - 2026")).toBeTruthy();
+    expect(screen.getByText("About 8 years")).toBeTruthy();
+    expect(screen.getByText("Diploma")).toBeTruthy();
+    expect(screen.queryByText("whole text")).toBeNull();
+  });
+
+  it("says Not found, never zero, when an estimate could not be made", () => {
+    render(<CvTextSection hasResume cvText={cv("done", "Some text")} />);
+    expect(screen.getAllByText("Not found")).toHaveLength(2);
+    expect(screen.getByText("Some text")).toBeTruthy();
+  });
+
   it("says why there is no text", () => {
     const { rerender } = render(<CvTextSection cvText={cv("empty")} hasResume />);
     expect(screen.getByText(/may be a scan or a photo/)).toBeTruthy();
@@ -63,5 +92,16 @@ describe("CvTextSection", () => {
 
     rerender(<CvTextSection cvText={null} hasResume={false} />);
     expect(screen.getByText(/has no CV/)).toBeTruthy();
+  });
+});
+
+describe("experienceLabel", () => {
+  it("is always worded as an estimate", () => {
+    expect(experienceLabel(8.2)).toBe("About 8 years");
+    expect(experienceLabel(1.4)).toBe("About 1 year");
+    expect(experienceLabel(0.3)).toBe("Under 1 year");
+    expect(experienceLabel(0)).toBe("Under 1 year");
+    expect(experienceLabel(null)).toBe("Not found");
+    expect(experienceLabel(undefined)).toBe("Not found");
   });
 });

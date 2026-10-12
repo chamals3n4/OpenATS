@@ -318,6 +318,13 @@ export type CandidateCvText = {
   method: string | null;
   text: string | null;
   pageCount: number | null;
+  /** The CV split by its headings. `header` is the text above the first heading. */
+  sections?: { key: string; heading: string | null; text: string }[] | null;
+  /** Estimated from the date ranges in the Experience section. Null means not found, not zero. */
+  experienceYears?: number | null;
+  /** The highest level named in the Education section; an estimate. */
+  educationLevel?: "secondary" | "diploma" | "bachelor" | "master" | "doctorate" | null;
+  contacts?: { emails: string[]; phones: string[]; links: string[] } | null;
 };
 
 export type CandidateDetail = Candidate & {

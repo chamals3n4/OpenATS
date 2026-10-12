@@ -8,3 +8,13 @@ export function parseMinScore(raw: unknown): number | undefined {
   const value = Number(raw);
   return Number.isFinite(value) ? Math.min(100, Math.max(0, value)) : undefined;
 }
+
+/**
+ * A minimum number of years of experience from the query string: one non-blank number, kept within
+ * 0-60. Anything else means no minimum, for the same reasons as `parseMinScore`.
+ */
+export function parseMinYears(raw: unknown): number | undefined {
+  if (typeof raw !== "string" || raw.trim() === "") return undefined;
+  const value = Number(raw);
+  return Number.isFinite(value) ? Math.min(60, Math.max(0, value)) : undefined;
+}

@@ -3,6 +3,7 @@ import { and, eq, isNotNull, isNull, lt, notInArray, or } from "drizzle-orm";
 import { db } from "./index";
 import { candidateCvText, candidates } from "./schema";
 import { EXTRACTOR_VERSION } from "../modules/candidate/cv-text";
+import { cvTextService } from "../modules/candidate/cv-text.service";
 import { requestCvExtraction } from "../queues/cv-extract/queue";
 
 /**
@@ -11,8 +12,19 @@ import { requestCvExtraction } from "../queues/cv-extract/queue";
  * raised. The worker (`pnpm dev:worker`) has to be running to do the reading.
  *
  *   pnpm tsx src/db/backfill-cv-text.ts
+ *
+ * With `--reparse` it reads no files and needs no worker: it works out the sections, years of
+ * experience, education level and search terms again from the text already stored. Run that after
+ * changing those rules.
+ *
+ *   pnpm tsx src/db/backfill-cv-text.ts --reparse
  */
 async function main() {
+  if (process.argv.includes("--reparse")) {
+    console.log(`Worked out the details of ${await cvTextService.reparseAll()} stored CV(s) again.`);
+    process.exit(0);
+  }
+
   const rows = await db
     .select({ id: candidates.id, resumeUrl: candidates.resumeUrl })
     .from(candidates)

@@ -296,6 +296,14 @@ export const candidateCvText = pgTable(
 
     pageCount: integer("page_count"),
     charCount: integer("char_count"),
+
+    // Read out of `text` by rules (cv-text/profile.ts). The years and the level are estimates, and
+    // null means "could not be worked out", never zero. None of this is part of the score.
+    sections: jsonb("sections").$type<{ key: string; heading: string | null; text: string }[]>(),
+    experienceYears: numeric("experience_years", { precision: 4, scale: 1 }).$type<number>(),
+    educationLevel: varchar("education_level", { length: 20 }),
+    contacts: jsonb("contacts").$type<{ emails: string[]; phones: string[]; links: string[] }>(),
+
     // Raised when extraction changes, so the backfill knows which rows to redo.
     extractorVersion: integer("extractor_version").notNull().default(1),
 

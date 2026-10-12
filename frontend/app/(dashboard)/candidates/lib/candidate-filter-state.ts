@@ -14,6 +14,8 @@ export interface CandidateFilterState {
   minScore: number | undefined;
   flag: FlagChoice;
   fullyScored: boolean;
+  /** Years of work the CV shows, an estimate. Undefined means no minimum. */
+  minExperience: number | undefined;
 }
 
 export const EMPTY_FILTERS: CandidateFilterState = {
@@ -23,6 +25,7 @@ export const EMPTY_FILTERS: CandidateFilterState = {
   minScore: undefined,
   flag: "any",
   fullyScored: false,
+  minExperience: undefined,
 };
 
 export const FLAG_LABELS: Record<FlagChoice, string> = {
@@ -52,6 +55,8 @@ export function parseFilterState(params: URLSearchParams): CandidateFilterState 
   const flag = params.get("flag") as FlagChoice | null;
   const minScore = params.get("minScore");
   const min = minScore === null || minScore.trim() === "" ? NaN : Number(minScore);
+  const minExperience = params.get("minExperience");
+  const years = minExperience === null || minExperience.trim() === "" ? NaN : Number(minExperience);
 
   return {
     jobId: Number.isInteger(job) && job > 0 ? job : undefined,
@@ -60,6 +65,7 @@ export function parseFilterState(params: URLSearchParams): CandidateFilterState 
     minScore: Number.isFinite(min) ? Math.min(100, Math.max(0, min)) : undefined,
     flag: flag && FLAG_ORDER.includes(flag) ? flag : "any",
     fullyScored: params.get("fullyScored") === "true",
+    minExperience: Number.isFinite(years) ? Math.min(60, Math.max(0, years)) : undefined,
   };
 }
 
@@ -72,12 +78,13 @@ export function toFilterParams(state: CandidateFilterState): URLSearchParams {
   if (state.minScore !== undefined) params.set("minScore", String(state.minScore));
   if (state.flag !== "any") params.set("flag", state.flag);
   if (state.fullyScored) params.set("fullyScored", "true");
+  if (state.minExperience !== undefined) params.set("minExperience", String(state.minExperience));
   return params;
 }
 
 export interface FilterChip {
   /** Which filter this chip clears. */
-  key: "job" | "status" | "minScore" | "flag" | "fullyScored";
+  key: "job" | "status" | "minScore" | "flag" | "fullyScored" | "minExperience";
   label: string;
 }
 
@@ -91,6 +98,9 @@ export function activeFilterChips(state: CandidateFilterState, jobs: Pick<Job, "
   if (state.minScore !== undefined) chips.push({ key: "minScore", label: `Score ${state.minScore}+` });
   if (state.flag !== "any") chips.push({ key: "flag", label: FLAG_LABELS[state.flag] });
   if (state.fullyScored) chips.push({ key: "fullyScored", label: "All parts scored" });
+  if (state.minExperience !== undefined) {
+    chips.push({ key: "minExperience", label: `About ${state.minExperience}+ years experience` });
+  }
   return chips;
 }
 
@@ -100,7 +110,8 @@ export function filtersMenuCount(state: CandidateFilterState): number {
     (state.status !== "all" ? 1 : 0) +
     (state.minScore !== undefined ? 1 : 0) +
     (state.flag !== "any" ? 1 : 0) +
-    (state.fullyScored ? 1 : 0)
+    (state.fullyScored ? 1 : 0) +
+    (state.minExperience !== undefined ? 1 : 0)
   );
 }
 
@@ -117,10 +128,12 @@ export function clearFilter(state: CandidateFilterState, key: FilterChip["key"])
       return { ...state, flag: "any" };
     case "fullyScored":
       return { ...state, fullyScored: false };
+    case "minExperience":
+      return { ...state, minExperience: undefined };
   }
 }
 
-const FILTER_PARAM_KEYS = ["job", "status", "sort", "minScore", "flag", "fullyScored"] as const;
+const FILTER_PARAM_KEYS = ["job", "status", "sort", "minScore", "flag", "fullyScored", "minExperience"] as const;
 
 /** Whether the address carries any filter at all. */
 export const hasFilterParams = (params: URLSearchParams) => FILTER_PARAM_KEYS.some((key) => params.has(key));

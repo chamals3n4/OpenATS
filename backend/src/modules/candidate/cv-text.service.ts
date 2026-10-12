@@ -2,6 +2,7 @@ import { and, eq, inArray, sql, type SQL } from "drizzle-orm";
 import { candidateCvText, db } from "../../db";
 import { EXTRACTOR_VERSION, type ExtractedCv } from "./cv-text";
 import { normalizeForSearch } from "./cv-text/normalize-search";
+import { buildCvProfile } from "./cv-text/profile";
 
 /**
  * Put around the matched words in a search snippet. Plain marks, not HTML: the text comes from a
@@ -28,6 +29,17 @@ export function cvMatches(search: string): SQL {
   )`;
 }
 
+/**
+ * A condition on the `candidates` table: the CV shows at least this many years of work. A CV whose
+ * years could not be worked out does not pass, since nothing is known about it either way.
+ */
+export function cvExperienceAtLeast(years: number): SQL {
+  return sql`exists (
+    select 1 from candidate_cv_text cvt
+    where cvt.candidate_id = "candidates"."id" and cvt.experience_years >= ${years}
+  )`;
+}
+
 /** How well this candidate's CV matches the search; null when they have no CV text. */
 export function cvRank(search: string): SQL {
   return sql`(
@@ -49,6 +61,10 @@ export const cvTextService = {
       searchText: null,
       pageCount: null,
       charCount: null,
+      sections: null,
+      experienceYears: null,
+      educationLevel: null,
+      contacts: null,
       errorMessage: null,
       updatedAt: new Date(),
     };
@@ -73,6 +89,10 @@ export const cvTextService = {
         searchText: cv.searchText || null,
         pageCount: cv.pageCount,
         charCount: cv.text.length,
+        sections: cv.profile?.sections ?? null,
+        experienceYears: cv.profile?.experienceYears ?? null,
+        educationLevel: cv.profile?.educationLevel ?? null,
+        contacts: cv.profile?.contacts ?? null,
         extractorVersion: EXTRACTOR_VERSION,
         errorMessage: null,
         updatedAt: new Date(),
@@ -122,6 +142,33 @@ export const cvTextService = {
     return new Map(rows.map((row) => [row.candidateId, row.snippet]));
   },
 
+  /**
+   * Works out the sections, years, education and search terms again from the text already stored,
+   * for every CV that has text. Used after changing those rules; no file is read again.
+   */
+  async reparseAll(): Promise<number> {
+    const rows = await db
+      .select({ id: candidateCvText.id, text: candidateCvText.text })
+      .from(candidateCvText)
+      .where(eq(candidateCvText.status, "done"));
+
+    for (const { id, text } of rows) {
+      if (!text) continue;
+      const profile = buildCvProfile(text);
+      await db
+        .update(candidateCvText)
+        .set({
+          searchText: normalizeForSearch(text),
+          sections: profile.sections,
+          experienceYears: profile.experienceYears,
+          educationLevel: profile.educationLevel,
+          contacts: profile.contacts,
+        })
+        .where(eq(candidateCvText.id, id));
+    }
+    return rows.length;
+  },
+
   async getForCandidate(candidateId: number) {
     const [row] = await db
       .select({
@@ -129,9 +176,15 @@ export const cvTextService = {
         method: candidateCvText.method,
         text: candidateCvText.text,
         pageCount: candidateCvText.pageCount,
+        sections: candidateCvText.sections,
+        experienceYears: candidateCvText.experienceYears,
+        educationLevel: candidateCvText.educationLevel,
+        contacts: candidateCvText.contacts,
       })
       .from(candidateCvText)
       .where(eq(candidateCvText.candidateId, candidateId));
-    return row ?? null;
+    if (!row) return null;
+    // Postgres hands a numeric back as text.
+    return { ...row, experienceYears: row.experienceYears === null ? null : Number(row.experienceYears) };
   },
 };

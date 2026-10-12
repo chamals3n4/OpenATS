@@ -10,7 +10,7 @@ import {
 import { jobService } from "../job/job.service";
 import { r2Service } from "../../shared/services/r2.service";
 import { socketService } from "../../shared/services/socket.service";
-import { parseMinScore } from "./candidate-query";
+import { parseMinScore, parseMinYears } from "./candidate-query";
 import { aiSettingsService } from "../settings/ai-settings.service";
 import { scoringService } from "../scoring/scoring.service";
 import { withholdInterviewScores } from "../scoring/scoring";
@@ -217,6 +217,7 @@ export const getCandidates = async (req: Request, res: Response) => {
         ? (flagParam as CandidateFlagFilter)
         : undefined,
       fullyScored: scoreFiltersAllowed && req.query.fullyScored === "true" ? true : undefined,
+      minExperienceYears: parseMinYears(req.query.minExperience),
       stageId: req.query.stageId
         ? parseInt(req.query.stageId.toString())
         : undefined,
@@ -334,6 +335,14 @@ export const getCandidateCvText = async (req: Request, res: Response) => {
       res.status(404).json({ error: "This candidate has no CV text" });
       return;
     }
+    // One section on its own, for a reader that does not need the whole CV.
+    const section = req.query.section?.toString();
+    if (section) {
+      const sections = (cvText.sections ?? []).filter((s) => s.key === section);
+      res.status(200).json({ data: { status: cvText.status, sections } });
+      return;
+    }
+
     res.status(200).json({ data: cvText });
   } catch (error) {
     logger.error(

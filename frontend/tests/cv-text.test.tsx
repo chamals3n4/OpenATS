@@ -1,8 +1,9 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
 import { splitSnippet } from "@/app/(dashboard)/candidates/lib/candidate-utils";
 import { CvTextSection, experienceLabel } from "@/app/(dashboard)/candidates/[id]/_components/sections/cv-text-section";
+import { countMatches, highlightParts, searchPattern } from "@/app/(dashboard)/candidates/[id]/lib/cv-highlight";
 import type { CandidateCvText } from "@/types";
 
 afterEach(cleanup);
@@ -56,16 +57,26 @@ describe("CvTextSection", () => {
           ...cv("done", "whole text"),
           sections: [
             { key: "header", heading: null, text: "Nimal Fernando" },
-            { key: "experience", heading: "EMPLOYMENT HISTORY", text: "Staff Nurse, 2018 - 2026" },
+            { key: "experience", heading: "EMPLOYMENT HISTORY", text: "Staff Nurse, Kandy General 2018 - 2026\n- Ward rounds" },
+            { key: "skills", heading: "Skills", text: "Clinical: Triage, Wound care" },
           ],
           experienceYears: 8.2,
           educationLevel: "diploma",
+          contacts: { emails: ["nimal@example.com"], phones: ["+94 77 123 4567"], links: [] },
         }}
       />,
     );
     expect(screen.getByText("Top of the CV")).toBeTruthy();
     expect(screen.getByText("EMPLOYMENT HISTORY")).toBeTruthy();
-    expect(screen.getByText("Staff Nurse, 2018 - 2026")).toBeTruthy();
+    // The date is set apart from the line it ended, and short lists are shown as tags.
+    expect(screen.getByText("Staff Nurse, Kandy General")).toBeTruthy();
+    expect(screen.getByText("2018 - 2026")).toBeTruthy();
+    expect(screen.getByText("Ward rounds").tagName).toBe("LI");
+    expect(screen.getByText("Triage")).toBeTruthy();
+    expect(screen.getByText("Clinical")).toBeTruthy();
+    expect(screen.getByText("Wound care")).toBeTruthy();
+    expect(screen.getByText("nimal@example.com")).toBeTruthy();
+    expect(screen.getByText("+94 77 123 4567")).toBeTruthy();
     expect(screen.getByText("About 8 years")).toBeTruthy();
     expect(screen.getByText("Diploma")).toBeTruthy();
     expect(screen.queryByText("whole text")).toBeNull();
@@ -103,5 +114,60 @@ describe("experienceLabel", () => {
     expect(experienceLabel(0)).toBe("Under 1 year");
     expect(experienceLabel(null)).toBe("Not found");
     expect(experienceLabel(undefined)).toBe("Not found");
+  });
+});
+
+describe("finding words in the CV summary", () => {
+  it("looks for each word on its own, in any case, and ignores single letters", () => {
+    const pattern = searchPattern("icu NURSE a");
+    expect(highlightParts("Nurse in the ICU, a nurse", pattern)).toEqual([
+      { text: "Nurse", match: true },
+      { text: " in the ", match: false },
+      { text: "ICU", match: true },
+      { text: ", a ", match: false },
+      { text: "nurse", match: true },
+    ]);
+    expect(countMatches(["Nurse in the ICU", "a nurse"], pattern)).toBe(3);
+    expect(searchPattern("  ")).toBeNull();
+    expect(searchPattern("a")).toBeNull();
+  });
+
+  it("treats what is typed as text, not as a pattern", () => {
+    const pattern = searchPattern("c++ (lead)");
+    expect(highlightParts("C++ developer (lead)", pattern).filter((p) => p.match).map((p) => p.text)).toEqual([
+      "C++",
+      "(lead)",
+    ]);
+  });
+
+  it("marks the matches on the page and says how many there are", () => {
+    const { container } = render(
+      <CvTextSection
+        hasResume
+        cvText={{
+          status: "done",
+          method: "text",
+          text: "",
+          pageCount: 1,
+          sections: [
+            { key: "experience", heading: "Experience", text: "Staff Nurse, Kandy 2018 - 2026\n- Nurse educator" },
+            { key: "skills", heading: "Skills", text: "Clinical: Triage, Nursing care" },
+          ],
+        }}
+      />,
+    );
+    const box = screen.getByLabelText("Find in this CV");
+    expect(container.querySelectorAll("mark")).toHaveLength(0);
+
+    fireEvent.change(box, { target: { value: "nurs" } });
+    expect([...container.querySelectorAll("mark")].map((m) => m.textContent)).toEqual(["Nurs", "Nurs", "Nurs"]);
+    expect(screen.getByRole("status").textContent).toContain("3 matches");
+
+    fireEvent.change(box, { target: { value: "welder" } });
+    expect(container.querySelectorAll("mark")).toHaveLength(0);
+    expect(screen.getByRole("status").textContent).toBe("No matches");
+
+    fireEvent.change(box, { target: { value: "" } });
+    expect(screen.queryByRole("status")).toBeNull();
   });
 });

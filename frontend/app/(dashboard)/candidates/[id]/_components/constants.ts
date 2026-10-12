@@ -93,10 +93,10 @@ export type SectionId =
   | "scores";
 
 export const SECTIONS = [
+  { id: "cv-text" as SectionId, label: "CV Summary", icon: TextAlignLeftIcon },
   // Listed only while AI CV analysis is turned on in Settings; see the candidate page.
   { id: "ai-analysis" as SectionId, label: "AI analysis", icon: AiScanTextIcon },
   { id: "answers" as SectionId, label: "Answers", icon: QuestionIcon },
-  { id: "cv-text" as SectionId, label: "CV text", icon: TextAlignLeftIcon },
   { id: "history" as SectionId, label: "Stage History", icon: Clock01Icon },
   { id: "offer" as SectionId, label: "Offer", icon: TelegramIcon },
   { id: "interviews" as SectionId, label: "Interviews", icon: CoPresentIcon },

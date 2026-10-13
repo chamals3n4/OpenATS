@@ -8,6 +8,7 @@ import app from "./app";
 import { socketService } from "./shared/services/socket.service";
 import { subscribeToCvAnalysisEvents } from "./queues/cv-analysis/events";
 import { assessmentExecutionService } from "./modules/assessment-execution/assessment-execution.service";
+import { resumeUploadService } from "./modules/upload/resume-upload.service";
 import logger from "./utils/logger";
 
 const PORT = env.PORT;
@@ -32,8 +33,19 @@ const checkExpiredInvites = () =>
     .catch((error) => logger.error(`Assessment expiry check failed: ${error instanceof Error ? error.message : String(error)}`));
 setInterval(checkExpiredInvites, EXPIRY_CHECK_MS).unref();
 
+// A CV uploaded on the careers page by someone who never sent the application.
+const removeUnusedResumeUploads = () =>
+  resumeUploadService
+    .removeExpired()
+    .then((count) => {
+      if (count > 0) logger.info(`Removed ${count} CV upload(s) that were never attached to an application`);
+    })
+    .catch((error) => logger.error(`Unused CV upload check failed: ${error instanceof Error ? error.message : String(error)}`));
+setInterval(removeUnusedResumeUploads, EXPIRY_CHECK_MS).unref();
+
 server.listen(PORT, () => {
   void checkExpiredInvites();
+  void removeUnusedResumeUploads();
   logger.info(`OpenATS Backend running on port ${PORT}`);
   logger.info(`Socket.io initialized and listening on the same port.`);
 });

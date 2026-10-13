@@ -80,8 +80,9 @@ export function JobApplicationForm({
 
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [resumeUploading, setResumeUploading] = useState(false);
-  // What the upload gives back for the file. It is named in the application, and is not a link.
-  const [resumeKey, setResumeKey] = useState<string | null>(null);
+  // What the upload gives back for the file: a one-time id, good for an hour. The application
+  // names it; it is not a link to the file.
+  const [resumeUploadId, setResumeUploadId] = useState<string | null>(null);
   const [resumeError, setResumeError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,7 +109,7 @@ export function JobApplicationForm({
   const handleResumeChange = async (file: File) => {
     setResumeFile(file);
     setResumeError(null);
-    setResumeKey(null);
+    setResumeUploadId(null);
     setResumeUploading(true);
     try {
       const form = new FormData();
@@ -121,8 +122,8 @@ export function JobApplicationForm({
         const err = await res.json().catch(() => ({}));
         throw new Error((err as { error?: string }).error ?? "Upload failed");
       }
-      const data = (await res.json()) as { data: { key: string } };
-      setResumeKey(data.data.key);
+      const data = (await res.json()) as { data: { uploadId: string } };
+      setResumeUploadId(data.data.uploadId);
     } catch (e: unknown) {
       setResumeError(e instanceof Error ? e.message : "Upload failed");
       setResumeFile(null);
@@ -157,7 +158,7 @@ export function JobApplicationForm({
           lastName,
           email,
           phone: phoneNumber ? phoneNumber : undefined,
-          resumeKey: resumeKey ?? undefined,
+          resumeUploadId: resumeUploadId ?? undefined,
           customAnswers,
         }),
       });
@@ -169,6 +170,12 @@ export function JobApplicationForm({
           err.message ||
             "This email has already been used to apply for this job.",
         );
+      } else if (err.code === "RESUME_UPLOAD_INVALID") {
+        // The page was left open for over an hour, so the uploaded file is gone. Ask for it again.
+        setResumeUploadId(null);
+        setResumeFile(null);
+        setResumeError(err.message || "Your CV upload has expired. Please upload it again.");
+        setSubmitError("Please upload your CV again, then submit.");
       } else {
         setSubmitError(
           err instanceof Error
@@ -325,7 +332,7 @@ export function JobApplicationForm({
                 >
                   {resumeUploading ? (
                     "Uploading…"
-                  ) : resumeKey ? (
+                  ) : resumeUploadId ? (
                     <span className="truncate max-w-[280px]">
                       {resumeFile?.name} — click to replace
                     </span>

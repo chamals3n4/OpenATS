@@ -33,8 +33,6 @@ const EXT_BY_MIME: Record<string, string> = {
   "image/svg+xml": ".svg",
 };
 
-const RESUME_KEY = /^resumes\/[0-9a-f-]{36}\.pdf$/;
-
 async function put(
   bucket: string,
   key: string,
@@ -82,11 +80,6 @@ export const r2Service = {
     const key = `resumes/${crypto.randomUUID()}.pdf`;
     await put(privateBucket(), key, file, true);
     return key;
-  },
-
-  /** Whether a string is a key this service gave out for a CV. */
-  isResumeKey(key: string): boolean {
-    return RESUME_KEY.test(key);
   },
 
   /** The stored CV's bytes. Null when there is no such file. */

@@ -10,6 +10,7 @@ import {
   text,
   timestamp,
   unique,
+  uuid,
   varchar,
   index,
 } from "drizzle-orm/pg-core";
@@ -345,3 +346,19 @@ export type NewCandidateCvAnalysis = typeof candidateCvAnalysis.$inferInsert;
 
 export type CandidateCvText = typeof candidateCvText.$inferSelect;
 export type NewCandidateCvText = typeof candidateCvText.$inferInsert;
+
+/**
+ * CVs uploaded from the careers page and not attached to an application yet. The id is what the
+ * anonymous uploader is given in place of a URL. A row is deleted when its application is sent, or
+ * with its file once it has expired; see modules/upload/resume-upload.service.ts.
+ */
+export const resumeUploads = pgTable(
+  "resume_uploads",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    resumeKey: varchar("resume_key", { length: 1000 }).notNull(),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (table) => [index("resume_uploads_expires_at_idx").on(table.expiresAt)],
+);

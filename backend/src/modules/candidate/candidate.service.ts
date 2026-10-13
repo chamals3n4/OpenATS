@@ -23,6 +23,7 @@ import { socketService } from "../../shared/services/socket.service";
 import { scoringService } from "../scoring/scoring.service";
 import { toAiSummary } from "./cv-analysis.service";
 import { cvExperienceAtLeast, cvMatches, cvRank, cvTextService } from "./cv-text.service";
+import { resumeUploadService } from "../upload/resume-upload.service";
 import { rejectionService } from "../rejection/rejection.service";
 import { applicationReceivedEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
@@ -54,6 +55,14 @@ export class DuplicateApplicationError extends Error {
   }
 }
 
+/** The CV named in an application is not an upload that is still waiting to be used. */
+export class InvalidResumeUploadError extends Error {
+  constructor() {
+    super("Your CV upload has expired. Please upload it again.");
+    this.name = "InvalidResumeUploadError";
+  }
+}
+
 /** An application answer that cannot be right for its question, e.g. two picks on a single choice. */
 export class InvalidAnswerError extends Error {
   constructor(message: string) {
@@ -73,7 +82,8 @@ export interface CandidateApplyInput {
   lastName: string;
   email: string;
   phone?: string | null | undefined;
-  resumeKey?: string | null | undefined;
+  /** The id POST /public/upload/resume gave back for the CV. */
+  resumeUploadId?: string | null | undefined;
   customAnswers?: CustomAnswerInput[] | undefined;
 }
 
@@ -347,7 +357,7 @@ async function sendApplicationConfirmationEmail(
 
 export const candidateService = {
   async apply(jobId: number, input: CandidateApplyInput) {
-    const { customAnswers, ...rest } = input;
+    const { customAnswers, resumeUploadId, ...rest } = input;
     const normalizedEmail = rest.email.trim().toLowerCase();
     const candidateData = { ...rest, email: normalizedEmail };
 
@@ -364,11 +374,19 @@ export const candidateService = {
           throw new Error("No pipeline stages defined for this job");
         }
 
+        // The applicant never names a file, only their own upload. An id that is unknown, expired
+        // or already used on another application gives no file.
+        const resumeKey = resumeUploadId
+          ? await resumeUploadService.claim(resumeUploadId, tx)
+          : undefined;
+        if (resumeKey === null) throw new InvalidResumeUploadError();
+
         const [candidate] = await tx
           .insert(candidates)
           .values(
             clean({
               ...candidateData,
+              resumeKey,
               jobId,
               currentStageId: firstStage.id,
             }),

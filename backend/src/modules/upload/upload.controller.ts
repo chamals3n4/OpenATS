@@ -1,5 +1,6 @@
 import { Request, Response } from "express";
 import { r2Service } from "../../shared/services/r2.service";
+import { resumeUploadService } from "./resume-upload.service";
 import { db } from "../../db";
 import { company } from "../../db/schema";
 import { eq } from "drizzle-orm";
@@ -45,8 +46,8 @@ export const uploadLogo = async (req: Request, res: Response) => {
 
 /**
  * A CV uploaded from the careers page, before the application is sent. The uploader is anonymous,
- * so they get back the file's key, which the apply request then names, and never a URL: the file
- * is in the private bucket and cannot be opened from outside.
+ * so they get back a one-time upload id, which the apply request then names, and never a URL or
+ * the file's key: the file is in the private bucket and cannot be opened from outside.
  */
 export const uploadPublicResume = async (req: Request, res: Response) => {
   try {
@@ -56,10 +57,14 @@ export const uploadPublicResume = async (req: Request, res: Response) => {
     }
 
     const key = await r2Service.uploadResume(req.file);
+    const uploadId = await resumeUploadService.create(key).catch(async (error) => {
+      await r2Service.deleteResume(key).catch(() => undefined);
+      throw error;
+    });
 
     res.status(200).json({
       data: {
-        key,
+        uploadId,
         filename: req.file.originalname,
         mimetype: req.file.mimetype,
         size: req.file.size,

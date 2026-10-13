@@ -4,6 +4,7 @@ import {
   candidateService,
   DuplicateApplicationError,
   InvalidAnswerError,
+  InvalidResumeUploadError,
   CANDIDATE_FLAG_FILTERS,
   type CandidateFlagFilter,
 } from "./candidate.service";
@@ -34,12 +35,8 @@ const candidateApplySchema = z.object({
   lastName: z.string().min(1, "Last name is required").max(100),
   email: z.string().email("Invalid email address").max(255),
   phone: z.string().max(50).optional().nullable(),
-  // The key POST /public/upload/resume gave back for the uploaded file. Never a URL.
-  resumeKey: z
-    .string()
-    .refine((key) => r2Service.isResumeKey(key), "Upload the CV again")
-    .optional()
-    .nullable(),
+  // The id POST /public/upload/resume gave back for the uploaded file. Never a URL or a key.
+  resumeUploadId: z.string().uuid("Upload the CV again").optional().nullable(),
   customAnswers: z.array(customAnswerSchema).optional(),
 });
 
@@ -140,6 +137,10 @@ export const applyForJob = async (req: Request, res: Response) => {
   } catch (error: unknown) {
     if (error instanceof InvalidAnswerError) {
       res.status(400).json({ error: error.message });
+      return;
+    }
+    if (error instanceof InvalidResumeUploadError) {
+      res.status(400).json({ error: error.message, code: "RESUME_UPLOAD_INVALID" });
       return;
     }
     if (error instanceof DuplicateApplicationError) {

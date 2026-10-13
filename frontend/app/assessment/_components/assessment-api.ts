@@ -38,7 +38,7 @@ export function saveAnswer(token: string, payload: unknown) {
 export function completeAttempt(token: string, reason?: string) {
   return apiFetch<{
     message: string;
-    data: import("../_lib/assessment-types").ScoreResult;
+    data: { completed: boolean };
   }>(`/assessment/${token}/complete`, {
     method: "POST",
     body: JSON.stringify(reason ? { autoSubmitReason: reason } : {}),

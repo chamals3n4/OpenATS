@@ -95,7 +95,27 @@ Applications are submitted to the public job endpoint:
 POST https://your-openats.example.com/api/public/jobs/42/apply
 ```
 
-Send the candidate's first name, last name, email, and phone, together with any answers to the job's custom questions. A resume can be uploaded as a PDF through the public resume upload flow. The API applies rate limits and rejects a duplicate application from the same email address for the same job.
+Send the candidate's first name, last name, email, and phone, together with their answers to the job's custom questions:
+
+```json
+{
+  "firstName": "Nimal",
+  "lastName": "Fernando",
+  "email": "nimal@example.com",
+  "phone": "+94 77 123 4567",
+  "resumeUploadId": "3f6c1c1e-8f0a-4a57-9a55-0d7a2f6f6b1c",
+  "customAnswers": [
+    { "questionId": 12, "answerText": "Five years" },
+    { "questionId": 13, "optionIds": [41] }
+  ]
+}
+```
+
+- **Resume.** First send the PDF as the `file` field of a `multipart/form-data` request to `POST /api/public/upload/resume`. The reply holds an `uploadId`. Pass it as `resumeUploadId` when applying. It works once and for one hour; after that, upload the file again. The API never returns a link to the file.
+- **Questions.** `GET /api/public/jobs/42/questions` lists the questions and their options. Every question with `"isRequired": true` must be answered, and each `optionIds` value must be one of that question's own options. Otherwise the application is refused with status 400 and a message naming the question.
+- **Reply.** A successful application answers with status 201 and `{ "data": { "applied": true } }`. Nothing about the stored candidate is returned.
+
+The API applies rate limits and rejects a duplicate application from the same email address for the same job (status 409, code `DUPLICATE_APPLICATION`).
 
 After a successful submission, OpenATS creates the candidate record and places it at the opening stage of that job's hiring pipeline. Hiring teams can continue from **Candidates** in the dashboard.
 

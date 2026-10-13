@@ -199,17 +199,28 @@ export const getPublicJobById = async (req: Request, res: Response) => {
       return;
     }
 
-    const {
-      hiringTeam,
-      pipelineStages,
-      createdBy,
-      scoreWeightQuestions,
-      scoreWeightAssessment,
-      scoreWeightRating,
-      scoreWeightInterview,
-      ...data
-    } = result;
-    res.status(200).json({ data });
+    // Named one by one, so a column added to jobs later is not public until someone decides it is.
+    res.status(200).json({
+      data: {
+        id: result.id,
+        slug: result.slug,
+        title: result.title,
+        departmentId: result.departmentId,
+        employmentType: result.employmentType,
+        location: result.location,
+        description: result.description,
+        salaryType: result.salaryType,
+        currency: result.currency,
+        payFrequency: result.payFrequency,
+        salaryFixed: result.salaryFixed,
+        salaryMin: result.salaryMin,
+        salaryMax: result.salaryMax,
+        status: result.status,
+        skills: result.skills,
+        createdAt: result.createdAt,
+        updatedAt: result.updatedAt,
+      },
+    });
   } catch (error) {
     logger.error(`Failed to fetch public job id=${req.params.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch job" });

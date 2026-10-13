@@ -7,6 +7,7 @@ import { getErrorCode, getErrorMessage} from "../../utils/error.utils";
 import { jobs } from "../../db/schema";
 import { scoringService } from "../scoring/scoring.service";
 import { canViewJob } from "../../shared/auth/job-access";
+import { sanitizeJobDescription } from "./job-description";
 
 const employmentTypeEnum = z.enum([
   "full_time",
@@ -208,7 +209,10 @@ export const getPublicJobById = async (req: Request, res: Response) => {
         departmentId: result.departmentId,
         employmentType: result.employmentType,
         location: result.location,
-        description: result.description,
+        // Cleaned again on the way out. The careers page puts this straight into its HTML, so a
+        // description saved before cleaning existed (or written into the database directly)
+        // still cannot carry a script to the public.
+        description: sanitizeJobDescription(result.description),
         salaryType: result.salaryType,
         currency: result.currency,
         payFrequency: result.payFrequency,

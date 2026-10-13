@@ -247,6 +247,9 @@ export function JobApplicationForm({
         {job.description && (
           <div
             className="mt-10 text-slate-600 dark:text-neutral-300 text-sm leading-[1.45] [&_p]:m-0 [&_p+p]:mt-1.5 [&_ul]:my-1.5 [&_ul]:list-disc [&_ul]:pl-6 [&_ol]:my-1.5 [&_ol]:list-decimal [&_ol]:pl-6 [&_li]:my-0.5 [&_h1]:text-2xl [&_h1]:font-semibold [&_h1]:text-slate-900 dark:[&_h1]:text-neutral-100 [&_h1]:m-0 [&_h1+p]:mt-1.5 [&_h2]:text-xl [&_h2]:font-semibold [&_h2]:text-slate-900 dark:[&_h2]:text-neutral-100 [&_h2]:m-0 [&_h2+p]:mt-1.5 [&_h3]:text-lg [&_h3]:font-medium [&_h3]:text-slate-800 dark:[&_h3]:text-neutral-200 [&_h3]:m-0 [&_h3+p]:mt-1"
+            // Already cleaned by the API (GET /public/jobs/:id cleans it on the way out). It is
+            // not cleaned again here because this page is rendered on the server, where the
+            // browser-only cleaner cannot run.
             dangerouslySetInnerHTML={{ __html: job.description }}
           />
         )}

@@ -215,6 +215,7 @@ export function CandidatesTable({
           label="candidate"
           count={selectedCount}
           isAllMatching={allMatchingSelected}
+          requireTypedCount={allMatchingSelected}
           isPending={isDeletingSelected}
           onClose={() => setBulkDeleteOpen(false)}
           onConfirm={handleConfirmBulkDelete}

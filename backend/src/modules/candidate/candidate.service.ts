@@ -56,6 +56,14 @@ export class DuplicateApplicationError extends Error {
   }
 }
 
+/** A bulk delete matched a different number of candidates than the person confirmed. */
+export class BulkDeleteCountChangedError extends Error {
+  constructor(public readonly count: number) {
+    super(`${count} candidates match now. Check the list and confirm again.`);
+    this.name = "BulkDeleteCountChangedError";
+  }
+}
+
 /** The CV named in an application is not an upload that is still waiting to be used. */
 export class InvalidResumeUploadError extends Error {
   constructor() {
@@ -972,15 +980,40 @@ export const candidateService = {
     return { id: deleted.id, jobId: deleted.jobId };
   },
 
-  async deleteManyByFilters(
-    jobId: number | undefined,
-    filters: Omit<CandidateFilters, "page" | "limit"> = {},
-  ) {
-    const where = buildCandidateWhere(jobId, filters);
-    const deleted = await db.delete(candidates).where(where).returning({
+  /** Deletes the candidates that were picked one by one. Ids that no longer exist are skipped. */
+  async deleteByIds(ids: number[]) {
+    if (ids.length === 0) return [];
+    const deleted = await db.delete(candidates).where(inArray(candidates.id, ids)).returning({
       id: candidates.id,
       jobId: candidates.jobId,
       resumeKey: candidates.resumeKey,
+    });
+
+    await requestResumeDeletion(deleted.map((candidate) => candidate.resumeKey));
+    return deleted.map(({ id, jobId }) => ({ id, jobId }));
+  },
+
+  /**
+   * Deletes every candidate of one job that matches the filters: the "select all matching" of the
+   * candidate list. Always one job, never the whole installation. `expectedCount` is the number
+   * the person was shown and confirmed; if a different number matches now (someone applied, or
+   * the search also matches CVs they did not see), nothing is deleted and they are asked again.
+   */
+  async deleteManyByFilters(
+    jobId: number,
+    filters: Omit<CandidateFilters, "page" | "limit">,
+    expectedCount: number,
+  ) {
+    const where = buildCandidateWhere(jobId, filters);
+    const deleted = await db.transaction(async (tx) => {
+      const rows = await tx.delete(candidates).where(where).returning({
+        id: candidates.id,
+        jobId: candidates.jobId,
+        resumeKey: candidates.resumeKey,
+      });
+      // Thrown inside the transaction, so the delete is undone.
+      if (rows.length !== expectedCount) throw new BulkDeleteCountChangedError(rows.length);
+      return rows;
     });
 
     await requestResumeDeletion(deleted.map((candidate) => candidate.resumeKey));

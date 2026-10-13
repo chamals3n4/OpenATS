@@ -21,6 +21,7 @@ import logger from "../../utils/logger";
 
 import { requestCvAnalysis } from "../../queues/cv-analysis/queue";
 import { requestCvExtraction } from "../../queues/cv-extract/queue";
+import { requestResumeDeletion } from "../../queues/resume-delete/queue";
 import { cvTextService } from "./cv-text.service";
 import { getErrorMessage} from "../../utils/error.utils";
 
@@ -110,7 +111,7 @@ export const applyForJob = async (req: Request, res: Response) => {
     const result = await candidateService.apply(jobId, parsed.data);
 
     logger.info(
-      `New application submitted: candidateId=${result.id}, email="${result.email}", jobId=${jobId}${result.resumeKey ? ", hasResume=true" : ""}`,
+      `New application submitted: candidateId=${result.id}, jobId=${jobId}${result.resumeKey ? ", hasResume=true" : ""}`,
     );
 
     if (result.resumeKey) {
@@ -144,9 +145,8 @@ export const applyForJob = async (req: Request, res: Response) => {
       return;
     }
     if (error instanceof DuplicateApplicationError) {
-      logger.warn(
-        `Duplicate application attempt: email="${req.body?.email}", jobId=${req.params.jobId}`,
-      );
+      // No email address here: logs are kept after a candidate asks to be deleted.
+      logger.warn(`Duplicate application attempt: jobId=${req.params.jobId}`);
       res.status(409).json({
         error: "You have already applied to this job with this email.",
         code: "DUPLICATE_APPLICATION",
@@ -527,7 +527,7 @@ export const deleteCandidate = async (req: Request, res: Response) => {
     }
 
     logger.info(
-      `Candidate deleted: id=${id}, email="${result.email}", jobId=${result.jobId} by user ${req.user?.id}`,
+      `Candidate deleted: id=${id}, jobId=${result.jobId} by user ${req.user?.id}`,
     );
     res.status(200).json({ data: result });
   } catch (error) {
@@ -611,9 +611,7 @@ export const updateCandidateBasicDetails = async (
     }
 
     if (newResumeKey && oldResumeKey && oldResumeKey !== newResumeKey) {
-      await r2Service.deleteResume(oldResumeKey).catch((err) => {
-        logger.error("Failed to delete old resume from storage:", err);
-      });
+      await requestResumeDeletion([oldResumeKey]);
     }
 
     if (newResumeKey) {

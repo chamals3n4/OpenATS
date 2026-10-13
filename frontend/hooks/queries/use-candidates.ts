@@ -238,7 +238,7 @@ export function useDeleteCandidate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      serverFetch<{ data: Candidate }>(`/candidates/${id}`, {
+      serverFetch<{ data: { id: number; jobId: number } }>(`/candidates/${id}`, {
         method: "DELETE",
       }),
     onSuccess: () => {

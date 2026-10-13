@@ -97,4 +97,4 @@ The **Assessments** tab shows assessment invitations and attempts associated wit
 
 If an applicant's basic information is incorrect, use **Edit** in the profile header to update their name, email, phone number, or resume. Uploading a replacement resume replaces the current CV and can start a new analysis.
 
-Use **Delete** only when the record should be permanently removed. If you need to keep the recruitment history, retain the candidate record and use the appropriate status or decision action instead.
+Use **Delete** only when the record should be permanently removed. It also erases the candidate's CV file; see [Deleting candidate data](../administration/deleting-candidate-data) for exactly what is and is not removed. If you need to keep the recruitment history, retain the candidate record and use the appropriate status or decision action instead.

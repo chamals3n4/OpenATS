@@ -24,6 +24,7 @@ import { scoringService } from "../scoring/scoring.service";
 import { toAiSummary } from "./cv-analysis.service";
 import { cvExperienceAtLeast, cvMatches, cvRank, cvTextService } from "./cv-text.service";
 import { resumeUploadService } from "../upload/resume-upload.service";
+import { requestResumeDeletion } from "../../queues/resume-delete/queue";
 import { rejectionService } from "../rejection/rejection.service";
 import { applicationReceivedEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
@@ -956,12 +957,19 @@ export const candidateService = {
     return updated ?? null;
   },
 
+  /**
+   * Deletes the candidate and everything recorded about them (every table that names a candidate
+   * cascades), then has their CV file erased from storage.
+   */
   async delete(id: number) {
     const [deleted] = await db
       .delete(candidates)
       .where(eq(candidates.id, id))
-      .returning();
-    return deleted ?? null;
+      .returning({ id: candidates.id, jobId: candidates.jobId, resumeKey: candidates.resumeKey });
+    if (!deleted) return null;
+
+    await requestResumeDeletion([deleted.resumeKey]);
+    return { id: deleted.id, jobId: deleted.jobId };
   },
 
   async deleteManyByFilters(
@@ -971,11 +979,12 @@ export const candidateService = {
     const where = buildCandidateWhere(jobId, filters);
     const deleted = await db.delete(candidates).where(where).returning({
       id: candidates.id,
-      email: candidates.email,
       jobId: candidates.jobId,
+      resumeKey: candidates.resumeKey,
     });
 
-    return deleted;
+    await requestResumeDeletion(deleted.map((candidate) => candidate.resumeKey));
+    return deleted.map(({ id, jobId: deletedJobId }) => ({ id, jobId: deletedJobId }));
   },
 };
 

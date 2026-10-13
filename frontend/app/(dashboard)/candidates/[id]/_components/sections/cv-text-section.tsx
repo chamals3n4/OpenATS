@@ -35,8 +35,16 @@ function Hl({ children }: { children: string }) {
 }
 
 /** Why there is no text to show, in words a recruiter can act on. */
-function notice(cvText: CandidateCvText | null, hasResume: boolean): string | null {
+function notice(
+  cvText: CandidateCvText | null,
+  hasResume: boolean,
+  workerMissing: boolean,
+): string | null {
   if (!hasResume) return "This candidate has no CV.";
+  // Nothing is reading CVs, so "a few seconds" would never come true. Say what is wrong instead.
+  if (workerMissing && (!cvText || cvText.status === "pending")) {
+    return "Waiting for the background worker, which is not running. This CV will be read, and will appear in CV search, once an administrator starts it.";
+  }
   if (!cvText) return "The text of this CV has not been read yet.";
   if (cvText.status === "pending") return "Reading the CV. This usually takes a few seconds.";
   if (cvText.status === "empty") {
@@ -185,11 +193,14 @@ function Contacts({ contacts }: { contacts: NonNullable<CandidateCvText["contact
 export function CvTextSection({
   cvText,
   hasResume,
+  workerMissing = false,
 }: {
   cvText: CandidateCvText | null;
   hasResume: boolean;
+  /** The background worker is not running, so a CV that is waiting will keep waiting. */
+  workerMissing?: boolean;
 }) {
-  const message = notice(cvText, hasResume);
+  const message = notice(cvText, hasResume, workerMissing);
   const sections = useMemo(() => cvText?.sections ?? [], [cvText?.sections]);
 
   const [query, setQuery] = useState("");

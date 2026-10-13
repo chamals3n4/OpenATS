@@ -32,6 +32,21 @@ export function useUpdateSettingsAllowedOrigins() {
   });
 }
 
+export type WorkerStatus = "connected" | "missing" | "unknown";
+
+/**
+ * Whether the background worker is running. Without it CVs are never read, and nothing else says
+ * so. "unknown" means the server could not tell, and is treated as no news.
+ */
+export function useWorkerStatus(options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: ["settings", "worker"],
+    queryFn: () => serverFetch<{ data: { status: WorkerStatus } }>("/settings/worker"),
+    staleTime: 1000 * 30,
+    enabled: options?.enabled ?? true,
+  });
+}
+
 /** Whether AI CV analysis is on. Readable by everyone, since it decides what the candidate page shows. */
 export function useAiSettings() {
   return useQuery({

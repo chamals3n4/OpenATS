@@ -3,7 +3,8 @@ import { eq } from "drizzle-orm";
 import { CV_EXTRACT_QUEUE, type CvExtractJobData } from "./queue";
 import { createRedisConnection } from "../../config/redis";
 import { candidates, db } from "../../db";
-import { extractCvText, UnreadableCvError } from "../../modules/candidate/cv-text";
+import { UnreadableCvError } from "../../modules/candidate/cv-text";
+import { extractCvTextWithTimeout } from "../../modules/candidate/cv-text/extract-with-timeout";
 import { cvTextService } from "../../modules/candidate/cv-text.service";
 import { r2Service } from "../../shared/services/r2.service";
 import logger from "../../utils/logger";
@@ -29,20 +30,21 @@ export function startCvExtractWorker(): Worker<CvExtractJobData> {
       if (!file) throw new UnrecoverableError("The CV file could not be found in storage");
 
       try {
-        const cv = await extractCvText(file);
+        // On its own thread with a time limit, so one file cannot hold up every other CV.
+        const cv = await extractCvTextWithTimeout(file);
         await cvTextService.save(candidateId, resumeKey, cv);
         logger.info(
           `[cv-extract] candidate=${candidateId} status=${cv.status} pages=${cv.pageCount} chars=${cv.text.length}`,
         );
       } catch (error) {
-        // Trying a password-protected or damaged file again gives the same answer.
+        // Trying a password-protected, damaged or too-slow file again gives the same answer.
         if (error instanceof UnreadableCvError) throw new UnrecoverableError(error.message);
         throw error;
       }
     },
     {
       connection: createRedisConnection(),
-      // Parsing a PDF is CPU work on this process's one thread, so more would not go faster.
+      // Each CV is read on its own thread, so two can be read at once.
       concurrency: 2,
     },
   );

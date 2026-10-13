@@ -90,7 +90,7 @@ make dev
 6. Runs database migrations and seeds the default pipeline stages
 7. Asks for an email, a name and a password, and creates your first super admin
 
-`make dev` then starts the backend and frontend together. Sign in at `http://localhost:3000` with the admin you just created.
+`make dev` then starts the backend, the background worker and the frontend together. Sign in at `http://localhost:3000` with the admin you just created.
 
 You'll still need to fill in a few provider credentials by hand afterward, since these are personal secrets nobody can generate for you: Cloudflare R2 and Resend, plus Gemini and Google OAuth if you want those features. Each `.env.example` says what every value is for and which ones are optional.
 

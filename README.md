@@ -88,7 +88,7 @@ Two independent packages - not a monorepo, no shared `package.json` or lockfile.
 | **Frontend**        | [Next.js](https://nextjs.org) (App Router) · TypeScript · [Tailwind CSS v4](https://tailwindcss.com) · [shadcn/ui](https://ui.shadcn.com) (`base-vega`) · [hugeicons](https://hugeicons.com) |
 | **Backend**         | [Express 5](https://expressjs.com) · TypeScript (compiled to CommonJS) · [Socket.IO](https://socket.io) for realtime updates                                                                 |
 | **Data**            | [Drizzle ORM](https://orm.drizzle.team) · PostgreSQL ([Neon](https://neon.tech) in production, any Postgres locally)                                                                         |
-| **Jobs**            | [BullMQ](https://docs.bullmq.io) on Redis - CV analysis runs as its own worker process, not inline with the API                                                                              |
+| **Jobs**            | [BullMQ](https://docs.bullmq.io) on Redis - a required background worker process reads CV text and erases deleted candidates' files, and runs the optional AI CV analysis |
 | **AI**              | Optional: [Gemini](https://ai.google.dev) writes notes on CVs (a summary, strengths and gaps). Off by default, and never part of the candidate score |
 | **Auth**            | Built in, with [Better Auth](https://www.better-auth.com): email and password, no outside identity service. Roles are `super_admin` / `hiring_manager` / `interviewer` |
 | **Storage**         | Cloudflare R2 (or any S3-compatible bucket) for resumes and attachments                                                                                                                      |
@@ -101,7 +101,7 @@ Two independent packages - not a monorepo, no shared `package.json` or lockfile.
 | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
 | `frontend/`                      | Next.js app · :3000                                                                                                        |
 | `backend/`                       | Express API · :8080                                                                                                        |
-| `backend/src/queues/cv-analysis` | The BullMQ queue, worker, and event bridge for background CV analysis |
+| `backend/src/queues`             | The BullMQ queues run by the background worker: CV text, CV file deletion, and AI CV analysis |
 | `backend/src/db/schema`          | Drizzle schema, one file per domain                                                                                        |
 | `backend/drizzle`                | Generated migration SQL - always committed, never hand-edited                                                              |
 | `e2e/`                           | Playwright end-to-end tests, at the root because they span both packages                                                   |
@@ -127,12 +127,17 @@ time to add a super admin or to get back in if you are locked out.
 you: `R2_*` and `RESEND_*` in `backend/.env`. Fill those in before uploading CVs or
 sending email.
 
-AI CV analysis is optional. To use it, set `GEMINI_API_KEY`, turn it on under
-**Settings → General**, and run the worker in a second terminal:
+The **background worker is required**, not optional. It reads the text of every uploaded CV
+(which is what CV search looks through) and erases the files of deleted candidates. Without
+it CVs stay "pending" and never appear in search. `pnpm dev` and `make dev` start it together with the API and the web app; to run it by
+itself:
 
 ```sh
 pnpm --filter ./backend dev:worker
 ```
+
+AI CV analysis is optional and runs in the same worker. To use it, set `GEMINI_API_KEY` and
+turn it on under **Settings → General**.
 
 Prefer to run each step by hand? The full walkthrough is in
 [CONTRIBUTING.md](./CONTRIBUTING.md).

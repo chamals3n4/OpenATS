@@ -50,6 +50,20 @@ Every user has exactly one role.
 
 A role change takes effect on the user's **next request**. They do not need to sign out and in again.
 
+### Who sees which jobs
+
+A job's **hiring team** decides what an Interviewer sees. It does not limit Hiring Managers.
+
+| Role | Jobs and candidates they can see |
+| --- | --- |
+| **Super Admin** | Every job and every candidate. |
+| **Hiring Manager** | Every job and every candidate, whether or not they are on the job's hiring team. This includes CVs, emails, assessments and ratings. |
+| **Interviewer** | Only the jobs they are on the hiring team for, and the candidates of those jobs. A link to any other candidate answers "no access". |
+
+The **team chat** is the one exception. A job's chat, and the chat on each of its candidates, is open only to that job's hiring team and to Super Admins. A Hiring Manager who is not on the hiring team can open the candidate but not the chat. Add them to the hiring team to bring them into the conversation.
+
+If you need to keep a job's candidates away from some of your Hiring Managers, OpenATS cannot do that today: give those people the Interviewer role instead.
+
 ## Managing users
 
 Open **Settings → User Management**. Only Super Admins see this page.

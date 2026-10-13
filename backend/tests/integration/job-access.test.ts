@@ -6,16 +6,24 @@ import { jobs } from "../../src/db/schema/jobs";
 import { jobHiringTeam } from "../../src/db/schema/pipeline";
 import { candidates } from "../../src/db/schema/candidates";
 import { users } from "../../src/db/schema/users";
-import { canAccessJob, canAccessCandidate } from "../../src/shared/auth/job-access";
+import {
+  canAccessJob,
+  canAccessCandidate,
+  canViewCandidate,
+  canViewJob,
+} from "../../src/shared/auth/job-access";
 import {
   requireCandidateAccess,
+  requireCandidateView,
   requireJobAccess,
+  requireJobView,
 } from "../../src/middlewares/job-access.middleware";
 import { getCandidateById } from "../../src/modules/candidate/candidate.controller";
 import type { AuthenticatedUser } from "../../src/shared/auth/verify-token";
 import type { NextFunction, Request, Response } from "express";
 
-// Covers the rule that keeps one hiring team's chat away from another.
+// Covers the two rules in shared/auth/job-access.ts: who is in a hiring team's chat (canAccess*),
+// and who may see a job's candidates (canView*).
 
 const SUFFIX = `job-access-${Date.now()}`;
 
@@ -274,11 +282,77 @@ function runController(
   });
 }
 
+describe("who may see a job and its candidates", () => {
+  it("lets a hiring manager see a job they are not on the hiring team of", async () => {
+    expect(await canViewJob(outsiderUser, teamJobId)).toBe(true);
+    expect(await canViewCandidate(outsiderUser, teamCandidateId)).toBe(true);
+  });
+
+  it("lets a super admin see every job", async () => {
+    expect(await canViewJob(adminUser, otherJobId)).toBe(true);
+    expect(await canViewCandidate(adminUser, otherCandidateId)).toBe(true);
+  });
+
+  it("lets an interviewer see only the jobs they are on", async () => {
+    expect(await canViewJob(interviewerOnTeamUser, teamJobId)).toBe(true);
+    expect(await canViewCandidate(interviewerOnTeamUser, teamCandidateId)).toBe(true);
+
+    expect(await canViewJob(interviewerOnTeamUser, otherJobId)).toBe(false);
+    expect(await canViewCandidate(interviewerOnTeamUser, otherCandidateId)).toBe(false);
+    expect(await canViewCandidate(interviewerOffTeamUser, teamCandidateId)).toBe(false);
+  });
+
+  it("does not tell an interviewer whether a candidate id exists", async () => {
+    expect(await canViewCandidate(interviewerOnTeamUser, 2_000_000_000)).toBe(false);
+  });
+
+  it("keeps the team chat to the hiring team: seeing a candidate is not being in the chat", async () => {
+    expect(await canViewCandidate(outsiderUser, teamCandidateId)).toBe(true);
+    expect(await canAccessCandidate(outsiderUser, teamCandidateId)).toBe(false);
+    expect(await canAccessJob(outsiderUser, teamJobId)).toBe(false);
+  });
+});
+
+describe("requireCandidateView and requireJobView", () => {
+  it("pass a hiring manager who is not on the hiring team", async () => {
+    const candidate = await runMiddleware(requireCandidateView(), outsiderUser, {
+      candidateId: String(teamCandidateId),
+    });
+    const job = await runMiddleware(requireJobView(), outsiderUser, { jobId: String(teamJobId) });
+
+    expect(candidate.passed).toBe(true);
+    expect(job.passed).toBe(true);
+  });
+
+  it("reject an interviewer who is not on the hiring team with 403", async () => {
+    const candidate = await runMiddleware(requireCandidateView(), interviewerOffTeamUser, {
+      candidateId: String(teamCandidateId),
+    });
+    const job = await runMiddleware(requireJobView(), interviewerOffTeamUser, {
+      jobId: String(teamJobId),
+    });
+
+    expect(candidate.status).toBe(403);
+    expect(job.status).toBe(403);
+  });
+
+  it("pass an interviewer who is on the hiring team", async () => {
+    const result = await runMiddleware(requireCandidateView(), interviewerOnTeamUser, {
+      candidateId: String(teamCandidateId),
+    });
+    expect(result.passed).toBe(true);
+  });
+
+  it("reject a malformed id with 400", async () => {
+    const result = await runMiddleware(requireCandidateView(), outsiderUser, { candidateId: "abc" });
+    expect(result.status).toBe(400);
+  });
+});
+
 describe("getCandidateById authorization", () => {
   // Regression coverage for the candidate-detail IDOR: interviewer must be
   // scoped to their own hiring team, exactly like the list endpoint already
-  // is; hiring_manager/super_admin must stay company-wide (see the comment
-  // on the check itself in candidate.controller.ts for why).
+  // is; hiring_manager/super_admin stay company-wide (canViewCandidate).
   it("allows an interviewer on the candidate's hiring team", async () => {
     const result = await runController(getCandidateById, interviewerOnTeamUser, {
       id: String(teamCandidateId),

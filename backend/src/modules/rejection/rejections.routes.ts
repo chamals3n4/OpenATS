@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { requireCandidateView } from "../../middlewares/job-access.middleware";
 import { requireManager } from "../../middlewares/role.middleware";
 import { z } from "zod";
 import { rejectionService, RejectionError } from "./rejection.service";
@@ -136,7 +137,7 @@ router.post("/candidates/:id/unreject", requireManager, async (req, res) => {
 });
 
 // GET /candidates/:id/rejections — get rejection history
-router.get("/candidates/:id/rejections", async (req, res) => {
+router.get("/candidates/:id/rejections", requireCandidateView("id"), async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
     if (isNaN(id)) {

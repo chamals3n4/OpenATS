@@ -16,7 +16,7 @@ import { parseMinScore, parseMinYears } from "./candidate-query";
 import { aiSettingsService } from "../settings/ai-settings.service";
 import { scoringService } from "../scoring/scoring.service";
 import { withholdInterviewScores } from "../scoring/scoring";
-import { canAccessCandidate } from "../../shared/auth/job-access";
+import { canViewCandidate } from "../../shared/auth/job-access";
 import logger from "../../utils/logger";
 
 import { requestCvAnalysis } from "../../queues/cv-analysis/queue";
@@ -267,13 +267,10 @@ export const getCandidateById = async (req: Request, res: Response) => {
       return;
     }
 
-    // Only `interviewer` is job-team-scoped elsewhere (getCandidates' own
-    // teamUserId filter above); hiring_manager/super_admin are company-wide
-    // by design everywhere else (jobs, interviews, offers). Keep that same
-    // split here — widening this check to every role would lock
-    // hiring_manager out of candidates outside their own hiring team.
-    if (req.user.role === "interviewer") {
-      const allowed = await canAccessCandidate(req.user, id);
+    // The rule in shared/auth/job-access.ts: an interviewer sees the candidates of their own
+    // jobs, a hiring manager or super admin sees every candidate.
+    {
+      const allowed = await canViewCandidate(req.user, id);
       if (!allowed) {
         logger.warn(`[access] user ${req.user.id} denied candidate ${id}`);
         res
@@ -317,8 +314,7 @@ export const getCandidateCvText = async (req: Request, res: Response) => {
       return;
     }
 
-    // The same split as getCandidateById: only an interviewer is limited to their own jobs.
-    if (req.user.role === "interviewer" && !(await canAccessCandidate(req.user, id))) {
+    if (!(await canViewCandidate(req.user, id))) {
       logger.warn(`[access] user ${req.user.id} denied candidate ${id}`);
       res.status(403).json({ error: "You do not have access to this resource" });
       return;
@@ -354,12 +350,9 @@ export const getCandidateResume = async (req: Request, res: Response) => {
       return;
     }
 
-    if (req.user.role === "interviewer") {
-      const allowed = await canAccessCandidate(req.user, id);
-      if (!allowed) {
-        res.status(403).json({ error: "You do not have access to this resource" });
-        return;
-      }
+    if (!(await canViewCandidate(req.user, id))) {
+      res.status(403).json({ error: "You do not have access to this resource" });
+      return;
     }
 
     // The file is sent by this server, straight from the private bucket. There is no link to the

@@ -4,7 +4,16 @@ import { jobHiringTeam } from "../../db/schema/pipeline";
 import { candidates } from "../../db/schema/candidates";
 import type { AuthenticatedUser } from "./verify-token";
 
-// Per-job authorization, shared by the sockets and the HTTP middleware.
+// Per-job authorization, shared by the sockets and the HTTP middleware. There are two rules.
+//
+// Who may see and work on a job's candidates (canViewJob, canViewCandidate):
+//   - super admins and hiring managers: every job. Hiring managers run hiring for the whole
+//     company, so they are not limited to the jobs they were added to.
+//   - interviewers: only jobs where they are on the hiring team.
+//
+// Who is in a job's team chat (canAccessJob, canAccessCandidate):
+//   - members of that job's hiring team, whatever their role, and super admins.
+//   A hiring manager who is not on the team can open the candidate but not the team's chat.
 
 // Narrows an untrusted client-supplied id to a usable row id.
 export function parseRoomId(value: unknown): number | null {
@@ -46,4 +55,26 @@ export async function canAccessCandidate(
 
   if (!candidate) return false;
   return canAccessJob(user, candidate.jobId);
+}
+
+/** Whether the user may see this job and its candidates. Not the chat rule; see the top of the file. */
+export async function canViewJob(
+  user: AuthenticatedUser,
+  jobId: number,
+): Promise<boolean> {
+  if (user.role !== "interviewer") return true;
+  return canAccessJob(user, jobId);
+}
+
+/**
+ * Whether the user may see this candidate. For a manager or admin it is true even when there is
+ * no such candidate: the handler answers 404 for that, where an interviewer gets 403 either way
+ * so they cannot probe for ids.
+ */
+export async function canViewCandidate(
+  user: AuthenticatedUser,
+  candidateId: number,
+): Promise<boolean> {
+  if (user.role !== "interviewer") return true;
+  return canAccessCandidate(user, candidateId);
 }

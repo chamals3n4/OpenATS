@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
+import { requireCandidateView } from "../../middlewares/job-access.middleware";
 import { requireManager } from "../../middlewares/role.middleware";
 import { interviewService, FeedbackValidationError } from "./interview.service";
 import { DEFAULT_INTERVIEW_MINUTES, completeInterviewBooking } from "./interview-confirm";
@@ -38,7 +39,7 @@ const updateInterviewSchema = z.object({
   attendeeEmails: z.array(z.string().email()).optional(),
 });
 
-router.get("/candidates/:candidateId/interviews", async (req, res) => {
+router.get("/candidates/:candidateId/interviews", requireCandidateView(), async (req, res) => {
   try {
     const candidateId = parseInt((req.params.candidateId ?? "").toString());
     if (isNaN(candidateId)) {

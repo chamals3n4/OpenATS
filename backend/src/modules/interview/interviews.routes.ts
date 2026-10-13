@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { z } from "zod";
-import { requireCandidateView } from "../../middlewares/job-access.middleware";
+import { requireCandidateView, requireInterviewView } from "../../middlewares/job-access.middleware";
 import { requireManager } from "../../middlewares/role.middleware";
 import { interviewService, FeedbackValidationError } from "./interview.service";
 import { DEFAULT_INTERVIEW_MINUTES, completeInterviewBooking } from "./interview-confirm";
@@ -65,7 +65,11 @@ router.get("/interviews", async (req, res) => {
       fromDate: req.query.from as string | undefined,
       toDate: req.query.to as string | undefined,
     };
-    const interviews = await interviewService.getAll(filters);
+    // An interviewer gets the interviews of their own jobs and the ones assigned to them.
+    const interviews = await interviewService.getAll(
+      filters,
+      req.user.role === "interviewer" ? req.user.id : undefined,
+    );
     res.status(200).json({ data: interviews });
   } catch (error) {
     logger.error(`Failed to list interviews: ${getErrorMessage(error)}`);
@@ -74,7 +78,7 @@ router.get("/interviews", async (req, res) => {
 });
 
 // Confirmed upcoming interview times, used to flag already-allocated slots
-router.get("/interviews/allocated-slots", async (req, res) => {
+router.get("/interviews/allocated-slots", requireManager, async (req, res) => {
   try {
     const rows = await db
       .select({
@@ -387,7 +391,7 @@ const feedbackSchema = z
     "Add notes, a recommendation or at least one score",
   );
 
-router.post("/interviews/:id/feedback", async (req, res) => {
+router.post("/interviews/:id/feedback", requireInterviewView(), async (req, res) => {
   try {
     const interviewId = parseInt((req.params.id ?? "").toString());
     if (isNaN(interviewId)) {
@@ -430,7 +434,7 @@ router.post("/interviews/:id/feedback", async (req, res) => {
   }
 });
 
-router.get("/interviews/:id/feedback", async (req, res) => {
+router.get("/interviews/:id/feedback", requireInterviewView(), async (req, res) => {
   try {
     const interviewId = parseInt((req.params.id ?? "").toString());
     if (isNaN(interviewId)) {

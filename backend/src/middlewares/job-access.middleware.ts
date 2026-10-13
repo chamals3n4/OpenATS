@@ -3,6 +3,7 @@ import {
   canAccessCandidate,
   canAccessJob,
   canViewCandidate,
+  canViewInterview,
   canViewJob,
   parseRoomId,
 } from "../shared/auth/job-access";
@@ -65,3 +66,24 @@ export const requireCandidateView = (param = "candidateId") => candidateGuard(ca
 
 export const requireJobAccess = (param = "jobId") => jobGuard(canAccessJob, param);
 export const requireCandidateAccess = (param = "candidateId") => candidateGuard(canAccessCandidate, param);
+
+/** For routes about one interview. An interviewer passes for their own jobs and for interviews assigned to them. */
+export function requireInterviewView(param = "id") {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const interviewId = parseRoomId(req.params[param]);
+    if (interviewId === null) {
+      res.status(400).json({ error: "Invalid interview id" });
+      return;
+    }
+
+    try {
+      if (!(await canViewInterview(req.user, interviewId))) {
+        deny(res, req.user.id, `interview ${interviewId}`);
+        return;
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}

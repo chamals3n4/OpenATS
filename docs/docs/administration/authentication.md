@@ -58,9 +58,11 @@ A job's **hiring team** decides what an Interviewer sees. It does not limit Hiri
 | --- | --- |
 | **Super Admin** | Every job and every candidate. |
 | **Hiring Manager** | Every job and every candidate, whether or not they are on the job's hiring team. This includes CVs, emails, assessments and ratings. |
-| **Interviewer** | Only the jobs they are on the hiring team for, and the candidates of those jobs. A link to any other candidate answers "no access". |
+| **Interviewer** | Only the jobs they are on the hiring team for, and the candidates of those jobs. A link to any other candidate answers "no access". They also see any interview they were picked to run, even on a job they are not on the team of. They never see the **Manage Offers** page or salaries there, and cannot accept or decline an offer. |
 
 The **team chat** is the one exception. A job's chat, and the chat on each of its candidates, is open only to that job's hiring team and to Super Admins. A Hiring Manager who is not on the hiring team can open the candidate but not the chat. Add them to the hiring team to bring them into the conversation.
+
+Picking someone to run an interview does not add them to the job's hiring team. They can see that interview and submit its scorecard, but to open the candidate's page and CV they have to be on the hiring team as well.
 
 If you need to keep a job's candidates away from some of your Hiring Managers, OpenATS cannot do that today: give those people the Interviewer role instead.
 

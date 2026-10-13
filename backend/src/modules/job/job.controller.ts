@@ -6,6 +6,7 @@ import logger from "../../utils/logger";
 import { getErrorCode, getErrorMessage} from "../../utils/error.utils";
 import { jobs } from "../../db/schema";
 import { scoringService } from "../scoring/scoring.service";
+import { canViewJob } from "../../shared/auth/job-access";
 
 const employmentTypeEnum = z.enum([
   "full_time",
@@ -172,12 +173,9 @@ export const getJobById = async (req: Request, res: Response) => {
       return;
     }
 
-    if (req.user.role === "interviewer") {
-      const onTeam = result.hiringTeam?.some((m: { userId: number }) => m.userId === req.user.id);
-      if (!onTeam) {
-        res.status(403).json({ error: "Access restricted to assigned jobs" });
-        return;
-      }
+    if (!(await canViewJob(req.user, id))) {
+      res.status(403).json({ error: "Access restricted to assigned jobs" });
+      return;
     }
 
     res.status(200).json({ data: result });
@@ -228,6 +226,10 @@ export const getJobBySlug = async (req: Request, res: Response) => {
     const result = await jobService.getBySlug(slug);
     if (!result) {
       res.status(404).json({ error: "Job not found" });
+      return;
+    }
+    if (!(await canViewJob(req.user, result.id))) {
+      res.status(403).json({ error: "Access restricted to assigned jobs" });
       return;
     }
     res.status(200).json({ data: result });

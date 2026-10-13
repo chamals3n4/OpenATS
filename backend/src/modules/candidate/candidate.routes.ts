@@ -28,7 +28,9 @@ const upload = multer({
   },
 });
 
-router.post("/jobs/:jobId/apply", applyForJob);
+// Adding an application from inside the dashboard. Applicants use /public/jobs/:jobId/apply, which
+// has the origin check and its own limits; this one skips both, so it is for managers only.
+router.post("/jobs/:jobId/apply", requireManager, applyForJob);
 
 router.get("/", getCandidates);
 router.get("/jobs/:jobId/board", requireManager, getPipelineBoard);

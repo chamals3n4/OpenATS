@@ -13,7 +13,7 @@ export function startCvAnalysisWorker(): Worker<CvAnalysisJobData> {
   const worker = new Worker<CvAnalysisJobData>(
     CV_ANALYSIS_QUEUE,
     async (job) => {
-      const { candidateId, jobId, resumeUrl } = job.data;
+      const { candidateId, jobId, resumeKey } = job.data;
       logger.info(
         `[worker] processing candidate=${candidateId} attempt=${job.attemptsMade + 1}`,
       );
@@ -24,7 +24,7 @@ export function startCvAnalysisWorker(): Worker<CvAnalysisJobData> {
         await cvAnalysisService.clear(candidateId);
         return;
       }
-      await cvAnalysisService.runAnalysis(candidateId, jobId, resumeUrl);
+      await cvAnalysisService.runAnalysis(candidateId, jobId, resumeKey);
     },
     {
       connection: createRedisConnection(),

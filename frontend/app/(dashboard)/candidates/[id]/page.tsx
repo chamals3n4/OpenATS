@@ -268,7 +268,7 @@ export default function CandidateDetailPage({
             <div className="rounded-md border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-950">
               {activeSection === "ai-analysis" && (
                 <AiAnalysisSection
-                  resumeUrl={candidate.resumeUrl}
+                  hasResume={candidate.hasResume}
                   cvAnalysis={cvAnalysis}
                 />
               )}
@@ -276,7 +276,7 @@ export default function CandidateDetailPage({
                 <AnswersSection candidate={candidate} />
               )}
               {activeSection === "cv-text" && (
-                <CvTextSection cvText={candidate.cvText ?? null} hasResume={!!candidate.resumeUrl} />
+                <CvTextSection cvText={candidate.cvText ?? null} hasResume={candidate.hasResume} />
               )}
               {activeSection === "history" && (
                 <HistorySection candidate={candidate} stageMap={stageMap} />

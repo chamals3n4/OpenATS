@@ -160,7 +160,7 @@ export function CandidateHeader({
           <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
             <Button
               variant="cancel"
-              disabled={!candidate.resumeUrl}
+              disabled={!candidate.hasResume}
               onClick={onViewCv}
               className="h-9 gap-2 px-3.5 text-sm"
             >

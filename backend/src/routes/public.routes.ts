@@ -9,7 +9,7 @@ import { getPublicCompany } from "../modules/company/company.controller";
 import { checkOrigins } from "../middlewares/allowedOrigins.middleware";
 import { getPublicCustomQuestions } from "../modules/custom-question/custom-question.controller";
 import { applyForJob } from "../modules/candidate/candidate.controller";
-import { uploadFile } from "../modules/upload/upload.controller";
+import { uploadPublicResume } from "../modules/upload/upload.controller";
 import {
   getAssessmentForCandidate,
   startAssessment,
@@ -127,7 +127,7 @@ router.post(
   checkOrigins,
   publicWriteLimiter,
   handleResumeUpload,
-  uploadFile,
+  uploadPublicResume,
 );
 
 // assessments for candidates ( token based)

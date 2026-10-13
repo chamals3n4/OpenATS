@@ -83,11 +83,16 @@ AUTH_ISSUER=http://localhost:3000
 
 R2 stores resumes and attachments. Open the [Cloudflare R2 dashboard](https://dash.cloudflare.com/?to=/:account/r2/overview) and select the Cloudflare account you will use for OpenATS.
 
-1. Select **Create bucket** and give it a clear name, such as `openats-files`.
-2. Keep the bucket private unless your product intentionally needs public resume URLs.
+OpenATS uses two buckets, so that CVs can never be opened by a link:
+
+- a **public** bucket for company logos, which are shown on the careers page and in emails
+- a **private** bucket for CVs, which are only ever sent by the OpenATS server to signed-in users
+
+1. Select **Create bucket** and create the private one, for example `openats-cvs`. Leave public access off and do not connect a custom domain to it.
+2. Create a second bucket for logos, for example `openats-public`. Under **Settings**, turn on public access (the `r2.dev` address, or a custom domain) and copy its public URL.
 3. Return to **R2 Overview** and select **Manage** beside **API Tokens**.
 4. Select **Create Account API Token** or **Create User API Token**.
-5. Choose **Object Read & Write**, then restrict the token to the `openats-files` bucket where possible.
+5. Choose **Object Read & Write**, then restrict the token to those two buckets where possible.
 6. Create the token and immediately copy its **Access Key ID**, **Secret Access Key**, and **S3 API endpoint**. Cloudflare only shows the secret once.
 
 Find the Cloudflare Account ID in the dashboard. The endpoint normally follows this format:
@@ -96,11 +101,12 @@ Find the Cloudflare Account ID in the dashboard. The endpoint normally follows t
 R2_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
 R2_ACCESS_KEY_ID=<Access Key ID>
 R2_SECRET_ACCESS_KEY=<Secret Access Key>
-R2_BUCKET_NAME=openats-files
-R2_PUBLIC_URL=<public bucket URL, if you expose files publicly>
+R2_BUCKET_NAME=openats-public
+R2_PUBLIC_URL=<public URL of the logo bucket>
+R2_PRIVATE_BUCKET_NAME=openats-cvs
 ```
 
-Set `R2_PUBLIC_URL` only when you have configured a public bucket domain. See [Cloudflare’s R2 S3 guide](https://developers.cloudflare.com/r2/get-started/s3/) if the dashboard labels differ.
+See [Cloudflare’s R2 S3 guide](https://developers.cloudflare.com/r2/get-started/s3/) if the dashboard labels differ.
 
 ## 7. Configure transactional email with Resend
 

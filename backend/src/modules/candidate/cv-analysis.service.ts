@@ -1,19 +1,9 @@
-import { GetObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { GoogleGenAI } from "@google/genai";
 import { eq } from "drizzle-orm";
 import { candidateCvAnalysis, db } from "../../db";
 import { jobSkills, jobs } from "../../db";
+import { r2Service } from "../../shared/services/r2.service";
 import logger from "../../utils/logger";
-
-const r2Client = new S3Client({
-  region: "us-east-1",
-  endpoint: process.env.R2_ENDPOINT!,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-  forcePathStyle: true,
-});
 
 // Created on first use, not when this file loads. The API key is optional: the server has to
 // start, and everything else has to work, on an installation that never turns AI analysis on.
@@ -91,34 +81,6 @@ interface JobRequirements {
 interface SkillMatch {
   matchedSkills: string[]; // green in ui
   missingSkills: string[]; // red in UI
-}
-
-function extractKeyFromUrl(resumeUrl: string): string {
-  const base = process.env.R2_PUBLIC_URL?.endsWith("/")
-    ? process.env.R2_PUBLIC_URL.slice(0, -1)
-    : process.env.R2_PUBLIC_URL;
-
-  return resumeUrl.replace(`${base}/`, "");
-}
-
-// download pdf bytes from r2
-async function downloadPdfFromR2(objectKey: string): Promise<Buffer> {
-  const command = new GetObjectCommand({
-    Bucket: process.env.R2_BUCKET_NAME!,
-    Key: objectKey,
-  });
-  const response = await r2Client.send(command);
-
-  if (!response.Body) {
-    throw new Error(`empty response body for key : ${objectKey}`);
-  }
-
-  const chunks: Uint8Array[] = [];
-  for await (const chunk of response.Body as AsyncIterable<Uint8Array>) {
-    chunks.push(chunk);
-  }
-
-  return Buffer.concat(chunks);
 }
 
 async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
@@ -532,7 +494,7 @@ export const cvAnalysisService = {
   async runAnalysis(
     candidateId: number,
     jobId: number,
-    resumeUrl: string,
+    resumeKey: string,
   ): Promise<void> {
     logger.info(
       `[CV Analysis] Running for candidate ${candidateId}, job ${jobId}`,
@@ -550,8 +512,8 @@ export const cvAnalysisService = {
 
     logger.info(`[CV Analysis] Job has ${jobSkillRows.length} required skills`);
 
-    const objectKey = extractKeyFromUrl(resumeUrl);
-    const pdfBuffer = await downloadPdfFromR2(objectKey);
+    const pdfBuffer = await r2Service.getResume(resumeKey);
+    if (!pdfBuffer) throw new Error("The CV file could not be found in storage");
 
     logger.info(`[CV Analysis] PDF downloaded (${pdfBuffer.length} bytes)`);
 

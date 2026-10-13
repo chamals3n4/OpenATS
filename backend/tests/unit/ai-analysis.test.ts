@@ -22,6 +22,7 @@ describe("the Gemini key is optional", () => {
     R2_ACCESS_KEY_ID: "id",
     R2_SECRET_ACCESS_KEY: "secret",
     R2_BUCKET_NAME: "bucket",
+    R2_PRIVATE_BUCKET_NAME: "private-bucket",
     R2_PUBLIC_URL: "https://files.example.test",
     RESEND_API_KEY: "resend",
     RESEND_FROM_EMAIL: "no-reply@example.test",

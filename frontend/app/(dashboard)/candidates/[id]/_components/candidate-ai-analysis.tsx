@@ -85,13 +85,13 @@ function Notice({ children }: { children: React.ReactNode }) {
  * the CV shows. It gives no score and no verdict on purpose. It describes; people decide.
  */
 export function CandidateAiAnalysis({
-  resumeUrl,
+  hasResume,
   cv,
 }: {
-  resumeUrl: string | null;
+  hasResume: boolean;
   cv: CandidateCvAnalysisPayload | null;
 }) {
-  if (!resumeUrl) {
+  if (!hasResume) {
     return <Notice>No CV on file, so there is nothing for the AI to read.</Notice>;
   }
 

@@ -12,8 +12,8 @@ import { normalizeForSearch } from "../../src/modules/candidate/cv-text/normaliz
 import { buildPdf } from "../helpers/pdf";
 
 const SUFFIX = `cvt${Date.now()}`;
-const OLD_URL = `https://files.example.test/resumes/old-${SUFFIX}.pdf`;
-const NEW_URL = `https://files.example.test/resumes/new-${SUFFIX}.pdf`;
+const OLD_KEY = `resumes/old-${SUFFIX}.pdf`;
+const NEW_KEY = `resumes/new-${SUFFIX}.pdf`;
 let companyId: number, departmentId: number, userId: number, jobId: number, candidateId: number;
 
 /** Whether the candidate's stored CV text matches a search typed by a recruiter. */
@@ -65,7 +65,7 @@ beforeAll(async () => {
   jobId = job!.id;
   const [candidate] = await db
     .insert(candidates)
-    .values({ firstName: "Nimal", lastName: "Fernando", email: `nimal.${SUFFIX}@example.test`, jobId, resumeUrl: OLD_URL })
+    .values({ firstName: "Nimal", lastName: "Fernando", email: `nimal.${SUFFIX}@example.test`, jobId, resumeKey: OLD_KEY })
     .returning();
   candidateId = candidate!.id;
 });
@@ -80,10 +80,10 @@ afterAll(async () => {
 
 describe("stored CV text", () => {
   it("starts as pending, then holds the text once the file has been read", async () => {
-    await cvTextService.markPending(candidateId, OLD_URL);
+    await cvTextService.markPending(candidateId, OLD_KEY);
     expect((await cvTextService.getForCandidate(candidateId))?.status).toBe("pending");
 
-    await cvTextService.save(candidateId, OLD_URL, await extractCvText(cvFile()));
+    await cvTextService.save(candidateId, OLD_KEY, await extractCvText(cvFile()));
 
     const stored = await cvTextService.getForCandidate(candidateId);
     expect(stored?.status).toBe("done");
@@ -111,12 +111,12 @@ describe("stored CV text", () => {
   });
 
   it("drops a result for a CV that has since been replaced", async () => {
-    await cvTextService.markPending(candidateId, NEW_URL);
+    await cvTextService.markPending(candidateId, NEW_KEY);
     expect(await matches("nurse")).toBe(false);
 
     // The job for the old file finishes late: nothing may be written.
-    await cvTextService.save(candidateId, OLD_URL, await extractCvText(cvFile()));
-    await cvTextService.markFailed(candidateId, OLD_URL, "late failure");
+    await cvTextService.save(candidateId, OLD_KEY, await extractCvText(cvFile()));
+    await cvTextService.markFailed(candidateId, OLD_KEY, "late failure");
 
     const stored = await cvTextService.getForCandidate(candidateId);
     expect(stored?.status).toBe("pending");
@@ -124,14 +124,14 @@ describe("stored CV text", () => {
   });
 
   it("records a failure and keeps nothing searchable", async () => {
-    await cvTextService.markFailed(candidateId, NEW_URL, "The PDF is password protected");
+    await cvTextService.markFailed(candidateId, NEW_KEY, "The PDF is password protected");
     expect((await cvTextService.getForCandidate(candidateId))?.status).toBe("failed");
     expect(await matches("nurse")).toBe(false);
   });
 
   it("works the details out again from the stored text, without the file", async () => {
-    await cvTextService.markPending(candidateId, OLD_URL);
-    await cvTextService.save(candidateId, OLD_URL, await extractCvText(cvFile()));
+    await cvTextService.markPending(candidateId, OLD_KEY);
+    await cvTextService.save(candidateId, OLD_KEY, await extractCvText(cvFile()));
     await db
       .update(candidateCvText)
       .set({ sections: null, searchText: "stale" })

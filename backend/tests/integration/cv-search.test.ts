@@ -44,13 +44,13 @@ const NURSE_CV = [
 const WELDER_CV = "Certified welder. MIG and TIG welding, structural steel, blueprint reading. Ten years on site.";
 
 async function addCandidate(jobId: number, firstName: string, lastName: string, cv: string) {
-  const resumeUrl = `https://files.example.test/resumes/${firstName}-${SUFFIX}.pdf`.toLowerCase();
+  const resumeKey = `resumes/${firstName}-${SUFFIX}.pdf`.toLowerCase();
   const [candidate] = await db
     .insert(candidates)
-    .values({ firstName, lastName, email: `${firstName}.${jobId}.${SUFFIX}@example.test`.toLowerCase(), jobId, resumeUrl })
+    .values({ firstName, lastName, email: `${firstName}.${jobId}.${SUFFIX}@example.test`.toLowerCase(), jobId, resumeKey })
     .returning();
-  await cvTextService.markPending(candidate!.id, resumeUrl);
-  await cvTextService.save(candidate!.id, resumeUrl, {
+  await cvTextService.markPending(candidate!.id, resumeKey);
+  await cvTextService.save(candidate!.id, resumeKey, {
     status: "done",
     fileType: "pdf",
     method: "text",

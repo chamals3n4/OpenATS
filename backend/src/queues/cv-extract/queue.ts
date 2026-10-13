@@ -7,7 +7,7 @@ export const CV_EXTRACT_QUEUE = "cv-extract";
 
 export type CvExtractJobData = {
   candidateId: number;
-  resumeUrl: string;
+  resumeKey: string;
 };
 
 export const cvExtractQueue = new Queue<CvExtractJobData>(CV_EXTRACT_QUEUE, {
@@ -28,7 +28,7 @@ export const cvExtractQueue = new Queue<CvExtractJobData>(CV_EXTRACT_QUEUE, {
  * analysis this is always on: the text is read on this server and goes nowhere else.
  */
 export async function requestCvExtraction(data: CvExtractJobData): Promise<void> {
-  await cvTextService.markPending(data.candidateId, data.resumeUrl);
+  await cvTextService.markPending(data.candidateId, data.resumeKey);
   await cvExtractQueue.add("extract", data);
   logger.info(`[cv-extract] enqueued candidate=${data.candidateId}`);
 }

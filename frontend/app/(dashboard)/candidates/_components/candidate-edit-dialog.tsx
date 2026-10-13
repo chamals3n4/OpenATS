@@ -103,9 +103,9 @@ export function CandidateEditDialog({
               <p className="text-[13px] font-medium text-slate-600 dark:text-neutral-400">
                 Upload new CV (PDF)
               </p>
-              {candidate?.resumeUrl ? (
+              {candidate?.hasResume ? (
                 <a
-                  href={candidate.resumeUrl}
+                  href={`/api/candidates/${candidate.id}/resume`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center text-[12px] font-medium text-theme hover:underline whitespace-nowrap"

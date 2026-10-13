@@ -1,6 +1,7 @@
 import { eq, desc, ilike, inArray, and, sql } from "drizzle-orm";
 import { db, NewJob } from "../../db";
 import { cleanObject as clean } from "../../utils/object.utils";
+import { requestResumeDeletion } from "../../queues/resume-delete/queue";
 import {
   jobs,
   jobSkills,
@@ -173,11 +174,21 @@ export const jobService = {
 
   async deleteMany(ids: number[]) {
     if (ids.length === 0) return [];
-    return db.transaction(async (tx) => {
+    let resumeKeys: Array<string | null> = [];
+    const deleted = await db.transaction(async (tx) => {
       await tx.delete(offers).where(inArray(offers.jobId, ids));
-      await tx.delete(candidates).where(inArray(candidates.jobId, ids));
+      const removed = await tx
+        .delete(candidates)
+        .where(inArray(candidates.jobId, ids))
+        .returning({ resumeKey: candidates.resumeKey });
+      resumeKeys = removed.map((candidate) => candidate.resumeKey);
       return tx.delete(jobs).where(inArray(jobs.id, ids)).returning();
     });
+
+    // Deleting a job deletes its candidates, so their CV files go too. After the commit, so a
+    // rolled-back delete erases nothing.
+    await requestResumeDeletion(resumeKeys);
+    return deleted;
   },
 
   async getById(id: number) {
@@ -332,9 +343,14 @@ export const jobService = {
   },
 
   async delete(id: number) {
-    return await db.transaction(async (tx) => {
+    let resumeKeys: Array<string | null> = [];
+    const deletedJob = await db.transaction(async (tx) => {
       await tx.delete(offers).where(eq(offers.jobId, id));
-      await tx.delete(candidates).where(eq(candidates.jobId, id));
+      const removed = await tx
+        .delete(candidates)
+        .where(eq(candidates.jobId, id))
+        .returning({ resumeKey: candidates.resumeKey });
+      resumeKeys = removed.map((candidate) => candidate.resumeKey);
 
       const [deleted] = await tx
         .delete(jobs)
@@ -343,6 +359,10 @@ export const jobService = {
 
       return deleted ?? null;
     });
+
+    // The candidates' CV files, as in deleteMany.
+    await requestResumeDeletion(resumeKeys);
+    return deletedJob;
   },
 
   async getAssessments(jobId: number) {

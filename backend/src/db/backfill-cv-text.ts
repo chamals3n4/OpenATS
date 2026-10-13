@@ -26,18 +26,18 @@ async function main() {
   }
 
   const rows = await db
-    .select({ id: candidates.id, resumeUrl: candidates.resumeUrl })
+    .select({ id: candidates.id, resumeKey: candidates.resumeKey })
     .from(candidates)
     .leftJoin(
       candidateCvText,
       and(
         eq(candidateCvText.candidateId, candidates.id),
-        eq(candidateCvText.resumeUrl, candidates.resumeUrl),
+        eq(candidateCvText.resumeKey, candidates.resumeKey),
       ),
     )
     .where(
       and(
-        isNotNull(candidates.resumeUrl),
+        isNotNull(candidates.resumeKey),
         or(
           isNull(candidateCvText.id),
           notInArray(candidateCvText.status, ["done", "empty"]),
@@ -46,8 +46,8 @@ async function main() {
       ),
     );
 
-  for (const { id, resumeUrl } of rows) {
-    if (resumeUrl) await requestCvExtraction({ candidateId: id, resumeUrl });
+  for (const { id, resumeKey } of rows) {
+    if (resumeKey) await requestCvExtraction({ candidateId: id, resumeKey });
   }
   console.log(`Queued ${rows.length} CV(s) to have their text read.`);
   process.exit(0);

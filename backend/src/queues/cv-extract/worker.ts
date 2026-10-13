@@ -12,25 +12,25 @@ export function startCvExtractWorker(): Worker<CvExtractJobData> {
   const worker = new Worker<CvExtractJobData>(
     CV_EXTRACT_QUEUE,
     async (job) => {
-      const { candidateId, resumeUrl } = job.data;
+      const { candidateId, resumeKey } = job.data;
 
       // The candidate may have been deleted, or the CV replaced, since this was queued. The new CV
       // has its own job, so this one has nothing left to do.
       const [candidate] = await db
-        .select({ resumeUrl: candidates.resumeUrl })
+        .select({ resumeKey: candidates.resumeKey })
         .from(candidates)
         .where(eq(candidates.id, candidateId));
-      if (!candidate || candidate.resumeUrl !== resumeUrl) {
+      if (!candidate || candidate.resumeKey !== resumeKey) {
         logger.info(`[cv-extract] skipped candidate=${candidateId}: the CV is gone or was replaced`);
         return;
       }
 
-      const file = await r2Service.getObjectByUrl(resumeUrl);
+      const file = await r2Service.getResume(resumeKey);
       if (!file) throw new UnrecoverableError("The CV file could not be found in storage");
 
       try {
         const cv = await extractCvText(file);
-        await cvTextService.save(candidateId, resumeUrl, cv);
+        await cvTextService.save(candidateId, resumeKey, cv);
         logger.info(
           `[cv-extract] candidate=${candidateId} status=${cv.status} pages=${cv.pageCount} chars=${cv.text.length}`,
         );
@@ -56,7 +56,7 @@ export function startCvExtractWorker(): Worker<CvExtractJobData> {
     const exhausted =
       err instanceof UnrecoverableError || job.attemptsMade >= (job.opts.attempts ?? 1);
     if (exhausted) {
-      await cvTextService.markFailed(job.data.candidateId, job.data.resumeUrl, err.message);
+      await cvTextService.markFailed(job.data.candidateId, job.data.resumeKey, err.message);
     }
   });
 

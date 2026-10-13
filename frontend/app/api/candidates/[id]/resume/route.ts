@@ -31,7 +31,8 @@ export async function GET(
     return new NextResponse(response.body, {
       headers: {
         "Content-Type": response.headers.get("content-type") ?? "application/pdf",
-        "Content-Disposition": "inline",
+        // Carries the file name the backend chose (nimal-fernando-cv.pdf).
+        "Content-Disposition": response.headers.get("content-disposition") ?? "inline",
         "Cache-Control": "private, max-age=300",
       },
     });

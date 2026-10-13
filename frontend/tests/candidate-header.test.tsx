@@ -17,7 +17,7 @@ const candidate = (over: Partial<CandidateDetail> = {}) =>
     jobTitle: "Software Engineering Intern",
     status: "hired",
     stageName: "Hired",
-    resumeUrl: "https://example.com/cv.pdf",
+    hasResume: true,
     ...over,
   }) as CandidateDetail;
 
@@ -82,7 +82,7 @@ describe("CandidateHeader actions", () => {
   });
 
   it("disables View CV when there is no CV", () => {
-    renderHeader(candidate({ resumeUrl: null }));
+    renderHeader(candidate({ hasResume: false }));
     expect((screen.getByRole("button", { name: "View CV" }) as HTMLButtonElement).disabled).toBe(true);
   });
 

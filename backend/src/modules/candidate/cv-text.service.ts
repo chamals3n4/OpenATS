@@ -51,9 +51,9 @@ export function cvRank(search: string): SQL {
 /** The stored text of each candidate's CV. Reading the file is in `cv-text/`. */
 export const cvTextService = {
   /** Called when a CV arrives or is replaced: whatever was stored describes the old file. */
-  async markPending(candidateId: number, resumeUrl: string): Promise<void> {
+  async markPending(candidateId: number, resumeKey: string): Promise<void> {
     const reset = {
-      resumeUrl,
+      resumeKey,
       status: "pending" as const,
       method: null,
       fileType: null,
@@ -78,7 +78,7 @@ export const cvTextService = {
    * Saves a result, but only onto the row for the same file. If the CV was replaced while this one
    * was being read, the row now names the new file and this result is dropped.
    */
-  async save(candidateId: number, resumeUrl: string, cv: ExtractedCv): Promise<void> {
+  async save(candidateId: number, resumeKey: string, cv: ExtractedCv): Promise<void> {
     await db
       .update(candidateCvText)
       .set({
@@ -98,16 +98,16 @@ export const cvTextService = {
         updatedAt: new Date(),
       })
       .where(
-        and(eq(candidateCvText.candidateId, candidateId), eq(candidateCvText.resumeUrl, resumeUrl)),
+        and(eq(candidateCvText.candidateId, candidateId), eq(candidateCvText.resumeKey, resumeKey)),
       );
   },
 
-  async markFailed(candidateId: number, resumeUrl: string, message: string): Promise<void> {
+  async markFailed(candidateId: number, resumeKey: string, message: string): Promise<void> {
     await db
       .update(candidateCvText)
       .set({ status: "failed", errorMessage: message, updatedAt: new Date() })
       .where(
-        and(eq(candidateCvText.candidateId, candidateId), eq(candidateCvText.resumeUrl, resumeUrl)),
+        and(eq(candidateCvText.candidateId, candidateId), eq(candidateCvText.resumeKey, resumeKey)),
       );
   },
 
@@ -148,11 +148,11 @@ export const cvTextService = {
    */
   async reparseAll(): Promise<number> {
     const rows = await db
-      .select({ id: candidateCvText.id, text: candidateCvText.text, resumeUrl: candidateCvText.resumeUrl })
+      .select({ id: candidateCvText.id, text: candidateCvText.text, resumeKey: candidateCvText.resumeKey })
       .from(candidateCvText)
       .where(eq(candidateCvText.status, "done"));
 
-    for (const { id, text, resumeUrl } of rows) {
+    for (const { id, text, resumeKey } of rows) {
       if (!text) continue;
       const profile = buildCvProfile(text);
       await db
@@ -170,7 +170,7 @@ export const cvTextService = {
           and(
             eq(candidateCvText.id, id),
             eq(candidateCvText.status, "done"),
-            eq(candidateCvText.resumeUrl, resumeUrl),
+            eq(candidateCvText.resumeKey, resumeKey),
           ),
         );
     }

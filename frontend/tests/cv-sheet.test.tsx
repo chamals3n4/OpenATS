@@ -8,7 +8,7 @@ const candidate = (over: Partial<CandidateDetail> = {}) =>
     id: 2,
     firstName: "Chamal",
     lastName: "Senarathna",
-    resumeUrl: "https://example.com/cv.pdf",
+    hasResume: true,
     ...over,
   }) as CandidateDetail;
 
@@ -49,7 +49,7 @@ describe("CvSheet", () => {
   });
 
   it("says so when there is no CV, without an open-in-new-tab link", () => {
-    render(<CvSheet open onOpenChange={vi.fn()} candidate={candidate({ resumeUrl: null })} />);
+    render(<CvSheet open onOpenChange={vi.fn()} candidate={candidate({ hasResume: false })} />);
     expect(screen.getByText("No CV uploaded")).toBeTruthy();
     expect(screen.queryByRole("link", { name: "Open in new tab" })).toBeNull();
   });

@@ -23,6 +23,8 @@ import { socketService } from "../../shared/services/socket.service";
 import { scoringService } from "../scoring/scoring.service";
 import { toAiSummary } from "./cv-analysis.service";
 import { cvExperienceAtLeast, cvMatches, cvRank, cvTextService } from "./cv-text.service";
+import { resumeUploadService } from "../upload/resume-upload.service";
+import { requestResumeDeletion } from "../../queues/resume-delete/queue";
 import { rejectionService } from "../rejection/rejection.service";
 import { applicationReceivedEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
@@ -54,6 +56,14 @@ export class DuplicateApplicationError extends Error {
   }
 }
 
+/** The CV named in an application is not an upload that is still waiting to be used. */
+export class InvalidResumeUploadError extends Error {
+  constructor() {
+    super("Your CV upload has expired. Please upload it again.");
+    this.name = "InvalidResumeUploadError";
+  }
+}
+
 /** An application answer that cannot be right for its question, e.g. two picks on a single choice. */
 export class InvalidAnswerError extends Error {
   constructor(message: string) {
@@ -73,7 +83,8 @@ export interface CandidateApplyInput {
   lastName: string;
   email: string;
   phone?: string | null | undefined;
-  resumeUrl?: string | null | undefined;
+  /** The id POST /public/upload/resume gave back for the CV. */
+  resumeUploadId?: string | null | undefined;
   customAnswers?: CustomAnswerInput[] | undefined;
 }
 
@@ -133,8 +144,12 @@ export interface CandidateBasicUpdateInput {
   lastName?: string;
   email?: string;
   phone?: string | null;
-  resumeUrl?: string | null;
+  resumeKey?: string | null;
 }
+
+// Lists and the candidate page are told whether there is a CV, never where it is stored. The file
+// itself is only served by GET /candidates/:id/resume.
+const hasResume = sql<boolean>`${candidates.resumeKey} is not null`;
 
 function nameMatches(search: string) {
   // "%" and "_" mean "anything" to LIKE. Typed into a search box they are ordinary characters, so
@@ -343,7 +358,7 @@ async function sendApplicationConfirmationEmail(
 
 export const candidateService = {
   async apply(jobId: number, input: CandidateApplyInput) {
-    const { customAnswers, ...rest } = input;
+    const { customAnswers, resumeUploadId, ...rest } = input;
     const normalizedEmail = rest.email.trim().toLowerCase();
     const candidateData = { ...rest, email: normalizedEmail };
 
@@ -360,11 +375,19 @@ export const candidateService = {
           throw new Error("No pipeline stages defined for this job");
         }
 
+        // The applicant never names a file, only their own upload. An id that is unknown, expired
+        // or already used on another application gives no file.
+        const resumeKey = resumeUploadId
+          ? await resumeUploadService.claim(resumeUploadId, tx)
+          : undefined;
+        if (resumeKey === null) throw new InvalidResumeUploadError();
+
         const [candidate] = await tx
           .insert(candidates)
           .values(
             clean({
               ...candidateData,
+              resumeKey,
               jobId,
               currentStageId: firstStage.id,
             }),
@@ -447,7 +470,7 @@ export const candidateService = {
           lastName: candidates.lastName,
           email: candidates.email,
           phone: candidates.phone,
-          resumeUrl: candidates.resumeUrl,
+          hasResume: hasResume,
           jobId: candidates.jobId,
           currentStageId: candidates.currentStageId,
           status: candidates.status,
@@ -542,7 +565,7 @@ export const candidateService = {
         lastName: candidates.lastName,
         email: candidates.email,
         phone: candidates.phone,
-        resumeUrl: candidates.resumeUrl,
+        hasResume: hasResume,
         jobId: candidates.jobId,
         currentStageId: candidates.currentStageId,
         status: candidates.status,
@@ -894,6 +917,19 @@ export const candidateService = {
     );
   },
 
+  /** Where the CV is stored. Kept out of every other result, which only say whether there is one. */
+  async getResumeFile(id: number) {
+    const [candidate] = await db
+      .select({
+        resumeKey: candidates.resumeKey,
+        firstName: candidates.firstName,
+        lastName: candidates.lastName,
+      })
+      .from(candidates)
+      .where(eq(candidates.id, id));
+    return candidate?.resumeKey ? { ...candidate, resumeKey: candidate.resumeKey } : null;
+  },
+
   async updateBasicDetails(id: number, data: CandidateBasicUpdateInput) {
     const [existing] = await db
       .select()
@@ -911,7 +947,7 @@ export const candidateService = {
           lastName: data.lastName,
           email: data.email,
           phone: data.phone,
-          resumeUrl: data.resumeUrl,
+          resumeKey: data.resumeKey,
           updatedAt: new Date(),
         }),
       )
@@ -921,12 +957,19 @@ export const candidateService = {
     return updated ?? null;
   },
 
+  /**
+   * Deletes the candidate and everything recorded about them (every table that names a candidate
+   * cascades), then has their CV file erased from storage.
+   */
   async delete(id: number) {
     const [deleted] = await db
       .delete(candidates)
       .where(eq(candidates.id, id))
-      .returning();
-    return deleted ?? null;
+      .returning({ id: candidates.id, jobId: candidates.jobId, resumeKey: candidates.resumeKey });
+    if (!deleted) return null;
+
+    await requestResumeDeletion([deleted.resumeKey]);
+    return { id: deleted.id, jobId: deleted.jobId };
   },
 
   async deleteManyByFilters(
@@ -936,11 +979,12 @@ export const candidateService = {
     const where = buildCandidateWhere(jobId, filters);
     const deleted = await db.delete(candidates).where(where).returning({
       id: candidates.id,
-      email: candidates.email,
       jobId: candidates.jobId,
+      resumeKey: candidates.resumeKey,
     });
 
-    return deleted;
+    await requestResumeDeletion(deleted.map((candidate) => candidate.resumeKey));
+    return deleted.map(({ id, jobId: deletedJobId }) => ({ id, jobId: deletedJobId }));
   },
 };
 

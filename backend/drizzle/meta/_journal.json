@@ -281,6 +281,20 @@
       "when": 1791806269192,
       "tag": "0039_quiet_hannibal_king",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1791898566516,
+      "tag": "0040_private_cv_storage",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1791900397817,
+      "tag": "0041_resume_uploads",
+      "breakpoints": true
     }
   ]
 }

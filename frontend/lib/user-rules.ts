@@ -116,6 +116,28 @@ export function parseUpdateUser(body: unknown): Parsed<UpdateUserInput> {
   return { ok: true, value };
 }
 
+/** As long as the name columns allow. */
+export const NAME_MAX_LENGTH = 100;
+
+export type OwnProfileInput = { firstName: string; lastName: string };
+
+/**
+ * What a person may change about themselves: their name. Their email is how they sign in and
+ * their role is what they may do, so those stay with a super admin.
+ */
+export function parseOwnProfile(body: unknown): Parsed<OwnProfileInput> {
+  const input = (body ?? {}) as Record<string, unknown>;
+
+  const firstName = text(input.firstName);
+  if (!firstName) return { ok: false, error: "First name is required." };
+  const lastName = text(input.lastName);
+
+  if (firstName.length > NAME_MAX_LENGTH || lastName.length > NAME_MAX_LENGTH) {
+    return { ok: false, error: `A name can be at most ${NAME_MAX_LENGTH} characters.` };
+  }
+  return { ok: true, value: { firstName, lastName } };
+}
+
 /**
  * Stops an install from locking itself out. Returns the reason the change is
  * refused, or null when it may go ahead.

@@ -196,7 +196,7 @@ export function HiringTeamTab({
                 <div className="relative">
                   <HugeiconsIcon
                     icon={Search01Icon}
-                    className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500 dark:text-neutral-400"
+                    className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-500 dark:text-neutral-400"
                   />
                   <Input
                     type="search"

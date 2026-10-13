@@ -3,6 +3,7 @@ import {
   isValidPassword,
   lockoutReason,
   parseCreateUser,
+  parseOwnProfile,
   parseUpdateUser,
 } from "@/lib/user-rules";
 
@@ -169,5 +170,38 @@ describe("isValidPassword", () => {
     expect(isValidPassword("a".repeat(7))).toBe(false);
     expect(isValidPassword("a".repeat(129))).toBe(false);
     expect(isValidPassword(undefined)).toBe(false);
+  });
+});
+
+describe("parseOwnProfile", () => {
+  it("takes a first and last name, trimmed", () => {
+    expect(parseOwnProfile({ firstName: "  Chamal ", lastName: " Senarathna " })).toEqual({
+      ok: true,
+      value: { firstName: "Chamal", lastName: "Senarathna" },
+    });
+  });
+
+  it("needs a first name, and allows no last name", () => {
+    expect(parseOwnProfile({ firstName: "  ", lastName: "Senarathna" }).ok).toBe(false);
+    expect(parseOwnProfile({ firstName: "Chamal" })).toEqual({
+      ok: true,
+      value: { firstName: "Chamal", lastName: "" },
+    });
+  });
+
+  it("refuses a name longer than the database can hold", () => {
+    expect(parseOwnProfile({ firstName: "a".repeat(101), lastName: "" }).ok).toBe(false);
+    expect(parseOwnProfile({ firstName: "a".repeat(100), lastName: "b".repeat(100) }).ok).toBe(true);
+  });
+
+  it("ignores anything else that is sent, such as an email or a role", () => {
+    const parsed = parseOwnProfile({ firstName: "Chamal", lastName: "S", email: "x@y.z", role: "super_admin" });
+
+    expect(parsed).toEqual({ ok: true, value: { firstName: "Chamal", lastName: "S" } });
+  });
+
+  it("refuses a body that is not an object of names", () => {
+    expect(parseOwnProfile(null).ok).toBe(false);
+    expect(parseOwnProfile({ firstName: 42 }).ok).toBe(false);
   });
 });

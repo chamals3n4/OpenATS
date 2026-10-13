@@ -25,7 +25,8 @@ export function SkillsInput({
       <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
         Skills
       </Label>
-      <div className="min-h-10 p-1.5 flex flex-wrap gap-2 border border-slate-300 dark:border-neutral-600 rounded-lg bg-gray-100 dark:bg-neutral-800 transition-[border-color] duration-200">
+      {/* The typing field inside has no edge of its own, so the box shows the focus, as other inputs do. */}
+      <div className="min-h-10 p-1.5 flex flex-wrap gap-2 border border-slate-300 dark:border-neutral-600 rounded-lg bg-gray-100 dark:bg-neutral-800 transition-[border-color] duration-300 ease-in-out focus-within:border-theme dark:focus-within:border-theme">
         {skills.map((skill) => (
           <div
             key={skill}

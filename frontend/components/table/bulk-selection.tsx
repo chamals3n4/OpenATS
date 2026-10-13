@@ -10,6 +10,14 @@ import { cn } from "@/lib/utils";
 
 type RowId = string | number;
 
+// The boxes that pick rows. A clear dark edge on white, so an empty box is easy to see on the
+// grey header and on a hovered row, and a pointer, so it reads as something to click.
+const SELECT_BOX =
+  "size-[18px] cursor-pointer rounded-[4px] border-slate-400 bg-white shadow-none hover:border-slate-600 disabled:cursor-not-allowed dark:border-neutral-500 dark:bg-neutral-900 dark:hover:border-neutral-300";
+
+/** Classes for a button in the selection bar, so every table's extra buttons match the built-in ones. */
+export const BULK_BAR_BUTTON = "h-8 rounded-md px-3 text-[13px] font-semibold shadow-none";
+
 export function useBulkSelection<T extends RowId>(visibleIds: T[]) {
   const [selectedIds, setSelectedIds] = useState<Set<T>>(() => new Set());
 
@@ -107,7 +115,7 @@ export function BulkSelectHeaderCell({
         indeterminate={indeterminate}
         disabled={disabled}
         onCheckedChange={onCheckedChange}
-        className="size-4 rounded-[4px] shadow-none"
+        className={SELECT_BOX}
       />
     </TableHead>
   );
@@ -131,7 +139,7 @@ export function BulkSelectRowCell({
         aria-label="Select row"
         checked={checked}
         onCheckedChange={onCheckedChange}
-        className="size-4 rounded-[4px] shadow-none"
+        className={SELECT_BOX}
       />
     </TableCell>
   );
@@ -155,8 +163,8 @@ export function BulkSelectionBar({
   if (selectedCount === 0) return null;
 
   return (
-    <div className="flex h-10 items-center justify-between border-b border-slate-300 bg-slate-50 px-4 dark:border-neutral-700 dark:bg-neutral-900/80">
-      <div className="flex items-center gap-3 text-sm font-medium text-slate-700 dark:text-neutral-200">
+    <div className="flex min-h-12 flex-wrap items-center justify-between gap-x-4 gap-y-2 border-b border-slate-300 bg-slate-50 px-4 py-2 dark:border-neutral-700 dark:bg-neutral-900/80">
+      <div className="flex items-center gap-2.5 text-sm font-semibold text-slate-800 dark:text-neutral-100">
         <span>
           {selectedCount} {label}
           {selectedCount === 1 ? "" : "s"} selected
@@ -165,7 +173,10 @@ export function BulkSelectionBar({
           type="button"
           variant="ghost"
           onClick={onClear}
-          className="h-7 rounded-md px-2 text-xs font-semibold text-slate-500 shadow-none hover:bg-slate-200 hover:text-slate-800 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:hover:text-neutral-100"
+          className={cn(
+            BULK_BAR_BUTTON,
+            "cursor-pointer gap-1.5 px-2 font-medium text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
+          )}
         >
           <XIcon className="size-3.5" />
           Clear
@@ -179,7 +190,7 @@ export function BulkSelectionBar({
             variant="destructive"
             onClick={onDeleteSelected}
             disabled={isDeleting}
-            className="h-7 rounded-md px-2.5 text-xs font-semibold shadow-none"
+            className={cn(BULK_BAR_BUTTON, "cursor-pointer gap-1.5")}
           >
             <Trash2Icon className="size-3.5" />
             {isDeleting ? "Deleting..." : "Delete selected"}

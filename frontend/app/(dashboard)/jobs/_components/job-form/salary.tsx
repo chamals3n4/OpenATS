@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
+import { CurrencySelect } from "@/components/form/currency-select";
 import { PAY_FREQUENCY_LABELS } from "@/lib/job-labels";
 
 interface SalarySectionProps {
@@ -106,19 +107,11 @@ export function SalarySection({
                 <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
                   Currency
                 </Label>
-                <Select
+                <CurrencySelect
                   value={currency}
-                  onValueChange={(val) => onCurrencyChange(val || "USD")}
-                >
-                  <SelectTrigger className="w-full h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg text-slate-800 dark:text-neutral-200 focus:ring-0">
-                    <SelectValue placeholder="USD" />
-                  </SelectTrigger>
-                  <SelectContent className="rounded-lg shadow-lg border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900">
-                    <SelectItem value="USD">USD</SelectItem>
-                    <SelectItem value="EUR">EUR</SelectItem>
-                    <SelectItem value="LKR">LKR</SelectItem>
-                  </SelectContent>
-                </Select>
+                  onChange={onCurrencyChange}
+                  className="rounded-lg text-slate-800 dark:text-neutral-200"
+                />
               </div>
               <div className="space-y-2.5">
                 <Label className="text-sm font-semibold text-slate-700 dark:text-neutral-300">

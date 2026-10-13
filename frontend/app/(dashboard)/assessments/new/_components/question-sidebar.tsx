@@ -13,8 +13,10 @@ interface QuestionSidebarProps {
   onAdd: () => void;
   onRemove: (uid: number) => void;
   onMove: (from: number, to: number) => void;
+  readOnly?: boolean;
 }
 
+/** The questions of the assessment, in order, with the total they add up to. */
 export function QuestionSidebar({
   questions,
   selectedQ,
@@ -22,30 +24,24 @@ export function QuestionSidebar({
   onAdd,
   onRemove,
   onMove,
+  readOnly,
 }: QuestionSidebarProps) {
+  const totalPoints = questions.reduce((sum, question) => sum + (Number(question.points) || 0), 0);
+
   return (
-    <div className="w-[280px] border-r border-slate-300 dark:border-neutral-700 flex flex-col shrink-0 bg-white dark:bg-neutral-950">
-      <div className="px-5 py-4 border-b border-slate-300 dark:border-neutral-700">
-        <span className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
-          Questions ({questions.length})
-        </span>
+    <aside className="flex min-h-0 w-[300px] shrink-0 flex-col border-r border-slate-300 bg-white dark:border-neutral-700 dark:bg-neutral-950">
+      {/* The same height as the "Question N" bar beside it, so the two lines under them meet. */}
+      <div className="flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-300 px-4 dark:border-neutral-700">
+        <h2 className="text-sm font-semibold text-slate-900 dark:text-neutral-100">
+          {questions.length} {questions.length === 1 ? "question" : "questions"}
+        </h2>
+        <p className="text-sm tabular-nums text-slate-600 dark:text-neutral-400">
+          {totalPoints} {totalPoints === 1 ? "point" : "points"}
+        </p>
       </div>
 
-      <div className="p-4">
-        <Button
-          onClick={onAdd}
-          className="w-full bg-[var(--theme-color)] hover:bg-[var(--theme-color-hover)] text-white h-10 rounded-lg shadow-none border-none font-medium text-sm gap-2 transition-all active:scale-[0.98]"
-        >
-          <HugeiconsIcon
-            icon={PlusSignIcon}
-            className="size-4"
-            strokeWidth={2.5}
-          />
-          Add Question
-        </Button>
-      </div>
-
-      <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-2">
+      {/* Scrolls by itself, apart from the question being edited beside it. */}
+      <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {questions.map((q, idx) => (
           <QuestionSidebarItem
             key={q.uid}
@@ -56,9 +52,22 @@ export function QuestionSidebar({
             onRemove={() => onRemove(q.uid)}
             canRemove={questions.length > 1}
             onMove={onMove}
+            readOnly={readOnly}
           />
         ))}
+
+        {/* Straight after the last question, which is where the new one will appear. */}
+        {!readOnly && (
+          <Button
+            type="button"
+            onClick={onAdd}
+            className="h-10 w-full cursor-pointer gap-2 rounded-md border-none bg-theme text-sm font-semibold text-white shadow-none hover:bg-theme-hover"
+          >
+            <HugeiconsIcon icon={PlusSignIcon} className="size-4" strokeWidth={2.5} />
+            Add question
+          </Button>
+        )}
       </div>
-    </div>
+    </aside>
   );
 }

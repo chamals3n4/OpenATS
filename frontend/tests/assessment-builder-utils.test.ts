@@ -6,6 +6,7 @@ import {
   makeQuestion,
   questionFromApi,
   questionToApi,
+  questionsFingerprint,
   toggleCorrectOption,
 } from "@/app/(dashboard)/assessments/new/lib/assessment-builder-utils";
 import type { Question } from "@/app/(dashboard)/assessments/new/lib/assessment-builder-types";
@@ -25,7 +26,7 @@ describe("toggleCorrectOption", () => {
   });
 
   it("lets a multiple select have several correct options", () => {
-    let question = q({ type: "Multiple Select" });
+    let question = q({ type: "multiple" });
     const [a, b] = question.options;
     question = { ...question, options: toggleCorrectOption(question, a!.id) };
     question = { ...question, options: toggleCorrectOption(question, b!.id) };
@@ -38,7 +39,7 @@ describe("toggleCorrectOption", () => {
 describe("changing the type", () => {
   it("keeps only the first correct answer when going from multiple select to multiple choice", () => {
     const options = q().options.map((o) => ({ ...o, isCorrect: true }));
-    const next = getDefaultOptionsForType("Multiple Select", "Multiple Choice", options);
+    const next = getDefaultOptionsForType("multiple", "single", options);
     expect(next.filter((o) => o.isCorrect)).toHaveLength(1);
     expect(next[0]!.isCorrect).toBe(true);
   });
@@ -46,20 +47,20 @@ describe("changing the type", () => {
 
 describe("questionToApi / questionFromApi", () => {
   it("sends the points and the type the candidate page understands", () => {
-    expect(questionToApi(q({ type: "Multiple Select", points: 3 }), 0)).toMatchObject({
+    expect(questionToApi(q({ type: "multiple", points: 3 }), 0)).toMatchObject({
       questionType: "checkbox",
       points: 3,
       position: 1,
     });
-    expect(questionToApi(q({ type: "Multiple Choice" }), 1).questionType).toBe("radio");
-    const long = questionToApi(q({ type: "Long Answer", points: 5 }), 2);
+    expect(questionToApi(q({ type: "single" }), 1).questionType).toBe("radio");
+    const long = questionToApi(q({ type: "long", points: 5 }), 2);
     expect(long).toMatchObject({ questionType: "long_answer", points: 5 });
     expect(long.options).toBeUndefined();
   });
 
   it("reads points back from Postgres numeric strings", () => {
     expect(questionFromApi({ id: 1, questionType: "long_answer", points: "2.50" })).toMatchObject({
-      type: "Long Answer",
+      type: "long",
       points: 2.5,
       dbId: 1,
     });
@@ -71,8 +72,8 @@ describe("questionToApi / questionFromApi", () => {
       { id: 2, label: "B", isCorrect: true },
       { id: 3, label: "C", isCorrect: false },
     ];
-    expect(questionFromApi({ id: 1, questionType: "multiple_choice", options: opts }).type).toBe("Multiple Select");
-    expect(questionFromApi({ id: 1, questionType: "multiple_choice", options: opts.slice(1) }).type).toBe("Multiple Choice");
+    expect(questionFromApi({ id: 1, questionType: "multiple_choice", options: opts }).type).toBe("multiple");
+    expect(questionFromApi({ id: 1, questionType: "multiple_choice", options: opts.slice(1) }).type).toBe("single");
   });
 });
 
@@ -86,9 +87,54 @@ describe("clampPoints and validation", () => {
 
   it("asks for a correct answer on a choice question, but not a written one", () => {
     expect(firstQuestionProblem([q()])).toMatch(/Question 1/);
-    expect(firstQuestionProblem([q({ type: "Long Answer", options: [] })])).toBeNull();
+    expect(firstQuestionProblem([q({ type: "long", options: [] })])).toBeNull();
     const withCorrect = q();
     withCorrect.options[0]!.isCorrect = true;
     expect(firstQuestionProblem([withCorrect])).toBeNull();
+  });
+});
+
+describe("questionsFingerprint", () => {
+  const question = (over: Partial<Question> = {}): Question => ({
+    uid: 1,
+    dbId: 10,
+    title: "Which status means created?",
+    description: "",
+    type: "single",
+    points: 5,
+    options: [
+      { id: 1, text: "200", isCorrect: false },
+      { id: 2, text: "201", isCorrect: true },
+    ],
+    ...over,
+  });
+
+  it("is the same for the same questions, whatever ids the page gave them", () => {
+    expect(questionsFingerprint([question()])).toBe(questionsFingerprint([question({ uid: 99 })]));
+  });
+
+  it.each([
+    ["the wording", { title: "Which status means made?" }],
+    ["the extra detail", { description: "HTTP only" }],
+    ["the kind of question", { type: "multiple" as const }],
+    ["the points", { points: 10 }],
+    ["which answer is correct", { options: [{ id: 1, text: "200", isCorrect: true }, { id: 2, text: "201", isCorrect: false }] }],
+    ["an option's text", { options: [{ id: 1, text: "204", isCorrect: false }, { id: 2, text: "201", isCorrect: true }] }],
+  ])("changes when %s changes", (_name, over) => {
+    expect(questionsFingerprint([question(over)])).not.toBe(questionsFingerprint([question()]));
+  });
+
+  it("changes when a question is added, removed or moved", () => {
+    const a = question();
+    const b = question({ uid: 2, dbId: 11, title: "Second" });
+
+    expect(questionsFingerprint([a, b])).not.toBe(questionsFingerprint([a]));
+    expect(questionsFingerprint([b, a])).not.toBe(questionsFingerprint([a, b]));
+  });
+
+  it("goes back to the same value when a change is undone", () => {
+    const before = questionsFingerprint([question()]);
+    expect(questionsFingerprint([question({ title: "x" })])).not.toBe(before);
+    expect(questionsFingerprint([question()])).toBe(before);
   });
 });

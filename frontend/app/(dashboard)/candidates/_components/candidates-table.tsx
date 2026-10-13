@@ -19,7 +19,9 @@ import {
   BulkSelectHeaderCell,
   BulkSelectionBar,
   useBulkSelection,
+  BULK_BAR_BUTTON,
 } from "@/components/table/bulk-selection";
+import { cn } from "@/lib/utils";
 import { BulkDeleteDialog } from "@/components/table/bulk-delete-dialog";
 import { BulkRejectDialog } from "./bulk-reject-dialog";
 
@@ -171,7 +173,7 @@ export function CandidatesTable({
               variant="cancel"
               onClick={() => setBulkRejectOpen(true)}
               disabled={isRejectingSelected}
-              className="h-7 rounded-md px-2.5 text-xs font-semibold shadow-none"
+              className={cn(BULK_BAR_BUTTON, "cursor-pointer")}
             >
               Reject selected
             </Button>
@@ -181,7 +183,10 @@ export function CandidatesTable({
               type="button"
               variant="ghost"
               onClick={handleSelectAllMatching}
-              className="h-7 rounded-md px-2 text-xs font-semibold text-slate-600 shadow-none hover:bg-slate-200 hover:text-slate-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50"
+              className={cn(
+                BULK_BAR_BUTTON,
+                "cursor-pointer px-2 font-medium text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
+              )}
             >
               Select all {pagination.total} candidates
             </Button>

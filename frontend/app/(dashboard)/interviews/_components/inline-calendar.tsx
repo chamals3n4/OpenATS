@@ -221,8 +221,8 @@ export function InlineCalendar({
                   </span>
                   {/* Beside the date, because a short row has no room for it under the names. */}
                   {dayInterviews.length > MAX_CHIPS && (
-                    <span className="hidden rounded-full bg-theme px-1.5 text-[11px] font-semibold leading-5 text-white sm:block">
-                      +{dayInterviews.length - MAX_CHIPS}
+                    <span className="hidden text-[11px] font-medium leading-5 text-slate-500 sm:block dark:text-neutral-400">
+                      +{dayInterviews.length - MAX_CHIPS} more
                     </span>
                   )}
                 </span>
@@ -230,13 +230,16 @@ export function InlineCalendar({
                 {/* Wide screens: who and when. Narrow screens: only how many. */}
                 <span className="hidden w-full flex-col gap-1 sm:flex">
                   {dayInterviews.slice(0, MAX_CHIPS).map((iv) => (
-                    <span
-                      key={iv.id}
-                      className={`relative flex items-center gap-1.5 overflow-hidden rounded-sm py-0.5 pl-2.5 pr-1.5 text-xs font-medium ${statusOf(iv.status).badge}`}
-                    >
-                      <span className={`absolute inset-y-0 left-0 w-1 ${statusOf(iv.status).dot}`} />
-                      <span className="shrink-0 tabular-nums">{fmtTime(iv.scheduledAt)}</span>
-                      <span className="truncate">{iv.candidateName?.split(" ")[0]}</span>
+                    // A plain line: a dot in the status colour (the same dots as the key under the
+                    // grid), the time in bold, and the name. No block or pill behind it.
+                    <span key={iv.id} className="flex w-full items-center gap-1.5 text-[13px] leading-4">
+                      <span aria-hidden className={`size-2 shrink-0 rounded-full ${statusOf(iv.status).dot}`} />
+                      <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-neutral-100">
+                        {fmtTime(iv.scheduledAt)}
+                      </span>
+                      <span className="truncate font-medium text-slate-700 dark:text-neutral-300">
+                        {iv.candidateName?.split(" ")[0]}
+                      </span>
                     </span>
                   ))}
                 </span>
@@ -284,7 +287,7 @@ export function InlineCalendar({
           <div className="relative">
             <HugeiconsIcon
               icon={Search01Icon}
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500 dark:text-neutral-400"
+              className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-500 dark:text-neutral-400"
             />
             <Input
               type="search"

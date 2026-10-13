@@ -35,8 +35,13 @@ function fill(current: string, next: string, confirmation = next) {
   });
 }
 
-function submit() {
+/** The section is closed until asked for. */
+function open() {
   fireEvent.click(screen.getByRole("button", { name: "Change password" }));
+}
+
+function submit() {
+  fireEvent.click(screen.getByRole("button", { name: "Update password" }));
 }
 
 describe("changePasswordErrorMessage", () => {
@@ -60,6 +65,7 @@ describe("ChangePasswordForm", () => {
   it("asks to sign out other sessions when it changes the password", async () => {
     changePassword.mockResolvedValue({ data: {}, error: null });
     render(<ChangePasswordForm />);
+    open();
     fill("old-password", "new-password-1");
     submit();
 
@@ -69,13 +75,37 @@ describe("ChangePasswordForm", () => {
       newPassword: "new-password-1",
       revokeOtherSessions: true,
     });
-    await waitFor(() =>
-      expect(screen.getByLabelText("Current password")).toHaveValue(""),
-    );
+    // Done, so the section closes again.
+    await waitFor(() => expect(screen.queryByLabelText("Current password")).toBeNull());
+  });
+
+  it("is closed at first, and opens when asked", () => {
+    render(<ChangePasswordForm />);
+    expect(screen.queryByLabelText("Current password")).toBeNull();
+
+    open();
+
+    expect(screen.getByLabelText("Current password")).toBeInTheDocument();
+    expect(screen.getByLabelText("New password")).toBeInTheDocument();
+  });
+
+  it("closes and forgets what was typed when cancelled", () => {
+    render(<ChangePasswordForm />);
+    open();
+    fill("old-password", "new-password-1");
+
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    expect(screen.queryByLabelText("Current password")).toBeNull();
+
+    open();
+    expect(screen.getByLabelText("Current password")).toHaveValue("");
+    expect(screen.getByLabelText("New password")).toHaveValue("");
+    expect(changePassword).not.toHaveBeenCalled();
   });
 
   it("sends nothing when the new password breaks the rules", () => {
     render(<ChangePasswordForm />);
+    open();
 
     fill("old-password", "short");
     submit();
@@ -108,6 +138,7 @@ describe("ChangePasswordForm", () => {
       error: { code: "INVALID_PASSWORD", status: 400 },
     });
     render(<ChangePasswordForm />);
+    open();
     fill("wrong-password", "new-password-1");
     submit();
 

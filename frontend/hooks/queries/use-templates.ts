@@ -140,6 +140,25 @@ export function useSystemEmails() {
   });
 }
 
+/**
+ * An automatic email exactly as a candidate would receive it, built by the server from the
+ * wording given (saved or not) and made-up details. The server builds the real email the same
+ * way, so this is the email and not a drawing of it.
+ */
+export function useSystemEmailPreview(purpose: string, content: { subject: string; bodyHtml: string }) {
+  return useQuery({
+    queryKey: ["templates", "system", purpose, "preview", content.subject, content.bodyHtml],
+    queryFn: () =>
+      serverFetch<{ data: { subject: string; html: string } }>(`/templates/system/${purpose}/preview`, {
+        method: "POST",
+        body: JSON.stringify(content),
+      }),
+    // The last preview stays on screen while the next one loads, so typing does not make it blink.
+    placeholderData: keepPreviousData,
+    staleTime: 1000 * 60,
+  });
+}
+
 export function useSaveSystemEmail() {
   const queryClient = useQueryClient();
   return useMutation({

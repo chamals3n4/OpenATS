@@ -17,13 +17,10 @@ export function makeQuestion(): Question {
     uid: ++idCounter,
     title: "",
     description: "",
-    type: "Multiple Choice",
+    type: "single",
     points: 1,
-    options: [
-      makeOption("Option 1"),
-      makeOption("Option 2"),
-      makeOption("Option 3"),
-    ],
+    // Empty, so they are typed and not edited: "Option 1" is only the placeholder.
+    options: [makeOption(""), makeOption(""), makeOption("")],
   };
 }
 
@@ -36,7 +33,7 @@ export function moveItem<T>(list: T[], from: number, to: number): T[] {
 
 /** Written answers have no options; a person grades them. */
 export const isWrittenType = (type: QuestionType) =>
-  type === "Short Answer" || type === "Long Answer";
+  type === "short" || type === "long";
 
 export const MIN_POINTS = 0.5;
 export const MAX_POINTS = 1000;
@@ -48,18 +45,14 @@ export function getDefaultOptionsForType(
   newType: QuestionType,
   currentOptions: AnswerOption[],
 ): AnswerOption[] {
-  if (newType === "True/False") {
+  if (newType === "true_false") {
     return TRUE_FALSE_OPTIONS.map((o) => ({ ...o }));
   }
-  if (currentType === "True/False") {
-    return [
-      makeOption("Option 1"),
-      makeOption("Option 2"),
-      makeOption("Option 3"),
-    ];
+  if (currentType === "true_false") {
+    return [makeOption(""), makeOption(""), makeOption("")];
   }
-  // Only a multiple select can have more than one correct answer.
-  if (newType === "Multiple Choice") {
+  // Only a multiple choice question can have more than one correct answer.
+  if (newType === "single") {
     const first = currentOptions.findIndex((o) => o.isCorrect);
     return currentOptions.map((o, i) => ({ ...o, isCorrect: i === first && first !== -1 }));
   }
@@ -68,10 +61,10 @@ export function getDefaultOptionsForType(
 
 /**
  * Marks an option correct (or not). A single-answer question keeps exactly one correct option;
- * a multiple select lets any number be correct, and is then graded with partial credit.
+ * a multiple choice question lets any number be correct, and is then graded with partial credit.
  */
 export function toggleCorrectOption(question: Question, optionId: number): AnswerOption[] {
-  const multi = question.type === "Multiple Select";
+  const multi = question.type === "multiple";
   return question.options.map((o) => ({
     ...o,
     isCorrect: o.id === optionId ? !o.isCorrect : multi ? o.isCorrect : false,
@@ -81,11 +74,11 @@ export function toggleCorrectOption(question: Question, optionId: number): Answe
 type ApiQuestionType = NewAssessmentQuestion["questionType"];
 
 const API_TYPE: Record<QuestionType, ApiQuestionType> = {
-  "Multiple Choice": "radio",
-  "True/False": "radio",
-  "Multiple Select": "checkbox",
-  "Short Answer": "short_answer",
-  "Long Answer": "long_answer",
+  "single": "radio",
+  "true_false": "radio",
+  "multiple": "checkbox",
+  "short": "short_answer",
+  "long": "long_answer",
 };
 
 export function questionToApi(q: Question, idx: number): NewAssessmentQuestion {
@@ -123,12 +116,12 @@ interface ApiQuestion {
 export function questionFromApi(db: ApiQuestion): Question {
   const options = db.options ?? [];
   const correctCount = options.filter((o) => o.isCorrect).length;
-  let type: QuestionType = "Multiple Choice";
-  if (db.questionType === "short_answer") type = "Short Answer";
-  else if (db.questionType === "long_answer") type = "Long Answer";
-  else if (db.questionType === "checkbox" || correctCount > 1) type = "Multiple Select";
+  let type: QuestionType = "single";
+  if (db.questionType === "short_answer") type = "short";
+  else if (db.questionType === "long_answer") type = "long";
+  else if (db.questionType === "checkbox" || correctCount > 1) type = "multiple";
   else if (options.length === 2 && options[0]?.label === "True" && options[1]?.label === "False") {
-    type = "True/False";
+    type = "true_false";
   }
 
   return {
@@ -141,6 +134,34 @@ export function questionFromApi(db: ApiQuestion): Question {
     points: clampPoints(Number(db.points ?? 1)),
     options: options.map((o) => ({ id: o.id ?? ++idCounter, text: o.label, isCorrect: o.isCorrect })),
   };
+}
+
+/**
+ * Everything about the questions that saving would write, as one string: their order, wording,
+ * kind, points and options. Two lists with the same fingerprint save the same thing, so it tells
+ * whether anything has been changed since the assessment was loaded.
+ */
+export function questionsFingerprint(questions: Question[]): string {
+  return JSON.stringify(
+    questions.map((q) => [
+      q.dbId ?? null,
+      q.title,
+      q.description,
+      q.type,
+      Number(q.points),
+      isWrittenType(q.type) ? [] : q.options.map((o) => [o.text, o.isCorrect]),
+    ]),
+  );
+}
+
+/** Whether a question is ready to be saved: it has a title, and something to mark it against. */
+export function questionProblem(question: Question): string | null {
+  if (!question.title.trim()) return "Add the question";
+  if (isWrittenType(question.type)) return null;
+  if (!question.options.some((o) => o.isCorrect)) {
+    return question.type === "multiple" ? "Mark the correct answers" : "Mark the correct answer";
+  }
+  return null;
 }
 
 /** The first thing wrong with the questions that would make them ungradable, or null. */

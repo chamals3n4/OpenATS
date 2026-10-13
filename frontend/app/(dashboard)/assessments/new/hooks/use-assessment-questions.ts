@@ -3,6 +3,7 @@
 import { useState, useCallback } from "react";
 import type { Question, QuestionType } from "../lib/assessment-builder-types";
 import {
+  makeOption,
   makeQuestion,
   moveItem,
   getDefaultOptionsForType,
@@ -44,6 +45,18 @@ export function useAssessmentQuestions() {
     [questions],
   );
 
+  // Deleting asks first. The question waits here until the person confirms or cancels.
+  const [pendingRemoveId, setPendingRemoveId] = useState<number | null>(null);
+  const pendingRemove = questions.find((q) => q.uid === pendingRemoveId) ?? null;
+  const pendingRemoveNumber = questions.findIndex((q) => q.uid === pendingRemoveId) + 1;
+
+  const requestRemoveQuestion = useCallback((qId: number) => setPendingRemoveId(qId), []);
+  const cancelRemoveQuestion = useCallback(() => setPendingRemoveId(null), []);
+  const confirmRemoveQuestion = () => {
+    if (pendingRemoveId !== null) removeQuestion(pendingRemoveId);
+    setPendingRemoveId(null);
+  };
+
   const updateQuestion = useCallback(
     (qId: number, patch: Partial<Question>) => {
       setQuestions((prev) =>
@@ -69,6 +82,12 @@ export function useAssessmentQuestions() {
     [],
   );
 
+  /** Swaps in a saved assessment's questions, for the edit page once they have loaded. */
+  const replaceQuestions = useCallback((next: Question[]) => {
+    setQuestions(next);
+    setSelectedQ(next[0]?.uid ?? 0);
+  }, []);
+
   const moveQuestion = useCallback((from: number, to: number) => {
     setQuestions((prev) => moveItem(prev, from, to));
   }, []);
@@ -82,11 +101,7 @@ export function useAssessmentQuestions() {
               ...q,
               options: [
                 ...q.options,
-                {
-                  id: Date.now(),
-                  text: `Option ${q.options.length + 1}`,
-                  isCorrect: false,
-                },
+                makeOption(""),
               ],
             }
           : q,
@@ -139,9 +154,15 @@ export function useAssessmentQuestions() {
     setSelectedQ,
     addQuestion,
     removeQuestion,
+    requestRemoveQuestion,
+    cancelRemoveQuestion,
+    confirmRemoveQuestion,
+    pendingRemove,
+    pendingRemoveNumber,
     updateQuestion,
     changeQuestionType,
     moveQuestion,
+    replaceQuestions,
     addOption,
     removeOption,
     updateOptionText,

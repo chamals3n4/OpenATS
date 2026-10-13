@@ -1,62 +1,73 @@
 "use client";
 
 import { HugeiconsIcon } from "@hugeicons/react";
-import { RadioButtonIcon } from "@hugeicons/core-free-icons";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import type { Question, QuestionType } from "../lib/assessment-builder-types";
-import { Label } from "@/components/ui/label";
+  CheckmarkSquare02Icon,
+  ParagraphIcon,
+  RadioButtonIcon,
+  TextIcon,
+  ToggleOnIcon,
+} from "@hugeicons/core-free-icons";
+import { QUESTION_TYPES, type Question, type QuestionType } from "../lib/assessment-builder-types";
 
-const QUESTION_TYPES: QuestionType[] = [
-  "Multiple Choice",
-  "Multiple Select",
-  "True/False",
-  "Short Answer",
-  "Long Answer",
-];
+const ICONS: Record<QuestionType, typeof RadioButtonIcon> = {
+  single: RadioButtonIcon,
+  multiple: CheckmarkSquare02Icon,
+  true_false: ToggleOnIcon,
+  short: TextIcon,
+  long: ParagraphIcon,
+};
 
 interface QuestionTypeSelectorProps {
   question: Question;
   onChangeType: (qId: number, type: QuestionType) => void;
+  readOnly?: boolean;
 }
 
-export function QuestionTypeSelector({
-  question,
-  onChangeType,
-}: QuestionTypeSelectorProps) {
+/**
+ * The kind of question, as a row of choices instead of a dropdown: there are only five, and
+ * seeing them side by side with what each one asks of the candidate is what tells them apart.
+ */
+export function QuestionTypeSelector({ question, onChangeType, readOnly }: QuestionTypeSelectorProps) {
   return (
-    <div>
-      <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
-        Question Type
-      </Label>
-      <Select
-        value={question.type}
-        onValueChange={(val) =>
-          onChangeType(question.uid, val as QuestionType)
-        }
-      >
-        <SelectTrigger className="h-8 bg-gray-100 dark:bg-neutral-800 border-slate-300 dark:border-neutral-600 rounded-md shadow-none text-sm focus:ring-0 gap-2 transition-colors">
-          <div className="flex items-center gap-2">
-            <HugeiconsIcon
-              icon={RadioButtonIcon}
-              className="size-3.5 text-slate-400 dark:text-neutral-500 shrink-0"
-            />
-            <SelectValue />
-          </div>
-        </SelectTrigger>
-        <SelectContent className="rounded-md shadow-lg border-slate-300 dark:border-neutral-600 bg-white dark:bg-neutral-900">
-          {QUESTION_TYPES.map((type) => (
-            <SelectItem key={type} value={type}>
-              {type}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
-    </div>
+    <fieldset disabled={readOnly}>
+      <legend className="mb-2 text-sm font-medium text-slate-700 dark:text-neutral-300">Answer type</legend>
+      <div role="radiogroup" aria-label="Answer type" className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-5">
+        {QUESTION_TYPES.map(({ type, label, hint }) => {
+          const chosen = question.type === type;
+          return (
+            <button
+              key={type}
+              type="button"
+              role="radio"
+              aria-checked={chosen}
+              onClick={() => onChangeType(question.uid, type)}
+              className={`flex cursor-pointer flex-col items-start gap-1.5 rounded-md border px-3 py-2.5 text-left outline-none transition-colors focus-visible:border-theme disabled:cursor-default ${
+                chosen
+                  ? "border-theme bg-theme/10"
+                  : "border-slate-300 bg-white hover:border-slate-400 hover:bg-slate-50 dark:border-neutral-600 dark:bg-neutral-900 dark:hover:bg-neutral-800"
+              }`}
+            >
+              <HugeiconsIcon
+                icon={ICONS[type]}
+                strokeWidth={1.75}
+                aria-hidden
+                className={`size-4.5 ${chosen ? "text-theme dark:text-primary" : "text-slate-500 dark:text-neutral-400"}`}
+              />
+              <span>
+                <span
+                  className={`block text-sm font-semibold ${
+                    chosen ? "text-theme dark:text-primary" : "text-slate-900 dark:text-neutral-100"
+                  }`}
+                >
+                  {label}
+                </span>
+                <span className="block text-xs text-slate-600 dark:text-neutral-400">{hint}</span>
+              </span>
+            </button>
+          );
+        })}
+      </div>
+    </fieldset>
   );
 }

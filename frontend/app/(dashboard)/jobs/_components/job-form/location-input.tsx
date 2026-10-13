@@ -17,7 +17,7 @@ export function LocationInput({ value, onChange }: LocationInputProps) {
       <Input
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        placeholder="Search"
+        placeholder="For example Colombo, Sri Lanka, or Remote"
         className="h-10! bg-gray-100 dark:bg-neutral-800 border border-slate-300 dark:border-neutral-600 shadow-none rounded-lg placeholder:text-slate-400 dark:placeholder:text-neutral-500 focus-visible:ring-0"
       />
     </div>

@@ -14,7 +14,13 @@ import {
 } from "../../db/schema";
 
 import { DEFAULT_PASS_MARK, passMarkFor, scoringService } from "../scoring/scoring.service";
-import { gradeChoiceQuestion, hasPassed, isWrittenType, scorePercentage } from "./grading";
+import {
+  gradeChoiceQuestion,
+  hasPassed,
+  isPastDeadline,
+  isWrittenType,
+  scorePercentage,
+} from "./grading";
 import { assessmentInviteEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 
@@ -49,6 +55,17 @@ export type InviteCandidateResult = {
   /** False when reusing an active attempt (no new email). */
   didSendInvite: boolean;
 };
+
+/** The attempt was already submitted (or never started), so it cannot be completed now. */
+export class AttemptNotInProgressError extends Error {
+  constructor() {
+    super("Attempt is not in 'started' status");
+    this.name = "AttemptNotInProgressError";
+  }
+}
+
+// How long after the time limit an attempt is taken to be abandoned.
+const ABANDONED_AFTER_SECONDS = 5 * 60;
 
 export const assessmentExecutionService = {
   async inviteCandidate(
@@ -356,13 +373,17 @@ export const assessmentExecutionService = {
    */
   async completeAttempt(id: number) {
     return await db.transaction(async (tx) => {
+      // Locked for the length of the transaction. Two submits at once (a double click, or the
+      // candidate's submit meeting the timed-out check) queue up here, and the second finds the
+      // attempt already completed instead of grading and emailing a second time.
       const [attempt] = await tx
         .select()
         .from(candidateAssessmentAttempts)
-        .where(eq(candidateAssessmentAttempts.id, id));
+        .where(eq(candidateAssessmentAttempts.id, id))
+        .for("update");
 
       if (!attempt || attempt.status !== "started") {
-        throw new Error("Attempt is not in 'started' status");
+        throw new AttemptNotInProgressError();
       }
 
       const questions = await tx
@@ -509,6 +530,45 @@ export const assessmentExecutionService = {
       await scoringService.recompute(candidateId);
     }
     return expired.length;
+  },
+
+  /**
+   * Finishes attempts that were started and then left: the tab was closed, or the browser never
+   * sent the submit. Without this they stay "in progress" for ever and the candidate never gets
+   * an Assessment score. Whatever was answered is graded, as if they had pressed submit when the
+   * time ran out. An attempt on a test with no time left to run is one past its time limit, or
+   * whose link has expired.
+   *
+   * The wait before stepping in is longer than the grace a late answer gets, so the browser's own
+   * automatic submit, which also emails the candidate, normally gets there first. Safe to run
+   * often and from several servers at once.
+   */
+  async completeAbandonedAttempts(now: Date = new Date()): Promise<number> {
+    const started = await db
+      .select({
+        id: candidateAssessmentAttempts.id,
+        startedAt: candidateAssessmentAttempts.startedAt,
+        expiresAt: candidateAssessmentAttempts.expiresAt,
+        timeLimit: assessments.timeLimit,
+      })
+      .from(candidateAssessmentAttempts)
+      .innerJoin(assessments, eq(candidateAssessmentAttempts.assessmentId, assessments.id))
+      .where(eq(candidateAssessmentAttempts.status, "started"));
+
+    let completed = 0;
+    for (const attempt of started) {
+      const timeUp = isPastDeadline(attempt.startedAt, attempt.timeLimit, now, ABANDONED_AFTER_SECONDS);
+      if (!timeUp && attempt.expiresAt >= now) continue;
+
+      try {
+        await this.completeAttempt(attempt.id);
+        completed++;
+      } catch (error) {
+        // Submitted by the candidate between the query above and here. Nothing left to do.
+        if (!(error instanceof AttemptNotInProgressError)) throw error;
+      }
+    }
+    return completed;
   },
 
   /** Whose attempt this is, so a request about it can be checked against that candidate's job. */

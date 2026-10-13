@@ -4,6 +4,7 @@ import { requireCandidateView, requireInterviewView } from "../../middlewares/jo
 import { requireManager } from "../../middlewares/role.middleware";
 import { interviewService, FeedbackValidationError } from "./interview.service";
 import { DEFAULT_INTERVIEW_MINUTES, completeInterviewBooking } from "./interview-confirm";
+import { isInterviewClash } from "./interview-slots";
 import { interviewSlotsEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { socketService } from "../../shared/services/socket.service";
@@ -127,11 +128,17 @@ router.patch("/interviews/:id", requireManager, async (req, res) => {
     });
     res.status(200).json({ data: interview });
   } catch (error) {
+    if (isInterviewClash(error)) {
+      res.status(409).json({ error: INTERVIEWER_BUSY, code: "SLOT_TAKEN" });
+      return;
+    }
     res
       .status(400)
       .json({ error: getErrorMessage(error) || "Failed to update interview" });
   }
 });
+
+const INTERVIEWER_BUSY = "The interviewer already has an interview at that time. Pick another time.";
 
 const futureDate = z.string().refine((v) => {
   const d = new Date(v);
@@ -303,6 +310,11 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
 
     res.status(201).json({ data: interview });
   } catch (error) {
+    // A time the team set themselves that runs into another of the interviewer's interviews.
+    if (isInterviewClash(error)) {
+      res.status(409).json({ error: INTERVIEWER_BUSY, code: "SLOT_TAKEN" });
+      return;
+    }
     logger.error(`Schedule interview failed: ${getErrorMessage(error)}`);
     res.status(400).json({ error: getErrorMessage(error) });
   }

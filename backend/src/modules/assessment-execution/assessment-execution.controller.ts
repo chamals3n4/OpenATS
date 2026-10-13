@@ -1,6 +1,10 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { assessmentExecutionService, GradingError } from "./assessment-execution.service";
+import {
+  assessmentExecutionService,
+  AttemptNotInProgressError,
+  GradingError,
+} from "./assessment-execution.service";
 import { assessmentCompletedEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { socketService } from "../../shared/services/socket.service";
@@ -225,7 +229,21 @@ export const completeAssessment = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await assessmentExecutionService.completeAttempt(attempt.id);
+    let result;
+    try {
+      result = await assessmentExecutionService.completeAttempt(attempt.id);
+    } catch (error) {
+      // A second submit that arrived while the first was being saved. The assessment is in, so
+      // the candidate is told so, and no second email is sent.
+      if (error instanceof AttemptNotInProgressError) {
+        res.status(200).json({
+          message: "Assessment completed successfully",
+          data: { completed: true },
+        });
+        return;
+      }
+      throw error;
+    }
     if (!result) {
       throw new Error("Failed to finalize assessment");
     }

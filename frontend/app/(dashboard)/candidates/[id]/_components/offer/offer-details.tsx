@@ -10,6 +10,7 @@ import {
   EMPLOYMENT_LABELS,
   canEditOffer,
   formatMoney,
+  formatRespondBy,
 } from "../../lib/offer-utils";
 import { OfferLetterDialog } from "./offer-letter-dialog";
 import { OfferTracker } from "./offer-tracker";
@@ -156,13 +157,14 @@ export function OfferDetails({
             {salary ?? <span className="text-slate-400">Not set</span>}
           </p>
         </div>
-        <dl className="grid gap-x-6 gap-y-5 px-5 py-5 sm:grid-cols-3">
+        <dl className="grid gap-x-6 gap-y-5 px-5 py-5 sm:grid-cols-2 lg:grid-cols-4">
           <Detail label="Employment type">
             {offer.employmentType
               ? (EMPLOYMENT_LABELS[offer.employmentType] ?? offer.employmentType)
               : "—"}
           </Detail>
           <Detail label="Start date">{formatDate(offer.startDate)}</Detail>
+          <Detail label="Respond by">{formatRespondBy(offer.expiresAt) ?? "No end date"}</Detail>
           <Detail label="Reporting manager">{offer.reportingManager || "—"}</Detail>
         </dl>
         {offer.benefits && (

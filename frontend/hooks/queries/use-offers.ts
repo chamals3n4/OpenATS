@@ -221,6 +221,14 @@ export async function fetchPublicOffer(
   return payload.data;
 }
 
+/**
+ * Tells the server the candidate has the offer on screen. Loading the offer no longer counts as
+ * viewing it, because email scanners load links too. Best effort: the page works without it.
+ */
+export async function markPublicOfferViewed(token: string): Promise<void> {
+  await fetch(`${API_BASE}/public/offers/${token}/viewed`, { method: "POST" }).catch(() => undefined);
+}
+
 export async function acceptPublicOffer(token: string): Promise<void> {
   const response = await fetch(`${API_BASE}/public/offers/${token}/accept`, {
     method: "POST",

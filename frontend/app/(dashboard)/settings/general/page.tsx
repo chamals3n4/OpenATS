@@ -15,6 +15,7 @@ const NEW_COMPANY: Company = {
   address: null,
   description: null,
   logoUrl: null,
+  timeZone: "UTC",
   createdAt: "",
   updatedAt: "",
 };

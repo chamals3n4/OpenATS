@@ -37,6 +37,7 @@ The following fields are optional, but adding them gives your careers page and j
 - **Address**: the company or hiring office address.
 - **Tagline**: a short description shown on the careers page. It accepts up to 500 characters.
 - **Company Logo**: upload a PNG, JPG, WebP, GIF, or SVG file up to 5 MB.
+- **Company time zone**: interview times and other dates in emails to candidates are written in this time zone. It starts on your browser's own zone; check it is where your company works, such as `Asia/Colombo`.
 
 Select **Create** when the profile is new, or **Save** when updating an existing profile. Wait for the success message before moving to departments.
 

@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { offerService } from "./offer.service";
+import { offerService, OfferClosedError } from "./offer.service";
 import { socketService } from "../../shared/services/socket.service";
 import logger from "../../utils/logger";
 import { asEnum } from "../../utils/object.utils";
@@ -19,6 +19,15 @@ const offerStatusSchema = z.enum([
   "expired",
 ]);
 
+// The moment the offer stops being open, with its time zone offset. Has to be still to come:
+// an offer cannot be given a date that has already passed.
+const expirySchema = z
+  .string()
+  .datetime({ offset: true })
+  .refine((value) => new Date(value).getTime() > Date.now(), "The expiry date must be in the future")
+  .optional()
+  .nullable();
+
 const offerInputSchema = z.object({
   candidateId: z.number().int().positive(),
   jobId: z.number().int().positive(),
@@ -30,6 +39,7 @@ const offerInputSchema = z.object({
     .optional()
     .nullable(),
   startDate: z.string().date().optional().nullable(),
+  expiresAt: expirySchema,
   reportingManager: z.string().trim().min(1).max(255).optional().nullable(),
   benefits: z.string().trim().min(1).max(4000).optional().nullable(),
   offerLetterHtml: z.string().optional().nullable(),
@@ -45,11 +55,19 @@ const offerUpdateSchema = z.object({
     .optional()
     .nullable(),
   startDate: z.string().date().optional().nullable(),
+  expiresAt: expirySchema,
   reportingManager: z.string().trim().min(1).max(255).optional().nullable(),
   benefits: z.string().trim().min(1).max(4000).optional().nullable(),
   offerLetterHtml: z.string().optional().nullable(),
   status: offerStatusSchema.optional(),
 });
+
+/** Answers 409 when the offer is already decided or expired. Returns whether it did. */
+function answerClosed(res: Response, error: unknown): boolean {
+  if (!(error instanceof OfferClosedError)) return false;
+  res.status(409).json({ error: error.message, code: "OFFER_CLOSED" });
+  return true;
+}
 
 function paramStr(value: string | string[] | undefined) {
   return (value ?? "").toString();
@@ -234,6 +252,7 @@ export const updateOffer = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: updated });
   } catch (error) {
+    if (answerClosed(res, error)) return;
     logger.error(`Failed to update offer ${req.params.id}: ${(error as Error)?.message}`);
     res.status(400).json({ error: (error as Error).message || "Failed to update offer" });
   }
@@ -288,6 +307,7 @@ export const acceptOffer = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: accepted });
   } catch (error) {
+    if (answerClosed(res, error)) return;
     logger.error(`Failed to accept offer ${req.params.id}: ${(error as Error)?.message}`);
     res.status(400).json({ error: (error as Error).message || "Failed to accept offer" });
   }
@@ -315,6 +335,7 @@ export const declineOffer = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: declined });
   } catch (error) {
+    if (answerClosed(res, error)) return;
     logger.error(`Failed to decline offer ${req.params.id}: ${(error as Error)?.message}`);
     res.status(400).json({ error: (error as Error).message || "Failed to decline offer" });
   }
@@ -396,6 +417,7 @@ export const acceptPublicOffer = async (req: Request, res: Response) => {
     // The candidate's page only needs the new status, not the stored offer.
     res.status(200).json({ data: { status: result.status } });
   } catch (error) {
+    if (answerClosed(res, error)) return;
     logger.error(`Failed to accept public offer: ${(error as Error)?.message}`);
     res.status(400).json({ error: (error as Error).message || "Failed to accept offer" });
   }
@@ -423,7 +445,38 @@ export const declinePublicOffer = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: { status: result.status } });
   } catch (error) {
+    if (answerClosed(res, error)) return;
     logger.error(`Failed to decline public offer: ${(error as Error)?.message}`);
     res.status(400).json({ error: (error as Error).message || "Failed to decline offer" });
+  }
+};
+
+/** Called by the offer page once it is on screen, so "viewed" means a person looked at it. */
+export const markPublicOfferViewed = async (req: Request, res: Response) => {
+  try {
+    const token = paramStr(req.params.token).trim();
+    if (!token) {
+      res.status(400).json({ error: "Invalid token" });
+      return;
+    }
+
+    const offer = await offerService.markViewedByToken(token);
+    if (!offer) {
+      res.status(404).json({ error: "Offer link is invalid" });
+      return;
+    }
+
+    if (offer.status === "viewed") {
+      socketService.notifyOfferChanged({
+        offerId: offer.id,
+        candidateId: offer.candidateId,
+        jobId: offer.jobId,
+      });
+    }
+
+    res.status(200).json({ data: { status: offer.status } });
+  } catch (error) {
+    logger.error(`Failed to mark public offer viewed: ${(error as Error)?.message}`);
+    res.status(500).json({ error: "Failed to update offer" });
   }
 };

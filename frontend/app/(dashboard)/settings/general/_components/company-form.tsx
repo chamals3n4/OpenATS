@@ -23,6 +23,7 @@ type Values = {
   address: string;
   description: string;
   logoUrl: string | null;
+  timeZone: string;
 };
 
 const toValues = (c: Company): Values => ({
@@ -33,7 +34,28 @@ const toValues = (c: Company): Values => ({
   address: c.address ?? "",
   description: c.description ?? "",
   logoUrl: c.logoUrl ?? null,
+  timeZone: c.timeZone || "UTC",
 });
+
+/** Every zone the browser knows, with UTC first. Falls back to a short list on an old browser. */
+function timeZoneOptions(current: string): string[] {
+  let zones: string[] = [];
+  try {
+    zones = Intl.supportedValuesOf("timeZone");
+  } catch {
+    zones = [];
+  }
+  return Array.from(new Set(["UTC", current, ...zones])).filter(Boolean);
+}
+
+/** Where the person setting the company up is, as a first suggestion. */
+function browserTimeZone(): string {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+  } catch {
+    return "UTC";
+  }
+}
 
 function Section({
   title,
@@ -69,7 +91,10 @@ export function CompanyForm({
   const upsertCompany = useUpsertCompany();
   const uploadLogo = useUploadLogo();
 
-  const [values, setValues] = useState<Values>(() => toValues(company));
+  // A new company starts on the zone of whoever is creating it, which is usually the right one.
+  const [values, setValues] = useState<Values>(() =>
+    isNew ? { ...toValues(company), timeZone: browserTimeZone() } : toValues(company),
+  );
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [showErrors, setShowErrors] = useState(false);
 
@@ -126,6 +151,7 @@ export function CompanyForm({
         address: values.address.trim() || null,
         description: values.description.trim() || null,
         logoUrl: values.logoUrl,
+        timeZone: values.timeZone,
       },
       {
         onSuccess: () => {
@@ -229,6 +255,26 @@ export function CompanyForm({
             />
           </FormField>
         </div>
+      </Section>
+
+      <Section
+        title="Time zone"
+        description="Interview times and other dates in emails to candidates are written in this time zone."
+      >
+        <FormField label="Company time zone" htmlFor="company-time-zone">
+          <select
+            id="company-time-zone"
+            value={values.timeZone}
+            onChange={(e) => set("timeZone", e.target.value)}
+            className={`${inputCls} h-10 w-full rounded-md border px-3 sm:max-w-sm`}
+          >
+            {timeZoneOptions(values.timeZone).map((zone) => (
+              <option key={zone} value={zone}>
+                {zone.replace(/_/g, " ")}
+              </option>
+            ))}
+          </select>
+        </FormField>
       </Section>
 
       <Section

@@ -46,6 +46,9 @@ export const offers = pgTable(
 
     reviewToken: varchar("review_token", { length: 100 }).unique(),
 
+    // After this the candidate can no longer accept or decline. Null means it never runs out.
+    expiresAt: timestamp("expires_at"),
+
     sentAt: timestamp("sent_at"),
     viewedAt: timestamp("viewed_at"),
     acceptedAt: timestamp("accepted_at"),

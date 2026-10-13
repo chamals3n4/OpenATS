@@ -40,6 +40,8 @@ export interface CreateOfferInput {
     | null
     | undefined;
   startDate?: string | null | undefined;
+  /** When the offer stops being open to accept or decline. Null for no end. */
+  expiresAt?: string | null | undefined;
   reportingManager?: string | null | undefined;
   benefits?: string | null | undefined;
   offerLetterHtml?: string | null | undefined;
@@ -61,6 +63,8 @@ export interface UpdateOfferInput {
     | null
     | undefined;
   startDate?: string | null | undefined;
+  /** When the offer stops being open to accept or decline. Null for no end. */
+  expiresAt?: string | null | undefined;
   reportingManager?: string | null | undefined;
   benefits?: string | null | undefined;
   offerLetterHtml?: string | null | undefined;
@@ -79,6 +83,28 @@ function isTransitionAllowed(from: OfferStatus, to: OfferStatus) {
   };
 
   return allowed[from].includes(to);
+}
+
+/** The candidate has answered, or the offer ran out. What they were shown must not change after that. */
+const DECIDED: OfferStatus[] = ["accepted", "declined", "expired"];
+const OPEN_TO_ANSWER: OfferStatus[] = ["sent", "viewed"];
+
+/** An offer that can no longer be edited, accepted or declined, with the reason worded for the person. */
+export class OfferClosedError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "OfferClosedError";
+  }
+}
+
+const hasRunOut = (offer: { expiresAt: Date | null }, now: Date) =>
+  offer.expiresAt !== null && offer.expiresAt <= now;
+
+function normalizeExpiry(value?: string | null) {
+  // As for the start date: undefined stays undefined so a partial update leaves it alone.
+  if (value === undefined) return undefined;
+  if (!value) return null;
+  return new Date(value);
 }
 
 function generateReviewToken() {
@@ -311,6 +337,7 @@ export const offerService = {
         input.templateId,
         {
           ...input,
+          expiresAt: normalizeExpiry(input.expiresAt) ?? null,
         },
       );
     }
@@ -327,6 +354,7 @@ export const offerService = {
           currency: input.currency ?? null,
           employmentType: input.employmentType ?? null,
           startDate: normalizeDate(input.startDate),
+          expiresAt: normalizeExpiry(input.expiresAt) ?? null,
           reportingManager: input.reportingManager ?? null,
           benefits: input.benefits ?? null,
           offerLetterHtml,
@@ -358,6 +386,16 @@ export const offerService = {
       );
     }
 
+    // Once the candidate has accepted or declined (or the offer ran out), the salary, dates and
+    // letter are the record of what they answered. Nothing about them can be edited any more.
+    const { status: _status, ...content } = input;
+    const changesContent = Object.values(content).some((value) => value !== undefined);
+    if (changesContent && DECIDED.includes(existing.status)) {
+      throw new OfferClosedError(
+        `This offer was ${existing.status === "expired" ? "left to expire" : existing.status} and can no longer be changed`,
+      );
+    }
+
     let offerLetterHtml = input.offerLetterHtml;
     if (
       input.templateId !== undefined &&
@@ -370,6 +408,7 @@ export const offerService = {
         {
           ...existing,
           ...input,
+          expiresAt: normalizeExpiry(input.expiresAt) ?? existing.expiresAt,
         },
       );
     }
@@ -383,6 +422,7 @@ export const offerService = {
         currency: input.currency,
         employmentType: input.employmentType,
         startDate: normalizeDate(input.startDate),
+        expiresAt: normalizeExpiry(input.expiresAt),
         reportingManager: input.reportingManager,
         benefits: input.benefits,
         offerLetterHtml,
@@ -414,6 +454,9 @@ export const offerService = {
       offer.status === "expired"
     ) {
       throw new Error(`Cannot send an offer in status '${offer.status}'`);
+    }
+    if (hasRunOut(offer, new Date())) {
+      throw new Error("This offer's expiry date has passed. Set a later date before sending it.");
     }
 
     let offerLetterHtml = offer.offerLetterHtml;
@@ -476,55 +519,86 @@ export const offerService = {
   },
 
   async acceptById(id: number, actorId?: number | null) {
+    return this.answer(id, "accepted", actorId);
+  },
+
+  async declineById(id: number, actorId?: number | null) {
+    return this.answer(id, "declined", actorId);
+  },
+
+  /**
+   * Records the candidate's answer. The status is changed with one conditional update, so of two
+   * answers arriving together only the first takes effect; the other is told the offer is
+   * already decided. An offer past its expiry date is closed instead of answered.
+   */
+  async answer(id: number, answer: "accepted" | "declined", actorId?: number | null) {
     const existing = await offerRepository.findById(id);
     if (!existing) return null;
 
-    if (!["sent", "viewed"].includes(existing.status)) {
-      throw new Error(`Cannot accept offer in status '${existing.status}'`);
+    const now = new Date();
+    if (OPEN_TO_ANSWER.includes(existing.status) && hasRunOut(existing, now)) {
+      await offerRepository.transition(id, OPEN_TO_ANSWER, { status: "expired" });
+      throw new OfferClosedError("This offer has expired");
     }
 
-    const updated = await offerRepository.updateById(id, {
-      status: "accepted",
-      acceptedAt: new Date(),
-    });
+    const updated = await offerRepository.transition(
+      id,
+      OPEN_TO_ANSWER,
+      answer === "accepted"
+        ? { status: "accepted", acceptedAt: now }
+        : { status: "declined", declinedAt: now },
+    );
 
-    if (!updated) return null;
+    if (!updated) {
+      const current = (await offerRepository.findById(id))?.status ?? existing.status;
+      throw new OfferClosedError(
+        current === "expired"
+          ? "This offer has expired"
+          : current === "accepted" || current === "declined"
+            ? `This offer has already been ${current}`
+            : `Cannot ${answer === "accepted" ? "accept" : "decline"} offer in status '${current}'`,
+      );
+    }
 
     await candidateActivityService.create({
       candidateId: updated.candidateId,
       jobId: updated.jobId,
       offerId: updated.id,
       actorId: actorId ?? null,
-      eventType: "offer_accepted",
+      eventType: answer === "accepted" ? "offer_accepted" : "offer_declined",
     });
 
     return updated;
   },
 
-  async declineById(id: number, actorId?: number | null) {
-    const existing = await offerRepository.findById(id);
-    if (!existing) return null;
+  /** Closes offers whose expiry date has passed with no answer. Safe to run often. */
+  async expireOverdue(now: Date = new Date()): Promise<number> {
+    return (await offerRepository.expireOverdue(now)).length;
+  },
 
-    if (!["sent", "viewed"].includes(existing.status)) {
-      throw new Error(`Cannot decline offer in status '${existing.status}'`);
+  /**
+   * Records that the candidate opened their offer. Called by the offer page once it is on
+   * screen, not by loading the offer: email security scanners fetch links by themselves, and
+   * that used to mark offers as viewed that nobody had looked at.
+   */
+  async markViewedByToken(token: string) {
+    const offer = await offerRepository.findByReviewToken(token);
+    if (!offer) return null;
+
+    const updated = await offerRepository.transition(offer.id, ["sent"], {
+      status: "viewed",
+      viewedAt: new Date(),
+    });
+    if (updated) {
+      await candidateActivityService.create({
+        candidateId: updated.candidateId,
+        jobId: updated.jobId,
+        offerId: updated.id,
+        actorId: null,
+        eventType: "offer_viewed",
+      });
     }
-
-    const updated = await offerRepository.updateById(id, {
-      status: "declined",
-      declinedAt: new Date(),
-    });
-
-    if (!updated) return null;
-
-    await candidateActivityService.create({
-      candidateId: updated.candidateId,
-      jobId: updated.jobId,
-      offerId: updated.id,
-      actorId: actorId ?? null,
-      eventType: "offer_declined",
-    });
-
-    return updated;
+    return updated ?? offer;
   },
 
   async getPublicByToken(token: string) {
@@ -547,23 +621,11 @@ export const offerService = {
 
     if (!row) return null;
 
-    if (row.offer.status === "sent") {
-      const updated = await offerRepository.updateById(row.offer.id, {
-        status: "viewed",
-        viewedAt: new Date(),
-      });
-
-      if (updated) {
-        row.offer.status = updated.status;
-        row.offer.viewedAt = updated.viewedAt;
-
-        await candidateActivityService.create({
-          candidateId: updated.candidateId,
-          jobId: updated.jobId,
-          offerId: updated.id,
-          eventType: "offer_viewed",
-        });
-      }
+    // Loading the offer changes nothing about it (see markViewedByToken), with one exception: an
+    // offer past its date is closed here, so the page never offers buttons that would be refused.
+    if (OPEN_TO_ANSWER.includes(row.offer.status) && hasRunOut(row.offer, new Date())) {
+      const expired = await offerRepository.transition(row.offer.id, OPEN_TO_ANSWER, { status: "expired" });
+      if (expired) row.offer.status = expired.status;
     }
 
     return {
@@ -573,6 +635,7 @@ export const offerService = {
       currency: row.offer.currency,
       employmentType: row.offer.employmentType,
       startDate: row.offer.startDate,
+      expiresAt: row.offer.expiresAt,
       reportingManager: row.offer.reportingManager,
       benefits: row.offer.benefits,
       offerLetterHtml: row.offer.offerLetterHtml,

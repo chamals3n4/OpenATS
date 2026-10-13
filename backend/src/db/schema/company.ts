@@ -17,6 +17,8 @@ export const company = pgTable("company", {
   address: text("address"),
   description: text("description"),
   logoUrl: varchar("logo_url", { length: 1000 }),
+  // IANA name, such as "Asia/Colombo". Dates and times in emails are written in this zone.
+  timeZone: varchar("time_zone", { length: 64 }).notNull().default("UTC"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });

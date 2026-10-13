@@ -7,6 +7,7 @@ import {
   fetchPublicOffer,
   acceptPublicOffer,
   declinePublicOffer,
+  markPublicOfferViewed,
 } from "@/hooks/queries/use-offers";
 import type { PublicOfferView } from "@/types";
 import { Spinner } from "@/components/ui/spinner";
@@ -67,6 +68,18 @@ function fmtDate(value: string | null): string {
   });
 }
 
+/** A moment in the reader's own time zone, with the zone named so it cannot be misread. */
+function fmtDateTime(value: string): string {
+  return new Date(value).toLocaleString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+}
+
 const EMPLOYMENT_LABELS: Record<string, string> = {
   full_time: "Full-time",
   part_time: "Part-time",
@@ -100,6 +113,19 @@ export default function OfferPortalPage({
       });
   }, [token]);
 
+  // Sent once the offer is on the candidate's screen, which is what "viewed" should mean.
+  const isUnseen = offer?.status === "sent";
+  useEffect(() => {
+    if (isUnseen) void markPublicOfferViewed(token);
+  }, [isUnseen, token]);
+
+  // After a refused answer the offer on screen is out of date (it expired, or was already
+  // answered in another tab), so it is loaded again to show where it really stands.
+  const reload = () =>
+    fetchPublicOffer(token)
+      .then(setOffer)
+      .catch(() => undefined);
+
   const handleAccept = async () => {
     setActionLoading(true);
     setActionError(null);
@@ -108,6 +134,7 @@ export default function OfferPortalPage({
       setOffer((prev) => (prev ? { ...prev, status: "accepted" } : prev));
     } catch (err) {
       setActionError((err as Error).message || "Failed to accept offer");
+      await reload();
     } finally {
       setActionLoading(false);
     }
@@ -122,6 +149,7 @@ export default function OfferPortalPage({
       setOffer((prev) => (prev ? { ...prev, status: "declined" } : prev));
     } catch (err) {
       setActionError((err as Error).message || "Failed to decline offer");
+      await reload();
     } finally {
       setActionLoading(false);
     }
@@ -228,9 +256,30 @@ export default function OfferPortalPage({
           </div>
         </div>
 
+        {offer.status === "expired" && (
+          <p className="mt-8 text-sm leading-relaxed text-slate-600 dark:text-neutral-400">
+            This offer is no longer open
+            {offer.expiresAt ? `: it had to be answered by ${fmtDateTime(offer.expiresAt)}` : ""}.
+            Please contact the hiring team if you would still like to discuss it.
+          </p>
+        )}
+
+        {!canRespond && actionError && (
+          <p className="mt-4 text-sm text-red-500 dark:text-red-400">{actionError}</p>
+        )}
+
         {/* Respond */}
         {canRespond && (
           <div className="mt-12">
+            {offer.expiresAt && (
+              <p className="mb-4 text-sm text-slate-600 dark:text-neutral-400">
+                Please respond by{" "}
+                <span className="font-medium text-slate-900 dark:text-neutral-100">
+                  {fmtDateTime(offer.expiresAt)}
+                </span>
+                .
+              </p>
+            )}
             {actionError && (
               <p className="mb-4 text-sm text-red-500 dark:text-red-400">
                 {actionError}

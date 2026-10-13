@@ -82,6 +82,9 @@ beforeEach(() => {
 });
 
 async function book(values: Partial<typeof candidateInterviews.$inferInsert>) {
+  // One interviewer cannot hold two interviews at the same time, so each test's booking leaves
+  // before the next one is made.
+  await db.delete(candidateInterviews).where(eq(candidateInterviews.candidateId, candidateId));
   const [iv] = await db
     .insert(candidateInterviews)
     .values({

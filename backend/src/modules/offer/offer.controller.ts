@@ -393,7 +393,8 @@ export const acceptPublicOffer = async (req: Request, res: Response) => {
       jobId: result.jobId,
     });
 
-    res.status(200).json({ data: result });
+    // The candidate's page only needs the new status, not the stored offer.
+    res.status(200).json({ data: { status: result.status } });
   } catch (error) {
     logger.error(`Failed to accept public offer: ${(error as Error)?.message}`);
     res.status(400).json({ error: (error as Error).message || "Failed to accept offer" });
@@ -420,7 +421,7 @@ export const declinePublicOffer = async (req: Request, res: Response) => {
       jobId: result.jobId,
     });
 
-    res.status(200).json({ data: result });
+    res.status(200).json({ data: { status: result.status } });
   } catch (error) {
     logger.error(`Failed to decline public offer: ${(error as Error)?.message}`);
     res.status(400).json({ error: (error as Error).message || "Failed to decline offer" });

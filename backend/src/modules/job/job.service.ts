@@ -2,6 +2,7 @@ import { eq, desc, ilike, inArray, and, sql } from "drizzle-orm";
 import { db, NewJob } from "../../db";
 import { cleanObject as clean } from "../../utils/object.utils";
 import { requestResumeDeletion } from "../../queues/resume-delete/queue";
+import { sanitizeJobDescription } from "./job-description";
 import {
   jobs,
   jobSkills,
@@ -251,7 +252,8 @@ export const jobService = {
         departmentId: jobData.departmentId,
         employmentType: jobData.employmentType,
         location: jobData.location ?? null,
-        description: jobData.description ?? null,
+        // Cleaned here, in the one place a description is written, whatever sent it.
+        description: sanitizeJobDescription(jobData.description) ?? null,
         salaryType: jobData.salaryType ?? null,
         currency: jobData.currency ?? null,
         payFrequency: jobData.payFrequency ?? null,
@@ -314,6 +316,8 @@ export const jobService = {
         ...jobData,
         updatedAt: new Date(),
       };
+      if (jobData.description !== undefined)
+        updateData.description = sanitizeJobDescription(jobData.description);
       if (jobData.salaryFixed !== undefined)
         updateData.salaryFixed = jobData.salaryFixed || null;
       if (jobData.salaryMin !== undefined)

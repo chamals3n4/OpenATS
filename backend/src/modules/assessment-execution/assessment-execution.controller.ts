@@ -142,7 +142,10 @@ export const startAssessment = async (req: Request, res: Response) => {
 
     const result = await assessmentExecutionService.startAttempt(attempt.id);
     logger.info(`Assessment started: attemptId=${attempt.id}`);
-    res.status(200).json({ data: result });
+    // Only what the candidate's page needs to run its clock, not the stored attempt.
+    res.status(200).json({
+      data: { status: result?.status ?? "started", startedAt: result?.startedAt ?? null },
+    });
   } catch (error) {
     logger.error(`Failed to start assessment attempt for token=${req.params.token}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to start assessment" });
@@ -189,7 +192,7 @@ export const submitAssessmentAnswer = async (req: Request, res: Response) => {
       candidateId: attempt.candidate.id,
       attemptId: attempt.id,
     });
-    res.status(200).json({ data: result });
+    res.status(200).json({ data: { questionId: result.questionId, saved: true } });
   } catch (error) {
     logger.error(`Failed to save answer for attempt token=${req.params.token}: ${getErrorMessage(error)}`);
     res.status(500).json({
@@ -262,12 +265,10 @@ export const completeAssessment = async (req: Request, res: Response) => {
     }
 
     logger.info(`Assessment completed: attemptId=${attempt.id}, passed=${result.passed}, score=${result.scorePercentage}%${autoSubmitReason ? `, autoSubmit="${autoSubmitReason}"` : ""}`);
+    // The result is for the hiring team. The candidate is told it was received, not how they did.
     res.status(200).json({
       message: "Assessment completed successfully",
-      data: {
-        passed: result.passed,
-        scorePercentage: result.scorePercentage,
-      },
+      data: { completed: true },
     });
   } catch (error) {
     logger.error(`Failed to complete assessment for token=${req.params.token}: ${getErrorMessage(error)}`);

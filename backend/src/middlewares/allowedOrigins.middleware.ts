@@ -1,11 +1,11 @@
 import type { NextFunction, Request, Response } from "express";
-import { pageSettingsService } from "../modules/settings/page-settings.service";
+import {
+  isOriginAllowed,
+  normalizeOrigin as norm,
+  pageSettingsService,
+} from "../modules/settings/page-settings.service";
 
 const FORWARDED = "x-openats-browser-origin";
-
-function norm(s: string): string {
-  return s.trim().replace(/\/$/, "");
-}
 
 function getOrigin(req: Request): string | null {
   const forwarded = req.headers[FORWARDED];
@@ -25,6 +25,11 @@ function getOrigin(req: Request): string | null {
   return null;
 }
 
+/**
+ * Stops other websites' pages from using the public API when a list of allowed origins is set.
+ * It is not access control: the Origin header is sent by browsers, and a request made without a
+ * browser (curl, a script) has no Origin and passes. Nothing behind this check may be private.
+ */
 export async function checkOrigins(
   req: Request,
   res: Response,
@@ -43,8 +48,7 @@ export async function checkOrigins(
       return;
     }
 
-    const ok = allowed.map((x) => norm(x)).includes(o);
-    if (!ok) {
+    if (!isOriginAllowed(o, allowed)) {
       res.status(403).json({ error: "Origin not allowed" });
       return;
     }

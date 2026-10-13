@@ -47,14 +47,18 @@ The preview uses the same public jobs endpoint as the live page, so it is a usef
 
 ## Control which websites can request jobs
 
-The **Allowed origins** section protects the public API when you embed OpenATS in another website.
+The **Allowed origins** section limits which other websites can show your jobs and send applications from their own pages.
 
 1. In **Settings > Careers page**, find **Allowed origins**.
 2. Enter the origin of the website that will load OpenATS jobs, for example `https://careers.example.com` or `http://localhost:5173`.
 3. Select **Add**. Add each separate website or development origin that needs access.
 4. Remove an origin with its trash button, then select **Save origins**.
 
-An origin contains the scheme, host, and optional port. Do not enter a page path such as `/jobs`. Leave the list empty to allow requests from all origins. If an embedded listing is blocked by the browser, check that the page's exact origin, including its port in development, is present in this list.
+An origin contains the scheme, host, and optional port. Do not enter a page path such as `/jobs`. Leave the list empty to allow requests from all origins.
+
+The careers page that OpenATS serves itself always works, whatever is on the list. You do not need to add your OpenATS address. A change can take up to 30 seconds to apply.
+
+This setting stops other websites from embedding your jobs. It is not a security boundary: it relies on the origin a browser reports, and a request made without a browser (a script, `curl`) reports none and is let through. Everything behind it is already public: published jobs, their questions, and the application form. Abuse is held back by the rate limits, not by this list. If an embedded listing is blocked by the browser, check that the page's exact origin, including its port in development, is present in this list.
 
 ## Publish and unpublish roles
 
@@ -95,7 +99,27 @@ Applications are submitted to the public job endpoint:
 POST https://your-openats.example.com/api/public/jobs/42/apply
 ```
 
-Send the candidate's first name, last name, email, and phone, together with any answers to the job's custom questions. A resume can be uploaded as a PDF through the public resume upload flow. The API applies rate limits and rejects a duplicate application from the same email address for the same job.
+Send the candidate's first name, last name, email, and phone, together with their answers to the job's custom questions:
+
+```json
+{
+  "firstName": "Nimal",
+  "lastName": "Fernando",
+  "email": "nimal@example.com",
+  "phone": "+94 77 123 4567",
+  "resumeUploadId": "3f6c1c1e-8f0a-4a57-9a55-0d7a2f6f6b1c",
+  "customAnswers": [
+    { "questionId": 12, "answerText": "Five years" },
+    { "questionId": 13, "optionIds": [41] }
+  ]
+}
+```
+
+- **Resume.** First send the PDF as the `file` field of a `multipart/form-data` request to `POST /api/public/upload/resume`. The reply holds an `uploadId`. Pass it as `resumeUploadId` when applying. It works once and for one hour; after that, upload the file again. The API never returns a link to the file.
+- **Questions.** `GET /api/public/jobs/42/questions` lists the questions and their options. Every question with `"isRequired": true` must be answered, and each `optionIds` value must be one of that question's own options. Otherwise the application is refused with status 400 and a message naming the question.
+- **Reply.** A successful application answers with status 201 and `{ "data": { "applied": true } }`. Nothing about the stored candidate is returned.
+
+The API applies rate limits and rejects a duplicate application from the same email address for the same job (status 409, code `DUPLICATE_APPLICATION`).
 
 After a successful submission, OpenATS creates the candidate record and places it at the opening stage of that job's hiring pipeline. Hiring teams can continue from **Candidates** in the dashboard.
 

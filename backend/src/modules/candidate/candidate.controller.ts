@@ -152,7 +152,12 @@ export const applyForJob = async (req: Request, res: Response) => {
       );
     }
 
-    res.status(201).json({ data: result });
+    // The applicant is told that it worked and nothing else. The saved row holds their score and
+    // the knockout flag, and seeing those would let them apply again with better answers. A
+    // manager adding an application from the dashboard route also gets the new candidate's id.
+    res.status(201).json({
+      data: req.user ? { applied: true, id: result.id, jobId: result.jobId } : { applied: true },
+    });
   } catch (error: unknown) {
     if (error instanceof InvalidAnswerError) {
       res.status(400).json({ error: error.message });

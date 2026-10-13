@@ -56,7 +56,3 @@ export type Screen =
   | "quiz"
   | "submitted";
 
-export interface ScoreResult {
-  passed: boolean;
-  scorePercentage: number;
-}

@@ -24,6 +24,8 @@ import { scoringService } from "../scoring/scoring.service";
 import { toAiSummary } from "./cv-analysis.service";
 import { cvExperienceAtLeast, cvMatches, cvRank, cvTextService } from "./cv-text.service";
 import { resumeUploadService } from "../upload/resume-upload.service";
+import { customQuestionService } from "../custom-question/custom-question.service";
+import { findAnswerProblem } from "./application-answers";
 import { requestResumeDeletion } from "../../queues/resume-delete/queue";
 import { rejectionService } from "../rejection/rejection.service";
 import { applicationReceivedEmail } from "../../shared/services/candidate-emails";
@@ -370,6 +372,14 @@ export const candidateService = {
     const normalizedEmail = rest.email.trim().toLowerCase();
     const candidateData = { ...rest, email: normalizedEmail };
 
+    // Before anything is saved: every question that has to be answered is, and every answer and
+    // option belongs to this job. See application-answers.ts.
+    const problem = findAnswerProblem(
+      await customQuestionService.getByJobId(jobId),
+      customAnswers ?? [],
+    );
+    if (problem) throw new InvalidAnswerError(problem);
+
     try {
       return await db.transaction(async (tx) => {
         const [firstStage] = await tx
@@ -413,23 +423,11 @@ export const candidateService = {
 
         if (customAnswers && customAnswers.length > 0) {
           for (const answer of customAnswers) {
-            const [question] = await tx
-              .select()
-              .from(jobCustomQuestions)
-              .where(
-                and(
-                  eq(jobCustomQuestions.id, answer.questionId),
-                  eq(jobCustomQuestions.jobId, jobId),
-                ),
-              );
+            // Left blank, which is allowed for a question that does not have to be answered.
+            const hasText = Boolean(answer.answerText?.trim());
+            if (!hasText && (answer.optionIds?.length ?? 0) === 0) continue;
 
-            if (!question) continue;
-
-            if (question.questionType === "radio" && (answer.optionIds?.length ?? 0) > 1) {
-              throw new InvalidAnswerError(`Pick only one option for "${question.title}"`);
-            }
-
-            if (answer.answerText !== undefined) {
+            if (hasText) {
               await tx.insert(candidateCustomAnswers).values({
                 candidateId: candidate.id,
                 questionId: answer.questionId,

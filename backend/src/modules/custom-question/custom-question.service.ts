@@ -7,6 +7,7 @@ import {
   jobPipelineStages,
 } from "../../db/schema";
 import { cleanObject as clean } from "../../utils/object.utils";
+import { mustAnswer } from "../candidate/application-answers";
 
 export interface OptionInput {
   /** Set when editing an existing option, so candidates' picks of it are kept. */
@@ -43,11 +44,16 @@ export interface AttachAssessmentInput {
 
 
 export const customQuestionService = {
-  /** What an applicant is shown: the options only, never the points or knockout flags. */
+  /**
+   * What an applicant is shown: the options only, never the points or knockout flags. A question
+   * that has to be answered because of a knockout option is shown as required, like any other,
+   * so the form asks for it and nothing tells the applicant why.
+   */
   async getForApplicant(jobId: number) {
     const questions = await customQuestionService.getByJobId(jobId);
     return questions.map((q) => ({
       ...q,
+      isRequired: mustAnswer(q),
       options: q.options.map(({ points: _p, isKnockout: _k, isCorrect: _c, ...o }) => o),
     }));
   },

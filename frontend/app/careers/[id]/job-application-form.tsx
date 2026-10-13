@@ -134,9 +134,23 @@ export function JobApplicationForm({
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    setSubmitting(true);
     setSubmitError(null);
     setEmailError(null);
+
+    // The browser checks required text fields itself. It cannot do that for a group of
+    // checkboxes or radio buttons, so those are checked here; the server checks everything again.
+    const unanswered = questions.find(
+      (q) =>
+        q.isRequired &&
+        (q.questionType === "checkbox" || q.questionType === "radio") &&
+        !answers[q.id]?.optionIds?.length,
+    );
+    if (unanswered) {
+      setSubmitError(`Please answer "${unanswered.title}"`);
+      return;
+    }
+
+    setSubmitting(true);
 
     const customAnswers = questions
       .map((q) => {

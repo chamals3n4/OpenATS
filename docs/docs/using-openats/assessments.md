@@ -73,6 +73,7 @@ Things worth knowing:
 - **The time limit is in minutes** and does not pause. When it runs out, the answers given so far are submitted automatically, and no more answers are accepted.
 - **Answers are saved as the candidate goes.** If they reload the page or lose their connection, their answers are still there when they return.
 - **An assessment can be taken once.** After it is submitted, nothing can be changed.
+- **A test that is started and left is still finished.** If the candidate closes the page and never comes back, OpenATS submits it for them a few minutes after the time limit, and grades whatever they had answered. It does not stay **In Progress** for ever, and the candidate gets an Assessment score.
 
 ## Review a candidate's answers
 

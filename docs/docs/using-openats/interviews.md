@@ -67,11 +67,13 @@ OpenATS sends the "Interview: pick a time" email with a private link. The interv
 
 The candidate opens the link, sees the times you offered, and selects one. Times that have passed, or that another interview has taken, cannot be chosen.
 
+An interviewer cannot be booked for two interviews that overlap. A 60 minute interview at 10:00 also rules out a 10:30 start, not only another interview at exactly 10:00. If two candidates choose the same time at the same moment, one gets it and the other is asked to pick another.
+
 ![Candidate selects an interview time slot](/content/interviews/timeslot-selection-by-candidate.png)
 
 ### If you set the time
 
-The interview is booked at once. There is no link for the candidate to pick from.
+The interview is booked at once. There is no link for the candidate to pick from. If the interviewer already has an interview that overlaps that time, OpenATS says so and nothing is booked.
 
 ### When the interview has its time
 
@@ -80,6 +82,8 @@ Either way, three things happen:
 1. A Google Meet link is created, if you chose Google Meet.
 2. A calendar event is created, if the interviewer has connected Google.
 3. The candidate receives the "Interview confirmed" email with the date, the time, the length, and the link or address.
+
+Dates and times in emails are written in the **company time zone**, with the zone named beside the time, for example `3:00 PM GMT+5:30 (Asia/Colombo)`. Set it under **Settings > General > Time zone**. Until it is set, emails use UTC.
 
 ## Change or cancel an interview
 

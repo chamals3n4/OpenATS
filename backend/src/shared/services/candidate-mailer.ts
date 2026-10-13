@@ -3,6 +3,7 @@ import { company, emailMessages } from "../../db/schema";
 import logger from "../../utils/logger";
 import { mailService } from "./mail.service";
 import { getSystemEmailContent, type SystemEmailPurpose } from "./system-emails";
+import { DEFAULT_TIME_ZONE } from "./time-zone";
 
 /** What an email was for. Shown in the candidate's email history. */
 export type CandidateEmailKind =
@@ -36,16 +37,27 @@ export interface CandidateEmailResult {
   error?: string;
 }
 
+/** The name emails are signed with, and the zone their dates and times are written in. */
+async function getCompanyForEmail(): Promise<{ companyName: string; timeZone: string }> {
+  const [row] = await db
+    .select({ name: company.name, timeZone: company.timeZone })
+    .from(company)
+    .limit(1);
+  return {
+    companyName: row?.name?.trim() || "The hiring team",
+    timeZone: row?.timeZone || DEFAULT_TIME_ZONE,
+  };
+}
+
 /** The name emails are signed with. */
 export async function getCompanyName(): Promise<string> {
-  const [row] = await db.select({ name: company.name }).from(company).limit(1);
-  return row?.name?.trim() || "The hiring team";
+  return (await getCompanyForEmail()).companyName;
 }
 
 /** What a built-in email needs before it can be built: who it is from, and its wording. */
 export async function emailContext(purpose: SystemEmailPurpose) {
-  const [companyName, content] = await Promise.all([getCompanyName(), getSystemEmailContent(purpose)]);
-  return { companyName, content };
+  const [from, content] = await Promise.all([getCompanyForEmail(), getSystemEmailContent(purpose)]);
+  return { ...from, content };
 }
 
 /**

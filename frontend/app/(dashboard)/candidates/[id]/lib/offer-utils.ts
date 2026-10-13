@@ -16,6 +16,8 @@ export interface OfferFormValues {
   salary: string;
   employmentType: EmploymentType;
   startDate: string;
+  /** The last day the candidate can answer, as YYYY-MM-DD. Empty for no end. */
+  expiresOn: string;
   reportingManager: string;
   benefits: string;
   offerLetterHtml: string;
@@ -40,10 +42,39 @@ export const OFFER_FIELD_LABELS: Record<OfferFieldKey, string> = {
   salary: "Salary",
   employmentType: "Employment type",
   startDate: "Start date",
+  expiresOn: "Respond by",
   reportingManager: "Reporting manager",
   benefits: "Benefits",
   offerLetterHtml: "Offer letter",
 };
+
+/** A date as the value of a date input (YYYY-MM-DD), in the browser's own time zone. */
+export function toDateInput(date: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+/**
+ * The last moment of the chosen day, where the person choosing it is. "Respond by Friday" means
+ * the offer is open all of Friday, so the date becomes Friday 23:59:59 and not Friday 00:00.
+ */
+export function endOfDay(dateInput: string): string | null {
+  if (!dateInput) return null;
+  const [year, month, day] = dateInput.split("-").map(Number);
+  if (!year || !month || !day) return null;
+  return new Date(year, month - 1, day, 23, 59, 59).toISOString();
+}
+
+/** "Friday, October 16, 2026" for a respond-by date, or null when there is none. */
+export function formatRespondBy(expiresAt: string | null | undefined): string | null {
+  if (!expiresAt) return null;
+  return new Date(expiresAt).toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+}
 
 export function offerToFormValues(offer: Offer): OfferFormValues {
   return {
@@ -52,6 +83,7 @@ export function offerToFormValues(offer: Offer): OfferFormValues {
     salary: offer.salary ? String(Number(offer.salary)) : "",
     employmentType: offer.employmentType ?? "full_time",
     startDate: offer.startDate ?? "",
+    expiresOn: offer.expiresAt ? toDateInput(new Date(offer.expiresAt)) : "",
     reportingManager: offer.reportingManager ?? "",
     benefits: offer.benefits ?? "",
     offerLetterHtml: offer.offerLetterHtml ?? "",
@@ -74,6 +106,7 @@ export function formValuesToPayload(values: OfferFormValues): Partial<Offer> {
     currency: values.currency || null,
     employmentType: values.employmentType,
     startDate: values.startDate || null,
+    expiresAt: endOfDay(values.expiresOn),
     reportingManager: values.reportingManager.trim() || null,
     benefits: values.benefits.trim() || null,
     offerLetterHtml: values.offerLetterHtml.trim() || null,

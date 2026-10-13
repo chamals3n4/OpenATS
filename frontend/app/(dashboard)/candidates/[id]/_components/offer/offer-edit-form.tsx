@@ -21,6 +21,7 @@ import {
   EMPLOYMENT_LABELS,
   OFFER_FIELD_LABELS,
   getMissingFields,
+  toDateInput,
   type EmploymentType,
   type OfferFieldKey,
   type OfferFormValues,
@@ -224,7 +225,7 @@ export function OfferEditForm({
         </div>
       </Section>
 
-      <Section title="Role details" description="When and where the candidate starts.">
+      <Section title="Role details" description="When the candidate starts, and how long the offer stays open. After the respond-by date it can no longer be accepted.">
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="Start date" htmlFor={`${uid}-start`} required error={errorFor("startDate")}>
             <Input
@@ -232,6 +233,16 @@ export function OfferEditForm({
               type="date"
               value={values.startDate}
               onChange={(e) => set("startDate", e.target.value)}
+              className={inputCls}
+            />
+          </FormField>
+          <FormField label="Respond by (optional)" htmlFor={`${uid}-expires`} error={errorFor("expiresOn")}>
+            <Input
+              id={`${uid}-expires`}
+              type="date"
+              min={toDateInput(new Date())}
+              value={values.expiresOn}
+              onChange={(e) => set("expiresOn", e.target.value)}
               className={inputCls}
             />
           </FormField>

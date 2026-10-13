@@ -106,6 +106,8 @@ export type Company = {
   address: string | null;
   description: string | null;
   logoUrl: string | null;
+  /** IANA name, such as "Asia/Colombo". Dates and times in emails are written in this zone. */
+  timeZone: string;
   createdAt: string;
   updatedAt: string;
 };
@@ -418,6 +420,8 @@ export type Offer = {
     | "freelance"
     | null;
   startDate: string | null;
+  /** When the offer stops being open to accept or decline. Null means it never runs out. */
+  expiresAt?: string | null;
   expiryDate?: string | null;
   reportingManager: string | null;
   benefits: string | null;
@@ -533,6 +537,7 @@ export type PublicOfferView = {
     | "freelance"
     | null;
   startDate: string | null;
+  expiresAt: string | null;
   reportingManager: string | null;
   benefits: string | null;
   offerLetterHtml: string | null;

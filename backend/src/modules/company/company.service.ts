@@ -21,6 +21,8 @@ export type UpdateCompanyInput = {
   address?: string | null | undefined;
   description?: string | null | undefined;
   logoUrl?: string | null | undefined;
+  /** IANA time zone name. Left out, the saved one is kept. */
+  timeZone?: string | undefined;
 };
 
 export type CreateDepartmentInput = {

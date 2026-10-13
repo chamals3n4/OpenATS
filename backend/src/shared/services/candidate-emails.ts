@@ -1,3 +1,4 @@
+import { formatEmailDate, formatEmailTime } from "./time-zone";
 import {
   emailButton,
   emailDetailRow,
@@ -29,25 +30,13 @@ export interface BuiltEmail {
 
 const typeLabel = (eventType: string) => (eventType === "onsite" ? "On-site" : "Virtual");
 
-function formatDate(d: Date): string {
-  return d.toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-function formatTime(d: Date): string {
-  // The zone is included so the time cannot be misread.
-  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZoneName: "short" });
-}
-
 const hello = (name: string) => emailParagraph(`Hello ${escapeHtml(name)},`);
 
 /** What every builder takes besides its own details. */
 interface Common {
   companyName: string;
+  /** The company's time zone, for any date or time in the email. Left out, UTC. */
+  timeZone?: string | undefined;
   /** The wording to use. Left out, the built-in wording is used. */
   content?: SystemEmailContent | undefined;
 }
@@ -99,7 +88,7 @@ export function assessmentInviteEmail(
       after: [
         emailDetails([
           emailDetailRow("Assessment", escapeHtml(input.assessmentTitle)),
-          emailDetailRow("Open until", formatDate(input.expiresAt)),
+          emailDetailRow("Open until", formatEmailDate(input.expiresAt, input.timeZone)),
         ]),
         emailButton(input.inviteUrl, "Start the assessment"),
         emailLinkFallback(input.inviteUrl),
@@ -204,11 +193,11 @@ export function interviewConfirmedEmail(
     { candidate_name: input.candidateName, event_name: input.eventName },
     {
       heading: "Your interview is confirmed",
-      subtitle: `${formatDate(input.scheduledAt)} · ${formatTime(input.scheduledAt)}`,
+      subtitle: `${formatEmailDate(input.scheduledAt, input.timeZone)} · ${formatEmailTime(input.scheduledAt, input.timeZone)}`,
       after: [
         emailDetails([
-          emailDetailRow("Date", formatDate(input.scheduledAt)),
-          emailDetailRow("Time", formatTime(input.scheduledAt)),
+          emailDetailRow("Date", formatEmailDate(input.scheduledAt, input.timeZone)),
+          emailDetailRow("Time", formatEmailTime(input.scheduledAt, input.timeZone)),
           emailDetailRow("Duration", `${input.durationMinutes} minutes`),
           emailDetailRow("Interview type", typeLabel(input.eventType)),
           ...(input.location ? [emailDetailRow("Location", escapeHtml(input.location))] : []),
@@ -234,8 +223,8 @@ export function interviewCancelledEmail(
       after: input.scheduledAt
         ? [
             emailDetails([
-              emailDetailRow("Cancelled date", formatDate(input.scheduledAt)),
-              emailDetailRow("Cancelled time", formatTime(input.scheduledAt)),
+              emailDetailRow("Cancelled date", formatEmailDate(input.scheduledAt, input.timeZone)),
+              emailDetailRow("Cancelled time", formatEmailTime(input.scheduledAt, input.timeZone)),
             ]),
           ]
         : [],

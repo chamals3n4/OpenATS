@@ -295,6 +295,13 @@
       "when": 1791900397817,
       "tag": "0041_resume_uploads",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1791906747215,
+      "tag": "0042_scheduling_offers_time_zone",
+      "breakpoints": true
     }
   ]
 }

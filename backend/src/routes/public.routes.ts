@@ -20,13 +20,15 @@ import {
   acceptPublicOffer,
   declinePublicOffer,
   getPublicOfferByToken,
+  markPublicOfferViewed,
 } from "../modules/offer/offer.controller";
 import { db } from "../db";
 import { candidates, jobs, candidateInterviews } from "../db/schema";
-import { and, eq, ne } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import rateLimit from "express-rate-limit";
 import logger from "../utils/logger";
 import { completeInterviewBooking } from "../modules/interview/interview-confirm";
+import { getBusyRanges, isInterviewClash, overlapsBusy } from "../modules/interview/interview-slots";
 import { getErrorMessage } from "../utils/error.utils";
 
 const router: Router = Router();
@@ -146,40 +148,9 @@ router.post(
 
 // public offer portal (token based)
 router.get("/offers/:token", publicReadLimiter, getPublicOfferByToken);
+router.post("/offers/:token/viewed", publicWriteLimiter, markPublicOfferViewed);
 router.post("/offers/:token/accept", publicWriteLimiter, acceptPublicOffer);
 router.post("/offers/:token/decline", publicWriteLimiter, declinePublicOffer);
-
-// Times already taken by other confirmed interviews (same interviewer, or any if unassigned)
-async function getTakenTimes(
-  excludeInterviewId: number,
-  interviewerId: number | null,
-): Promise<Set<number>> {
-  const rows = await db
-    .select({
-      scheduledAt: candidateInterviews.scheduledAt,
-      interviewerId: candidateInterviews.interviewerId,
-    })
-    .from(candidateInterviews)
-    .where(
-      and(
-        eq(candidateInterviews.status, "scheduled"),
-        ne(candidateInterviews.id, excludeInterviewId),
-      ),
-    );
-  const taken = new Set<number>();
-  for (const r of rows) {
-    if (!r.scheduledAt) continue;
-    if (
-      interviewerId != null &&
-      r.interviewerId != null &&
-      r.interviewerId !== interviewerId
-    ) {
-      continue;
-    }
-    taken.add(r.scheduledAt.getTime());
-  }
-  return taken;
-}
 
 // Public interview slot selection (no auth)
 router.get("/interview/:token", publicReadLimiter, async (req, res) => {
@@ -222,14 +193,15 @@ router.get("/interview/:token", publicReadLimiter, async (req, res) => {
       return;
     }
 
-    const takenTimes = await getTakenTimes(iv.id, iv.interviewerId);
+    const busy = await getBusyRanges(iv.id, iv.interviewerId);
     const slots = (iv.timeSlots ?? []) as Array<{
       datetime: string;
       selected: boolean;
     }>;
+    // Taken when any part of the interview would overlap another one, not only on an equal start.
     const timeSlots = slots.map((s) => ({
       ...s,
-      taken: takenTimes.has(new Date(s.datetime).getTime()),
+      taken: overlapsBusy(new Date(s.datetime), iv.durationMinutes, busy),
     }));
 
     const { interviewerId: _interviewerId, ...publicIv } = iv;
@@ -306,34 +278,48 @@ router.patch(
         return;
       }
 
-      const takenTimes = await getTakenTimes(iv.id, iv.interviewerId);
-      if (takenTimes.has(scheduledAt.getTime())) {
+      const slotTaken = () =>
         res.status(409).json({
           error:
             "This time slot is no longer available. Please pick a different time.",
           code: "SLOT_TAKEN",
         });
+
+      const busy = await getBusyRanges(iv.id, iv.interviewerId);
+      if (overlapsBusy(scheduledAt, iv.durationMinutes, busy)) {
+        slotTaken();
         return;
       }
 
       selectedSlot.selected = true;
 
-      // Claim first so concurrent confirms can't double-book
-      const claimed = await db
-        .update(candidateInterviews)
-        .set({
-          timeSlots: slots,
-          status: "scheduled",
-          scheduledAt,
-          updatedAt: new Date(),
-        })
-        .where(
-          and(
-            eq(candidateInterviews.id, iv.id),
-            eq(candidateInterviews.status, "pending_schedule"),
-          ),
-        )
-        .returning({ id: candidateInterviews.id });
+      // The check above and this write are two steps, so two candidates could both pass the
+      // check for the same time. The database constraint lets only one of the writes through;
+      // the other is told the slot is taken, like anyone who was a little later.
+      let claimed: Array<{ id: number }>;
+      try {
+        claimed = await db
+          .update(candidateInterviews)
+          .set({
+            timeSlots: slots,
+            status: "scheduled",
+            scheduledAt,
+            updatedAt: new Date(),
+          })
+          .where(
+            and(
+              eq(candidateInterviews.id, iv.id),
+              eq(candidateInterviews.status, "pending_schedule"),
+            ),
+          )
+          .returning({ id: candidateInterviews.id });
+      } catch (error) {
+        if (isInterviewClash(error)) {
+          slotTaken();
+          return;
+        }
+        throw error;
+      }
 
       if (claimed.length === 0) {
         res

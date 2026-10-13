@@ -9,6 +9,7 @@ import {
 } from "./candidate.service";
 import { jobService } from "../job/job.service";
 import { r2Service } from "../../shared/services/r2.service";
+import { resumeContentDisposition } from "./resume-filename";
 import { socketService } from "../../shared/services/socket.service";
 import { parseMinScore, parseMinYears } from "./candidate-query";
 import { aiSettingsService } from "../settings/ai-settings.service";
@@ -33,10 +34,10 @@ const candidateApplySchema = z.object({
   lastName: z.string().min(1, "Last name is required").max(100),
   email: z.string().email("Invalid email address").max(255),
   phone: z.string().max(50).optional().nullable(),
-  resumeUrl: z
+  // The key POST /public/upload/resume gave back for the uploaded file. Never a URL.
+  resumeKey: z
     .string()
-    .url("Invalid resume URL")
-    .max(1000)
+    .refine((key) => r2Service.isResumeKey(key), "Upload the CV again")
     .optional()
     .nullable(),
   customAnswers: z.array(customAnswerSchema).optional(),
@@ -112,13 +113,13 @@ export const applyForJob = async (req: Request, res: Response) => {
     const result = await candidateService.apply(jobId, parsed.data);
 
     logger.info(
-      `New application submitted: candidateId=${result.id}, email="${result.email}", jobId=${jobId}${result.resumeUrl ? ", hasResume=true" : ""}`,
+      `New application submitted: candidateId=${result.id}, email="${result.email}", jobId=${jobId}${result.resumeKey ? ", hasResume=true" : ""}`,
     );
 
-    if (result.resumeUrl) {
+    if (result.resumeKey) {
       requestCvExtraction({
         candidateId: result.id,
-        resumeUrl: result.resumeUrl,
+        resumeKey: result.resumeKey,
       }).catch((err) =>
         logger.error(
           `Failed to enqueue CV text extraction for candidateId=${result.id}: ${getErrorMessage(err)}`,
@@ -127,7 +128,7 @@ export const applyForJob = async (req: Request, res: Response) => {
       requestCvAnalysis({
         candidateId: result.id,
         jobId: result.jobId,
-        resumeUrl: result.resumeUrl,
+        resumeKey: result.resumeKey,
       }).catch((err) =>
         logger.error(
           `Failed to enqueue CV analysis for candidateId=${result.id}: ${getErrorMessage(err)}`,
@@ -287,14 +288,6 @@ export const getCandidateById = async (req: Request, res: Response) => {
       return;
     }
 
-    if (result.resumeUrl) {
-      await r2Service.ensureInlinePdf(result.resumeUrl).catch((error) => {
-        logger.warn(
-          `Unable to prepare inline CV preview for candidate ${id}: ${getErrorMessage(error)}`,
-        );
-      });
-    }
-
     const [blinded] = await blindForInterviewer(req.user, [result]);
     const hidden = blinded !== result;
     // While AI CV analysis is off, a saved analysis is kept but not sent, so it is hidden in fact
@@ -368,22 +361,22 @@ export const getCandidateResume = async (req: Request, res: Response) => {
       }
     }
 
-    const candidate = await candidateService.getById(id);
-    if (!candidate?.resumeUrl) {
+    // The file is sent by this server, straight from the private bucket. There is no link to the
+    // stored file, so nothing can be copied out of the dashboard and opened without signing in.
+    const file = await candidateService.getResumeFile(id);
+    const resume = file ? await r2Service.getResume(file.resumeKey) : null;
+    if (!file || !resume) {
       res.status(404).json({ error: "Resume not found" });
       return;
     }
 
-    const resume = await r2Service.getPdfByUrl(candidate.resumeUrl);
-    if (!resume) {
-      res.status(404).json({ error: "Resume not found" });
-      return;
-    }
-
-    res.setHeader("Content-Type", resume.contentType);
-    res.setHeader("Content-Disposition", "inline");
+    res.setHeader("Content-Type", "application/pdf");
+    res.setHeader(
+      "Content-Disposition",
+      resumeContentDisposition(file.firstName, file.lastName),
+    );
     res.setHeader("Cache-Control", "private, max-age=300");
-    res.send(Buffer.from(resume.body));
+    res.send(resume);
   } catch (error) {
     logger.error(
       `Failed to stream candidate resume id=${req.params.id}: ${getErrorMessage(error)}`,
@@ -560,6 +553,7 @@ export const updateCandidateBasicDetails = async (
       res.status(404).json({ error: "Candidate not found" });
       return;
     }
+    const oldResumeKey = (await candidateService.getResumeFile(id))?.resumeKey ?? null;
 
     const normalizedBody = {
       firstName: req.body?.firstName,
@@ -592,43 +586,39 @@ export const updateCandidateBasicDetails = async (
       return;
     }
 
-    let newResumeUrl: string | undefined;
+    let newResumeKey: string | undefined;
     if (req.file) {
       if (req.file.mimetype !== "application/pdf") {
         res.status(400).json({ error: "Only PDF files are allowed" });
         return;
       }
 
-      newResumeUrl = await r2Service.uploadFile(req.file, "resumes");
+      newResumeKey = await r2Service.uploadResume(req.file);
     }
 
     const updated = await candidateService.updateBasicDetails(id, {
       ...parsed.data,
-      ...(newResumeUrl ? { resumeUrl: newResumeUrl } : {}),
+      ...(newResumeKey ? { resumeKey: newResumeKey } : {}),
     });
 
     if (!updated) {
-      if (newResumeUrl) {
-        await r2Service.deleteByUrl(newResumeUrl).catch(() => undefined);
+      if (newResumeKey) {
+        await r2Service.deleteResume(newResumeKey).catch(() => undefined);
       }
       res.status(404).json({ error: "Candidate not found" });
       return;
     }
 
-    if (
-      newResumeUrl &&
-      existing.resumeUrl &&
-      existing.resumeUrl !== newResumeUrl
-    ) {
-      await r2Service.deleteByUrl(existing.resumeUrl).catch((err) => {
+    if (newResumeKey && oldResumeKey && oldResumeKey !== newResumeKey) {
+      await r2Service.deleteResume(oldResumeKey).catch((err) => {
         logger.error("Failed to delete old resume from storage:", err);
       });
     }
 
-    if (newResumeUrl) {
+    if (newResumeKey) {
       requestCvExtraction({
         candidateId: updated.id,
-        resumeUrl: newResumeUrl,
+        resumeKey: newResumeKey,
       }).catch((err) =>
         logger.error(
           `Failed to enqueue CV text extraction for candidateId=${updated.id}: ${getErrorMessage(err)}`,
@@ -637,7 +627,7 @@ export const updateCandidateBasicDetails = async (
       requestCvAnalysis({
         candidateId: updated.id,
         jobId: updated.jobId,
-        resumeUrl: newResumeUrl,
+        resumeKey: newResumeKey,
       }).catch((err) =>
         logger.error(
           `Failed to enqueue CV analysis for candidateId=${updated.id}: ${getErrorMessage(err)}`,
@@ -646,9 +636,10 @@ export const updateCandidateBasicDetails = async (
     }
 
     logger.info(
-      `Candidate details updated: id=${id}${newResumeUrl ? ", resumeReplaced=true" : ""} by user ${req.user?.id}`,
+      `Candidate details updated: id=${id}${newResumeKey ? ", resumeReplaced=true" : ""} by user ${req.user?.id}`,
     );
-    res.status(200).json({ data: updated });
+    const { resumeKey, ...details } = updated;
+    res.status(200).json({ data: { ...details, hasResume: resumeKey !== null } });
   } catch (error) {
     logger.error(
       `Failed to update candidate details id=${req.params.id} - user ${req.user?.id}: ${getErrorMessage(error)}`,

@@ -80,7 +80,8 @@ export function JobApplicationForm({
 
   const [resumeFile, setResumeFile] = useState<File | null>(null);
   const [resumeUploading, setResumeUploading] = useState(false);
-  const [resumeUrl, setResumeUrl] = useState<string | null>(null);
+  // What the upload gives back for the file. It is named in the application, and is not a link.
+  const [resumeKey, setResumeKey] = useState<string | null>(null);
   const [resumeError, setResumeError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -107,7 +108,7 @@ export function JobApplicationForm({
   const handleResumeChange = async (file: File) => {
     setResumeFile(file);
     setResumeError(null);
-    setResumeUrl(null);
+    setResumeKey(null);
     setResumeUploading(true);
     try {
       const form = new FormData();
@@ -120,8 +121,8 @@ export function JobApplicationForm({
         const err = await res.json().catch(() => ({}));
         throw new Error((err as { error?: string }).error ?? "Upload failed");
       }
-      const data = (await res.json()) as { data: { url: string } };
-      setResumeUrl(data.data.url);
+      const data = (await res.json()) as { data: { key: string } };
+      setResumeKey(data.data.key);
     } catch (e: unknown) {
       setResumeError(e instanceof Error ? e.message : "Upload failed");
       setResumeFile(null);
@@ -156,7 +157,7 @@ export function JobApplicationForm({
           lastName,
           email,
           phone: phoneNumber ? phoneNumber : undefined,
-          resumeUrl: resumeUrl ?? undefined,
+          resumeKey: resumeKey ?? undefined,
           customAnswers,
         }),
       });
@@ -324,7 +325,7 @@ export function JobApplicationForm({
                 >
                   {resumeUploading ? (
                     "Uploading…"
-                  ) : resumeUrl ? (
+                  ) : resumeKey ? (
                     <span className="truncate max-w-[280px]">
                       {resumeFile?.name} — click to replace
                     </span>

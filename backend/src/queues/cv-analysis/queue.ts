@@ -9,7 +9,7 @@ export const CV_ANALYSIS_QUEUE = "cv-analysis";
 export type CvAnalysisJobData = {
   candidateId: number;
   jobId: number;
-  resumeUrl: string;
+  resumeKey: string;
 };
 
 export const cvAnalysisQueue = new Queue<CvAnalysisJobData>(CV_ANALYSIS_QUEUE, {

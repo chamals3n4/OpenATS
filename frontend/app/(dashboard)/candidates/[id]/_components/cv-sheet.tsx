@@ -33,7 +33,7 @@ export function CvSheet({ open, onOpenChange, candidate }: CvSheetProps) {
             {candidate.firstName} {candidate.lastName} CV
           </SheetTitle>
           <div className="flex shrink-0 items-center gap-2">
-          {candidate.resumeUrl && (
+          {candidate.hasResume && (
             <Button
               render={
                 <a
@@ -59,7 +59,7 @@ export function CvSheet({ open, onOpenChange, candidate }: CvSheetProps) {
           </Button>
           </div>
         </SheetHeader>
-        {candidate.resumeUrl ? (
+        {candidate.hasResume ? (
           <ResumeScrollView candidateId={candidate.id} />
         ) : (
           <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 p-8 text-center">

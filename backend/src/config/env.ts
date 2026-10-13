@@ -14,6 +14,8 @@ export const envSchema = z.object({
   R2_ACCESS_KEY_ID: z.string().min(1, "R2_ACCESS_KEY_ID is required"),
   R2_SECRET_ACCESS_KEY: z.string().min(1, "R2_SECRET_ACCESS_KEY is required"),
   R2_BUCKET_NAME: z.string().min(1, "R2_BUCKET_NAME is required"),
+  // CVs. This bucket must have no public access; see r2.service.ts.
+  R2_PRIVATE_BUCKET_NAME: z.string().min(1, "R2_PRIVATE_BUCKET_NAME is required"),
   R2_PUBLIC_URL: z.string().min(1, "R2_PUBLIC_URL is required"),
 
   RESEND_API_KEY: z.string().min(1, "RESEND_API_KEY is required"),

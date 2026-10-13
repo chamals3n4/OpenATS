@@ -219,7 +219,8 @@ export type Candidate = {
   lastName: string;
   email: string;
   phone: string | null;
-  resumeUrl: string | null;
+  /** Whether a CV is on file. The file itself is only served by /api/candidates/:id/resume. */
+  hasResume: boolean;
   jobId: number;
   currentStageId: number | null;
   status: "active" | "rejected" | "offered" | "hired" | "withdrawn";

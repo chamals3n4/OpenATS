@@ -36,7 +36,8 @@ export const candidates = pgTable(
     email: varchar("email", { length: 255 }).notNull(),
     phone: varchar("phone", { length: 50 }),
     // Cloudflare R2 URL
-    resumeUrl: varchar("resume_url", { length: 1000 }),
+    // The CV's key in the private bucket (resumes/<uuid>.pdf), not a URL. See r2.service.ts.
+    resumeKey: varchar("resume_key", { length: 1000 }),
 
     jobId: integer("job_id")
       .notNull()
@@ -278,7 +279,7 @@ export const candidateCvText = pgTable(
       .references(() => candidates.id, { onDelete: "cascade" }),
 
     // The file this text came from. A result for any other file is out of date and is not saved.
-    resumeUrl: varchar("resume_url", { length: 1000 }).notNull(),
+    resumeKey: varchar("resume_key", { length: 1000 }).notNull(),
 
     status: cvTextStatus("status").notNull().default("pending"),
     // "text" (read from the file) or "ocr" (read from page images).

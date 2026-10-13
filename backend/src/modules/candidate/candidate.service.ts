@@ -73,7 +73,7 @@ export interface CandidateApplyInput {
   lastName: string;
   email: string;
   phone?: string | null | undefined;
-  resumeUrl?: string | null | undefined;
+  resumeKey?: string | null | undefined;
   customAnswers?: CustomAnswerInput[] | undefined;
 }
 
@@ -133,8 +133,12 @@ export interface CandidateBasicUpdateInput {
   lastName?: string;
   email?: string;
   phone?: string | null;
-  resumeUrl?: string | null;
+  resumeKey?: string | null;
 }
+
+// Lists and the candidate page are told whether there is a CV, never where it is stored. The file
+// itself is only served by GET /candidates/:id/resume.
+const hasResume = sql<boolean>`${candidates.resumeKey} is not null`;
 
 function nameMatches(search: string) {
   // "%" and "_" mean "anything" to LIKE. Typed into a search box they are ordinary characters, so
@@ -447,7 +451,7 @@ export const candidateService = {
           lastName: candidates.lastName,
           email: candidates.email,
           phone: candidates.phone,
-          resumeUrl: candidates.resumeUrl,
+          hasResume: hasResume,
           jobId: candidates.jobId,
           currentStageId: candidates.currentStageId,
           status: candidates.status,
@@ -542,7 +546,7 @@ export const candidateService = {
         lastName: candidates.lastName,
         email: candidates.email,
         phone: candidates.phone,
-        resumeUrl: candidates.resumeUrl,
+        hasResume: hasResume,
         jobId: candidates.jobId,
         currentStageId: candidates.currentStageId,
         status: candidates.status,
@@ -894,6 +898,19 @@ export const candidateService = {
     );
   },
 
+  /** Where the CV is stored. Kept out of every other result, which only say whether there is one. */
+  async getResumeFile(id: number) {
+    const [candidate] = await db
+      .select({
+        resumeKey: candidates.resumeKey,
+        firstName: candidates.firstName,
+        lastName: candidates.lastName,
+      })
+      .from(candidates)
+      .where(eq(candidates.id, id));
+    return candidate?.resumeKey ? { ...candidate, resumeKey: candidate.resumeKey } : null;
+  },
+
   async updateBasicDetails(id: number, data: CandidateBasicUpdateInput) {
     const [existing] = await db
       .select()
@@ -911,7 +928,7 @@ export const candidateService = {
           lastName: data.lastName,
           email: data.email,
           phone: data.phone,
-          resumeUrl: data.resumeUrl,
+          resumeKey: data.resumeKey,
           updatedAt: new Date(),
         }),
       )

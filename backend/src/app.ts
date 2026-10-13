@@ -18,10 +18,15 @@ import { sql } from "drizzle-orm";
 import { db } from "./db";
 import { createRedisConnection } from "./config/redis";
 import logger from "./utils/logger";
+import { DEFAULT_TRUST_PROXY, parseTrustProxy } from "./config/env";
+import { getWorkerStatus } from "./queues/worker-status";
 
 const healthRedis = createRedisConnection();
 
 const app: Express = express();
+
+// Before anything reads req.ip: the request log and every per-IP rate limit depend on it.
+app.set("trust proxy", parseTrustProxy(process.env.TRUST_PROXY) ?? DEFAULT_TRUST_PROXY);
 
 app.use(helmet());
 
@@ -91,9 +96,18 @@ app.get("/health", async (req, res) => {
   }
 
   const healthy = Object.values(checks).every((v) => v === "ok");
+
+  // Reported, but not part of whether this server is healthy: the worker is another process, and
+  // restarting the API because the worker is down would fix nothing. A monitor can alert on it.
+  const worker = checks.redis === "ok" ? await getWorkerStatus() : "unknown";
+
   res.status(healthy ? 200 : 503).json({
     status: healthy ? "ok" : "degraded",
     checks,
+    worker,
+    ...(worker === "missing"
+      ? { warning: "No background worker is connected. CVs will not be read until it is started." }
+      : {}),
   });
 });
 

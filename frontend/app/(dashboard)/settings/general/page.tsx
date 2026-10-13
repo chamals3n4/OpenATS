@@ -1,6 +1,7 @@
 "use client";
 
 import { useCompany } from "@/hooks/queries/use-company";
+import { useWorkerStatus } from "@/hooks/queries/use-settings";
 import type { Company } from "@/types";
 import { CompanyForm } from "./_components/company-form";
 import { DepartmentsPanel } from "./_components/departments-panel";
@@ -27,6 +28,7 @@ export default function SettingsGeneralPage() {
     isError: companyError,
   } = useCompany();
   const company = companyData?.data;
+  const { data: workerStatus } = useWorkerStatus();
 
   return (
     <div className="flex flex-1 flex-col bg-slate-50/70 dark:bg-neutral-950">
@@ -40,6 +42,23 @@ export default function SettingsGeneralPage() {
               Your company profile, the departments you hire for, and AI CV analysis.
             </p>
           </header>
+
+          {workerStatus?.data.status === "missing" && (
+            <div
+              role="alert"
+              className="rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20"
+            >
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-300">
+                The background worker is not running
+              </p>
+              <p className="mt-1 text-sm text-amber-800 dark:text-amber-400">
+                CVs are not being read, so new candidates will not appear in CV search, and the
+                files of deleted candidates are not erased. Start the worker on the server
+                (<code>pnpm start:worker</code> in <code>backend</code>). Nothing is lost: it
+                catches up once it is running.
+              </p>
+            </div>
+          )}
 
           {companyLoading ? (
             <div className="grid items-start gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">

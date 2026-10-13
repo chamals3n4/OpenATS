@@ -25,7 +25,7 @@ import { useTemplates } from "@/hooks/queries/use-templates";
 import { InterviewSchedulerDialog } from "@/app/(dashboard)/interviews/_components/interview-scheduler-dialog";
 
 import { type SectionId, OFFER_STATUS_STYLES, SECTIONS } from "./_components/constants";
-import { useAiSettings } from "@/hooks/queries/use-settings";
+import { useAiSettings, useWorkerStatus } from "@/hooks/queries/use-settings";
 import { CandidateHeader } from "./_components/candidate-header";
 import { SectionTabs } from "./_components/section-tabs";
 import { CvSheet } from "./_components/cv-sheet";
@@ -83,6 +83,11 @@ export default function CandidateDetailPage({
   // The page opens on the first tab, the CV summary. The AI analysis tab exists only while AI CV
   // analysis is turned on in Settings; when it is off the tab is not listed at all.
   const { data: aiSettingsData, isLoading: aiSettingsLoading } = useAiSettings();
+  // Only asked when this CV is still waiting to be read, to say why if nothing is reading CVs.
+  const cvWaiting =
+    !!candidateData?.data.hasResume &&
+    (!candidateData.data.cvText || candidateData.data.cvText.status === "pending");
+  const { data: workerStatus } = useWorkerStatus({ enabled: cvWaiting });
   const aiActive = aiSettingsData?.data?.active ?? false;
   const sections = useMemo(
     () => SECTIONS.filter((section) => section.id !== "ai-analysis" || aiActive),
@@ -276,7 +281,11 @@ export default function CandidateDetailPage({
                 <AnswersSection candidate={candidate} />
               )}
               {activeSection === "cv-text" && (
-                <CvTextSection cvText={candidate.cvText ?? null} hasResume={candidate.hasResume} />
+                <CvTextSection
+                  cvText={candidate.cvText ?? null}
+                  hasResume={candidate.hasResume}
+                  workerMissing={workerStatus?.data.status === "missing"}
+                />
               )}
               {activeSection === "history" && (
                 <HistorySection candidate={candidate} stageMap={stageMap} />

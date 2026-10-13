@@ -133,7 +133,7 @@ AI CV analysis sends each candidate's CV to Google Gemini, which writes a summar
 
 2. **The switch in the app.** The feature is **off by default**, even with a key. A Super Admin or Hiring Manager turns it on under **Settings → General → AI CV analysis**. Without a key the switch is disabled and shows "Add a Gemini API key to use this".
 
-Keep the CV analysis worker running when this feature is on. Never expose this key through a `NEXT_PUBLIC_` variable.
+AI analysis runs in the background worker, which has to be running anyway (see step 11). Never expose this key through a `NEXT_PUBLIC_` variable.
 
 ## 9. Let interviewers connect Google (optional)
 
@@ -184,12 +184,14 @@ cd backend
 pnpm dev
 ```
 
-**Terminal 2: CV analysis worker**
+**Terminal 2: background worker (required)**
 
 ```sh
 cd backend
 pnpm dev:worker
 ```
+
+The worker is not optional. It reads the text of every uploaded CV, which is what CV search looks through, and erases the files of deleted candidates. Without it CVs stay "pending" for ever and nothing reports an error. **Settings > General** shows a warning when no worker is connected, and `GET /health` on the API reports `"worker": "missing"`.
 
 **Terminal 3: web application**
 
@@ -202,4 +204,4 @@ Open `http://localhost:3000`, sign in with the admin you created in step 10, and
 
 ## 12. Verify before inviting users
 
-Check that sign-in works, a job can be created, a resume can be uploaded, an email can be sent, and the CV worker is connected to Redis. Test each optional provider one at a time; this makes configuration problems much easier to isolate.
+Check that sign-in works, a job can be created, a resume can be uploaded, an email can be sent, and the background worker is running: open a candidate with a CV and check its **CV text** tab fills in within a few seconds. Test each optional provider one at a time; this makes configuration problems much easier to isolate.

@@ -212,3 +212,34 @@ describe("finding words in the CV summary", () => {
     expect(active()).toBe(0);
   });
 });
+
+describe("a CV that is waiting to be read", () => {
+  const cv = (status: CandidateCvText["status"], text: string | null = null): CandidateCvText => ({
+    status,
+    method: "text",
+    text,
+    pageCount: 1,
+  });
+
+  it("says it takes a few seconds while the background worker is running", () => {
+    render(<CvTextSection cvText={cv("pending", "")} hasResume />);
+    expect(screen.getByText(/usually takes a few seconds/)).toBeTruthy();
+  });
+
+  it("says what is wrong when the background worker is not running", () => {
+    render(<CvTextSection cvText={cv("pending", "")} hasResume workerMissing />);
+
+    expect(screen.getByText(/background worker, which is not running/)).toBeTruthy();
+    expect(screen.queryByText(/usually takes a few seconds/)).toBeNull();
+  });
+
+  it("says the same when the CV has not even been queued yet", () => {
+    render(<CvTextSection cvText={null} hasResume workerMissing />);
+    expect(screen.getByText(/background worker, which is not running/)).toBeTruthy();
+  });
+
+  it("does not blame the worker for a CV that was read", () => {
+    render(<CvTextSection cvText={cv("done", "Registered Nurse")} hasResume workerMissing />);
+    expect(screen.queryByText(/background worker/)).toBeNull();
+  });
+});

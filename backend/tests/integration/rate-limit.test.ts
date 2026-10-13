@@ -69,3 +69,31 @@ describe("assessment limits", () => {
     expect((await post("another-token/complete")).status).not.toBe(429);
   });
 });
+
+describe("limits per visitor behind a proxy", () => {
+  // A job that does not exist: each request is refused for that, and still counts toward the limit.
+  const applyFrom = (forwardedFor: string) =>
+    request(app)
+      .post("/public/jobs/2000000000/apply")
+      .set("X-Forwarded-For", forwardedFor)
+      .send({ firstName: "A", lastName: "B", email: "a@example.test" });
+
+  it("gives each visitor their own budget, read from the address the proxy passes on", async () => {
+    // Five applications in a quarter of an hour is the limit for one visitor.
+    for (let i = 0; i < 5; i++) {
+      expect((await applyFrom("203.0.113.10")).status).not.toBe(429);
+    }
+    expect((await applyFrom("203.0.113.10")).status).toBe(429);
+
+    // Someone else, through the same proxy, is not affected.
+    expect((await applyFrom("203.0.113.11")).status).not.toBe(429);
+  });
+
+  it("goes by the address the proxy added, not one the visitor wrote in themselves", async () => {
+    // The proxy appends the real address; anything before it was sent by the visitor.
+    for (let i = 0; i < 5; i++) {
+      expect((await applyFrom(`198.51.100.${i}, 203.0.113.20`)).status).not.toBe(429);
+    }
+    expect((await applyFrom("198.51.100.99, 203.0.113.20")).status).toBe(429);
+  });
+});

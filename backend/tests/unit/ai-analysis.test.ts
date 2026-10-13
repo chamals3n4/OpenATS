@@ -16,7 +16,7 @@ describe("the Gemini key is optional", () => {
     DATABASE_URL: "postgresql://u:p@localhost:5432/db",
     AUTH_JWKS_URL: "https://example.test/jwks",
     AUTH_ISSUER: "https://example.test/issuer",
-    ENCRYPTION_KEY: "key",
+    ENCRYPTION_KEY: Buffer.alloc(32, 7).toString("base64"),
     FRONTEND_URL: "http://localhost:3000",
     R2_ENDPOINT: "https://r2.example.test",
     R2_ACCESS_KEY_ID: "id",

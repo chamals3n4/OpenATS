@@ -9,7 +9,7 @@ import { startResumeDeleteWorker } from "./queues/resume-delete/worker";
 import logger from "./utils/logger";
 
 const workers = [startCvAnalysisWorker(), startCvExtractWorker(), startResumeDeleteWorker()];
-logger.info("CV analysis, CV text and CV file deletion workers started");
+logger.info("Background worker started: CV text, CV file deletion and AI CV analysis");
 
 async function shutdown(signal: string) {
   logger.info(`[worker] received ${signal}, shutting down gracefully...`);

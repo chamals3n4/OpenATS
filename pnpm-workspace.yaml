@@ -14,4 +14,3 @@ allowBuilds:
   protobufjs: true
   '@google/genai': true
   '@swc/core': false
-  tesseract.js: false

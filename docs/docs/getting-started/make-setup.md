@@ -49,7 +49,7 @@ To send invite and password reset emails, also put the Resend values in `fronten
 make dev
 ```
 
-This starts Docker infrastructure, the backend API and the frontend together. Open the web application at `http://localhost:3000` and sign in with the admin you created during setup.
+This starts Docker infrastructure, the backend API, the background worker and the frontend together. The worker is required: it reads the text of uploaded CVs. Open the web application at `http://localhost:3000` and sign in with the admin you created during setup.
 
 ## Manual fallback
 

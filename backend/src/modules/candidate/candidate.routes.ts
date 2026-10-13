@@ -15,7 +15,7 @@ import {
 } from "./candidate.controller";
 
 import { setCandidateRating } from "../scoring/scoring.controller";
-import { requireCandidateAccess } from "../../middlewares/job-access.middleware";
+import { requireCandidateView } from "../../middlewares/job-access.middleware";
 import { requireManager } from "../../middlewares/role.middleware";
 
 const router: Router = Router();
@@ -28,7 +28,9 @@ const upload = multer({
   },
 });
 
-router.post("/jobs/:jobId/apply", applyForJob);
+// Adding an application from inside the dashboard. Applicants use /public/jobs/:jobId/apply, which
+// has the origin check and its own limits; this one skips both, so it is for managers only.
+router.post("/jobs/:jobId/apply", requireManager, applyForJob);
 
 router.get("/", getCandidates);
 router.get("/jobs/:jobId/board", requireManager, getPipelineBoard);
@@ -36,7 +38,7 @@ router.get("/jobs/:jobId", getCandidates);
 router.get("/:id/resume", getCandidateResume);
 router.get("/:id/cv-text", getCandidateCvText);
 router.get("/:id", getCandidateById);
-router.put("/:id/rating", requireCandidateAccess("id"), setCandidateRating);
+router.put("/:id/rating", requireCandidateView("id"), setCandidateRating);
 router.patch("/:id", requireManager, upload.single("resume"), updateCandidateBasicDetails);
 // Before "/:id/stage", which would otherwise read "bulk" as an id.
 router.put("/bulk/stage", requireManager, bulkMoveCandidates);

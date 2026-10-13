@@ -126,9 +126,22 @@ export default function CandidatesPageClient() {
   const handleDeleteSelected = useCallback(
     async (ids: number[]) => {
       if (ids.length === 0) return false;
-      await Promise.all(ids.map((id) => deleteMutation.mutateAsync(id)));
+      try {
+        // The server takes at most 200 at a time.
+        let count = 0;
+        for (let start = 0; start < ids.length; start += 200) {
+          const { data } = await bulkDeleteMutation.mutateAsync({
+            candidateIds: ids.slice(start, start + 200),
+          });
+          count += data.count;
+        }
+        toast.success(`Deleted ${count} ${count === 1 ? "candidate" : "candidates"}`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to delete the candidates");
+        return false;
+      }
     },
-    [deleteMutation],
+    [bulkDeleteMutation],
   );
 
   const bulkRejectMutation = useBulkRejectCandidates();
@@ -152,12 +165,21 @@ export default function CandidatesPageClient() {
 
   const handleDeleteAllMatchingCandidates = useCallback(async () => {
     const total = pagination?.total ?? 0;
-    if (total === 0) return false;
-    await bulkDeleteMutation.mutateAsync({
-      jobId: selectedJobId,
-      search: debouncedSearch || undefined,
-      status: selectedStatus === "all" ? undefined : selectedStatus,
-    });
+    // Only ever within one job. Across all jobs, candidates have to be picked.
+    if (total === 0 || selectedJobId === undefined) return false;
+    try {
+      const { data } = await bulkDeleteMutation.mutateAsync({
+        jobId: selectedJobId,
+        search: debouncedSearch || undefined,
+        status: selectedStatus === "all" ? undefined : selectedStatus,
+        // The number in the dialog. The server deletes nothing if another number matches now.
+        expectedCount: total,
+      });
+      toast.success(`Deleted ${data.count} ${data.count === 1 ? "candidate" : "candidates"}`);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to delete the candidates");
+      return false;
+    }
   }, [
     bulkDeleteMutation,
     debouncedSearch,
@@ -257,9 +279,14 @@ export default function CandidatesPageClient() {
           pagination={pagination}
           onPageChange={setPage}
           onDeleteSelected={handleDeleteSelected}
-          // "Delete all matching" only knows job, search and status, so with a score, flag or
-          // experience filter on it would delete people the list is not showing. Picking rows still works.
-          onDeleteAllMatching={hasScoreFilters ? undefined : handleDeleteAllMatchingCandidates}
+          // "Delete all matching" works inside one job only, and only knows job, search and status:
+          // with no job picked, or with a score, flag or experience filter on, it would delete
+          // people the list is not showing. Picking rows still works.
+          onDeleteAllMatching={
+            hasScoreFilters || selectedJobId === undefined
+              ? undefined
+              : handleDeleteAllMatchingCandidates
+          }
           isDeletingSelected={
             deleteMutation.isPending || bulkDeleteMutation.isPending
           }

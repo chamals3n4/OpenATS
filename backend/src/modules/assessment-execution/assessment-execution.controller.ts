@@ -4,7 +4,7 @@ import { assessmentExecutionService, GradingError } from "./assessment-execution
 import { assessmentCompletedEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { socketService } from "../../shared/services/socket.service";
-import { canAccessCandidate } from "../../shared/auth/job-access";
+import { canViewCandidate } from "../../shared/auth/job-access";
 import { isPastDeadline } from "./grading";
 import logger from "../../utils/logger";
 import { getErrorMessage} from "../../utils/error.utils";
@@ -43,9 +43,9 @@ async function getAttemptByTokenOrFail(res: Response, token: string) {
   return attempt;
 }
 
-/** Answers 403 and returns false when the user is not on the candidate's job. */
+/** Answers 403 and returns false when the user may not see the candidate (an interviewer who is not on the job). */
 async function allowCandidate(req: Request, res: Response, candidateId: number, what: string) {
-  if (await canAccessCandidate(req.user, candidateId)) return true;
+  if (await canViewCandidate(req.user, candidateId)) return true;
   logger.warn(`[access] user ${req.user.id} denied ${what} for candidate ${candidateId}`);
   res.status(403).json({ error: "You do not have access to this resource" });
   return false;

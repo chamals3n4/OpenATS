@@ -4,6 +4,7 @@ import {
   candidateInterviews,
   candidates,
   jobs,
+  jobHiringTeam,
   jobPipelineStages,
   interviewFeedback,
   interviewFeedbackRatings,
@@ -71,8 +72,24 @@ export const interviewService = {
     search?: string;
     fromDate?: string;
     toDate?: string;
-  }) {
+  }, interviewerUserId?: number) {
     const conditions = [];
+
+    // The same rule as canViewInterview, for the whole list.
+    if (interviewerUserId) {
+      conditions.push(
+        or(
+          eq(candidateInterviews.interviewerId, interviewerUserId),
+          inArray(
+            candidateInterviews.jobId,
+            db
+              .select({ id: jobHiringTeam.jobId })
+              .from(jobHiringTeam)
+              .where(eq(jobHiringTeam.userId, interviewerUserId)),
+          ),
+        )!,
+      );
+    }
 
     if (filters?.jobId) {
       conditions.push(eq(candidateInterviews.jobId, filters.jobId));

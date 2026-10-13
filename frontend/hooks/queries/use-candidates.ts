@@ -26,12 +26,20 @@ type CandidateListResponse = {
   pagination?: CandidatePagination;
 };
 
-export type CandidateBulkDeleteFilters = {
-  jobId?: number;
-  stageId?: number;
-  search?: string;
-  status?: "active" | "rejected" | "offered" | "hired" | "withdrawn";
-};
+/**
+ * What a bulk delete removes: the candidates picked one by one, or everyone matching the list's
+ * filters in one job. The second form carries the number the person confirmed, and the server
+ * deletes nothing if a different number matches by then.
+ */
+export type CandidateBulkDelete =
+  | { candidateIds: number[] }
+  | {
+      jobId: number;
+      stageId?: number;
+      search?: string;
+      status?: "active" | "rejected" | "offered" | "hired" | "withdrawn";
+      expectedCount: number;
+    };
 
 export type CandidateFlagFilter =
   | "flagged"
@@ -250,15 +258,16 @@ export function useDeleteCandidate() {
 export function useBulkDeleteCandidates() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (filters: CandidateBulkDeleteFilters) =>
+    mutationFn: (what: CandidateBulkDelete) =>
       serverFetch<{ data: { count: number; ids: number[] } }>(
         "/candidates/bulk",
         {
           method: "DELETE",
-          body: JSON.stringify(filters),
+          body: JSON.stringify(what),
         },
       ),
-    onSuccess: () => {
+    // Also after a refusal: "a different number matches now" means the list on screen is stale.
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
       queryClient.invalidateQueries({ queryKey: ["offers"] });
     },

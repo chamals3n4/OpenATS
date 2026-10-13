@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { z } from "zod";
 import {
   candidateService,
+  BulkDeleteCountChangedError,
   DuplicateApplicationError,
   InvalidAnswerError,
   InvalidResumeUploadError,
@@ -16,7 +17,7 @@ import { parseMinScore, parseMinYears } from "./candidate-query";
 import { aiSettingsService } from "../settings/ai-settings.service";
 import { scoringService } from "../scoring/scoring.service";
 import { withholdInterviewScores } from "../scoring/scoring";
-import { canAccessCandidate } from "../../shared/auth/job-access";
+import { canViewCandidate } from "../../shared/auth/job-access";
 import logger from "../../utils/logger";
 
 import { requestCvAnalysis } from "../../queues/cv-analysis/queue";
@@ -63,14 +64,31 @@ const updateCandidateBasicSchema = z.object({
   phone: z.union([z.string().max(50), z.null()]).optional(),
 });
 
-const bulkDeleteCandidatesSchema = z.object({
-  jobId: z.number().int().positive().optional(),
-  stageId: z.number().int().positive().optional(),
-  search: z.string().trim().optional(),
-  status: z
-    .enum(["active", "rejected", "offered", "hired", "withdrawn"])
-    .optional(),
-});
+// A bulk delete has to say exactly what it deletes: either the candidates picked one by one, or
+// everyone matching the list's filters in ONE job together with the number the person confirmed.
+// There is no form that reaches across jobs, and an empty body is not "everything".
+const bulkDeleteCandidatesSchema = z.union([
+  z
+    .object({
+      candidateIds: z
+        .array(z.number().int().positive())
+        .min(1, "Pick at least one candidate")
+        .max(200, "Delete at most 200 candidates at a time")
+        .refine((ids) => new Set(ids).size === ids.length, "Candidate ids must be unique"),
+    })
+    .strict(),
+  z
+    .object({
+      jobId: z.number().int().positive("A job is required"),
+      stageId: z.number().int().positive().optional(),
+      search: z.string().trim().optional(),
+      status: z
+        .enum(["active", "rejected", "offered", "hired", "withdrawn"])
+        .optional(),
+      expectedCount: z.number().int().positive("Confirm how many candidates will be deleted"),
+    })
+    .strict(),
+]);
 
 /**
  * Anyone interviewing a candidate, whatever their role, sees no Interview part or total for them
@@ -267,13 +285,10 @@ export const getCandidateById = async (req: Request, res: Response) => {
       return;
     }
 
-    // Only `interviewer` is job-team-scoped elsewhere (getCandidates' own
-    // teamUserId filter above); hiring_manager/super_admin are company-wide
-    // by design everywhere else (jobs, interviews, offers). Keep that same
-    // split here — widening this check to every role would lock
-    // hiring_manager out of candidates outside their own hiring team.
-    if (req.user.role === "interviewer") {
-      const allowed = await canAccessCandidate(req.user, id);
+    // The rule in shared/auth/job-access.ts: an interviewer sees the candidates of their own
+    // jobs, a hiring manager or super admin sees every candidate.
+    {
+      const allowed = await canViewCandidate(req.user, id);
       if (!allowed) {
         logger.warn(`[access] user ${req.user.id} denied candidate ${id}`);
         res
@@ -317,8 +332,7 @@ export const getCandidateCvText = async (req: Request, res: Response) => {
       return;
     }
 
-    // The same split as getCandidateById: only an interviewer is limited to their own jobs.
-    if (req.user.role === "interviewer" && !(await canAccessCandidate(req.user, id))) {
+    if (!(await canViewCandidate(req.user, id))) {
       logger.warn(`[access] user ${req.user.id} denied candidate ${id}`);
       res.status(403).json({ error: "You do not have access to this resource" });
       return;
@@ -354,12 +368,9 @@ export const getCandidateResume = async (req: Request, res: Response) => {
       return;
     }
 
-    if (req.user.role === "interviewer") {
-      const allowed = await canAccessCandidate(req.user, id);
-      if (!allowed) {
-        res.status(403).json({ error: "You do not have access to this resource" });
-        return;
-      }
+    if (!(await canViewCandidate(req.user, id))) {
+      res.status(403).json({ error: "You do not have access to this resource" });
+      return;
     }
 
     // The file is sent by this server, straight from the private bucket. There is no link to the
@@ -473,23 +484,28 @@ export const bulkDeleteCandidates = async (req: Request, res: Response) => {
     const parsed = bulkDeleteCandidatesSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({
-        error: "Validation failed",
-        details: parsed.error.flatten().fieldErrors,
+        error: "Say which candidates to delete: a list of candidates, or a job and the number to delete",
       });
       return;
     }
 
-    const { jobId, stageId, search, status } = parsed.data;
-
-    logger.warn(
-      `Bulk candidate deletion requested: jobId=${jobId ?? "all"}, stageId=${stageId ?? "all"}, status=${status ?? "all"}, search="${search ?? ""}" by user ${req.user?.id}`,
-    );
-
-    const deleted = await candidateService.deleteManyByFilters(jobId, {
-      stageId,
-      search: search || undefined,
-      status,
-    });
+    let deleted: Array<{ id: number; jobId: number }>;
+    if ("candidateIds" in parsed.data) {
+      logger.warn(
+        `Bulk candidate deletion requested: ${parsed.data.candidateIds.length} picked candidate(s) by user ${req.user?.id}`,
+      );
+      deleted = await candidateService.deleteByIds(parsed.data.candidateIds);
+    } else {
+      const { jobId, stageId, search, status, expectedCount } = parsed.data;
+      logger.warn(
+        `Bulk candidate deletion requested: jobId=${jobId}, stageId=${stageId ?? "all"}, status=${status ?? "all"}, search=${search ? "yes" : "no"}, expected=${expectedCount} by user ${req.user?.id}`,
+      );
+      deleted = await candidateService.deleteManyByFilters(
+        jobId,
+        { stageId, search: search || undefined, status },
+        expectedCount,
+      );
+    }
 
     logger.info(
       `Bulk candidate deletion completed: count=${deleted.length} by user ${req.user?.id}`,
@@ -502,6 +518,11 @@ export const bulkDeleteCandidates = async (req: Request, res: Response) => {
       },
     });
   } catch (error) {
+    if (error instanceof BulkDeleteCountChangedError) {
+      // Nothing was deleted. The dashboard reloads the list and asks again with the new number.
+      res.status(409).json({ error: error.message, code: "COUNT_CHANGED", count: error.count });
+      return;
+    }
     logger.error(
       `Failed to bulk delete candidates - user ${req.user?.id}: ${getErrorMessage(error)}`,
     );

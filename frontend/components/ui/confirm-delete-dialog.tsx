@@ -25,6 +25,10 @@ type ConfirmDeleteDialogProps = {
   pendingLabel?: string;
   /** Overrides the confirm button colors, for non-delete actions such as publishing. */
   confirmClassName?: string;
+  /** Extra content under the description, such as a field that has to be filled in first. */
+  children?: React.ReactNode;
+  /** Keeps the confirm button off until the caller is satisfied (see `children`). */
+  confirmDisabled?: boolean;
   onClose: () => void;
   onConfirm: () => void;
 };
@@ -47,6 +51,8 @@ export function ConfirmDeleteDialog({
   confirmLabel = "Delete",
   pendingLabel,
   confirmClassName,
+  children,
+  confirmDisabled = false,
   onClose,
   onConfirm,
 }: ConfirmDeleteDialogProps) {
@@ -61,6 +67,7 @@ export function ConfirmDeleteDialog({
             {description}
           </AlertDialogDescription>
         </AlertDialogHeader>
+        {children}
         <AlertDialogFooter className="gap-2">
           <AlertDialogCancel
             disabled={isPending}
@@ -73,7 +80,7 @@ export function ConfirmDeleteDialog({
               e.preventDefault();
               onConfirm();
             }}
-            disabled={isPending}
+            disabled={isPending || confirmDisabled}
             className={cn(
               "inline-flex h-9 cursor-pointer items-center gap-2 rounded-md border-none bg-red-600 px-4 text-sm font-medium leading-none text-white shadow-none hover:bg-red-700 disabled:cursor-not-allowed disabled:opacity-70",
               confirmClassName,

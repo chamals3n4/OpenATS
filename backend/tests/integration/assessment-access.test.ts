@@ -27,8 +27,8 @@ import { initTestKeys, bearer } from "../helpers/jwt";
 import { isPastDeadline } from "../../src/modules/assessment-execution/grading";
 
 const SUFFIX = `aa${Date.now()}`;
-let memberAuth: string, outsiderAuth: string;
-let memberId: number, outsiderId: number;
+let memberAuth: string, outsiderAuth: string, offTeamInterviewerAuth: string;
+let memberId: number, outsiderId: number, offTeamInterviewerId: number;
 let companyId: number, departmentId: number, jobId: number, candidateId: number, assessmentId: number, questionId: number;
 let attemptId: number;
 const liveToken = `live-${SUFFIX}`;
@@ -43,6 +43,9 @@ beforeAll(async () => {
 
   const member = await bearer({ email: `member.${SUFFIX}@example.test`, role: "hiring_manager", firstName: "On", lastName: "Team" });
   const outsider = await bearer({ email: `outsider.${SUFFIX}@example.test`, role: "hiring_manager", firstName: "Off", lastName: "Team" });
+  const offTeamInterviewer = await bearer({ email: `interviewer.${SUFFIX}@example.test`, role: "interviewer", firstName: "Off", lastName: "Interviewer" });
+  offTeamInterviewerAuth = offTeamInterviewer.authorization;
+  offTeamInterviewerId = offTeamInterviewer.user.id;
   memberAuth = member.authorization;
   outsiderAuth = outsider.authorization;
   memberId = member.user.id;
@@ -102,7 +105,7 @@ afterAll(async () => {
   await db.delete(jobs).where(eq(jobs.id, jobId));
   await db.delete(departments).where(eq(departments.id, departmentId));
   await db.delete(company).where(eq(company.id, companyId));
-  await db.delete(users).where(inArray(users.id, [memberId, outsiderId]));
+  await db.delete(users).where(inArray(users.id, [memberId, outsiderId, offTeamInterviewerId]));
 });
 
 describe("who can see a candidate's assessments", () => {
@@ -113,17 +116,58 @@ describe("who can see a candidate's assessments", () => {
     expect((await get(`attempts/${attemptId}/results`, memberAuth)).status).toBe(200);
   });
 
-  it("refuses someone who is not on that job, even with a manager role", async () => {
-    expect((await get(`candidate/${candidateId}`, outsiderAuth)).status).toBe(403);
-    expect((await get(`attempts/${attemptId}/results`, outsiderAuth)).status).toBe(403);
+  it("lets a hiring manager who is not on that job, as for the rest of the candidate", async () => {
+    expect((await get(`candidate/${candidateId}`, outsiderAuth)).status).toBe(200);
+    expect((await get(`attempts/${attemptId}/results`, outsiderAuth)).status).toBe(200);
   });
 
-  it("refuses an invite from someone who is not on that job", async () => {
+  it("refuses an interviewer who is not on that job", async () => {
+    expect((await get(`candidate/${candidateId}`, offTeamInterviewerAuth)).status).toBe(403);
+    expect((await get(`attempts/${attemptId}/results`, offTeamInterviewerAuth)).status).toBe(403);
+  });
+});
+
+describe("the rest of what is stored about a candidate follows the same rule", () => {
+  const paths = () => [
+    `/api/candidates/${candidateId}`,
+    `/api/candidates/${candidateId}/emails`,
+    `/api/candidates/${candidateId}/interviews`,
+    `/api/candidates/${candidateId}/rejections`,
+  ];
+  const get = (path: string, auth: string) => request(app).get(path).set("Authorization", auth);
+
+  it("is open to a hiring manager who is not on the job", async () => {
+    for (const path of paths()) {
+      expect((await get(path, outsiderAuth)).status, path).toBe(200);
+    }
+  });
+
+  it("is closed to an interviewer who is not on the job", async () => {
+    for (const path of paths()) {
+      expect((await get(path, offTeamInterviewerAuth)).status, path).toBe(403);
+    }
+  });
+
+  it("lets a hiring manager who is not on the job rate the candidate", async () => {
     const res = await request(app)
-      .post("/api/assessment-execution/invite")
+      .put(`/api/candidates/${candidateId}/rating`)
       .set("Authorization", outsiderAuth)
-      .send({ candidateId, assessmentId });
+      .send({ rating: 4 });
+    expect(res.status).toBe(200);
+  });
+
+  it("does not let an interviewer who is not on the job rate the candidate", async () => {
+    const res = await request(app)
+      .put(`/api/candidates/${candidateId}/rating`)
+      .set("Authorization", offTeamInterviewerAuth)
+      .send({ rating: 4 });
     expect(res.status).toBe(403);
+  });
+
+  it("keeps the team chat to the hiring team, manager or not", async () => {
+    expect((await get(`/api/chat/candidate/${candidateId}`, memberAuth)).status).toBe(200);
+    expect((await get(`/api/chat/candidate/${candidateId}`, outsiderAuth)).status).toBe(403);
+    expect((await get(`/api/chat/job/${jobId}`, outsiderAuth)).status).toBe(403);
   });
 });
 

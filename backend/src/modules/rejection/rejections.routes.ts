@@ -1,11 +1,10 @@
 import { Router } from "express";
+import { requireCandidateView } from "../../middlewares/job-access.middleware";
 import { requireManager } from "../../middlewares/role.middleware";
 import { z } from "zod";
 import { rejectionService, RejectionError } from "./rejection.service";
-import { templateEngineService } from "../template/template-engine.service";
-import { variableService } from "../template/variable.service";
 import { db } from "../../db";
-import { templates, candidates } from "../../db/schema";
+import { candidates } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import logger from "../../utils/logger";
 import { getErrorMessage} from "../../utils/error.utils";
@@ -136,7 +135,7 @@ router.post("/candidates/:id/unreject", requireManager, async (req, res) => {
 });
 
 // GET /candidates/:id/rejections — get rejection history
-router.get("/candidates/:id/rejections", async (req, res) => {
+router.get("/candidates/:id/rejections", requireCandidateView("id"), async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
     if (isNaN(id)) {
@@ -149,52 +148,6 @@ router.get("/candidates/:id/rejections", async (req, res) => {
   } catch (error) {
     logger.error(`Failed to fetch rejections: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch rejections" });
-  }
-});
-
-// POST /templates/:id/preview — preview a rendered template for a candidate
-router.post("/templates/:id/preview", async (req, res) => {
-  try {
-    const templateId = parseInt((req.params.id ?? "").toString());
-    const candidateId = req.body?.candidateId
-      ? parseInt(req.body.candidateId)
-      : undefined;
-
-    if (isNaN(templateId)) {
-      res.status(400).json({ error: "Invalid template ID" });
-      return;
-    }
-
-    const [template] = await db
-      .select()
-      .from(templates)
-      .where(eq(templates.id, templateId));
-
-    if (!template) {
-      res.status(404).json({ error: "Template not found" });
-      return;
-    }
-
-    // Use candidate context if provided
-    const context = candidateId
-      ? await variableService.getContextForCandidate(candidateId)
-      : { candidate_name: "John Doe", job_title: "Software Engineer", company_name: "Your Company" };
-
-    const compiled = templateEngineService.compileTemplate(
-      template.subject,
-      template.bodyJson,
-      context,
-    );
-
-    res.status(200).json({
-      data: {
-        subject: compiled.subject,
-        html: compiled.html,
-      },
-    });
-  } catch (error) {
-    logger.error(`Failed to preview template: ${getErrorMessage(error)}`);
-    res.status(500).json({ error: "Failed to preview template" });
   }
 });
 

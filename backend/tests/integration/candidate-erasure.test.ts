@@ -122,7 +122,7 @@ describe("deleting many candidates", () => {
     const second = await makeCandidate(jobId, "bulk-b");
     const kept = await makeCandidate(otherJobId, "bulk-kept");
 
-    const deleted = await candidateService.deleteManyByFilters(jobId, {});
+    const deleted = await candidateService.deleteManyByFilters(jobId, {}, 2);
 
     expect(deleted.map((row) => row.id).sort()).toEqual([first.id, second.id].sort());
     expect(erasedKeys()).toEqual([first.resumeKey, second.resumeKey].sort());

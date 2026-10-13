@@ -47,14 +47,18 @@ The preview uses the same public jobs endpoint as the live page, so it is a usef
 
 ## Control which websites can request jobs
 
-The **Allowed origins** section protects the public API when you embed OpenATS in another website.
+The **Allowed origins** section limits which other websites can show your jobs and send applications from their own pages.
 
 1. In **Settings > Careers page**, find **Allowed origins**.
 2. Enter the origin of the website that will load OpenATS jobs, for example `https://careers.example.com` or `http://localhost:5173`.
 3. Select **Add**. Add each separate website or development origin that needs access.
 4. Remove an origin with its trash button, then select **Save origins**.
 
-An origin contains the scheme, host, and optional port. Do not enter a page path such as `/jobs`. Leave the list empty to allow requests from all origins. If an embedded listing is blocked by the browser, check that the page's exact origin, including its port in development, is present in this list.
+An origin contains the scheme, host, and optional port. Do not enter a page path such as `/jobs`. Leave the list empty to allow requests from all origins.
+
+The careers page that OpenATS serves itself always works, whatever is on the list. You do not need to add your OpenATS address. A change can take up to 30 seconds to apply.
+
+This setting stops other websites from embedding your jobs. It is not a security boundary: it relies on the origin a browser reports, and a request made without a browser (a script, `curl`) reports none and is let through. Everything behind it is already public: published jobs, their questions, and the application form. Abuse is held back by the rate limits, not by this list. If an embedded listing is blocked by the browser, check that the page's exact origin, including its port in development, is present in this list.
 
 ## Publish and unpublish roles
 

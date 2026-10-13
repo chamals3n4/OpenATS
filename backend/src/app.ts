@@ -9,7 +9,11 @@ import { errorMiddleware } from "./middlewares/error.middleware";
 import { swaggerUi, swaggerDocument } from "./config/swagger";
 import { authMiddleware } from "./middlewares/auth.middleware";
 import { apiLimiter } from "./middlewares/rate-limit.middleware";
-import { pageSettingsService } from "./modules/settings/page-settings.service";
+import {
+  frontendOrigin,
+  normalizeOrigin,
+  pageSettingsService,
+} from "./modules/settings/page-settings.service";
 import { sql } from "drizzle-orm";
 import { db } from "./db";
 import { createRedisConnection } from "./config/redis";
@@ -21,10 +25,6 @@ const app: Express = express();
 
 app.use(helmet());
 
-function normalizeOrigin(origin: string): string {
-  return origin.trim().replace(/\/$/, "");
-}
-
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -34,15 +34,13 @@ app.use(
       }
 
       const requestOrigin = normalizeOrigin(origin);
-      const fallbackFrontend = normalizeOrigin(
-        process.env.FRONTEND_URL ?? "http://localhost:3000",
-      );
 
-      if (requestOrigin === fallbackFrontend) {
+      if (requestOrigin === frontendOrigin()) {
         callback(null, true);
         return;
       }
 
+      // Cached in memory by the service, so this is not a database read per request.
       pageSettingsService
         .getAllowedOrigins()
         .then((origins) => {

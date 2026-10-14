@@ -6,7 +6,7 @@ import { useDragLayer } from "react-dnd";
 import { Button } from "@/components/ui/button";
 import type { BoardCandidate } from "@/types";
 import { useJob } from "@/hooks/queries/use-jobs";
-import { useCurrentUser } from "@/hooks/queries/use-user";
+import { RoleGuard } from "@/components/guards/role-guard";
 import { usePipeline } from "@/hooks/queries/use-pipeline";
 import { useJobAssessments } from "@/hooks/queries/use-assessments";
 import { useBoardCandidates } from "@/hooks/queries/use-candidates";
@@ -16,17 +16,17 @@ import { BulkActionBar } from "./_components/bulk-action-bar";
 import { BoardHeader } from "./_components/board-header";
 import { DragPreview } from "./_components/drag-preview";
 import { MoveConfirmDialog } from "./_components/move-confirm-dialog";
-import { useBoardMoves } from "./hooks/use-board-moves";
-import { useEdgeScroll } from "./hooks/use-edge-scroll";
+import { useBoardMoves } from "./_hooks/use-board-moves";
+import { useEdgeScroll } from "./_hooks/use-edge-scroll";
 import {
   EMPTY_FILTERS,
   hasCandidateFilters,
   matchesFilters,
   type BoardFilters,
-} from "./lib/board-filters";
-import { bulkMoveTargets, groupByStage, isFullyVisibleX, toFullIndex } from "./lib/board-utils";
+} from "./_lib/board-filters";
+import { bulkMoveTargets, groupByStage, isFullyVisibleX, toFullIndex } from "./_lib/board-utils";
 
-/** Re-reads the clock once a minute so "5m ago" on the cards does not go stale. */
+/** Update every minute so "5m ago" stays right */
 function useMinuteClock() {
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
@@ -36,25 +36,27 @@ function useMinuteClock() {
   return now;
 }
 
+// Interviewers do not get the board
 export default function HiringPipelinePage() {
+  const jobId = Number(useParams().id);
+  return (
+    <RoleGuard allow="manager" redirectTo={`/jobs/${jobId}`}>
+      <HiringPipeline />
+    </RoleGuard>
+  );
+}
+
+function HiringPipeline() {
   const jobId = Number(useParams().id);
   const router = useRouter();
 
-  const { data: currentUserRes, isLoading: isLoadingUser } = useCurrentUser();
   const { data: jobData, isLoading: isLoadingJob } = useJob(jobId);
-  const role = currentUserRes?.data?.role;
-  const isManager = role === "super_admin" || role === "hiring_manager";
 
   const { data: pipelineData, isLoading: isLoadingStages } = usePipeline(jobId);
-  const board = useBoardCandidates(jobId, { enabled: isManager });
+  const board = useBoardCandidates(jobId);
   const { data: assessmentData } = useJobAssessments(jobId);
 
   const job = jobData?.data;
-
-  // Interviewers do not get the board.
-  useEffect(() => {
-    if (role && !isManager) router.replace(`/jobs/${jobId}`);
-  }, [role, isManager, router, jobId]);
 
   useEffect(() => {
     if (!isLoadingJob && !job) router.replace("/jobs");
@@ -79,7 +81,7 @@ export default function HiringPipelinePage() {
 
   const now = useMinuteClock();
 
-  // Filters run on a deferred copy, so typing and picking stay instant even on a big board.
+  // Use a deferred copy so typing stays fast
   const [filters, setFilters] = useState<BoardFilters>(EMPTY_FILTERS);
   const patchFilters = useCallback(
     (patch: Partial<BoardFilters>) => setFilters((f) => ({ ...f, ...patch })),
@@ -105,14 +107,14 @@ export default function HiringPipelinePage() {
     return filtered;
   }, [byStage, deferred, isFiltering, now]);
 
-  // Only candidates in the columns on screen count as matches or can be selected.
+  // Only visible columns count
   const shownCandidates = useMemo(
     () => shownStages.flatMap((s) => visibleByStage.get(s.id) ?? []),
     [shownStages, visibleByStage],
   );
   const matchCount = isFiltering ? shownCandidates.length : null;
 
-  // Selection. What is selected but no longer shown (filtered out) is ignored, not remembered.
+  // Ignore selected cards that are filtered out
   const [selected, setSelected] = useState<ReadonlySet<number>>(new Set());
   const selectedIds = useMemo(() => {
     const shown = new Set(shownCandidates.map((c) => c.id));
@@ -158,7 +160,7 @@ export default function HiringPipelinePage() {
     [stages, shownCandidates, selectedIds],
   );
 
-  // The selected cards in the order they appear on the board, so they keep that order.
+  // Selected cards in board order
   const moveSelected = useCallback(
     (stageId: number) => {
       requestBulkMove(
@@ -169,7 +171,7 @@ export default function HiringPipelinePage() {
     [requestBulkMove, shownCandidates, selectedIds],
   );
 
-  // A slot counted among the cards shown becomes a slot in the whole column.
+  // Convert visible slot to column slot
   const moveVisible = useCallback(
     (candidateId: number, stageId: number, index: number) => {
       const full = byStage.get(stageId) ?? [];
@@ -186,9 +188,7 @@ export default function HiringPipelinePage() {
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  // A filter can match in a column that is scrolled out of view, so bring the first column with
-  // a match into view. It runs when that column changes, not on every keystroke, so it does not
-  // fight someone who scrolls away by hand while typing.
+  // Scroll to the first column with a match
   const firstMatchStageId = isFiltering
     ? (shownStages.find((s) => (visibleByStage.get(s.id)?.length ?? 0) > 0)?.id ?? null)
     : null;
@@ -206,7 +206,7 @@ export default function HiringPipelinePage() {
     });
   }, [firstMatchStageId]);
 
-  // Clearing the filters puts the board back at the first stage.
+  // Scroll back to the first stage after clearing
   const wasFiltering = useRef(false);
   useEffect(() => {
     if (wasFiltering.current && !isFiltering) {
@@ -217,8 +217,6 @@ export default function HiringPipelinePage() {
 
   const { isDragging } = useDragLayer((monitor) => ({ isDragging: monitor.isDragging() }));
   useEdgeScroll(scrollRef, isDragging);
-
-  if (isLoadingUser || !role || !isManager) return null;
 
   const isLoading = board.isPending || isLoadingStages;
 

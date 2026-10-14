@@ -1,5 +1,6 @@
 "use client";
 
+import { cloneElement, isValidElement } from "react";
 import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
 
@@ -50,6 +51,7 @@ const buttonVariants = cva(
   },
 );
 
+// Render links as real links, not as Base UI buttons
 function Button({
   className,
   variant = "default",
@@ -57,13 +59,22 @@ function Button({
   render,
   ...props
 }: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
+  const classes = cn(buttonVariants({ variant, size, className }), buttonPress);
+
+  if (isValidElement<{ className?: string }>(render) && render.type !== "button") {
+    // Pass only defined props, and skip nativeButton
+    const passed = Object.fromEntries(
+      Object.entries(props).filter(([key, value]) => key !== "nativeButton" && value !== undefined),
+    );
+    return cloneElement(render, {
+      "data-slot": "button",
+      ...passed,
+      className: cn(classes, render.props.className),
+    } as Record<string, unknown>);
+  }
+
   return (
-    <ButtonPrimitive
-      data-slot="button"
-      className={cn(buttonVariants({ variant, size, className }), buttonPress)}
-      render={render}
-      {...props}
-    />
+    <ButtonPrimitive data-slot="button" className={classes} render={render} {...props} />
   );
 }
 

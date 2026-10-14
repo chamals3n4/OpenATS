@@ -1,9 +1,24 @@
 "use client";
 
-import { CandidateAiAnalysis } from "@/components/dynamic-imports";
+import dynamic from "next/dynamic";
 import type { CandidateCvAnalysisPayload } from "@/types";
 
-/** Shown only while AI CV analysis is turned on in Settings. */
+// Load only when the tab opens
+const CandidateAiAnalysis = dynamic(
+  () => import("../candidate-ai-analysis").then((mod) => ({ default: mod.CandidateAiAnalysis })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="flex flex-col items-center justify-center gap-4 py-16 text-center px-4">
+        <p className="text-[13px] text-slate-500 dark:text-neutral-500">
+          Loading AI analysis…
+        </p>
+      </div>
+    ),
+  },
+);
+
+/** Only when AI analysis is on */
 export function AiAnalysisSection({
   hasResume,
   cvAnalysis,

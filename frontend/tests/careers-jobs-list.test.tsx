@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { CareersJobsList } from "@/app/careers/_components/careers-jobs-list";
-import type { CareerJobRow } from "@/app/careers/lib/careers-utils";
+import type { CareerJobRow } from "@/app/careers/_lib/careers-utils";
 
 const job = (id: number, over: Partial<CareerJobRow> = {}): CareerJobRow => ({
   id,

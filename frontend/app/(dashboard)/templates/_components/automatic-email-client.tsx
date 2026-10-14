@@ -14,7 +14,7 @@ import {
 import { useIsManager } from "@/hooks/use-role";
 import { TemplateFormHeader } from "./template-form/header";
 import { EmailBuilder } from "./template-form/email-builder";
-import { EmailPreviewPanel } from "./template-form/email-builder/email-preview";
+import { AutomaticEmailPreview } from "./automatic-email-preview";
 import { VariablesProvider } from "./template-form/email-builder/variables-context";
 
 const BACK = "/templates?tab=automatic";
@@ -33,7 +33,7 @@ export function AutomaticEmailClient({ purpose }: { purpose: string }) {
 
   if (isLoading) return <Message>Loading…</Message>;
   if (!email) return <Message>This automatic email does not exist.</Message>;
-  // Keyed, so the form starts again from the saved wording after a reset.
+  // Keyed so reset starts from the saved text
   return <AutomaticEmailForm key={`${email.purpose}-${email.updatedAt ?? "default"}`} email={email} />;
 }
 
@@ -117,7 +117,7 @@ function AutomaticEmailForm({ email }: { email: SystemEmail }) {
           </div>
 
           <div className="border-slate-200 lg:h-full lg:overflow-y-auto lg:border-l dark:border-neutral-800">
-            <EmailPreviewPanel subject={subject} bodyHtml={bodyHtml} appends={email.appends} />
+            <AutomaticEmailPreview purpose={email.purpose} subject={subject} bodyHtml={bodyHtml} />
           </div>
         </div>
 

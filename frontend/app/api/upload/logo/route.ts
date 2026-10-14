@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getApiToken } from "@/lib/session";
+import { getApiToken } from "@/lib/auth/session";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 

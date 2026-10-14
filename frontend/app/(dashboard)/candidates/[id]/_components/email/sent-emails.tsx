@@ -6,14 +6,13 @@ import { Mail01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useCandidateEmails } from "@/hooks/queries/use-candidate-emails";
-import { timeAgo } from "../constants";
-import { formatDateTime } from "../../lib/format-datetime";
-import { htmlToPlainText } from "../../lib/email-utils";
+import { formatDateTime, timeAgo } from "@/lib/format";
+import { htmlToPlainText } from "../../_lib/email-utils";
 import { SandboxedHtmlPreview } from "../sandboxed-html-preview";
 import { EmailMessageDialog } from "./email-message-dialog";
 import type { CandidateEmail } from "@/types";
 
-/** Emails the app sends by itself. A message someone typed has no label. */
+/** Label for automatic emails */
 const KIND_LABELS: Record<string, string> = {
   application_received: "Application received",
   assessment_invite: "Assessment invite",

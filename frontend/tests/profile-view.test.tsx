@@ -64,9 +64,10 @@ describe("ProfileView", () => {
     expect(screen.getByRole("img", { name: "Chamal Senarathna" }).getAttribute("src")).toBe("https://example.com/me.png");
   });
 
-  it("explains why the name and email cannot be edited here", () => {
+  it("says who manages the role and the email, and no longer says the name cannot be changed", () => {
     renderView();
-    expect(screen.getByText(/managed by your administrator/)).toBeTruthy();
+    expect(screen.getByText(/role and email are managed by your administrator/)).toBeTruthy();
+    expect(screen.queryByText(/name, email and role are managed/)).toBeNull();
   });
 
   it("no longer shows the username and country that came from the old sign-in provider", () => {
@@ -75,7 +76,7 @@ describe("ProfileView", () => {
     expect(screen.queryByText("Country")).toBeNull();
   });
 
-  it("renders extra sections under the account card", () => {
+  it("renders the sections it is given beside the account card", () => {
     render(
       <ProfileView {...base}>
         <section aria-label="Change password" />

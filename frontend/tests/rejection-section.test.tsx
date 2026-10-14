@@ -9,7 +9,7 @@ vi.mock("@/hooks/queries/use-user", () => ({
   }),
 }));
 const serverFetch = vi.fn();
-vi.mock("@/lib/auth-action", () => ({ serverFetch: (...a: unknown[]) => serverFetch(...a) }));
+vi.mock("@/lib/server-fetch", () => ({ serverFetch: (...a: unknown[]) => serverFetch(...a) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import { toast } from "sonner";

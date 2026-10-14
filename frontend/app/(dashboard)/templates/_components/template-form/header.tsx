@@ -6,7 +6,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Calendar02Icon, Cancel01Icon, Mail01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import type { TemplateType } from "../../lib/template-form-types";
+import type { TemplateType } from "../../_lib/template-form-types";
 
 const TYPE_COPY: Record<TemplateType, { icon: typeof Mail01Icon; kind: string; newTitle: string }> = {
   email: { icon: Mail01Icon, kind: "Email template", newTitle: "New email template" },
@@ -16,7 +16,7 @@ const TYPE_COPY: Record<TemplateType, { icon: typeof Mail01Icon; kind: string; n
 interface TemplateFormHeaderProps {
   templateType: TemplateType;
   mode: "new" | "edit";
-  /** The name as typed so far, shown as the title while editing. */
+  /** Name shown as the title */
   name: string;
   isPending: boolean;
   onSave: () => void;

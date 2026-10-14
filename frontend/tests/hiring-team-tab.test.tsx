@@ -6,7 +6,7 @@ let isManager = true;
 vi.mock("@/hooks/use-role", () => ({ useIsManager: () => isManager }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-import { HiringTeamTab } from "@/app/(dashboard)/jobs/[id]/_components/tabs/HiringTeamTab";
+import { HiringTeamTabView } from "@/app/(dashboard)/jobs/[id]/_components/tabs/hiring-team-tab";
 import type { HiringTeamMember, User } from "@/types";
 
 const user = (id: number, firstName: string, lastName: string, role: User["role"], isActive = true) =>
@@ -28,7 +28,7 @@ function Harness({ team = [member(ada)], open = false }: { team?: HiringTeamMemb
   const [isOpen, setOpen] = useState(open);
   const [id, setId] = useState("");
   return (
-    <HiringTeamTab
+    <HiringTeamTabView
       team={team}
       allUsers={[ada, grace, alan, gone]}
       addTeamMemberOpen={isOpen}
@@ -48,7 +48,7 @@ beforeEach(() => {
 });
 afterEach(cleanup);
 
-describe("HiringTeamTab", () => {
+describe("HiringTeamTabView", () => {
   it("lists each member with their email and a readable role", () => {
     render(<Harness />);
     expect(screen.getByText("Ada Lovelace")).toBeTruthy();
@@ -101,7 +101,7 @@ describe("HiringTeamTab", () => {
     const many = Array.from({ length: 40 }, (_, i) => user(50 + i, "Person", `Number${i}`, "interviewer"));
     const onlyZed = user(999, "Zed", "Last", "interviewer");
     render(
-      <HiringTeamTab
+      <HiringTeamTabView
         team={[]}
         allUsers={[...many, onlyZed]}
         addTeamMemberOpen

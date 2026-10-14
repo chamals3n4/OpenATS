@@ -11,10 +11,7 @@ type BulkDeleteDialogProps = {
   count: number;
   isPending?: boolean;
   isAllMatching?: boolean;
-  /**
-   * Makes the person type the number before Delete works. For "all matching", where the rows
-   * being deleted are mostly on pages they have not looked at.
-   */
+  /** Type the count to confirm a bulk delete */
   requireTypedCount?: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -31,7 +28,7 @@ export function BulkDeleteDialog({
   onConfirm,
 }: BulkDeleteDialogProps) {
   const [typed, setTyped] = useState("");
-  // Start empty each time the dialog opens, however it was closed.
+  // Reset when opened
   const [wasOpen, setWasOpen] = useState(isOpen);
   if (wasOpen !== isOpen) {
     setWasOpen(isOpen);

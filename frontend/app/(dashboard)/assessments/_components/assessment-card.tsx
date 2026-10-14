@@ -5,7 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Quiz01Icon, Time01Icon } from "@hugeicons/core-free-icons";
 import { RowDeleteButton, RowEditButton } from "@/components/table/row-actions";
 import { useIsManager } from "@/hooks/use-role";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import type { Assessment } from "@/types";
 
 interface AssessmentCardProps {
@@ -16,18 +16,18 @@ interface AssessmentCardProps {
 export function AssessmentCard({ assessment, onDelete }: AssessmentCardProps) {
   const isManager = useIsManager();
   const href = `/assessments/${assessment.id}`;
-  // The list endpoint sends a count; the detail endpoint sends the questions.
+  // List sends a count, detail sends the questions
   const questionCount =
     assessment.questionCount ?? assessment.questions?.length ?? 0;
 
   return (
-    <article className="relative flex h-full cursor-pointer flex-col rounded-lg border border-slate-300 bg-white shadow-none dark:border-neutral-700 dark:bg-neutral-900">
+    <article className="relative flex h-full cursor-pointer flex-col rounded-lg border border-slate-300 bg-white shadow-none transition-colors duration-300 ease-in-out hover:border-theme dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-theme">
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="space-y-1.5">
           <h2 className="text-base font-semibold leading-snug text-slate-900 dark:text-neutral-100">
             <Link
               href={href}
-              className="line-clamp-1 outline-none after:absolute after:inset-0 after:rounded-lg after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-theme"
+              className="line-clamp-1 cursor-pointer outline-none after:absolute after:inset-0 after:cursor-pointer after:rounded-lg after:content-[''] focus-visible:after:ring-2 focus-visible:after:ring-theme"
             >
               {assessment.title}
             </Link>

@@ -10,7 +10,7 @@ import {
   moveCard,
   moveEffects,
   timeAgo,
-} from "@/app/(dashboard)/jobs/[id]/pipeline/lib/board-utils";
+} from "@/app/(dashboard)/jobs/[id]/pipeline/_lib/board-utils";
 import type { BoardCandidate } from "@/types";
 
 const card = (id: number, stage: number | null, extra: Partial<BoardCandidate> = {}): BoardCandidate => ({

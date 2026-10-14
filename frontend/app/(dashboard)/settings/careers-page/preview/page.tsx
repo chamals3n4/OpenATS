@@ -31,7 +31,7 @@ function formatPosted(iso: string) {
     : date.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
 
-/** The raw data the public API returns, as a read-only list for managers. */
+/** Raw public API data */
 export default function CareersPreviewPage() {
   const [jobs, setJobs] = useState<ListRow[]>([]);
   const [loading, setLoading] = useState(true);

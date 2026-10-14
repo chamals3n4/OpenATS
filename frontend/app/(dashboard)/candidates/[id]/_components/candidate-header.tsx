@@ -21,7 +21,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { formatDate, OFFER_STATUS_STYLES } from "./constants";
+import { OFFER_STATUS_STYLES } from "./constants";
+import { formatDate } from "@/lib/format";
 import { useIsManager } from "@/hooks/use-role";
 import type { useMoveCandidateStage } from "@/hooks/queries/use-candidates";
 import type { CandidateDetail, Offer, PipelineStage } from "@/types";

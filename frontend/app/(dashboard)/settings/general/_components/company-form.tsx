@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,8 @@ import { useUpsertCompany, useUploadLogo } from "@/hooks/queries/use-company";
 import type { Company } from "@/types";
 import { FormField, inputCls } from "@/components/form/form-field";
 import { LogoField } from "./logo-field";
+import { SettingsSection } from "./settings-section";
+import { TimeZoneSelect } from "./time-zone-select";
 
 const DESCRIPTION_MAX = 500;
 const LOGO_MAX_BYTES = 10 * 1024 * 1024;
@@ -37,18 +40,7 @@ const toValues = (c: Company): Values => ({
   timeZone: c.timeZone || "UTC",
 });
 
-/** Every zone the browser knows, with UTC first. Falls back to a short list on an old browser. */
-function timeZoneOptions(current: string): string[] {
-  let zones: string[] = [];
-  try {
-    zones = Intl.supportedValuesOf("timeZone");
-  } catch {
-    zones = [];
-  }
-  return Array.from(new Set(["UTC", current, ...zones])).filter(Boolean);
-}
-
-/** Where the person setting the company up is, as a first suggestion. */
+/** Browser time zone as the default */
 function browserTimeZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -57,41 +49,22 @@ function browserTimeZone(): string {
   }
 }
 
-function Section({
-  title,
-  description,
-  children,
-}: {
-  title: string;
-  description: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <div className="space-y-4 border-t border-slate-200 px-6 py-6 first:border-t-0 dark:border-neutral-800">
-      <div>
-        <h3 className="text-sm font-semibold text-slate-900 dark:text-neutral-100">
-          {title}
-        </h3>
-        <p className="mt-0.5 text-sm text-slate-500 dark:text-neutral-400">
-          {description}
-        </p>
-      </div>
-      {children}
-    </div>
-  );
-}
+const FORM_ID = "company-profile-form";
 
 export function CompanyForm({
   company,
   isNew,
+  actionsSlot,
 }: {
   company: Company;
   isNew: boolean;
+  /** Where to render the buttons */
+  actionsSlot: HTMLElement | null;
 }) {
   const upsertCompany = useUpsertCompany();
   const uploadLogo = useUploadLogo();
 
-  // A new company starts on the zone of whoever is creating it, which is usually the right one.
+  // Default to the creator's time zone
   const [values, setValues] = useState<Values>(() =>
     isNew ? { ...toValues(company), timeZone: browserTimeZone() } : toValues(company),
   );
@@ -167,50 +140,82 @@ export function CompanyForm({
   const logoSrc = logoPreview ?? values.logoUrl;
 
   return (
-    <section className="overflow-hidden rounded-lg border border-slate-300 bg-white dark:border-neutral-700 dark:bg-neutral-900">
-      <div className="px-6 py-5">
-        <h2 className="text-base font-semibold text-slate-900 dark:text-neutral-100">
-          Company profile
-        </h2>
-        <p className="mt-0.5 text-sm text-slate-500 dark:text-neutral-400">
-          {isNew
-            ? "Add your company details to get started."
-            : "This information appears on your careers page and job listings."}
-        </p>
-      </div>
+    <form
+      id={FORM_ID}
+      noValidate
+      onSubmit={(event) => {
+        event.preventDefault();
+        handleSave();
+      }}
+    >
+      {/* Shown in the page title row */}
+      {actionsSlot &&
+        createPortal(
+          <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
+            {isDirty && !isNew && (
+              <p className="flex items-center gap-2 text-sm text-slate-600 dark:text-neutral-400">
+                <span aria-hidden className="size-2 rounded-full bg-amber-500" />
+                Unsaved changes
+              </p>
+            )}
+            {!isNew && (
+              <Button
+                type="button"
+                variant="cancel"
+                onClick={handleDiscard}
+                disabled={!isDirty || upsertCompany.isPending}
+                className="h-9 cursor-pointer px-4 text-sm disabled:cursor-not-allowed"
+              >
+                Cancel
+              </Button>
+            )}
+            <Button
+              type="submit"
+              form={FORM_ID}
+              disabled={upsertCompany.isPending || uploadLogo.isPending || (!isNew && !isDirty)}
+              className="h-9 cursor-pointer gap-2 border-none bg-theme px-4 text-sm font-semibold text-white hover:bg-theme-hover disabled:cursor-not-allowed"
+            >
+              {upsertCompany.isPending && <Spinner className="size-3.5" />}
+              {upsertCompany.isPending ? "Saving" : isNew ? "Create company" : "Save changes"}
+            </Button>
+          </div>,
+          actionsSlot,
+        )}
 
-      <Section title="Brand" description="How your company is identified.">
-        <LogoField
-          companyName={values.name}
-          logoSrc={logoSrc}
-          isUploading={uploadLogo.isPending}
-          onSelectFile={handleLogo}
-          onRemove={() => {
-            set("logoUrl", null);
-            setLogoPreview(null);
-          }}
-        />
-        <FormField
-          label="Company name"
-          htmlFor="company-name"
-          required
-          error={showErrors ? errors.name : null}
-        >
-          <Input
-            id="company-name"
-            value={values.name}
-            onChange={(e) => set("name", e.target.value)}
-            placeholder="Acme Inc."
-            className={inputCls}
-          />
-        </FormField>
-      </Section>
-
-      <Section
-        title="Contact"
-        description="Where candidates and your team can reach you."
+      <SettingsSection
+        title="Company profile"
+        description="The name and logo candidates see on your careers page, job listings and emails."
       >
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="space-y-5">
+          <LogoField
+            companyName={values.name}
+            logoSrc={logoSrc}
+            isUploading={uploadLogo.isPending}
+            onSelectFile={handleLogo}
+            onRemove={() => {
+              set("logoUrl", null);
+              setLogoPreview(null);
+            }}
+          />
+          <FormField
+            label="Company name"
+            htmlFor="company-name"
+            required
+            error={showErrors ? errors.name : null}
+          >
+            <Input
+              id="company-name"
+              value={values.name}
+              onChange={(e) => set("name", e.target.value)}
+              placeholder="Acme Inc."
+              className={inputCls}
+            />
+          </FormField>
+        </div>
+      </SettingsSection>
+
+      <SettingsSection title="Contact" description="Where candidates and your team can reach the company.">
+        <div className="grid gap-5 sm:grid-cols-2">
           <FormField
             label="Contact email"
             htmlFor="company-email"
@@ -255,32 +260,23 @@ export function CompanyForm({
             />
           </FormField>
         </div>
-      </Section>
+      </SettingsSection>
 
-      <Section
+      <SettingsSection
         title="Time zone"
         description="Interview times and other dates in emails to candidates are written in this time zone."
       >
         <FormField label="Company time zone" htmlFor="company-time-zone">
-          <select
+          <TimeZoneSelect
             id="company-time-zone"
             value={values.timeZone}
-            onChange={(e) => set("timeZone", e.target.value)}
-            className={`${inputCls} h-10 w-full rounded-md border px-3 sm:max-w-sm`}
-          >
-            {timeZoneOptions(values.timeZone).map((zone) => (
-              <option key={zone} value={zone}>
-                {zone.replace(/_/g, " ")}
-              </option>
-            ))}
-          </select>
+            onChange={(zone) => set("timeZone", zone)}
+            className="sm:max-w-sm"
+          />
         </FormField>
-      </Section>
+      </SettingsSection>
 
-      <Section
-        title="About"
-        description="A short introduction candidates see on your careers page."
-      >
+      <SettingsSection title="About" description="A short introduction candidates read on your careers page.">
         <FormField
           label="Description"
           htmlFor="company-description"
@@ -289,54 +285,14 @@ export function CompanyForm({
           <Textarea
             id="company-description"
             value={values.description}
-            onChange={(e) =>
-              set("description", e.target.value.slice(0, DESCRIPTION_MAX))
-            }
+            onChange={(e) => set("description", e.target.value.slice(0, DESCRIPTION_MAX))}
             placeholder="What does your company do, and what is it like to work there?"
             rows={4}
             className="min-h-28 resize-y border-slate-300 bg-gray-100 text-sm shadow-none dark:border-neutral-600 dark:bg-neutral-800"
           />
         </FormField>
-      </Section>
+      </SettingsSection>
 
-      <footer className="flex items-center justify-between gap-3 border-t border-slate-200 bg-slate-50 px-6 py-3.5 dark:border-neutral-800 dark:bg-neutral-950/50">
-        <p className="flex items-center gap-2 text-sm text-slate-600 dark:text-neutral-400">
-          {isDirty && !isNew && (
-            <>
-              <span className="size-2 rounded-full bg-amber-500" />
-              Unsaved changes
-            </>
-          )}
-        </p>
-        <div className="flex items-center gap-2">
-          {!isNew && (
-            <Button
-              variant="cancel"
-              onClick={handleDiscard}
-              disabled={!isDirty || upsertCompany.isPending}
-              className="h-9 px-4 text-sm"
-            >
-              Discard
-            </Button>
-          )}
-          <Button
-            onClick={handleSave}
-            disabled={
-              upsertCompany.isPending ||
-              uploadLogo.isPending ||
-              (!isNew && !isDirty)
-            }
-            className="h-9 gap-2 border-none bg-theme px-4 text-sm font-semibold text-white hover:bg-theme-hover"
-          >
-            {upsertCompany.isPending && <Spinner className="size-3.5" />}
-            {upsertCompany.isPending
-              ? "Saving"
-              : isNew
-                ? "Create company"
-                : "Save changes"}
-          </Button>
-        </div>
-      </footer>
-    </section>
+    </form>
   );
 }

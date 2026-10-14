@@ -3,13 +3,13 @@
 import { useMemo } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowUpRight01Icon, QuestionIcon, Tick02Icon } from "@hugeicons/core-free-icons";
-import { formatDate } from "../constants";
+import { formatDate } from "@/lib/format";
 import {
   asWebUrl,
   groupAnswers,
   isAnswered,
   type AnswerItem,
-} from "../../lib/answer-utils";
+} from "../../_lib/answer-utils";
 import type { CandidateDetail } from "@/types";
 
 function AnswerCard({ item, number }: { item: AnswerItem; number: number }) {

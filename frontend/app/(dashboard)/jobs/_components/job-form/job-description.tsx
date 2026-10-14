@@ -1,7 +1,22 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { Label } from "@/components/ui/label";
-import { JobDescriptionEditor } from "@/components/dynamic-imports";
+
+// Load the editor only in the browser
+const JobDescriptionEditor = dynamic(
+  () => import("../job-description-editor").then((mod) => ({ default: mod.JobDescriptionEditor })),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="min-h-[260px] border border-slate-200 dark:border-neutral-800 rounded-xl bg-white dark:bg-neutral-900 flex items-center justify-center">
+        <p className="text-[13px] text-slate-500 dark:text-neutral-500">
+          Loading editor…
+        </p>
+      </div>
+    ),
+  },
+);
 
 interface JobDescriptionSectionProps {
   value: string;

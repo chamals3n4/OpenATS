@@ -15,8 +15,7 @@ export function useCandidateSocket() {
 
     const socket = createAuthedSocket(token);
 
-    // What the candidate page shows is marked out of date, but not fetched while it is open: it
-    // loads fresh the next time the candidate is opened, and after your own saves.
+    // Mark the candidate stale but don't refetch while open
     const candidateChanged = (candidateId: number) => {
       queryClient.invalidateQueries({ queryKey: ["candidates", candidateId], exact: true, refetchType: "none" });
       queryClient.invalidateQueries({ queryKey: ["candidate-assessments", candidateId], refetchType: "none" });

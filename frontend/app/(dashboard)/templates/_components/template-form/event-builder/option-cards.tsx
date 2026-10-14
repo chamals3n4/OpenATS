@@ -11,7 +11,6 @@ export interface CardOption<T extends string> {
   icon: typeof Video01Icon;
 }
 
-/** A choice between a few options, each shown as a card with an icon and a line of help. */
 export function OptionCards<T extends string>({
   label,
   value,

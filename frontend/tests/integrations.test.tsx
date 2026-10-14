@@ -4,7 +4,7 @@ import { IntegrationRow } from "@/app/(dashboard)/settings/integrations/_compone
 import {
   VIDEO_MEETING_INTEGRATIONS,
   stateOf,
-} from "@/app/(dashboard)/settings/integrations/lib/integrations";
+} from "@/app/(dashboard)/settings/integrations/_lib/integrations";
 
 afterEach(cleanup);
 

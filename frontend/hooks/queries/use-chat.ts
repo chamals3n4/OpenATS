@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import type { ChatMessage } from "@/types";
 
 export function useChatHistory(jobId: number, enabled: boolean) {
@@ -7,6 +7,8 @@ export function useChatHistory(jobId: number, enabled: boolean) {
     queryKey: ["chat", "job", jobId],
     queryFn: () => serverFetch<{ data: ChatMessage[] }>(`/chat/job/${jobId}`),
     enabled: enabled && !!jobId,
+    // Always refetch when the panel opens
+    staleTime: 0,
   });
 }
 

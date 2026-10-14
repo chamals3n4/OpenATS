@@ -1,15 +1,16 @@
-import { serverFetch } from "@/lib/auth-action";
-import { getSession } from "@/lib/session";
+import { serverFetch } from "@/lib/server-fetch";
+import { getSession } from "@/lib/auth/session";
 import type { CurrentUser } from "@/types";
 import { ChangePasswordForm } from "./_components/change-password-form";
+import { ProfileDetailsForm } from "./_components/profile-details-form";
 import { ProfileView } from "./_components/profile-view";
 import {
   formatMemberSince,
   fullNameOf,
   humanizeRole,
-} from "./lib/profile-utils";
+} from "./_lib/profile-utils";
 
-/** The API's record of the user (join date, status). The page still works without it. */
+/** User record from the API. Optional */
 async function getCurrentUser(): Promise<CurrentUser | null> {
   try {
     return (await serverFetch<{ data: CurrentUser }>("/users/me")).data;
@@ -43,6 +44,7 @@ export default async function ProfilePage() {
       memberSince={formatMemberSince(me?.createdAt)}
       isActive={me ? me.isActive : null}
     >
+      <ProfileDetailsForm firstName={firstName ?? ""} lastName={lastName ?? ""} email={email} />
       <ChangePasswordForm />
     </ProfileView>
   );

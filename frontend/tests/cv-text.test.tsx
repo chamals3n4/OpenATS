@@ -1,9 +1,9 @@
 import { describe, it, expect, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 
-import { splitSnippet } from "@/app/(dashboard)/candidates/lib/candidate-utils";
+import { splitSnippet } from "@/app/(dashboard)/candidates/_lib/candidate-utils";
 import { CvTextSection, experienceLabel } from "@/app/(dashboard)/candidates/[id]/_components/sections/cv-text-section";
-import { countMatches, highlightParts, searchPattern } from "@/app/(dashboard)/candidates/[id]/lib/cv-highlight";
+import { countMatches, highlightParts, searchPattern } from "@/app/(dashboard)/candidates/[id]/_lib/cv-highlight";
 import type { CandidateCvText } from "@/types";
 
 afterEach(cleanup);

@@ -6,7 +6,7 @@ import {
   useMutation,
 } from "@tanstack/react-query";
 import type { Template, TemplateBody } from "@/types";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import type { PaginationInfo } from "@/components/table/table-footer";
 
 export type TemplateListParams = {
@@ -118,12 +118,12 @@ export function usePreviewTemplate() {
   });
 }
 
-/** One of the emails the app sends by itself, with the wording currently in use. */
+/** Automatic email with its current wording */
 export type SystemEmail = {
   purpose: string;
   label: string;
   description: string;
-  /** What the app adds after the message when it is sent, or null. */
+  /** Text added after the message, or null */
   appends: string | null;
   variables: { name: string; sample: string }[];
   subject: string;
@@ -137,6 +137,21 @@ export function useSystemEmails() {
     queryKey: ["templates", "system"],
     queryFn: () => serverFetch<{ data: SystemEmail[] }>("/templates/system"),
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+/** Automatic email preview built by the server */
+export function useSystemEmailPreview(purpose: string, content: { subject: string; bodyHtml: string }) {
+  return useQuery({
+    queryKey: ["templates", "system", purpose, "preview", content.subject, content.bodyHtml],
+    queryFn: () =>
+      serverFetch<{ data: { subject: string; html: string } }>(`/templates/system/${purpose}/preview`, {
+        method: "POST",
+        body: JSON.stringify(content),
+      }),
+    // Keep the old preview while loading
+    placeholderData: keepPreviousData,
+    staleTime: 1000 * 60,
   });
 }
 

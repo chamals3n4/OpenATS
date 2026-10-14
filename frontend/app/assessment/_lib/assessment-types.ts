@@ -37,11 +37,11 @@ export interface AttemptData {
     lastName: string;
     email: string;
   };
-  /** The company the assessment is from. Null when no company has been set up. */
+  /** Company, or null if not set up */
   company?: { name: string } | null;
   /** The position the candidate applied for. */
   jobTitle?: string | null;
-  /** Answers already saved for this attempt, so a reload carries on where it stopped. */
+  /** Saved answers so a reload continues */
   savedAnswers?: { questionId: number; answerText: string | null; optionIds: number[] }[];
 }
 

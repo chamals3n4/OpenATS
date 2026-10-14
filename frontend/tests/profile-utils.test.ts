@@ -4,7 +4,7 @@ import {
   fullNameOf,
   humanizeRole,
   initialsOf,
-} from "@/app/(dashboard)/settings/profile/lib/profile-utils";
+} from "@/app/(dashboard)/settings/profile/_lib/profile-utils";
 
 describe("humanizeRole", () => {
   it("names the app's roles properly", () => {

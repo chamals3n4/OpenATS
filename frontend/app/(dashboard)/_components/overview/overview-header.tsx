@@ -10,7 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { PERIODS, type Period } from "../../lib/overview-utils";
+import { PERIODS, type Period } from "../../_lib/overview-utils";
 
 interface OverviewHeaderProps {
   period: Period;

@@ -1,6 +1,6 @@
 import { Node, mergeAttributes } from "@tiptap/core";
 
-// Serializes to literal {{variable}} text so the backend's {{var}} regex substitution works.
+// Save as {{variable}} text for the backend
 export const VariableChip = Node.create({
   name: "variableChip",
   group: "inline",

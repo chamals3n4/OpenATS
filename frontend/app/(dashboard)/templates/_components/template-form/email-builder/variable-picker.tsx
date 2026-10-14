@@ -22,7 +22,7 @@ import { useVariableGroups } from "./variables-context";
 interface VariablePickerProps {
   onSelect: (variable: string) => void;
   disabled?: boolean;
-  /** Names what the variable goes into, for screen readers: "subject" or "body". */
+  /** Screen reader label: "subject" or "body" */
   target: string;
 }
 

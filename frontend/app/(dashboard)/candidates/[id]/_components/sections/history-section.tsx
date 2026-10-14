@@ -5,14 +5,13 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Clock01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { useUsers } from "@/hooks/queries/use-user";
 import { useIsManager } from "@/hooks/use-role";
-import { timeAgo } from "../constants";
-import { formatDateTime } from "../../lib/format-datetime";
-import { formatElapsed } from "../../lib/format-elapsed";
+import { formatDateTime, timeAgo } from "@/lib/format";
+import { formatElapsed } from "../../_lib/format-elapsed";
 import {
   buildTimeline,
   summarizeTimeline,
   type TimelineItem,
-} from "../../lib/stage-history-utils";
+} from "../../_lib/stage-history-utils";
 import type { CandidateDetail } from "@/types";
 
 function SectionHeader() {
@@ -126,7 +125,7 @@ export function HistorySection({
   stageMap: Record<number, string>;
 }) {
   const isManager = useIsManager();
-  // The users list is manager-only; other roles simply don't see who moved the candidate.
+  // Only managers can see who moved the candidate
   const { data: usersData } = useUsers({ enabled: isManager });
   const [now] = useState(() => Date.now());
 
@@ -147,7 +146,7 @@ export function HistorySection({
   );
   const summary = summarizeTimeline(timeline);
 
-  // Marking someone hired moves them to a "Hired" stage, which is the newest entry.
+  // Hired is the newest stage
   const isHiredEntry = (item: TimelineItem) =>
     (stageMap[item.stageId] ?? "").trim().toLowerCase() === "hired" ||
     (item.isCurrent && candidate.status === "hired");

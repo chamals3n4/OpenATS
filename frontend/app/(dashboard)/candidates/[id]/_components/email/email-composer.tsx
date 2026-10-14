@@ -32,12 +32,12 @@ import {
   splitParagraphs,
   templateHtmlToText,
   validateEmail,
-} from "../../lib/email-utils";
+} from "../../_lib/email-utils";
 import type { CandidateDetail } from "@/types";
 
 export function EmailComposer({ candidate }: { candidate: CandidateDetail }) {
   const send = useSendCandidateEmail(candidate.id);
-  // Replies are addressed to whoever sends, so say so before they do.
+  // Replies go to the sender
   const { data: meData } = useCurrentUser();
   const replyAddress = meData?.data?.email;
   const [subject, setSubject] = useState("");
@@ -52,7 +52,7 @@ export function EmailComposer({ candidate }: { candidate: CandidateDetail }) {
   const { data: companyData } = useCompany();
   const emailTemplates = (templatesData?.data ?? []).filter((t) => t.type === "email");
   const templateItems = emailTemplates.map((t) => ({ value: String(t.id), label: t.name }));
-  // A template picked while there is already text, waiting for a yes before it replaces it.
+  // Template waiting for confirm before replacing text
   const [pendingTemplateId, setPendingTemplateId] = useState<string | null>(null);
 
   const fullName = `${candidate.firstName} ${candidate.lastName}`.trim();

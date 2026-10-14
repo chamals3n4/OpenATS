@@ -1,7 +1,12 @@
-import { isAuthMailConfigured } from "@/lib/auth-mail";
+import { isAuthMailConfigured } from "@/lib/auth/password-emails";
+import { RoleGuard } from "@/components/guards/role-guard";
 import { UserManagementClient } from "./_components/user-management-client";
 
 export default function UserManagementPage() {
-  // Read on the server: the Resend settings are not exposed to the browser.
-  return <UserManagementClient inviteEmailEnabled={isAuthMailConfigured()} />;
+  // Read on the server, Resend settings are private
+  return (
+    <RoleGuard allow="super_admin" redirectTo="/settings/general">
+      <UserManagementClient inviteEmailEnabled={isAuthMailConfigured()} />
+    </RoleGuard>
+  );
 }

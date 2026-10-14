@@ -59,7 +59,7 @@ The frontend never connects directly to PostgreSQL or Redis. It communicates wit
 
 ## Frontend structure
 
-The frontend uses Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui, and React Query. Route-specific components remain close to the relevant route in `frontend/app/`. Reusable interface pieces live in `frontend/components/`, and shared client utilities live in `frontend/lib/` and `frontend/hooks/`.
+The frontend uses Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui, and React Query. Code used by one route stays beside it in `frontend/app/`, in private folders that Next.js leaves out of routing: `_components/`, `_lib/` and `_hooks/`. A route only imports from its own private folders and its parents'; code that a second route needs moves up to their nearest common parent. Reusable interface pieces live in `frontend/components/`, and shared client utilities live in `frontend/lib/` and `frontend/hooks/`, which never import from `frontend/app/`. File names are kebab-case.
 
 ## Testing the boundaries
 

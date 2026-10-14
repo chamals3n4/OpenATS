@@ -8,13 +8,13 @@ import { Button } from "@/components/ui/button";
 
 interface CopyButtonProps {
   text: string;
-  /** What is being copied, for the screen reader and the error message. */
+  /** Label for screen readers and errors */
   label: string;
   /** Show the word "Copy" next to the icon. */
   withText?: boolean;
 }
 
-/** Copies to the clipboard and says so in the button itself for two seconds. */
+/** Copy and show Copied for two seconds */
 export function CopyButton({ text, label, withText = false }: CopyButtonProps) {
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);

@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import type { AttentionReport } from "@/types";
-import { ageLabel, daysAgo, interviewWhen } from "../../lib/overview-utils";
+import { ageLabel, daysAgo, interviewWhen } from "../../_lib/overview-utils";
 import { cardCls } from "./card";
 
 interface AttentionPanelProps {
@@ -40,16 +40,20 @@ function Column({
         </p>
       </div>
 
-      <div className="mt-3 min-h-[3.5rem] flex-1">
-        {count === 0 ? (
-          <p className="flex items-center gap-2 text-sm text-slate-500 dark:text-neutral-400">
-            <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2} />
-            {emptyText}
-          </p>
-        ) : (
-          children
-        )}
-      </div>
+      {count === 0 ? (
+        // Columns share the same height
+        <div className="mt-3 flex min-h-[3.5rem] flex-1 flex-col items-center justify-center gap-2 px-2 py-4 text-center">
+          <HugeiconsIcon
+            icon={CheckmarkCircle02Icon}
+            className="size-6 text-emerald-600 dark:text-emerald-400"
+            strokeWidth={1.75}
+            aria-hidden
+          />
+          <p className="text-sm text-slate-600 dark:text-neutral-400">{emptyText}</p>
+        </div>
+      ) : (
+        <div className="mt-3 min-h-[3.5rem] flex-1">{children}</div>
+      )}
 
       <Link
         href={href}
@@ -92,7 +96,7 @@ function Row({
   );
 }
 
-/** What a hiring manager should look at today, with a way into each. */
+/** What a manager should look at today */
 export function AttentionPanel({ report, isLoading, isError, onRetry, now }: AttentionPanelProps) {
   if (isError && !report) {
     return (

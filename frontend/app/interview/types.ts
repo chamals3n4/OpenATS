@@ -1,7 +1,7 @@
 export interface Slot {
   datetime: string;
   selected: boolean;
-  /** Already confirmed by another interview — shown but not selectable. */
+  /** Taken by another interview */
   taken?: boolean;
 }
 

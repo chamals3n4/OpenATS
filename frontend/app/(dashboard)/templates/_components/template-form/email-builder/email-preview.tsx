@@ -1,17 +1,15 @@
 "use client";
 
-import { fillSampleText, renderPreviewHtml } from "../../../lib/template-form-utils";
+import { fillSampleText, renderPreviewHtml } from "../../../_lib/template-form-utils";
 import { useVariableSamples } from "./variables-context";
 import { PreviewPane } from "../preview-pane";
 
 interface EmailPreviewPanelProps {
   subject: string;
   bodyHtml: string;
-  /** What the app adds after the message when it sends the email, if anything. */
-  appends?: string | null;
 }
 
-export function EmailPreviewPanel({ subject, bodyHtml, appends }: EmailPreviewPanelProps) {
+export function EmailPreviewPanel({ subject, bodyHtml }: EmailPreviewPanelProps) {
   const samples = useVariableSamples();
   const hasBody = !!bodyHtml && bodyHtml !== "<p></p>";
 
@@ -37,12 +35,6 @@ export function EmailPreviewPanel({ subject, bodyHtml, appends }: EmailPreviewPa
         ) : (
           <p className="py-10 text-center text-sm text-slate-500 dark:text-neutral-400">
             The email body appears here as you write.
-          </p>
-        )}
-        {appends && (
-          <p className="mt-2 rounded-md border border-dashed border-slate-300 px-4 py-3 text-[13px] leading-relaxed text-slate-600 dark:border-neutral-700 dark:text-neutral-400">
-            <span className="font-semibold text-slate-800 dark:text-neutral-200">Added automatically here:</span>{" "}
-            {appends}
           </p>
         )}
       </div>

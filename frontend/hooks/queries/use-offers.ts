@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import type { Offer, OfferWithRelations, PublicOfferView } from "@/types";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import type { PaginationInfo } from "@/components/table/table-footer";
 
 export type OfferListParams = {
@@ -221,10 +221,7 @@ export async function fetchPublicOffer(
   return payload.data;
 }
 
-/**
- * Tells the server the candidate has the offer on screen. Loading the offer no longer counts as
- * viewing it, because email scanners load links too. Best effort: the page works without it.
- */
+/** Mark the offer as viewed. Not on load, since email scanners open links */
 export async function markPublicOfferViewed(token: string): Promise<void> {
   await fetch(`${API_BASE}/public/offers/${token}/viewed`, { method: "POST" }).catch(() => undefined);
 }

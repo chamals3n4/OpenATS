@@ -7,6 +7,7 @@ import { File01Icon, SentIcon } from "@hugeicons/core-free-icons";
 import { FormField, inputCls } from "@/components/form/form-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { CurrencySelect } from "@/components/form/currency-select";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -16,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import {
   EMPLOYMENT_LABELS,
   OFFER_FIELD_LABELS,
@@ -25,14 +26,10 @@ import {
   type EmploymentType,
   type OfferFieldKey,
   type OfferFormValues,
-} from "../../lib/offer-utils";
+} from "../../_lib/offer-utils";
 import { OfferLetterDialog } from "./offer-letter-dialog";
 import type { Offer, Template } from "@/types";
 
-const CURRENCIES = ["USD", "EUR", "GBP", "LKR", "INR", "AUD"].map((c) => ({
-  value: c,
-  label: c,
-}));
 const EMPLOYMENT_ITEMS = Object.entries(EMPLOYMENT_LABELS).map(
   ([value, label]) => ({ value, label }),
 );
@@ -46,7 +43,7 @@ interface OfferEditFormProps {
   candidateName: string;
   initialValues: OfferFormValues;
   emailTemplates: Template[];
-  /** Show the validation errors straight away, e.g. after a failed "Send" from the summary. */
+  /** Show errors right away */
   showErrorsInitially?: boolean;
   isSaving: boolean;
   isSending: boolean;
@@ -176,22 +173,11 @@ export function OfferEditForm({
         <div className="grid gap-4 sm:grid-cols-2">
           <FormField label="Salary" htmlFor={`${uid}-salary`} required error={errorFor("salary")}>
             <div className="flex gap-2">
-              <Select
-                items={CURRENCIES}
+              <CurrencySelect
                 value={values.currency}
-                onValueChange={(v) => set("currency", v ?? "USD")}
-              >
-                <SelectTrigger className={`${selectTriggerCls} w-24! shrink-0`} aria-label="Currency">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {CURRENCIES.map((c) => (
-                    <SelectItem key={c.value} value={c.value}>
-                      {c.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                onChange={(currency) => set("currency", currency)}
+                className="w-28 shrink-0"
+              />
               <Input
                 id={`${uid}-salary`}
                 type="number"

@@ -17,7 +17,7 @@ import {
   QUESTION_TYPE_LABELS,
   isChoiceType,
   type QuestionType,
-} from "../../lib/question-utils";
+} from "../../_lib/question-utils";
 
 const TYPE_ICONS: Record<QuestionType, typeof TextIcon> = {
   short_answer: TextIcon,
@@ -38,10 +38,7 @@ interface QuestionRowProps {
   onDelete: (question: CustomQuestion) => void;
 }
 
-/**
- * A top-level component, not one defined inside the list's render: a component created during
- * render is a new type every time, so React would remount every row on each keystroke elsewhere.
- */
+/** Keep this outside the list so rows don't remount */
 export function QuestionRow({ question, index, canManage, onMove, onEdit, onDelete }: QuestionRowProps) {
   const { ref, isDragging, isOver } = useDragSort({
     id: question.id,

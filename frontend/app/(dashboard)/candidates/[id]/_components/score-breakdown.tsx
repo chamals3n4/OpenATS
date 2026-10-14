@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { StarRating, RATING_LABELS } from "@/components/star-rating";
 import { useCurrentUser } from "@/hooks/queries/use-user";
+import { useRole } from "@/hooks/use-role";
 import { useRateCandidate } from "@/hooks/queries/use-candidates";
 import { SCORE_PARTS, formatScore, sharesOf, type ScorePart } from "@/lib/scoring";
 import type { CandidateDetail } from "@/types";
@@ -19,7 +20,7 @@ const PART_FIELD: Record<ScorePart, keyof CandidateDetail> = {
 
 const toNumber = (v: unknown) => (v === null || v === undefined || v === "" ? null : Number(v));
 
-/** The candidate's total score, its four parts, and the viewer's own star rating. */
+/** Total score, parts and your rating */
 export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
   const { data: me } = useCurrentUser();
   const rate = useRateCandidate();
@@ -30,11 +31,11 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
   const total = toNumber(candidate.totalScore);
 
   const ratings = candidate.ratings ?? [];
-  const isInterviewer = me?.data?.role === "interviewer";
+  const { isInterviewer } = useRole();
   const spread = candidate.interviewSpread;
   const myRating = ratings.find((r) => r.userId === me?.data?.id)?.rating ?? null;
 
-  // Clicking a star only changes what is shown. Nothing is saved until Update score is pressed.
+  // Nothing is saved until Update score
   const [picked, setPicked] = useState<number | null | undefined>(undefined);
   const shownRating = picked !== undefined ? picked : myRating;
   const changed = picked !== undefined && picked !== myRating;

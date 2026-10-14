@@ -26,11 +26,9 @@ import {
   postedLabel,
   type CareerJobRow,
   type JobFilters,
-} from "../lib/careers-utils";
+} from "../_lib/careers-utils";
 
-// One height for the search field and the dropdowns: the 32px the dashboard filter bars use.
-// The dark-theme border has to be matched by a dark-theme focus border, or focusing a field
-// in dark mode shows nothing.
+// Same height as the dashboard filters
 const fieldCls =
   "h-8! border border-slate-300 bg-slate-100 text-slate-900 shadow-none placeholder:text-slate-400 focus-visible:border-neutral-900 focus-visible:ring-0 dark:border-neutral-700 dark:bg-neutral-800/60 dark:text-neutral-100 dark:placeholder:text-neutral-500 dark:focus-visible:border-neutral-300";
 
@@ -43,7 +41,7 @@ function JobRow({ job, now }: { job: CareerJobRow; now: number }) {
 
   return (
     <li>
-      {/* The whole card is the link; border, fill and arrow ease in together on hover. */}
+      {/* Whole card is the link */}
       <Link
         href={`/careers/${job.id}`}
         className="group flex items-center justify-between gap-4 rounded-xl border border-slate-300 bg-white px-5 py-4 transition-[border-color,background-color,box-shadow] duration-200 ease-out hover:border-neutral-900 hover:bg-slate-50 hover:shadow-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-neutral-900 motion-reduce:transition-none dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-neutral-300 dark:hover:bg-neutral-800/70 dark:focus-visible:outline-neutral-100"
@@ -62,7 +60,6 @@ function JobRow({ job, now }: { job: CareerJobRow; now: number }) {
         >
           {/* The dark fill sweeps in from the left behind the label. */}
           <span className="absolute inset-0 -z-10 origin-left scale-x-0 rounded-full bg-neutral-900 transition-transform duration-300 ease-out group-hover:scale-x-100 motion-reduce:transition-none dark:bg-neutral-100" />
-          {/* The label turns once the fill has reached it, so it is never grey on grey. */}
           <span className="transition-colors delay-100 duration-150 ease-out group-hover:text-white motion-reduce:transition-none dark:group-hover:text-neutral-900">
             Apply
           </span>
@@ -79,7 +76,7 @@ function JobRow({ job, now }: { job: CareerJobRow; now: number }) {
 
 export type CareersBrand = { name: string; logoUrl: string | null } | null;
 
-/** The company's logo (or name) and "Open roles" side by side on one line. */
+/** Logo or name, and "Open roles" */
 export function CareersTitleBar({ brand }: { brand: CareersBrand }) {
   return (
     <div className="flex min-w-0 items-center gap-4">
@@ -158,11 +155,11 @@ export function CareersJobsList({
   const groups = useMemo(() => groupByDepartment(filtered), [filtered]);
 
   const isFiltered = hasActiveFilters(filters);
-  // A dropdown with one possible value would filter nothing, so only offer real choices.
+  // Only show dropdowns with real choices
   const showDepartment = departments.length > 1;
   const showType = types.length > 1;
   const showLocation = locations.length > 1;
-  // A single department's name above every role says nothing.
+  // Hide the department if there is only one
   const showDepartmentHeadings = departments.length > 1;
 
   return (
@@ -172,7 +169,6 @@ export function CareersJobsList({
 
         <div className="flex w-full flex-wrap items-center gap-2 md:ml-auto md:w-auto">
           <div className="relative min-w-0 flex-1 md:w-52 md:flex-none">
-            {/* z-10: the field briefly transforms while pressed, and would paint over the icon. */}
             <HugeiconsIcon
               icon={Search01Icon}
               className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-400 dark:text-neutral-500"

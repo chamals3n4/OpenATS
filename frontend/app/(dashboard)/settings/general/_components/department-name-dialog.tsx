@@ -91,7 +91,7 @@ export function DepartmentNameDialog({
             {title}
           </DialogTitle>
         </DialogHeader>
-        {/* Mounted only while open, so the field always starts from the current name. */}
+        {/* Mount only when open so the field resets */}
         <NameForm {...formProps} onClose={onClose} />
       </DialogContent>
     </Dialog>

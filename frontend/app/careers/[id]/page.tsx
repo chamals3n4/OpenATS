@@ -1,4 +1,4 @@
-import { JobApplicationForm } from "./job-application-form";
+import { JobApplicationForm } from "./_components/job-application-form";
 import type { JobDetail, CustomQuestion } from "@/types";
 
 const API_BASE = (

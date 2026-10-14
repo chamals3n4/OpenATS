@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import type { Integration, IntegrationState } from "../lib/integrations";
+import type { Integration, IntegrationState } from "../_lib/integrations";
 
 interface IntegrationRowProps {
   integration: Integration;
@@ -27,7 +27,6 @@ const PILL: Record<IntegrationState, { label: string; cls: string }> = {
   },
 };
 
-/** One app: what it does, whether it is connected, and the one action that makes sense. */
 export function IntegrationRow({
   integration,
   state,

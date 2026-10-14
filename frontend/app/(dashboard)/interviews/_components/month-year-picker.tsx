@@ -13,10 +13,7 @@ const MONTH_NAMES = [
 const stepCls =
   "flex size-8 cursor-pointer items-center justify-center rounded-md text-slate-600 transition-colors hover:bg-theme/10 hover:text-theme dark:text-neutral-300 dark:hover:text-primary";
 
-/**
- * The calendar's title, which opens a small panel for jumping straight to any month of any
- * year. The year is stepped with the arrows; picking a month closes the panel.
- */
+/** Calendar title that opens a month and year picker */
 export function MonthYearPicker({
   year,
   month,
@@ -30,7 +27,7 @@ export function MonthYearPicker({
   onChange: (year: number, month: number) => void;
 }) {
   const [open, setOpen] = useState(false);
-  // The year being browsed in the panel, which only becomes the calendar's year once a month is picked.
+  // Year shown in the picker
   const [viewYear, setViewYear] = useState(year);
 
   return (

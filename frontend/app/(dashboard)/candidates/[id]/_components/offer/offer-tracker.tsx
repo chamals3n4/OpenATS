@@ -1,10 +1,10 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
-import { formatDate } from "../constants";
+import { formatDate } from "@/lib/format";
 import {
   getOfferSteps,
   type OfferStep,
-} from "../../lib/offer-utils";
+} from "../../_lib/offer-utils";
 import type { Offer } from "@/types";
 
 function Marker({ step }: { step: OfferStep }) {
@@ -18,7 +18,7 @@ function Marker({ step }: { step: OfferStep }) {
     );
   }
   if (step.state === "done") {
-    // The candidate saying yes is the happy ending, so it gets its own colour.
+    // Accepted gets its own colour
     const color = step.key === "outcome" ? "bg-green-600" : "bg-theme";
     return (
       <span className={`${base} ${color} text-white`}>
@@ -40,7 +40,7 @@ function Marker({ step }: { step: OfferStep }) {
   );
 }
 
-/** The offer's journey: created, sent, viewed, then the candidate's answer. */
+/** Offer steps: created, sent, viewed, answered */
 export function OfferTracker({ offer }: { offer: Offer }) {
   const steps = getOfferSteps(offer);
 
@@ -48,7 +48,7 @@ export function OfferTracker({ offer }: { offer: Offer }) {
     <ol className="grid grid-cols-4 gap-x-4">
       {steps.map((step, i) => {
         const isLast = i === steps.length - 1;
-        // The line leaving a step is solid once that step is finished.
+        // Solid line once the step is done
         const lineDone = step.state === "done" || step.state === "negative";
 
         return (

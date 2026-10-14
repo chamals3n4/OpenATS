@@ -4,9 +4,9 @@ import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Location01Icon, Video01Icon } from "@hugeicons/core-free-icons";
 import type { InterviewListItem } from "@/types";
-import { OUTCOME_CONFIG, STATUS_CONFIG, fmtTimeRange } from "./constants";
+import { OUTCOME_CONFIG, STATUS_CONFIG, fmtTimeRange } from "../../_lib/interview-display";
 import { InterviewActions } from "./interview-actions";
-import { dayKey, groupByDay } from "../lib/calendar-utils";
+import { dayKey, groupByDay } from "../_lib/calendar-utils";
 
 interface InterviewListProps {
   interviews: InterviewListItem[];
@@ -22,7 +22,7 @@ function dayTitle(key: string, todayKey: string, tomorrowKey: string) {
   return { title: long, detail: null };
 }
 
-/** Every interview, a day at a time, with the ones still waiting for a time at the end. */
+/** Interviews by day, unscheduled ones at the end */
 export function InterviewList({ interviews, onFeedback, onEdit }: InterviewListProps) {
   const now = new Date();
   const todayKey = dayKey(now);

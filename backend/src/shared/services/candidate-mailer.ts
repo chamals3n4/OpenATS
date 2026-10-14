@@ -38,7 +38,7 @@ export interface CandidateEmailResult {
 }
 
 /** The name emails are signed with, and the zone their dates and times are written in. */
-async function getCompanyForEmail(): Promise<{ companyName: string; timeZone: string }> {
+export async function getCompanyForEmail(): Promise<{ companyName: string; timeZone: string }> {
   const [row] = await db
     .select({ name: company.name, timeZone: company.timeZone })
     .from(company)

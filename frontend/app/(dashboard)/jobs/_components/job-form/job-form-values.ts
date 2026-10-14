@@ -18,7 +18,6 @@ export interface JobFormValues {
   isActive: boolean;
 }
 
-/** Form values once the required fields are known to be filled in. */
 export type ValidJobFormValues = JobFormValues & {
   departmentId: number;
   employmentType: Job["employmentType"];

@@ -45,7 +45,7 @@ type SalaryInput = Pick<
   | "salaryFixed"
 >;
 
-/** Salary fields of a job payload; anything incomplete is sent as null so it clears the stored value. */
+/** Salary fields. Incomplete ones are sent as null */
 export function buildSalaryPayload({
   isSalaryInfoIncluded,
   salaryType,
@@ -134,7 +134,7 @@ export type UpdateJobPayload = ReturnType<typeof buildSalaryPayload> & {
   status: Job["status"];
 };
 
-/** Payload for editing a job: empty text fields are sent as null so they are cleared server-side. */
+/** Edit payload. Empty fields are sent as null */
 export function buildUpdateJobPayload(
   params: BuildJobPayloadParams & { status: Job["status"] },
 ): UpdateJobPayload {

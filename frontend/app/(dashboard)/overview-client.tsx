@@ -16,7 +16,7 @@ import { Card, cardCls } from "./_components/overview/card";
 import { ExportDialog, type ExportFormat } from "./_components/overview/export-dialog";
 import { KpiCards } from "./_components/overview/kpi-cards";
 import { OverviewHeader } from "./_components/overview/overview-header";
-import { buildKpis, periodOf, type Period } from "./lib/overview-utils";
+import { buildKpis, periodOf, type Period } from "./_lib/overview-utils";
 
 export function OverviewClient() {
   const isManager = useIsManager();
@@ -34,7 +34,7 @@ export function OverviewClient() {
   const exportReport = useExportAnalyticsReport();
   const report = analytics.data?.data;
 
-  // The clock for "Today, 2:30 PM" and "3 days ago", refreshed each minute.
+  // Clock for relative times, updated each minute
   const [now, setNow] = useState(() => Date.now());
   useEffect(() => {
     const id = setInterval(() => setNow(Date.now()), 60_000);
@@ -98,7 +98,7 @@ export function OverviewClient() {
 
             <KpiCards kpis={kpis} comparedWith={`the previous ${days} days`} isLoading={analytics.isPending} />
 
-            {/* Dim the charts while a new period loads, so old numbers are not mistaken for new. */}
+            {/* Dim the charts while loading */}
             <div
               aria-busy={analytics.isPlaceholderData}
               className={`grid grid-cols-1 gap-4 lg:grid-cols-2 ${analytics.isPlaceholderData ? "opacity-60" : ""}`}

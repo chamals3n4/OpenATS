@@ -1,0 +1,168 @@
+import type {
+  Question,
+  AnswerOption,
+  QuestionType,
+} from "./assessment-builder-types";
+import { TRUE_FALSE_OPTIONS } from "./assessment-builder-constants";
+import type { NewAssessmentQuestion } from "@/types";
+
+let idCounter = 10;
+
+export function makeOption(text: string): AnswerOption {
+  return { id: ++idCounter, text, isCorrect: false };
+}
+
+export function makeQuestion(): Question {
+  return {
+    uid: ++idCounter,
+    title: "",
+    description: "",
+    type: "single",
+    points: 1,
+    // Empty so the user types it. "Option 1" is a placeholder
+    options: [makeOption(""), makeOption(""), makeOption("")],
+  };
+}
+
+export function moveItem<T>(list: T[], from: number, to: number): T[] {
+  const copy = [...list];
+  const [item] = copy.splice(from, 1);
+  copy.splice(to, 0, item);
+  return copy;
+}
+
+/** Written answers have no options; a person grades them. */
+export const isWrittenType = (type: QuestionType) =>
+  type === "short" || type === "long";
+
+export const MIN_POINTS = 0.5;
+export const MAX_POINTS = 1000;
+export const clampPoints = (value: number) =>
+  Number.isFinite(value) ? Math.min(MAX_POINTS, Math.max(MIN_POINTS, Math.round(value * 2) / 2)) : 1;
+
+export function getDefaultOptionsForType(
+  currentType: QuestionType,
+  newType: QuestionType,
+  currentOptions: AnswerOption[],
+): AnswerOption[] {
+  if (newType === "true_false") {
+    return TRUE_FALSE_OPTIONS.map((o) => ({ ...o }));
+  }
+  if (currentType === "true_false") {
+    return [makeOption(""), makeOption(""), makeOption("")];
+  }
+  // Only multiple can have more than one correct answer
+  if (newType === "single") {
+    const first = currentOptions.findIndex((o) => o.isCorrect);
+    return currentOptions.map((o, i) => ({ ...o, isCorrect: i === first && first !== -1 }));
+  }
+  return currentOptions;
+}
+
+/** Single keeps one correct option, multiple allows many */
+export function toggleCorrectOption(question: Question, optionId: number): AnswerOption[] {
+  const multi = question.type === "multiple";
+  return question.options.map((o) => ({
+    ...o,
+    isCorrect: o.id === optionId ? !o.isCorrect : multi ? o.isCorrect : false,
+  }));
+}
+
+type ApiQuestionType = NewAssessmentQuestion["questionType"];
+
+const API_TYPE: Record<QuestionType, ApiQuestionType> = {
+  "single": "radio",
+  "true_false": "radio",
+  "multiple": "checkbox",
+  "short": "short_answer",
+  "long": "long_answer",
+};
+
+export function questionToApi(q: Question, idx: number): NewAssessmentQuestion {
+  const written = isWrittenType(q.type);
+  return {
+    title: q.title || `Question ${idx + 1}`,
+    description: q.description || null,
+    questionType: API_TYPE[q.type],
+    points: clampPoints(q.points),
+    position: idx + 1,
+    options: written
+      ? undefined
+      : q.options.map((opt, oIdx) => ({
+          label: opt.text || `Option ${oIdx + 1}`,
+          isCorrect: opt.isCorrect,
+          position: oIdx + 1,
+        })),
+  };
+}
+
+export function formatQuestionsForApi(questions: Question[]): NewAssessmentQuestion[] {
+  return questions.map(questionToApi);
+}
+
+interface ApiQuestion {
+  id: number;
+  title?: string | null;
+  description?: string | null;
+  questionType: string;
+  points?: number | string | null;
+  options?: { id?: number; label: string; isCorrect: boolean }[];
+}
+
+/** Convert a saved question. Old ones used "multiple_choice" */
+export function questionFromApi(db: ApiQuestion): Question {
+  const options = db.options ?? [];
+  const correctCount = options.filter((o) => o.isCorrect).length;
+  let type: QuestionType = "single";
+  if (db.questionType === "short_answer") type = "short";
+  else if (db.questionType === "long_answer") type = "long";
+  else if (db.questionType === "checkbox" || correctCount > 1) type = "multiple";
+  else if (options.length === 2 && options[0]?.label === "True" && options[1]?.label === "False") {
+    type = "true_false";
+  }
+
+  return {
+    uid: ++idCounter,
+    dbId: db.id,
+    title: db.title ?? "",
+    description: db.description ?? "",
+    type,
+    // Postgres `numeric` reaches us as a string.
+    points: clampPoints(Number(db.points ?? 1)),
+    options: options.map((o) => ({ id: o.id ?? ++idCounter, text: o.label, isCorrect: o.isCorrect })),
+  };
+}
+
+/** A string of the questions, used to check for changes */
+export function questionsFingerprint(questions: Question[]): string {
+  return JSON.stringify(
+    questions.map((q) => [
+      q.dbId ?? null,
+      q.title,
+      q.description,
+      q.type,
+      Number(q.points),
+      isWrittenType(q.type) ? [] : q.options.map((o) => [o.text, o.isCorrect]),
+    ]),
+  );
+}
+
+/** Has a title and something to grade against */
+export function questionProblem(question: Question): string | null {
+  if (!question.title.trim()) return "Add the question";
+  if (isWrittenType(question.type)) return null;
+  if (!question.options.some((o) => o.isCorrect)) {
+    return question.type === "multiple" ? "Mark the correct answers" : "Mark the correct answer";
+  }
+  return null;
+}
+
+/** First problem that blocks saving, or null */
+export function firstQuestionProblem(questions: Question[]): string | null {
+  // Same rule as the sidebar, so what it flags also blocks saving
+  for (const [i, q] of questions.entries()) {
+    const problem = questionProblem(q);
+    if (problem) return `Question ${i + 1}: ${problem.toLowerCase()}.`;
+  }
+  return null;
+}

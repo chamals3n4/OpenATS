@@ -5,7 +5,7 @@ import {
   meetingProvider,
   relativeDay,
   safeMeetingUrl,
-} from "@/app/(dashboard)/candidates/[id]/lib/interview-utils";
+} from "@/app/(dashboard)/candidates/[id]/_lib/interview-utils";
 import type { CandidateInterview } from "@/types";
 
 const iv = (id: number, over: Partial<CandidateInterview> = {}): CandidateInterview =>

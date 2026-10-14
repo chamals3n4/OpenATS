@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
-import { useCurrentUser } from "@/hooks/queries/use-user";
+import { RoleGuard } from "@/components/guards/role-guard";
 import { useDepartments } from "@/hooks/queries/use-company";
 import { useJob, useUpdateJob } from "@/hooks/queries/use-jobs";
 import { buildUpdateJobPayload } from "@/lib/jobs-utils";
@@ -15,17 +15,18 @@ import {
 } from "../../_components/job-form/job-form-values";
 
 export default function EditJobPage() {
+  const { id } = useParams<{ id: string }>();
+  return (
+    <RoleGuard allow="manager" redirectTo={`/jobs/${id}`}>
+      <EditJob />
+    </RoleGuard>
+  );
+}
+
+function EditJob() {
   const router = useRouter();
   const params = useParams<{ id: string }>();
   const jobId = Number(params.id);
-
-  const { data: currentUserRes } = useCurrentUser();
-  const role = currentUserRes?.data?.role;
-  const isManager = role === "super_admin" || role === "hiring_manager";
-
-  useEffect(() => {
-    if (role && !isManager) router.replace(`/jobs/${jobId}`);
-  }, [role, isManager, router, jobId]);
 
   const { data: deptData } = useDepartments();
   const { data: jobData, isLoading: isJobLoading } = useJob(jobId);
@@ -39,7 +40,7 @@ export default function EditJobPage() {
 
   const handleSubmit = (values: ValidJobFormValues) => {
     if (!job) return;
-    // The switch only toggles published; any other status is preserved.
+    // Only toggle published, keep other statuses
     const status = values.isActive
       ? "published"
       : job.status === "published"
@@ -50,8 +51,6 @@ export default function EditJobPage() {
       onSuccess: () => router.push(`/jobs/${jobId}`),
     });
   };
-
-  if (!role || !isManager) return null;
 
   if (!Number.isFinite(jobId)) {
     return (

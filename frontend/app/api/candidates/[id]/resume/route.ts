@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getApiToken } from "@/lib/session";
+import { getApiToken } from "@/lib/auth/session";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -31,7 +31,7 @@ export async function GET(
     return new NextResponse(response.body, {
       headers: {
         "Content-Type": response.headers.get("content-type") ?? "application/pdf",
-        // Carries the file name the backend chose (nimal-fernando-cv.pdf).
+        // File name chosen by the backend
         "Content-Disposition": response.headers.get("content-disposition") ?? "inline",
         "Cache-Control": "private, max-age=300",
       },

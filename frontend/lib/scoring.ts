@@ -1,4 +1,4 @@
-/** Score helpers shared by the job setup and the candidate pages. */
+/** Score helpers */
 
 export type ScorePart = "questions" | "assessment" | "rating" | "interview";
 export type Weights = Record<ScorePart, number>;
@@ -10,13 +10,13 @@ export const SCORE_PARTS: { id: ScorePart; label: string; hint: string }[] = [
   { id: "interview", label: "Interview", hint: "Average of the interviewers' scorecards" },
 ];
 
-/** Each part's share of the total, as whole percentages that add up to 100 (all 0 when no weight is set). */
+/** Each part's share in percent, adds up to 100 */
 export function sharesOf(weights: Weights): Weights {
   const total = SCORE_PARTS.reduce((sum, p) => sum + weights[p.id], 0);
   if (total <= 0) return { questions: 0, assessment: 0, rating: 0, interview: 0 };
   const raw = SCORE_PARTS.map((p) => ({ id: p.id, exact: (weights[p.id] / total) * 100 }));
   const shares = Object.fromEntries(raw.map((r) => [r.id, Math.floor(r.exact)])) as Weights;
-  // Hand the rounding leftovers to the parts with the biggest remainders.
+  // Give rounding leftovers to the biggest remainders
   let left = 100 - Object.values(shares).reduce((a, b) => a + b, 0);
   for (const r of [...raw].sort((a, b) => (b.exact % 1) - (a.exact % 1))) {
     if (left <= 0) break;
@@ -28,7 +28,7 @@ export function sharesOf(weights: Weights): Weights {
   return shares;
 }
 
-/** The scorecard score a candidate or part shows: "72", or a dash when there is none. */
+/** Score as text, or a dash */
 export function formatScore(value: string | number | null | undefined): string {
   if (value === null || value === undefined) return "—";
   const n = Number(value);
@@ -37,7 +37,7 @@ export function formatScore(value: string | number | null | undefined): string {
 
 export type ScoreTone = "none" | "high" | "mid" | "low";
 
-/** A rough band for colouring a 0-100 score. The number is always shown too. */
+/** Colour band for a score */
 export function scoreTone(value: string | number | null | undefined): ScoreTone {
   if (value === null || value === undefined) return "none";
   const n = Number(value);
@@ -45,7 +45,7 @@ export function scoreTone(value: string | number | null | undefined): ScoreTone 
   return n >= 70 ? "high" : n >= 40 ? "mid" : "low";
 }
 
-/** "2 of 4 parts scored", or null when the job's weighted parts are not known. */
+/** e.g. "2 of 4 parts scored" */
 export function describeParts(scored: number | undefined, weighted: number | undefined): string | null {
   if (scored === undefined || weighted === undefined || weighted <= 0) return null;
   return `${scored} of ${weighted} ${weighted === 1 ? "part" : "parts"} scored`;

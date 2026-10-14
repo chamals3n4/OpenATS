@@ -3,23 +3,23 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCreateAssessment } from "@/hooks/queries/use-assessments";
-import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useAssessmentQuestions } from "../hooks/use-assessment-questions";
-import { firstQuestionProblem, formatQuestionsForApi } from "../lib/assessment-builder-utils";
+import { useAssessmentQuestions } from "../../_hooks/use-assessment-questions";
+import { firstQuestionProblem, formatQuestionsForApi } from "../../_lib/assessment-builder-utils";
 import { AssessmentMetaSection } from "../../_components/assessment-meta-section";
-import { QuestionSidebar } from "./question-sidebar";
-import { QuestionEditor } from "./question-editor";
+import { QuestionSidebar } from "../../_components/builder/question-sidebar";
+import { DeleteQuestionDialog } from "../../_components/builder/delete-question-dialog";
+import { QuestionEditor } from "../../_components/builder/question-editor";
 
 export default function CreateAssessmentPageClient() {
   const router = useRouter();
   const createAssessment = useCreateAssessment();
 
-  const [isActive, setIsActive] = useState(true);
-  const [metaOpen, setMetaOpen] = useState(false);
+  // Open first since a new assessment needs a title
+  const [metaOpen, setMetaOpen] = useState(true);
   const [assessmentTitle, setAssessmentTitle] = useState("");
   const [assessmentDesc, setAssessmentDesc] = useState("");
   const [timeLimit, setTimeLimit] = useState("120");
@@ -31,7 +31,11 @@ export default function CreateAssessmentPageClient() {
     currentIndex,
     setSelectedQ,
     addQuestion,
-    removeQuestion,
+    requestRemoveQuestion,
+    cancelRemoveQuestion,
+    confirmRemoveQuestion,
+    pendingRemove,
+    pendingRemoveNumber,
     updateQuestion,
     changeQuestionType,
     moveQuestion,
@@ -68,49 +72,34 @@ export default function CreateAssessmentPageClient() {
   };
 
   return (
-    <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950 overflow-hidden">
-      {/* Header */}
-      <div className="px-8 py-5 border-b border-slate-300 dark:border-neutral-700 flex items-center justify-between shrink-0 gap-4">
-        <div className="flex items-center gap-5 min-w-0">
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-neutral-100 leading-none whitespace-nowrap">
-            Create New Assessment
+    // Full height so the header stays and the panels scroll
+    <div className="flex h-[calc(100dvh-var(--header-height))] w-full min-w-0 flex-col overflow-hidden bg-white dark:bg-neutral-950">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-slate-300 px-4 py-4 sm:px-8 dark:border-neutral-700">
+        <div className="min-w-0">
+          <p className="text-sm text-slate-600 dark:text-neutral-400">New assessment</p>
+          <h1 className="mt-0.5 truncate text-xl font-semibold leading-tight text-slate-900 dark:text-neutral-100">
+            {assessmentTitle.trim() || "Untitled assessment"}
           </h1>
-          <div className="flex items-center gap-2.5">
-            <Switch
-              checked={isActive}
-              onCheckedChange={setIsActive}
-              className="data-[state=checked]:bg-[var(--theme-color)] scale-110"
-            />
-            <span className="text-sm text-slate-600 dark:text-neutral-400 font-medium whitespace-nowrap">
-              Make this Active
-            </span>
-          </div>
         </div>
 
-        <div className="flex items-center gap-3 shrink-0">
+        <div className="flex shrink-0 items-center gap-2">
           <Button
-            className="text-white cursor-pointer rounded-lg h-10 px-6 font-medium shadow-none border-none transition-all active:scale-[0.98] disabled:opacity-70 gap-2"
-            style={{ backgroundColor: "var(--theme-color)" }}
+            variant="cancel"
+            render={<Link href="/assessments" />}
+            className="h-9 cursor-pointer px-4 text-sm"
+          >
+            Cancel
+          </Button>
+          <Button
             onClick={handleSave}
             disabled={createAssessment.isPending}
+            className="h-9 cursor-pointer gap-2 border-none bg-theme px-4 text-sm font-semibold text-white shadow-none hover:bg-theme-hover disabled:opacity-70"
           >
-            {createAssessment.isPending && (
-              <Loader2 className="size-4 animate-spin mr-1" />
-            )}
-            {createAssessment.isPending
-              ? "Saving Assessment"
-              : "Save Assessment"}
+            {createAssessment.isPending && <Loader2 className="size-4 animate-spin" />}
+            {createAssessment.isPending ? "Saving" : "Save assessment"}
           </Button>
-          <Link href="/assessments">
-            <Button
-              variant="outline"
-              className="h-10 px-6 rounded-lg border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-neutral-400 bg-white dark:bg-neutral-900 hover:bg-slate-50 dark:hover:bg-neutral-800 shadow-none font-medium text-sm"
-            >
-              Cancel
-            </Button>
-          </Link>
         </div>
-      </div>
+      </header>
 
       {/* Meta Section */}
       <AssessmentMetaSection
@@ -125,18 +114,20 @@ export default function CreateAssessmentPageClient() {
       />
 
       {/* Main Content: Sidebar + Editor */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 overflow-hidden">
         <QuestionSidebar
           questions={questions}
           selectedQ={selectedQ}
           onSelect={setSelectedQ}
           onAdd={addQuestion}
-          onRemove={removeQuestion}
+          onRemove={requestRemoveQuestion}
           onMove={moveQuestion}
         />
 
         {currentQ && (
           <QuestionEditor
+            // New editor per question so it starts at the top
+            key={currentQ.uid}
             question={currentQ}
             index={currentIndex}
             onUpdate={updateQuestion}
@@ -145,11 +136,18 @@ export default function CreateAssessmentPageClient() {
             onRemoveOption={removeOption}
             onUpdateOptionText={updateOptionText}
             onToggleCorrect={toggleCorrectOption}
-            onRemoveQuestion={removeQuestion}
+            onRemoveQuestion={requestRemoveQuestion}
             canRemove={questions.length > 1}
           />
         )}
       </div>
+
+      <DeleteQuestionDialog
+        question={pendingRemove}
+        number={pendingRemoveNumber}
+        onCancel={cancelRemoveQuestion}
+        onConfirm={confirmRemoveQuestion}
+      />
     </div>
   );
 }

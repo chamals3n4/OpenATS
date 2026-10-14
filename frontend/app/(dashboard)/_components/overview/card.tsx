@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 export const cardCls =
   "rounded-lg border border-slate-300 bg-white dark:border-neutral-700 dark:bg-neutral-900";
 
-/** A titled card with an optional line of explanation under the title. */
+/** Card with a title and optional subtitle */
 export function Card({
   title,
   subtitle,

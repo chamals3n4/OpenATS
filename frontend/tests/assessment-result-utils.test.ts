@@ -5,7 +5,7 @@ import {
   getQuestionState,
   summarizeQuestions,
   type GradableQuestion,
-} from "@/app/(dashboard)/candidates/[id]/lib/assessment-result-utils";
+} from "@/app/(dashboard)/candidates/[id]/_lib/assessment-result-utils";
 
 const choice = (selected: number[], correct: number[]): GradableQuestion => ({
   questionType: "multiple_choice",

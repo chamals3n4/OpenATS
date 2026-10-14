@@ -10,7 +10,7 @@ interface QuestionNavigatorProps {
   onQuestionClick: (index: number) => void;
 }
 
-/** Every question as a numbered button: filled once answered, with a coloured border when it is the one on screen. */
+/** Question number buttons */
 export function QuestionNavigator({ questions, currentQ, answers, onQuestionClick }: QuestionNavigatorProps) {
   return (
     <nav aria-label="Questions">
@@ -31,7 +31,6 @@ export function QuestionNavigator({ questions, currentQ, answers, onQuestionClic
                     ? "bg-theme text-white"
                     : "bg-white text-slate-700 dark:bg-neutral-900 dark:text-neutral-300"
                 } ${
-                  // An unanswered question on screen is marked by its border. An answered one is already filled.
                   answered
                     ? "border border-theme"
                     : current

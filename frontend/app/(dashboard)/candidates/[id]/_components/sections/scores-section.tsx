@@ -9,8 +9,8 @@ import {
   Link01Icon,
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
-import { formatDate } from "../constants";
-import { formatDuration } from "../../lib/assessment-result-utils";
+import { formatDate } from "@/lib/format";
+import { formatDuration } from "../../_lib/assessment-result-utils";
 import type { useCandidateAssessments } from "@/hooks/queries/use-assessments";
 
 type Attempt = NonNullable<
@@ -86,7 +86,7 @@ function Fact({
 }
 
 function ScoreFact({ attempt }: { attempt: Attempt }) {
-  // Postgres `numeric` reaches us as a string (e.g. "100.00"), so convert it.
+  // numeric comes as a string
   const score =
     attempt.scorePercentage === null ? null : Number(attempt.scorePercentage);
   const barColor =

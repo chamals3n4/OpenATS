@@ -18,10 +18,10 @@ import {
   TEMPLATE_NAME_MAX,
   suggestCopyName,
   validateTemplateName,
-} from "../lib/templates-utils";
+} from "../_lib/templates-utils";
 
 interface DuplicateTemplateDialogProps {
-  /** The template being copied; the dialog is open while this is set. */
+  /** Template to copy, dialog is open while set */
   template: Template | null;
   isPending: boolean;
   onClose: () => void;
@@ -78,7 +78,7 @@ function DuplicateForm({
         <Input
           id="duplicate-name"
           autoFocus
-          // Select the suggestion so typing replaces it, while a click can still place the cursor.
+          // Select the text so typing replaces it
           onFocus={(e) => e.currentTarget.select()}
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -119,12 +119,12 @@ export function DuplicateTemplateDialog({
     <Dialog
       open={template !== null}
       onOpenChange={(open) => {
-        // Don't let Escape or an outside click abandon a copy that is being created.
+        // Don't close while saving
         if (!open && !isPending) onClose();
       }}
     >
       <DialogContent className="max-w-[calc(100%-2rem)] gap-0 rounded-xl border-slate-200 bg-white p-6 sm:max-w-[600px] dark:border-neutral-800 dark:bg-neutral-900">
-        {/* Mounted only while open, so every copy starts from a fresh suggestion. */}
+        {/* Mount only when open so it resets */}
         {template && (
           <DuplicateForm
             template={template}

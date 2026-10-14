@@ -17,7 +17,7 @@ import type { useDeleteInterview } from "@/hooks/queries/use-interviews";
 import {
   OUTCOME_CONFIG,
   STATUS_CONFIG,
-} from "@/app/(dashboard)/interviews/_components/constants";
+} from "@/app/(dashboard)/_lib/interview-display";
 import {
   eventTypeLabel,
   formatInterviewTime,
@@ -25,7 +25,7 @@ import {
   meetingProvider,
   relativeDay,
   safeMeetingUrl,
-} from "../../lib/interview-utils";
+} from "../../_lib/interview-utils";
 import { InterviewFeedbackDialog } from "./interview-feedback-dialog";
 import type { CandidateInterview } from "@/types";
 
@@ -71,7 +71,7 @@ export function InterviewCard({
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  // Fetched up front so the button can show how many notes there already are.
+  // Fetch first to show the notes count
   const { data: feedbackData } = useInterviewFeedback(interview.id);
   const feedbackCount = feedbackData?.data?.length ?? 0;
 

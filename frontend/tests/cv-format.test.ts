@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { formatCvSection } from "@/app/(dashboard)/candidates/[id]/lib/cv-format";
+import { formatCvSection } from "@/app/(dashboard)/candidates/[id]/_lib/cv-format";
 
 describe("formatCvSection", () => {
   it("joins a summary the PDF broke into lines into one paragraph", () => {

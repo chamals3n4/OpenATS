@@ -24,7 +24,7 @@ import {
   STATUS_OPTIONS,
   activeFilterCount,
   type BoardFilters,
-} from "../lib/board-filters";
+} from "../_lib/board-filters";
 
 interface BoardFiltersBarProps {
   filters: BoardFilters;
@@ -73,7 +73,7 @@ export function BoardFiltersBar({ filters, stages, onChange, onClear }: BoardFil
 
   const toggleStage = (id: number, on: boolean) => {
     const next = on ? [...filters.stageIds, id] : filters.stageIds.filter((s) => s !== id);
-    // Picking every stage is the same as no filter, so keep the state in one form.
+    // All stages is the same as no filter
     onChange({ stageIds: next.length === stages.length ? [] : next });
   };
 
@@ -95,7 +95,7 @@ export function BoardFiltersBar({ filters, stages, onChange, onClear }: BoardFil
                 checked={shownStages === 0 || filters.stageIds.includes(stage.id)}
                 closeOnClick={false}
                 onCheckedChange={(on) => {
-                  // From "all stages", the first click means "just the others".
+                  // From all stages, the first click unselects the rest
                   if (shownStages === 0) {
                     onChange({ stageIds: stages.filter((s) => s.id !== stage.id).map((s) => s.id) });
                   } else {

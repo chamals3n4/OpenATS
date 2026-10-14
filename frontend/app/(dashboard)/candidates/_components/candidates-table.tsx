@@ -19,7 +19,9 @@ import {
   BulkSelectHeaderCell,
   BulkSelectionBar,
   useBulkSelection,
+  BULK_BAR_BUTTON,
 } from "@/components/table/bulk-selection";
+import { cn } from "@/lib/utils";
 import { BulkDeleteDialog } from "@/components/table/bulk-delete-dialog";
 import { BulkRejectDialog } from "./bulk-reject-dialog";
 
@@ -34,10 +36,7 @@ interface CandidatesTableProps {
   onDeleteSelected: (ids: number[]) => boolean | void | Promise<boolean | void>;
   onDeleteAllMatching?: () => boolean | void | Promise<boolean | void>;
   isDeletingSelected?: boolean;
-  /**
-   * Rejects the picked candidates with a reason. Resolve to false to keep the selection as it is,
-   * or to the ids that failed to keep only those selected; anything else clears it.
-   */
+  /** Reject selected candidates. Returns failed ids to keep selected */
   onRejectSelected?: (
     ids: number[],
     reason: string,
@@ -70,7 +69,7 @@ export function CandidatesTable({
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
 
-  // Candidates who picked a knockout answer and are still in the process.
+  // Candidates with a knockout answer still in process
   const flaggedIds = useMemo(
     () => candidates.filter((c) => c.knockedOut && c.status !== "rejected").map((c) => c.id),
     [candidates],
@@ -134,7 +133,7 @@ export function CandidatesTable({
   const handleConfirmBulkReject = async (reason: string) => {
     const result = await onRejectSelected?.(Array.from(selection.selectedIds), reason);
     if (Array.isArray(result) && result.length > 0) {
-      // Keep the dialog open on just the failures, so its count matches what a retry would reject.
+      // Keep only the failed ones selected
       selection.replaceSelection(result);
       return;
     }
@@ -171,7 +170,7 @@ export function CandidatesTable({
               variant="cancel"
               onClick={() => setBulkRejectOpen(true)}
               disabled={isRejectingSelected}
-              className="h-7 rounded-md px-2.5 text-xs font-semibold shadow-none"
+              className={cn(BULK_BAR_BUTTON, "cursor-pointer")}
             >
               Reject selected
             </Button>
@@ -181,7 +180,10 @@ export function CandidatesTable({
               type="button"
               variant="ghost"
               onClick={handleSelectAllMatching}
-              className="h-7 rounded-md px-2 text-xs font-semibold text-slate-600 shadow-none hover:bg-slate-200 hover:text-slate-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50"
+              className={cn(
+                BULK_BAR_BUTTON,
+                "cursor-pointer px-2 font-medium text-slate-600 hover:bg-slate-200 hover:text-slate-900 dark:text-neutral-300 dark:hover:bg-neutral-800 dark:hover:text-neutral-50",
+              )}
             >
               Select all {pagination.total} candidates
             </Button>

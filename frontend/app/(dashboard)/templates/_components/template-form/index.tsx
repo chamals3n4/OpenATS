@@ -9,10 +9,10 @@ import {
 } from "@/hooks/queries/use-templates";
 import { Input } from "@/components/ui/input";
 import type { Template } from "@/types";
-import type { TemplateType } from "../../lib/template-form-types";
-import { useTemplateForm } from "../../hooks/use-template-form";
-import { INPUT_CLASS } from "../../lib/template-form-constants";
-import { buildEventPayload, validateTemplateForm } from "../../lib/template-form-utils";
+import type { TemplateType } from "../../_lib/template-form-types";
+import { useTemplateForm } from "../../_hooks/use-template-form";
+import { INPUT_CLASS } from "../../_lib/template-form-constants";
+import { buildEventPayload, validateTemplateForm } from "../../_lib/template-form-utils";
 import { TemplateFormHeader } from "./header";
 import { FormField } from "./form-field";
 import { EmailBuilder } from "./email-builder";
@@ -48,12 +48,12 @@ export function TemplateForm({
 
   const form = useTemplateForm(templateType);
   const { hydrate } = form;
-  // Errors stay hidden until the first save attempt, so an empty new form is not red.
+  // Hide errors until the first save
   const [showErrors, setShowErrors] = useState(false);
-  // On small screens only one side fits, so this picks which.
+  // Only one side fits on small screens
   const [pane, setPane] = useState<Pane>("edit");
 
-  // Fill the form once. A background refetch of the same template must not undo typing.
+  // Fill the form once so refetches don't undo typing
   const hydratedId = useRef<number | null>(null);
   useEffect(() => {
     if (mode !== "edit" || !existingTemplate || hydratedId.current === existingTemplate.id) return;

@@ -5,13 +5,12 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Call02Icon, Link01Icon, Mail01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { Input } from "@/components/ui/input";
 import type { CandidateCvText } from "@/types";
-import { formatCvSection, type CvBlock } from "../../lib/cv-format";
-import { countMatches, highlightParts, searchPattern } from "../../lib/cv-highlight";
+import { formatCvSection, type CvBlock } from "../../_lib/cv-format";
+import { countMatches, highlightParts, searchPattern } from "../../_lib/cv-highlight";
 
-/** What is being looked for in the summary, shared with every piece of text drawn below. */
 const SearchContext = createContext<RegExp | null>(null);
 
-/** Text from the CV, with the words being searched for marked. Always drawn as text, never markup. */
+/** CV text with search matches marked */
 function Hl({ children }: { children: string }) {
   const pattern = useContext(SearchContext);
   if (!pattern) return <>{children}</>;
@@ -34,14 +33,14 @@ function Hl({ children }: { children: string }) {
   );
 }
 
-/** Why there is no text to show, in words a recruiter can act on. */
+/** Why there is no text */
 function notice(
   cvText: CandidateCvText | null,
   hasResume: boolean,
   workerMissing: boolean,
 ): string | null {
   if (!hasResume) return "This candidate has no CV.";
-  // Nothing is reading CVs, so "a few seconds" would never come true. Say what is wrong instead.
+  // Worker is not running, so say that
   if (workerMissing && (!cvText || cvText.status === "pending")) {
     return "Waiting for the background worker, which is not running. This CV will be read, and will appear in CV search, once an administrator starts it.";
   }
@@ -69,7 +68,7 @@ const SECTION_TITLES: Record<string, string> = {
   other: "Other",
 };
 
-/** The heading shown for a section: the candidate's own, or ours when the CV gave none. */
+/** Section heading from the CV, or our default */
 const sectionTitle = (section: { key: string; heading: string | null }) =>
   section.heading ?? SECTION_TITLES[section.key] ?? "Other";
 
@@ -81,7 +80,7 @@ const EDUCATION_LABELS: Record<string, string> = {
   doctorate: "Doctorate",
 };
 
-/** "About 5 years", or "Under 1 year". Never a bare number, which would read as a fact. */
+/** e.g. "About 5 years" */
 export function experienceLabel(years: number | null | undefined): string {
   if (years === null || years === undefined) return "Not found";
   if (years < 1) return "Under 1 year";
@@ -90,10 +89,9 @@ export function experienceLabel(years: number | null | undefined): string {
 }
 
 const chipBase = "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[13px] font-medium";
-// Tags are blue: a clear colour that is not the theme and does not already mean something here
-// (green for success, amber for waiting, red for rejected).
+// Blue tags so they don't look like a status
 const tagCls = `${chipBase} border-sky-200 bg-sky-100 text-sky-950 dark:border-sky-800 dark:bg-sky-950 dark:text-sky-100`;
-// Contact details are green, so they do not read as one more list of tags.
+// Green so contacts don't look like tags
 const contactCls = `${chipBase} border-emerald-200 bg-emerald-100 text-emerald-950 dark:border-emerald-800 dark:bg-emerald-950 dark:text-emerald-100`;
 const bodyCls = "text-sm leading-6 text-slate-800 dark:text-neutral-200";
 const cardCls = "rounded-md border border-slate-300 bg-white dark:border-neutral-700 dark:bg-neutral-900";
@@ -189,7 +187,6 @@ function Contacts({ contacts }: { contacts: NonNullable<CandidateCvText["contact
   );
 }
 
-/** The text read from the candidate's CV on the server: what CV search looks through. */
 export function CvTextSection({
   cvText,
   hasResume,
@@ -197,7 +194,6 @@ export function CvTextSection({
 }: {
   cvText: CandidateCvText | null;
   hasResume: boolean;
-  /** The background worker is not running, so a CV that is waiting will keep waiting. */
   workerMissing?: boolean;
 }) {
   const message = notice(cvText, hasResume, workerMissing);
@@ -216,14 +212,13 @@ export function CvTextSection({
     );
   }, [cvText, sections, pattern]);
 
-  // Enter moves to the next match and Shift+Enter to the one before, like find in a browser.
+  // Enter = next match, Shift+Enter = previous
   const body = useRef<HTMLDivElement>(null);
   const current = useRef(-1);
   const step = (direction: 1 | -1) => {
     const marks = body.current?.querySelectorAll<HTMLElement>("mark[data-cv-match]");
     if (!marks || marks.length === 0) return;
     marks.forEach((mark) => mark.removeAttribute("data-active"));
-    // Before the first step there is no current match: forward starts at the first, back at the last.
     current.current =
       current.current < 0
         ? direction === 1 ? 0 : marks.length - 1

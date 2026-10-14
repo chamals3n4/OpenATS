@@ -5,13 +5,14 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Edit02Icon, File01Icon, SentIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { OFFER_STATUS_STYLES, formatDate } from "../constants";
+import { OFFER_STATUS_STYLES } from "../constants";
+import { formatDate } from "@/lib/format";
 import {
   EMPLOYMENT_LABELS,
   canEditOffer,
   formatMoney,
   formatRespondBy,
-} from "../../lib/offer-utils";
+} from "../../_lib/offer-utils";
 import { OfferLetterDialog } from "./offer-letter-dialog";
 import { OfferTracker } from "./offer-tracker";
 import type { Offer } from "@/types";

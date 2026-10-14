@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import type { InterviewListItem } from "@/types";
 
 export function useInterviews(filters?: Record<string, string | number>) {
@@ -27,7 +27,7 @@ export type AllocatedSlot = {
   interviewerId: number | null;
 };
 
-/** Upcoming confirmed interview times — used to flag already-taken slots when scheduling. */
+/** Upcoming interview times, used to mark taken slots */
 export function useAllocatedSlots(enabled = true) {
   return useQuery({
     queryKey: ["interviews", "allocated-slots"],

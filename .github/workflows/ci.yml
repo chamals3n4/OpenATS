@@ -68,7 +68,7 @@ jobs:
       # Better Auth reads the tables that the Drizzle migrations create. This
       # fails when one changes without the other: an auth table or column
       # edited in backend/src/db/schema, or a field mapped differently in
-      # frontend/lib/auth-options.ts.
+      # frontend/lib/auth/options.ts.
       - name: Check Better Auth schema matches the migrations
         working-directory: frontend
         env:
@@ -78,10 +78,10 @@ jobs:
           BETTER_AUTH_URL: http://localhost:3000
         run: |
           set -o pipefail
-          npx --yes auth@latest generate --config lib/auth.ts --yes \
+          npx --yes auth@latest generate --config lib/auth/server.ts --yes \
             --output "$RUNNER_TEMP/better-auth-drift.sql" 2>&1 | tee "$RUNNER_TEMP/better-auth-generate.log"
           if ! grep -qi "already up to date" "$RUNNER_TEMP/better-auth-generate.log"; then
-            echo "::error::Better Auth's expected schema differs from the migrated database. Update the Drizzle auth schema and frontend/lib/auth-options.ts together."
+            echo "::error::Better Auth's expected schema differs from the migrated database. Update the Drizzle auth schema and frontend/lib/auth/options.ts together."
             exit 1
           fi
 

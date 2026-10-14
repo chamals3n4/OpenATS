@@ -8,7 +8,7 @@ import {
   positionChanges,
   toApiOptions,
   validateQuestion,
-} from "@/app/(dashboard)/jobs/[id]/lib/question-utils";
+} from "@/app/(dashboard)/jobs/[id]/_lib/question-utils";
 
 describe("isChoiceType", () => {
   it("is true only for the types answered from a list", () => {
@@ -131,7 +131,7 @@ describe("reordering", () => {
   });
 });
 
-import { asWebUrl } from "@/app/(dashboard)/candidates/[id]/lib/answer-utils";
+import { asWebUrl } from "@/app/(dashboard)/candidates/[id]/_lib/answer-utils";
 
 describe("asWebUrl", () => {
   it("accepts http and https links and bare www addresses", () => {

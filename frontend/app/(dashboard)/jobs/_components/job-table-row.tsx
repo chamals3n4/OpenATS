@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import type {
   Job,
   PipelineStage,
@@ -16,7 +16,7 @@ import type {
   JobAssessment,
 } from "@/types";
 import { EMPLOYMENT_TYPE_LABELS } from "@/lib/job-labels";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import { useIsManager } from "@/hooks/use-role";
 
 interface JobTableRowProps {

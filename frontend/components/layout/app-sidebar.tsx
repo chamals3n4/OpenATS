@@ -16,7 +16,7 @@ import { usePathname } from "next/navigation";
 
 import { NavMain } from "@/components/layout/nav-main";
 import { Sidebar, SidebarContent } from "@/components/ui/sidebar";
-import { useCurrentUser } from "@/hooks/queries/use-user";
+import { useRole } from "@/hooks/use-role";
 
 const navMainData = [
   {
@@ -85,10 +85,7 @@ const navMainData = [
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const pathname = usePathname();
-  const { data: currentUserRes } = useCurrentUser();
-  const role = currentUserRes?.data?.role;
-  const isSuperAdmin = role === "super_admin";
-  const isManager = role === "super_admin" || role === "hiring_manager";
+  const { isSuperAdmin, isManager } = useRole();
 
   const items = navMainData
     .filter((item) => {

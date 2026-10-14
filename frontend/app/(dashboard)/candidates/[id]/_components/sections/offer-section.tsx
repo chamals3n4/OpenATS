@@ -19,7 +19,7 @@ import {
   getMissingFields,
   offerToFormValues,
   type OfferFormValues,
-} from "../../lib/offer-utils";
+} from "../../_lib/offer-utils";
 import { OfferDetails } from "../offer/offer-details";
 import { OfferEditForm } from "../offer/offer-edit-form";
 import { OfferEmptyState } from "../offer/offer-empty-state";
@@ -36,7 +36,7 @@ interface OfferSectionProps {
 
 interface PendingSend {
   values: OfferFormValues;
-  /** True when sending the saved offer as it is, so there is nothing to save first. */
+  /** Sending the saved offer as is */
   skipUpdate: boolean;
 }
 
@@ -92,7 +92,7 @@ export function OfferSection({
     );
   };
 
-  // Sending from the summary uses the saved offer, so check that is complete first.
+  // Check the saved offer is complete
   const handleSendFromSummary = () => {
     if (!offer) return;
     const values = offerToFormValues(offer);

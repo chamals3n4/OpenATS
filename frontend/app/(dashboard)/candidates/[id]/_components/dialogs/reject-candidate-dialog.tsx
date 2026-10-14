@@ -21,14 +21,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import { REJECTION_REASONS } from "../constants";
 import {
   INTERNAL_NOTE_MAX,
   NOTE_REQUIRED_REASON,
   pickRejectionTemplate,
   validateRejection,
-} from "../../lib/rejection-utils";
+} from "../../_lib/rejection-utils";
 import { SandboxedHtmlPreview } from "../sandboxed-html-preview";
 import type { useRejectCandidate } from "@/hooks/queries/use-candidates";
 import type { CandidateDetail, Template } from "@/types";
@@ -38,7 +38,7 @@ interface RejectCandidateDialogProps {
   onOpenChange: (open: boolean) => void;
   candidate: CandidateDetail;
   candidateId: number;
-  /** Name of the stage they are in now, which is where "Restore" would send them back to. */
+  /** Current stage, used by Restore */
   stageName?: string | null;
   emailTemplates: Template[];
   rejectMutation: ReturnType<typeof useRejectCandidate>;
@@ -74,7 +74,7 @@ function RejectForm({
   const handleToggleEmail = (on: boolean) => {
     setSendEmail(on);
     setPreview(null);
-    // Start from the template that looks like a rejection, if there is one.
+    // Start with the rejection template
     if (on && !templateId) {
       const guess = pickRejectionTemplate(emailTemplates);
       if (guess) setTemplateId(String(guess.id));
@@ -305,13 +305,13 @@ export function RejectCandidateDialog({
     <Dialog
       open={open}
       onOpenChange={(next) => {
-        // Don't let Escape or an outside click abandon a rejection that is being saved.
+        // Don't close while saving
         if (!next && formProps.rejectMutation.isPending) return;
         onOpenChange(next);
       }}
     >
       <DialogContent className="max-w-lg gap-5 rounded-xl border-slate-200 bg-white p-6 sm:max-w-lg dark:border-neutral-800 dark:bg-neutral-900">
-        {/* Mounted only while open, so every rejection starts from a blank form. */}
+        {/* Mount only when open so the form resets */}
         <RejectForm {...formProps} onClose={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>

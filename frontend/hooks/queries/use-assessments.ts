@@ -5,7 +5,7 @@ import {
   useQueryClient,
   useMutation,
 } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import type {
   Assessment,
   AssessmentQuestion,
@@ -300,7 +300,7 @@ export function useAttemptResults(attemptId: number, options?: { enabled?: boole
             candidateName: string;
             candidateEmail: string;
           };
-          /** Written answers still waiting for a reviewer to grade them. */
+          /** Written answers waiting for grading */
           pendingReview: number;
           questions: {
             id: number;
@@ -326,7 +326,7 @@ export function useAttemptResults(attemptId: number, options?: { enabled?: boole
   });
 }
 
-/** A reviewer's points for one written answer. The score appears once every one is graded. */
+/** Points for one written answer */
 export function useGradeAnswer(attemptId: number) {
   const queryClient = useQueryClient();
   return useMutation({

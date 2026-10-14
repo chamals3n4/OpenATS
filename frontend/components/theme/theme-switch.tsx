@@ -20,7 +20,7 @@ const MODES = [
 export function ThemeSwitch({ className }: { className?: string }) {
   const { theme, setTheme } = useTheme();
 
-  // Theme is client-only, so hold the toggle back until after hydration.
+  // Wait for hydration
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,

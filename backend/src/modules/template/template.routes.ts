@@ -10,6 +10,7 @@ import {
   listSystemEmails,
   saveSystemEmail,
   resetSystemEmail,
+  previewSystemEmailHandler,
 } from "./template.controller";
 
 import { requireManager } from "../../middlewares/role.middleware";
@@ -23,6 +24,7 @@ router.delete("/bulk", requireManager, bulkDeleteTemplates);
 router.get("/system", listSystemEmails);
 router.put("/system/:purpose", requireManager, saveSystemEmail);
 router.delete("/system/:purpose", requireManager, resetSystemEmail);
+router.post("/system/:purpose/preview", previewSystemEmailHandler);
 router.get("/:id", getTemplateById);
 router.put("/:id", requireManager, updateTemplate);
 router.delete("/:id", requireManager, deleteTemplate);

@@ -3,7 +3,7 @@
 import { useDragLayer } from "react-dnd";
 import type { DragItem } from "./board-card";
 
-/** The card that follows the pointer while dragging, drawn by us because the native image is blank. */
+/** Custom drag preview */
 export function DragPreview() {
   const { item, offset, isDragging } = useDragLayer((monitor) => ({
     item: monitor.getItem() as DragItem | null,
@@ -16,9 +16,7 @@ export function DragPreview() {
   return (
     <div
       aria-hidden
-      // The browser reports the pointer every few frames while dragging. Easing between those
-      // reports makes the card glide after the pointer instead of hopping from spot to spot.
-      // People who ask for reduced motion get the card exactly at the pointer instead.
+      // Smooth the card movement while dragging
       className="pointer-events-none fixed top-0 left-0 z-[9999] will-change-transform transition-transform duration-[110ms] ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:transition-none"
       style={{ transform: `translate3d(${offset.x}px, ${offset.y}px, 0)` }}
     >

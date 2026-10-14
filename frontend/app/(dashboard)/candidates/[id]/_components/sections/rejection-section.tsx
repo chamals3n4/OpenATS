@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/confirm-delete-dialog";
 import { useUsers } from "@/hooks/queries/use-user";
 import { useIsManager } from "@/hooks/use-role";
-import { sortRejections } from "../../lib/rejection-utils";
+import { sortRejections } from "../../_lib/rejection-utils";
 import { RejectionCard } from "../rejection/rejection-card";
 import type { useUnrejectCandidate } from "@/hooks/queries/use-candidates";
 import type { CandidateDetail, Template } from "@/types";
@@ -34,7 +34,7 @@ export function RejectionSection({
   onReject,
 }: RejectionSectionProps) {
   const isManager = useIsManager();
-  // The users list is manager-only; other roles just don't see who rejected.
+  // Only managers can see who rejected
   const { data: usersData } = useUsers({ enabled: isManager });
   const [restoreOpen, setRestoreOpen] = useState(false);
 

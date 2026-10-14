@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import {
   buildTimeline,
   summarizeTimeline,
-} from "@/app/(dashboard)/candidates/[id]/lib/stage-history-utils";
-import { formatElapsed } from "@/app/(dashboard)/candidates/[id]/lib/format-elapsed";
+} from "@/app/(dashboard)/candidates/[id]/_lib/stage-history-utils";
+import { formatElapsed } from "@/app/(dashboard)/candidates/[id]/_lib/format-elapsed";
 
 const at = (iso: string) => new Date(iso).getTime();
 const entry = (id: number, stageId: number, movedAt: string, movedBy: number | null = 1) => ({

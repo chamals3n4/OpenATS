@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 
 export type Recommendation = "strong_no" | "no" | "yes" | "strong_yes";
 
@@ -16,7 +16,6 @@ export type InterviewScorecard = {
   ratings: { criterionId: number; name: string; rating: number }[];
 };
 
-/** `hiddenCount` is how many scorecards an interviewer cannot see until they submit their own. */
 export type ScorecardMeta = { hasSubmitted: boolean; hiddenCount: number };
 
 export function useInterviewFeedback(interviewId: number) {

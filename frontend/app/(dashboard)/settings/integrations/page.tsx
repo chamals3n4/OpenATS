@@ -1,11 +1,11 @@
 import { Suspense } from "react";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import type { IntegrationStatus } from "@/hooks/queries/use-integrations";
 import { IntegrationsList } from "./_components/integrations-list";
 import { OAuthCallbackToast } from "./_components/oauth-callback-toast";
 
 export default async function SettingsIntegrationsPage() {
-  // A failed load is shown by the list, with a retry, instead of crashing the page.
+  // The list handles load errors
   let initialStatus: IntegrationStatus[] | null = null;
   try {
     initialStatus = (await serverFetch<{ data: IntegrationStatus[] }>("/integrations/status")).data;

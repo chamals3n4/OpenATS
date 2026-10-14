@@ -5,7 +5,6 @@ import { Edit02Icon, Message02Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import type { InterviewListItem } from "@/types";
 
-/** The two things you can do to an interview from a list: leave a note, or change it. */
 export function InterviewActions({
   interview,
   onFeedback,

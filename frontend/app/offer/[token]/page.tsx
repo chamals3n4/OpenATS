@@ -1,373 +1,48 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { Tick02Icon, Alert02Icon } from "@hugeicons/core-free-icons";
-import {
-  fetchPublicOffer,
-  acceptPublicOffer,
-  declinePublicOffer,
-  markPublicOfferViewed,
-} from "@/hooks/queries/use-offers";
-import type { PublicOfferView } from "@/types";
-import { Spinner } from "@/components/ui/spinner";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+import { use, useState } from "react";
+import { usePublicOffer } from "./_hooks/use-public-offer";
+import { OfferLoading, OfferNotFound } from "./_components/offer-message-screens";
+import { OfferDetails } from "./_components/offer-details";
+import { OfferResponse } from "./_components/offer-response";
+import { DeclineOfferDialog } from "./_components/decline-offer-dialog";
 
-const STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  draft: {
-    label: "Draft",
-    className:
-      "bg-slate-100 text-slate-500 dark:bg-neutral-800 dark:text-neutral-400",
-  },
-  sent: {
-    label: "Awaiting Response",
-    className:
-      "bg-(--theme-color)/10 text-[var(--theme-color)]",
-  },
-  viewed: {
-    label: "Awaiting Response",
-    className:
-      "bg-(--theme-color)/10 text-[var(--theme-color)]",
-  },
-  accepted: {
-    label: "Accepted",
-    className:
-      "bg-emerald-50 text-emerald-600 dark:bg-emerald-950/30 dark:text-emerald-400",
-  },
-  declined: {
-    label: "Declined",
-    className: "bg-red-50 text-red-500 dark:bg-red-950/30 dark:text-red-400",
-  },
-  expired: {
-    label: "Expired",
-    className:
-      "bg-amber-50 text-amber-600 dark:bg-amber-950/30 dark:text-amber-400",
-  },
-};
-
-function fmtCurrency(value: number | string | null): string {
-  if (value == null) return "—";
-  return Number(value).toLocaleString("en-US");
-}
-
-function fmtDate(value: string | null): string {
-  if (!value) return "—";
-  return new Date(value).toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
-
-/** A moment in the reader's own time zone, with the zone named so it cannot be misread. */
-function fmtDateTime(value: string): string {
-  return new Date(value).toLocaleString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-    timeZoneName: "short",
-  });
-}
-
-const EMPLOYMENT_LABELS: Record<string, string> = {
-  full_time: "Full-time",
-  part_time: "Part-time",
-  contract: "Contract",
-  internship: "Internship",
-  freelance: "Freelance",
-};
-
-export default function OfferPortalPage({
-  params,
-}: {
-  params: Promise<{ token: string }>;
-}) {
+// The page a candidate opens from the offer email
+export default function OfferPortalPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
-  const [offer, setOffer] = useState<PublicOfferView | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [actionLoading, setActionLoading] = useState(false);
-  const [actionError, setActionError] = useState<string | null>(null);
+  const { offer, loading, error, actionLoading, actionError, accept, decline } =
+    usePublicOffer(token);
   const [showDeclineConfirm, setShowDeclineConfirm] = useState(false);
 
-  useEffect(() => {
-    fetchPublicOffer(token)
-      .then((data) => {
-        setOffer(data);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setError((err as Error).message || "Failed to load offer");
-        setLoading(false);
-      });
-  }, [token]);
-
-  // Sent once the offer is on the candidate's screen, which is what "viewed" should mean.
-  const isUnseen = offer?.status === "sent";
-  useEffect(() => {
-    if (isUnseen) void markPublicOfferViewed(token);
-  }, [isUnseen, token]);
-
-  // After a refused answer the offer on screen is out of date (it expired, or was already
-  // answered in another tab), so it is loaded again to show where it really stands.
-  const reload = () =>
-    fetchPublicOffer(token)
-      .then(setOffer)
-      .catch(() => undefined);
-
-  const handleAccept = async () => {
-    setActionLoading(true);
-    setActionError(null);
-    try {
-      await acceptPublicOffer(token);
-      setOffer((prev) => (prev ? { ...prev, status: "accepted" } : prev));
-    } catch (err) {
-      setActionError((err as Error).message || "Failed to accept offer");
-      await reload();
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  const handleDecline = async () => {
-    setShowDeclineConfirm(false);
-    setActionLoading(true);
-    setActionError(null);
-    try {
-      await declinePublicOffer(token);
-      setOffer((prev) => (prev ? { ...prev, status: "declined" } : prev));
-    } catch (err) {
-      setActionError((err as Error).message || "Failed to decline offer");
-      await reload();
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-neutral-950">
-        <div className="flex items-center gap-2.5 text-slate-400 dark:text-neutral-500">
-          <Spinner className="size-4" />
-          <p className="text-sm font-medium">Loading offer…</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (error || !offer) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-neutral-950 px-6">
-        <div className="text-center max-w-md">
-          <div className="mx-auto mb-5 flex size-12 items-center justify-center rounded-full bg-red-50 dark:bg-red-950/30">
-            <HugeiconsIcon
-              icon={Alert02Icon}
-              className="size-5 text-red-500 dark:text-red-400"
-              strokeWidth={2}
-            />
-          </div>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-neutral-100">
-            Offer not found
-          </h1>
-          <p className="mt-2 text-sm leading-relaxed text-slate-500 dark:text-neutral-400">
-            {error || "This offer link is invalid or has expired."}
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  const status = STATUS_LABELS[offer.status] ?? STATUS_LABELS.draft;
-  const canRespond = ["sent", "viewed"].includes(offer.status);
-
-  const details = [
-    {
-      label: "Salary",
-      value: offer.currency
-        ? `${offer.currency} ${fmtCurrency(offer.salary)}`
-        : fmtCurrency(offer.salary),
-    },
-    {
-      label: "Employment type",
-      value: offer.employmentType
-        ? (EMPLOYMENT_LABELS[offer.employmentType] ?? offer.employmentType)
-        : "—",
-    },
-    { label: "Start date", value: fmtDate(offer.startDate) },
-    { label: "Reporting manager", value: offer.reportingManager || "—" },
-  ];
+  if (loading) return <OfferLoading />;
+  if (error || !offer) return <OfferNotFound message={error} />;
 
   return (
     <div className="min-h-screen bg-white dark:bg-neutral-950 transition-colors duration-300">
       <div className="max-w-[640px] mx-auto pt-14 pb-24 px-6 sm:px-8">
-        <p className="text-sm font-medium text-slate-500 dark:text-neutral-400">
-          Offer Letter
-        </p>
+        <OfferDetails offer={offer} />
 
-        <h1 className="mt-4 text-3xl sm:text-[32px] font-semibold text-slate-900 dark:text-neutral-100 leading-tight">
-          {offer.jobTitle}
-        </h1>
-
-        <div className="mt-3 flex items-center gap-3">
-          <p className="text-sm text-slate-500 dark:text-neutral-400">
-            {offer.candidateName}
-          </p>
-          <span
-            className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${status.className}`}
-          >
-            {status.label}
-          </span>
-        </div>
-
-        {/* Details */}
-        <div className="mt-10 rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/60 p-6">
-          <div className="grid grid-cols-2 gap-x-6 gap-y-5">
-            {details.map(({ label, value }) => (
-              <div key={label}>
-                <p className="text-xs font-medium text-slate-500 dark:text-neutral-400">
-                  {label}
-                </p>
-                <p className="mt-1 text-sm font-medium text-slate-900 dark:text-neutral-100">
-                  {value}
-                </p>
-              </div>
-            ))}
-            {offer.benefits && (
-              <div className="col-span-2">
-                <p className="text-xs font-medium text-slate-500 dark:text-neutral-400">
-                  Benefits
-                </p>
-                <p className="mt-1 text-sm leading-relaxed text-slate-700 dark:text-neutral-300 whitespace-pre-line">
-                  {offer.benefits}
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {offer.status === "expired" && (
-          <p className="mt-8 text-sm leading-relaxed text-slate-600 dark:text-neutral-400">
-            This offer is no longer open
-            {offer.expiresAt ? `: it had to be answered by ${fmtDateTime(offer.expiresAt)}` : ""}.
-            Please contact the hiring team if you would still like to discuss it.
-          </p>
-        )}
-
-        {!canRespond && actionError && (
-          <p className="mt-4 text-sm text-red-500 dark:text-red-400">{actionError}</p>
-        )}
-
-        {/* Respond */}
-        {canRespond && (
-          <div className="mt-12">
-            {offer.expiresAt && (
-              <p className="mb-4 text-sm text-slate-600 dark:text-neutral-400">
-                Please respond by{" "}
-                <span className="font-medium text-slate-900 dark:text-neutral-100">
-                  {fmtDateTime(offer.expiresAt)}
-                </span>
-                .
-              </p>
-            )}
-            {actionError && (
-              <p className="mb-4 text-sm text-red-500 dark:text-red-400">
-                {actionError}
-              </p>
-            )}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <button
-                type="button"
-                onClick={handleAccept}
-                disabled={actionLoading}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-theme hover:bg-theme-hover text-white px-6 h-11 font-medium text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {actionLoading && <Spinner className="size-3.5" />}
-                {actionLoading ? "Processing" : "Accept offer"}
-              </button>
-              <button
-                type="button"
-                onClick={() => setShowDeclineConfirm(true)}
-                disabled={actionLoading}
-                className="inline-flex items-center justify-center gap-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-transparent text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 px-6 h-11 font-medium text-sm transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Decline
-              </button>
-            </div>
-          </div>
-        )}
-
-        {offer.status === "accepted" && (
-          <div className="mt-12 rounded-xl bg-emerald-50 dark:bg-emerald-950/20 px-6 py-5 text-center">
-            <div className="mx-auto mb-3 flex size-10 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-950/40">
-              <HugeiconsIcon
-                icon={Tick02Icon}
-                className="size-4 text-emerald-600 dark:text-emerald-400"
-                strokeWidth={2.5}
-              />
-            </div>
-            <p className="text-base font-semibold text-emerald-700 dark:text-emerald-300">
-              Offer accepted
-            </p>
-            <p className="mt-1 text-sm text-emerald-600 dark:text-emerald-400">
-              Congratulations! The hiring team has been notified.
-            </p>
-          </div>
-        )}
-
-        {offer.status === "declined" && (
-          <div className="mt-12 rounded-xl bg-red-50 dark:bg-red-950/20 px-6 py-5 text-center">
-            <p className="text-base font-semibold text-red-600 dark:text-red-400">
-              Offer declined
-            </p>
-            <p className="mt-1 text-sm text-red-500 dark:text-red-400">
-              You have declined this offer. The hiring team has been notified.
-            </p>
-          </div>
-        )}
+        <OfferResponse
+          offer={offer}
+          actionLoading={actionLoading}
+          actionError={actionError}
+          onAccept={accept}
+          onDecline={() => setShowDeclineConfirm(true)}
+        />
 
         <p className="text-center text-xs text-slate-400 dark:text-neutral-500 mt-12">
           Powered by OpenATS
         </p>
       </div>
 
-      {/* Decline confirmation */}
-      <AlertDialog
+      <DeclineOfferDialog
         open={showDeclineConfirm}
-        onOpenChange={(o) => !o && setShowDeclineConfirm(false)}
-      >
-        <AlertDialogContent className="max-w-sm rounded-md border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 shadow-lg">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="text-base font-semibold text-slate-900 dark:text-neutral-100">
-              Decline this offer?
-            </AlertDialogTitle>
-            <AlertDialogDescription className="text-sm text-slate-500 dark:text-neutral-400 leading-relaxed">
-              The hiring team will be notified. This cannot be undone.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter className="gap-2">
-            <AlertDialogCancel className="h-8 px-4 text-sm">
-              Cancel
-            </AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDecline}
-              className="h-8 rounded-md border-none bg-red-600 px-4 text-sm font-semibold leading-none text-white shadow-none hover:bg-red-500 cursor-pointer"
-            >
-              Decline offer
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        onClose={() => setShowDeclineConfirm(false)}
+        onConfirm={() => {
+          setShowDeclineConfirm(false);
+          void decline();
+        }}
+      />
     </div>
   );
 }

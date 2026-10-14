@@ -5,8 +5,8 @@ let isManager = true;
 vi.mock("@/hooks/use-role", () => ({ useIsManager: () => isManager }));
 vi.mock("@/hooks/use-drag-sort", () => ({ useDragSort: () => ({ ref: () => {}, isDragging: false, isOver: false }) }));
 
-import { StageDialog } from "@/app/(dashboard)/jobs/[id]/_components/dialogs/StageDialog";
-import { HiringProcessTab } from "@/app/(dashboard)/jobs/[id]/_components/tabs/HiringProcessTab";
+import { StageDialog } from "@/app/(dashboard)/jobs/[id]/_components/dialogs/stage-dialog";
+import { HiringProcessTabView } from "@/app/(dashboard)/jobs/[id]/_components/tabs/hiring-process-tab";
 import type { PipelineStage } from "@/types";
 
 const stage = (id: number, name: string, stageType: PipelineStage["stageType"]) =>
@@ -55,7 +55,7 @@ describe("StageDialog", () => {
   });
 });
 
-describe("HiringProcessTab", () => {
+describe("HiringProcessTabView", () => {
   const props = {
     stages: [stage(1, "Applied", "screening"), stage(2, "Technical interview", "interview")],
     onAddStage: vi.fn(),
@@ -65,14 +65,14 @@ describe("HiringProcessTab", () => {
   };
 
   it("lists the stages in order with their type, and has no inline editing", () => {
-    render(<HiringProcessTab {...props} />);
+    render(<HiringProcessTabView {...props} />);
     expect(screen.getByText("Technical interview")).toBeTruthy();
     expect(screen.getByText("Screening")).toBeTruthy();
     expect(screen.queryByRole("textbox")).toBeNull();
   });
 
   it("hands the stage to the edit dialog and asks before deleting", () => {
-    render(<HiringProcessTab {...props} />);
+    render(<HiringProcessTabView {...props} />);
     fireEvent.click(screen.getByRole("button", { name: "Edit the stage Technical interview" }));
     expect(props.onEditStage).toHaveBeenCalledWith(expect.objectContaining({ id: 2 }));
 
@@ -82,7 +82,7 @@ describe("HiringProcessTab", () => {
 
   it("is read-only for people who cannot change the pipeline", () => {
     isManager = false;
-    render(<HiringProcessTab {...props} />);
+    render(<HiringProcessTabView {...props} />);
     expect(screen.queryByRole("button")).toBeNull();
   });
 });

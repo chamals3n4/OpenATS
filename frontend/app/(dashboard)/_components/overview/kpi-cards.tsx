@@ -1,4 +1,4 @@
-import type { Kpi, Tone } from "../../lib/overview-utils";
+import type { Kpi, Tone } from "../../_lib/overview-utils";
 import { cardCls } from "./card";
 
 const TONE: Record<Tone, string> = {
@@ -10,7 +10,7 @@ const TONE: Record<Tone, string> = {
 
 interface KpiCardsProps {
   kpis: Kpi[];
-  /** Words for the period compared against, e.g. "the previous 7 days". */
+  /** e.g. "the previous 7 days" */
   comparedWith: string;
   isLoading: boolean;
 }

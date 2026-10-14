@@ -4,7 +4,6 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { ListSectionSpinner } from "@/components/dashboard-main-loading";
 import { Button } from "@/components/ui/button";
-import { ThemeButton } from "@/components/theme/theme-button";
 import { useIsManager } from "@/hooks/use-role";
 import type { Assessment } from "@/types";
 import { AssessmentCard } from "./assessment-card";
@@ -55,9 +54,9 @@ export function AssessmentCardGrid({
             </Button>
           ) : (
             isManager && (
-              <ThemeButton
+              <Button
                 onClick={onCreate}
-                className="h-9 gap-2 border-none px-4 text-sm shadow-none"
+                className="h-9 cursor-pointer gap-2 rounded-md border-none bg-theme px-4 text-sm font-semibold text-white shadow-none hover:bg-theme-hover"
               >
                 <HugeiconsIcon
                   icon={PlusSignIcon}
@@ -65,7 +64,7 @@ export function AssessmentCardGrid({
                   strokeWidth={2.5}
                 />
                 New Assessment
-              </ThemeButton>
+              </Button>
             )
           )}
         </div>

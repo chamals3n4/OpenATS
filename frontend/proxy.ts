@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/server";
 
 const PUBLIC_PATHS = new Set([
   "/login",
@@ -26,15 +26,13 @@ function isPublicRoute(pathname: string) {
   );
 }
 
-// An optimistic check only: getSessionCookie says a cookie exists, not that
-// the session behind it is valid. The dashboard layout does the real check.
+// Only checks the cookie exists. The layout checks the session
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const hasSessionCookie = Boolean(getSessionCookie(request));
 
   if (pathname === "/login" && hasSessionCookie) {
-    // Verified for real here. A stale cookie would otherwise bounce between
-    // this redirect and the dashboard layout's redirect back to /login.
+    // Check the session here to avoid a redirect loop
     const session = await auth.api.getSession({ headers: request.headers });
     if (session) {
       return NextResponse.redirect(new URL("/", request.url));

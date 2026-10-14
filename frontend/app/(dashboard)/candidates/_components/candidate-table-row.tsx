@@ -5,7 +5,8 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 import type { Candidate } from "@/types";
-import { splitSnippet, timeAgo } from "../lib/candidate-utils";
+import { splitSnippet } from "../_lib/candidate-utils";
+import { timeAgo } from "@/lib/format";
 import { useIsManager } from "@/hooks/use-role";
 import { ScoreBadge } from "@/components/score-badge";
 

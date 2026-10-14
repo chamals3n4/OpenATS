@@ -18,7 +18,7 @@ interface OfferLetterDialogProps {
   candidateName: string;
 }
 
-/** The letter in a dialog, so reading it never means scrolling the tab. */
+/** Offer letter dialog */
 export function OfferLetterDialog({
   open,
   onOpenChange,

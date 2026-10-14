@@ -22,7 +22,6 @@ interface FlagsDialogProps {
   onOpenProfile: (id: number) => void;
 }
 
-/** Spells out a card's flags, which are an icon on the card because a board column is narrow. */
 export function FlagsDialog({ candidate, name, open, onOpenChange, onOpenProfile }: FlagsDialogProps) {
   const flags = candidateFlags(candidate);
   const parts =

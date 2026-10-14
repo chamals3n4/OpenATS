@@ -7,7 +7,7 @@ import {
   isValidReplyAddress,
   splitParagraphs,
   validateEmail,
-} from "@/app/(dashboard)/candidates/[id]/lib/email-utils";
+} from "@/app/(dashboard)/candidates/[id]/_lib/email-utils";
 
 describe("validateEmail", () => {
   it("accepts a subject and a message", () => {
@@ -82,7 +82,7 @@ import {
   templateHtmlToText,
   unfilledVariables,
   validateEmail as validate,
-} from "@/app/(dashboard)/candidates/[id]/lib/email-utils";
+} from "@/app/(dashboard)/candidates/[id]/_lib/email-utils";
 
 describe("using a template in a typed email", () => {
   it("turns template HTML into paragraphs of plain text", () => {

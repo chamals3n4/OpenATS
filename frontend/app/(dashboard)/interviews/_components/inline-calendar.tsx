@@ -12,10 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { InterviewListItem } from "@/types";
-import { STATUS_CONFIG, fmtTime, fmtTimeRange, matchesInterview } from "./constants";
+import { STATUS_CONFIG, fmtTimeRange, matchesInterview } from "../../_lib/interview-display";
+import { formatTime } from "@/lib/format";
 import { InterviewActions } from "./interview-actions";
 import { MonthYearPicker } from "./month-year-picker";
-import { dayKey, groupByDay, monthGrid } from "../lib/calendar-utils";
+import { dayKey, groupByDay, monthGrid } from "../_lib/calendar-utils";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MAX_CHIPS = 2;
@@ -29,7 +30,7 @@ function PanelItem({
   onEdit,
 }: {
   interview: InterviewListItem;
-  /** In search results the interviews come from different days, so each says which. */
+  /** Search results show the day */
   showDate: boolean;
   onFeedback: (iv: InterviewListItem) => void;
   onEdit: (iv: InterviewListItem) => void;
@@ -103,7 +104,7 @@ export function InlineCalendar({
   onEdit: (iv: InterviewListItem) => void;
 }) {
   const [query, setQuery] = useState("");
-  // Read once, so "today" does not move under the user if the page is left open over midnight.
+  // Read once so today doesn't change at midnight
   const [today] = useState(() => new Date());
   const todayKey = dayKey(today);
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -116,10 +117,10 @@ export function InlineCalendar({
 
   const selectedDate = new Date(`${selectedKey}T00:00:00`);
   const selectedInterviews = byDay.get(selectedKey) ?? [];
-  // No time yet, so they cannot be on the grid. Listed beside it so they are not forgotten.
+  // No time yet, so list them next to the calendar
   const waiting = interviews.filter((iv) => iv.status === "pending_schedule" && !iv.scheduledAt);
 
-  // Searching looks through every interview, on any day. Otherwise the panel shows the chosen day.
+  // Search all days, otherwise show the selected day
   const searching = query.trim() !== "";
   const results = searching
     ? interviews
@@ -134,7 +135,7 @@ export function InlineCalendar({
   };
   const selectDay = (date: Date, key: string) => {
     setSelectedKey(key);
-    // A day from the next or previous month brings that month into view.
+    // Clicking a day from another month switches to it
     if (date.getMonth() !== month) setCursor(new Date(date.getFullYear(), date.getMonth(), 1));
   };
 
@@ -175,7 +176,6 @@ export function InlineCalendar({
           ))}
         </div>
 
-        {/* Rows share the height left in the window, so a whole month shows without scrolling. */}
         <div
           className="grid grid-cols-7"
           style={{ gridAutoRows: `minmax(3.75rem, min(8rem, calc((100dvh - 20.5rem) / ${days.length / 7})))` }}
@@ -219,24 +219,24 @@ export function InlineCalendar({
                   >
                     {date.getDate()}
                   </span>
-                  {/* Beside the date, because a short row has no room for it under the names. */}
                   {dayInterviews.length > MAX_CHIPS && (
-                    <span className="hidden rounded-full bg-theme px-1.5 text-[11px] font-semibold leading-5 text-white sm:block">
-                      +{dayInterviews.length - MAX_CHIPS}
+                    <span className="hidden text-[11px] font-medium leading-5 text-slate-500 sm:block dark:text-neutral-400">
+                      +{dayInterviews.length - MAX_CHIPS} more
                     </span>
                   )}
                 </span>
 
-                {/* Wide screens: who and when. Narrow screens: only how many. */}
                 <span className="hidden w-full flex-col gap-1 sm:flex">
                   {dayInterviews.slice(0, MAX_CHIPS).map((iv) => (
-                    <span
-                      key={iv.id}
-                      className={`relative flex items-center gap-1.5 overflow-hidden rounded-sm py-0.5 pl-2.5 pr-1.5 text-xs font-medium ${statusOf(iv.status).badge}`}
-                    >
-                      <span className={`absolute inset-y-0 left-0 w-1 ${statusOf(iv.status).dot}`} />
-                      <span className="shrink-0 tabular-nums">{fmtTime(iv.scheduledAt)}</span>
-                      <span className="truncate">{iv.candidateName?.split(" ")[0]}</span>
+                    // Status dot, time and name
+                    <span key={iv.id} className="flex w-full items-center gap-1.5 text-[13px] leading-4">
+                      <span aria-hidden className={`size-2 shrink-0 rounded-full ${statusOf(iv.status).dot}`} />
+                      <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-neutral-100">
+                        {formatTime(iv.scheduledAt)}
+                      </span>
+                      <span className="truncate font-medium text-slate-700 dark:text-neutral-300">
+                        {iv.candidateName?.split(" ")[0]}
+                      </span>
                     </span>
                   ))}
                 </span>
@@ -260,7 +260,6 @@ export function InlineCalendar({
         </footer>
       </section>
 
-      {/* As tall as the window allows, with its own scroll, so a busy day never pushes the page down. */}
       <section
         aria-label="Interviews"
         className="flex w-full shrink-0 flex-col overflow-hidden rounded-md border border-slate-300 bg-white xl:max-h-[calc(100dvh-12.5rem)] xl:w-96 dark:border-neutral-700 dark:bg-neutral-900"
@@ -284,7 +283,7 @@ export function InlineCalendar({
           <div className="relative">
             <HugeiconsIcon
               icon={Search01Icon}
-              className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-slate-500 dark:text-neutral-400"
+              className="pointer-events-none absolute left-3 top-1/2 z-10 size-4 -translate-y-1/2 text-slate-500 dark:text-neutral-400"
             />
             <Input
               type="search"

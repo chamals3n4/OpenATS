@@ -7,7 +7,7 @@ const TABS: { value: TemplatesTab; label: string; href: string }[] = [
   { value: "automatic", label: "Automatic emails", href: "/templates?tab=automatic" },
 ];
 
-/** Switches between the templates people pick by hand and the emails the app sends by itself. */
+/** Manual templates and automatic emails */
 export function TemplatesTabs({ tab }: { tab: TemplatesTab }) {
   return (
     <nav aria-label="Template kinds" className="flex shrink-0 gap-6 border-b border-slate-300 px-6 dark:border-neutral-700">

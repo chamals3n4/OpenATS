@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { dayKey, groupByDay, monthGrid } from "@/app/(dashboard)/interviews/lib/calendar-utils";
+import { dayKey, groupByDay, monthGrid } from "@/app/(dashboard)/interviews/_lib/calendar-utils";
 
 describe("monthGrid", () => {
   it("covers the month in whole weeks, Sunday first, padded with the neighbouring months", () => {

@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 const serverFetch = vi.fn();
-vi.mock("@/lib/auth-action", () => ({ serverFetch: (...a: unknown[]) => serverFetch(...a) }));
+vi.mock("@/lib/server-fetch", () => ({ serverFetch: (...a: unknown[]) => serverFetch(...a) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
 let googleConnected = false;
@@ -32,7 +32,7 @@ vi.mock("@/components/ui/date-time-picker", () => ({
 }));
 
 import { toast } from "sonner";
-import { InterviewSchedulerDialog } from "@/app/(dashboard)/interviews/_components/interview-scheduler-dialog";
+import { InterviewSchedulerDialog } from "@/app/(dashboard)/_components/interview-scheduler-dialog";
 
 const future = (days: number) => {
   const d = new Date(Date.now() + days * 86_400_000);

@@ -41,7 +41,7 @@ export function JobsPageClient() {
   const jobs = data?.data ?? [];
   const pagination = data?.pagination;
 
-  // Client-side filter for employment type (not a DB column we search — applied on top of server results)
+  // Filter employment type on the client
   const filteredJobs = useMemo(() => {
     if (filterType === "all") return jobs;
     return jobs.filter((j) => j.employmentType === filterType);

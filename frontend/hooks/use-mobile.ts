@@ -13,7 +13,7 @@ export function useIsMobile() {
   return React.useSyncExternalStore(
     subscribe,
     () => window.matchMedia(MOBILE_QUERY).matches,
-    // There is no viewport while server rendering, so assume desktop.
+    // Assume desktop on the server
     () => false,
   )
 }

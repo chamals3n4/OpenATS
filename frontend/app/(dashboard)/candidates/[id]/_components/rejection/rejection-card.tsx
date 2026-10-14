@@ -1,17 +1,16 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Mail01Icon } from "@hugeicons/core-free-icons";
-import { timeAgo } from "../constants";
-import { formatDateTime } from "../../lib/format-datetime";
-import { describeRejectionEmail, type EmailTone } from "../../lib/rejection-utils";
+import { formatDateTime, timeAgo } from "@/lib/format";
+import { describeRejectionEmail, type EmailTone } from "../../_lib/rejection-utils";
 import type { CandidateRejection } from "@/types";
 
 interface RejectionCardProps {
   rejection: CandidateRejection;
   stageName: string | null;
-  /** Null when the viewer cannot see names (only managers can list users). */
+  /** Null if the viewer can't see names */
   rejectedByName: string | null;
   templateName: string | null;
-  /** True for the newest rejection while the candidate is still rejected. */
+  /** Newest rejection while still rejected */
   isCurrent: boolean;
 }
 

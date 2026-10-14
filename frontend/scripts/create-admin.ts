@@ -1,16 +1,7 @@
 /**
- * Creates the first super admin, or promotes an existing user to one.
- *
- *   pnpm --filter ./frontend exec tsx scripts/create-admin.ts \
- *     --email ada@example.com --first-name Ada --last-name Lovelace
- *
- * Public sign-up is disabled, so this is how a fresh install gets its first
- * account. It is also the recovery path for a locked-out install, and how an
- * install upgrading from an external identity provider gives an existing
- * user a password.
- *
- * Anything not passed as a flag is asked for. The password is read without
- * echo and is never printed or logged.
+ * Create the first super admin, or promote a user.
+ * pnpm --filter ./frontend exec tsx scripts/create-admin.ts --email ada@example.com --first-name Ada --last-name Lovelace
+ * Missing values are asked for. The password is never printed
  */
 import path from "node:path";
 import readline from "node:readline";
@@ -20,7 +11,7 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PASSWORD_RULE,
-} from "../lib/auth-errors";
+} from "../lib/auth/errors";
 import { checkEnv } from "../lib/env";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -58,7 +49,7 @@ function ask(question: string, opts: { hidden?: boolean } = {}) {
       resolve(answer);
     });
 
-    // Muted after the question is written, so typed characters are not echoed.
+    // Mute so the password isn't shown
     muted = Boolean(opts.hidden);
   });
 }
@@ -108,8 +99,7 @@ async function readInputs() {
 }
 
 async function main() {
-  // Outside Next.js nothing loads frontend/.env for us. Variables already in
-  // the environment win, as they do in Next.js.
+  // Load frontend/.env ourselves outside Next.js
   try {
     process.loadEnvFile(path.join(__dirname, "../.env"));
   } catch {
@@ -127,17 +117,16 @@ async function main() {
 
   const { email, firstName, lastName, password } = await readInputs();
 
-  // Imported only now: these read the environment when they load.
+  // Import late, they read env on load
   const { betterAuth } = await import("better-auth");
-  const { authOptions } = await import("../lib/auth-options");
-  const { pool } = await import("../lib/db");
+  const { authOptions } = await import("../lib/auth/options");
+  const { pool } = await import("../lib/auth/db");
 
-  // Its own instance, without nextCookies(), which needs a Next.js request.
+  // Own instance, no nextCookies()
   const auth = betterAuth(authOptions);
 
   try {
-    // Matched without regard to case: rows from before built-in sign-in may
-    // hold a mixed-case email, which Better Auth's own lookup would miss.
+    // Match case insensitive, old rows may have mixed case
     const existing = await pool.query<{ id: number }>(
       "select id from users where lower(email) = $1",
       [email],
@@ -164,13 +153,12 @@ async function main() {
       return;
     }
 
-    // Existing user: the row and its id stay, so everything linked to it
-    // (jobs, hiring teams, notes, history) is untouched.
+    // Keep the existing user row and its links
     const userId = String(existing.rows[0].id);
     const ctx = await auth.$context;
 
     await ctx.internalAdapter.updateUser(userId, {
-      // Stored in lower case so that sign-in, which lower-cases, finds it.
+      // Store lower case for sign in
       email,
       role: "super_admin",
       banned: false,
@@ -183,7 +171,7 @@ async function main() {
     if (await ctx.internalAdapter.findCredentialAccount(userId)) {
       await ctx.internalAdapter.updatePassword(userId, hash);
     } else {
-      // Every user from before built-in sign-in: they never had a password here.
+      // Old users without a password
       await ctx.internalAdapter.linkAccount({
         userId,
         providerId: "credential",
@@ -192,8 +180,7 @@ async function main() {
       });
     }
 
-    // This is the lockout recovery path, so whoever was signed in as this
-    // user before the password changed is signed out.
+    // Sign out old sessions after the password changes
     await ctx.internalAdapter.deleteUserSessions(userId);
 
     console.log(
@@ -205,7 +192,7 @@ async function main() {
 }
 
 main().catch((error: unknown) => {
-  // Only the message: an error object could carry the request body.
+  // Only the message, the error may hold the body
   console.error(
     `\nCould not create the admin: ${error instanceof Error ? error.message : String(error)}\n`,
   );

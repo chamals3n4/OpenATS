@@ -3,7 +3,7 @@
 import { useRef } from "react";
 import { VariablePicker } from "./variable-picker";
 
-/** The id of the message shown under the composer when the subject is wrong. */
+/** Id of the subject error message */
 export const SUBJECT_ERROR_ID = "template-subject-error";
 
 interface EmailSubjectFieldProps {

@@ -69,7 +69,7 @@ export function JobDescriptionEditor({
   }
 
   return (
-    <div className="border border-slate-300 dark:border-neutral-600 rounded-xl overflow-hidden shadow-none">
+    <div className="border border-slate-300 dark:border-neutral-600 rounded-xl overflow-hidden shadow-none transition-[border-color] duration-300 ease-in-out focus-within:border-theme dark:focus-within:border-theme">
       <div className="flex items-center gap-1.5 p-2 bg-[#F8FAFC]/50 dark:bg-neutral-900/50 border-b border-slate-300 dark:border-neutral-600">
         <Button
           type="button"

@@ -29,7 +29,7 @@ import { useIsManager } from "@/hooks/use-role";
 interface InterviewFeedbackDialogProps {
   interviewId: number;
   interviewName: string;
-  /** The job being interviewed for, which decides the scorecard's criteria. */
+  /** Job for the scorecard criteria */
   jobId: number;
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -114,10 +114,7 @@ function SubmittedScorecard({
   );
 }
 
-/**
- * The interviewers' scorecards for an interview, and the form to fill in your own. An
- * interviewer sees nobody else's scorecard until they have submitted theirs.
- */
+/** Interview scorecards. You see others only after submitting yours */
 export function InterviewFeedbackDialog({
   interviewId,
   interviewName,
@@ -145,7 +142,7 @@ export function InterviewFeedbackDialog({
   const [text, setText] = useState("");
   const [seededFrom, setSeededFrom] = useState<number | null>(null);
 
-  // Start the form from the scorecard you already submitted, so submitting again edits it.
+  // Start from your submitted scorecard
   if (mine && seededFrom !== mine.id) {
     setSeededFrom(mine.id);
     setScores(Object.fromEntries(mine.ratings.map((r) => [r.criterionId, r.rating])));

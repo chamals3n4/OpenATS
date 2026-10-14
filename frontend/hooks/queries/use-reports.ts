@@ -1,5 +1,5 @@
 import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import { AnalyticsReport, AnalyticsExportPayload, AttentionReport } from "@/types";
 
 export function useAnalyticsReport(
@@ -20,7 +20,7 @@ export function useAnalyticsReport(
   });
 }
 
-/** Interviews, offers and candidates that need a manager's attention. Managers only. */
+/** Items that need a manager's attention */
 export function useAttentionReport(departmentId?: number, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["reports", "attention", departmentId ?? "all"],

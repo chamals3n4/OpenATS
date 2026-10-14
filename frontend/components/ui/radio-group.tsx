@@ -16,7 +16,6 @@ function RadioGroup({ className, ...props }: RadioGroupPrimitive.Props) {
 }
 
 export type RadioGroupItemProps = RadioPrimitive.Root.Props & {
-  /** `theme` fills the ring with brand terracotta; dot is white in light mode and `background` in dark. */
   variant?: "default" | "theme"
 }
 

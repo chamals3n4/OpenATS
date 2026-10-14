@@ -25,7 +25,7 @@ interface ExportDialogProps {
   open: boolean;
   format: ExportFormat;
   onFormatChange: (format: ExportFormat) => void;
-  /** What the export covers, e.g. "Last 30 days, All departments". */
+  /** e.g. "Last 30 days, All departments" */
   scope: string;
   isPending: boolean;
   onClose: () => void;

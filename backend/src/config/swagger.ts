@@ -1,7 +1,10 @@
 import swaggerUi from "swagger-ui-express";
-import YAML from "yamljs";
+import fs from "fs";
+import yaml from "js-yaml";
 import path from "path";
 
-const swaggerDocument = YAML.load(path.join(process.cwd(), "openapi.yaml"));
+const swaggerDocument = yaml.load(
+  fs.readFileSync(path.join(process.cwd(), "openapi.yaml"), "utf8"),
+) as Record<string, unknown>;
 
 export { swaggerUi, swaggerDocument };

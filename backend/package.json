@@ -25,14 +25,14 @@
     "ext": "ts,json"
   },
   "dependencies": {
-    "@aws-sdk/client-s3": "^3.1146.0",
-    "@google/genai": "^2.24.0",
-    "bullmq": "^6.3.10",
+    "@aws-sdk/client-s3": "^3.1149.0",
+    "@google/genai": "^2.28.0",
+    "bullmq": "^6.3.12",
     "cors": "^2.8.6",
-    "dotenv": "^18.0.4",
-    "drizzle-orm": "^0.45.3",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.7.0",
+    "dotenv": "^18.0.7",
+    "drizzle-orm": "^0.45.4",
+    "express": "^5.3.0",
+    "express-rate-limit": "^8.7.1",
     "googleapis": "^173.0.0",
     "helmet": "^8.1.0",
     "ioredis": "6.0.0",
@@ -40,7 +40,7 @@
     "morgan": "^1.12.1",
     "multer": "^2.4.0",
     "pg": "^8.23.1",
-    "resend": "^6.32.0",
+    "resend": "^6.32.1",
     "sanitize-html": "^2.18.0",
     "socket.io": "^4.8.4",
     "swagger-ui-express": "^5.0.1",
@@ -56,7 +56,7 @@
     "@types/helmet": "^4.0.0",
     "@types/morgan": "^1.9.10",
     "@types/multer": "^2.3.0",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "@types/pg": "^8.23.1",
     "@types/sanitize-html": "^2.16.2",
     "@types/socket.io": "^3.0.2",
@@ -71,7 +71,7 @@
     "supertest": "^7.3.1",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.71.0",
+    "typescript-eslint": "^8.71.1",
     "vitest": "^4.1.0"
   }
 }

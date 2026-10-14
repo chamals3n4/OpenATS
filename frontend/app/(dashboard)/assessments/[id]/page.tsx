@@ -25,8 +25,8 @@ import {
   makeQuestion,
   questionFromApi,
   questionsFingerprint,
-  questionToApi,
 } from "../_lib/assessment-builder-utils";
+import { saveQuestions } from "../_lib/save-questions";
 
 /** View or edit an existing assessment */
 export default function EditAssessmentPage({
@@ -114,19 +114,15 @@ export default function EditAssessmentPage({
 
     setIsSaving(true);
     try {
-      const kept = new Set(saved.filter((q) => q.dbId).map((q) => q.dbId!));
-      for (const dbId of originalDbIds.current.filter((id) => !kept.has(id))) {
-        await deleteQuestionMutation.mutateAsync(dbId);
-      }
-
-      for (const [idx, q] of saved.entries()) {
-        const data = questionToApi(q, idx);
-        if (q.dbId) {
-          await updateQuestionMutation.mutateAsync({ questionId: q.dbId, data });
-        } else {
-          await createQuestionMutation.mutateAsync(data);
-        }
-      }
+      await saveQuestions({
+        questions: saved,
+        savedIds: originalDbIds,
+        deleteQuestion: (id) => deleteQuestionMutation.mutateAsync(id),
+        updateQuestion: (id, data) => updateQuestionMutation.mutateAsync({ questionId: id, data }),
+        createQuestion: (data) => createQuestionMutation.mutateAsync(data),
+        // Keep the new id, so a retry updates it instead of creating a copy
+        onCreated: (uid, dbId) => updateQuestion(uid, { dbId }),
+      });
 
       toast.success("Assessment updated.");
       router.push("/assessments");

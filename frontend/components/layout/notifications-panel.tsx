@@ -92,6 +92,9 @@ const SAMPLE_NOTIFICATIONS: NotificationItem[] = [
   },
 ];
 
+/** The list only holds examples, so the bell must not report them as unread */
+const EXAMPLES_ONLY = true;
+
 /** How many are listed before "Show more" is pressed. */
 const FIRST_SHOWN = 4;
 
@@ -140,11 +143,17 @@ export function NotificationsPanel() {
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         type="button"
-        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
+        aria-label={
+          EXAMPLES_ONLY
+            ? "Notifications (preview with examples)"
+            : unreadCount > 0
+              ? `Notifications, ${unreadCount} unread`
+              : "Notifications"
+        }
         className="relative flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-slate-100/80 text-slate-500 outline-none hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-theme/40 aria-expanded:bg-slate-200 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:aria-expanded:bg-neutral-800"
       >
         <HugeiconsIcon icon={Notification03Icon} className="size-5" />
-        {unreadCount > 0 && (
+        {!EXAMPLES_ONLY && unreadCount > 0 && (
           <span
             aria-hidden
             className="absolute right-1.5 top-1.5 size-2 rounded-full bg-theme ring-2 ring-white dark:ring-neutral-950"

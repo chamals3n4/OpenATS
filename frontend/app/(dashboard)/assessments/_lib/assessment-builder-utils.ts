@@ -159,11 +159,10 @@ export function questionProblem(question: Question): string | null {
 
 /** First problem that blocks saving, or null */
 export function firstQuestionProblem(questions: Question[]): string | null {
+  // Same rule as the sidebar, so what it flags also blocks saving
   for (const [i, q] of questions.entries()) {
-    if (isWrittenType(q.type)) continue;
-    if (!q.options.some((o) => o.isCorrect)) {
-      return `Question ${i + 1}: mark at least one correct answer, or it can never earn points.`;
-    }
+    const problem = questionProblem(q);
+    if (problem) return `Question ${i + 1}: ${problem.toLowerCase()}.`;
   }
   return null;
 }

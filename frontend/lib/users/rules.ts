@@ -126,6 +126,10 @@ export function parseOwnProfile(body: unknown): Parsed<OwnProfileInput> {
 
   const firstName = text(input.firstName);
   if (!firstName) return { ok: false, error: "First name is required." };
+  // Left out is fine, but anything sent must be text, not cleared by mistake
+  if (input.lastName != null && typeof input.lastName !== "string") {
+    return { ok: false, error: "Last name must be text." };
+  }
   const lastName = text(input.lastName);
 
   if (firstName.length > NAME_MAX_LENGTH || lastName.length > NAME_MAX_LENGTH) {

@@ -26,6 +26,12 @@ export function ProfileDetailsForm({
   const [values, setValues] = useState(saved);
   const [showErrors, setShowErrors] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const edit = (patch: Partial<typeof values>) => {
+    setValues((prev) => ({ ...prev, ...patch }));
+    setSaveError(null);
+  };
 
   const firstNameError = values.firstName.trim() ? null : "Enter your first name.";
   const isDirty =
@@ -37,6 +43,7 @@ export function ProfileDetailsForm({
     if (firstNameError) return;
 
     setSaving(true);
+    setSaveError(null);
     try {
       const res = await fetch("/api/users/me", {
         method: "PATCH",
@@ -57,7 +64,9 @@ export function ProfileDetailsForm({
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       router.refresh();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save your details.");
+      const message = error instanceof Error ? error.message : "Could not save your details.";
+      setSaveError(message);
+      toast.error(message);
     } finally {
       setSaving(false);
     }
@@ -90,7 +99,7 @@ export function ProfileDetailsForm({
               autoComplete="given-name"
               maxLength={NAME_MAX_LENGTH}
               value={values.firstName}
-              onChange={(e) => setValues((prev) => ({ ...prev, firstName: e.target.value }))}
+              onChange={(e) => edit({ firstName: e.target.value })}
               className={inputCls}
             />
           </FormField>
@@ -100,7 +109,7 @@ export function ProfileDetailsForm({
               autoComplete="family-name"
               maxLength={NAME_MAX_LENGTH}
               value={values.lastName}
-              onChange={(e) => setValues((prev) => ({ ...prev, lastName: e.target.value }))}
+              onChange={(e) => edit({ lastName: e.target.value })}
               className={inputCls}
             />
           </FormField>
@@ -119,6 +128,12 @@ export function ProfileDetailsForm({
               className={`${inputCls} cursor-not-allowed text-slate-500 dark:text-neutral-400`}
             />
           </FormField>
+
+          {saveError && (
+            <p role="alert" className="text-sm text-red-600 sm:col-span-2 dark:text-red-400">
+              {saveError}
+            </p>
+          )}
         </div>
 
         <footer className="flex items-center justify-end gap-2 border-t border-slate-200 bg-slate-50 px-6 py-3.5 dark:border-neutral-800 dark:bg-neutral-950/50">
@@ -128,6 +143,7 @@ export function ProfileDetailsForm({
             onClick={() => {
               setValues(saved);
               setShowErrors(false);
+              setSaveError(null);
             }}
             disabled={!isDirty || saving}
             className="h-9 px-4 text-sm"

@@ -7,10 +7,11 @@ afterEach(cleanup);
 const openPanel = () => fireEvent.click(screen.getByRole("button", { name: /^Notifications/ }));
 
 describe("NotificationsPanel", () => {
-  it("is closed until the bell is pressed, and the bell says how many are unread", () => {
+  it("is closed until the bell is pressed, and the bell does not report the examples as unread", () => {
     render(<NotificationsPanel />);
+    const bell = screen.getByRole("button", { name: "Notifications (preview with examples)" });
 
-    expect(screen.getByRole("button", { name: "Notifications, 3 unread" })).toBeTruthy();
+    expect(bell.querySelector("span[aria-hidden]")).toBeNull();
     expect(screen.queryByText("Mark all as read")).toBeNull();
   });
 

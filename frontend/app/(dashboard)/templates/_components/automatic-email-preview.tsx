@@ -26,8 +26,13 @@ export function AutomaticEmailPreview({
   subject: string;
   bodyHtml: string;
 }) {
-  const content = usePaused({ subject, bodyHtml }, TYPING_PAUSE_MS);
-  const { data, isError } = useSystemEmailPreview(purpose, content);
+  // Pause the strings, since a new object each render would restart the timer forever
+  const pausedSubject = usePaused(subject, TYPING_PAUSE_MS);
+  const pausedBody = usePaused(bodyHtml, TYPING_PAUSE_MS);
+  const { data, isError } = useSystemEmailPreview(purpose, {
+    subject: pausedSubject,
+    bodyHtml: pausedBody,
+  });
   const email = data?.data;
 
   const frame = useRef<HTMLIFrameElement>(null);

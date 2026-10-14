@@ -21,7 +21,12 @@ import {
 } from "@/components/ui/dialog";
 import { Spinner } from "@/components/ui/spinner";
 import type { HiringTeamMember, User } from "@/types";
-import type { useRemoveHiringTeamMember } from "@/hooks/queries/use-jobs";
+import {
+  useAddHiringTeamMember,
+  useHiringTeam,
+  useRemoveHiringTeamMember,
+} from "@/hooks/queries/use-jobs";
+import { useUsers } from "@/hooks/queries/use-user";
 import { useIsManager } from "@/hooks/use-role";
 
 interface HiringTeamTabProps {
@@ -74,7 +79,7 @@ function RoleTag({ role }: { role: string | null | undefined }) {
   );
 }
 
-export function HiringTeamTab({
+export function HiringTeamTabView({
   team,
   allUsers,
   addTeamMemberOpen,
@@ -300,5 +305,44 @@ export function HiringTeamTab({
         onConfirm={handleRemove}
       />
     </div>
+  );
+}
+
+// Loads the team and handles adding members
+export function HiringTeamTab({ jobId }: { jobId: number }) {
+  const { data: teamData } = useHiringTeam(jobId);
+  const { data: allUsersData } = useUsers();
+  const addTeamMemberMutation = useAddHiringTeamMember(jobId);
+  const removeTeamMemberMutation = useRemoveHiringTeamMember(jobId);
+  const [addTeamMemberOpen, setAddTeamMemberOpen] = useState(false);
+  const [newMemberId, setNewMemberId] = useState("");
+
+  const handleAddTeamMember = () => {
+    if (!newMemberId) return;
+    addTeamMemberMutation.mutate(
+      { userId: Number(newMemberId) },
+      {
+        onSuccess: () => {
+          setAddTeamMemberOpen(false);
+          setNewMemberId("");
+          toast.success("Added to the hiring team");
+        },
+        onError: (error) => toast.error(error.message || "Failed to add the member"),
+      },
+    );
+  };
+
+  return (
+    <HiringTeamTabView
+      team={teamData?.data ?? []}
+      allUsers={allUsersData?.data ?? []}
+      addTeamMemberOpen={addTeamMemberOpen}
+      setAddTeamMemberOpen={setAddTeamMemberOpen}
+      newMemberId={newMemberId}
+      setNewMemberId={setNewMemberId}
+      handleAddTeamMember={handleAddTeamMember}
+      addTeamMemberMutationPending={addTeamMemberMutation.isPending}
+      removeTeamMemberMutation={removeTeamMemberMutation}
+    />
   );
 }

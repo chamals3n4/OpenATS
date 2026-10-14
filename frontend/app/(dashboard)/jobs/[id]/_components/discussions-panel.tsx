@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useMemo, useRef, type CSSProperties } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { ConfirmDeleteDialog } from "@/components/ui/confirm-delete-dialog";
+import { useChatHistory } from "@/hooks/queries/use-chat";
+import { useCurrentUser } from "@/hooks/queries/use-user";
+import { useJobChat } from "@/hooks/use-job-chat";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon, Delete02Icon, PencilEdit01Icon, SentIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
@@ -84,7 +88,7 @@ function toRows(messages: ChatMessage[], now: Date): Row[] {
 }
 
 /** Team discussion panel for a job */
-export function DiscussionsPanel({
+export function DiscussionsPanelView({
   notesPanelWidth,
   setIsResizingNotes,
   allMessages,
@@ -410,6 +414,103 @@ export function DiscussionsPanel({
           </form>
         )}
       </aside>
+    </>
+  );
+}
+
+function timeAgo(dateStr: string) {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+// Loads the chat and handles sending, editing, deleting and resizing
+export function DiscussionsPanel({ jobId, onClose }: { jobId: number; onClose: () => void }) {
+  const { data: meData } = useCurrentUser();
+  const me = meData?.data;
+  const { data: chatHistoryData, isError: chatHistoryError } = useChatHistory(jobId, true);
+  const { sendMessage, editMessage, deleteMessage, denied } = useJobChat(jobId, true);
+
+  const [noteText, setNoteText] = useState("");
+  const [editingNoteId, setEditingNoteId] = useState<number | null>(null);
+  const [editingNoteText, setEditingNoteText] = useState("");
+  const [noteDeleteTarget, setNoteDeleteTarget] = useState<{
+    id: number;
+    senderName: string | null;
+    message: string | null;
+  } | null>(null);
+  const [panelWidth, setPanelWidth] = useState(380);
+  const [isResizing, setIsResizing] = useState(false);
+
+  // useJobChat writes live messages into this cache
+  const allMessages = useMemo(
+    () =>
+      [...(chatHistoryData?.data ?? [])].sort(
+        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime(),
+      ),
+    [chatHistoryData?.data],
+  );
+
+  useEffect(() => {
+    if (!isResizing) return;
+    // The job keeps at least half of the window
+    const MIN = 340,
+      MAX = Math.min(720, Math.round(window.innerWidth / 2));
+    const onMove = (e: MouseEvent) => {
+      const next = Math.round(window.innerWidth - e.clientX);
+      setPanelWidth(Math.max(MIN, Math.min(MAX, next)));
+    };
+    const onUp = () => setIsResizing(false);
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+    return () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+    };
+  }, [isResizing]);
+
+  const handleSendNote = () => {
+    if (!noteText.trim() || !me) return;
+    sendMessage(noteText.trim());
+    setNoteText("");
+  };
+
+  return (
+    <>
+      <DiscussionsPanelView
+        notesPanelWidth={panelWidth}
+        setIsResizingNotes={setIsResizing}
+        allMessages={allMessages}
+        historyError={chatHistoryError || denied}
+        setIsNotesOpen={(open) => !open && onClose()}
+        me={me}
+        timeAgo={timeAgo}
+        editingNoteId={editingNoteId}
+        setEditingNoteId={setEditingNoteId}
+        editingNoteText={editingNoteText}
+        setEditingNoteText={setEditingNoteText}
+        editMessage={editMessage}
+        setNoteDeleteTarget={setNoteDeleteTarget}
+        noteText={noteText}
+        setNoteText={setNoteText}
+        handleSendNote={handleSendNote}
+      />
+
+      <ConfirmDeleteDialog
+        open={noteDeleteTarget !== null}
+        title="Delete this note?"
+        description="This note will be permanently deleted. This cannot be undone."
+        onClose={() => setNoteDeleteTarget(null)}
+        onConfirm={() => {
+          if (!me || !noteDeleteTarget) return;
+          deleteMessage(noteDeleteTarget.id);
+          setNoteDeleteTarget(null);
+        }}
+      />
     </>
   );
 }

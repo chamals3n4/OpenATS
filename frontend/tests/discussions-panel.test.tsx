@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import { DiscussionsPanel } from "@/app/(dashboard)/jobs/[id]/_components/discussions-panel";
+import { DiscussionsPanelView } from "@/app/(dashboard)/jobs/[id]/_components/discussions-panel";
 import type { ChatMessage, User } from "@/types";
 
 // jsdom has no layout, so scrolling to the newest message is a no-op here.
@@ -18,9 +18,9 @@ const message = (id: number, senderId: number, senderName: string, sentAt: strin
   senderAvatar: null,
 });
 
-const renderPanel = (allMessages: ChatMessage[], over: Partial<Parameters<typeof DiscussionsPanel>[0]> = {}) =>
+const renderPanel = (allMessages: ChatMessage[], over: Partial<Parameters<typeof DiscussionsPanelView>[0]> = {}) =>
   render(
-    <DiscussionsPanel
+    <DiscussionsPanelView
       notesPanelWidth={380}
       setIsResizingNotes={vi.fn()}
       allMessages={allMessages}
@@ -40,7 +40,7 @@ const renderPanel = (allMessages: ChatMessage[], over: Partial<Parameters<typeof
     />,
   );
 
-describe("DiscussionsPanel", () => {
+describe("DiscussionsPanelView", () => {
   it("says the conversation is empty, and how it is meant to be used", () => {
     renderPanel([]);
     expect(screen.getByText("No messages yet")).toBeTruthy();

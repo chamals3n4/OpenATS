@@ -1,6 +1,6 @@
 "use client";
 
-import type { Ref } from "react";
+import { useRef, useState, type Ref } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, DragDropVerticalIcon } from "@hugeicons/core-free-icons";
 import { RowDeleteButton, RowEditButton } from "@/components/table/row-actions";
@@ -8,7 +8,17 @@ import { Button } from "@/components/ui/button";
 import { useDragSort } from "@/hooks/use-drag-sort";
 import { useIsManager } from "@/hooks/use-role";
 import type { PipelineStage } from "@/types";
-import { STAGE_TYPES } from "../dialogs/stage-dialog";
+import { StageDialog, STAGE_TYPES, type StageValues } from "../dialogs/stage-dialog";
+import { ConfirmDeleteDialog, ConfirmDeleteName } from "@/components/ui/confirm-delete-dialog";
+import { toast } from "sonner";
+import {
+  useCreateStage,
+  useDeleteStage,
+  usePipeline,
+  useReorderStages,
+  useUpdateStage,
+} from "@/hooks/queries/use-pipeline";
+import { withStageColors, type ColoredStage } from "../../_lib/stage-colors";
 
 type Stage = PipelineStage & { color: string };
 
@@ -77,7 +87,7 @@ function StageRow({
   );
 }
 
-export function HiringProcessTab({
+export function HiringProcessTabView({
   stages,
   onAddStage,
   onEditStage,
@@ -135,5 +145,110 @@ export function HiringProcessTab({
         </div>
       )}
     </div>
+  );
+}
+
+// Loads the stages and handles add, edit, delete and reorder
+export function HiringProcessTab({ jobId }: { jobId: number }) {
+  const { data: pipelineData } = usePipeline(jobId);
+  const createStageMutation = useCreateStage(jobId);
+  const updateStageMutation = useUpdateStage(jobId);
+  const deleteStageMutation = useDeleteStage(jobId);
+  const reorderStagesMutation = useReorderStages(jobId);
+
+  // Local copy so reordering shows right away. Reset when the query changes
+  const [stages, setStages] = useState<ColoredStage[]>([]);
+  const [seededStages, setSeededStages] = useState<PipelineStage[] | null>(null);
+  if (pipelineData?.data && pipelineData.data !== seededStages) {
+    setSeededStages(pipelineData.data);
+    setStages(withStageColors(pipelineData.data));
+  }
+
+  // Stage dialog: closed, add or edit
+  const [stageDialog, setStageDialog] = useState<{ stage: PipelineStage | null } | null>(null);
+  const [stageDeleteTarget, setStageDeleteTarget] = useState<{ id: number; name: string } | null>(
+    null,
+  );
+
+  const handleSubmitStage = (values: StageValues) => {
+    const editing = stageDialog?.stage;
+    if (editing) {
+      updateStageMutation.mutate(
+        { stageId: editing.id, data: values },
+        {
+          onSuccess: () => {
+            setStageDialog(null);
+            toast.success("Stage saved");
+          },
+          onError: (error) => toast.error(error.message || "Failed to save the stage"),
+        },
+      );
+      return;
+    }
+    const nextPosition =
+      stages.length === 0 ? 1 : Math.max(...stages.map((s) => s.position ?? 0)) + 1;
+    createStageMutation.mutate(
+      { ...values, position: nextPosition },
+      {
+        onSuccess: () => {
+          setStageDialog(null);
+          toast.success("Stage added");
+        },
+        onError: (error) => toast.error(error.message || "Failed to add the stage"),
+      },
+    );
+  };
+
+  // Save the new order after a short pause
+  const reorderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const handleStageReorder = (from: number, to: number) => {
+    const reordered = [...stages];
+    const [moved] = reordered.splice(from, 1);
+    reordered.splice(to, 0, moved);
+    setStages(reordered);
+
+    if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
+    reorderTimeoutRef.current = setTimeout(() => {
+      reorderStagesMutation.mutate(reordered.map((s, idx) => ({ id: s.id, position: idx + 1 })));
+    }, 500);
+  };
+
+  return (
+    <>
+      <HiringProcessTabView
+        stages={stages}
+        onAddStage={() => setStageDialog({ stage: null })}
+        onEditStage={(stage) => setStageDialog({ stage })}
+        setStageDeleteTarget={setStageDeleteTarget}
+        handleStageReorder={handleStageReorder}
+      />
+
+      <StageDialog
+        open={stageDialog !== null}
+        stage={stageDialog?.stage ?? null}
+        isPending={createStageMutation.isPending || updateStageMutation.isPending}
+        onSubmit={handleSubmitStage}
+        onClose={() => setStageDialog(null)}
+      />
+
+      <ConfirmDeleteDialog
+        open={stageDeleteTarget !== null}
+        title="Delete this stage?"
+        description={
+          <>
+            <ConfirmDeleteName>{stageDeleteTarget?.name ?? "This stage"}</ConfirmDeleteName> will be
+            permanently deleted. This cannot be undone.
+          </>
+        }
+        isPending={deleteStageMutation.isPending}
+        onClose={() => setStageDeleteTarget(null)}
+        onConfirm={() => {
+          if (!stageDeleteTarget) return;
+          deleteStageMutation.mutate(stageDeleteTarget.id, {
+            onSuccess: () => setStageDeleteTarget(null),
+          });
+        }}
+      />
+    </>
   );
 }

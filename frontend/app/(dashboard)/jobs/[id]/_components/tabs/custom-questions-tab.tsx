@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
@@ -11,12 +11,13 @@ import {
 } from "@/components/ui/confirm-delete-dialog";
 import { useIsManager } from "@/hooks/use-role";
 import type { CustomQuestion } from "@/types";
-import type {
+import {
   useCreateQuestion,
+  useCustomQuestions,
   useDeleteQuestion,
   useUpdateQuestion,
 } from "@/hooks/queries/use-jobs";
-import { optionDraftsOf } from "../../_lib/question-utils";
+import { moveItem, optionDraftsOf, positionChanges } from "../../_lib/question-utils";
 import type { OptionDraft } from "../../_lib/question-utils";
 import { QuestionDialog, QuestionForm, type QuestionValues } from "../questions/question-form";
 import { QuestionRow } from "../questions/question-row";
@@ -36,7 +37,7 @@ const NEW_QUESTION = {
   options: [] as OptionDraft[],
 };
 
-export function CustomQuestionsTab({
+export function CustomQuestionsTabView({
   questions,
   handleQuestionReorder,
   createQuestionMutation,
@@ -200,5 +201,45 @@ export function CustomQuestionsTab({
         onConfirm={handleConfirmDelete}
       />
     </div>
+  );
+}
+
+// Loads the questions and handles reorder
+export function CustomQuestionsTab({ jobId }: { jobId: number }) {
+  const { data: customQuestionsData } = useCustomQuestions(jobId);
+  const createQuestionMutation = useCreateQuestion(jobId);
+  const updateQuestionMutation = useUpdateQuestion(jobId);
+  const deleteQuestionMutation = useDeleteQuestion(jobId);
+
+  // Local copy so reordering shows right away. Reset when the query changes
+  const [questions, setQuestions] = useState<CustomQuestion[]>([]);
+  const [seededQuestions, setSeededQuestions] = useState<CustomQuestion[] | null>(null);
+  if (customQuestionsData?.data && customQuestionsData.data !== seededQuestions) {
+    setSeededQuestions(customQuestionsData.data);
+    setQuestions(customQuestionsData.data);
+  }
+
+  // Save the new order after a short pause
+  const reorderTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const handleQuestionReorder = (from: number, to: number) => {
+    const reordered = moveItem(questions, from, to);
+    setQuestions(reordered);
+
+    if (reorderTimeoutRef.current) clearTimeout(reorderTimeoutRef.current);
+    reorderTimeoutRef.current = setTimeout(() => {
+      positionChanges(reordered).forEach(({ id, position }) => {
+        updateQuestionMutation.mutate({ questionId: id, data: { position } });
+      });
+    }, 500);
+  };
+
+  return (
+    <CustomQuestionsTabView
+      questions={questions}
+      handleQuestionReorder={handleQuestionReorder}
+      createQuestionMutation={createQuestionMutation}
+      updateQuestionMutation={updateQuestionMutation}
+      deleteQuestionMutation={deleteQuestionMutation}
+    />
   );
 }

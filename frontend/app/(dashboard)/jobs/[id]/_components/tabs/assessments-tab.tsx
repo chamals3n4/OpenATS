@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { PlusSignIcon, Quiz03Icon } from "@hugeicons/core-free-icons";
@@ -31,10 +31,14 @@ import {
 import type { Assessment, JobAssessment, PipelineStage } from "@/types";
 import { Input } from "@/components/ui/input";
 import {
+  useAssessments,
+  useAttachAssessment,
+  useDetachAssessment,
+  useJobAssessments,
   useUpdatePassMark,
-  type useAttachAssessment,
-  type useDetachAssessment,
 } from "@/hooks/queries/use-assessments";
+import { usePipeline } from "@/hooks/queries/use-pipeline";
+import { withStageColors } from "../../_lib/stage-colors";
 import { useIsManager } from "@/hooks/use-role";
 import {
   describeAssessment,
@@ -256,7 +260,7 @@ function AttachForm({
   );
 }
 
-export function AssessmentsTab({
+export function AssessmentsTabView({
   jobId,
   attachedAssessments,
   allAssessments,
@@ -420,5 +424,26 @@ export function AssessmentsTab({
         onConfirm={handleRemove}
       />
     </div>
+  );
+}
+
+// Loads the job's assessments, all assessments and the stages
+export function AssessmentsTab({ jobId }: { jobId: number }) {
+  const { data: allAssessmentsData } = useAssessments();
+  const { data: jobAssessmentsData } = useJobAssessments(jobId);
+  const { data: pipelineData } = usePipeline(jobId);
+  const attachAssessmentMutation = useAttachAssessment(jobId);
+  const detachAssessmentMutation = useDetachAssessment(jobId);
+  const stages = useMemo(() => withStageColors(pipelineData?.data ?? []), [pipelineData?.data]);
+
+  return (
+    <AssessmentsTabView
+      jobId={jobId}
+      attachedAssessments={jobAssessmentsData?.data ?? []}
+      allAssessments={allAssessmentsData?.data ?? []}
+      stages={stages}
+      attachAssessmentMutation={attachAssessmentMutation}
+      detachAssessmentMutation={detachAssessmentMutation}
+    />
   );
 }

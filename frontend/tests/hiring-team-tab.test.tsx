@@ -6,7 +6,7 @@ let isManager = true;
 vi.mock("@/hooks/use-role", () => ({ useIsManager: () => isManager }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
-import { HiringTeamTab } from "@/app/(dashboard)/jobs/[id]/_components/tabs/HiringTeamTab";
+import { HiringTeamTab } from "@/app/(dashboard)/jobs/[id]/_components/tabs/hiring-team-tab";
 import type { HiringTeamMember, User } from "@/types";
 
 const user = (id: number, firstName: string, lastName: string, role: User["role"], isActive = true) =>

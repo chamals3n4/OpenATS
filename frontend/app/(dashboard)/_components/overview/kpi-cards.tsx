@@ -1,4 +1,4 @@
-import type { Kpi, Tone } from "../../lib/overview-utils";
+import type { Kpi, Tone } from "../../_lib/overview-utils";
 import { cardCls } from "./card";
 
 const TONE: Record<Tone, string> = {

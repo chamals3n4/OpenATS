@@ -7,7 +7,7 @@ import {
   interviewWhen,
   percentDelta,
   pointsDelta,
-} from "@/app/(dashboard)/lib/overview-utils";
+} from "@/app/(dashboard)/_lib/overview-utils";
 import type { AnalyticsReport } from "@/types";
 
 const summary = (extra: Partial<AnalyticsReport["summary"]> = {}): AnalyticsReport["summary"] => ({

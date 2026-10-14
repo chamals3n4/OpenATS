@@ -3,7 +3,7 @@ import {
   readStoredFilters,
   subscribeStoredFilters,
   writeStoredFilters,
-} from "@/app/(dashboard)/candidates/lib/candidate-filter-storage";
+} from "@/app/(dashboard)/candidates/_lib/candidate-filter-storage";
 
 afterEach(() => {
   window.localStorage.clear();

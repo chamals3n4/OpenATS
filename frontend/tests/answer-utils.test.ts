@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { groupAnswers, isAnswered } from "@/app/(dashboard)/candidates/[id]/lib/answer-utils";
+import { groupAnswers, isAnswered } from "@/app/(dashboard)/candidates/[id]/_lib/answer-utils";
 import type { CandidateDetail } from "@/types";
 
 type A = CandidateDetail["answers"][number];

@@ -2,8 +2,8 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Link01Icon, Location01Icon } from "@hugeicons/core-free-icons";
-import { SAMPLE } from "../../../lib/template-form-constants";
-import { formatDuration } from "../../../lib/template-form-utils";
+import { SAMPLE } from "../../../_lib/template-form-constants";
+import { formatDuration } from "../../../../_lib/format-duration";
 import { PreviewPane } from "../preview-pane";
 
 interface EventPreviewPanelProps {

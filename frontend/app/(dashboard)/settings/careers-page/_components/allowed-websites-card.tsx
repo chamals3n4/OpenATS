@@ -7,7 +7,7 @@ import { FormField, inputCls } from "@/components/form/form-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { MAX_ORIGINS, normalizeOrigin, sameOrigins } from "../lib/careers-utils";
+import { MAX_ORIGINS, normalizeOrigin, sameOrigins } from "../_lib/careers-utils";
 
 interface AllowedWebsitesCardProps {
   /** What is saved on the server. */

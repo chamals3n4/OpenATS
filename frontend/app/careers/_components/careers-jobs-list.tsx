@@ -26,7 +26,7 @@ import {
   postedLabel,
   type CareerJobRow,
   type JobFilters,
-} from "../lib/careers-utils";
+} from "../_lib/careers-utils";
 
 // One height for the search field and the dropdowns: the 32px the dashboard filter bars use.
 // The dark-theme border has to be matched by a dark-theme focus border, or focusing a field

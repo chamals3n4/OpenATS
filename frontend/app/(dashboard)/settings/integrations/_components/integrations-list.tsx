@@ -14,7 +14,7 @@ import {
   type IntegrationStatus,
 } from "@/hooks/queries/use-integrations";
 import { IntegrationRow } from "./integration-row";
-import { VIDEO_MEETING_INTEGRATIONS, stateOf } from "../lib/integrations";
+import { VIDEO_MEETING_INTEGRATIONS, stateOf } from "../_lib/integrations";
 
 export function IntegrationsList({ initialStatus }: { initialStatus: IntegrationStatus[] | null }) {
   const status = useIntegrationStatus(initialStatus ?? undefined);

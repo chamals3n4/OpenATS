@@ -8,7 +8,7 @@ import {
   parseFilterState,
   resolveFilterState,
   toFilterParams,
-} from "@/app/(dashboard)/candidates/lib/candidate-filter-state";
+} from "@/app/(dashboard)/candidates/_lib/candidate-filter-state";
 
 const jobs = [{ id: 3, title: "Software Engineering Intern" }];
 

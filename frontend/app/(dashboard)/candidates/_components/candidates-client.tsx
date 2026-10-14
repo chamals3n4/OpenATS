@@ -17,7 +17,7 @@ import {
   readStoredFilters,
   subscribeStoredFilters,
   writeStoredFilters,
-} from "../lib/candidate-filter-storage";
+} from "../_lib/candidate-filter-storage";
 import {
   EMPTY_FILTERS,
   hasFilterParams,
@@ -25,7 +25,7 @@ import {
   resolveFilterState,
   toFilterParams,
   type CandidateFilterState,
-} from "../lib/candidate-filter-state";
+} from "../_lib/candidate-filter-state";
 import { useCurrentUser } from "@/hooks/queries/use-user";
 import { CandidatesTable } from "./candidates-table";
 import { CandidateEditDialog } from "./candidate-edit-dialog";
@@ -34,7 +34,7 @@ import {
   createEmptyFormData,
   candidateToFormData,
   buildUpdateFormData,
-} from "../lib/candidate-types";
+} from "../_lib/candidate-types";
 
 const PAGE_LIMIT = 15;
 

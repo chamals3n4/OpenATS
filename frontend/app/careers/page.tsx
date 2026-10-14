@@ -1,5 +1,5 @@
 import { CareersJobsList, CareersTitleBar } from "./_components/careers-jobs-list";
-import type { CareerJobRow } from "./lib/careers-utils";
+import type { CareerJobRow } from "./_lib/careers-utils";
 
 type CompanyInfo = {
   name: string;

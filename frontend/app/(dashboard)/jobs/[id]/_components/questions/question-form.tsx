@@ -38,7 +38,7 @@ import {
   toApiOptions,
   validateQuestion,
   type QuestionType,
-} from "../../lib/question-utils";
+} from "../../_lib/question-utils";
 
 export interface QuestionValues {
   title: string;

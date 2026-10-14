@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/re
 import { AttentionPanel } from "@/app/(dashboard)/_components/overview/attention-panel";
 import { ExportDialog } from "@/app/(dashboard)/_components/overview/export-dialog";
 import { KpiCards } from "@/app/(dashboard)/_components/overview/kpi-cards";
-import { buildKpis } from "@/app/(dashboard)/lib/overview-utils";
+import { buildKpis } from "@/app/(dashboard)/_lib/overview-utils";
 import type { AnalyticsReport, AttentionReport } from "@/types";
 
 afterEach(cleanup);

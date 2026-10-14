@@ -8,8 +8,8 @@ import {
   questionToApi,
   questionsFingerprint,
   toggleCorrectOption,
-} from "@/app/(dashboard)/assessments/new/lib/assessment-builder-utils";
-import type { Question } from "@/app/(dashboard)/assessments/new/lib/assessment-builder-types";
+} from "@/app/(dashboard)/assessments/_lib/assessment-builder-utils";
+import type { Question } from "@/app/(dashboard)/assessments/_lib/assessment-builder-types";
 
 const q = (over: Partial<Question> = {}): Question => ({
   ...makeQuestion(),

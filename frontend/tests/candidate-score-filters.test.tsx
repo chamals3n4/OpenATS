@@ -4,7 +4,7 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-li
 vi.mock("@/lib/auth-action", () => ({ serverFetch: vi.fn() }));
 
 import { CandidateFilters } from "@/app/(dashboard)/candidates/_components/candidate-filters";
-import { EMPTY_FILTERS, type CandidateFilterState } from "@/app/(dashboard)/candidates/lib/candidate-filter-state";
+import { EMPTY_FILTERS, type CandidateFilterState } from "@/app/(dashboard)/candidates/_lib/candidate-filter-state";
 import { candidateListParams } from "@/hooks/queries/use-candidates";
 import type { Job } from "@/types";
 

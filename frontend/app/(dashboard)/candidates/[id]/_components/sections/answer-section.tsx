@@ -9,7 +9,7 @@ import {
   groupAnswers,
   isAnswered,
   type AnswerItem,
-} from "../../lib/answer-utils";
+} from "../../_lib/answer-utils";
 import type { CandidateDetail } from "@/types";
 
 function AnswerCard({ item, number }: { item: AnswerItem; number: number }) {

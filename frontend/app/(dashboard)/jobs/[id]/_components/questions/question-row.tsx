@@ -17,7 +17,7 @@ import {
   QUESTION_TYPE_LABELS,
   isChoiceType,
   type QuestionType,
-} from "../../lib/question-utils";
+} from "../../_lib/question-utils";
 
 const TYPE_ICONS: Record<QuestionType, typeof TextIcon> = {
   short_answer: TextIcon,

@@ -1,7 +1,7 @@
 "use client";
 
 import { Input } from "@/components/ui/input";
-import { INPUT_CLASS } from "../../../lib/template-form-constants";
+import { INPUT_CLASS } from "../../../_lib/template-form-constants";
 import { FormField } from "../form-field";
 
 interface LocationFieldProps {

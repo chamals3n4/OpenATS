@@ -22,7 +22,7 @@ import {
 } from "@/hooks/queries/use-candidates";
 import { useDeleteInterview } from "@/hooks/queries/use-interviews";
 import { useTemplates } from "@/hooks/queries/use-templates";
-import { InterviewSchedulerDialog } from "@/app/(dashboard)/interviews/_components/interview-scheduler-dialog";
+import { InterviewSchedulerDialog } from "@/app/(dashboard)/_components/interview-scheduler-dialog";
 
 import { type SectionId, OFFER_STATUS_STYLES, SECTIONS } from "./_components/constants";
 import { useAiSettings, useWorkerStatus } from "@/hooks/queries/use-settings";

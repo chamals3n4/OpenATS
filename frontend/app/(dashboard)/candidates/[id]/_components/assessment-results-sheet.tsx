@@ -23,7 +23,7 @@ import {
   isWrittenQuestion,
   summarizeQuestions,
   type QuestionState,
-} from "../lib/assessment-result-utils";
+} from "../_lib/assessment-result-utils";
 
 type Results = NonNullable<
   NonNullable<ReturnType<typeof useAttemptResults>["data"]>["data"]

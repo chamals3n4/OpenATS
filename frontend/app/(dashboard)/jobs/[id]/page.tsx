@@ -9,13 +9,13 @@ import { useParams, useRouter, useSearchParams } from "next/navigation";
 import { serverFetch } from "@/lib/auth-action";
 import { Tabs } from "@/components/ui/tabs";
 
-import { JobHeader } from "./_components/JobHeader";
-import { JobTabs } from "./_components/JobTabs";
-import { JobSetupAlert } from "./_components/JobSetupAlert";
-import { DiscussionsPanel } from "./_components/DiscussionsPanel";
-import { StageDialog, type StageValues } from "./_components/dialogs/StageDialog";
+import { JobHeader } from "./_components/job-header";
+import { JobTabs } from "./_components/job-tabs";
+import { JobSetupAlert } from "./_components/job-setup-alert";
+import { DiscussionsPanel } from "./_components/discussions-panel";
+import { StageDialog, type StageValues } from "./_components/dialogs/stage-dialog";
 
-import { moveItem, positionChanges } from "./lib/question-utils";
+import { moveItem, positionChanges } from "./_lib/question-utils";
 import {
   useJob,
   useCustomQuestions,

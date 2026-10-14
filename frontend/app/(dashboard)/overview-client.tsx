@@ -16,7 +16,7 @@ import { Card, cardCls } from "./_components/overview/card";
 import { ExportDialog, type ExportFormat } from "./_components/overview/export-dialog";
 import { KpiCards } from "./_components/overview/kpi-cards";
 import { OverviewHeader } from "./_components/overview/overview-header";
-import { buildKpis, periodOf, type Period } from "./lib/overview-utils";
+import { buildKpis, periodOf, type Period } from "./_lib/overview-utils";
 
 export function OverviewClient() {
   const isManager = useIsManager();

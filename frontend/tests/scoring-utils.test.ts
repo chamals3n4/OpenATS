@@ -9,7 +9,7 @@ import {
   templateOf,
   validateCriteria,
   weightsOfJob,
-} from "@/app/(dashboard)/jobs/[id]/lib/scoring-utils";
+} from "@/app/(dashboard)/jobs/[id]/_lib/scoring-utils";
 
 describe("sharesOf", () => {
   it("is each weight as a percentage of the total, adding up to 100", () => {

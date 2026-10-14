@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/confirm-delete-dialog";
 import { useUsers } from "@/hooks/queries/use-user";
 import { useIsManager } from "@/hooks/use-role";
-import { sortRejections } from "../../lib/rejection-utils";
+import { sortRejections } from "../../_lib/rejection-utils";
 import { RejectionCard } from "../rejection/rejection-card";
 import type { useUnrejectCandidate } from "@/hooks/queries/use-candidates";
 import type { CandidateDetail, Template } from "@/types";

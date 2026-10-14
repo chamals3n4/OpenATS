@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
-import { DiscussionsPanel } from "@/app/(dashboard)/jobs/[id]/_components/DiscussionsPanel";
+import { DiscussionsPanel } from "@/app/(dashboard)/jobs/[id]/_components/discussions-panel";
 import type { ChatMessage, User } from "@/types";
 
 // jsdom has no layout, so scrolling to the newest message is a no-op here.

@@ -5,7 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowUp01Icon, ArrowDown01Icon } from "@hugeicons/core-free-icons";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { inputCls, textareaCls } from "../new/lib/assessment-builder-constants";
+import { inputCls, textareaCls } from "../_lib/assessment-builder-constants";
 
 interface AssessmentMetaSectionProps {
   isOpen: boolean;

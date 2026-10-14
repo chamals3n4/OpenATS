@@ -6,7 +6,7 @@ import { BoardColumn } from "@/app/(dashboard)/jobs/[id]/pipeline/_components/bo
 import { BoardHeader } from "@/app/(dashboard)/jobs/[id]/pipeline/_components/board-header";
 import { BoardFiltersBar } from "@/app/(dashboard)/jobs/[id]/pipeline/_components/board-filters-bar";
 import { BulkActionBar } from "@/app/(dashboard)/jobs/[id]/pipeline/_components/bulk-action-bar";
-import { EMPTY_FILTERS } from "@/app/(dashboard)/jobs/[id]/pipeline/lib/board-filters";
+import { EMPTY_FILTERS } from "@/app/(dashboard)/jobs/[id]/pipeline/_lib/board-filters";
 import { MoveConfirmDialog } from "@/app/(dashboard)/jobs/[id]/pipeline/_components/move-confirm-dialog";
 import type { BoardCandidate, PipelineStage } from "@/types";
 

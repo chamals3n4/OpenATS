@@ -10,7 +10,7 @@ import {
 } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { formatDate } from "../constants";
-import { formatDuration } from "../../lib/assessment-result-utils";
+import { formatDuration } from "../../_lib/assessment-result-utils";
 import type { useCandidateAssessments } from "@/hooks/queries/use-assessments";
 
 type Attempt = NonNullable<

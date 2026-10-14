@@ -2,7 +2,7 @@
 
 import { ConfirmDeleteDialog, ConfirmDeleteName } from "@/components/ui/confirm-delete-dialog";
 import type { OfferWithRelations } from "@/types";
-import { getCandidateName } from "../lib/offer-utils";
+import { getCandidateName } from "../_lib/offer-utils";
 
 interface OfferDeleteDialogProps {
   offer: OfferWithRelations | null;

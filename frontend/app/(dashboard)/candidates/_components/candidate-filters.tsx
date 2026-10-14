@@ -29,7 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import type { Job } from "@/types";
-import { getStatusLabel, type CandidateStatusFilter } from "../lib/candidate-utils";
+import { getStatusLabel, type CandidateStatusFilter } from "../_lib/candidate-utils";
 import {
   FLAG_LABELS,
   FLAG_ORDER,
@@ -39,9 +39,9 @@ import {
   type CandidateFilterState,
   type CandidateSort,
   type FlagChoice,
-} from "../lib/candidate-filter-state";
+} from "../_lib/candidate-filter-state";
 
-export type { CandidateSort, FlagChoice } from "../lib/candidate-filter-state";
+export type { CandidateSort, FlagChoice } from "../_lib/candidate-filter-state";
 
 interface CandidateFiltersProps {
   search: string;

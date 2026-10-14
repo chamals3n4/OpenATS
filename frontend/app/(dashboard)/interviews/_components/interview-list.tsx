@@ -4,9 +4,9 @@ import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Location01Icon, Video01Icon } from "@hugeicons/core-free-icons";
 import type { InterviewListItem } from "@/types";
-import { OUTCOME_CONFIG, STATUS_CONFIG, fmtTimeRange } from "./constants";
+import { OUTCOME_CONFIG, STATUS_CONFIG, fmtTimeRange } from "../../_lib/interview-display";
 import { InterviewActions } from "./interview-actions";
-import { dayKey, groupByDay } from "../lib/calendar-utils";
+import { dayKey, groupByDay } from "../_lib/calendar-utils";
 
 interface InterviewListProps {
   interviews: InterviewListItem[];

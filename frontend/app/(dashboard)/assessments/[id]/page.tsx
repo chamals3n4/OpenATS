@@ -16,17 +16,17 @@ import {
 import { useIsManager } from "@/hooks/use-role";
 import { Button } from "@/components/ui/button";
 import { EditAssessmentDetailsDialog } from "../_components/edit-assessment-details-dialog";
-import { DeleteQuestionDialog } from "../new/_components/delete-question-dialog";
-import { QuestionEditor } from "../new/_components/question-editor";
-import { QuestionSidebar } from "../new/_components/question-sidebar";
-import { useAssessmentQuestions } from "../new/hooks/use-assessment-questions";
+import { DeleteQuestionDialog } from "../_components/builder/delete-question-dialog";
+import { QuestionEditor } from "../_components/builder/question-editor";
+import { QuestionSidebar } from "../_components/builder/question-sidebar";
+import { useAssessmentQuestions } from "../_hooks/use-assessment-questions";
 import {
   firstQuestionProblem,
   makeQuestion,
   questionFromApi,
   questionsFingerprint,
   questionToApi,
-} from "../new/lib/assessment-builder-utils";
+} from "../_lib/assessment-builder-utils";
 
 /**
  * An existing assessment. A manager edits it; anyone else reads it. It uses the same question

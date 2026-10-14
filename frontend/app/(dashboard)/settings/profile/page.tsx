@@ -8,7 +8,7 @@ import {
   formatMemberSince,
   fullNameOf,
   humanizeRole,
-} from "./lib/profile-utils";
+} from "./_lib/profile-utils";
 
 /** The API's record of the user (join date, status). The page still works without it. */
 async function getCurrentUser(): Promise<CurrentUser | null> {

@@ -7,12 +7,12 @@ import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { toast } from "sonner";
-import { useAssessmentQuestions } from "../hooks/use-assessment-questions";
-import { firstQuestionProblem, formatQuestionsForApi } from "../lib/assessment-builder-utils";
+import { useAssessmentQuestions } from "../../_hooks/use-assessment-questions";
+import { firstQuestionProblem, formatQuestionsForApi } from "../../_lib/assessment-builder-utils";
 import { AssessmentMetaSection } from "../../_components/assessment-meta-section";
-import { QuestionSidebar } from "./question-sidebar";
-import { DeleteQuestionDialog } from "./delete-question-dialog";
-import { QuestionEditor } from "./question-editor";
+import { QuestionSidebar } from "../../_components/builder/question-sidebar";
+import { DeleteQuestionDialog } from "../../_components/builder/delete-question-dialog";
+import { QuestionEditor } from "../../_components/builder/question-editor";
 
 export default function CreateAssessmentPageClient() {
   const router = useRouter();

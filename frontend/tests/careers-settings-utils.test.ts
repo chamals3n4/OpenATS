@@ -3,7 +3,7 @@ import {
   careersUrls,
   normalizeOrigin,
   sameOrigins,
-} from "@/app/(dashboard)/settings/careers-page/lib/careers-utils";
+} from "@/app/(dashboard)/settings/careers-page/_lib/careers-utils";
 
 describe("normalizeOrigin", () => {
   it("keeps a plain origin as it is", () => {

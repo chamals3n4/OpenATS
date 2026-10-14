@@ -32,7 +32,7 @@ vi.mock("@/components/ui/date-time-picker", () => ({
 }));
 
 import { toast } from "sonner";
-import { InterviewSchedulerDialog } from "@/app/(dashboard)/interviews/_components/interview-scheduler-dialog";
+import { InterviewSchedulerDialog } from "@/app/(dashboard)/_components/interview-scheduler-dialog";
 
 const future = (days: number) => {
   const d = new Date(Date.now() + days * 86_400_000);

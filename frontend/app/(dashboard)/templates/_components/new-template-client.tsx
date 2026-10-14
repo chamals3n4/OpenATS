@@ -2,7 +2,7 @@
 
 import { useSearchParams } from "next/navigation";
 import { TemplateForm } from "./template-form";
-import { TemplateType } from "../lib/templates-utils";
+import { TemplateType } from "../_lib/templates-utils";
 
 export function NewTemplateClient() {
   const searchParams = useSearchParams();

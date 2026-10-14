@@ -28,7 +28,7 @@ import {
   NOTE_REQUIRED_REASON,
   pickRejectionTemplate,
   validateRejection,
-} from "../../lib/rejection-utils";
+} from "../../_lib/rejection-utils";
 import { SandboxedHtmlPreview } from "../sandboxed-html-preview";
 import type { useRejectCandidate } from "@/hooks/queries/use-candidates";
 import type { CandidateDetail, Template } from "@/types";

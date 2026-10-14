@@ -4,7 +4,7 @@ import { formatDate } from "../constants";
 import {
   getOfferSteps,
   type OfferStep,
-} from "../../lib/offer-utils";
+} from "../../_lib/offer-utils";
 import type { Offer } from "@/types";
 
 function Marker({ step }: { step: OfferStep }) {

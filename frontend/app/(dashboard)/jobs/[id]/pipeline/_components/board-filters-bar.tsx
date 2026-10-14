@@ -24,7 +24,7 @@ import {
   STATUS_OPTIONS,
   activeFilterCount,
   type BoardFilters,
-} from "../lib/board-filters";
+} from "../_lib/board-filters";
 
 interface BoardFiltersBarProps {
   filters: BoardFilters;

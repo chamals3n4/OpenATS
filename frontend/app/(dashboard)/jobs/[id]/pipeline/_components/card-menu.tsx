@@ -12,7 +12,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import type { BoardCandidate, PipelineStage } from "@/types";
-import { fullName, stageKeyOf } from "../lib/board-utils";
+import { fullName, stageKeyOf } from "../_lib/board-utils";
 
 interface CardMenuProps {
   candidate: BoardCandidate;

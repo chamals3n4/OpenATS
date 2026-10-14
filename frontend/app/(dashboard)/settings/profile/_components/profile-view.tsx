@@ -1,4 +1,4 @@
-import { initialsOf } from "../lib/profile-utils";
+import { initialsOf } from "../_lib/profile-utils";
 
 export interface ProfileViewProps {
   firstName: string | null;

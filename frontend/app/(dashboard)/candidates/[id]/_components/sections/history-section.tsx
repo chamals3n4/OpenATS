@@ -6,13 +6,13 @@ import { Clock01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
 import { useUsers } from "@/hooks/queries/use-user";
 import { useIsManager } from "@/hooks/use-role";
 import { timeAgo } from "../constants";
-import { formatDateTime } from "../../lib/format-datetime";
-import { formatElapsed } from "../../lib/format-elapsed";
+import { formatDateTime } from "../../_lib/format-datetime";
+import { formatElapsed } from "../../_lib/format-elapsed";
 import {
   buildTimeline,
   summarizeTimeline,
   type TimelineItem,
-} from "../../lib/stage-history-utils";
+} from "../../_lib/stage-history-utils";
 import type { CandidateDetail } from "@/types";
 
 function SectionHeader() {

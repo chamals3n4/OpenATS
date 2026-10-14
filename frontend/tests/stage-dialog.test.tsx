@@ -5,8 +5,8 @@ let isManager = true;
 vi.mock("@/hooks/use-role", () => ({ useIsManager: () => isManager }));
 vi.mock("@/hooks/use-drag-sort", () => ({ useDragSort: () => ({ ref: () => {}, isDragging: false, isOver: false }) }));
 
-import { StageDialog } from "@/app/(dashboard)/jobs/[id]/_components/dialogs/StageDialog";
-import { HiringProcessTab } from "@/app/(dashboard)/jobs/[id]/_components/tabs/HiringProcessTab";
+import { StageDialog } from "@/app/(dashboard)/jobs/[id]/_components/dialogs/stage-dialog";
+import { HiringProcessTab } from "@/app/(dashboard)/jobs/[id]/_components/tabs/hiring-process-tab";
 import type { PipelineStage } from "@/types";
 
 const stage = (id: number, name: string, stageType: PipelineStage["stageType"]) =>

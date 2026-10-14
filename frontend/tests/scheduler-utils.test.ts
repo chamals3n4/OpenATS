@@ -5,7 +5,7 @@ import {
   parseTemplate,
   validateSchedule,
   type ScheduleInput,
-} from "@/app/(dashboard)/interviews/lib/scheduler-utils";
+} from "@/app/(dashboard)/_lib/scheduler-utils";
 
 const now = new Date("2026-09-09T12:00:00").getTime();
 const block = (content: string) => ({ content });

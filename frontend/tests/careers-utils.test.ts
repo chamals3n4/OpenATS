@@ -9,7 +9,7 @@ import {
   postedLabel,
   type CareerJobRow,
   type JobFilters,
-} from "@/app/careers/lib/careers-utils";
+} from "@/app/careers/_lib/careers-utils";
 
 const job = (id: number, over: Partial<CareerJobRow> = {}): CareerJobRow => ({
   id,

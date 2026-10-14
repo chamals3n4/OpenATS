@@ -12,7 +12,7 @@ import {
   capitalizeStatus,
   getCandidateName,
   getJobTitle,
-} from "../lib/offer-utils";
+} from "../_lib/offer-utils";
 import { useIsManager } from "@/hooks/use-role";
 
 interface OfferTableRowProps {

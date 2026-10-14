@@ -1,8 +1,8 @@
 "use client";
 
 import { ConfirmDeleteDialog, ConfirmDeleteName } from "@/components/ui/confirm-delete-dialog";
-import { fullName } from "../lib/board-utils";
-import type { PendingMove } from "../hooks/use-board-moves";
+import { fullName } from "../_lib/board-utils";
+import type { PendingMove } from "../_hooks/use-board-moves";
 
 interface MoveConfirmDialogProps {
   pending: PendingMove | null;

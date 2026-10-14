@@ -19,7 +19,7 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({ push, refresh }),
 }));
 
-import LoginPage from "@/app/login/page";
+import LoginPage from "@/app/(auth)/login/page";
 import { validateSignIn } from "@/lib/auth-errors";
 
 afterEach(() => {

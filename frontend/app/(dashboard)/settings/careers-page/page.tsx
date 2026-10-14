@@ -11,7 +11,7 @@ import {
 import { AllowedWebsitesCard } from "./_components/allowed-websites-card";
 import { CareersLinkCard } from "./_components/careers-link-card";
 import { WebsiteIntegrationCard } from "./_components/website-integration-card";
-import { careersUrls } from "./lib/careers-utils";
+import { careersUrls } from "./_lib/careers-utils";
 
 const NO_ORIGINS: string[] = [];
 

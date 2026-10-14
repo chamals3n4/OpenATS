@@ -1,7 +1,7 @@
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import type { Integration, IntegrationState } from "../lib/integrations";
+import type { Integration, IntegrationState } from "../_lib/integrations";
 
 interface IntegrationRowProps {
   integration: Integration;

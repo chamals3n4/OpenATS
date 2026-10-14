@@ -12,10 +12,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { InterviewListItem } from "@/types";
-import { STATUS_CONFIG, fmtTime, fmtTimeRange, matchesInterview } from "./constants";
+import { STATUS_CONFIG, fmtTime, fmtTimeRange, matchesInterview } from "../../_lib/interview-display";
 import { InterviewActions } from "./interview-actions";
 import { MonthYearPicker } from "./month-year-picker";
-import { dayKey, groupByDay, monthGrid } from "../lib/calendar-utils";
+import { dayKey, groupByDay, monthGrid } from "../_lib/calendar-utils";
 
 const WEEKDAYS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 const MAX_CHIPS = 2;

@@ -9,7 +9,7 @@ import {
   saveAnswer,
   completeAttempt,
 } from "./assessment-api";
-import { remainingSeconds, useAssessmentTimer } from "../hooks/use-assessment-timer";
+import { remainingSeconds, useAssessmentTimer } from "../_hooks/use-assessment-timer";
 import { buildAnswerPayload, countAnswered, restoreAnswers } from "../_lib/assessment-utils";
 import type { Screen, AttemptData, Answer } from "../_lib/assessment-types";
 import { IntroScreen } from "./screens/intro-screen";

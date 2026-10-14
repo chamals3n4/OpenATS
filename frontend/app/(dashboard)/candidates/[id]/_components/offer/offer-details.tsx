@@ -11,7 +11,7 @@ import {
   canEditOffer,
   formatMoney,
   formatRespondBy,
-} from "../../lib/offer-utils";
+} from "../../_lib/offer-utils";
 import { OfferLetterDialog } from "./offer-letter-dialog";
 import { OfferTracker } from "./offer-tracker";
 import type { Offer } from "@/types";

@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
 import type { AttentionReport } from "@/types";
-import { ageLabel, daysAgo, interviewWhen } from "../../lib/overview-utils";
+import { ageLabel, daysAgo, interviewWhen } from "../../_lib/overview-utils";
 import { cardCls } from "./card";
 
 interface AttentionPanelProps {

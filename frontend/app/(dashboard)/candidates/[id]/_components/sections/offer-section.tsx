@@ -19,7 +19,7 @@ import {
   getMissingFields,
   offerToFormValues,
   type OfferFormValues,
-} from "../../lib/offer-utils";
+} from "../../_lib/offer-utils";
 import { OfferDetails } from "../offer/offer-details";
 import { OfferEditForm } from "../offer/offer-edit-form";
 import { OfferEmptyState } from "../offer/offer-empty-state";

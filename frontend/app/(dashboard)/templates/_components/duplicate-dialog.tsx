@@ -18,7 +18,7 @@ import {
   TEMPLATE_NAME_MAX,
   suggestCopyName,
   validateTemplateName,
-} from "../lib/templates-utils";
+} from "../_lib/templates-utils";
 
 interface DuplicateTemplateDialogProps {
   /** The template being copied; the dialog is open while this is set. */

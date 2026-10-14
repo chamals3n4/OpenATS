@@ -15,7 +15,7 @@ vi.mock("@/app/assessment/_components/assessment-api", () => ({
 }));
 
 import { AssessmentClient } from "@/app/assessment/_components/assessment-client";
-import { useAssessmentTimer } from "@/app/assessment/hooks/use-assessment-timer";
+import { useAssessmentTimer } from "@/app/assessment/_hooks/use-assessment-timer";
 import type { AttemptData } from "@/app/assessment/_lib/assessment-types";
 
 const attempt = (over: Partial<AttemptData> = {}) =>

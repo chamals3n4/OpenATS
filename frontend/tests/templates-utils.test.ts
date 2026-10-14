@@ -3,7 +3,7 @@ import {
   TEMPLATE_NAME_MAX,
   suggestCopyName,
   validateTemplateName,
-} from "@/app/(dashboard)/templates/lib/templates-utils";
+} from "@/app/(dashboard)/templates/_lib/templates-utils";
 
 describe("suggestCopyName", () => {
   it("adds (copy) to the name", () => {
@@ -35,7 +35,8 @@ describe("validateTemplateName", () => {
   });
 });
 
-import { buildEventPayload, formatDuration, validateTemplateForm } from "@/app/(dashboard)/templates/lib/template-form-utils";
+import { buildEventPayload, validateTemplateForm } from "@/app/(dashboard)/templates/_lib/template-form-utils";
+import { formatDuration } from "@/app/(dashboard)/_lib/format-duration";
 
 describe("validateTemplateForm", () => {
   it("needs a name for both kinds of template", () => {
@@ -100,7 +101,7 @@ describe("formatDuration", () => {
   });
 });
 
-import { renderPreviewHtml } from "@/app/(dashboard)/templates/lib/template-form-utils";
+import { renderPreviewHtml } from "@/app/(dashboard)/templates/_lib/template-form-utils";
 
 describe("renderPreviewHtml", () => {
   it("removes scripts and event handlers, and keeps ordinary formatting", () => {

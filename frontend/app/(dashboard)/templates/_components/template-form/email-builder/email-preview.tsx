@@ -1,6 +1,6 @@
 "use client";
 
-import { fillSampleText, renderPreviewHtml } from "../../../lib/template-form-utils";
+import { fillSampleText, renderPreviewHtml } from "../../../_lib/template-form-utils";
 import { useVariableSamples } from "./variables-context";
 import { PreviewPane } from "../preview-pane";
 

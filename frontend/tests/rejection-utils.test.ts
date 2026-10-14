@@ -4,7 +4,7 @@ import {
   pickRejectionTemplate,
   sortRejections,
   validateRejection,
-} from "@/app/(dashboard)/candidates/[id]/lib/rejection-utils";
+} from "@/app/(dashboard)/candidates/[id]/_lib/rejection-utils";
 import type { CandidateRejection, Template } from "@/types";
 
 const base = { reason: "Lack of required skills", note: "", sendEmail: false, templateId: "" };

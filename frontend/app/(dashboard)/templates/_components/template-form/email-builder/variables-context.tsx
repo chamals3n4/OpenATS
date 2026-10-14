@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useContext } from "react";
-import { OFFER_ONLY_VARS, SAMPLE, VARS } from "../../../lib/template-form-constants";
+import { OFFER_ONLY_VARS, SAMPLE, VARS } from "../../../_lib/template-form-constants";
 
 export interface VariableGroup {
   heading: string;

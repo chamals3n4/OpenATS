@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { formatDuration, formatTime } from "@/app/assessment/_lib/assessment-constants";
-import { remainingSeconds } from "@/app/assessment/hooks/use-assessment-timer";
+import { remainingSeconds } from "@/app/assessment/_hooks/use-assessment-timer";
 import { restoreAnswers, wordCount } from "@/app/assessment/_lib/assessment-utils";
 import { QuizScreen } from "@/app/assessment/_components/quiz/quiz-screen";
 import { IntroScreen } from "@/app/assessment/_components/screens/intro-screen";

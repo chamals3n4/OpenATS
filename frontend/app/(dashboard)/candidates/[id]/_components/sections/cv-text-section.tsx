@@ -5,8 +5,8 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Call02Icon, Link01Icon, Mail01Icon, Search01Icon } from "@hugeicons/core-free-icons";
 import { Input } from "@/components/ui/input";
 import type { CandidateCvText } from "@/types";
-import { formatCvSection, type CvBlock } from "../../lib/cv-format";
-import { countMatches, highlightParts, searchPattern } from "../../lib/cv-highlight";
+import { formatCvSection, type CvBlock } from "../../_lib/cv-format";
+import { countMatches, highlightParts, searchPattern } from "../../_lib/cv-highlight";
 
 /** What is being looked for in the summary, shared with every piece of text drawn below. */
 const SearchContext = createContext<RegExp | null>(null);

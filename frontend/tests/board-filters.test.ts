@@ -6,7 +6,7 @@ import {
   hasCandidateFilters,
   matchesFilters,
   type BoardFilters,
-} from "@/app/(dashboard)/jobs/[id]/pipeline/lib/board-filters";
+} from "@/app/(dashboard)/jobs/[id]/pipeline/_lib/board-filters";
 import type { BoardCandidate } from "@/types";
 
 const NOW = new Date("2026-06-30T12:00:00Z").getTime();

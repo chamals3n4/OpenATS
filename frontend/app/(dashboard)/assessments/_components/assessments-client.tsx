@@ -15,7 +15,7 @@ import { AssessmentCardGrid } from "./card-grid";
 import { AssessmentInviteDialog } from "./invite-dialog";
 import { AssessmentDeleteDialog } from "./delete-dialog";
 import { CreateAssessmentDialog } from "./create-assessment-dialog";
-import { generateAssessmentUrl } from "../lib/utils";
+import { generateAssessmentUrl } from "../_lib/utils";
 
 export default function AssessmentsPageClient() {
   const { data, isLoading } = useAssessments();

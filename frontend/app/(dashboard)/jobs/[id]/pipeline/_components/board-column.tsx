@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BoardCandidate, PipelineStage } from "@/types";
-import { dropIndex } from "../lib/board-utils";
+import { dropIndex } from "../_lib/board-utils";
 import { BoardCard, CARD_TYPE, type DragItem } from "./board-card";
 
 /**

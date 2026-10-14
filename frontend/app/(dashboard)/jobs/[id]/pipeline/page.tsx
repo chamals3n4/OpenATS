@@ -16,15 +16,15 @@ import { BulkActionBar } from "./_components/bulk-action-bar";
 import { BoardHeader } from "./_components/board-header";
 import { DragPreview } from "./_components/drag-preview";
 import { MoveConfirmDialog } from "./_components/move-confirm-dialog";
-import { useBoardMoves } from "./hooks/use-board-moves";
-import { useEdgeScroll } from "./hooks/use-edge-scroll";
+import { useBoardMoves } from "./_hooks/use-board-moves";
+import { useEdgeScroll } from "./_hooks/use-edge-scroll";
 import {
   EMPTY_FILTERS,
   hasCandidateFilters,
   matchesFilters,
   type BoardFilters,
-} from "./lib/board-filters";
-import { bulkMoveTargets, groupByStage, isFullyVisibleX, toFullIndex } from "./lib/board-utils";
+} from "./_lib/board-filters";
+import { bulkMoveTargets, groupByStage, isFullyVisibleX, toFullIndex } from "./_lib/board-utils";
 
 /** Re-reads the clock once a minute so "5m ago" on the cards does not go stale. */
 function useMinuteClock() {

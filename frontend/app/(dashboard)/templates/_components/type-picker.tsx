@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { TYPE_META, type TemplateType } from "../lib/templates-utils";
+import { TYPE_META, type TemplateType } from "../_lib/templates-utils";
 
 const TEMPLATE_TYPES: TemplateType[] = ["email", "event"];
 

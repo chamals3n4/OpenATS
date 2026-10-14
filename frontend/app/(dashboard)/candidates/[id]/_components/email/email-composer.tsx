@@ -32,7 +32,7 @@ import {
   splitParagraphs,
   templateHtmlToText,
   validateEmail,
-} from "../../lib/email-utils";
+} from "../../_lib/email-utils";
 import type { CandidateDetail } from "@/types";
 
 export function EmailComposer({ candidate }: { candidate: CandidateDetail }) {

@@ -3,7 +3,7 @@ import {
   describeAssessment,
   isAlreadyAttached,
   sortByStageOrder,
-} from "@/app/(dashboard)/jobs/[id]/lib/assessment-attach-utils";
+} from "@/app/(dashboard)/jobs/[id]/_lib/assessment-attach-utils";
 
 describe("describeAssessment", () => {
   it("joins the time limit and question count", () => {

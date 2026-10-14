@@ -1,6 +1,6 @@
 import { afterEach, describe, it, expect, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import type { OptionDraft, QuestionType } from "@/app/(dashboard)/jobs/[id]/lib/question-utils";
+import type { OptionDraft, QuestionType } from "@/app/(dashboard)/jobs/[id]/_lib/question-utils";
 import { QuestionDialog, QuestionForm } from "@/app/(dashboard)/jobs/[id]/_components/questions/question-form";
 
 type Initial = { title: string; type: QuestionType; required: boolean; options: OptionDraft[] };

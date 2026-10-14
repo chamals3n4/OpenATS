@@ -4,7 +4,7 @@ import {
   formValuesToPayload,
   offerToFormValues,
   toDateInput,
-} from "@/app/(dashboard)/candidates/[id]/lib/offer-utils";
+} from "@/app/(dashboard)/candidates/[id]/_lib/offer-utils";
 import type { Offer } from "@/types";
 
 const offer = (expiresAt: string | null): Offer =>

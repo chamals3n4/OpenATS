@@ -90,7 +90,12 @@ pnpm exec tsx scripts/create-admin.ts   # create or reset a super admin (also `m
 - Path alias: `@/*` → `./*` (configured in both `tsconfig.json` and Next.js config).
 - **Server-side data fetching**: `serverFetch` in `frontend/lib/auth-action.ts`, which attaches the token from `getApiToken()`.
 - **Client-side data fetching**: `useApi` hook + React Query hooks in `frontend/hooks/queries/`.
-- **Component placement convention**: components/hooks/utils scoped to one route live colocated under that route using Next.js's underscore-prefixed folders (excluded from routing) — `_components/` (nest further for large features, e.g. `templates/_components/template-form/email-builder/`), `lib/` (singular — not `libs/`), `hooks/`. Only truly shared code goes in the top-level `frontend/components/` (shadcn primitives in `components/ui`, shared `components/table`), `frontend/lib/`, and `frontend/hooks/queries/`.
+- **Component placement convention** (App Router private folders, which Next.js leaves out of routing):
+  - Code used by one route lives beside it in `_components/`, `_lib/` and `_hooks/`. Every private folder inside `app/` starts with an underscore; never add a plain `lib/` or `hooks/` there. Nest further for large features (e.g. `templates/_components/template-form/email-builder/`).
+  - A route never imports from another route's private folders, only from its own and its ancestors'. When a second route needs something, move it to the nearest common parent: `(dashboard)/_components` / `(dashboard)/_lib` for dashboard pages (the interview scheduler lives there), `assessments/_components/builder` for the assessment builder shared by `new` and `[id]`. Tests may import any of them.
+  - Code used across the whole app goes in the top-level `frontend/components/` (shadcn primitives in `components/ui`, shared `components/table`), `frontend/lib/`, `frontend/hooks/` and `frontend/hooks/queries/`. These never import from `app/`.
+  - A component loaded with `next/dynamic` is declared in the file that uses it. `components/dynamic-imports.tsx` is only for shared ones (the drag and drop provider).
+  - File names are kebab-case (`job-header.tsx`), exports are named.
 
 ## Testing
 

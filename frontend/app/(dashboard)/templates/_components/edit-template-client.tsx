@@ -2,7 +2,7 @@
 
 import { useTemplate } from "@/hooks/queries/use-templates";
 import { TemplateForm } from "./template-form";
-import { TemplateType } from "../lib/templates-utils";
+import { TemplateType } from "../_lib/templates-utils";
 import { useIsManager } from "@/hooks/use-role";
 
 interface EditTemplateClientProps {

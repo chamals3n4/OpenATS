@@ -5,7 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { CoPresentIcon, PlusSignIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import type { useDeleteInterview } from "@/hooks/queries/use-interviews";
-import { groupInterviews } from "../../lib/interview-utils";
+import { groupInterviews } from "../../_lib/interview-utils";
 import { InterviewCard } from "../interview/interview-card";
 import type { CandidateDetail, CandidateInterview } from "@/types";
 

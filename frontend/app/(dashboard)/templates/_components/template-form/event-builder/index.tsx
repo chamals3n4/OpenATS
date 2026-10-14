@@ -3,8 +3,9 @@
 import { Video01Icon, Location01Icon } from "@hugeicons/core-free-icons";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { TEXTAREA_CLASS, INPUT_CLASS } from "../../../lib/template-form-constants";
-import { DURATION_OPTIONS, formatDuration } from "../../../lib/template-form-utils";
+import { TEXTAREA_CLASS, INPUT_CLASS } from "../../../_lib/template-form-constants";
+import { DURATION_OPTIONS } from "../../../_lib/template-form-utils";
+import { formatDuration } from "../../../../_lib/format-duration";
 import {
   Select,
   SelectContent,

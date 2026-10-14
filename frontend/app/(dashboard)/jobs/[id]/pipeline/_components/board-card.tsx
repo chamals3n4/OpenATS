@@ -9,7 +9,7 @@ import { Alert02Icon } from "@hugeicons/core-free-icons";
 import { ScoreBadge } from "@/components/score-badge";
 import { candidateFlags } from "@/lib/scoring";
 import type { BoardCandidate, PipelineStage } from "@/types";
-import { fullName, timeAgo } from "../lib/board-utils";
+import { fullName, timeAgo } from "../_lib/board-utils";
 import { CardMenu } from "./card-menu";
 import { FlagsDialog } from "./flags-dialog";
 

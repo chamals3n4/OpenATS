@@ -1,5 +1,5 @@
-import { serverFetch } from "@/lib/auth-action";
-import { getSession } from "@/lib/session";
+import { serverFetch } from "@/lib/server-fetch";
+import { getSession } from "@/lib/auth/session";
 import type { CurrentUser } from "@/types";
 import { ChangePasswordForm } from "./_components/change-password-form";
 import { ProfileDetailsForm } from "./_components/profile-details-form";

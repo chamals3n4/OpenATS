@@ -8,7 +8,7 @@ import { FormField, inputCls } from "@/components/form/form-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
-import { NAME_MAX_LENGTH } from "@/lib/user-rules";
+import { NAME_MAX_LENGTH } from "@/lib/users/rules";
 
 /**
  * The part of a profile its owner may change: their name. The email is shown but not editable,

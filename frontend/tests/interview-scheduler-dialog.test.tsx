@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
 const serverFetch = vi.fn();
-vi.mock("@/lib/auth-action", () => ({ serverFetch: (...a: unknown[]) => serverFetch(...a) }));
+vi.mock("@/lib/server-fetch", () => ({ serverFetch: (...a: unknown[]) => serverFetch(...a) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
 let googleConnected = false;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { isAuthMailConfigured } from "@/lib/auth-mail";
+import { isAuthMailConfigured } from "@/lib/auth/password-emails";
 import {
   badRequest,
   errorResponse,
@@ -7,7 +7,7 @@ import {
   parseUserId,
   requireSuperAdmin,
   sendPasswordLink,
-} from "@/lib/user-admin";
+} from "@/lib/users/admin";
 
 const ROUTE_LOG = "[API /users/[id]/password-reset]";
 

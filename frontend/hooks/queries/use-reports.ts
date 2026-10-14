@@ -1,5 +1,5 @@
 import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import { AnalyticsReport, AnalyticsExportPayload, AttentionReport } from "@/types";
 
 export function useAnalyticsReport(

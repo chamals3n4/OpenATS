@@ -1,4 +1,4 @@
-import { isAuthMailConfigured } from "@/lib/auth-mail";
+import { isAuthMailConfigured } from "@/lib/auth/password-emails";
 import { UserManagementClient } from "./_components/user-management-client";
 
 export default function UserManagementPage() {

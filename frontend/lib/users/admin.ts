@@ -2,9 +2,9 @@ import { randomBytes } from "node:crypto";
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { APIError } from "better-auth/api";
-import { auth } from "./auth";
-import { serverFetch } from "./auth-action";
-import { getSession, requireRole } from "./session";
+import { auth } from "../auth/server";
+import { serverFetch } from "../server-fetch";
+import { getSession, requireRole } from "../auth/session";
 import type { User } from "@/types";
 
 // Server-side helpers shared by the /api/users routes.

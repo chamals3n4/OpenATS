@@ -7,7 +7,7 @@ import { PrefetchProvider } from "@/components/providers/prefetch-provider";
 import { CandidateSocketProvider } from "@/components/providers/candidate-socket-provider";
 import { SocketAuthProvider } from "@/components/providers/socket-auth-provider";
 import { redirect } from "next/navigation";
-import { getApiToken, getSession } from "@/lib/session";
+import { getApiToken, getSession } from "@/lib/auth/session";
 import { SetupCompanyGate } from "@/components/guards/setup-company-gate";
 import { QueryProvider } from "@/components/providers/query-provider";
 import { Toaster } from "@/components/ui/sonner";

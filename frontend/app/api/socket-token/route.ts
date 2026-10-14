@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getApiToken } from "@/lib/session";
+import { getApiToken } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 

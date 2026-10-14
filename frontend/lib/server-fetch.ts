@@ -3,7 +3,7 @@
 import { cache } from "react";
 import { headers } from "next/headers";
 import { apiFetch } from "./api";
-import { getApiToken } from "./session";
+import { getApiToken } from "./auth/session";
 
 /**
  * Cached auth context — deduplicates the async token / headers

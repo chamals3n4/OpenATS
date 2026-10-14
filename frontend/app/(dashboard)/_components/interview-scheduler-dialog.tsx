@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import { useUserIntegrationStatus } from "@/hooks/queries/use-integrations";
 import { useAllocatedSlots } from "@/hooks/queries/use-interviews";
 import { useUsers } from "@/hooks/queries/use-user";

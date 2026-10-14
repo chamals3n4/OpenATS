@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { CheckmarkCircle02Icon, Unlink03Icon } from "@hugeicons/core-free-icons";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth/client";
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
@@ -13,7 +13,7 @@ import {
   isInvalidResetToken,
   resetPasswordErrorMessage,
   validateNewPassword,
-} from "@/lib/auth-errors";
+} from "@/lib/auth/errors";
 import { AuthShell } from "../_components/auth-shell";
 import { FormAlert } from "@/components/auth/form-alert";
 import { PasswordInput } from "@/components/auth/password-input";

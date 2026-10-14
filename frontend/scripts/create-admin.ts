@@ -20,7 +20,7 @@ import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PASSWORD_RULE,
-} from "../lib/auth-errors";
+} from "../lib/auth/errors";
 import { checkEnv } from "../lib/env";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -129,8 +129,8 @@ async function main() {
 
   // Imported only now: these read the environment when they load.
   const { betterAuth } = await import("better-auth");
-  const { authOptions } = await import("../lib/auth-options");
-  const { pool } = await import("../lib/db");
+  const { authOptions } = await import("../lib/auth/options");
+  const { pool } = await import("../lib/auth/db");
 
   // Its own instance, without nextCookies(), which needs a Next.js request.
   const auth = betterAuth(authOptions);

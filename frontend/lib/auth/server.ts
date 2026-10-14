@@ -1,6 +1,6 @@
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
-import { authOptions } from "./auth-options";
+import { authOptions } from "./options";
 
 export const auth = betterAuth({
   ...authOptions,

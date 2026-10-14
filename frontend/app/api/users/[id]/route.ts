@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { serverFetch } from "@/lib/auth-action";
-import { lockoutReason, parseUpdateUser } from "@/lib/user-rules";
+import { auth } from "@/lib/auth/server";
+import { serverFetch } from "@/lib/server-fetch";
+import { lockoutReason, parseUpdateUser } from "@/lib/users/rules";
 import {
   activeUsers,
   badRequest,
@@ -10,7 +10,7 @@ import {
   getUser,
   parseUserId,
   requireSuperAdmin,
-} from "@/lib/user-admin";
+} from "@/lib/users/admin";
 
 const ROUTE_LOG = "[API /users/[id]]";
 

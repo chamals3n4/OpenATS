@@ -1,8 +1,8 @@
 // Rules for user management, kept free of server imports so they can be
 // unit-tested and shared by the routes and the settings page.
 
-import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "./auth-errors";
-import type { AppRole } from "./session";
+import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../auth/errors";
+import type { AppRole } from "../auth/session";
 
 export const APP_ROLES = ["super_admin", "hiring_manager", "interviewer"] as const;
 

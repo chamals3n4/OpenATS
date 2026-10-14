@@ -6,7 +6,7 @@ import {
   useMutation,
 } from "@tanstack/react-query";
 import type { Template, TemplateBody } from "@/types";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import type { PaginationInfo } from "@/components/table/table-footer";
 
 export type TemplateListParams = {

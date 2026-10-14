@@ -4,8 +4,8 @@ import { admin, jwt } from "better-auth/plugins";
 import {
   PASSWORD_LINK_EXPIRES_IN_SECONDS,
   sendPasswordLinkEmail,
-} from "./auth-mail";
-import { ac, roles } from "./auth-permissions";
+} from "./password-emails";
+import { ac, roles } from "./permissions";
 import { pool } from "./db";
 
 // A user created by invite has no password yet, so the same Better Auth
@@ -33,7 +33,7 @@ const trustedProxies = (process.env.AUTH_TRUSTED_PROXIES ?? "")
   .filter(Boolean);
 
 // Plain options object. nextCookies() is deliberately not added here (see
-// lib/auth.ts) so scripts can import this file outside Next.js.
+// lib/auth/server.ts) so scripts can import this file outside Next.js.
 export const authOptions = {
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,

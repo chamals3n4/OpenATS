@@ -6,7 +6,7 @@ import { ConfirmDeleteDialog, ConfirmDeleteName } from "@/components/ui/confirm-
 import { useState, useEffect, useMemo, useRef } from "react";
 import { useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import { Tabs } from "@/components/ui/tabs";
 
 import { JobHeader } from "./_components/job-header";

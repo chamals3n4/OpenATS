@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
-import { auth } from "@/lib/auth";
+import { auth } from "@/lib/auth/server";
 
 const PUBLIC_PATHS = new Set([
   "/login",

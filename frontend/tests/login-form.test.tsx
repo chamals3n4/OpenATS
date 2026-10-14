@@ -11,7 +11,7 @@ const signInEmail = vi.fn();
 const push = vi.fn();
 const refresh = vi.fn();
 
-vi.mock("@/lib/auth-client", () => ({
+vi.mock("@/lib/auth/client", () => ({
   authClient: { signIn: { email: (...args: unknown[]) => signInEmail(...args) } },
 }));
 
@@ -20,7 +20,7 @@ vi.mock("next/navigation", () => ({
 }));
 
 import LoginPage from "@/app/(auth)/login/page";
-import { validateSignIn } from "@/lib/auth-errors";
+import { validateSignIn } from "@/lib/auth/errors";
 
 afterEach(() => {
   cleanup();

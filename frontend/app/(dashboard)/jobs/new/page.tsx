@@ -6,7 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useCurrentUser } from "@/hooks/queries/use-user";
 import { useCreateJob } from "@/hooks/queries/use-jobs";
 import { useDepartments } from "@/hooks/queries/use-company";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import { buildJobPayload } from "@/lib/jobs-utils";
 import { JobForm } from "../_components/job-form/job-form";
 import type { ValidJobFormValues } from "../_components/job-form/job-form-values";

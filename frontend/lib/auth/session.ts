@@ -1,7 +1,7 @@
 import { cache } from "react";
 import { headers } from "next/headers";
 import { APIError } from "better-auth/api";
-import { auth } from "./auth";
+import { auth } from "./server";
 
 export type AppRole = "super_admin" | "hiring_manager" | "interviewer";
 

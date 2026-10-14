@@ -3,7 +3,7 @@
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
-// Must match `resetPasswordTokenExpiresIn` in auth-options.ts.
+// Must match `resetPasswordTokenExpiresIn` in options.ts.
 export const PASSWORD_LINK_EXPIRES_IN_SECONDS = 60 * 60 * 24;
 const EXPIRY_TEXT = "24 hours";
 
@@ -158,12 +158,12 @@ export async function sendPasswordLinkEmail(opts: {
   if (!isAuthMailConfigured()) {
     if (process.env.NODE_ENV === "development") {
       console.log(
-        `[auth-mail] Resend is not configured. ${opts.kind === "invite" ? "Set password" : "Reset password"} link for ${opts.to}:\n${opts.url}`,
+        `[password-emails] Resend is not configured. ${opts.kind === "invite" ? "Set password" : "Reset password"} link for ${opts.to}:\n${opts.url}`,
       );
     } else {
       // The link is a credential, so it is never logged outside development.
       console.warn(
-        `[auth-mail] Resend is not configured; no ${opts.kind} email was sent. Set RESEND_API_KEY and RESEND_FROM_EMAIL.`,
+        `[password-emails] Resend is not configured; no ${opts.kind} email was sent. Set RESEND_API_KEY and RESEND_FROM_EMAIL.`,
       );
     }
     return;
@@ -173,6 +173,6 @@ export async function sendPasswordLinkEmail(opts: {
     const { subject, html } = buildPasswordEmail(opts.kind, opts);
     await sendThroughResend({ to: opts.to, subject, html });
   } catch (error) {
-    console.error(`[auth-mail] Failed to send ${opts.kind} email:`, error);
+    console.error(`[password-emails] Failed to send ${opts.kind} email:`, error);
   }
 }

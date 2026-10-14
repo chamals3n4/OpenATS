@@ -1,17 +1,17 @@
 import { NextResponse } from "next/server";
 import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
-import { serverFetch } from "@/lib/auth-action";
-import { isAuthMailConfigured } from "@/lib/auth-mail";
-import { pool } from "@/lib/db";
-import { parseCreateUser } from "@/lib/user-rules";
+import { auth } from "@/lib/auth/server";
+import { serverFetch } from "@/lib/server-fetch";
+import { isAuthMailConfigured } from "@/lib/auth/password-emails";
+import { pool } from "@/lib/auth/db";
+import { parseCreateUser } from "@/lib/users/rules";
 import {
   badRequest,
   errorResponse,
   requireSuperAdmin,
   sendPasswordLink,
   unknowablePassword,
-} from "@/lib/user-admin";
+} from "@/lib/users/admin";
 import type { User } from "@/types";
 
 const ROUTE_LOG = "[API /users]";

@@ -9,14 +9,14 @@ import {
 
 const changePassword = vi.fn();
 
-vi.mock("@/lib/auth-client", () => ({
+vi.mock("@/lib/auth/client", () => ({
   authClient: { changePassword: (...args: unknown[]) => changePassword(...args) },
 }));
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import { ChangePasswordForm } from "@/app/(dashboard)/settings/profile/_components/change-password-form";
-import { changePasswordErrorMessage } from "@/lib/auth-errors";
+import { changePasswordErrorMessage } from "@/lib/auth/errors";
 
 afterEach(() => {
   cleanup();

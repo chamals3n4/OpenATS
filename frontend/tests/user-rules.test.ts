@@ -5,7 +5,7 @@ import {
   parseCreateUser,
   parseOwnProfile,
   parseUpdateUser,
-} from "@/lib/user-rules";
+} from "@/lib/users/rules";
 
 const ADMIN = { id: 1, role: "super_admin" };
 const OTHER_ADMIN = { id: 2, role: "super_admin" };

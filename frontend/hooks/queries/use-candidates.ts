@@ -12,7 +12,7 @@ import type {
   CandidateInterview,
   StageAutomationFlags,
 } from "@/types";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 
 export type CandidatePagination = {
   total: number;

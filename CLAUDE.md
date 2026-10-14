@@ -81,14 +81,15 @@ pnpm exec tsx scripts/create-admin.ts   # create or reset a super admin (also `m
 ### Frontend
 
 - **Next.js** with `force-dynamic` on the root layout (`frontend/app/layout.tsx`).
-- **Session and API token**: `frontend/lib/session.ts` (`getSession`, `getApiToken`, `requireRole`) is the only place server code reads the Better Auth session or issues the JWT sent to Express. `frontend/proxy.ts` only checks that a session cookie exists; the dashboard layout does the real check with `getSession()`.
-- **Auth hardening** lives in `frontend/lib/auth-options.ts`: rate limits stored in `auth_rate_limits` (so they hold across server instances), `trustedOrigins` limited to `BETTER_AUTH_URL`, 7-day sessions, secure cookies in production. `frontend/instrumentation.ts` runs `lib/env.ts` at server start and exits when `DATABASE_URL`, `BETTER_AUTH_SECRET` (32+ characters) or `BETTER_AUTH_URL` is missing.
-- **User management** (`frontend/app/api/users/*`) goes through the Better Auth admin API (`auth.api.createUser`, `adminUpdateUser`, `setRole`, `banUser`, `setUserPassword`), always with the caller's headers so Better Auth checks the role itself. Users are never hard-deleted: deactivating bans the user and then soft-deletes through Express. `frontend/lib/user-rules.ts` holds the input parsing and the guards that stop the last super admin being removed.
+- **Session and API token**: `frontend/lib/auth/session.ts` (`getSession`, `getApiToken`, `requireRole`) is the only place server code reads the Better Auth session or issues the JWT sent to Express. `frontend/proxy.ts` only checks that a session cookie exists; the dashboard layout does the real check with `getSession()`.
+- **Auth hardening** lives in `frontend/lib/auth/options.ts`: rate limits stored in `auth_rate_limits` (so they hold across server instances), `trustedOrigins` limited to `BETTER_AUTH_URL`, 7-day sessions, secure cookies in production. `frontend/instrumentation.ts` runs `lib/env.ts` at server start and exits when `DATABASE_URL`, `BETTER_AUTH_SECRET` (32+ characters) or `BETTER_AUTH_URL` is missing.
+- **User management** (`frontend/app/api/users/*`) goes through the Better Auth admin API (`auth.api.createUser`, `adminUpdateUser`, `setRole`, `banUser`, `setUserPassword`), always with the caller's headers so Better Auth checks the role itself. Users are never hard-deleted: deactivating bans the user and then soft-deletes through Express. `frontend/lib/users/rules.ts` holds the input parsing and the guards that stop the last super admin being removed.
 - Heavy components are code-split with `ssr: false` via `frontend/components/dynamic-imports.tsx`.
 - **Tailwind v4** — CSS-first config (`@tailwindcss/postcss`), no `tailwind.config.ts`. Theme defined via `@theme` in CSS globals.
 - **shadcn/ui** with `base-vega` style. Icon library is **hugeicons** (not lucide or heroicons).
 - Path alias: `@/*` → `./*` (configured in both `tsconfig.json` and Next.js config).
-- **Server-side data fetching**: `serverFetch` in `frontend/lib/auth-action.ts`, which attaches the token from `getApiToken()`.
+- **Server-side data fetching**: `serverFetch` in `frontend/lib/server-fetch.ts`, which attaches the token from `getApiToken()`.
+- **`frontend/lib/auth/`** holds sign-in and sessions: `server.ts` (the Better Auth instance, also the CLI's `--config`), `options.ts`, `client.ts` (browser), `permissions.ts`, `session.ts`, `errors.ts` (messages and password rules), `password-emails.ts`, and `db.ts` (the pool, used only by auth). **`frontend/lib/users/`** holds user management: `admin.ts` and `rules.ts` for the `/api/users` routes, `client.ts` for the browser.
 - **Client-side data fetching**: `useApi` hook + React Query hooks in `frontend/hooks/queries/`.
 - **Component placement convention** (App Router private folders, which Next.js leaves out of routing):
   - Code used by one route lives beside it in `_components/`, `_lib/` and `_hooks/`. Every private folder inside `app/` starts with an underscore; never add a plain `lib/` or `hooks/` there. Nest further for large features (e.g. `templates/_components/template-form/email-builder/`).
@@ -115,7 +116,7 @@ See `docs/docs/developer/testing.md` for the full guide. In short:
 Two separate `.env` files are required (copy from `.env.example` in each directory):
 
 - `backend/.env` — `DATABASE_URL`, `REDIS_URL`, `ENCRYPTION_KEY` (32 bytes in base64, checked at start), `TRUST_PROXY` (optional), `R2_*`, `RESEND_*`, `AUTH_JWKS_URL`, `AUTH_ISSUER`, `GEMINI_API_KEY` (optional), `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` / `GOOGLE_OAUTH_REDIRECT_URI` (optional)
-- `frontend/.env` — `OPENATS_API_URL`, `NEXT_PUBLIC_API_URL`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RESEND_API_KEY` / `RESEND_FROM_EMAIL` (optional; invite and reset emails are sent from the Next.js server by `frontend/lib/auth-mail.ts`)
+- `frontend/.env` — `OPENATS_API_URL`, `NEXT_PUBLIC_API_URL`, `DATABASE_URL`, `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `RESEND_API_KEY` / `RESEND_FROM_EMAIL` (optional; invite and reset emails are sent from the Next.js server by `frontend/lib/auth/password-emails.ts`)
 
 ## CI/CD
 

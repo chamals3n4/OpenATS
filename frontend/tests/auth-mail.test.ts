@@ -3,7 +3,7 @@ import {
   buildPasswordEmail,
   isAuthMailConfigured,
   sendPasswordLinkEmail,
-} from "@/lib/auth-mail";
+} from "@/lib/auth/password-emails";
 
 const URL =
   "http://localhost:3000/api/auth/reset-password/tok123?callbackURL=%2Freset-password";

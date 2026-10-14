@@ -4,14 +4,14 @@ import { useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Tick02Icon } from "@hugeicons/core-free-icons";
 import { toast } from "sonner";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth/client";
 import {
   PASSWORD_MAX_LENGTH,
   PASSWORD_MIN_LENGTH,
   PASSWORD_RULE,
   changePasswordErrorMessage,
   validateNewPassword,
-} from "@/lib/auth-errors";
+} from "@/lib/auth/errors";
 import { FormAlert } from "@/components/auth/form-alert";
 import { PasswordInput } from "@/components/auth/password-input";
 import { Button } from "@/components/ui/button";

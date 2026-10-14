@@ -25,7 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { useSidebar } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth/client";
 import { useRouter } from "next/navigation";
 import { useCurrentUser } from "@/hooks/queries/use-user";
 import { initialsOf } from "@/lib/initials";

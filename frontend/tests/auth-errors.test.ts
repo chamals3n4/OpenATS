@@ -4,7 +4,7 @@ import {
   resetPasswordErrorMessage,
   signInErrorMessage,
   validateNewPassword,
-} from "@/lib/auth-errors";
+} from "@/lib/auth/errors";
 
 describe("signInErrorMessage", () => {
   it("gives the same generic message for a wrong password and an unknown email", () => {

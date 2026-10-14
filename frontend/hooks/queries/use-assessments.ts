@@ -5,7 +5,7 @@ import {
   useQueryClient,
   useMutation,
 } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/auth-action";
+import { serverFetch } from "@/lib/server-fetch";
 import type {
   Assessment,
   AssessmentQuestion,

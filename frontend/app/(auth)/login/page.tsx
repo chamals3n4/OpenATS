@@ -3,12 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { authClient } from "@/lib/auth-client";
+import { authClient } from "@/lib/auth/client";
 import {
   signInErrorMessage,
   validateSignIn,
   type SignInFieldErrors,
-} from "@/lib/auth-errors";
+} from "@/lib/auth/errors";
 import { AuthShell } from "../_components/auth-shell";
 import { authInputClass } from "@/components/auth/input-class";
 import { FormAlert } from "@/components/auth/form-alert";

@@ -14,7 +14,7 @@ import { DiscussionsPanel } from "./_components/discussions-panel";
 import { useJob } from "@/hooks/queries/use-jobs";
 import { useCandidates } from "@/hooks/queries/use-candidates";
 
-import type { JobDetail } from "@/types";
+import { formatSalary } from "@/lib/format";
 
 const JOB_TABS = [
   { value: "overview", label: "Overview" },
@@ -24,15 +24,6 @@ const JOB_TABS = [
   { value: "assessments", label: "Assessments" },
   { value: "scoring", label: "Scoring" },
 ];
-
-function formatSalary(job: JobDetail) {
-  if (!job.salaryType) return null;
-  const fmt = (n: string | null) => (n ? Number(n).toLocaleString() : "");
-  const freq = job.payFrequency ?? "";
-  if (job.salaryType === "fixed")
-    return `${job.currency} ${fmt(job.salaryFixed)}/${freq}`;
-  return `${job.currency} ${fmt(job.salaryMin)}-${fmt(job.salaryMax)}/${freq}`;
-}
 
 export default function JobDetailsPage() {
   const params = useParams();

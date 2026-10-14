@@ -1,18 +1,12 @@
-export function fmtTime(s: string | null) {
-  if (!s) return "";
-  return new Date(s).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
+import { formatTime } from "@/lib/format";
 
 /** e.g. "9:30 AM – 10:15 AM" */
 export function fmtTimeRange(scheduledAt: string | null, durationMinutes: number | null) {
   if (!scheduledAt) return "";
-  const start = fmtTime(scheduledAt);
+  const start = formatTime(scheduledAt);
   if (!durationMinutes) return start;
   const end = new Date(new Date(scheduledAt).getTime() + durationMinutes * 60_000);
-  return `${start} – ${fmtTime(end.toISOString())}`;
+  return `${start} – ${formatTime(end.toISOString())}`;
 }
 
 /** Search by candidate, interview, job or stage */
@@ -23,22 +17,6 @@ export function matchesInterview(
   const q = query.trim().toLowerCase();
   if (!q) return true;
   return [iv.candidateName, iv.eventName, iv.jobTitle, iv.stageName].some((text) => text?.toLowerCase().includes(q));
-}
-
-export function fmtDate(s: string) {
-  return new Date(s).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
-export function fmtDateLong(s: string) {
-  return new Date(s).toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
 }
 
 export const STATUS_CONFIG: Record<

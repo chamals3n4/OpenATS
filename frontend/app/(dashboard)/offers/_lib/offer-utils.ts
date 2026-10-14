@@ -36,15 +36,6 @@ export function fmtSalary(offer: Offer): string {
   return `${offer.currency ?? ""} ${Number(offer.salary).toLocaleString()}`.trim();
 }
 
-export function fmtDate(val: string | null): string {
-  if (!val) return "—";
-  return new Date(val).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-}
-
 export function capitalizeStatus(status: string): string {
   return status.charAt(0).toUpperCase() + status.slice(1);
 }

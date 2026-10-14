@@ -3,7 +3,7 @@
 import { useMemo } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { ArrowUpRight01Icon, QuestionIcon, Tick02Icon } from "@hugeicons/core-free-icons";
-import { formatDate } from "../constants";
+import { formatDate } from "@/lib/format";
 import {
   asWebUrl,
   groupAnswers,

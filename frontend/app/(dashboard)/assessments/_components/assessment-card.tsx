@@ -5,7 +5,7 @@ import { HugeiconsIcon } from "@hugeicons/react";
 import { Quiz01Icon, Time01Icon } from "@hugeicons/core-free-icons";
 import { RowDeleteButton, RowEditButton } from "@/components/table/row-actions";
 import { useIsManager } from "@/hooks/use-role";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import type { Assessment } from "@/types";
 
 interface AssessmentCardProps {

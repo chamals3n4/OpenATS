@@ -5,10 +5,10 @@ import { TableRow, TableCell } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 import type { OfferWithRelations } from "@/types";
+import { formatDate } from "@/lib/format";
 import {
   getStatusStyle,
   fmtSalary,
-  fmtDate,
   capitalizeStatus,
   getCandidateName,
   getJobTitle,
@@ -60,7 +60,7 @@ export function OfferTableRow({
         {fmtSalary(offer)}
       </TableCell>
       <TableCell className="h-12 px-6 py-0 text-slate-800 dark:text-neutral-200 font-normal">
-        {fmtDate(offer.sentAt)}
+        {formatDate(offer.sentAt)}
       </TableCell>
       <TableCell
         className="h-12 px-6 py-0"

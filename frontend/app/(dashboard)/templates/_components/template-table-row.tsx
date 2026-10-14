@@ -4,7 +4,8 @@ import { Copy01Icon } from "@hugeicons/core-free-icons";
 import { RowDeleteButton, RowEditButton } from "@/components/table/row-actions";
 import { TableRow, TableCell } from "@/components/ui/table";
 import type { Template } from "@/types";
-import { getTypeMeta, formatDate } from "../_lib/templates-utils";
+import { getTypeMeta } from "../_lib/templates-utils";
+import { formatDate } from "@/lib/format";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
 import { useIsManager } from "@/hooks/use-role";
 

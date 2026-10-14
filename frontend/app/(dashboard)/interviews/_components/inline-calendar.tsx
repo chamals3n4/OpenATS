@@ -12,7 +12,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { InterviewListItem } from "@/types";
-import { STATUS_CONFIG, fmtTime, fmtTimeRange, matchesInterview } from "../../_lib/interview-display";
+import { STATUS_CONFIG, fmtTimeRange, matchesInterview } from "../../_lib/interview-display";
+import { formatTime } from "@/lib/format";
 import { InterviewActions } from "./interview-actions";
 import { MonthYearPicker } from "./month-year-picker";
 import { dayKey, groupByDay, monthGrid } from "../_lib/calendar-utils";
@@ -231,7 +232,7 @@ export function InlineCalendar({
                     <span key={iv.id} className="flex w-full items-center gap-1.5 text-[13px] leading-4">
                       <span aria-hidden className={`size-2 shrink-0 rounded-full ${statusOf(iv.status).dot}`} />
                       <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-neutral-100">
-                        {fmtTime(iv.scheduledAt)}
+                        {formatTime(iv.scheduledAt)}
                       </span>
                       <span className="truncate font-medium text-slate-700 dark:text-neutral-300">
                         {iv.candidateName?.split(" ")[0]}

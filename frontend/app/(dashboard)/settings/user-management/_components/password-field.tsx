@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { toast } from "sonner";
-import { Copy, Eye, EyeOff } from "lucide-react";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { Copy01Icon, ViewIcon, ViewOffSlashIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { generatePassword, inputCls } from "../_lib/user-utils";
@@ -62,7 +63,7 @@ export function PasswordField({
           onClick={() => setShow((s) => !s)}
           className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-neutral-300"
         >
-          {show ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+          <HugeiconsIcon icon={show ? ViewOffSlashIcon : ViewIcon} className="size-4" />
         </button>
       </div>
       <div className="flex gap-2 w-full sm:w-auto">
@@ -84,7 +85,7 @@ export function PasswordField({
           className="h-10 px-3 rounded-lg bg-white dark:bg-neutral-900 border-slate-200 dark:border-neutral-800 text-slate-700 dark:text-neutral-300 shadow-none flex-1 sm:flex-none"
           onClick={() => copyToClipboard(value)}
         >
-          <Copy className="size-4 mr-2" />
+          <HugeiconsIcon icon={Copy01Icon} className="size-4 mr-2" />
           Copy
         </Button>
       </div>

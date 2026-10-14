@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import type { JobDetail, CustomQuestion } from "@/types";
+import { formatSalary } from "@/lib/format";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
@@ -50,15 +51,6 @@ const EMPLOYMENT_LABELS: Record<string, string> = {
   internship: "Internship",
   freelance: "Freelance",
 };
-
-function formatSalary(job: JobDetail): string | null {
-  if (!job.salaryType) return null;
-  const fmt = (n: string | null) => (n ? Number(n).toLocaleString() : "");
-  const freq = job.payFrequency ? `/${job.payFrequency}` : "";
-  if (job.salaryType === "fixed")
-    return `${job.currency} ${fmt(job.salaryFixed)}${freq}`;
-  return `${job.currency} ${fmt(job.salaryMin)} – ${fmt(job.salaryMax)}${freq}`;
-}
 
 const fieldInput =
   "h-11 bg-slate-100 dark:bg-neutral-800/60 border border-slate-300 dark:border-neutral-700 rounded-md shadow-none focus-visible:ring-0 text-slate-900 dark:text-neutral-100 placeholder:text-slate-400 dark:placeholder:text-neutral-500";

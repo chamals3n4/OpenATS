@@ -1,7 +1,6 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Mail01Icon } from "@hugeicons/core-free-icons";
-import { timeAgo } from "../constants";
-import { formatDateTime } from "../../_lib/format-datetime";
+import { formatDateTime, timeAgo } from "@/lib/format";
 import { describeRejectionEmail, type EmailTone } from "../../_lib/rejection-utils";
 import type { CandidateRejection } from "@/types";
 

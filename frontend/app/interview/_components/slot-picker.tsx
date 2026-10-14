@@ -12,6 +12,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { InterviewData } from "../types";
 import ConfirmedState from "./confirmed-state";
 import ErrorState from "./error-state";
+import { formatTime } from "@/lib/format";
 
 function fmtDate(dt: string) {
   return new Date(dt).toLocaleDateString("en-US", {
@@ -19,13 +20,6 @@ function fmtDate(dt: string) {
     month: "long",
     day: "numeric",
     year: "numeric",
-  });
-}
-
-function fmtTime(dt: string) {
-  return new Date(dt).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
   });
 }
 
@@ -184,7 +178,7 @@ export default function SlotPicker({ data, token, apiBase }: Props) {
                       {fmtDate(slot.datetime)}
                     </span>
                     <span className="block text-sm text-slate-500 dark:text-neutral-400 mt-0.5">
-                      {fmtTime(slot.datetime)}
+                      {formatTime(slot.datetime)}
                     </span>
                   </span>
                 </span>

@@ -21,10 +21,6 @@ export function getTypeMeta(type: string) {
   );
 }
 
-export function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString();
-}
-
 export const TEMPLATE_NAME_MAX = 255;
 
 const COPY_SUFFIX = " (copy)";

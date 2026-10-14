@@ -16,7 +16,7 @@ import type {
   JobAssessment,
 } from "@/types";
 import { EMPLOYMENT_TYPE_LABELS } from "@/lib/job-labels";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/format";
 import { useIsManager } from "@/hooks/use-role";
 
 interface JobTableRowProps {

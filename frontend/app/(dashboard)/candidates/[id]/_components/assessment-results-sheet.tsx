@@ -15,7 +15,7 @@ import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { useIsManager } from "@/hooks/use-role";
 import { useAttemptResults, useGradeAnswer } from "@/hooks/queries/use-assessments";
-import { formatDate } from "./constants";
+import { formatDate } from "@/lib/format";
 import {
   earnedPoints,
   formatDuration,

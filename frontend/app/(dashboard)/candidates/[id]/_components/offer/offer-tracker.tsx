@@ -1,6 +1,6 @@
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Cancel01Icon, Tick02Icon } from "@hugeicons/core-free-icons";
-import { formatDate } from "../constants";
+import { formatDate } from "@/lib/format";
 import {
   getOfferSteps,
   type OfferStep,

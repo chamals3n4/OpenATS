@@ -16,21 +16,6 @@ export interface CandidateFormData {
   resumeFile: File | null;
 }
 
-export interface EditCandidateState {
-  target: Candidate | null;
-  formData: CandidateFormData;
-}
-
-export function createEmptyFormData(): CandidateFormData {
-  return {
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    resumeFile: null,
-  };
-}
-
 export function candidateToFormData(candidate: Candidate): CandidateFormData {
   return {
     firstName: candidate.firstName,

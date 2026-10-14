@@ -7,7 +7,6 @@ import {
   useBulkRejectCandidates,
   useCandidates,
   useDeleteCandidate,
-  useUpdateCandidateBasicDetails,
 } from "@/hooks/queries/use-candidates";
 import { toast } from "sonner";
 import { useJobs } from "@/hooks/queries/use-jobs";
@@ -30,11 +29,6 @@ import { useCurrentUser } from "@/hooks/queries/use-user";
 import { CandidatesTable } from "./candidates-table";
 import { CandidateEditDialog } from "./candidate-edit-dialog";
 import { CandidateDeleteDialog } from "./candidate-delete-dialog";
-import {
-  createEmptyFormData,
-  candidateToFormData,
-  buildUpdateFormData,
-} from "../_lib/candidate-types";
 
 const PAGE_LIMIT = 15;
 
@@ -203,26 +197,6 @@ export default function CandidatesPageClient() {
 
   // ── Edit ───────────────────────────────────────────────────
   const [editTarget, setEditTarget] = useState<Candidate | null>(null);
-  const [editForm, setEditForm] = useState(createEmptyFormData());
-  const updateMutation = useUpdateCandidateBasicDetails();
-
-  const openEditDialog = useCallback((candidate: Candidate) => {
-    setEditTarget(candidate);
-    setEditForm(candidateToFormData(candidate));
-  }, []);
-
-  const handleConfirmUpdate = useCallback(() => {
-    if (!editTarget) return;
-    updateMutation.mutate(
-      { id: editTarget.id, formData: buildUpdateFormData(editForm) },
-      {
-        onSuccess: () => {
-          setEditTarget(null);
-          setEditForm(createEmptyFormData());
-        },
-      },
-    );
-  }, [editTarget, editForm, updateMutation]);
 
   const handleRowClick = useCallback(
     (candidate: Candidate) => {
@@ -268,7 +242,7 @@ export default function CandidatesPageClient() {
           candidates={candidates}
           isLoading={isLoading || !hydrated}
           onRowClick={handleRowClick}
-          onEdit={openEditDialog}
+          onEdit={setEditTarget}
           onDelete={setDeleteTarget}
           pagination={pagination}
           onPageChange={setPage}
@@ -287,15 +261,7 @@ export default function CandidatesPageClient() {
         />
       </div>
 
-      <CandidateEditDialog
-        candidate={editTarget}
-        formData={editForm}
-        onFormChange={setEditForm}
-        isOpen={!!editTarget}
-        onClose={() => setEditTarget(null)}
-        onConfirm={handleConfirmUpdate}
-        isPending={updateMutation.isPending}
-      />
+      <CandidateEditDialog candidate={editTarget} onClose={() => setEditTarget(null)} />
 
       <CandidateDeleteDialog
         candidate={deleteTarget}

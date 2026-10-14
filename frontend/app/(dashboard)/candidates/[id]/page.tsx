@@ -12,7 +12,6 @@ import {
   useCandidate,
   useDeleteCandidate,
   useMoveCandidateStage,
-  useUpdateCandidateBasicDetails,
 } from "@/hooks/queries/use-candidates";
 import { usePipeline } from "@/hooks/queries/use-pipeline";
 import { useCandidateAssessments } from "@/hooks/queries/use-assessments";
@@ -77,7 +76,6 @@ export default function CandidateDetailPage({
   );
 
   const deleteMutation = useDeleteCandidate();
-  const updateMutation = useUpdateCandidateBasicDetails();
 
   // AI tab only shows when AI analysis is on
   const { data: aiSettingsData, isLoading: aiSettingsLoading } = useAiSettings();
@@ -98,11 +96,6 @@ export default function CandidateDetailPage({
       : sections[0]!.id;
   const [deleteTarget, setDeleteTarget] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [editFirstName, setEditFirstName] = useState("");
-  const [editLastName, setEditLastName] = useState("");
-  const [editEmail, setEditEmail] = useState("");
-  const [editPhone, setEditPhone] = useState("");
-  const [editResumeFile, setEditResumeFile] = useState<File | null>(null);
 
   const [selectedStageId, setSelectedStageId] = useState("");
   const [isCvExpanded, setIsCvExpanded] = useState(false);
@@ -136,11 +129,6 @@ export default function CandidateDetailPage({
 
   const openEditDialog = () => {
     if (!candidate) return;
-    setEditFirstName(candidate.firstName);
-    setEditLastName(candidate.lastName);
-    setEditEmail(candidate.email);
-    setEditPhone(candidate.phone ?? "");
-    setEditResumeFile(null);
     setEditOpen(true);
   };
 
@@ -149,26 +137,6 @@ export default function CandidateDetailPage({
     deleteMutation.mutate(candidate.id, {
       onSuccess: () => router.push("/candidates"),
     });
-  };
-
-  const confirmUpdate = () => {
-    if (!candidate) return;
-    const formData = new FormData();
-    formData.append("firstName", editFirstName.trim());
-    formData.append("lastName", editLastName.trim());
-    formData.append("email", editEmail.trim());
-    formData.append("phone", editPhone.trim());
-    if (editResumeFile) formData.append("resume", editResumeFile);
-
-    updateMutation.mutate(
-      { id: candidate.id, formData },
-      {
-        onSuccess: () => {
-          setEditOpen(false);
-          setEditResumeFile(null);
-        },
-      },
-    );
   };
 
   const saveStageChange = () => {
@@ -340,25 +308,8 @@ export default function CandidateDetailPage({
       />
 
       <CandidateEditDialog
-        isOpen={editOpen}
+        candidate={editOpen ? (candidate ?? null) : null}
         onClose={() => setEditOpen(false)}
-        candidate={candidate}
-        formData={{
-          firstName: editFirstName,
-          lastName: editLastName,
-          email: editEmail,
-          phone: editPhone,
-          resumeFile: editResumeFile,
-        }}
-        onFormChange={(formData) => {
-          setEditFirstName(formData.firstName);
-          setEditLastName(formData.lastName);
-          setEditEmail(formData.email);
-          setEditPhone(formData.phone);
-          setEditResumeFile(formData.resumeFile);
-        }}
-        onConfirm={confirmUpdate}
-        isPending={updateMutation.isPending}
       />
 
       <CandidateDeleteDialog

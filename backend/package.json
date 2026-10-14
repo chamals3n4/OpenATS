@@ -67,6 +67,7 @@
     "drizzle-kit": "^0.31.11",
     "eslint": "^9.39.5",
     "nodemon": "^3.1.11",
+    "socket.io-client": "^4.8.4",
     "supertest": "^7.3.1",
     "tsx": "^4.23.15",
     "typescript": "^5.9.3",

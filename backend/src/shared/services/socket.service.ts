@@ -13,6 +13,8 @@ import {
 import logger from "../../utils/logger";
 import { getErrorMessage } from "../../utils/error.utils";
 
+/** Long enough for any note, short enough that one message cannot fill the table. */
+const MAX_MESSAGE_LENGTH = 5000;
 const STAFF_ROOM = "staff";
 const jobRoom = (jobId: number) => `job_${jobId}`;
 const candidateRoom = (candidateId: number) => `candidate_${candidateId}`;
@@ -83,20 +85,30 @@ export class SocketService {
       logger.info(`Socket connected: ${socket.id} (user ${user.id})`);
 
       // job room — hiring team members only
-      socket.on("join_job", async (rawJobId: unknown) => {
+      // Answers through the callback once the join is done, because writes are refused until
+      // then: the browser waits for this before it sends anything.
+      socket.on("join_job", async (rawJobId: unknown, ack?: unknown) => {
+        const reply = (ok: boolean) => {
+          if (typeof ack === "function") ack({ ok });
+        };
         const jobId = parseRoomId(rawJobId);
-        if (jobId === null) return;
+        if (jobId === null) {
+          reply(false);
+          return;
+        }
 
         if (!(await canAccessJob(user, jobId))) {
           logger.warn(
             `[socket] user ${user.id} denied join of job_${jobId} (not on hiring team)`,
           );
           socket.emit("room_denied", { room: "job", id: jobId });
+          reply(false);
           return;
         }
 
         socket.join(jobRoom(jobId));
         logger.info(`Socket ${socket.id} joined job room: job_${jobId}`);
+        reply(true);
       });
 
       // candidate room — follows the candidate's job
@@ -123,6 +135,14 @@ export class SocketService {
       const inCandidateRoom = (candidateId: number) =>
         socket.rooms.has(candidateRoom(candidateId));
 
+      // A message is text that a person typed. Anything else, or something too long to be one, is
+      // refused rather than stored.
+      const messageText = (value: unknown): string | null => {
+        if (typeof value !== "string") return null;
+        const text = value.trim();
+        return text && text.length <= MAX_MESSAGE_LENGTH ? text : null;
+      };
+
       const denyWrite = (event: string, id: number | null) => {
         logger.warn(
           `[socket] user ${user.id} denied ${event} for room id ${id} (not joined)`,
@@ -142,6 +162,8 @@ export class SocketService {
             denyWrite("send_job_message", jobId);
             return;
           }
+          const text = messageText(data?.message);
+          if (text === null) return;
 
           try {
             const [newMessage] = await db
@@ -149,7 +171,7 @@ export class SocketService {
               .values({
                 jobId,
                 senderId: user.id,
-                message: data.message,
+                message: text,
                 replyToId: data.replyToId,
               })
               .returning();
@@ -185,11 +207,13 @@ export class SocketService {
             denyWrite("edit_job_message", jobId);
             return;
           }
+          const text = messageText(data?.message);
+          if (text === null) return;
 
           try {
             const [updated] = await db
               .update(jobChatMessages)
-              .set({ message: data.message })
+              .set({ message: text })
               .where(
                 and(
                   eq(jobChatMessages.id, data.messageId),

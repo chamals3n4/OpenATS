@@ -130,9 +130,8 @@ export default function JobDetailsPage() {
 
   const [isNotesOpen, setIsNotesOpen] = useState(false);
   const [noteText, setNoteText] = useState("");
-  const [notesPanelWidth, setNotesPanelWidth] = useState(350);
+  const [notesPanelWidth, setNotesPanelWidth] = useState(380);
   const [isResizingNotes, setIsResizingNotes] = useState(false);
-  const [isLgUp, setIsLgUp] = useState(false);
   const [activeJobTab, setActiveJobTab] = useState("overview");
 
   const { data: jobData, isLoading: jobLoading } = useJob(jobId);
@@ -143,8 +142,8 @@ export default function JobDetailsPage() {
     });
   const jobCandidateCount = jobCandidatesData?.data?.length ?? 0;
   const { data: meData } = useCurrentUser();
-  const { data: chatHistoryData } = useChatHistory(jobId, isNotesOpen);
-  const { liveMessages, sendMessage, editMessage, deleteMessage } = useJobChat(
+  const { data: chatHistoryData, isError: chatHistoryError } = useChatHistory(jobId, isNotesOpen);
+  const { sendMessage, editMessage, deleteMessage, denied: chatDenied } = useJobChat(
     jobId,
     isNotesOpen,
   );
@@ -193,15 +192,14 @@ export default function JobDetailsPage() {
   const job = jobData?.data;
   const me = meData?.data;
 
-  const allMessages = useMemo(() => {
-    const history = chatHistoryData?.data ?? [];
-    const merged = [...history, ...liveMessages];
-    const byId = new Map<number, (typeof merged)[number]>();
-    for (const msg of merged) byId.set(msg.id, msg);
-    return Array.from(byId.values()).sort(
-      (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime(),
-    );
-  }, [chatHistoryData?.data, liveMessages]);
+  // The history and everything that arrived live are one list: useJobChat writes into this cache.
+  const allMessages = useMemo(
+    () =>
+      [...(chatHistoryData?.data ?? [])].sort(
+        (a, b) => new Date(a.sentAt).getTime() - new Date(b.sentAt).getTime(),
+      ),
+    [chatHistoryData?.data],
+  );
 
   const handleSendNote = () => {
     if (!noteText.trim() || !me) return;
@@ -229,17 +227,10 @@ export default function JobDetailsPage() {
   }
 
   useEffect(() => {
-    const mq = window.matchMedia("(min-width: 1024px)");
-    const onChange = () => setIsLgUp(mq.matches);
-    onChange();
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
-
-  useEffect(() => {
     if (!isResizingNotes) return;
-    const MIN = 360,
-      MAX = 700;
+    // The job beside it keeps at least half of the window.
+    const MIN = 340,
+      MAX = Math.min(720, Math.round(window.innerWidth / 2));
     const onMove = (e: MouseEvent) => {
       const next = Math.round(window.innerWidth - e.clientX);
       setNotesPanelWidth(Math.max(MIN, Math.min(MAX, next)));
@@ -342,7 +333,10 @@ export default function JobDetailsPage() {
   const salaryStr = job ? formatSalary(job) : null;
 
   return (
-    <div className="flex flex-1 flex-col overflow-hidden bg-slate-50 dark:bg-neutral-950">
+    // As tall as the window under the top bar. The job and the discussion sit side by side in it,
+    // each scrolling on its own, so opening the discussion narrows the job instead of covering it.
+    <div className="flex h-[calc(100dvh-var(--header-height))] w-full min-w-0 overflow-hidden bg-slate-50 dark:bg-neutral-950">
+      <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <JobHeader
         job={job}
         jobLoading={jobLoading}
@@ -435,12 +429,14 @@ export default function JobDetailsPage() {
         </div>
       </div>
 
+      </div>
+
       {isNotesOpen && (
         <DiscussionsPanel
-          isLgUp={isLgUp}
           notesPanelWidth={notesPanelWidth}
           setIsResizingNotes={setIsResizingNotes}
           allMessages={allMessages}
+          historyError={chatHistoryError || chatDenied}
           setIsNotesOpen={setIsNotesOpen}
           me={me}
           timeAgo={timeAgo}

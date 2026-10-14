@@ -2,7 +2,7 @@
 
 import { createContext, useContext } from "react";
 
-/** Passes the socket token to client hooks */
+// Passes the socket token to client hooks
 const SocketTokenContext = createContext<string | undefined>(undefined);
 
 export function SocketAuthProvider({

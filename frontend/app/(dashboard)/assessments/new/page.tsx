@@ -1,10 +1,10 @@
-import { ManagerGuard } from "@/components/guards/manager-guard";
+import { RoleGuard } from "@/components/guards/role-guard";
 import CreateAssessmentPageClient from "./_components/create-assessment-client";
 
 export default function NewAssessmentPage() {
   return (
-    <ManagerGuard redirectTo="/assessments">
+    <RoleGuard allow="manager" redirectTo="/assessments">
       <CreateAssessmentPageClient />
-    </ManagerGuard>
+    </RoleGuard>
   );
 }

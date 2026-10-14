@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { StarRating, RATING_LABELS } from "@/components/star-rating";
 import { useCurrentUser } from "@/hooks/queries/use-user";
+import { useRole } from "@/hooks/use-role";
 import { useRateCandidate } from "@/hooks/queries/use-candidates";
 import { SCORE_PARTS, formatScore, sharesOf, type ScorePart } from "@/lib/scoring";
 import type { CandidateDetail } from "@/types";
@@ -30,7 +31,7 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
   const total = toNumber(candidate.totalScore);
 
   const ratings = candidate.ratings ?? [];
-  const isInterviewer = me?.data?.role === "interviewer";
+  const { isInterviewer } = useRole();
   const spread = candidate.interviewSpread;
   const myRating = ratings.find((r) => r.userId === me?.data?.id)?.rating ?? null;
 

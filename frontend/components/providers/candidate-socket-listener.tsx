@@ -2,7 +2,8 @@
 
 import { useCandidateSocket } from "@/hooks/use-candidate-socket";
 
-export function CandidateSocketProvider() {
+// Keeps candidate data fresh from socket events. Renders nothing
+export function CandidateSocketListener() {
   useCandidateSocket();
   return null;
 }

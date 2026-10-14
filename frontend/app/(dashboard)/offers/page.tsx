@@ -1,10 +1,10 @@
-import { ManagerGuard } from "@/components/guards/manager-guard";
+import { RoleGuard } from "@/components/guards/role-guard";
 import OffersPageClient from "./_components/offers-client";
 
 export default function OffersPage() {
   return (
-    <ManagerGuard redirectTo="/">
+    <RoleGuard allow="manager" redirectTo="/">
       <OffersPageClient />
-    </ManagerGuard>
+    </RoleGuard>
   );
 }

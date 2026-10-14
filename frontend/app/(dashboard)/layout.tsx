@@ -3,8 +3,8 @@ import { AppSidebar } from "@/components/layout/app-sidebar";
 import { SiteHeaderServer } from "@/components/layout/site-header-server";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { DragDropProvider } from "@/components/dynamic-imports";
-import { PrefetchProvider } from "@/components/providers/prefetch-provider";
-import { CandidateSocketProvider } from "@/components/providers/candidate-socket-provider";
+import { DashboardPrefetch } from "@/components/providers/dashboard-prefetch";
+import { CandidateSocketListener } from "@/components/providers/candidate-socket-listener";
 import { SocketAuthProvider } from "@/components/providers/socket-auth-provider";
 import { redirect } from "next/navigation";
 import { getApiToken, getSession } from "@/lib/auth/session";
@@ -27,8 +27,8 @@ export default async function DashboardLayout({
   return (
     <QueryProvider>
       <SocketAuthProvider token={socketToken}>
-        <PrefetchProvider />
-        <CandidateSocketProvider />
+        <DashboardPrefetch />
+        <CandidateSocketListener />
         <div className="[--header-height:calc(--spacing(14))]">
           <SidebarProvider className="flex flex-col">
             <SiteHeaderServer />

@@ -25,7 +25,7 @@ import {
   toFilterParams,
   type CandidateFilterState,
 } from "../_lib/candidate-filter-state";
-import { useCurrentUser } from "@/hooks/queries/use-user";
+import { useRole } from "@/hooks/use-role";
 import { CandidatesTable } from "./candidates-table";
 import { CandidateEditDialog } from "./candidate-edit-dialog";
 import { CandidateDeleteDialog } from "./candidate-delete-dialog";
@@ -52,8 +52,7 @@ export default function CandidatesPageClient() {
   const [search, setSearch] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
-  const { data: me } = useCurrentUser();
-  const isInterviewer = me?.data?.role === "interviewer";
+  const { isInterviewer } = useRole();
 
   // Save filters from a shared link too
   useEffect(() => {

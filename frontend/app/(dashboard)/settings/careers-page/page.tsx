@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo } from "react";
 import { toast } from "sonner";
-import { useCurrentUser } from "@/hooks/queries/use-user";
+import { RoleGuard } from "@/components/guards/role-guard";
 import {
   useSettingsAllowedOrigins,
   useUpdateSettingsAllowedOrigins,
@@ -16,14 +15,14 @@ import { careersUrls } from "./_lib/careers-utils";
 const NO_ORIGINS: string[] = [];
 
 export default function CareersSettingsPage() {
-  const router = useRouter();
-  const { data: currentUserRes, isLoading: isLoadingUser } = useCurrentUser();
-  const role = currentUserRes?.data?.role;
-  const isManager = role === "super_admin" || role === "hiring_manager";
+  return (
+    <RoleGuard allow="manager" redirectTo="/settings/general">
+      <CareersSettings />
+    </RoleGuard>
+  );
+}
 
-  useEffect(() => {
-    if (role && !isManager) router.replace("/settings/general");
-  }, [role, isManager, router]);
+function CareersSettings() {
 
   const { data, isLoading, isError, error, refetch } = useSettingsAllowedOrigins();
   const updateOrigins = useUpdateSettingsAllowedOrigins();
@@ -32,8 +31,6 @@ export default function CareersSettingsPage() {
     () => careersUrls(process.env.NEXT_PUBLIC_APP_URL?.trim() || "http://localhost:3000"),
     [],
   );
-
-  if (isLoadingUser || !role || !isManager) return null;
 
   return (
     <div className="flex min-w-0 flex-1 flex-col bg-slate-50/70 dark:bg-neutral-950">

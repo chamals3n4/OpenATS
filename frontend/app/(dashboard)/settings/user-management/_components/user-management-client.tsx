@@ -1,7 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { Add01Icon, Search01Icon } from "@hugeicons/core-free-icons";
@@ -27,16 +26,8 @@ export function UserManagementClient({
   // False when the server has no email provider configured
   inviteEmailEnabled: boolean;
 }) {
-  const router = useRouter();
   const { data: currentUserRes } = useCurrentUser();
   const currentUserId = currentUserRes?.data?.id;
-
-  // Super admins only
-  useEffect(() => {
-    if (currentUserRes?.data && currentUserRes.data.role !== "super_admin") {
-      router.replace("/settings/general");
-    }
-  }, [currentUserRes, router]);
 
   const { data: users = [], isLoading } = useManagedUsers();
   const removeMutation = useRemoveUser();

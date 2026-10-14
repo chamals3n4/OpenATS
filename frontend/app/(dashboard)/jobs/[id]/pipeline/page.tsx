@@ -6,7 +6,7 @@ import { useDragLayer } from "react-dnd";
 import { Button } from "@/components/ui/button";
 import type { BoardCandidate } from "@/types";
 import { useJob } from "@/hooks/queries/use-jobs";
-import { useCurrentUser } from "@/hooks/queries/use-user";
+import { RoleGuard } from "@/components/guards/role-guard";
 import { usePipeline } from "@/hooks/queries/use-pipeline";
 import { useJobAssessments } from "@/hooks/queries/use-assessments";
 import { useBoardCandidates } from "@/hooks/queries/use-candidates";
@@ -36,25 +36,27 @@ function useMinuteClock() {
   return now;
 }
 
+// Interviewers do not get the board
 export default function HiringPipelinePage() {
+  const jobId = Number(useParams().id);
+  return (
+    <RoleGuard allow="manager" redirectTo={`/jobs/${jobId}`}>
+      <HiringPipeline />
+    </RoleGuard>
+  );
+}
+
+function HiringPipeline() {
   const jobId = Number(useParams().id);
   const router = useRouter();
 
-  const { data: currentUserRes, isLoading: isLoadingUser } = useCurrentUser();
   const { data: jobData, isLoading: isLoadingJob } = useJob(jobId);
-  const role = currentUserRes?.data?.role;
-  const isManager = role === "super_admin" || role === "hiring_manager";
 
   const { data: pipelineData, isLoading: isLoadingStages } = usePipeline(jobId);
-  const board = useBoardCandidates(jobId, { enabled: isManager });
+  const board = useBoardCandidates(jobId);
   const { data: assessmentData } = useJobAssessments(jobId);
 
   const job = jobData?.data;
-
-  // Interviewers do not get the board.
-  useEffect(() => {
-    if (role && !isManager) router.replace(`/jobs/${jobId}`);
-  }, [role, isManager, router, jobId]);
 
   useEffect(() => {
     if (!isLoadingJob && !job) router.replace("/jobs");
@@ -215,8 +217,6 @@ export default function HiringPipelinePage() {
 
   const { isDragging } = useDragLayer((monitor) => ({ isDragging: monitor.isDragging() }));
   useEdgeScroll(scrollRef, isDragging);
-
-  if (isLoadingUser || !role || !isManager) return null;
 
   const isLoading = board.isPending || isLoadingStages;
 

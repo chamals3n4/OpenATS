@@ -1,13 +1,4 @@
-/**
- * The kinds of question, by what the candidate does. The names say how many answers can be
- * picked, because "multiple choice" on its own is read both ways.
- *
- *   single      pick one option
- *   multiple    pick every option that applies
- *   true_false  pick True or False
- *   short       type a line
- *   long        type a paragraph or more
- */
+/** Question types: single, multiple, true_false, short, long */
 export type QuestionType = "single" | "multiple" | "true_false" | "short" | "long";
 
 export interface QuestionTypeInfo {
@@ -36,12 +27,12 @@ export interface AnswerOption {
 
 export interface Question {
   uid: number;
-  /** Set once the question is saved, so editing updates it instead of adding a copy. */
+  /** Set after saving so we update instead of adding */
   dbId?: number;
   title: string;
   description: string;
   type: QuestionType;
-  /** What a fully correct answer is worth. A reviewer awards written answers up to this. */
+  /** Max points for a correct answer */
   points: number;
   options: AnswerOption[];
 }

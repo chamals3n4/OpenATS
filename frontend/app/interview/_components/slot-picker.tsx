@@ -40,10 +40,10 @@ export default function SlotPicker({ data, token, apiBase }: Props) {
   const [confirming, setConfirming] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  // Slots discovered to be taken after page load (confirm attempt lost a race)
+  // Slots taken after the page loaded
   const [takenIndexes, setTakenIndexes] = useState<Set<number>>(new Set());
   const [notice, setNotice] = useState<string | null>(null);
-  // Fixed at mount so re-renders cannot reshuffle which slots read as past.
+  // Fixed on mount so past slots don't change
   const [now] = useState(() => Date.now());
 
   const handleConfirm = async () => {
@@ -59,7 +59,7 @@ export default function SlotPicker({ data, token, apiBase }: Props) {
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         if (body?.code === "SLOT_TAKEN") {
-          // Someone else confirmed this time — grey it out and let them retry
+          // Someone took this slot, grey it out
           setTakenIndexes((prev) => new Set(prev).add(selectedSlot));
           setSelectedSlot(null);
           setNotice(body.error);

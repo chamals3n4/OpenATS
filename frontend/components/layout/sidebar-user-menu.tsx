@@ -46,8 +46,6 @@ export function SidebarUserMenu({
   const collapsed = state === "collapsed";
   const showProfileRow = variant === "sidebar" && !collapsed;
 
-  // The signed-in user's row from the API, shared with the rest of the
-  // dashboard through the ["me"] query.
   const { data: currentUser, isLoading } = useCurrentUser();
   const me = currentUser?.data;
 

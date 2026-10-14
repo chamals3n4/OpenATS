@@ -7,7 +7,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useSystemEmails } from "@/hooks/queries/use-templates";
 import { useIsManager } from "@/hooks/use-role";
 
-/** The emails the app sends by itself. Each can be reworded, or left as it comes. */
+/** Automatic emails list */
 export function AutomaticEmailsList() {
   const isManager = useIsManager();
   const { data, isLoading, isError } = useSystemEmails();
@@ -38,7 +38,6 @@ export function AutomaticEmailsList() {
       <ul className="mt-4 divide-y divide-slate-200 overflow-hidden rounded-md border border-slate-300 dark:divide-neutral-800 dark:border-neutral-700">
         {emails.map((email) => (
           <li key={email.purpose}>
-            {/* The whole row opens the email, so there is no separate button to aim for. */}
             <Link
               href={`/templates/automatic/${email.purpose}`}
               aria-label={`${isManager ? "Edit" : "View"} the “${email.label}” email`}

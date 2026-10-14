@@ -118,12 +118,12 @@ export function usePreviewTemplate() {
   });
 }
 
-/** One of the emails the app sends by itself, with the wording currently in use. */
+/** Automatic email with its current wording */
 export type SystemEmail = {
   purpose: string;
   label: string;
   description: string;
-  /** What the app adds after the message when it is sent, or null. */
+  /** Text added after the message, or null */
   appends: string | null;
   variables: { name: string; sample: string }[];
   subject: string;
@@ -140,11 +140,7 @@ export function useSystemEmails() {
   });
 }
 
-/**
- * An automatic email exactly as a candidate would receive it, built by the server from the
- * wording given (saved or not) and made-up details. The server builds the real email the same
- * way, so this is the email and not a drawing of it.
- */
+/** Automatic email preview built by the server */
 export function useSystemEmailPreview(purpose: string, content: { subject: string; bodyHtml: string }) {
   return useQuery({
     queryKey: ["templates", "system", purpose, "preview", content.subject, content.bodyHtml],
@@ -153,7 +149,7 @@ export function useSystemEmailPreview(purpose: string, content: { subject: strin
         method: "POST",
         body: JSON.stringify(content),
       }),
-    // The last preview stays on screen while the next one loads, so typing does not make it blink.
+    // Keep the old preview while loading
     placeholderData: keepPreviousData,
     staleTime: 1000 * 60,
   });

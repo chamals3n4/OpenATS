@@ -6,10 +6,7 @@ import { useAiSettings, useUpdateAiSettings } from "@/hooks/queries/use-settings
 import { useIsManager } from "@/hooks/use-role";
 import { SettingsSection } from "./settings-section";
 
-/**
- * The one switch for AI CV analysis. It is off unless someone turns it on, and it says plainly
- * where the CVs go, because turning it on shares candidates' personal data with a third party.
- */
+/** AI CV analysis switch. Off by default since CVs go to a third party */
 export function AiAnalysisCard() {
   const isManager = useIsManager();
   const { data, isPending, isError } = useAiSettings();
@@ -17,7 +14,7 @@ export function AiAnalysisCard() {
 
   const settings = data?.data;
   const configured = settings?.geminiConfigured ?? false;
-  // Shown as on only when it is really in effect: chosen, and the server has a key.
+  // On only when enabled and the server has a key
   const on = settings?.active ?? false;
 
   const handleChange = (next: boolean) =>

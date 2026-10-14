@@ -6,7 +6,7 @@ export function fmtTime(s: string | null) {
   });
 }
 
-/** "9:30 AM – 10:15 AM" when the length is known, otherwise just the start. */
+/** e.g. "9:30 AM – 10:15 AM" */
 export function fmtTimeRange(scheduledAt: string | null, durationMinutes: number | null) {
   if (!scheduledAt) return "";
   const start = fmtTime(scheduledAt);
@@ -15,7 +15,7 @@ export function fmtTimeRange(scheduledAt: string | null, durationMinutes: number
   return `${start} – ${fmtTime(end.toISOString())}`;
 }
 
-/** Whether an interview matches what was typed, by candidate, interview name, job or stage. */
+/** Search by candidate, interview, job or stage */
 export function matchesInterview(
   iv: { candidateName: string; eventName: string | null; jobTitle: string | null; stageName: string | null },
   query: string,

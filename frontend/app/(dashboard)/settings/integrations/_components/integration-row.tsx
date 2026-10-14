@@ -27,7 +27,6 @@ const PILL: Record<IntegrationState, { label: string; cls: string }> = {
   },
 };
 
-/** One app: what it does, whether it is connected, and the one action that makes sense. */
 export function IntegrationRow({
   integration,
   state,

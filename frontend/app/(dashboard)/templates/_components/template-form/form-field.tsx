@@ -1,6 +1,6 @@
 import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
 
-/** A titled group of fields. Groups are separated by a line in the form column. */
+/** Field group with a divider */
 export function FormSection({
   title,
   description,
@@ -23,7 +23,7 @@ export function FormSection({
   );
 }
 
-/** A label, its control, and either a hint or the error that replaces it. */
+/** Label, control and hint or error */
 export function FormField({
   label,
   htmlFor,
@@ -39,7 +39,7 @@ export function FormField({
   optional?: boolean;
   children: ReactNode;
 }) {
-  // With a known control id, tie the hint or error to that control for screen readers.
+  // Link the hint or error for screen readers
   const describedBy = htmlFor && (error || hint) ? `${htmlFor}-description` : undefined;
   const control =
     describedBy && isValidElement(children)

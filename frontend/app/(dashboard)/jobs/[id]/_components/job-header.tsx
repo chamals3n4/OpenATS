@@ -321,7 +321,6 @@ export function JobHeader({
             </div>
           </div>
 
-          {/* Right: action buttons, styled like the candidate profile's */}
           <div className="flex shrink-0 flex-wrap items-center gap-2 lg:justify-end">
             {isManager && primaryAction && (
               <Button

@@ -45,7 +45,7 @@ export function useAssessmentQuestions() {
     [questions],
   );
 
-  // Deleting asks first. The question waits here until the person confirms or cancels.
+  // Question waiting for delete confirm
   const [pendingRemoveId, setPendingRemoveId] = useState<number | null>(null);
   const pendingRemove = questions.find((q) => q.uid === pendingRemoveId) ?? null;
   const pendingRemoveNumber = questions.findIndex((q) => q.uid === pendingRemoveId) + 1;
@@ -82,7 +82,7 @@ export function useAssessmentQuestions() {
     [],
   );
 
-  /** Swaps in a saved assessment's questions, for the edit page once they have loaded. */
+  /** Load saved questions on the edit page */
   const replaceQuestions = useCallback((next: Question[]) => {
     setQuestions(next);
     setSelectedQ(next[0]?.uid ?? 0);

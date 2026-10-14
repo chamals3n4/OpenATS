@@ -39,7 +39,7 @@ const TEXT_TYPES = new Set(["short_answer", "long_answer"]);
 export const isTextQuestion = (question: Question) => TEXT_TYPES.has(question.questionType);
 export const isMultiSelect = (question: Question) => question.questionType === "checkbox";
 
-/** Turns the answers the server has saved into the shape the screens keep them in. */
+/** Convert saved answers for the screens */
 export function restoreAnswers(
   questions: Question[],
   saved: { questionId: number; answerText: string | null; optionIds: number[] }[] | undefined,

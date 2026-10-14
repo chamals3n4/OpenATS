@@ -11,7 +11,7 @@ import {
 
 const ROUTE_LOG = "[API /users/[id]/password-reset]";
 
-// "Send password reset link": emails the user a link to choose a password.
+// Email the user a reset link
 export async function POST(
   _req: NextRequest,
   context: { params: Promise<{ id: string }> },

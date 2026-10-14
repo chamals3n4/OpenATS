@@ -1,6 +1,6 @@
 import type { CandidateRejection, Template } from "@/types";
 
-/** "Other" tells the team nothing on its own, so it needs a note to go with it. */
+/** "Other" needs a note */
 export const NOTE_REQUIRED_REASON = "Other";
 export const INTERNAL_NOTE_MAX = 2000;
 
@@ -29,7 +29,7 @@ export function validateRejection(input: RejectionFormInput): RejectionFormError
   return errors;
 }
 
-/** The template most likely meant for rejections, so the email can start pre-selected. */
+/** Pick the rejection template by default */
 export function pickRejectionTemplate(templates: Template[]): Template | null {
   return (
     templates.find((t) => /reject|regret|unsuccessful|not moving forward|decline/i.test(t.name)) ??

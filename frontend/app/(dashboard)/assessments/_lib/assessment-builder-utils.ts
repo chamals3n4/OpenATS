@@ -19,7 +19,7 @@ export function makeQuestion(): Question {
     description: "",
     type: "single",
     points: 1,
-    // Empty, so they are typed and not edited: "Option 1" is only the placeholder.
+    // Empty so the user types it. "Option 1" is a placeholder
     options: [makeOption(""), makeOption(""), makeOption("")],
   };
 }
@@ -51,7 +51,7 @@ export function getDefaultOptionsForType(
   if (currentType === "true_false") {
     return [makeOption(""), makeOption(""), makeOption("")];
   }
-  // Only a multiple choice question can have more than one correct answer.
+  // Only multiple can have more than one correct answer
   if (newType === "single") {
     const first = currentOptions.findIndex((o) => o.isCorrect);
     return currentOptions.map((o, i) => ({ ...o, isCorrect: i === first && first !== -1 }));
@@ -59,10 +59,7 @@ export function getDefaultOptionsForType(
   return currentOptions;
 }
 
-/**
- * Marks an option correct (or not). A single-answer question keeps exactly one correct option;
- * a multiple choice question lets any number be correct, and is then graded with partial credit.
- */
+/** Single keeps one correct option, multiple allows many */
 export function toggleCorrectOption(question: Question, optionId: number): AnswerOption[] {
   const multi = question.type === "multiple";
   return question.options.map((o) => ({
@@ -112,7 +109,7 @@ interface ApiQuestion {
   options?: { id?: number; label: string; isCorrect: boolean }[];
 }
 
-/** The builder's version of a saved question. Older assessments stored every choice as "multiple_choice". */
+/** Convert a saved question. Old ones used "multiple_choice" */
 export function questionFromApi(db: ApiQuestion): Question {
   const options = db.options ?? [];
   const correctCount = options.filter((o) => o.isCorrect).length;
@@ -136,11 +133,7 @@ export function questionFromApi(db: ApiQuestion): Question {
   };
 }
 
-/**
- * Everything about the questions that saving would write, as one string: their order, wording,
- * kind, points and options. Two lists with the same fingerprint save the same thing, so it tells
- * whether anything has been changed since the assessment was loaded.
- */
+/** A string of the questions, used to check for changes */
 export function questionsFingerprint(questions: Question[]): string {
   return JSON.stringify(
     questions.map((q) => [
@@ -154,7 +147,7 @@ export function questionsFingerprint(questions: Question[]): string {
   );
 }
 
-/** Whether a question is ready to be saved: it has a title, and something to mark it against. */
+/** Has a title and something to grade against */
 export function questionProblem(question: Question): string | null {
   if (!question.title.trim()) return "Add the question";
   if (isWrittenType(question.type)) return null;
@@ -164,7 +157,7 @@ export function questionProblem(question: Question): string | null {
   return null;
 }
 
-/** The first thing wrong with the questions that would make them ungradable, or null. */
+/** First problem that blocks saving, or null */
 export function firstQuestionProblem(questions: Question[]): string | null {
   for (const [i, q] of questions.entries()) {
     if (isWrittenType(q.type)) continue;

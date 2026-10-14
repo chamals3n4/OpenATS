@@ -12,21 +12,12 @@ export const jobChatKey = (jobId: number) => ["chat", "job", jobId] as const;
 
 type History = { data: ChatMessage[] } | undefined;
 
-/**
- * The live side of a job's team discussion. Messages are kept in one place: the history query's
- * cache. What arrives over the socket is written into that cache, not into a list of its own, so
- * a message that was sent, edited or deleted while the panel was open is still right after it is
- * closed and opened again.
- *
- * Messages are only sent once the server has let this connection into the job's room. Sending
- * straight after the panel opens used to race the join, and the server refused the message
- * without anyone seeing why.
- */
+/** Live chat for a job. Socket events update the history cache. Sends wait until the room is joined */
 export function useJobChat(jobId: number, enabled: boolean) {
   const queryClient = useQueryClient();
   const socketRef = useRef<Socket | null>(null);
   const joinedRef = useRef(false);
-  // Typed before the join was confirmed. Sent, in order, as soon as it is.
+  // Messages typed before joining, sent once joined
   const pendingRef = useRef<string[]>([]);
   const [denied, setDenied] = useState(false);
   const token = useSocketToken();
@@ -41,7 +32,7 @@ export function useJobChat(jobId: number, enabled: boolean) {
     const socket = createAuthedSocket(token);
     socketRef.current = socket;
     joinedRef.current = false;
-    // Reset for this connection, so a message typed on another job is never carried over.
+    // Reset for this job
     /* eslint-disable-next-line react-hooks/set-state-in-effect */
     setDenied(false);
 
@@ -51,8 +42,7 @@ export function useJobChat(jobId: number, enabled: boolean) {
       }
     };
 
-    // Re-joined on every connect, so a reconnect restores the room too. Until the server answers,
-    // nothing is sent.
+    // Join on every connect. Don't send until joined
     socket.on("connect", () => {
       joinedRef.current = false;
       socket.emit("join_job", jobId, (reply?: { ok?: boolean }) => {

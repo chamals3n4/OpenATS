@@ -1,5 +1,4 @@
-// Account emails (invite and password reset). Better Auth runs in the Next.js
-// server, so these are sent from here rather than from the Express mail service.
+// Invite and reset emails, sent from Next.js
 
 const RESEND_ENDPOINT = "https://api.resend.com/emails";
 
@@ -23,8 +22,7 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-// Same layout as backend/src/shared/services/mail.service.ts (inline styles
-// only — email clients strip <style>).
+// Same layout as the backend emails, inline styles only
 
 function emailButton(href: string, label: string): string {
   return [
@@ -144,11 +142,7 @@ async function sendThroughResend(message: {
   }
 }
 
-/**
- * Sends the invite or reset email. Never throws: a failure here must not
- * change the response to a password reset request, which would reveal
- * whether the email belongs to an account.
- */
+/** Send the email. Never throws so we don't reveal if the account exists */
 export async function sendPasswordLinkEmail(opts: {
   kind: PasswordLinkKind;
   to: string;
@@ -161,7 +155,7 @@ export async function sendPasswordLinkEmail(opts: {
         `[password-emails] Resend is not configured. ${opts.kind === "invite" ? "Set password" : "Reset password"} link for ${opts.to}:\n${opts.url}`,
       );
     } else {
-      // The link is a credential, so it is never logged outside development.
+      // Never log the link outside dev
       console.warn(
         `[password-emails] Resend is not configured; no ${opts.kind} email was sent. Set RESEND_API_KEY and RESEND_FROM_EMAIL.`,
       );

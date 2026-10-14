@@ -1,7 +1,4 @@
-/**
- * The Candidates filters, kept in the browser so they survive leaving the page and coming back,
- * not only a reload. It holds the same text as the address query, and nothing when no filter is on.
- */
+/** Save filters in the browser */
 const KEY = "openats.candidates.filters";
 
 const listeners = new Set<() => void>();
@@ -10,7 +7,7 @@ export function readStoredFilters(): string | null {
   try {
     return window.localStorage.getItem(KEY);
   } catch {
-    // Storage can be blocked (private windows, site settings). The filters then last until reload.
+    // Storage can be blocked, so ignore errors
     return null;
   }
 }

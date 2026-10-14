@@ -3,12 +3,12 @@ import type { IntegrationStatus } from "@/hooks/queries/use-integrations";
 export type IntegrationState = "connected" | "not_connected" | "coming_soon";
 
 export type Integration = {
-  /** Matches the provider the API reports on, for the ones that are wired up. */
+  /** Provider name from the API */
   key: "google_meet" | "zoom" | "teams";
   name: string;
   description: string;
   logo: string;
-  /** False for apps that are listed but cannot be connected yet. */
+  /** False for apps not available yet */
   available: boolean;
 };
 
@@ -37,7 +37,7 @@ export const VIDEO_MEETING_INTEGRATIONS: Integration[] = [
   },
 ];
 
-/** What to show for one integration, from what the API says is connected. */
+/** Status for one integration */
 export function stateOf(
   integration: Pick<Integration, "key" | "available">,
   statuses: IntegrationStatus[] | undefined,

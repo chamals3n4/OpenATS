@@ -15,7 +15,7 @@ const config = {
   previous: { label: "Previous period", color: "var(--color-slate-300)" },
 } satisfies ChartConfig;
 
-/** Room for the longest stage name at 12px, so no two labels ever overlap. */
+/** Width for the longest stage name */
 const labelWidth = (names: string[]) =>
   Math.min(190, Math.max(72, Math.max(...names.map((n) => n.length)) * 7 + 12));
 
@@ -29,7 +29,7 @@ export function PipelineChart({
   if (!data.length || data.every((d) => d.current === 0 && d.previous === 0)) {
     return <ChartEmpty message="No candidates have moved between stages in this period." />;
   }
-  // One row per stage, so the chart grows with the pipeline instead of squeezing the names.
+  // One row per stage
   const height = Math.max(224, data.length * ROW_HEIGHT + 56);
   return (
     <ChartContainer config={config} className="w-full" style={{ height }}>

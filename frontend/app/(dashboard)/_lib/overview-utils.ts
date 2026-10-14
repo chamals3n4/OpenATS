@@ -22,24 +22,24 @@ export interface Kpi {
   /** The figure, or "—" when there is no data to show. */
   value: string;
   unit?: string;
-  /** Change against the previous period, left out when there is nothing to compare with. */
+  /** Change from the previous period */
   delta: Delta | null;
   /** One line under the figure saying what it counts. */
   hint: string;
   managerOnly: boolean;
 }
 
-/** 12.5 -> "12.5", 12 -> "12": a trailing ".0" adds nothing. */
+/** Drop a trailing ".0" */
 const trim = (n: number) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
-/** "+12.5%" or "-4%", green when up. A flat result reads "No change" in neutral. */
+/** e.g. "+12.5%" or "No change" */
 export function percentDelta(pct: number | null): Delta | null {
   if (pct === null) return null;
   if (pct === 0) return { text: "No change", tone: "neutral" };
   return { text: `${pct > 0 ? "+" : "-"}${trim(Math.abs(pct))}%`, tone: pct > 0 ? "good" : "bad" };
 }
 
-/** Percentage points, for a rate that is itself a percentage. */
+/** Percentage points */
 export function pointsDelta(points: number | null): Delta | null {
   if (points === null) return null;
   if (points === 0) return { text: "No change", tone: "neutral" };
@@ -49,7 +49,7 @@ export function pointsDelta(points: number | null): Delta | null {
   };
 }
 
-/** Time to hire: fewer days is better, so faster is the good direction. */
+/** Fewer days is better */
 export function fasterDelta(days: number | null): Delta | null {
   if (days === null) return null;
   if (days === 0) return { text: "No change", tone: "neutral" };
@@ -105,7 +105,7 @@ export function buildKpis(summary: AnalyticsReport["summary"]): Kpi[] {
   ];
 }
 
-/** "today", "1 day", "23 days", for how long something has been waiting. */
+/** e.g. "today", "23 days" */
 export function ageLabel(days: number): string {
   if (days <= 0) return "today";
   return plural(days, "day", "days");
@@ -114,7 +114,7 @@ export function ageLabel(days: number): string {
 const sameDay = (a: Date, b: Date) =>
   a.getFullYear() === b.getFullYear() && a.getMonth() === b.getMonth() && a.getDate() === b.getDate();
 
-/** "Today, 2:30 PM", "Tomorrow, 9:00 AM", or "Wed 17 Jun, 2:30 PM", in the viewer's time zone. */
+/** e.g. "Today, 2:30 PM" in the viewer's time zone */
 export function interviewWhen(iso: string, now: number): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";

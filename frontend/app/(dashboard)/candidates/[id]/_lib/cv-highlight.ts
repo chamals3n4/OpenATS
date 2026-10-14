@@ -1,8 +1,4 @@
-/**
- * Finding words inside the CV summary. Each word typed is looked for on its own, in any case, so
- * "icu nurse" marks every "ICU" and every "nurse". One-letter words are ignored: they would mark
- * half the page.
- */
+/** Find search words in the CV, ignoring one letter words */
 export function searchPattern(query: string): RegExp | null {
   const words = query
     .trim()
@@ -12,10 +8,10 @@ export function searchPattern(query: string): RegExp | null {
   return words.length > 0 ? new RegExp(`(${words.join("|")})`, "gi") : null;
 }
 
-/** The text cut into the parts that match and the parts between them, in order. */
+/** Split into matched and normal parts */
 export function highlightParts(text: string, pattern: RegExp | null): { text: string; match: boolean }[] {
   if (!pattern) return text ? [{ text, match: false }] : [];
-  // Splitting on a pattern with one group puts the matches at the odd positions.
+  // Matches are at odd indexes
   return text
     .split(pattern)
     .map((part, index) => ({ text: part, match: index % 2 === 1 }))

@@ -1,12 +1,12 @@
 import type { BoardCandidate, PipelineStage } from "@/types";
 
-/** Key for candidates whose stage was deleted, so they are not silently dropped. */
+/** Key for candidates whose stage was deleted */
 export const NO_STAGE = -1;
 
 export const stageKeyOf = (c: Pick<BoardCandidate, "currentStageId">) =>
   c.currentStageId ?? NO_STAGE;
 
-/** One pass over the flat list, keeping each column in the order it arrived in. */
+/** Group by stage, keeping the order */
 export function groupByStage(candidates: BoardCandidate[]): Map<number, BoardCandidate[]> {
   const groups = new Map<number, BoardCandidate[]>();
   for (const c of candidates) {
@@ -18,11 +18,7 @@ export function groupByStage(candidates: BoardCandidate[]): Map<number, BoardCan
   return groups;
 }
 
-/**
- * The list after dropping `candidateId` at `toIndex` of `toStageId`. `toIndex` is a slot in the
- * column as it is drawn, so a card dragged down inside its own column lands one slot earlier
- * once it is lifted out. Returns the same array when nothing would change.
- */
+/** New list after a drop */
 export function moveCard(
   candidates: BoardCandidate[],
   candidateId: number,
@@ -55,7 +51,7 @@ export function moveCard(
   return [...groups.values()].flat();
 }
 
-/** Slot a card dropped at `pointerY` would take, from the top and bottom of the cards drawn. */
+/** Drop slot for the pointer position */
 export function dropIndex(cards: { top: number; bottom: number }[], pointerY: number): number {
   const index = cards.findIndex((r) => pointerY < r.top + (r.bottom - r.top) / 2);
   return index === -1 ? cards.length : index;
@@ -66,10 +62,7 @@ export interface MoveEffects {
   sendsAssessment: boolean;
 }
 
-/**
- * Moving into some stages does more than move the card: an offer stage drafts an offer, and a
- * stage with an assessment attached emails the candidate. Those need a confirmation first.
- */
+/** Offer and assessment stages need a confirm */
 export function moveEffects(
   stage: Pick<PipelineStage, "id" | "stageType">,
   assessmentStageIds: ReadonlySet<number>,
@@ -98,7 +91,6 @@ export function timeAgo(iso: string, now: number): string {
 export const fullName = (c: Pick<BoardCandidate, "firstName" | "lastName">) =>
   `${c.firstName} ${c.lastName}`.trim();
 
-/** True when `inner` sits fully inside `outer` horizontally. */
 export function isFullyVisibleX(
   inner: { left: number; right: number },
   outer: { left: number; right: number },
@@ -106,10 +98,7 @@ export function isFullyVisibleX(
   return inner.left >= outer.left && inner.right <= outer.right;
 }
 
-/**
- * Stages worth offering as a bulk-move target: every stage except one that all the selected
- * candidates are already in. A mixed selection can still go anywhere.
- */
+/** Stages you can bulk move to */
 export function bulkMoveTargets<S extends { id: number }>(
   stages: S[],
   selected: Pick<BoardCandidate, "currentStageId">[],
@@ -118,18 +107,14 @@ export function bulkMoveTargets<S extends { id: number }>(
   return stages.filter((s) => !selected.every((c) => stageKeyOf(c) === s.id));
 }
 
-/** Case-insensitive match on name or email, for the board's search box. */
+/** Search by name or email */
 export function matchesSearch(c: BoardCandidate, query: string): boolean {
   const q = query.trim().toLowerCase();
   if (!q) return true;
   return fullName(c).toLowerCase().includes(q) || c.email.toLowerCase().includes(q);
 }
 
-/**
- * A slot among the cards that are shown, turned into the slot in the whole column. While a
- * search hides some cards, dropping "after the second card I can see" must still land right
- * after that card, not after whatever happens to be second in the full column.
- */
+/** Convert a visible slot to a slot in the full column */
 export function toFullIndex(
   full: BoardCandidate[],
   visible: BoardCandidate[],

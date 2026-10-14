@@ -80,10 +80,7 @@ function Notice({ children }: { children: React.ReactNode }) {
   );
 }
 
-/**
- * The AI's notes on a candidate's CV: a summary, strengths, gaps, and which of the job's skills
- * the CV shows. It gives no score and no verdict on purpose. It describes; people decide.
- */
+/** AI notes on the CV. No score on purpose */
 export function CandidateAiAnalysis({
   hasResume,
   cv,
@@ -149,7 +146,7 @@ export function CandidateAiAnalysis({
   }
 
   return (
-    // Container queries: the same notes sit in a wide page and in a narrow side panel.
+    // Container queries for wide and narrow layouts
     <div className="@container space-y-4">
       {summary?.quickSummary && (
         <Panel title="Summary">

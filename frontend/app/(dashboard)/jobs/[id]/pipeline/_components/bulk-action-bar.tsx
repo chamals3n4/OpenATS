@@ -20,7 +20,6 @@ interface BulkActionBarProps {
   onClear: () => void;
 }
 
-/** Floats over the bottom of the board while cards are selected. */
 export function BulkActionBar({ count, stages, onMove, onClear }: BulkActionBarProps) {
   if (count === 0) return null;
   return (

@@ -1,5 +1,4 @@
-// Rules for user management, kept free of server imports so they can be
-// unit-tested and shared by the routes and the settings page.
+// User management rules, no server imports so they can be tested
 
 import { PASSWORD_MAX_LENGTH, PASSWORD_MIN_LENGTH } from "../auth/errors";
 import type { AppRole } from "../auth/session";
@@ -121,10 +120,7 @@ export const NAME_MAX_LENGTH = 100;
 
 export type OwnProfileInput = { firstName: string; lastName: string };
 
-/**
- * What a person may change about themselves: their name. Their email is how they sign in and
- * their role is what they may do, so those stay with a super admin.
- */
+/** Users can only change their own name */
 export function parseOwnProfile(body: unknown): Parsed<OwnProfileInput> {
   const input = (body ?? {}) as Record<string, unknown>;
 
@@ -138,16 +134,11 @@ export function parseOwnProfile(body: unknown): Parsed<OwnProfileInput> {
   return { ok: true, value: { firstName, lastName } };
 }
 
-/**
- * Stops an install from locking itself out. Returns the reason the change is
- * refused, or null when it may go ahead.
- *
- * `change` is "deactivate", or the role the target is being given.
- */
+/** Stop removing the last super admin. Returns the reason or null */
 export function lockoutReason(opts: {
   actorId: number;
   target: { id: number; role: string };
-  /** Ids of every active super admin, the target included if it is one. */
+  /** Ids of all active super admins */
   activeSuperAdminIds: number[];
   change: "deactivate" | AppRole;
 }): string | null {

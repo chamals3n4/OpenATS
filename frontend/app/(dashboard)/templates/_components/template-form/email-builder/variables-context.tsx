@@ -18,7 +18,7 @@ const DEFAULT_GROUPS: VariableGroup[] = [
 
 const VariablesContext = createContext<VariableGroup[]>(DEFAULT_GROUPS);
 
-/** Wrap an email builder in this to give it a different set of variables. */
+/** Use a different set of variables */
 export const VariablesProvider = VariablesContext.Provider;
 
 export function useVariableGroups(): VariableGroup[] {

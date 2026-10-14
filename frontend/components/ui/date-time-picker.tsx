@@ -99,7 +99,7 @@ export function DateTimePicker({
     const hour = current ? current.getHours() : 0;
     const minute = current ? current.getMinutes() : 0;
     onChange(buildValue(date, hour, minute));
-    // Time was already set — picking a date completes the selection.
+    // Time already set, so done
     if (current) setOpen(false);
   }
 
@@ -123,7 +123,7 @@ export function DateTimePicker({
     const hour24 = period === "PM" ? (hour12 % 12) + 12 : hour12 % 12;
     const minute = current ? current.getMinutes() : 0;
     onChange(buildValue(date, hour24, minute));
-    // AM/PM is the last step in the picking flow — close once it's chosen.
+    // Close after AM/PM
     setOpen(false);
   }
 

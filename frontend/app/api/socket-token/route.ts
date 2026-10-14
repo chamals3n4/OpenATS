@@ -3,7 +3,7 @@ import { getApiToken } from "@/lib/auth/session";
 
 export const dynamic = "force-dynamic";
 
-// Gives the browser a current access token for the socket handshake.
+// Token for the socket handshake
 export async function GET() {
   try {
     const token = await getApiToken();

@@ -11,7 +11,6 @@ export interface ProfileViewProps {
   memberSince: string | null;
   /** Null when the app could not say. */
   isActive: boolean | null;
-  /** The sections beside the identity card: personal details, change password. */
   children?: React.ReactNode;
 }
 
@@ -26,10 +25,7 @@ function Fact({ label, children }: { label: string; children: React.ReactNode })
   );
 }
 
-/**
- * The profile page: who you are on one side, and what you can change on the other. The identity
- * card only states things; everything editable is in the sections passed in as children.
- */
+/** Profile page layout */
 export function ProfileView({
   firstName,
   lastName,

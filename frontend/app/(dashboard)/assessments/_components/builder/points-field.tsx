@@ -10,7 +10,6 @@ interface PointsFieldProps {
   value: number;
   onChange: (points: number) => void;
   disabled?: boolean;
-  /** Written answers are graded by a person, so the hint says so. */
   written: boolean;
   multiSelect?: boolean;
 }

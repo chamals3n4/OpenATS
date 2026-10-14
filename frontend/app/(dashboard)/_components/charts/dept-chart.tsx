@@ -12,7 +12,7 @@ export function DeptChart({ data }: { data: { dept: string; days: number }[] }) 
   if (!data.length) {
     return <ChartEmpty message="No offers have been accepted yet, so there is no hiring time to show." />;
   }
-  // Slowest first, so the department that needs a look is at the top.
+  // Slowest first
   const sorted = [...data].sort((a, b) => b.days - a.days);
   return (
     <ChartContainer config={config} className="h-56 w-full">

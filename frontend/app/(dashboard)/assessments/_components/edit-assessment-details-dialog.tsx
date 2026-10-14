@@ -153,8 +153,7 @@ export function EditAssessmentDetailsDialog({
   details,
   onSaved,
 }: EditAssessmentDetailsDialogProps) {
-  // The mutation lives here, not in the form: this component stays mounted, so
-  // the completion callbacks still run even if the form were unmounted.
+  // Keep the mutation here so callbacks run after the form closes
   const updateAssessment = useUpdateAssessment(assessmentId);
 
   const handleSave = (next: AssessmentDetails) => {
@@ -176,13 +175,13 @@ export function EditAssessmentDetailsDialog({
     <Dialog
       open={open}
       onOpenChange={(nextOpen) => {
-        // Ignore close requests (X button, Escape, outside click) mid-save.
+        // Don't close while saving
         if (!nextOpen && updateAssessment.isPending) return;
         onOpenChange(nextOpen);
       }}
     >
       <DialogContent className="max-w-md gap-5 border-slate-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-900">
-        {/* Mounted only while open, so the fields start from the saved values each time. */}
+        {/* Mount only when open so fields reset */}
         <DetailsForm
           details={details}
           isPending={updateAssessment.isPending}

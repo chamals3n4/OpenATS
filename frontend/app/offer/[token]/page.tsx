@@ -68,7 +68,7 @@ function fmtDate(value: string | null): string {
   });
 }
 
-/** A moment in the reader's own time zone, with the zone named so it cannot be misread. */
+/** Date and time in the reader's time zone */
 function fmtDateTime(value: string): string {
   return new Date(value).toLocaleString("en-US", {
     year: "numeric",
@@ -113,14 +113,13 @@ export default function OfferPortalPage({
       });
   }, [token]);
 
-  // Sent once the offer is on the candidate's screen, which is what "viewed" should mean.
+  // Mark viewed once it is on screen
   const isUnseen = offer?.status === "sent";
   useEffect(() => {
     if (isUnseen) void markPublicOfferViewed(token);
   }, [isUnseen, token]);
 
-  // After a refused answer the offer on screen is out of date (it expired, or was already
-  // answered in another tab), so it is loaded again to show where it really stands.
+  // Reload the offer after a failed answer
   const reload = () =>
     fetchPublicOffer(token)
       .then(setOffer)

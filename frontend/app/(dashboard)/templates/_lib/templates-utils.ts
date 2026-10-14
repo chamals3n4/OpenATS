@@ -29,7 +29,7 @@ export const TEMPLATE_NAME_MAX = 255;
 
 const COPY_SUFFIX = " (copy)";
 
-/** "Offer letter" becomes "Offer letter (copy)", cut short enough to stay within the name limit. */
+/** e.g. "Offer letter (copy)", within the name limit */
 export function suggestCopyName(name: string): string {
   const base = name.trim();
   const room = TEMPLATE_NAME_MAX - COPY_SUFFIX.length;

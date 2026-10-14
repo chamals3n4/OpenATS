@@ -13,7 +13,7 @@ import {
 
 const ROUTE_LOG = "[API /users/[id]/password]";
 
-// "Set new password": a super admin chooses the user's password directly.
+// Super admin sets the password
 export async function POST(
   req: NextRequest,
   context: { params: Promise<{ id: string }> },
@@ -33,7 +33,7 @@ export async function POST(
       );
     }
 
-    // 404s for a missing or deactivated user before anything is changed.
+    // 404 for missing or deactivated users
     const target = await getUser(userId);
     if (!target.isActive) return badRequest("This user is deactivated.", 409);
 
@@ -43,7 +43,7 @@ export async function POST(
       headers: requestHeaders,
     });
 
-    // Whoever was signed in with the old password is signed out.
+    // Sign out old sessions
     await auth.api.revokeUserSessions({
       body: { userId: String(userId) },
       headers: requestHeaders,

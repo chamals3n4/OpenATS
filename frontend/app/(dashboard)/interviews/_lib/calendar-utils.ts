@@ -1,4 +1,4 @@
-/** "2026-10-12" in local time. Used as the key for a day, so nothing shifts at midnight UTC. */
+/** Local date key like "2026-10-12" */
 export function dayKey(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
@@ -7,7 +7,7 @@ export function dayKey(date: Date): string {
 export interface GridDay {
   date: Date;
   key: string;
-  /** False for the days of the neighbouring months that fill the first and last week. */
+  /** False for days from other months */
   inMonth: boolean;
 }
 
@@ -22,7 +22,7 @@ export function monthGrid(year: number, month: number): GridDay[] {
   });
 }
 
-/** Interviews that have a time, grouped by local day and in time order within each day. */
+/** Scheduled interviews grouped by day */
 export function groupByDay<T extends { scheduledAt: string | null }>(interviews: T[]): Map<string, T[]> {
   const byDay = new Map<string, T[]>();
   for (const interview of interviews) {

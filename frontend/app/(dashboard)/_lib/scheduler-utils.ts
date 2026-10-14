@@ -1,10 +1,10 @@
-/** The current time. A function so event handlers read it at the moment they run. */
+/** Current time, read when called */
 export const currentTime = () => Date.now();
 
 export type EventType = "virtual" | "onsite";
 export type LinkMode = "auto" | "manual";
 
-/** A slot is usable only if it parses and is still in the future. */
+/** Valid and in the future */
 export function isFutureSlot(datetime: string, now: number): boolean {
   const t = new Date(datetime).getTime();
   return !Number.isNaN(t) && t > now;
@@ -13,7 +13,7 @@ export function isFutureSlot(datetime: string, now: number): boolean {
 export const DEFAULT_DURATION_MINUTES = 60;
 export const DURATION_OPTIONS = [15, 30, 45, 60, 90, 120];
 
-/** Who decides the time: the candidate, from slots offered, or the hiring team. */
+/** Who picks the time */
 export type TimeMode = "candidate" | "fixed";
 
 export interface TemplateConfig {
@@ -22,7 +22,7 @@ export interface TemplateConfig {
   autoGenerate: boolean;
   location: string;
   durationMinutes: number;
-  /** The message to the candidate. Empty when the template leaves it to the automatic email. */
+  /** Message to the candidate, empty if the template has none */
   bodyText: string;
 }
 
@@ -31,11 +31,7 @@ interface TemplateLike {
   bodyJson?: unknown;
 }
 
-/**
- * An event template stores its settings as one JSON text block. Templates saved before
- * interviews had a length or a message simply lack those, and older ones may carry dates,
- * which are ignored: times are chosen for each interview.
- */
+/** Read the settings saved in an event template */
 export function parseTemplate(template: TemplateLike): TemplateConfig {
   const blocks = (Array.isArray(template.bodyJson) ? template.bodyJson : []) as Array<{
     content?: string;
@@ -70,7 +66,7 @@ export interface ScheduleInput {
   templateId: string;
   interviewerId: number | null;
   timeMode: TimeMode;
-  /** Local "YYYY-MM-DDTHH:mm" strings; blank rows are ignored. Used when the candidate picks. */
+  /** Time slots the candidate can pick from */
   slots: string[];
   /** The one time, when the hiring team sets it. */
   fixedTime: string;

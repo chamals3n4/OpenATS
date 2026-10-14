@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { useSystemEmailPreview } from "@/hooks/queries/use-templates";
 import { PreviewPane } from "./template-form/preview-pane";
 
-/** How long to wait after the last keystroke before asking for a new preview. */
+/** Debounce before fetching a new preview */
 const TYPING_PAUSE_MS = 350;
 
 function usePaused<T>(value: T, delayMs: number): T {
@@ -16,14 +16,7 @@ function usePaused<T>(value: T, delayMs: number): T {
   return paused;
 }
 
-/**
- * The automatic email as the candidate will receive it: the coloured band, the heading, the
- * details and the button, with made-up values for the name, the job and the dates.
- *
- * The HTML comes from the server, which builds it the same way it builds the email it sends, so
- * what is shown here is the email itself. It goes in a frame that cannot run scripts, because an
- * email is somebody's typed HTML and has no business in this page.
- */
+/** Preview of the automatic email. Server builds the HTML, shown in a sandboxed frame */
 export function AutomaticEmailPreview({
   purpose,
   subject,
@@ -39,10 +32,9 @@ export function AutomaticEmailPreview({
 
   const frame = useRef<HTMLIFrameElement>(null);
   const [height, setHeight] = useState(520);
-  // An email has no fixed height, so the frame is made as tall as what it holds.
+  // Resize the frame to fit the email
   const fitToContent = () => {
-    // The body, not the document: the document is never shorter than the frame, so measuring it
-    // would let the frame grow for a long email and never shrink back for a short one.
+    // Measure the body so the frame can shrink
     const body = frame.current?.contentDocument?.body;
     if (body) setHeight(body.scrollHeight);
   };
@@ -68,7 +60,7 @@ export function AutomaticEmailPreview({
         <iframe
           ref={frame}
           title="Email preview"
-          // Same origin so its height can be read; no "allow-scripts", so nothing in it can run.
+          // Same origin to read the height, no scripts
           sandbox="allow-same-origin"
           srcDoc={`<!doctype html><meta charset="utf-8"><base target="_blank"><style>html,body{margin:0}a{pointer-events:none}</style>${email.html}`}
           onLoad={fitToContent}

@@ -55,8 +55,7 @@ export default function CandidateDetailPage({
   const queryClient = useQueryClient();
   const searchParams = useSearchParams();
   const fromParam = searchParams.get("from");
-  // The Candidates list passes its filters along, so closing returns to the same filtered list.
-  // Re-serialised, so only plain query values can come back out of it.
+  // Keep the list filters so Back returns to the same list
   const backParam = new URLSearchParams(searchParams.get("back") ?? "").toString();
   const unwrappedParams = use(params);
   const candidateId = parseInt(unwrappedParams.id, 10);
@@ -80,10 +79,9 @@ export default function CandidateDetailPage({
   const deleteMutation = useDeleteCandidate();
   const updateMutation = useUpdateCandidateBasicDetails();
 
-  // The page opens on the first tab, the CV summary. The AI analysis tab exists only while AI CV
-  // analysis is turned on in Settings; when it is off the tab is not listed at all.
+  // AI tab only shows when AI analysis is on
   const { data: aiSettingsData, isLoading: aiSettingsLoading } = useAiSettings();
-  // Only asked when this CV is still waiting to be read, to say why if nothing is reading CVs.
+  // Only check the worker while the CV is waiting
   const cvWaiting =
     !!candidateData?.data.hasResume &&
     (!candidateData.data.cvText || candidateData.data.cvText.status === "pending");
@@ -193,7 +191,7 @@ export default function CandidateDetailPage({
     router.push(back);
   };
 
-  // Wait for the setting too, so the tabs do not appear and then change under the reader.
+  // Wait for the setting so the tabs don't jump
   if (isLoading || aiSettingsLoading) {
     return (
       <div className="flex flex-1 items-center justify-center bg-slate-50/50 dark:bg-neutral-950">

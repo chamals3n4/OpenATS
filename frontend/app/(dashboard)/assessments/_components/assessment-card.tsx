@@ -16,12 +16,11 @@ interface AssessmentCardProps {
 export function AssessmentCard({ assessment, onDelete }: AssessmentCardProps) {
   const isManager = useIsManager();
   const href = `/assessments/${assessment.id}`;
-  // The list endpoint sends a count; the detail endpoint sends the questions.
+  // List sends a count, detail sends the questions
   const questionCount =
     assessment.questionCount ?? assessment.questions?.length ?? 0;
 
   return (
-    // The whole card opens the assessment, so its edge takes the theme colour under the pointer.
     <article className="relative flex h-full cursor-pointer flex-col rounded-lg border border-slate-300 bg-white shadow-none transition-colors duration-300 ease-in-out hover:border-theme dark:border-neutral-700 dark:bg-neutral-900 dark:hover:border-theme">
       <div className="flex flex-1 flex-col gap-3 p-5">
         <div className="space-y-1.5">

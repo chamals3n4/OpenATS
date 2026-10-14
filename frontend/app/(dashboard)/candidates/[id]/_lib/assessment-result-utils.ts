@@ -8,7 +8,6 @@ export type QuestionState =
   | "graded"
   | "unanswered";
 
-/** The parts of a question in the attempt results that grading needs. */
 export interface GradableQuestion {
   questionType: string;
   points: number;
@@ -16,20 +15,17 @@ export interface GradableQuestion {
   answer: {
     answerText: string | null;
     selectedOptionIds: number[];
-    /** Points a reviewer awarded to a written answer; empty until graded. */
+    /** Reviewer points, empty until graded */
     pointsEarned?: number | string | null;
   } | null;
 }
 
-/** Written answers are never auto-graded by the backend, so a person has to read them. */
+/** Written answers need manual grading */
 export function isWrittenQuestion(questionType: string) {
   return questionType === "short_answer" || questionType === "long_answer";
 }
 
-/**
- * Mirrors the backend grader: each correct option picked earns an equal share, each wrong one
- * takes a share away, and the result never goes below zero. Returns the fraction 0-1.
- */
+/** Same as the backend grader. Returns 0 to 1 */
 export function choiceFraction(q: GradableQuestion): number {
   const correct = q.options.filter((o) => o.isCorrect).map((o) => o.id);
   if (correct.length === 0) return 0;
@@ -46,10 +42,7 @@ export function choiceFraction(q: GradableQuestion): number {
 const hasGrade = (q: GradableQuestion) =>
   q.answer?.pointsEarned !== null && q.answer?.pointsEarned !== undefined;
 
-/**
- * Where a question stands. A written answer is "review" until a reviewer grades it, then
- * "graded"; it is never "incorrect". A choice answer is correct, partly correct or incorrect.
- */
+/** Question status for the results view */
 export function getQuestionState(q: GradableQuestion): QuestionState {
   if (isWrittenQuestion(q.questionType)) {
     if (!q.answer?.answerText?.trim()) return "unanswered";
@@ -62,7 +55,7 @@ export function getQuestionState(q: GradableQuestion): QuestionState {
   return fraction > 0 ? "partial" : "incorrect";
 }
 
-/** Points the question has earned so far; a written answer counts only once graded. */
+/** Points so far. Written answers count after grading */
 export function earnedPoints(q: GradableQuestion): number {
   if (isWrittenQuestion(q.questionType)) return hasGrade(q) ? Number(q.answer?.pointsEarned) : 0;
   return Math.round(q.points * choiceFraction(q) * 100) / 100;
@@ -92,7 +85,7 @@ export function summarizeQuestions(questions: GradableQuestion[]): QuestionSumma
   return summary;
 }
 
-/** How long an attempt took, in plain words; null when either time is missing. */
+/** Time taken, null if a time is missing */
 export function formatDuration(start: string | null, end: string | null) {
   if (!start || !end) return null;
   const ms = new Date(end).getTime() - new Date(start).getTime();

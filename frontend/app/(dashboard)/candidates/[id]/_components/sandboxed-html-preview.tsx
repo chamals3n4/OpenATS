@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 
 interface SandboxedHtmlPreviewProps {
   html: string;
-  /** Accessible name for the frame, e.g. "Offer letter preview". */
+  /** Frame title for screen readers */
   title: string;
   className?: string;
 }
@@ -21,11 +21,7 @@ const PAGE_STYLES = [
   `::-webkit-scrollbar-thumb{background:${SCROLLBAR_COLOR};border-radius:9999px}`,
 ].join("");
 
-/**
- * Template HTML (offer letters, emails) merges in candidate-supplied text, so it is
- * shown in a sandboxed iframe (no scripts, no access to this page) rather than
- * injected into the page.
- */
+/** Show template HTML in a sandboxed iframe */
 export function SandboxedHtmlPreview({ html, title, className }: SandboxedHtmlPreviewProps) {
   return (
     <iframe

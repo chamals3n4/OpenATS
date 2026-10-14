@@ -21,18 +21,18 @@ import {
 
 type Board = { data: BoardCandidate[] };
 
-/** A move waiting for a yes, because it emails someone or drafts an offer. */
+/** Move waiting for confirm */
 export interface PendingMove {
   kind: "single" | "bulk";
   candidates: BoardCandidate[];
   stage: PipelineStage;
-  /** Slot in the column for a single move. A bulk move always goes to the top. */
+  /** Slot in the column. Bulk moves go to the top */
   index: number;
   effects: MoveEffects;
 }
 
 interface Options {
-  /** Called after a bulk move went through, so the page can clear its selection. */
+  /** Called after a bulk move */
   onBulkMoved?: () => void;
 }
 
@@ -48,11 +48,7 @@ function showAutomationToasts(automation: StageAutomationFlags | undefined) {
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
-/**
- * Everything about moving cards: the optimistic update, the save, undo, and the confirmation
- * for moves that email a candidate or draft an offer. The board's data lives in the query
- * cache, so there is no second copy to keep in step with it.
- */
+/** Move cards with optimistic update, undo and confirm */
 export function useBoardMoves(
   jobId: number,
   stages: PipelineStage[],
@@ -64,7 +60,7 @@ export function useBoardMoves(
   const bulkMove = useBulkMoveCandidates();
   const [movingIds, setMovingIds] = useState<ReadonlySet<number>>(new Set());
   const [pending, setPending] = useState<PendingMove | null>(null);
-  // The latest of these, for the undo toast, whose callback outlives the render it was made in.
+  // Latest value for the undo toast
   const runMoveRef = useRef<(id: number, stageId: number, index: number, undoable: boolean) => void>(
     () => {},
   );
@@ -120,7 +116,7 @@ export function useBoardMoves(
             showAutomationToasts(res.stageAutomation);
             if (!crossesStage) return;
             const label = `Moved ${fullName(card)} to ${stage.name}`;
-            // An email that has gone out cannot be taken back, so those moves offer no undo.
+            // No undo once an email is sent
             if (undoable && !hasEffects(effects) && fromStageId !== -1) {
               toast.success(label, {
                 action: {
@@ -156,7 +152,7 @@ export function useBoardMoves(
       const stage = stages.find((s) => s.id === toStageId);
       if (!before || !stage) return;
 
-      // Last first, so the first id ends up on top and the order the person saw is kept.
+      // Last first to keep the order
       let next = before.data;
       for (const id of [...candidateIds].reverse()) next = moveCard(next, id, toStageId, 0);
 
@@ -200,7 +196,7 @@ export function useBoardMoves(
     [jobId, stages, queryClient, bulkMove, settle],
   );
 
-  /** Ask to move a card to `index` of a stage; moves that have side effects wait for a yes. */
+  /** Move one card. Confirm first if needed */
   const requestMove = useCallback(
     (candidateId: number, toStageId: number, index: number) => {
       if (movingIds.has(candidateId)) return;
@@ -219,7 +215,7 @@ export function useBoardMoves(
     [movingIds, queryClient, jobId, stages, assessmentStageIds, runMove],
   );
 
-  /** Ask to move several cards to the top of a stage, with the same confirmation rule. */
+  /** Move many cards to the top of a stage */
   const requestBulkMove = useCallback(
     (candidateIds: number[], toStageId: number) => {
       const board = queryClient.getQueryData<Board>(boardKey(jobId));

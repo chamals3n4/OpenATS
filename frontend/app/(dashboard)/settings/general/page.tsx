@@ -33,10 +33,9 @@ export default function SettingsGeneralPage() {
   const [actionsSlot, setActionsSlot] = useState<HTMLElement | null>(null);
 
   return (
-    // Exactly as tall as the window under the top bar, with its own scrolling inside. Without that
-    // the whole window scrolls, and nothing in here can stay in place.
+    // Full height with its own scroll
     <div className="flex h-[calc(100dvh-var(--header-height))] w-full min-w-0 flex-col bg-white dark:bg-neutral-950">
-      {/* Above the scrolling part, so the title and the save buttons never leave the screen. */}
+      {/* Keep the title and buttons visible */}
       <div className="shrink-0 px-4 sm:px-8">
         <div className="max-w-7xl">
           <header className="flex flex-wrap items-center justify-between gap-x-6 gap-y-3 border-b border-slate-300 py-6 dark:border-neutral-700">
@@ -88,8 +87,7 @@ export default function SettingsGeneralPage() {
               Could not load settings. Try refreshing the page.
             </p>
           ) : (
-            // The profile is filled in once and left. Departments and the AI switch are what people
-            // come back for, so they sit beside it and stay on screen while the profile scrolls.
+            // Departments and AI stay visible while the profile scrolls
             <div className="grid items-start gap-x-10 xl:grid-cols-[minmax(0,1fr)_400px]">
               <div className="min-w-0">
                 <CompanyForm

@@ -34,11 +34,7 @@ const ICONS: Record<NotificationKind, typeof Notification03Icon> = {
   waiting: Clock01Icon,
 };
 
-/**
- * EXAMPLES ONLY. Nothing sends notifications yet: there is no table, no API and no socket event
- * behind this panel. These rows exist so the panel can be designed and reviewed, and they are
- * made up. When notifications are built, this list is what the API will replace.
- */
+/** MOCK DATA. Notifications are not built yet */
 const SAMPLE_NOTIFICATIONS: NotificationItem[] = [
   {
     id: 1,
@@ -99,7 +95,7 @@ const SAMPLE_NOTIFICATIONS: NotificationItem[] = [
 /** How many are listed before "Show more" is pressed. */
 const FIRST_SHOWN = 4;
 
-/** The bell in the top bar, and the list that opens under it. */
+/** Notifications bell and list */
 export function NotificationsPanel() {
   const [open, setOpen] = useState(false);
   const [onlyUnread, setOnlyUnread] = useState(false);
@@ -115,9 +111,7 @@ export function NotificationsPanel() {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, unread: false } : item)));
   const markAllRead = () => setItems((prev) => prev.map((item) => ({ ...item, unread: false })));
 
-  // Turning the wheel over the popup must not scroll the page behind it. The browser passes a
-  // wheel on to the page whenever the thing under the pointer has nothing left to scroll, which
-  // here is most of the time: the header, the footer, and the list once it reaches an end.
+  // Stop the wheel from scrolling the page
   const keepWheelInside = useCallback((popup: HTMLDivElement | null) => {
     if (!popup) return;
     const onWheel = (event: WheelEvent) => {
@@ -212,7 +206,6 @@ export function NotificationsPanel() {
           </div>
         </header>
 
-        {/* Grows with "Show more", then scrolls, so it never runs off the bottom of the window. */}
         <div data-notification-list className="max-h-[min(28rem,calc(100dvh-14rem))] overflow-y-auto overscroll-contain">
           {shown.length === 0 ? (
             <p className="px-4 py-10 text-center text-sm text-slate-600 dark:text-neutral-400">

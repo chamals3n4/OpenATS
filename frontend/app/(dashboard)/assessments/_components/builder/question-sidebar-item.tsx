@@ -18,7 +18,6 @@ interface QuestionSidebarItemProps {
   readOnly?: boolean;
 }
 
-/** One question in the list: its number, what it asks, its kind, and whether it is finished. */
 export function QuestionSidebarItem({
   question,
   index,

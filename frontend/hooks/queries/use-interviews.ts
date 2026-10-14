@@ -27,7 +27,7 @@ export type AllocatedSlot = {
   interviewerId: number | null;
 };
 
-/** Upcoming confirmed interview times — used to flag already-taken slots when scheduling. */
+/** Upcoming interview times, used to mark taken slots */
 export function useAllocatedSlots(enabled = true) {
   return useQuery({
     queryKey: ["interviews", "allocated-slots"],

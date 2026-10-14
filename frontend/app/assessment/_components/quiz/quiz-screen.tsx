@@ -43,7 +43,7 @@ export function QuizScreen({
   onQuestionClick,
   onSubmit,
 }: QuizScreenProps) {
-  // Submitting takes two steps: look over the list, then confirm.
+  // Review, then confirm
   const [reviewOpen, setReviewOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -78,7 +78,7 @@ export function QuizScreen({
             </h1>
             <p className="truncate text-[15px] text-slate-500 dark:text-neutral-400">
               {[
-                // "Software Engineer at Acme", or whichever of the two is known.
+                // e.g. "Software Engineer at Acme"
                 [attempt.jobTitle, attempt.company?.name].filter(Boolean).join(" at "),
                 `${answered} of ${total} answered`,
               ]
@@ -99,7 +99,7 @@ export function QuizScreen({
             <span className="text-2xl font-semibold tabular-nums leading-none">{formatTime(timeLeft)}</span>
           </div>
         </div>
-        {/* A pale line that fills with the theme colour as questions are answered. */}
+        {/* Progress bar */}
         <div
           role="progressbar"
           aria-label="Questions answered"
@@ -115,7 +115,7 @@ export function QuizScreen({
         </div>
       </header>
 
-      {/* Read out once when the clock turns red, not every second. */}
+      {/* Announce once when time is low */}
       <p aria-live="assertive" className="sr-only">
         {lowTime && timeLeft > 0 ? "Less than two minutes left." : ""}
       </p>

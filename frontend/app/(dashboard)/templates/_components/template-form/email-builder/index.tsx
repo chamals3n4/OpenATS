@@ -12,7 +12,6 @@ interface EmailBuilderProps {
   readOnly?: boolean;
 }
 
-/** Subject and body in one frame, so it reads as the email being written. */
 export function EmailBuilder({
   subject,
   onSubjectChange,

@@ -23,7 +23,7 @@ import {
 } from "@/components/ui/field";
 import { Spinner } from "@/components/ui/spinner";
 
-/** One line under a field that turns green once what it asks for is true. */
+/** Rule hint that turns green when met */
 function Check({ met, children }: { met: boolean; children: React.ReactNode }) {
   return (
     <p
@@ -42,11 +42,7 @@ function Check({ met, children }: { met: boolean; children: React.ReactNode }) {
   );
 }
 
-/**
- * The password section of the profile. It is closed until asked for: most visits to the profile
- * are not to change a password, and three empty password boxes make the page look like a form
- * that has to be filled in.
- */
+/** Password section, closed by default */
 export function ChangePasswordForm() {
   const [open, setOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -87,7 +83,7 @@ export function ChangePasswordForm() {
       const result = await authClient.changePassword({
         currentPassword,
         newPassword,
-        // Signs out every other device, in case the old password was known.
+        // Sign out other devices
         revokeOtherSessions: true,
       });
 

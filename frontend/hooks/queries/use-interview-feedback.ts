@@ -16,7 +16,6 @@ export type InterviewScorecard = {
   ratings: { criterionId: number; name: string; rating: number }[];
 };
 
-/** `hiddenCount` is how many scorecards an interviewer cannot see until they submit their own. */
 export type ScorecardMeta = { hasSubmitted: boolean; hiddenCount: number };
 
 export function useInterviewFeedback(interviewId: number) {

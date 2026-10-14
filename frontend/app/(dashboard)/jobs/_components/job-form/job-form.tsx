@@ -25,10 +25,7 @@ interface JobFormProps {
   onCancel: () => void;
 }
 
-/**
- * The single job form, shared by the create and edit pages. It owns the field
- * state; the pages own data loading and what happens on submit.
- */
+/** Job form for create and edit */
 export function JobForm({
   mode,
   initialValues = EMPTY_JOB_FORM_VALUES,

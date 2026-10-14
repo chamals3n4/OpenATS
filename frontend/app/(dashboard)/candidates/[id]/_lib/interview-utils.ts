@@ -1,9 +1,9 @@
 import type { CandidateInterview } from "@/types";
 
 export interface InterviewGroups {
-  /** Awaiting a time, or confirmed for a time that has not happened yet. Soonest first. */
+  /** Upcoming interviews, soonest first */
   upcoming: CandidateInterview[];
-  /** Finished, cancelled, or confirmed for a time that has passed. Latest first. */
+  /** Past interviews, latest first */
   past: CandidateInterview[];
 }
 
@@ -23,7 +23,7 @@ export function groupInterviews(
 ): InterviewGroups {
   const upcoming = interviews
     .filter((i) => isUpcoming(i, now))
-    // Interviews still waiting for a time have none to sort by, so they come first.
+    // Unscheduled first
     .sort((a, b) => (time(a) ?? -Infinity) - (time(b) ?? -Infinity) || a.id - b.id);
 
   const past = interviews
@@ -54,7 +54,7 @@ const startOfDay = (ms: number) => {
   return d.getTime();
 };
 
-/** "Today", "Tomorrow", "In 3 days", "Yesterday", "5 days ago", by calendar day. */
+/** e.g. "Today", "In 3 days", "5 days ago" */
 export function relativeDay(iso: string, now: number) {
   const days = Math.round((startOfDay(new Date(iso).getTime()) - startOfDay(now)) / 86_400_000);
   if (days === 0) return "Today";
@@ -69,7 +69,7 @@ export function eventTypeLabel(eventType: string | null) {
   return eventType ? eventType.charAt(0).toUpperCase() + eventType.slice(1) : "Virtual";
 }
 
-/** A short host name for a meeting link, such as "Google Meet" or "Zoom". */
+/** e.g. "Google Meet" or "Zoom" */
 export function meetingProvider(url: string) {
   try {
     const host = new URL(url).hostname.replace(/^www\./, "");
@@ -82,7 +82,7 @@ export function meetingProvider(url: string) {
   }
 }
 
-/** Only web links are opened, so a stored "javascript:" value can never become a link. */
+/** Only open http/https links */
 export function safeMeetingUrl(url: string | null) {
   if (!url) return null;
   try {

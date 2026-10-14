@@ -15,19 +15,16 @@ interface ScoreBadgeProps {
   knockedOut?: boolean | undefined;
   assessmentPassed?: boolean | null | undefined;
   assessmentExpired?: boolean | undefined;
-  /** "full" is for a candidate's header; "compact" for list rows and board cards. */
+  /** "full" for headers, "compact" for rows and cards */
   size?: "compact" | "full";
-  /** Leave the flag pills out, for places that show the flags another way (an icon, a dialog). */
+  /** Hide the flag pills */
   hideFlags?: boolean;
-  /** Render nothing for a candidate with no score and no flags, e.g. on crowded board cards. */
+  /** Render nothing when there is no score or flag */
   hideWhenUnscored?: boolean;
   className?: string;
 }
 
-/**
- * A candidate's total score, with how many parts it is built from and any flags. The parts count
- * matters: a 90 from one part is a first impression, not the same as a 90 from all four.
- */
+/** Total score with the number of parts and flags */
 export function ScoreBadge({
   total,
   scoredParts,

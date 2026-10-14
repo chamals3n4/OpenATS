@@ -65,12 +65,11 @@ export const CRITERION_MAX = 100;
 export const SUGGESTED_CRITERIA = ["Technical skill", "Communication", "Problem solving"];
 
 export interface CriterionDraft {
-  /** Set for a saved criterion, so renaming it keeps the scores already given. */
+  /** Set for saved criteria so scores are kept */
   id?: number;
   name: string;
 }
 
-/** Names of problems with a list of criteria, by index, plus a list-level message. */
 export function validateCriteria(list: CriterionDraft[]): { byIndex: Record<number, string>; list?: string } {
   const byIndex: Record<number, string> = {};
   const seen = new Set<string>();

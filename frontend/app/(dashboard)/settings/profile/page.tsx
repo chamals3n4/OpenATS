@@ -10,7 +10,7 @@ import {
   humanizeRole,
 } from "./_lib/profile-utils";
 
-/** The API's record of the user (join date, status). The page still works without it. */
+/** User record from the API. Optional */
 async function getCurrentUser(): Promise<CurrentUser | null> {
   try {
     return (await serverFetch<{ data: CurrentUser }>("/users/me")).data;

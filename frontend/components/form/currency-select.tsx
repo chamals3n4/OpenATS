@@ -2,10 +2,10 @@
 
 import { SearchSelect, type SearchSelectOption } from "@/components/form/search-select";
 
-// Offered first, because they are what most offers and jobs are written in.
+// Common currencies first
 const COMMON = ["USD", "EUR", "GBP", "LKR", "INR", "AUD", "CAD", "SGD", "AED"];
 
-// The browser knows every currency and its name, so there is no list to ship or keep up to date.
+// Currency list comes from the browser
 let cache: SearchSelectOption[] | null = null;
 function currencies(): SearchSelectOption[] {
   if (cache) return cache;
@@ -36,10 +36,7 @@ function currencies(): SearchSelectOption[] {
   return cache;
 }
 
-/**
- * Picks a currency by its code or its name ("LKR", "rupee", "dollar"). The value is the three
- * letter ISO code, which is what the API stores.
- */
+/** Currency picker by code or name */
 export function CurrencySelect({
   id,
   value,
@@ -57,7 +54,7 @@ export function CurrencySelect({
       value={value}
       onChange={onChange}
       options={currencies}
-      // The button is narrow, so it shows the code alone; the list shows the names.
+      // Button shows only the code
       describe={(code) => ({ label: code })}
       compact
       ariaLabel="Currency"

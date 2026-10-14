@@ -18,7 +18,7 @@ export default function CreateAssessmentPageClient() {
   const router = useRouter();
   const createAssessment = useCreateAssessment();
 
-  // Open to begin with: a new assessment has no title yet, and it cannot be saved without one.
+  // Open first since a new assessment needs a title
   const [metaOpen, setMetaOpen] = useState(true);
   const [assessmentTitle, setAssessmentTitle] = useState("");
   const [assessmentDesc, setAssessmentDesc] = useState("");
@@ -72,8 +72,7 @@ export default function CreateAssessmentPageClient() {
   };
 
   return (
-    // Exactly as tall as the window under the top bar, like the pipeline board. That is what
-    // keeps this page's header in place while the question list and the editor each scroll.
+    // Full height so the header stays and the panels scroll
     <div className="flex h-[calc(100dvh-var(--header-height))] w-full min-w-0 flex-col overflow-hidden bg-white dark:bg-neutral-950">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-slate-300 px-4 py-4 sm:px-8 dark:border-neutral-700">
         <div className="min-w-0">
@@ -127,7 +126,7 @@ export default function CreateAssessmentPageClient() {
 
         {currentQ && (
           <QuestionEditor
-            // A new editor for each question, so the page is at the top when another is opened.
+            // New editor per question so it starts at the top
             key={currentQ.uid}
             question={currentQ}
             index={currentIndex}

@@ -10,12 +10,11 @@ import { cn } from "@/lib/utils";
 
 type RowId = string | number;
 
-// The boxes that pick rows. A clear dark edge on white, so an empty box is easy to see on the
-// grey header and on a hovered row, and a pointer, so it reads as something to click.
+// Dark border and pointer so the box is easy to see
 const SELECT_BOX =
   "size-[18px] cursor-pointer rounded-[4px] border-slate-400 bg-white shadow-none hover:border-slate-600 disabled:cursor-not-allowed dark:border-neutral-500 dark:bg-neutral-900 dark:hover:border-neutral-300";
 
-/** Classes for a button in the selection bar, so every table's extra buttons match the built-in ones. */
+/** Class for extra buttons in the selection bar */
 export const BULK_BAR_BUTTON = "h-8 rounded-md px-3 text-[13px] font-semibold shadow-none";
 
 export function useBulkSelection<T extends RowId>(visibleIds: T[]) {

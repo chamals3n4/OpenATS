@@ -32,7 +32,7 @@ function ApiRow({ label, url, note }: { label: string; url: string; note: string
   );
 }
 
-/** Two ways to show the jobs on another website: paste a snippet, or build on the API. */
+/** Embed snippet or API */
 export function WebsiteIntegrationCard({ embedSnippet, jobsApiUrl, jobApiUrl }: WebsiteIntegrationCardProps) {
   return (
     <section className="rounded-lg border border-slate-300 bg-white p-5 sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">

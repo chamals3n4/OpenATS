@@ -51,9 +51,7 @@ const buttonVariants = cva(
   },
 );
 
-// A button that renders a link (`<Link>`, `<a>`) is a link styled as a button. It is rendered as
-// that link, not through Base UI's button: Base UI would mark it role="button" and give it button
-// keys, so it would be announced and behave as a button that navigates.
+// Render links as real links, not as Base UI buttons
 function Button({
   className,
   variant = "default",
@@ -64,8 +62,7 @@ function Button({
   const classes = cn(buttonVariants({ variant, size, className }), buttonPress);
 
   if (isValidElement<{ className?: string }>(render) && render.type !== "button") {
-    // Only what was actually passed, so the link keeps its own children and props otherwise.
-    // nativeButton is Base UI's own and is not passed to the link.
+    // Pass only defined props, and skip nativeButton
     const passed = Object.fromEntries(
       Object.entries(props).filter(([key, value]) => key !== "nativeButton" && value !== undefined),
     );

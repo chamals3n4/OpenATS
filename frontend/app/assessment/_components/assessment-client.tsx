@@ -37,7 +37,7 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
     fetchAttempt(token)
       .then(({ data }) => {
         setAttempt(data);
-        // Carry on from what was already saved, for a reload or a second device.
+        // Continue from saved answers
         setAnswers(restoreAnswers(data.assessment.questions, data.savedAnswers));
         if (data.status === "completed") {
           setScreen("already_completed");
@@ -61,7 +61,7 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
     setStarting(true);
     try {
       const started = await startAttempt(token);
-      // The clock runs from the moment the server recorded, so it matches what a reload would show.
+      // Start the clock from the server start time
       const startedAt = started.data?.startedAt ?? new Date().toISOString();
       setAttempt((prev) => (prev ? { ...prev, status: "started", startedAt } : prev));
       setScreen("quiz");
@@ -73,7 +73,7 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
     }
   };
 
-  /** Saves one answer. Resolves to whether it worked, and shows a notice while the latest save has failed. */
+  /** Save one answer. Returns true if it worked */
   const saveCurrentAnswer = useCallback(
     async (qId: number, answer: Answer) => {
       try {
@@ -97,9 +97,7 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
       const saved = await Promise.all(
         qs.filter((q) => answers[q.id]).map((q) => saveCurrentAnswer(q.id, answers[q.id])),
       );
-      // Submitting now would lock in the assessment without those answers, so stop and let them
-      // retry. Once the time is up the server no longer takes answers, so there is nothing to
-      // retry: submit what was saved in time.
+      // Stop if answers failed to save, unless time is up
       const timeIsUp = attempt ? remainingSeconds(attempt) <= 0 : false;
       if (saved.includes(false) && !timeIsUp) {
         throw new Error("Some of your answers could not be saved. Check your connection, then submit again.");
@@ -115,7 +113,7 @@ export function AssessmentClient({ token }: AssessmentClientProps) {
     }
   }, [submitting, attempt, answers, saveCurrentAnswer, token]);
 
-  // Must come after `handleComplete` so the callback can close over it.
+  // Must come after handleComplete
   const { timeLeft } = useAssessmentTimer(screen, attempt, () => {
     void handleComplete();
   });

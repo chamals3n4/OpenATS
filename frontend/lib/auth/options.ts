@@ -8,8 +8,7 @@ import {
 import { ac, roles } from "./permissions";
 import { pool } from "./db";
 
-// A user created by invite has no password yet, so the same Better Auth
-// "reset password" link doubles as their "set your password" link.
+// Invited users use the reset link to set a password
 async function hasPassword(userId: string): Promise<boolean> {
   const result = await pool.query(
     `select 1 from auth_accounts
@@ -22,23 +21,18 @@ async function hasPassword(userId: string): Promise<boolean> {
 
 const DAY_IN_SECONDS = 60 * 60 * 24;
 
-// Optional. Comma-separated proxy addresses or CIDR ranges that sit in front
-// of the app and append to X-Forwarded-For (for example a load balancer's
-// subnet). Rate limits are per client IP; with a multi-hop X-Forwarded-For
-// and no trusted proxies, Better Auth cannot pick the client address and
-// falls back to one bucket shared by everyone.
+// Optional trusted proxies so rate limits use the real client IP
 const trustedProxies = (process.env.AUTH_TRUSTED_PROXIES ?? "")
   .split(",")
   .map((entry) => entry.trim())
   .filter(Boolean);
 
-// Plain options object. nextCookies() is deliberately not added here (see
-// lib/auth/server.ts) so scripts can import this file outside Next.js.
+// No nextCookies() here so scripts can import it
 export const authOptions = {
   baseURL: process.env.BETTER_AUTH_URL,
   secret: process.env.BETTER_AUTH_SECRET,
   database: pool,
-  // Requests to /api/auth/* from any other origin are rejected.
+  // Only allow our own origin
   trustedOrigins: [process.env.BETTER_AUTH_URL].filter(
     (origin): origin is string => Boolean(origin),
   ),
@@ -47,15 +41,14 @@ export const authOptions = {
     useSecureCookies: process.env.NODE_ENV === "production",
     ...(trustedProxies.length > 0 ? { ipAddress: { trustedProxies } } : {}),
   },
-  // Kept in Postgres rather than in memory, so the limits hold across
-  // separate server instances (each serverless instance has its own memory).
+  // Store rate limits in Postgres so they work across servers
   rateLimit: {
     enabled: true,
     storage: "database",
     modelName: "auth_rate_limits",
     fields: { lastRequest: "last_request" },
     customRules: {
-      // Brute-force targets get a much smaller budget than the default.
+      // Smaller limits for brute force targets
       "/sign-in/email": { window: 60, max: 5 },
       "/request-password-reset": { window: 300, max: 3 },
     },
@@ -63,12 +56,10 @@ export const authOptions = {
   emailAndPassword: {
     enabled: true,
     disableSignUp: true,
-    // 24 hours rather than the default hour, so an invite is still usable
-    // the next day.
+    // 24 hours so invites work the next day
     resetPasswordTokenExpiresIn: PASSWORD_LINK_EXPIRES_IN_SECONDS,
     revokeSessionsOnPasswordReset: true,
-    // Better Auth builds `url` as /api/auth/reset-password/<token>, which
-    // redirects to /reset-password?token=<token>.
+    // Link goes to /reset-password?token=...
     sendResetPassword: async ({ user, url }) => {
       await sendPasswordLinkEmail({
         kind: (await hasPassword(user.id)) ? "reset" : "invite",
@@ -100,8 +91,7 @@ export const authOptions = {
   },
   session: {
     modelName: "auth_sessions",
-    // Signed out after 7 days without use; the expiry is pushed forward at
-    // most once a day.
+    // 7 day sessions, refreshed once a day
     expiresIn: 7 * DAY_IN_SECONDS,
     updateAge: DAY_IN_SECONDS,
     cookieCache: { enabled: true, maxAge: 300 },
@@ -140,9 +130,7 @@ export const authOptions = {
   databaseHooks: {
     session: {
       create: {
-        // A deactivated user (is_active = false) cannot start a session.
-        // Express rejects them on every request anyway; this stops the
-        // sign-in itself and gives the login page a reason to show.
+        // Block sign in for deactivated users
         async before(session, ctx) {
           if (!ctx) return;
           const user = await ctx.context.internalAdapter.findUserById(

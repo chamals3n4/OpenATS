@@ -42,7 +42,7 @@ const ROLE_LABELS: Record<string, string> = {
   interviewer: "Interviewer",
 };
 
-/** How many people the add dialog lists at once. With hundreds of users, the rest are found by searching. */
+/** Max users shown in the add dialog */
 const MAX_SHOWN = 6;
 
 type Person = Pick<User, "firstName" | "lastName" | "avatarUrl">;
@@ -89,7 +89,7 @@ export function HiringTeamTab({
   const [removeTarget, setRemoveTarget] = useState<HiringTeamMember | null>(null);
   const [search, setSearch] = useState("");
 
-  // People who can still be added: active, and not on the team already.
+  // Active users not on the team
   const candidates = allUsers.filter(
     (user) => user.isActive !== false && !team.some((member) => member.userId === user.id),
   );

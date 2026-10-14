@@ -20,14 +20,14 @@ type ConfirmDeleteDialogProps = {
   title: string;
   description: React.ReactNode;
   isPending?: boolean;
-  /** Button label, e.g. "Delete" or "Remove". The pending label is derived from it. */
+  /** Button label, e.g. "Delete" */
   confirmLabel?: string;
   pendingLabel?: string;
-  /** Overrides the confirm button colors, for non-delete actions such as publishing. */
+  /** Custom confirm button colours */
   confirmClassName?: string;
-  /** Extra content under the description, such as a field that has to be filled in first. */
+  /** Extra content under the description */
   children?: React.ReactNode;
-  /** Keeps the confirm button off until the caller is satisfied (see `children`). */
+  /** Disable confirm until ready */
   confirmDisabled?: boolean;
   onClose: () => void;
   onConfirm: () => void;
@@ -42,7 +42,7 @@ export function ConfirmDeleteName({ children }: { children: React.ReactNode }) {
   );
 }
 
-/** The one delete confirmation used across the app, so every page looks and behaves the same. */
+/** Shared delete confirm dialog */
 export function ConfirmDeleteDialog({
   open,
   title,

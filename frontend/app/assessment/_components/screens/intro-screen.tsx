@@ -17,7 +17,7 @@ export function IntroScreen({ attempt, starting, onStart }: IntroScreenProps) {
   const { assessment, candidate } = attempt;
   const duration = formatDuration(assessment.timeLimit ?? 0);
   const count = assessment.questions.length;
-  // "Software Engineer at Acme", or whichever of the two is known.
+  // e.g. "Software Engineer at Acme"
   const appliedFor = [attempt.jobTitle, attempt.company?.name].filter(Boolean).join(" at ");
 
   const rules = [

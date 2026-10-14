@@ -115,13 +115,13 @@ function SchedulerForm({
   const [durationMinutes, setDurationMinutes] = useState(DEFAULT_DURATION_MINUTES);
   const [saving, setSaving] = useState(false);
   const [showErrors, setShowErrors] = useState(false);
-  // "Now" for judging whether a time has passed; refreshed whenever the form is submitted.
+  // Current time, updated on submit
   const [now, setNow] = useState(currentTime);
 
   const { data: statusData } = useUserIntegrationStatus(interviewerId);
   const googleConnected =
     statusData?.data.find((s) => s.provider === "google_meet")?.connected ?? false;
-  // A Google link can only be created for an interviewer who has connected Google.
+  // Google links need the interviewer to connect Google
   const linkMode: LinkMode = linkChoice === "auto" && googleConnected ? "auto" : "manual";
 
   const { data: allocatedData } = useAllocatedSlots(true);
@@ -185,7 +185,7 @@ function SchedulerForm({
           meetingProvider: autoGenerate ? "google_meet" : undefined,
           interviewerId,
           location: eventType === "onsite" ? location.trim() || null : null,
-          // The message belongs to the "pick a time" email, which a fixed time does not send.
+          // Message is only sent when the candidate picks a time
           bodyText: fixed ? null : bodyText.trim() || null,
           stageId: pipelineStageId,
           durationMinutes,
@@ -567,7 +567,7 @@ export function InterviewSchedulerDialog({ open, onOpenChange, ...formProps }: P
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[92vh] max-w-[calc(100%-2rem)] flex-col gap-0 rounded-xl border-slate-200 bg-white p-0 sm:max-w-5xl dark:border-neutral-800 dark:bg-neutral-900">
-        {/* Mounted only while open, so every interview starts from a blank form. */}
+        {/* Mount only when open so the form resets */}
         <SchedulerForm {...formProps} onClose={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>

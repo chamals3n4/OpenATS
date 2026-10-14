@@ -8,16 +8,13 @@ export interface HistoryEntry {
 export interface TimelineItem extends HistoryEntry {
   /** The newest entry: where the candidate is now. */
   isCurrent: boolean;
-  /** The oldest entry: when the candidate entered the pipeline. */
+  /** First entry, when they joined the pipeline */
   isFirst: boolean;
   /** How long the candidate was (or has been) in this stage. */
   durationMs: number;
 }
 
-/**
- * Turns the raw history into a newest-first timeline. Each entry's duration runs
- * until the next move, and the current stage runs until `now`.
- */
+/** History newest first, with time spent in each stage */
 export function buildTimeline(
   history: HistoryEntry[],
   now: number,

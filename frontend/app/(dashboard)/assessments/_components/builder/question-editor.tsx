@@ -24,13 +24,12 @@ interface QuestionEditorProps {
   onToggleCorrect: (qId: number, optId: number) => void;
   onRemoveQuestion: (qId: number) => void;
   canRemove: boolean;
-  /** For someone who may look at the assessment but not change it. */
+  /** Read only view */
   readOnly?: boolean;
 }
 
 const labelCls = "mb-2 block text-sm font-medium text-slate-700 dark:text-neutral-300";
 
-/** One question, in the order it is written: what is asked, how it is answered, then the answers. */
 export function QuestionEditor({
   question,
   index,
@@ -49,11 +48,10 @@ export function QuestionEditor({
   const number = index + 1;
 
   return (
-    // Plain sections on the page, divided by lines. No cards: the page is already the frame.
     <div className="min-h-0 flex-1 overflow-y-auto bg-white dark:bg-neutral-950">
       <div className="divide-y divide-slate-300 dark:divide-neutral-700">
         <section>
-          {/* Stays at the top of this pane while the question scrolls under it. */}
+          {/* Sticky header */}
           <header className="sticky top-0 z-10 flex h-14 items-center justify-between gap-3 border-b border-slate-300 bg-white px-4 sm:px-8 dark:border-neutral-700 dark:bg-neutral-950">
             <h2 className="text-base font-semibold text-slate-900 dark:text-neutral-100">Question {number}</h2>
             {!readOnly && (

@@ -5,35 +5,26 @@ import { auth } from "./server";
 
 export type AppRole = "super_admin" | "hiring_manager" | "interviewer";
 
-/**
- * Server-side session helpers. Each is wrapped in `cache()` so that several
- * calls within one server render share a single lookup.
- */
+/** Server session helpers, cached per render */
 
-/** The current Better Auth session, or null when nobody is signed in. */
+/** Current session, or null */
 export const getSession = cache(async () => {
   return auth.api.getSession({ headers: await headers() });
 });
 
-/**
- * A short-lived JWT for the Express API, or null when nobody is signed in.
- * Express verifies it against `/api/auth/jwks`.
- */
+/** Short lived JWT for the Express API, or null */
 export const getApiToken = cache(async (): Promise<string | null> => {
   try {
     const { token } = await auth.api.getToken({ headers: await headers() });
     return token;
   } catch (error) {
-    // No session is an expected outcome; anything else is a real failure.
+    // No session is fine, other errors are not
     if (error instanceof APIError && error.statusCode === 401) return null;
     throw error;
   }
 });
 
-/**
- * Throws "Unauthorized" without a session and "Forbidden" when the signed-in
- * user's role is not exactly `role`.
- */
+/** Throw if not signed in or the role doesn't match */
 export const requireRole = cache(async (role: AppRole): Promise<void> => {
   const session = await getSession();
   if (!session) throw new Error("Unauthorized");

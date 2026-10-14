@@ -1,8 +1,7 @@
 import { createAccessControl } from "better-auth/plugins/access";
 import { adminAc, defaultStatements } from "better-auth/plugins/admin/access";
 
-// Shared by the server options and the browser client, so it must not import
-// anything server-only (pg, env secrets).
+// Used by server and client, so no server only imports
 export const ac = createAccessControl(defaultStatements);
 
 export const roles = {

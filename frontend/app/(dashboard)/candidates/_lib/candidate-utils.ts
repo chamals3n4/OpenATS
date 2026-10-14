@@ -19,11 +19,7 @@ export function getStatusLabel(status: CandidateStatusFilter): string {
   return labels[status];
 }
 
-/**
- * Splits a CV search snippet into plain parts and matched parts. The server marks matches with
- * [[ and ]] instead of HTML, because the text comes from a file a stranger uploaded: it is always
- * shown as text, never as markup.
- */
+/** Split a snippet into text and [[matches]]. Always shown as text */
 export function splitSnippet(snippet: string): { text: string; match: boolean }[] {
   return snippet
     .split(/(\[\[.*?\]\])/)

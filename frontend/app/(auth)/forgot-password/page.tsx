@@ -43,8 +43,7 @@ export default function ForgotPasswordPage() {
         redirectTo: "/reset-password",
       });
 
-      // Only throttling is reported. Every other outcome shows the same
-      // confirmation, so the page never reveals whether the email exists.
+      // Only show rate limit errors so we don't reveal if the email exists
       if (isRateLimited(result.error)) {
         setError(signInErrorMessage(result.error));
       } else {

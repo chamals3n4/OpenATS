@@ -23,7 +23,7 @@ interface ReviewDialogProps {
   onContinue: () => void;
 }
 
-/** The step before submitting: every question, and whether it has an answer yet. */
+/** Review before submit */
 export function ReviewDialog({ open, questions, answers, onClose, onGoTo, onContinue }: ReviewDialogProps) {
   const answered = questions.filter((question) => isAnswered(question, answers)).length;
   const unanswered = questions.length - answered;

@@ -28,7 +28,7 @@ const startOfDay = (ms: number) => {
   return d.getTime();
 };
 
-/** "Posted today", "Posted 3 days ago", "Posted 2 weeks ago", then the date once it is old news. */
+/** e.g. "Posted 3 days ago" */
 export function postedLabel(createdAt: string, now: number): string | null {
   const created = new Date(createdAt).getTime();
   if (Number.isNaN(created)) return null;
@@ -118,7 +118,7 @@ export function departmentNames(jobs: CareerJobRow[]) {
   return [...new Set(jobs.map((j) => j.departmentName))].sort((a, b) => a.localeCompare(b));
 }
 
-/** The job types that actually exist, in the order people expect rather than alphabetically. */
+/** Job types in a fixed order */
 export function employmentTypesIn(jobs: CareerJobRow[]): Job["employmentType"][] {
   const order = Object.keys(EMPLOYMENT_LABELS) as Job["employmentType"][];
   const present = new Set(jobs.map((j) => j.employmentType));

@@ -34,7 +34,7 @@ export function RejectionSection({
   onReject,
 }: RejectionSectionProps) {
   const isManager = useIsManager();
-  // The users list is manager-only; other roles just don't see who rejected.
+  // Only managers can see who rejected
   const { data: usersData } = useUsers({ enabled: isManager });
   const [restoreOpen, setRestoreOpen] = useState(false);
 

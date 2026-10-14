@@ -10,7 +10,7 @@ interface MoveConfirmDialogProps {
   onConfirm: () => void;
 }
 
-/** Asked before a move that does more than move the card, because an email cannot be unsent. */
+/** Confirm moves that send an email */
 export function MoveConfirmDialog({ pending, onClose, onConfirm }: MoveConfirmDialogProps) {
   const count = pending?.candidates.length ?? 0;
   const many = count > 1;

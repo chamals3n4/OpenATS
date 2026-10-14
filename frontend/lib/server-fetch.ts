@@ -5,11 +5,7 @@ import { headers } from "next/headers";
 import { apiFetch } from "./api";
 import { getApiToken } from "./auth/session";
 
-/**
- * Cached auth context — deduplicates the async token / headers
- * calls so that multiple `serverFetch` calls within the same server-render
- * (RSC request or server-action) share a single token lookup.
- */
+/** Cache the token per request */
 const getAuthContext = cache(async () => {
   const token = await getApiToken();
   if (!token) throw new Error("Not authenticated");

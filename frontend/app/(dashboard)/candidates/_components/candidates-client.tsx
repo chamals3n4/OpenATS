@@ -43,13 +43,9 @@ export default function CandidatesPageClient() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // ── Filter State ───────────────────────────────────────────
-  // The position and the other filters live in the address, and are also saved in the browser. So
-  // they are still there after opening a candidate, after a reload, after visiting another page
-  // and coming back, and in a link you share. Only search is local.
+  // Filters are kept in the URL and in the browser. Search is local
   const stored = useSyncExternalStore(subscribeStoredFilters, readStoredFilters, () => null);
-  // False while the page is first drawn on the server and hydrated, so nothing is fetched until
-  // the saved filters have been read, rather than fetching the whole list and then the filtered one.
+  // Don't fetch until saved filters are loaded
   const hydrated = useSyncExternalStore(
     () => () => {},
     () => true,
@@ -65,7 +61,7 @@ export default function CandidatesPageClient() {
   const { data: me } = useCurrentUser();
   const isInterviewer = me?.data?.role === "interviewer";
 
-  // Filters that arrive in the address (a shared link) become the saved ones too.
+  // Save filters from a shared link too
   useEffect(() => {
     const url = new URLSearchParams(searchParams.toString());
     if (hasFilterParams(url)) writeStoredFilters(toFilterParams(parseFilterState(url)).toString());
@@ -91,7 +87,7 @@ export default function CandidatesPageClient() {
 
   const selectedJobId = filters.jobId;
   const selectedStatus = filters.status;
-  // Interviewers cannot use the score filters, so a stale value in the address is ignored for them.
+  // Ignore score filters for interviewers
   const scoreFilter = isInterviewer ? undefined : filters.minScore;
   const onlyFullyScored = isInterviewer ? false : filters.fullyScored;
   const hasScoreFilters =
@@ -151,7 +147,7 @@ export default function CandidatesPageClient() {
         const { data } = await bulkRejectMutation.mutateAsync({ candidateIds: ids, reason });
         if (data.failed.length > 0) {
           toast.error(`Rejected ${data.rejected.length}, but ${data.failed.length} could not be rejected`);
-          // Only the ones that failed stay selected, so a retry cannot hit the rest again.
+          // Keep only the failed ones selected
           return data.failed.map((f) => f.id);
         }
         toast.success(`Rejected ${data.rejected.length} ${data.rejected.length === 1 ? "candidate" : "candidates"}`);
@@ -165,14 +161,14 @@ export default function CandidatesPageClient() {
 
   const handleDeleteAllMatchingCandidates = useCallback(async () => {
     const total = pagination?.total ?? 0;
-    // Only ever within one job. Across all jobs, candidates have to be picked.
+    // Only within one job
     if (total === 0 || selectedJobId === undefined) return false;
     try {
       const { data } = await bulkDeleteMutation.mutateAsync({
         jobId: selectedJobId,
         search: debouncedSearch || undefined,
         status: selectedStatus === "all" ? undefined : selectedStatus,
-        // The number in the dialog. The server deletes nothing if another number matches now.
+        // Server deletes nothing if the count changed
         expectedCount: total,
       });
       toast.success(`Deleted ${data.count} ${data.count === 1 ? "candidate" : "candidates"}`);
@@ -230,7 +226,7 @@ export default function CandidatesPageClient() {
 
   const handleRowClick = useCallback(
     (candidate: Candidate) => {
-      // The filters ride along, so closing the candidate returns to the same filtered list.
+      // Pass filters so Back returns to the same list
       const back = searchParams.toString();
       router.push(`/candidates/${candidate.id}?from=candidates${back ? `&back=${encodeURIComponent(back)}` : ""}`);
     },
@@ -243,9 +239,7 @@ export default function CandidatesPageClient() {
   }, [setFilters]);
 
   return (
-    // min-h-0 lets this flex child shrink below its content size so the
-    // parent dashboard layout (which is already h-screen / overflow-hidden)
-    // can contain it properly and the inner scroll area works.
+    // min-h-0 so the inner area can scroll
     <div className="flex flex-1 flex-col min-h-0 bg-white dark:bg-neutral-950">
       {/* Fixed header — never scrolls away */}
       <div className="flex-shrink-0 px-6 pt-4 pb-3 flex items-center justify-between">
@@ -279,9 +273,7 @@ export default function CandidatesPageClient() {
           pagination={pagination}
           onPageChange={setPage}
           onDeleteSelected={handleDeleteSelected}
-          // "Delete all matching" works inside one job only, and only knows job, search and status:
-          // with no job picked, or with a score, flag or experience filter on, it would delete
-          // people the list is not showing. Picking rows still works.
+          // Delete all only works with one job and simple filters
           onDeleteAllMatching={
             hasScoreFilters || selectedJobId === undefined
               ? undefined

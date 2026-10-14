@@ -36,10 +36,7 @@ interface CandidatesTableProps {
   onDeleteSelected: (ids: number[]) => boolean | void | Promise<boolean | void>;
   onDeleteAllMatching?: () => boolean | void | Promise<boolean | void>;
   isDeletingSelected?: boolean;
-  /**
-   * Rejects the picked candidates with a reason. Resolve to false to keep the selection as it is,
-   * or to the ids that failed to keep only those selected; anything else clears it.
-   */
+  /** Reject selected candidates. Returns failed ids to keep selected */
   onRejectSelected?: (
     ids: number[],
     reason: string,
@@ -72,7 +69,7 @@ export function CandidatesTable({
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false);
   const [bulkRejectOpen, setBulkRejectOpen] = useState(false);
 
-  // Candidates who picked a knockout answer and are still in the process.
+  // Candidates with a knockout answer still in process
   const flaggedIds = useMemo(
     () => candidates.filter((c) => c.knockedOut && c.status !== "rejected").map((c) => c.id),
     [candidates],
@@ -136,7 +133,7 @@ export function CandidatesTable({
   const handleConfirmBulkReject = async (reason: string) => {
     const result = await onRejectSelected?.(Array.from(selection.selectedIds), reason);
     if (Array.isArray(result) && result.length > 0) {
-      // Keep the dialog open on just the failures, so its count matches what a retry would reject.
+      // Keep only the failed ones selected
       selection.replaceSelection(result);
       return;
     }

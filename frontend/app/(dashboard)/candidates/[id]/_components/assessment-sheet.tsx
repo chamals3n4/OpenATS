@@ -19,7 +19,7 @@ interface AssessmentSheetProps {
 }
 
 export function AssessmentSheet({ attemptId, onClose }: AssessmentSheetProps) {
-  // Same query key as the content below, so this is one request, not two.
+  // Same query key, so one request
   const { data } = useAttemptResults(attemptId ?? 0, {
     enabled: attemptId !== null,
   });

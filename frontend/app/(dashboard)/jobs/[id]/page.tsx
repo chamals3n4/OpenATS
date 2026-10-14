@@ -91,7 +91,7 @@ export default function JobDetailsPage() {
   const jobId = Number(params.id);
   const queryClient = useQueryClient();
   const router = useRouter();
-  // A freshly created job arrives with ?setup=1, which shows the next-steps alert once.
+  // New jobs come with ?setup=1 to show the setup alert
   const showSetupAlert = useSearchParams().get("setup") === "1";
   const dismissSetupAlert = () => router.replace(`/jobs/${jobId}`, { scroll: false });
 
@@ -192,7 +192,7 @@ export default function JobDetailsPage() {
   const job = jobData?.data;
   const me = meData?.data;
 
-  // The history and everything that arrived live are one list: useJobChat writes into this cache.
+  // useJobChat writes live messages into this cache
   const allMessages = useMemo(
     () =>
       [...(chatHistoryData?.data ?? [])].sort(
@@ -217,7 +217,7 @@ export default function JobDetailsPage() {
 
   const [questions, setQuestions] = useState<CustomQuestion[]>([]);
 
-  // Seed the editable copy whenever the query returns a new list.
+  // Reset the local copy when the query changes
   const [seededQuestions, setSeededQuestions] = useState<
     CustomQuestion[] | null
   >(null);
@@ -262,7 +262,7 @@ export default function JobDetailsPage() {
     );
   }
 
-  // The add / edit dialog: closed, adding a stage, or changing the one given.
+  // Stage dialog: closed, add or edit
   const [stageDialog, setStageDialog] = useState<{ stage: PipelineStage | null } | null>(null);
   const [stageDeleteTarget, setStageDeleteTarget] = useState<{
     id: number;
@@ -333,8 +333,7 @@ export default function JobDetailsPage() {
   const salaryStr = job ? formatSalary(job) : null;
 
   return (
-    // As tall as the window under the top bar. The job and the discussion sit side by side in it,
-    // each scrolling on its own, so opening the discussion narrows the job instead of covering it.
+    // Job and discussion side by side, each scrolls
     <div className="flex h-[calc(100dvh-var(--header-height))] w-full min-w-0 overflow-hidden bg-slate-50 dark:bg-neutral-950">
       <div className="flex min-w-0 flex-1 flex-col overflow-hidden">
       <JobHeader

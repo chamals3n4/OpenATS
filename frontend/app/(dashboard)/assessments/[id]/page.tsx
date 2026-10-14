@@ -28,10 +28,7 @@ import {
   questionToApi,
 } from "../_lib/assessment-builder-utils";
 
-/**
- * An existing assessment. A manager edits it; anyone else reads it. It uses the same question
- * list and question editor as the page that creates one, so the two cannot drift apart.
- */
+/** View or edit an existing assessment */
 export default function EditAssessmentPage({
   params,
 }: {
@@ -74,7 +71,7 @@ export default function EditAssessmentPage({
     toggleCorrectOption,
   } = useAssessmentQuestions();
 
-  // What the questions looked like when they were loaded. Save is off until they differ from it.
+  // Questions as loaded, used to enable Save
   const [savedFingerprint, setSavedFingerprint] = useState<string | null>(null);
   const isDirty = useMemo(
     () => savedFingerprint !== null && questionsFingerprint(questions) !== savedFingerprint,
@@ -82,7 +79,7 @@ export default function EditAssessmentPage({
   );
 
   const originalDbIds = useRef<number[]>([]);
-  // Saving refetches the assessment. That must not put the saved copy back over what is on screen.
+  // Don't overwrite edits when the save refetches
   const hasInitialized = useRef(false);
 
   useEffect(() => {
@@ -91,7 +88,7 @@ export default function EditAssessmentPage({
     if (!data) return;
     hasInitialized.current = true;
 
-    // In an effect, not during render: building the questions hands out new ids each time.
+    // Run in an effect since it creates new ids
     /* eslint-disable react-hooks/set-state-in-effect */
     setTitle(data.title ?? "");
     setDescription(data.description ?? "");
@@ -106,7 +103,7 @@ export default function EditAssessmentPage({
   }, [assessmentData, replaceQuestions]);
 
   const handleSave = async () => {
-    // What is on screen now. The saves below refetch, and this must not change under them.
+    // Current questions on screen
     const saved = questions;
 
     const problem = firstQuestionProblem(saved);
@@ -149,8 +146,7 @@ export default function EditAssessmentPage({
   }
 
   return (
-    // Exactly as tall as the window under the top bar, like the pipeline board. That is what
-    // keeps this page's header in place while the question list and the editor each scroll.
+    // Full height so the header stays and the panels scroll
     <div className="flex h-[calc(100dvh-var(--header-height))] w-full min-w-0 flex-col overflow-hidden bg-white dark:bg-neutral-950">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-slate-300 px-4 py-4 sm:px-8 dark:border-neutral-700">
         <div className="min-w-0">
@@ -211,7 +207,7 @@ export default function EditAssessmentPage({
 
         {currentQ && (
           <QuestionEditor
-            // A new editor for each question, so the page is at the top when another is opened.
+            // New editor per question so it starts at the top
             key={currentQ.uid}
             question={currentQ}
             index={currentIndex < 0 ? 0 : currentIndex}

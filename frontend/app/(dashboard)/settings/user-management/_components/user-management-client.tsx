@@ -92,12 +92,11 @@ function getDisplayName(u: User) {
 
 const PASSWORD_LENGTH_RULE = `Must be between ${PASSWORD_MIN_LENGTH} and ${PASSWORD_MAX_LENGTH} characters`;
 
-// From the browser's cryptographic generator, not Math.random: this becomes
-// a real account password.
+// Use crypto, not Math.random
 function generatePassword(length = 16) {
   const alphabet =
     "abcdefghijkmnopqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789!@#$%^&*-_=+";
-  // Reject values that would skew the pick towards the start of the alphabet.
+  // Avoid modulo bias
   const limit = 256 - (256 % alphabet.length);
   const chars: string[] = [];
   while (chars.length < length) {

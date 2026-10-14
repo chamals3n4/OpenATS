@@ -43,7 +43,7 @@ interface OfferEditFormProps {
   candidateName: string;
   initialValues: OfferFormValues;
   emailTemplates: Template[];
-  /** Show the validation errors straight away, e.g. after a failed "Send" from the summary. */
+  /** Show errors right away */
   showErrorsInitially?: boolean;
   isSaving: boolean;
   isSending: boolean;

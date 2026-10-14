@@ -5,7 +5,7 @@ import type { SECTIONS, SectionId } from "./constants";
 import type { CandidateCvAnalysisPayload } from "@/types";
 
 interface SectionTabsProps {
-  /** The tabs to show. The AI analysis tab is left out while that feature is off. */
+  /** Tabs to show */
   sections: typeof SECTIONS;
   activeSection: SectionId;
   onSectionChange: (id: SectionId) => void;

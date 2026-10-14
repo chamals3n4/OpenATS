@@ -1,10 +1,6 @@
 import type { ReactNode } from "react";
 
-/**
- * One block of the settings page: a heading, a line saying what it is for, then the controls,
- * with a rule under it. The page is a plain sheet with these down it, so nothing is boxed inside
- * anything.
- */
+/** Settings section with a heading and a divider */
 export function SettingsSection({
   title,
   description,
@@ -13,7 +9,7 @@ export function SettingsSection({
 }: {
   title: string;
   description: ReactNode;
-  /** A button that belongs to the whole section, set beside its heading. */
+  /** Button next to the section heading */
   action?: ReactNode;
   children: ReactNode;
 }) {

@@ -57,7 +57,7 @@ export default function TemplatesPageClient({ tab = "yours" }: { tab?: Templates
   const [pickedType, setPickedType] = useState<string | null>(null);
 
   const handleOpenTypePicker = useCallback(() => {
-    // Most templates are emails, so start there; one click to change it.
+    // Default to email
     setPickedType("email");
     setTypePickerOpen(true);
   }, []);
@@ -69,8 +69,7 @@ export default function TemplatesPageClient({ tab = "yours" }: { tab?: Templates
     }
   }, [pickedType, router]);
 
-  // ── Duplicate ──────────────────────────────────────────────
-  // Asks for a name first, so a copy is never made by accident or left unnamed.
+  // Duplicate: ask for a name first
   const [duplicateTarget, setDuplicateTarget] = useState<Template | null>(null);
 
   const handleConfirmDuplicate = useCallback(

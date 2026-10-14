@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import type { CandidateCvAnalysisPayload } from "@/types";
 
-// Loaded only when the tab is shown: most visits never open it.
+// Load only when the tab opens
 const CandidateAiAnalysis = dynamic(
   () => import("../candidate-ai-analysis").then((mod) => ({ default: mod.CandidateAiAnalysis })),
   {
@@ -18,7 +18,7 @@ const CandidateAiAnalysis = dynamic(
   },
 );
 
-/** Shown only while AI CV analysis is turned on in Settings. */
+/** Only when AI analysis is on */
 export function AiAnalysisSection({
   hasResume,
   cvAnalysis,

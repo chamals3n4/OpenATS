@@ -16,7 +16,7 @@ import type { User } from "@/types";
 
 const ROUTE_LOG = "[API /users]";
 
-// Roles are a column on the row now, so the Express list is the whole answer.
+// Roles are on the row, so the Express list is enough
 export async function GET() {
   try {
     const data = await serverFetch<{ data: User[] }>("/users");
@@ -43,8 +43,7 @@ export async function POST(req: Request) {
     const requestHeaders = await headers();
     const name = `${firstName} ${lastName}`.trim();
 
-    // Matched without regard to case: rows from before built-in sign-in may
-    // hold a mixed-case email.
+    // Match case insensitive, old rows may have mixed case
     const existing = await pool.query<{ id: number; is_active: boolean }>(
       "select id, is_active from users where lower(email) = $1 limit 1",
       [email],
@@ -56,8 +55,7 @@ export async function POST(req: Request) {
     }
 
     if (row) {
-      // A deactivated user: bring the same row back rather than adding a
-      // duplicate, so their id and everything linked to it are kept.
+      // Reactivate a deactivated user instead of adding a new one
       const userId = String(row.id);
 
       await auth.api.adminUpdateUser({
@@ -78,7 +76,7 @@ export async function POST(req: Request) {
         headers: requestHeaders,
       });
 
-      // Always replaced, so the password from before deactivation stops working.
+      // Replace the old password
       await auth.api.setUserPassword({
         body: { userId, newPassword: password ?? unknowablePassword() },
         headers: requestHeaders,
@@ -90,9 +88,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ success: true, reactivated: true }, { status: 200 });
     }
 
-    // An invited user gets no password at all: no credential exists until
-    // they follow the link, and that is also what selects the "Set your
-    // password" email over the "Reset your password" one.
+    // Invited users have no password until they use the link
     const created = await auth.api.createUser({
       body: {
         email,

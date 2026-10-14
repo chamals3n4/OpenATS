@@ -5,7 +5,7 @@ import { getStatusLabel, type CandidateStatusFilter } from "./candidate-utils";
 export type CandidateSort = "newest" | "score";
 export type FlagChoice = CandidateFlagFilter | "any";
 
-/** Everything the Candidates page can be narrowed by, apart from the search box. */
+/** Candidate list filters, except search */
 export interface CandidateFilterState {
   jobId: number | undefined;
   status: CandidateStatusFilter;
@@ -14,7 +14,7 @@ export interface CandidateFilterState {
   minScore: number | undefined;
   flag: FlagChoice;
   fullyScored: boolean;
-  /** Years of work the CV shows, an estimate. Undefined means no minimum. */
+  /** Min years of experience, an estimate */
   minExperience: number | undefined;
 }
 
@@ -48,7 +48,7 @@ export const FLAG_ORDER: FlagChoice[] = [
 
 const STATUSES: CandidateStatusFilter[] = ["all", "active", "rejected"];
 
-/** Reads the filters back from the address, ignoring anything that is not a valid value. */
+/** Read filters from the URL */
 export function parseFilterState(params: URLSearchParams): CandidateFilterState {
   const job = Number(params.get("job"));
   const status = params.get("status") as CandidateStatusFilter | null;
@@ -69,7 +69,7 @@ export function parseFilterState(params: URLSearchParams): CandidateFilterState 
   };
 }
 
-/** The address form of the filters. Only what differs from the defaults is written. */
+/** Write filters to the URL, only non defaults */
 export function toFilterParams(state: CandidateFilterState): URLSearchParams {
   const params = new URLSearchParams();
   if (state.jobId) params.set("job", String(state.jobId));
@@ -88,7 +88,7 @@ export interface FilterChip {
   label: string;
 }
 
-/** One chip per filter that is on, so the page always shows what the list is narrowed by. */
+/** One chip per active filter */
 export function activeFilterChips(state: CandidateFilterState, jobs: Pick<Job, "id" | "title">[]): FilterChip[] {
   const chips: FilterChip[] = [];
   if (state.jobId) {
@@ -104,7 +104,7 @@ export function activeFilterChips(state: CandidateFilterState, jobs: Pick<Job, "
   return chips;
 }
 
-/** How many filters inside the Filters menu are on (the position and sort have their own controls). */
+/** Count of active filters in the menu */
 export function filtersMenuCount(state: CandidateFilterState): number {
   return (
     (state.status !== "all" ? 1 : 0) +
@@ -138,11 +138,7 @@ const FILTER_PARAM_KEYS = ["job", "status", "sort", "minScore", "flag", "fullySc
 /** Whether the address carries any filter at all. */
 export const hasFilterParams = (params: URLSearchParams) => FILTER_PARAM_KEYS.some((key) => params.has(key));
 
-/**
- * The filters to use: those in the address when it has any, otherwise the ones saved last time, so
- * coming back to the page from anywhere restores them. Clearing every filter saves nothing, which
- * is what makes the list unfiltered again.
- */
+/** Use URL filters, or the saved ones */
 export function resolveFilterState(url: URLSearchParams, stored: string | null): CandidateFilterState {
   return parseFilterState(hasFilterParams(url) ? url : new URLSearchParams(stored ?? ""));
 }

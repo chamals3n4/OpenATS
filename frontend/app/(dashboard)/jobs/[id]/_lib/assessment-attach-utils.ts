@@ -1,6 +1,6 @@
 import type { Assessment, JobAssessment } from "@/types";
 
-/** "30 min · 5 questions", leaving out whatever is not known. */
+/** e.g. "30 min · 5 questions" */
 export function describeAssessment(
   assessment: Pick<Assessment, "timeLimit" | "questionCount"> | undefined,
 ): string {
@@ -15,7 +15,7 @@ export function describeAssessment(
   return parts.join(" · ");
 }
 
-/** The server accepts the same assessment twice on one stage, which would email it twice. */
+/** Avoid adding the same assessment twice to a stage */
 export function isAlreadyAttached(
   attached: Pick<JobAssessment, "assessmentId" | "triggerStageId">[],
   assessmentId: number,
@@ -26,7 +26,7 @@ export function isAlreadyAttached(
   );
 }
 
-/** Attachments in the order of the pipeline, so the list reads like the hiring process. */
+/** Sort by pipeline order */
 export function sortByStageOrder<T extends Pick<JobAssessment, "triggerStageId">>(
   attachments: T[],
   stages: { id: number; position: number }[],

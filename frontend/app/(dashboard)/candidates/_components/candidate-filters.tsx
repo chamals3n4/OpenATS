@@ -49,7 +49,7 @@ interface CandidateFiltersProps {
   jobs: Job[];
   value: CandidateFilterState;
   onChange: (next: CandidateFilterState) => void;
-  /** Interviewers cannot filter by score, which would give away scores hidden from them. */
+  /** Interviewers can't filter by score */
   hideScoreFilters?: boolean;
   onClear: () => void;
 }
@@ -66,7 +66,7 @@ const triggerCls =
 
 const barButtonCls = "h-8 gap-2 px-3 text-sm";
 
-/** A searchable list of positions. Choosing one shows as a chip, so it stays visible and can be removed. */
+/** Searchable position list */
 function PositionPicker({
   jobs,
   jobId,
@@ -131,7 +131,7 @@ function PositionPicker({
   );
 }
 
-/** A minimum-number box. It applies once typing pauses, so "7" then "70" is one search. */
+/** Number input that applies after typing stops */
 function MinNumberField({
   id,
   max,
@@ -148,9 +148,7 @@ function MinNumberField({
   const text = (v: number | undefined) => (v === undefined ? "" : String(v));
   const [draft, setDraft] = useState(text(value));
   const [seen, setSeen] = useState(value);
-  // When the filter changes from outside (its chip removed, Clear all), show that instead of the
-  // old typing, which would otherwise be applied again. Typing alone does not change `value`, so
-  // edits in progress are left alone.
+  // Sync when the filter is changed from outside
   if (value !== seen) {
     setSeen(value);
     setDraft(text(value));
@@ -189,7 +187,7 @@ function FiltersMenu({
   onChange: (next: CandidateFilterState) => void;
   hideScoreFilters?: boolean | undefined;
 }) {
-  // The score filters are hidden for interviewers, so they are not counted either.
+  // Score filters are hidden for interviewers, so don't count them
   const count = filtersMenuCount(hideScoreFilters ? { ...value, minScore: undefined, fullyScored: false } : value);
   const label = (text: string) => (
     <p className="mb-1.5 text-xs font-medium text-slate-600 dark:text-neutral-400">{text}</p>

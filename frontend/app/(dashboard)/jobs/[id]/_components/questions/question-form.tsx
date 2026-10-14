@@ -65,19 +65,16 @@ const padOptions = (options: OptionDraft[]) => {
   return padded;
 };
 
-/**
- * The form body for both adding and editing a question. Mount it only while its dialog is
- * open, so every open starts from fresh values.
- */
+/** Question form for add and edit. Mount only when open */
 export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: QuestionFormProps) {
   const [title, setTitle] = useState(initial.title);
   const [type, setType] = useState<QuestionType>(initial.type);
   const [required, setRequired] = useState(initial.required);
   const [options, setOptions] = useState<OptionDraft[]>(() => padOptions(initial.options));
-  // Scoring is optional: an unscored choice question is just for information.
+  // Scoring is optional
   const [scored, setScored] = useState(() => isScored(initial.options));
   const [showErrors, setShowErrors] = useState(false);
-  // Which option row should take focus once it has rendered (a row added with Enter).
+  // Option row to focus after it renders
   const focusOption = useRef<number | null>(null);
   const optionInputs = useRef<(HTMLInputElement | null)[]>([]);
 
@@ -103,7 +100,7 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
 
   const handleType = (next: QuestionType) => {
     setType(next);
-    // Switching to a choice type: make sure there are rows to fill in.
+    // Add rows when switching to a choice type
     if (isChoiceType(next)) setOptions((prev) => padOptions(prev));
   };
 
@@ -259,7 +256,7 @@ export function QuestionForm({ mode, initial, isPending, onSubmit, onCancel }: Q
                         maxLength={OPTION_MAX}
                         onChange={(e) => patchOption(i, { label: e.target.value })}
                         onKeyDown={(e) => {
-                          // Enter moves on to the next option instead of submitting the form.
+                          // Enter goes to the next option
                           if (e.key === "Enter") {
                             e.preventDefault();
                             if (option.label.trim()) addOption(i);
@@ -381,7 +378,6 @@ interface QuestionDialogProps {
   children: React.ReactNode;
 }
 
-/** A wide dialog with no open animation, kept inside the window on short screens. */
 export function QuestionDialog({ open, onClose, children }: QuestionDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>

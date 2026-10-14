@@ -23,7 +23,7 @@ export function useUpdateSettingsAllowedOrigins() {
         },
       ),
     onSuccess: (res) => {
-      // Show what the server saved straight away, then confirm it with a refetch.
+      // Show the saved value, then refetch
       queryClient.setQueryData(["settings", "allowed-origins"], res);
       queryClient.invalidateQueries({
         queryKey: ["settings", "allowed-origins"],
@@ -34,10 +34,7 @@ export function useUpdateSettingsAllowedOrigins() {
 
 export type WorkerStatus = "connected" | "missing" | "unknown";
 
-/**
- * Whether the background worker is running. Without it CVs are never read, and nothing else says
- * so. "unknown" means the server could not tell, and is treated as no news.
- */
+/** Is the background worker running */
 export function useWorkerStatus(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["settings", "worker"],
@@ -47,7 +44,7 @@ export function useWorkerStatus(options?: { enabled?: boolean }) {
   });
 }
 
-/** Whether AI CV analysis is on. Readable by everyone, since it decides what the candidate page shows. */
+/** Is AI CV analysis on */
 export function useAiSettings() {
   return useQuery({
     queryKey: ["settings", "ai"],
@@ -66,7 +63,7 @@ export function useUpdateAiSettings() {
       }),
     onSuccess: (res) => {
       queryClient.setQueryData(["settings", "ai"], res);
-      // Candidates carry their analysis only while it is on, so what is cached is now out of date.
+      // Refetch candidates after the setting changes
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
     },
   });

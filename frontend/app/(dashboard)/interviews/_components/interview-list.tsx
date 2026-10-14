@@ -22,7 +22,7 @@ function dayTitle(key: string, todayKey: string, tomorrowKey: string) {
   return { title: long, detail: null };
 }
 
-/** Every interview, a day at a time, with the ones still waiting for a time at the end. */
+/** Interviews by day, unscheduled ones at the end */
 export function InterviewList({ interviews, onFeedback, onEdit }: InterviewListProps) {
   const now = new Date();
   const todayKey = dayKey(now);

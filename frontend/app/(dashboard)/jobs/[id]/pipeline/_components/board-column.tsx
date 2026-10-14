@@ -9,11 +9,7 @@ import type { BoardCandidate, PipelineStage } from "@/types";
 import { dropIndex } from "../_lib/board-utils";
 import { BoardCard, CARD_TYPE, type DragItem } from "./board-card";
 
-/**
- * Cards drawn per column until "Show more" is pressed. Every drawn card is also a drag source,
- * and a drag start makes each of them re-check itself, so a 500-card column froze the page for
- * seconds. Search and the totals still cover every card; only the drawing is limited.
- */
+/** Cards shown per column before Show more. Too many makes drag slow */
 export const PAGE_SIZE = 50;
 
 const STAGE_DOT: Record<PipelineStage["stageType"], string> = {
@@ -27,17 +23,17 @@ interface BoardColumnProps {
   stages: PipelineStage[];
   /** The cards shown, after any search. */
   candidates: BoardCandidate[];
-  /** How many the stage holds in all, so a search can say "2 of 5". */
+  /** Total in the stage, for "2 of 5" */
   totalCount: number;
   now: number;
   isLoading: boolean;
   movingIds: ReadonlySet<number>;
-  /** A search is active, so the cards shown are highlighted as matches. */
+  /** Search is on */
   isSearching: boolean;
   selectedIds: ReadonlySet<number>;
   selectionMode: boolean;
   onToggleSelect: (id: number) => void;
-  /** Selects, or deselects when all are already selected, every card the column holds. */
+  /** Select or deselect all cards in the column */
   onToggleColumn: (candidateIds: number[]) => void;
   onOpen: (id: number) => void;
   onMove: (candidateId: number, stageId: number, index: number) => void;
@@ -65,7 +61,7 @@ export const BoardColumn = memo(function BoardColumn({
   const shown = candidates.length > limit ? candidates.slice(0, limit) : candidates;
   const hiddenCount = candidates.length - shown.length;
 
-  /** Where a card dropped at this height lands, read from the cards as drawn right now. */
+  /** Where a dropped card lands */
   const indexAt = useCallback((pointerY: number): number => {
     const body = bodyRef.current;
     if (!body) return 0;

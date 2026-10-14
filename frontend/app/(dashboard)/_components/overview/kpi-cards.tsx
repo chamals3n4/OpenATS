@@ -10,7 +10,7 @@ const TONE: Record<Tone, string> = {
 
 interface KpiCardsProps {
   kpis: Kpi[];
-  /** Words for the period compared against, e.g. "the previous 7 days". */
+  /** e.g. "the previous 7 days" */
   comparedWith: string;
   isLoading: boolean;
 }

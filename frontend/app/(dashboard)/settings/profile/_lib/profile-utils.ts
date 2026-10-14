@@ -4,7 +4,7 @@ const ROLE_LABELS: Record<string, string> = {
   interviewer: "Interviewer",
 };
 
-/** "hiring_manager" becomes "Hiring manager"; an unknown role is tidied rather than shown raw. */
+/** e.g. "hiring_manager" to "Hiring manager" */
 export function humanizeRole(role: string): string {
   const known = ROLE_LABELS[role];
   if (known) return known;
@@ -22,7 +22,7 @@ export function formatMemberSince(iso?: string | null): string | null {
   return date.toLocaleDateString("en-US", { month: "long", year: "numeric" });
 }
 
-/** "Ada Lovelace", or the fallback when there is no name at all. */
+/** Full name or the fallback */
 export function fullNameOf(
   first?: string | null,
   last?: string | null,

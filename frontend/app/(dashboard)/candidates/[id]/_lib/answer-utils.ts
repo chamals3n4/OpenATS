@@ -8,7 +8,7 @@ export interface AnswerOption {
   label: string;
 }
 
-/** One application question with everything the candidate answered to it. */
+/** A question with all its answers */
 export interface AnswerItem {
   questionId: number;
   title: string;
@@ -20,11 +20,7 @@ export interface AnswerItem {
 const titleOf = (title: string | null | undefined, questionId: number) =>
   title?.trim() || `Question #${questionId}`;
 
-/**
- * Written answers and chosen options arrive as two separate lists. Merge them into one
- * entry per question, in the order of the application form (falling back to question id
- * for older API responses that carry no position).
- */
+/** Merge answers and options into one list per question */
 export function groupAnswers(
   answers: RawAnswer[],
   selections: RawSelection[],
@@ -74,11 +70,7 @@ export function isAnswered(item: AnswerItem) {
   return Boolean(item.text) || item.options.length > 0;
 }
 
-/**
- * The address to open when a written answer is just a web link, else null. Only http and
- * https count, so an answer such as `javascript:...` is never turned into a clickable link.
- * A bare `www.` address gets https added.
- */
+/** Link for an answer that is a URL. Only http/https */
 export function asWebUrl(text: string | null | undefined): string | null {
   const value = text?.trim();
   if (!value || /\s/.test(value)) return null;

@@ -9,11 +9,11 @@ interface EmailPreviewDialogProps {
   toAddress: string;
   replyTo?: string;
   subject: string;
-  /** The message split into paragraphs, each a list of lines. */
+  /** Paragraphs split into lines */
   paragraphs: string[][];
 }
 
-/** What the candidate will see, in a dialog so reading it never moves the form. */
+/** Email preview dialog */
 export function EmailPreviewDialog({
   open,
   onOpenChange,

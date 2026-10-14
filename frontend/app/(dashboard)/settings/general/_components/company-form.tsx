@@ -40,7 +40,7 @@ const toValues = (c: Company): Values => ({
   timeZone: c.timeZone || "UTC",
 });
 
-/** Where the person setting the company up is, as a first suggestion. */
+/** Browser time zone as the default */
 function browserTimeZone(): string {
   try {
     return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
@@ -58,13 +58,13 @@ export function CompanyForm({
 }: {
   company: Company;
   isNew: boolean;
-  /** Where in the page the save and cancel buttons are drawn: its title row. */
+  /** Where to render the buttons */
   actionsSlot: HTMLElement | null;
 }) {
   const upsertCompany = useUpsertCompany();
   const uploadLogo = useUploadLogo();
 
-  // A new company starts on the zone of whoever is creating it, which is usually the right one.
+  // Default to the creator's time zone
   const [values, setValues] = useState<Values>(() =>
     isNew ? { ...toValues(company), timeZone: browserTimeZone() } : toValues(company),
   );
@@ -148,7 +148,7 @@ export function CompanyForm({
         handleSave();
       }}
     >
-      {/* Drawn in the page's title row, beside "Company settings", so saving is always in view. */}
+      {/* Shown in the page title row */}
       {actionsSlot &&
         createPortal(
           <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
@@ -169,7 +169,6 @@ export function CompanyForm({
                 Cancel
               </Button>
             )}
-            {/* Outside the form in the page, so it names the form it submits. */}
             <Button
               type="submit"
               form={FORM_ID}

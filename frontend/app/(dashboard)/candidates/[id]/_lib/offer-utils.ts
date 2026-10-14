@@ -16,7 +16,7 @@ export interface OfferFormValues {
   salary: string;
   employmentType: EmploymentType;
   startDate: string;
-  /** The last day the candidate can answer, as YYYY-MM-DD. Empty for no end. */
+  /** Respond by date as YYYY-MM-DD, empty for none */
   expiresOn: string;
   reportingManager: string;
   benefits: string;
@@ -25,7 +25,7 @@ export interface OfferFormValues {
 
 export type OfferFieldKey = keyof OfferFormValues;
 
-/** Everything except the template must be filled in before an offer can be sent. */
+/** Everything except the template is required to send */
 export const REQUIRED_TO_SEND: OfferFieldKey[] = [
   "salary",
   "currency",
@@ -48,16 +48,13 @@ export const OFFER_FIELD_LABELS: Record<OfferFieldKey, string> = {
   offerLetterHtml: "Offer letter",
 };
 
-/** A date as the value of a date input (YYYY-MM-DD), in the browser's own time zone. */
+/** Date as YYYY-MM-DD */
 export function toDateInput(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
 }
 
-/**
- * The last moment of the chosen day, where the person choosing it is. "Respond by Friday" means
- * the offer is open all of Friday, so the date becomes Friday 23:59:59 and not Friday 00:00.
- */
+/** End of the chosen day in local time */
 export function endOfDay(dateInput: string): string | null {
   if (!dateInput) return null;
   const [year, month, day] = dateInput.split("-").map(Number);
@@ -65,7 +62,7 @@ export function endOfDay(dateInput: string): string | null {
   return new Date(year, month - 1, day, 23, 59, 59).toISOString();
 }
 
-/** "Friday, October 16, 2026" for a respond-by date, or null when there is none. */
+/** e.g. "Friday, October 16, 2026", or null */
 export function formatRespondBy(expiresAt: string | null | undefined): string | null {
   if (!expiresAt) return null;
   return new Date(expiresAt).toLocaleDateString("en-US", {
@@ -98,7 +95,7 @@ export function getMissingFields(values: OfferFormValues): OfferFieldKey[] {
   });
 }
 
-/** Payload for saving. The status is deliberately left out so saving never changes it. */
+/** Status is left out so saving doesn't change it */
 export function formValuesToPayload(values: OfferFormValues): Partial<Offer> {
   return {
     templateId: values.templateId ? Number(values.templateId) : null,
@@ -113,12 +110,12 @@ export function formValuesToPayload(values: OfferFormValues): Partial<Offer> {
   };
 }
 
-/** Terms can change until the candidate has answered (the backend allows it; the UI follows). */
+/** Editable until the candidate answers */
 export function canEditOffer(status: Offer["status"]) {
   return status === "draft" || status === "sent" || status === "viewed";
 }
 
-/** "$60,000", falling back to "XYZ 60,000" for a currency code Intl does not know. */
+/** Format money, with a fallback for unknown currencies */
 export function formatMoney(salary: number | string | null, currency: string | null) {
   if (salary === null || salary === "" || Number.isNaN(Number(salary))) return null;
   const amount = Number(salary);
@@ -147,7 +144,7 @@ export interface OfferStep {
   state: StepState;
 }
 
-/** The offer's journey as four steps: created, sent, viewed, then the candidate's answer. */
+/** Offer steps: created, sent, viewed, answered */
 export function getOfferSteps(offer: Offer): OfferStep[] {
   const answered = offer.status === "accepted" || offer.status === "declined" || offer.status === "expired";
 
@@ -162,7 +159,7 @@ export function getOfferSteps(offer: Offer): OfferStep[] {
               key: "outcome",
               label: "Awaiting response",
               date: null,
-              // Only one step is ever active: the answer is awaited once the offer has been seen.
+              // Only one active step
               state: offer.status === "viewed" ? "current" : "upcoming",
             };
 
@@ -183,7 +180,7 @@ export function getOfferSteps(offer: Offer): OfferStep[] {
     outcome,
   ];
 
-  // Answered without ever opening it: don't leave "Viewed" looking like it is still pending.
+  // Answered without opening, so don't show Viewed as pending
   return steps.map((step) =>
     answered && step.key === "viewed" && !step.date
       ? { ...step, state: "upcoming" }

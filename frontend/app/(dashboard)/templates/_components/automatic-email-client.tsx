@@ -33,7 +33,7 @@ export function AutomaticEmailClient({ purpose }: { purpose: string }) {
 
   if (isLoading) return <Message>Loading…</Message>;
   if (!email) return <Message>This automatic email does not exist.</Message>;
-  // Keyed, so the form starts again from the saved wording after a reset.
+  // Keyed so reset starts from the saved text
   return <AutomaticEmailForm key={`${email.purpose}-${email.updatedAt ?? "default"}`} email={email} />;
 }
 

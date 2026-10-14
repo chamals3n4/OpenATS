@@ -72,12 +72,11 @@ function PasswordSaved() {
   );
 }
 
-// Serves both a password reset and an invited user setting a first password:
-// either way the link carries a one-time token.
+// Used for both password reset and invite links
 function ResetPasswordForm() {
   const searchParams = useSearchParams();
   const token = searchParams.get("token");
-  // Better Auth redirects here with ?error=INVALID_TOKEN for a bad link.
+  // Better Auth sends ?error=INVALID_TOKEN for a bad link
   const linkError = searchParams.get("error");
 
   const [password, setPassword] = useState("");

@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import type { AttemptData } from "../_lib/assessment-types";
 
-// An in-progress attempt resumes where it left off; anything else starts full.
+// Resume an attempt, or start full
 export function remainingSeconds(attempt: AttemptData): number {
-  // The limit is saved in minutes; the clock counts seconds.
+  // Limit is in minutes, clock in seconds
   const limit = (attempt.assessment.timeLimit ?? 0) * 60;
   if (attempt.status !== "started" || !attempt.startedAt) return limit;
   const elapsed = Math.floor(
@@ -21,8 +21,7 @@ export function useAssessmentTimer(
 ) {
   const [timeLeft, setTimeLeft] = useState(0);
 
-  // Seed the timer once per attempt and start time, then let the countdown below own it.
-  // The start time is part of the key because it only arrives when the candidate presses Start.
+  // Set the timer once per attempt
   const seedKey = attempt ? `${attempt.id}:${attempt.startedAt ?? ""}` : null;
   const [seededKey, setSeededKey] = useState<string | null>(null);
   if (attempt && seedKey !== seededKey) {
@@ -30,8 +29,7 @@ export function useAssessmentTimer(
     setTimeLeft(remainingSeconds(attempt));
   }
 
-  // Time running out submits once. If that fails, the candidate retries with the Submit
-  // button; calling it again on every render would send request after request.
+  // Submit once when time runs out
   const timeUpFired = useRef(false);
 
   // Countdown

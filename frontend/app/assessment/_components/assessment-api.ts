@@ -21,7 +21,7 @@ export function fetchAttempt(token: string) {
   );
 }
 
-/** Starts the clock. The reply holds the moment the server recorded as the start. */
+/** Start the clock. Returns the server start time */
 export function startAttempt(token: string) {
   return apiFetch<{ data: { startedAt: string | null } | null }>(`/assessment/${token}/start`, {
     method: "POST",

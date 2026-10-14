@@ -34,7 +34,7 @@ import {
   type Weights,
 } from "../../_lib/scoring-utils";
 
-/** One colour per score part, shared by its tile dot and its slice of the share bar. */
+/** Colour for each score part */
 const PART_COLOR: Record<ScorePart, string> = {
   questions: "bg-emerald-600",
   assessment: "bg-sky-500",
@@ -309,7 +309,7 @@ export function ScoringTab({ job }: { job: JobDetail | undefined }) {
   }
 
   const criteria = (data?.data ?? []).map((c) => ({ id: c.id, name: c.name }));
-  // Remount when the saved weights or criteria change, so the editors start from what is saved.
+  // Remount when saved values change
   const criteriaKey = criteria.map((c) => `${c.id}:${c.name}`).join("|");
   const weightsKey = Object.values(weightsOfJob(job)).join("-");
 

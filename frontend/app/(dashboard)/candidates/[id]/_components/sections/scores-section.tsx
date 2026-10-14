@@ -86,7 +86,7 @@ function Fact({
 }
 
 function ScoreFact({ attempt }: { attempt: Attempt }) {
-  // Postgres `numeric` reaches us as a string (e.g. "100.00"), so convert it.
+  // numeric comes as a string
   const score =
     attempt.scorePercentage === null ? null : Number(attempt.scorePercentage);
   const barColor =

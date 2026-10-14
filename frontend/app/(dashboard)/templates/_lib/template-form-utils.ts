@@ -13,7 +13,7 @@ export interface TemplateFormErrors {
   subject?: string;
 }
 
-/** The same limits the API enforces, checked first so the form can say what is wrong. */
+/** Same limits as the API */
 export function validateTemplateForm(input: {
   type: "email" | "event";
   name: string;
@@ -32,7 +32,7 @@ export function validateTemplateForm(input: {
   return errors;
 }
 
-/** Replace {{var}} placeholders with plain sample values, for text such as the subject. */
+/** Replace {{var}} with sample values */
 export function fillSampleText(text: string, samples: Record<string, string> = DEFAULT_SAMPLES): string {
   let out = text;
   Object.entries(samples).forEach(([key, value]) => {
@@ -41,11 +41,8 @@ export function fillSampleText(text: string, samples: Record<string, string> = D
   return out;
 }
 
-/** Substitute {{var}} placeholders in an HTML string with styled sample-value pills, for preview only. */
-/**
- * The result is cleaned before it is returned, because it is put straight into the page and a
- * saved template can hold anything another person typed or pasted.
- */
+/** Replace {{var}} with sample pills for the preview */
+/** Clean the HTML since it goes into the page */
 export function renderPreviewHtml(html: string, samples: Record<string, string> = DEFAULT_SAMPLES): string {
   let out = html;
   Object.entries(samples).forEach(([key, value]) => {
@@ -54,8 +51,7 @@ export function renderPreviewHtml(html: string, samples: Record<string, string> 
       `<span style="background:#dbeafe;color:#1d4ed8;border-radius:4px;padding:1px 5px;font-weight:600;font-size:0.85em">${escapeHtml(value)}</span>`,
     );
   });
-  // Cleaning needs a browser. On the server there is none, so nothing is rendered there
-  // rather than letting uncleaned HTML into the page.
+  // No cleaner on the server, so render nothing there
   if (typeof window === "undefined") return "";
   return DOMPurify.sanitize(out);
 }

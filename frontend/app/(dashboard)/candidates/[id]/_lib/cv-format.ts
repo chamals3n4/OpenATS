@@ -1,14 +1,10 @@
-/**
- * Turns one section of CV text into blocks the page can lay out: bullet lists, lines that end in a
- * date, and short lists shown as tags. It only rearranges what is written. Nothing is guessed, and
- * a line that fits no pattern is shown as it is, so no text is ever hidden.
- */
+/** Split a CV section into lists, dated lines and tags */
 export type CvBlock =
   | { type: "text"; text: string }
   | { type: "bullets"; items: string[] }
-  /** A line ending in a date: "Staff Nurse, Kandy General Hospital" + "2018 - 2023". */
+  /** A line that ends with a date range */
   | { type: "entry"; title: string; detail: string | null; tags: string[]; date: string | null }
-  /** "Languages: Sinhala, English, Tamil" as a label and tags. */
+  /** e.g. "Languages: Sinhala, English" */
   | { type: "tags"; label: string | null; items: string[] };
 
 const MONTH = "(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\\.?";
@@ -18,7 +14,7 @@ const TRAILING_DATE = new RegExp(
   "i",
 );
 
-/** Splits on commas that are not inside brackets, so "Node.js (Express, Koa), Go" is two items. */
+/** Split on commas outside brackets */
 function splitList(text: string): string[] {
   const items: string[] = [];
   let depth = 0;
@@ -37,7 +33,6 @@ function splitList(text: string): string[] {
   return items.map((item) => item.trim()).filter(Boolean);
 }
 
-/** A list reads as tags only when it is one: several short items, not a sentence with commas. */
 const isTagList = (items: string[]) => items.length >= 2 && items.every((item) => item.length <= 40);
 
 function toEntry(line: string): CvBlock | null {
@@ -66,16 +61,16 @@ function toTags(line: string): CvBlock | null {
   return isTagList(items) ? { type: "tags", label: labelled ? (labelled[1] ?? null) : null, items } : null;
 }
 
-/** Sections whose lines are short lists far more often than sentences. */
+/** Sections that are usually lists */
 const LIST_SECTIONS = new Set(["skills", "languages"]);
-/** Sections made of dated entries (a job, a course, a project). */
+/** Sections with dated entries */
 const ENTRY_SECTIONS = new Set(["experience", "education", "projects", "certifications", "other"]);
 
 export function formatCvSection(key: string, text: string): CvBlock[] {
   const blocks: CvBlock[] = [];
   const lines = text.split("\n").map((line) => line.trim()).filter(Boolean);
 
-  // A summary is one paragraph that the PDF broke into lines.
+  // Summary is one paragraph split by the PDF
   if (key === "summary" && !lines.some((line) => line.startsWith("- "))) {
     return lines.length ? [{ type: "text", text: lines.join(" ") }] : [];
   }
@@ -96,8 +91,7 @@ export function formatCvSection(key: string, text: string): CvBlock[] {
       continue;
     }
 
-    // A line straight after a bullet, that is not the start of a new entry, is the rest of that
-    // bullet: the PDF wrapped it onto a second line.
+    // Join a wrapped line back to its bullet
     if (last?.type === "bullets") {
       last.items[last.items.length - 1] += ` ${line}`;
       continue;

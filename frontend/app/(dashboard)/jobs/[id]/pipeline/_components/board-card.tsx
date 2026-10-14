@@ -21,19 +21,19 @@ interface BoardCardProps {
   candidate: BoardCandidate;
   stages: PipelineStage[];
   now: number;
-  /** True while this card's move is being saved: it cannot be dragged again until it lands. */
+  /** Saving this card's move */
   isMoving: boolean;
-  /** True while a search is active: every card shown is a match, so it gets the theme border. */
+  /** Search is on, so highlight the card */
   isMatch: boolean;
   isSelected: boolean;
-  /** True once anything is selected: a click toggles instead of opening. */
+  /** Something is selected, so click toggles */
   selectionMode: boolean;
   onToggleSelect: (id: number) => void;
   onOpen: (id: number) => void;
   onMove: (candidateId: number, stageId: number, index: number) => void;
 }
 
-/** One candidate on the board. Memoized, so a drag over a column does not redraw every card. */
+/** Memoized so drags don't redraw every card */
 export const BoardCard = memo(function BoardCard({
   candidate,
   stages,
@@ -74,7 +74,7 @@ export const BoardCard = memo(function BoardCard({
     [dragRef],
   );
 
-  // Clicks inside the actions menu are portaled but still bubble here through React.
+  // Ignore clicks from the menu
   const activate = () => (selectionMode ? onToggleSelect(candidate.id) : onOpen(candidate.id));
   const open = (e: MouseEvent<HTMLDivElement>) => {
     if (!e.currentTarget.contains(e.target as Node)) return;
@@ -144,7 +144,6 @@ export const BoardCard = memo(function BoardCard({
 
       {flags.length > 0 && (
         <>
-          {/* The flags are an icon, not pills, so they cannot squeeze the name in a narrow column. */}
           <button
             type="button"
             aria-label={`Flags for ${name}: ${flags.map((f) => f.label).join(", ")}`}

@@ -23,10 +23,7 @@ interface CardMenuProps {
   onMove: (candidateId: number, stageId: number, index: number) => void;
 }
 
-/**
- * The keyboard and touch way to move a card, since dragging needs a mouse. A stage picked here
- * puts the card at the top of that column, where it is always drawn.
- */
+/** Move a card without dragging */
 export function CardMenu({
   candidate,
   stages,

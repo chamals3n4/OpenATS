@@ -19,7 +19,7 @@ interface BoardHeaderProps {
   job: Pick<Job, "title" | "status" | "employmentType" | "location"> | undefined;
   /** Null while the candidates are still loading. */
   candidateCount: number | null;
-  /** How many match the search, or null when no search is active. */
+  /** Match count, or null without search */
   matchCount: number | null;
   search: string;
   onSearchChange: (value: string) => void;

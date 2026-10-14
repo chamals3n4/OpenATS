@@ -11,7 +11,7 @@ interface DiscussionsPanelProps {
   notesPanelWidth: number;
   setIsResizingNotes: (resizing: boolean) => void;
   allMessages: ChatMessage[];
-  /** The history could not be loaded, which for this chat means the person is not on the team. */
+  /** History failed, usually means not on the team */
   historyError?: boolean;
   setIsNotesOpen: (open: boolean) => void;
   me: User | undefined;
@@ -29,9 +29,9 @@ interface DiscussionsPanelProps {
   handleSendNote: () => void;
 }
 
-/** Messages from one person this close together are shown as one block, under one name. */
+/** Group messages from the same person */
 const GROUP_WITHIN_MS = 5 * 60_000;
-/** The message box grows with what is typed, up to about six lines, then scrolls. */
+/** Message box grows up to about six lines */
 const COMPOSER_MAX_PX = 160;
 
 function dayLabel(date: Date, now: Date): string {
@@ -58,7 +58,7 @@ type Row =
   | { kind: "day"; key: string; label: string }
   | { kind: "message"; key: string; message: ChatMessage; startsGroup: boolean };
 
-/** The list as it is drawn: a line for each new day, and a name only where a new block starts. */
+/** Rows to draw with day dividers and names */
 function toRows(messages: ChatMessage[], now: Date): Row[] {
   const rows: Row[] = [];
   let lastDay = "";
@@ -83,11 +83,7 @@ function toRows(messages: ChatMessage[], now: Date): Row[] {
   return rows;
 }
 
-/**
- * The hiring team's discussion about a job. It sits beside the job, not over it: on a wide
- * screen the page makes room for it, and it can be dragged wider. On a narrow screen it covers
- * the page, with a way back.
- */
+/** Team discussion panel for a job */
 export function DiscussionsPanel({
   notesPanelWidth,
   setIsResizingNotes,
@@ -108,12 +104,12 @@ export function DiscussionsPanel({
 }: DiscussionsPanelProps) {
   const listRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLTextAreaElement>(null);
-  // Whether the reader is at the bottom, so a new message scrolls into view only if they were.
+  // Is the user at the bottom of the list
   const atBottomRef = useRef(true);
 
   const rows = useMemo(() => toRows(allMessages, new Date()), [allMessages]);
 
-  // Opens on the newest messages, and follows new ones while the reader is at the bottom.
+  // Scroll to the newest messages
   useLayoutEffect(() => {
     const list = listRef.current;
     if (list && atBottomRef.current) list.scrollTop = list.scrollHeight;
@@ -123,7 +119,7 @@ export function DiscussionsPanel({
     composerRef.current?.focus();
   }, []);
 
-  // Grow the box with what is typed, and shrink it back after sending.
+  // Grow with the text, shrink after send
   useLayoutEffect(() => {
     const box = composerRef.current;
     if (!box) return;
@@ -147,7 +143,7 @@ export function DiscussionsPanel({
 
   return (
     <>
-      {/* On a narrow screen the panel covers the page, so a tap outside it closes it. */}
+      {/* Click outside to close on small screens */}
       <div
         aria-hidden
         onClick={() => setIsNotesOpen(false)}
@@ -256,7 +252,7 @@ export function DiscussionsPanel({
                     startsGroup ? "mt-3" : ""
                   }`}
                 >
-                  {/* The avatar only where a block starts; later messages line up under it. */}
+                  {/* Avatar only at the start of a block */}
                   <div className="w-8 shrink-0">
                     {startsGroup && (
                       <span
@@ -271,7 +267,7 @@ export function DiscussionsPanel({
                   </div>
 
                   <div className="min-w-0 flex-1">
-                    {/* The first message of a block has its time beside the name. */}
+                    {/* Time next to the name */}
                     {startsGroup && (
                       <p className="flex items-baseline gap-2">
                         <span className="truncate text-sm font-semibold leading-5 text-slate-900 dark:text-neutral-100">
@@ -329,7 +325,7 @@ export function DiscussionsPanel({
                           {message.message}
                         </p>
 
-                        {/* Kept in place when hidden, so the time does not jump when they appear. */}
+                        {/* Keep the space so the time doesn't move */}
                         {mine && (
                           <span className="invisible flex shrink-0 items-center gap-0.5 group-hover:visible group-focus-within:visible">
                             <button
@@ -362,7 +358,7 @@ export function DiscussionsPanel({
                           </span>
                         )}
 
-                        {/* The ones under it, which have no name line, carry theirs at the end. */}
+                        {/* Time at the end for the other messages */}
                         {!startsGroup && <span className="pt-0.5">{time}</span>}
                       </div>
                     )}

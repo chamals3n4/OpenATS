@@ -18,10 +18,7 @@ export const VARS = [
   "offer_review_url",
 ];
 
-/**
- * These only have a value when an offer is sent. A rejection that uses one is refused by the
- * API, because there is nothing to fill it with.
- */
+/** Only available for offers */
 export const OFFER_ONLY_VARS = new Set([
   "start_date",
   "salary",

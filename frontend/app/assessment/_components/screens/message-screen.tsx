@@ -8,7 +8,7 @@ const TONES = {
   error: "bg-red-50 text-red-600 dark:bg-red-950/30 dark:text-red-400",
 } as const;
 
-/** A centred screen with one thing to say: a result, or a reason the assessment cannot be taken. */
+/** Full screen message */
 export function MessageScreen({
   icon,
   tone,

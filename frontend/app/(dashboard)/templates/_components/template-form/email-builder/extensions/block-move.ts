@@ -1,6 +1,6 @@
 import type { Editor } from "@tiptap/core";
 
-/** Swaps two top-level (direct child) nodes of the doc by index. */
+/** Swap two top level nodes */
 export function moveTopLevelBlock(
   editor: Editor,
   fromIndex: number,

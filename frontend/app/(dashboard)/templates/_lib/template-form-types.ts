@@ -1,6 +1,6 @@
 export type TemplateType = "email" | "event";
 
-/** What an event template saves. The times are chosen later, when an interview is scheduled. */
+/** Event template settings. Times are picked later */
 export interface EventConfig {
   eventName: string;
   eventType: "virtual" | "onsite";
@@ -10,6 +10,6 @@ export interface EventConfig {
   /** A note for the hiring team. */
   description: string;
   durationMinutes: number;
-  /** The message the candidate is emailed. Empty means the automatic email's wording. */
+  /** Email message. Empty means the default wording */
   message: string;
 }

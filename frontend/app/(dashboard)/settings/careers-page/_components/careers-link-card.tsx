@@ -3,7 +3,7 @@ import { ArrowUpRight01Icon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
 import { CopyButton } from "./copy-button";
 
-/** The address candidates visit, with the two things people want to do with it. */
+/** Careers page link */
 export function CareersLinkCard({ url }: { url: string }) {
   return (
     <section className="rounded-lg border border-slate-300 bg-white p-5 sm:p-6 dark:border-neutral-700 dark:bg-neutral-900">

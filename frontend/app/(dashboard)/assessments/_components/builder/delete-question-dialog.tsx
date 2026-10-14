@@ -3,17 +3,14 @@
 import { ConfirmDeleteDialog, ConfirmDeleteName } from "@/components/ui/confirm-delete-dialog";
 import type { Question } from "../../_lib/assessment-builder-types";
 
-/**
- * Asks before a question is removed. Deleting is one click on a small button, and a question
- * with its options and correct answers takes a while to write again.
- */
+/** Confirm before deleting a question */
 export function DeleteQuestionDialog({
   question,
   number,
   onCancel,
   onConfirm,
 }: {
-  /** The question waiting to be deleted, or null when nothing is. */
+  /** Question to delete, or null */
   question: Question | null;
   number: number;
   onCancel: () => void;

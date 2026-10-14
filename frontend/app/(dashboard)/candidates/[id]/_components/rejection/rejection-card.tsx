@@ -8,10 +8,10 @@ import type { CandidateRejection } from "@/types";
 interface RejectionCardProps {
   rejection: CandidateRejection;
   stageName: string | null;
-  /** Null when the viewer cannot see names (only managers can list users). */
+  /** Null if the viewer can't see names */
   rejectedByName: string | null;
   templateName: string | null;
-  /** True for the newest rejection while the candidate is still rejected. */
+  /** Newest rejection while still rejected */
   isCurrent: boolean;
 }
 

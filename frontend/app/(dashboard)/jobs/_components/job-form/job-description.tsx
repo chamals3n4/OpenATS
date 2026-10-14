@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { Label } from "@/components/ui/label";
 
-// The editor is large and works only in the browser, so it is loaded there, after the form.
+// Load the editor only in the browser
 const JobDescriptionEditor = dynamic(
   () => import("../job-description-editor").then((mod) => ({ default: mod.JobDescriptionEditor })),
   {

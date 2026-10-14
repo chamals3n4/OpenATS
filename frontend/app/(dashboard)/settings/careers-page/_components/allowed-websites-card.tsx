@@ -19,10 +19,7 @@ interface AllowedWebsitesCardProps {
   onSave: (origins: string[]) => void;
 }
 
-/**
- * Which websites may load the jobs. Changes are made here and only take effect on Save, so
- * there is a clear way to back out.
- */
+/** Allowed websites. Changes apply on Save */
 export function AllowedWebsitesCard({
   saved,
   isLoading,
@@ -36,7 +33,7 @@ export function AllowedWebsitesCard({
   const [draft, setDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
 
-  // A fresh list from the server replaces the edits (after a save, or a reload).
+  // Reset edits when new data comes
   if (saved !== seeded) {
     setSeeded(saved);
     setOrigins(saved);

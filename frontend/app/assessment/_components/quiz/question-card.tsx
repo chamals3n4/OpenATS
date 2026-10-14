@@ -11,7 +11,7 @@ interface QuestionCardProps {
   total: number;
   answer: Answer | undefined;
   onAnswerChange: (answer: Answer) => void;
-  /** Called when an answer is settled (an option picked, or the text box left), so it can be saved. */
+  /** Called when an answer is done so it can be saved */
   onCommit: (answer: Answer) => void;
 }
 
@@ -23,7 +23,7 @@ export function QuestionCard({ question, number, total, answer, onAnswerChange, 
   const multi = isMultiSelect(question);
   const selected = answer?.optionIds ?? [];
   const titleId = `question-${question.id}-title`;
-  // Points arrive as text such as "5.00"; as a number they read "5", or "2.5" when not whole.
+  // Show "5.00" as "5"
   const points = Number(question.points) || 0;
 
   const instruction = text

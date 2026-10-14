@@ -7,7 +7,7 @@ export interface CreateUserPayload {
   lastName: string;
   email: string;
   role?: Role;
-  /** "invite" emails a set-password link; "set" uses `password`. */
+  /** "invite" emails a link, "set" uses password */
   method: "invite" | "set";
   password?: string;
 }

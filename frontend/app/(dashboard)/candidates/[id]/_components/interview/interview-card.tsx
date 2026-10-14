@@ -71,7 +71,7 @@ export function InterviewCard({
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [deleteOpen, setDeleteOpen] = useState(false);
 
-  // Fetched up front so the button can show how many notes there already are.
+  // Fetch first to show the notes count
   const { data: feedbackData } = useInterviewFeedback(interview.id);
   const feedbackCount = feedbackData?.data?.length ?? 0;
 

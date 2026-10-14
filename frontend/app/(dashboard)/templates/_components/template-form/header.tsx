@@ -16,7 +16,7 @@ const TYPE_COPY: Record<TemplateType, { icon: typeof Mail01Icon; kind: string; n
 interface TemplateFormHeaderProps {
   templateType: TemplateType;
   mode: "new" | "edit";
-  /** The name as typed so far, shown as the title while editing. */
+  /** Name shown as the title */
   name: string;
   isPending: boolean;
   onSave: () => void;

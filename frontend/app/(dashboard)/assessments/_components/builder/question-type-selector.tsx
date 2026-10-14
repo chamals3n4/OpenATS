@@ -24,10 +24,7 @@ interface QuestionTypeSelectorProps {
   readOnly?: boolean;
 }
 
-/**
- * The kind of question, as a row of choices instead of a dropdown: there are only five, and
- * seeing them side by side with what each one asks of the candidate is what tells them apart.
- */
+/** Question type picker */
 export function QuestionTypeSelector({ question, onChangeType, readOnly }: QuestionTypeSelectorProps) {
   return (
     <fieldset disabled={readOnly}>

@@ -30,7 +30,7 @@ export default function CreateNewJobPage() {
       onSuccess: (res) => {
         const jobId = res.data.id;
 
-        // Seed the cache so the job detail page renders instantly with no loading states
+        // Seed the cache so the job page loads instantly
         queryClient.setQueryData(["jobs", jobId], {
           data: { ...res.data, pipelineStages: [], hiringTeam: [] },
         });
@@ -42,14 +42,14 @@ export default function CreateNewJobPage() {
         queryClient.setQueryData(["jobs", jobId, "questions"], { data: [] });
         queryClient.setQueryData(["jobs", jobId, "assessments"], { data: [] });
 
-        // Background-fetch pipeline immediately (has default stages from seed)
+        // Prefetch the pipeline
         void queryClient.prefetchQuery({
           queryKey: ["jobs", jobId, "pipeline"],
           queryFn: () => serverFetch(`/jobs/${jobId}/pipeline`),
           staleTime: 1000 * 60 * 3,
         });
 
-        // `setup` makes the job page offer the next steps (questions, scoring).
+        // ?setup shows the next steps on the job page
         router.push(`/jobs/${jobId}?setup=1`);
       },
     });

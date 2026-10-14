@@ -39,7 +39,7 @@ export default function EditJobPage() {
 
   const handleSubmit = (values: ValidJobFormValues) => {
     if (!job) return;
-    // The switch only toggles published; any other status is preserved.
+    // Only toggle published, keep other statuses
     const status = values.isActive
       ? "published"
       : job.status === "published"

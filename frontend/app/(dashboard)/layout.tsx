@@ -18,8 +18,7 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  // The proxy only checks that a session cookie exists, so this is the real
-  // check that the session behind it is valid.
+  // Proxy only checks the cookie, so check the session here
   const session = await getSession();
   if (!session) redirect("/login");
 

@@ -135,7 +135,7 @@ export function StageDialog({ open, stage, isPending, onSubmit, onClose }: Stage
   return (
     <Dialog open={open} onOpenChange={(next) => !next && onClose()}>
       <DialogContent className="max-w-[calc(100%-2rem)] gap-0 overflow-hidden rounded-xl border-slate-200 bg-white p-0 sm:max-w-[480px] dark:border-neutral-800 dark:bg-neutral-900">
-        {/* Mounted only while open, so the form always starts from the stage it was opened for. */}
+        {/* Mount only when open so the form resets */}
         {open && <StageForm stage={stage} isPending={isPending} onSubmit={onSubmit} onClose={onClose} />}
       </DialogContent>
     </Dialog>

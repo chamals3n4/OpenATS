@@ -1,4 +1,4 @@
-// Turns a Better Auth client error into the message shown on the auth pages.
+// Better Auth error to a message
 
 export type AuthClientError = {
   code?: string;
@@ -25,7 +25,7 @@ export function signInErrorMessage(error: AuthClientError): string {
     return "This account has been deactivated. Contact your administrator.";
   }
 
-  // Never say which of the two was wrong, or whether the email exists.
+  // Don't say which one was wrong
   if (error.status === 401 || error.code === "INVALID_EMAIL_OR_PASSWORD") {
     return "Invalid email or password.";
   }
@@ -35,7 +35,7 @@ export function signInErrorMessage(error: AuthClientError): string {
 
 export type SignInFieldErrors = { email?: string; password?: string };
 
-/** Checked before the request is sent; empty when the form can be submitted. */
+/** Check before sending, empty when ok */
 export function validateSignIn(values: {
   email: string;
   password: string;
@@ -49,8 +49,7 @@ export function validateSignIn(values: {
     errors.email = "Enter a valid email address.";
   }
 
-  // Length rules are not applied here: they belong to setting a password, and
-  // saying so on sign-in would only help someone guessing.
+  // No length rules on sign in
   if (!values.password) {
     errors.password = "Enter your password.";
   }
@@ -93,7 +92,7 @@ export function changePasswordErrorMessage(error: AuthClientError): string {
   return GENERIC;
 }
 
-/** Client-side check of the rules shown to the user; null when it passes. */
+/** Check the password rules, null when ok */
 export function validateNewPassword(
   password: string,
   confirmation: string,

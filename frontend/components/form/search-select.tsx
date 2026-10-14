@@ -12,24 +12,19 @@ export interface SearchSelectOption {
   value: string;
   /** What is shown for it. */
   label: string;
-  /** A quieter note beside the label, such as an offset or a currency's full name. */
+  /** Small note next to the label */
   hint?: string;
-  /** Extra words that should also find this option. The value, label and hint always do. */
+  /** Extra search words */
   keywords?: string;
 }
 
-/** Rows drawn at once. Drawing hundreds is what makes a long list slow to open. */
+/** Max rows to draw at once */
 const MAX_SHOWN = 50;
 
 const haystackOf = (option: SearchSelectOption) =>
   `${option.value} ${option.label} ${option.hint ?? ""} ${option.keywords ?? ""}`.toLowerCase();
 
-/**
- * A select for a long list, with a search box: time zones, currencies. Typing narrows the list;
- * every word typed has to appear somewhere in the option. The chosen option is first when the
- * list opens. `options` is a function so a list that is costly to build is only built when the
- * list is opened (and it should cache what it returns).
- */
+/** Select with search for long lists */
 export function SearchSelect({
   id,
   value,
@@ -47,15 +42,12 @@ export function SearchSelect({
   value: string;
   onChange: (value: string) => void;
   options: () => SearchSelectOption[];
-  /**
-   * How to show the chosen value on the button. Given when building the whole list just to label
-   * one value would be wasteful; left out, the value is looked up in `options`.
-   */
+  /** Optional label for the selected value */
   describe?: (value: string) => Pick<SearchSelectOption, "label" | "hint">;
   searchPlaceholder: string;
   emptyText?: string;
   ariaLabel?: string;
-  /** Show only the label on the button, for a narrow field such as a currency code. */
+  /** Show only the label on the button */
   compact?: boolean;
   className?: string;
   contentClassName?: string;
@@ -111,13 +103,12 @@ export function SearchSelect({
 
       <PopoverContent
         align="start"
-        // It appears at once. The usual slide and zoom, on a long list, read as lag.
+        // No animation, it feels slow on long lists
         className={cn(
           "w-(--anchor-width) min-w-72 gap-0 p-0 duration-0 data-open:animate-none data-closed:animate-none",
           contentClassName,
         )}
       >
-        {/* Filtering is done above, so only the rows on show are ever drawn. */}
         <Command shouldFilter={false}>
           <div className="p-2 pb-1">
             <div className="flex h-9 items-center gap-2 rounded-md border border-slate-300 bg-gray-100 px-2.5 dark:border-neutral-600 dark:bg-neutral-800">

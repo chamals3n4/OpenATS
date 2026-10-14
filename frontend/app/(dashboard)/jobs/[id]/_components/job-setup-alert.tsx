@@ -11,7 +11,7 @@ interface JobSetupAlertProps {
   onDismiss: () => void;
 }
 
-/** Shown on a job that has just been created, pointing at the setup that ranks its candidates. */
+/** Setup tips for a new job */
 export function JobSetupAlert({ onAddQuestions, onSetUpScoring, onDismiss }: JobSetupAlertProps) {
   return (
     <Alert className="mb-4 border-green-300 bg-green-50 pr-12 text-green-950 dark:border-green-900 dark:bg-green-950/30 dark:text-green-100">

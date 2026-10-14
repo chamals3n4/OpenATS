@@ -14,7 +14,7 @@ export const QUESTION_TYPE_LABELS: Record<QuestionType, string> = Object.fromEnt
   QUESTION_TYPES.map((t) => [t.value, t.label]),
 ) as Record<QuestionType, string>;
 
-/** The two types whose answers are picked from a list, so they need options. */
+/** Types that need options */
 export function isChoiceType(type: QuestionType) {
   return type === "radio" || type === "checkbox";
 }
@@ -25,19 +25,19 @@ export const MIN_OPTIONS = 2;
 
 export const POINTS_MAX = 100;
 
-/** One option as it is edited: the label plus how it scores. */
+/** Option while editing */
 export interface OptionDraft {
-  /** Set for a saved option, so editing keeps the candidates' picks of it. */
+  /** Set for saved options so picks are kept */
   id?: number;
   label: string;
   points: number;
-  /** Picking it flags the candidate as not meeting the requirements. */
+  /** Picking this flags the candidate */
   isKnockout: boolean;
 }
 
 export const emptyOption = (): OptionDraft => ({ label: "", points: 0, isKnockout: false });
 
-/** Whether any option scores, so the question counts toward a candidate's Questions score. */
+/** Does any option have points */
 export function isScored(options: Pick<OptionDraft, "points" | "isKnockout">[]) {
   return options.some((o) => o.points !== 0 || o.isKnockout);
 }
@@ -91,11 +91,7 @@ export function hasQuestionErrors(errors: QuestionErrors) {
   return Boolean(errors.title || errors.options || Object.keys(errors.optionErrors).length > 0);
 }
 
-/**
- * The options as the API wants them: blanks dropped, numbered from 1 in the order shown. Negative
- * points only mean something on a "tick any" (checkbox) question, where they make a wrong tick
- * cost points; anywhere else they are sent as 0.
- */
+/** Options for the API. Negative points only for checkbox questions */
 export function toApiOptions(options: OptionDraft[], allowNegative = false) {
   return options
     .map((o) => ({ ...o, label: o.label.trim() }))
@@ -110,7 +106,7 @@ export function toApiOptions(options: OptionDraft[], allowNegative = false) {
     }));
 }
 
-/** Options to start an edit from: the saved ones in order, padded to the minimum. */
+/** Saved options in order, padded to the minimum */
 export function optionLabelsOf(question: Pick<CustomQuestion, "options">): string[] {
   const labels = [...question.options]
     .sort((a, b) => a.position - b.position)
@@ -119,7 +115,7 @@ export function optionLabelsOf(question: Pick<CustomQuestion, "options">): strin
   return labels;
 }
 
-/** Options to start an edit from, with their scoring: saved ones in order, padded to the minimum. */
+/** Options to start editing from */
 export function optionDraftsOf(question: Pick<CustomQuestion, "options">): OptionDraft[] {
   const drafts: OptionDraft[] = [...question.options]
     .sort((a, b) => a.position - b.position)
@@ -136,7 +132,7 @@ export function moveItem<T>(list: T[], from: number, to: number): T[] {
   return copy;
 }
 
-/** Only the questions whose number changed need saving after a reorder. */
+/** Only save questions whose order changed */
 export function positionChanges(list: Pick<CustomQuestion, "id" | "position">[]) {
   return list
     .map((q, i) => ({ id: q.id, position: i + 1, was: q.position }))

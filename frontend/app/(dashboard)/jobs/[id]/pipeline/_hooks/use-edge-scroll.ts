@@ -5,11 +5,7 @@ import { useEffect, type RefObject } from "react";
 const EDGE = 120;
 const MAX_SPEED = 18;
 
-/**
- * Scrolls a container sideways while a card is dragged near its left or right edge, faster the
- * closer to the edge. A native drag fires `dragover`, not `mousemove`, so that is what it listens
- * to, and one animation frame loop runs for the whole drag.
- */
+/** Scroll sideways when dragging near the edge */
 export function useEdgeScroll(ref: RefObject<HTMLElement | null>, active: boolean) {
   useEffect(() => {
     if (!active) return;

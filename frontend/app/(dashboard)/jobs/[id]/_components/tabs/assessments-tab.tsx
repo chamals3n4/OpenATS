@@ -53,7 +53,7 @@ interface AssessmentsTabProps {
 
 const DEFAULT_PASS_MARK = 60;
 
-/** The percentage a candidate needs; saved when the field loses focus with a changed value. */
+/** Pass mark, saved on blur */
 function PassMarkField({ jobId, attachment, canEdit }: { jobId: number; attachment: JobAssessment; canEdit: boolean }) {
   const update = useUpdatePassMark(jobId);
   const [value, setValue] = useState(String(attachment.passMark ?? DEFAULT_PASS_MARK));

@@ -19,7 +19,7 @@ const PART_FIELD: Record<ScorePart, keyof CandidateDetail> = {
 
 const toNumber = (v: unknown) => (v === null || v === undefined || v === "" ? null : Number(v));
 
-/** The candidate's total score, its four parts, and the viewer's own star rating. */
+/** Total score, parts and your rating */
 export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
   const { data: me } = useCurrentUser();
   const rate = useRateCandidate();
@@ -34,7 +34,7 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
   const spread = candidate.interviewSpread;
   const myRating = ratings.find((r) => r.userId === me?.data?.id)?.rating ?? null;
 
-  // Clicking a star only changes what is shown. Nothing is saved until Update score is pressed.
+  // Nothing is saved until Update score
   const [picked, setPicked] = useState<number | null | undefined>(undefined);
   const shownRating = picked !== undefined ? picked : myRating;
   const changed = picked !== undefined && picked !== myRating;

@@ -1,7 +1,6 @@
 import { Pool } from "pg";
 
-// Cached on globalThis so hot reload in dev reuses one pool instead of opening
-// a new one on every module re-evaluation.
+// Reuse one pool across hot reloads
 const globalForPg = globalThis as unknown as { authPgPool?: Pool };
 
 export const pool =

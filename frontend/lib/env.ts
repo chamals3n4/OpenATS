@@ -1,6 +1,4 @@
-// Startup checks for the server-side environment. Mirrors
-// backend/src/config/env.ts: fail fast with a clear message instead of
-// starting a server that cannot sign anyone in.
+// Check required env vars at startup
 
 const MIN_SECRET_LENGTH = 32;
 
@@ -15,7 +13,7 @@ function isUrl(value: string): boolean {
   }
 }
 
-/** Returns one message per problem; empty when the environment is usable. */
+/** One message per problem */
 export function checkEnv(env: EnvSource): string[] {
   const issues: string[] = [];
 

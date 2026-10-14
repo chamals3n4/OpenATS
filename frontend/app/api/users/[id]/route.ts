@@ -75,8 +75,7 @@ export async function PATCH(req: NextRequest, context: RouteContext) {
       });
     }
 
-    // Read from the row by Express on every request, so this applies to the
-    // user's next request without a new sign-in.
+    // Applies on the user's next request
     if (role !== undefined && role !== target.role) {
       await auth.api.setRole({
         body: { userId: String(userId), role },
@@ -108,15 +107,13 @@ export async function DELETE(_req: NextRequest, context: RouteContext) {
     });
     if (reason) return badRequest(reason, 409);
 
-    // Blocks sign-in and revokes every session. The row is never removed:
-    // jobs, offers, templates and assessments point at it through created_by
-    // with no ON DELETE rule, so a hard delete would fail or destroy history.
+    // Ban and revoke sessions. Never hard delete, other rows point to the user
     await auth.api.banUser({
       body: { userId: String(userId), banReason: "Deactivated by an administrator" },
       headers: await headers(),
     });
 
-    // Soft delete (is_active = false), which also drops them from user lists.
+    // Soft delete
     await serverFetch(`/users/${userId}`, { method: "DELETE" });
 
     console.log(`${ROUTE_LOG} user ${userId} deactivated`);

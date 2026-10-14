@@ -11,7 +11,6 @@ export interface BoardFilters {
   stageIds: number[];
   status: StatusFilter;
   applied: AppliedFilter;
-  /** Candidates who have been in their stage at least this many days. */
   inStage: StageTimeFilter;
 }
 
@@ -52,19 +51,19 @@ export function daysSince(iso: string, now: number): number {
   return Math.max(0, Math.floor((now - new Date(iso).getTime()) / DAY));
 }
 
-/** Days in the current stage, falling back to the day they applied when no move is recorded. */
+/** Days in the current stage */
 export function daysInStage(c: BoardCandidate, now: number): number {
   return daysSince(c.stageEnteredAt ?? c.appliedAt, now);
 }
 
-/** True when a filter that narrows the candidates (not the stage columns) is on. */
+/** A candidate filter is on */
 export function hasCandidateFilters(f: BoardFilters): boolean {
   return (
     f.search.trim() !== "" || f.status !== "any" || f.applied !== "any" || f.inStage !== "any"
   );
 }
 
-/** How many filters besides the search box are on, for the "Clear filters" button. */
+/** Count of active filters, not counting search */
 export function activeFilterCount(f: BoardFilters): number {
   return (
     (f.stageIds.length > 0 ? 1 : 0) +

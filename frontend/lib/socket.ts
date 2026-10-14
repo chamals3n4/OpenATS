@@ -4,7 +4,7 @@ import { io, type Socket } from "socket.io-client";
 
 const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
-// Give up after this many auth failures instead of looping forever.
+// Stop after this many auth failures
 const MAX_AUTH_RETRIES = 3;
 const AUTH_RETRY_DELAY_MS = 1_000;
 
@@ -19,7 +19,7 @@ async function fetchSocketToken(): Promise<string | null> {
   }
 }
 
-// Opens a socket that re-reads its token on every connect.
+// Socket that gets a fresh token on connect
 export function createAuthedSocket(fallbackToken?: string): Socket {
   let authRetries = 0;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
@@ -43,7 +43,7 @@ export function createAuthedSocket(fallbackToken?: string): Socket {
   });
 
   socket.on("connect_error", () => {
-    // Handshake rejections need a manual restart. socket.io retries the rest.
+    // Restart manually after a handshake rejection
     if (socket.active) return;
     if (authRetries >= MAX_AUTH_RETRIES) return;
 

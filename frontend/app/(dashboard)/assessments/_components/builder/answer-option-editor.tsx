@@ -15,10 +15,7 @@ interface AnswerOptionsEditorProps {
   readOnly?: boolean;
 }
 
-/**
- * The options of a choice question, and which of them is right. The mark beside each option has
- * the shape the candidate will see: a circle where one can be picked, a square where several can.
- */
+/** Answer options and the correct ones */
 export function AnswerOptionsEditor({
   question,
   isTrueFalse,
@@ -106,7 +103,6 @@ export function AnswerOptionsEditor({
           <span />
         )}
 
-        {/* Said here, where it can be fixed, and not only when the whole assessment is saved. */}
         {!hasCorrect && !readOnly && (
           <p role="status" className="flex items-center gap-1.5 text-sm font-medium text-amber-700 dark:text-amber-400">
             <HugeiconsIcon icon={Alert02Icon} className="size-4" strokeWidth={2} aria-hidden />

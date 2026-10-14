@@ -29,7 +29,7 @@ function PanelItem({
   onEdit,
 }: {
   interview: InterviewListItem;
-  /** In search results the interviews come from different days, so each says which. */
+  /** Search results show the day */
   showDate: boolean;
   onFeedback: (iv: InterviewListItem) => void;
   onEdit: (iv: InterviewListItem) => void;
@@ -103,7 +103,7 @@ export function InlineCalendar({
   onEdit: (iv: InterviewListItem) => void;
 }) {
   const [query, setQuery] = useState("");
-  // Read once, so "today" does not move under the user if the page is left open over midnight.
+  // Read once so today doesn't change at midnight
   const [today] = useState(() => new Date());
   const todayKey = dayKey(today);
   const [cursor, setCursor] = useState(() => new Date(today.getFullYear(), today.getMonth(), 1));
@@ -116,10 +116,10 @@ export function InlineCalendar({
 
   const selectedDate = new Date(`${selectedKey}T00:00:00`);
   const selectedInterviews = byDay.get(selectedKey) ?? [];
-  // No time yet, so they cannot be on the grid. Listed beside it so they are not forgotten.
+  // No time yet, so list them next to the calendar
   const waiting = interviews.filter((iv) => iv.status === "pending_schedule" && !iv.scheduledAt);
 
-  // Searching looks through every interview, on any day. Otherwise the panel shows the chosen day.
+  // Search all days, otherwise show the selected day
   const searching = query.trim() !== "";
   const results = searching
     ? interviews
@@ -134,7 +134,7 @@ export function InlineCalendar({
   };
   const selectDay = (date: Date, key: string) => {
     setSelectedKey(key);
-    // A day from the next or previous month brings that month into view.
+    // Clicking a day from another month switches to it
     if (date.getMonth() !== month) setCursor(new Date(date.getFullYear(), date.getMonth(), 1));
   };
 
@@ -175,7 +175,6 @@ export function InlineCalendar({
           ))}
         </div>
 
-        {/* Rows share the height left in the window, so a whole month shows without scrolling. */}
         <div
           className="grid grid-cols-7"
           style={{ gridAutoRows: `minmax(3.75rem, min(8rem, calc((100dvh - 20.5rem) / ${days.length / 7})))` }}
@@ -219,7 +218,6 @@ export function InlineCalendar({
                   >
                     {date.getDate()}
                   </span>
-                  {/* Beside the date, because a short row has no room for it under the names. */}
                   {dayInterviews.length > MAX_CHIPS && (
                     <span className="hidden text-[11px] font-medium leading-5 text-slate-500 sm:block dark:text-neutral-400">
                       +{dayInterviews.length - MAX_CHIPS} more
@@ -227,11 +225,9 @@ export function InlineCalendar({
                   )}
                 </span>
 
-                {/* Wide screens: who and when. Narrow screens: only how many. */}
                 <span className="hidden w-full flex-col gap-1 sm:flex">
                   {dayInterviews.slice(0, MAX_CHIPS).map((iv) => (
-                    // A plain line: a dot in the status colour (the same dots as the key under the
-                    // grid), the time in bold, and the name. No block or pill behind it.
+                    // Status dot, time and name
                     <span key={iv.id} className="flex w-full items-center gap-1.5 text-[13px] leading-4">
                       <span aria-hidden className={`size-2 shrink-0 rounded-full ${statusOf(iv.status).dot}`} />
                       <span className="shrink-0 font-semibold tabular-nums text-slate-900 dark:text-neutral-100">
@@ -263,7 +259,6 @@ export function InlineCalendar({
         </footer>
       </section>
 
-      {/* As tall as the window allows, with its own scroll, so a busy day never pushes the page down. */}
       <section
         aria-label="Interviews"
         className="flex w-full shrink-0 flex-col overflow-hidden rounded-md border border-slate-300 bg-white xl:max-h-[calc(100dvh-12.5rem)] xl:w-96 dark:border-neutral-700 dark:bg-neutral-900"

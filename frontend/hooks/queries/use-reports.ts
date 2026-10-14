@@ -20,7 +20,7 @@ export function useAnalyticsReport(
   });
 }
 
-/** Interviews, offers and candidates that need a manager's attention. Managers only. */
+/** Items that need a manager's attention */
 export function useAttentionReport(departmentId?: number, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: ["reports", "attention", departmentId ?? "all"],

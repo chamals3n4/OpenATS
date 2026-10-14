@@ -7,8 +7,7 @@ export function useChatHistory(jobId: number, enabled: boolean) {
     queryKey: ["chat", "job", jobId],
     queryFn: () => serverFetch<{ data: ChatMessage[] }>(`/chat/job/${jobId}`),
     enabled: enabled && !!jobId,
-    // Loaded again each time the discussion opens. While it is closed nothing keeps this copy up
-    // to date, and the app-wide five minutes would show messages from before the last visit.
+    // Always refetch when the panel opens
     staleTime: 0,
   });
 }

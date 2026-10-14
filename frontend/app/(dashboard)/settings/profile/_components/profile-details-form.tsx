@@ -10,10 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { NAME_MAX_LENGTH } from "@/lib/users/rules";
 
-/**
- * The part of a profile its owner may change: their name. The email is shown but not editable,
- * because it is what they sign in with and a super admin sets it.
- */
+/** Users can only change their name. Email is set by a super admin */
 export function ProfileDetailsForm({
   firstName,
   lastName,
@@ -56,7 +53,7 @@ export function ProfileDetailsForm({
       setValues(body.data);
       setShowErrors(false);
       toast.success("Your details were saved.");
-      // The name is also shown at the top of this page and in the header of every other one.
+      // Name is also shown in the header
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       router.refresh();
     } catch (error) {

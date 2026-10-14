@@ -26,11 +26,7 @@ type CandidateListResponse = {
   pagination?: CandidatePagination;
 };
 
-/**
- * What a bulk delete removes: the candidates picked one by one, or everyone matching the list's
- * filters in one job. The second form carries the number the person confirmed, and the server
- * deletes nothing if a different number matches by then.
- */
+/** Bulk delete by ids, or by filters in one job with a count */
 export type CandidateBulkDelete =
   | { candidateIds: number[] }
   | {
@@ -52,20 +48,20 @@ export type CandidateListFilters = {
   stageId?: number;
   search?: string;
   status?: "active" | "rejected" | "offered" | "hired" | "withdrawn";
-  /** "score": highest total first, candidates with a knockout answer last. */
+  /** "score": highest first, knockouts last */
   sort?: "score";
-  /** Only candidates whose total score is at least this (0-100). */
+  /** Min total score (0-100) */
   minScore?: number;
   flag?: CandidateFlagFilter;
   /** Only candidates scored on every part the job uses. */
   fullyScored?: boolean;
-  /** Only candidates whose CV shows at least this many years of work (an estimate). */
+  /** Min years of experience (estimate) */
   minExperience?: number;
   page?: number;
   limit?: number;
 };
 
-/** The query string for the candidate list. Only filters that are set are sent. */
+/** Query string, only set filters */
 export function candidateListParams(filters?: CandidateListFilters): URLSearchParams {
   const params = new URLSearchParams();
   if (filters?.stageId) params.set("stageId", String(filters.stageId));
@@ -145,10 +141,10 @@ export function useCandidates(
   });
 }
 
-/** Key of the pipeline board's data. Kept apart from the `candidates` lists, whose rows carry more. */
+/** Query key for the pipeline board */
 export const boardKey = (jobId: number) => ["pipeline-board", jobId] as const;
 
-/** Every candidate still in the process for one job, in the saved card order. */
+/** Active candidates for a job in card order */
 export function useBoardCandidates(jobId: number, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: boardKey(jobId),
@@ -208,7 +204,7 @@ export function useMoveCandidateStage() {
     }: {
       id: number;
       newStageId: number;
-      /** Where the card lands in the column, 0 being the top. Omitted means the end. */
+      /** Position in the column, 0 is top. Omit for the end */
       position?: number;
     }) =>
       serverFetch<{
@@ -231,7 +227,7 @@ export type BulkMoveResult = {
   assessmentInvitesSkipped: number;
 };
 
-/** Moves several candidates into one stage in a single request. */
+/** Move many candidates in one request */
 export function useBulkMoveCandidates() {
   return useMutation({
     mutationFn: ({ candidateIds, newStageId }: { candidateIds: number[]; newStageId: number }) =>
@@ -266,7 +262,7 @@ export function useBulkDeleteCandidates() {
           body: JSON.stringify(what),
         },
       ),
-    // Also after a refusal: "a different number matches now" means the list on screen is stale.
+    // Refetch after a refusal too, the list is stale
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
       queryClient.invalidateQueries({ queryKey: ["offers"] });
@@ -336,7 +332,7 @@ export function useRejectCandidate() {
   });
 }
 
-/** Rejects several candidates with one reason and no email, e.g. the ones flagged by a knockout answer. */
+/** Reject many candidates with one reason, no email */
 export function useBulkRejectCandidates() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -352,7 +348,7 @@ export function useBulkRejectCandidates() {
   });
 }
 
-/** Sets the signed-in user's 1-5 star rating of a candidate; null clears it. */
+/** Your 1-5 rating, null clears it */
 export function useRateCandidate() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -361,7 +357,7 @@ export function useRateCandidate() {
         method: "PUT",
         body: JSON.stringify({ rating }),
       }),
-    // Returned, so the mutation settles only once the fresh scores have loaded.
+    // Return it so the mutation waits for the refetch
     onSuccess: (_, variables) =>
       Promise.all([
         queryClient.invalidateQueries({ queryKey: ["candidates", variables.id], exact: true }),

@@ -103,7 +103,7 @@ function Summary({ results }: { results: Results }) {
   const summary = summarizeQuestions(questions);
   const choiceTotal = questions.filter((q) => !isWrittenQuestion(q.questionType)).length;
 
-  // Postgres `numeric` reaches us as a string, so convert it.
+  // numeric comes as a string
   const score =
     attempt.scorePercentage === null ? null : Number(attempt.scorePercentage);
   const hasScore = score !== null && Number.isFinite(score);
@@ -199,7 +199,7 @@ function Summary({ results }: { results: Results }) {
   );
 }
 
-/** Sticky strip of numbered chips, one per question, that scrolls to that question. */
+/** Question chips that jump to each question */
 function QuestionNavigator({ questions }: { questions: ResultQuestion[] }) {
   return (
     <nav
@@ -295,7 +295,6 @@ function OptionRow({
   );
 }
 
-/** Where a reviewer gives a written answer its points, from 0 up to the question's points. */
 function GradeForm({ attemptId, question }: { attemptId: number; question: ResultQuestion }) {
   const grade = useGradeAnswer(attemptId);
   const saved = question.answer?.pointsEarned;

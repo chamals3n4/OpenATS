@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** The right-hand side of a builder: a framed copy of what the candidate will receive. */
+/** Preview of what the candidate gets */
 export function PreviewPane({ note, children }: { note: string; children: ReactNode }) {
   return (
     <div className="min-h-full px-4 py-6 sm:px-6">

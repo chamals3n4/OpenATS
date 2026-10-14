@@ -8,7 +8,6 @@ import { HugeiconsIcon } from "@hugeicons/react"
 import { MinusSignIcon, Tick02Icon } from "@hugeicons/core-free-icons"
 
 export type CheckboxProps = CheckboxPrimitive.Root.Props & {
-  /** `theme` uses brand terracotta; tick is white in light mode and `background` in dark. */
   variant?: "default" | "theme"
 }
 
@@ -42,7 +41,7 @@ function Checkbox({
           transition={{ type: "spring", stiffness: 520, damping: 30, mass: 0.25 }}
           className="grid place-content-center"
         >
-          {/* A mixed (indeterminate) box shows a dash, so it never reads as "all checked". */}
+          {/* Indeterminate shows a dash */}
           <HugeiconsIcon
             icon={Tick02Icon}
             strokeWidth={2}

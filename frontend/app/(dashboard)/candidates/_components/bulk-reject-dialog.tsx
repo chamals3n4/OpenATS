@@ -24,7 +24,7 @@ interface BulkRejectDialogProps {
   onConfirm: (reason: string) => void;
 }
 
-/** Rejects the selected candidates with one reason. No email is sent. */
+/** Reject selected with one reason. No email */
 export function BulkRejectDialog({ open, count, isPending, onClose, onConfirm }: BulkRejectDialogProps) {
   return (
     <Dialog open={open} onOpenChange={(o) => !o && !isPending && onClose()}>

@@ -9,13 +9,13 @@ export const RATING_LABELS = ["Poor", "Below average", "Average", "Good", "Excel
 interface StarRatingProps {
   value: number | null;
   onChange: (value: number | null) => void;
-  /** Names the group for screen readers, e.g. "Technical skill". */
+  /** Screen reader label */
   label: string;
   disabled?: boolean;
   size?: "sm" | "md";
 }
 
-/** Five stars to pick 1-5. Picking the current value again clears it. */
+/** 1 to 5 stars. Click again to clear */
 export function StarRating({ value, onChange, label, disabled, size = "md" }: StarRatingProps) {
   return (
     <div className="flex items-center gap-0.5" role="radiogroup" aria-label={label}>

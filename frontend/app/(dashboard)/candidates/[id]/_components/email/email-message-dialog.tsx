@@ -20,13 +20,12 @@ interface EmailMessageDialogProps {
   onOpenChange: (open: boolean) => void;
   title: string;
   description: string;
-  /** To, Subject and so on, shown above the message like an email client does. */
+  /** Email headers like To and Subject */
   rows: EmailHeaderRow[];
   /** The message itself. */
   children: React.ReactNode;
 }
 
-/** One layout for looking at an email, whether it is a draft preview or one already sent. */
 export function EmailMessageDialog({
   open,
   onOpenChange,

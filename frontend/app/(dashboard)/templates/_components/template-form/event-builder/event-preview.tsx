@@ -16,7 +16,7 @@ interface EventPreviewPanelProps {
   message: string;
 }
 
-/** A small copy of the page a candidate opens to pick their time (app/interview). */
+/** Small preview of the candidate's time picker page */
 export function EventPreviewPanel({
   eventName,
   eventType,

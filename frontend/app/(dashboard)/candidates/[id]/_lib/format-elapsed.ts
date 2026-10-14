@@ -1,9 +1,6 @@
 const plural = (n: number, unit: string) => `${n} ${unit}${n === 1 ? "" : "s"}`;
 
-/**
- * A length of time in plain words for non-technical readers:
- * "Less than a minute", "35 minutes", "2 hours 10 minutes", "22 days 6 hours".
- */
+/** e.g. "35 minutes", "2 hours 10 minutes" */
 export function formatElapsed(ms: number) {
   const minutes = Math.floor(ms / 60000);
   if (minutes < 1) return "Less than a minute";

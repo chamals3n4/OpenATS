@@ -5,11 +5,7 @@ import { getSession } from "@/lib/auth/session";
 import { badRequest, errorResponse } from "@/lib/users/admin";
 import { parseOwnProfile } from "@/lib/users/rules";
 
-/**
- * A signed-in person changing their own name. Anyone may do this for themselves, whatever their
- * role. Nothing else can be changed here: the email and the role are a super admin's to set
- * (PATCH /api/users/:id).
- */
+/** Change your own name */
 export async function PATCH(req: NextRequest) {
   try {
     const session = await getSession();
@@ -19,8 +15,7 @@ export async function PATCH(req: NextRequest) {
     if (!parsed.ok) return badRequest(parsed.error);
     const { firstName, lastName } = parsed.value;
 
-    // Better Auth only ever updates the user the session belongs to, so there is no id to pass
-    // and no way to reach another account from here.
+    // Better Auth only updates the session user
     await auth.api.updateUser({
       body: { firstName, lastName, name: `${firstName} ${lastName}`.trim() },
       headers: await headers(),

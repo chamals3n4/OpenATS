@@ -99,7 +99,6 @@ export function BoardHeader({
             )}
           </div>
         <Button
-          nativeButton={false}
           variant="cancel"
           render={<Link href={`/jobs/${jobId}`} />}
           className="h-9 gap-2 px-4 text-sm"

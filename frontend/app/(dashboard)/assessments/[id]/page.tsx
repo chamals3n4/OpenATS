@@ -179,7 +179,6 @@ export default function EditAssessmentPage({
         <div className="flex shrink-0 items-center gap-2">
           <Button
             variant="cancel"
-            nativeButton={false}
             render={<Link href="/assessments" />}
             className="h-9 cursor-pointer px-4 text-sm"
           >

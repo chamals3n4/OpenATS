@@ -20,7 +20,6 @@ export function CareersLinkCard({ url }: { url: string }) {
         </div>
         <CopyButton text={url} label="careers page link" withText />
         <Button
-          nativeButton={false}
           render={<a href={url} target="_blank" rel="noopener noreferrer" />}
           className="h-9 shrink-0 gap-2 border-none bg-theme px-4 text-sm font-semibold text-white shadow-none hover:bg-theme-hover"
         >

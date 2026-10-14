@@ -362,7 +362,6 @@ export function JobHeader({
             {isManager && (
               <Button
                 variant="outline"
-                nativeButton={false}
                 render={<Link href={`/jobs/${jobId}/edit`} />}
                 className="h-9 cursor-pointer gap-2 border-theme/30 bg-theme/10 px-3.5 text-sm font-semibold text-theme shadow-none hover:bg-theme/20 dark:text-primary"
               >

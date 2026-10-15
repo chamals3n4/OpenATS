@@ -1,9 +1,8 @@
 <h1 align="center">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="./frontend/public/assets/openats-logo-white.png">
-    <img src="./frontend/public/assets/openats-logo.png" alt="OpenATS logo" width="44" align="center">
+    <source media="(prefers-color-scheme: dark)" srcset="./frontend/public/assets/openats-readme-white.png">
+    <img src="./frontend/public/assets/openats-readme-black.png" alt="OpenATS logo" width="240">
   </picture>
-  OpenATS
 </h1>
 
 <p align="center">

@@ -17,7 +17,7 @@ export function DemoCredentials({
 
   return (
     <div className="rounded-lg border border-border bg-muted/40 p-4">
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-sm font-semibold text-foreground">
             Demo credentials
@@ -29,14 +29,14 @@ export function DemoCredentials({
           ) : null}
           <dl className="mt-2 space-y-1 text-sm">
             <div className="flex gap-2">
-              <dt className="w-20 shrink-0 text-muted-foreground">Email</dt>
-              <dd className="truncate font-medium text-foreground">
+              <dt className="w-16 shrink-0 text-muted-foreground">Email</dt>
+              <dd className="min-w-0 break-all font-medium text-foreground">
                 {DEMO_EMAIL}
               </dd>
             </div>
             <div className="flex gap-2">
-              <dt className="w-20 shrink-0 text-muted-foreground">Password</dt>
-              <dd className="truncate font-medium text-foreground">
+              <dt className="w-16 shrink-0 text-muted-foreground">Password</dt>
+              <dd className="min-w-0 break-all font-medium text-foreground">
                 {DEMO_PASSWORD}
               </dd>
             </div>

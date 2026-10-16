@@ -75,3 +75,12 @@ describe("TRUST_PROXY", () => {
     expect(envSchema.safeParse(env({ TRUST_PROXY: "nginx" })).success).toBe(false);
   });
 });
+
+describe("RUN_WORKER_IN_API", () => {
+  it("is optional and accepts only true or false", () => {
+    expect(envSchema.safeParse(env()).success).toBe(true);
+    expect(envSchema.safeParse(env({ RUN_WORKER_IN_API: "true" })).success).toBe(true);
+    expect(envSchema.safeParse(env({ RUN_WORKER_IN_API: "false" })).success).toBe(true);
+    expect(envSchema.safeParse(env({ RUN_WORKER_IN_API: "yes" })).success).toBe(false);
+  });
+});

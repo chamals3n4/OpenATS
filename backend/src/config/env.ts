@@ -79,6 +79,10 @@ export const envSchema = z.object({
       'TRUST_PROXY must be a number of proxies (for example 1), "false", or a list of proxy addresses',
     ),
 
+  // "true" starts the background workers inside the API process, for hosting without a separate
+  // worker service. Leave it unset when `start:worker` runs as its own process.
+  RUN_WORKER_IN_API: z.enum(["true", "false"]).optional(),
+
   PORT: z.coerce.number().int().positive().default(8080),
 });
 

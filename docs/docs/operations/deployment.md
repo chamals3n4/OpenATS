@@ -59,6 +59,8 @@ It reads the text of every uploaded CV, erases the files of deleted candidates, 
 
 To check it: `GET /health` on the API includes `"worker": "connected"` or `"worker": "missing"`, and **Settings > General** shows a warning when none is connected. A missing worker does not make `/health` fail, because restarting the API would not fix it; alert on the `worker` field.
 
+**No separate worker service?** Some hosts charge for a second service. Set `RUN_WORKER_IN_API=true` in `backend/.env` and the API starts the same workers itself, so `pnpm start:worker` is not needed. Do not set it if the worker runs as its own process. The API and the CV reader then share one process's memory, and on a host that stops idle services, CVs wait until it wakes.
+
 Each CV is read with a 30 second limit. A file that takes longer is marked as unreadable and skipped, so one bad PDF cannot hold up the rest.
 
 ## Behind a proxy: `TRUST_PROXY`

@@ -3,12 +3,10 @@ import { validateEnv } from "./config/env";
 
 validateEnv();
 
-import { startCvAnalysisWorker } from "./queues/cv-analysis/worker";
-import { startCvExtractWorker } from "./queues/cv-extract/worker";
-import { startResumeDeleteWorker } from "./queues/resume-delete/worker";
+import { startAllWorkers } from "./queues/start-workers";
 import logger from "./utils/logger";
 
-const workers = [startCvAnalysisWorker(), startCvExtractWorker(), startResumeDeleteWorker()];
+const workers = startAllWorkers();
 logger.info("Background worker started: CV text, CV file deletion and AI CV analysis");
 
 async function shutdown(signal: string) {

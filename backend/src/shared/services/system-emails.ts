@@ -13,6 +13,7 @@ export const SYSTEM_EMAIL_PURPOSES = [
   "application_received",
   "assessment_invite",
   "assessment_completed",
+  "assignment_invite",
   "interview_slots",
   "interview_confirmed",
   "interview_cancelled",
@@ -42,6 +43,7 @@ const CANDIDATE = { name: "candidate_name", sample: "Alex Johnson" };
 const JOB = { name: "job_title", sample: "Senior Software Engineer" };
 const COMPANY = { name: "company_name", sample: "OpenATS Inc." };
 const EVENT = { name: "event_name", sample: "Technical interview" };
+const ASSIGNMENT = { name: "assignment_title", sample: "Build a job board" };
 const ASSESSMENT = { name: "assessment_title", sample: "Backend skills test" };
 
 const p = (...lines: string[]) => lines.map((line) => `<p>${line}</p>`).join("");
@@ -81,6 +83,17 @@ export const SYSTEM_EMAILS: Record<SystemEmailPurpose, SystemEmailDefinition> = 
       "Hello {{candidate_name}},",
       "Your answers for <strong>{{assessment_title}}</strong> were saved. Thank you for completing it.",
       "The hiring team will review your result and contact you about the next steps.",
+    ),
+  },
+  assignment_invite: {
+    label: "Assignment invite",
+    description: "Sent when you send a candidate a take-home assignment.",
+    appends: "The assignment name, the deadline and the “Open the assignment” button.",
+    variables: [CANDIDATE, ASSIGNMENT, COMPANY],
+    subject: "Assignment: {{assignment_title}}",
+    bodyHtml: p(
+      "Hello {{candidate_name}},",
+      "As the next step in your application, we would like you to complete a short take-home assignment. The full brief is on the page below.",
     ),
   },
   interview_slots: {

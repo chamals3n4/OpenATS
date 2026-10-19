@@ -18,6 +18,7 @@ import {
 } from "../../db/schema";
 import type { Candidate } from "../../db/schema/candidates";
 import { assessmentExecutionService } from "../assessment-execution/assessment-execution.service";
+import { assignmentService } from "../assignment/assignment.service";
 import { candidateActivityService } from "./candidate-activity.service";
 import { socketService } from "../../shared/services/socket.service";
 import { scoringService } from "../scoring/scoring.service";
@@ -240,6 +241,7 @@ const SCORE_ORDER = [
 /** Returned with move-stage so the UI can toast automation outcomes. */
 export type StageAutomationFlags = {
   assessmentInvite?: "sent" | "skipped_active_invite";
+  assignmentInvite?: "sent" | "skipped_active_invite" | "failed";
 };
 
 /**
@@ -315,6 +317,9 @@ export type BulkMoveResult = {
   failed: { id: number; error: string }[];
   assessmentInvitesSent: number;
   assessmentInvitesSkipped: number;
+  assignmentInvitesSent: number;
+  assignmentInvitesSkipped: number;
+  assignmentInvitesFailed: number;
 };
 
 export type MoveStageResult = {
@@ -726,7 +731,10 @@ export const candidateService = {
     movedBy: number | null = null,
     position?: number,
   ): Promise<MoveStageResult> {
-    return await db.transaction(async (tx) => {
+    // Sent after the move is saved, because an email must never go out from inside a transaction.
+    let assignmentToSend: number | null = null;
+
+    const moved = await db.transaction(async (tx) => {
       const stageAutomation: StageAutomationFlags = {};
 
       const [candidate] = await tx
@@ -848,8 +856,21 @@ export const candidateService = {
           : "skipped_active_invite";
       }
 
+      assignmentToSend = await assignmentService.getForStage(candidate.jobId, newStageId);
+
       return { candidate: updated, stageAutomation };
     });
+
+    if (assignmentToSend !== null) {
+      try {
+        const sent = await assignmentService.send(candidateId, assignmentToSend);
+        moved.stageAutomation.assignmentInvite = sent?.didSendInvite ? "sent" : "skipped_active_invite";
+      } catch (error) {
+        logger.error(`Stage assignment for candidate ${candidateId} failed: ${error instanceof Error ? error.message : String(error)}`);
+        moved.stageAutomation.assignmentInvite = "failed";
+      }
+    }
+    return moved;
   },
 
   /**
@@ -867,6 +888,9 @@ export const candidateService = {
       failed: [],
       assessmentInvitesSent: 0,
       assessmentInvitesSkipped: 0,
+      assignmentInvitesSent: 0,
+      assignmentInvitesSkipped: 0,
+      assignmentInvitesFailed: 0,
     };
     // Last first, so each one is placed at the top and the first id ends up on top.
     for (const id of [...candidateIds].reverse()) {
@@ -877,6 +901,9 @@ export const candidateService = {
         if (res.stageAutomation.assessmentInvite === "skipped_active_invite") {
           result.assessmentInvitesSkipped += 1;
         }
+        if (res.stageAutomation.assignmentInvite === "sent") result.assignmentInvitesSent += 1;
+        if (res.stageAutomation.assignmentInvite === "skipped_active_invite") result.assignmentInvitesSkipped += 1;
+        if (res.stageAutomation.assignmentInvite === "failed") result.assignmentInvitesFailed += 1;
       } catch (error) {
         result.failed.push({
           id,

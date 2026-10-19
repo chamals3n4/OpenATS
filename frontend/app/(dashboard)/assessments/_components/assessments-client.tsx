@@ -15,9 +15,12 @@ import { AssessmentCardGrid } from "./card-grid";
 import { AssessmentInviteDialog } from "./invite-dialog";
 import { AssessmentDeleteDialog } from "./delete-dialog";
 import { CreateAssessmentDialog } from "./create-assessment-dialog";
+import { AssignmentsTab } from "./assignments/assignments-tab";
+import { AssessmentsTabs, type AssessmentsTab } from "./assessments-tabs";
 import { generateAssessmentUrl } from "../_lib/utils";
 
-export default function AssessmentsPageClient() {
+
+export default function AssessmentsPageClient({ tab = "assessments" }: { tab?: AssessmentsTab }) {
   const { data, isLoading } = useAssessments();
   const allAssessments = useMemo(() => data?.data ?? [], [data]);
 
@@ -105,19 +108,25 @@ export default function AssessmentsPageClient() {
   return (
     <div className="flex flex-1 flex-col bg-white dark:bg-neutral-950">
       <AssessmentHeader
+        tab={tab}
         onCreate={() => setCreateOpen(true)}
         searchTerm={searchTerm}
         onSearchChange={setSearchTerm}
       />
+      <AssessmentsTabs tab={tab} />
 
-      <AssessmentCardGrid
-        assessments={assessments}
-        isLoading={isLoading}
-        searchTerm={searchTerm}
-        onClearSearch={() => setSearchTerm("")}
-        onCreate={() => setCreateOpen(true)}
-        onDelete={setDeleteTarget}
-      />
+      {tab === "assignments" ? (
+        <AssignmentsTab />
+      ) : (
+        <AssessmentCardGrid
+          assessments={assessments}
+          isLoading={isLoading}
+          searchTerm={searchTerm}
+          onClearSearch={() => setSearchTerm("")}
+          onCreate={() => setCreateOpen(true)}
+          onDelete={setDeleteTarget}
+        />
+      )}
 
       <AssessmentInviteDialog
         assessment={inviteTarget}

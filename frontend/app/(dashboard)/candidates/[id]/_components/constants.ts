@@ -9,6 +9,7 @@ import {
   UserRemove01Icon,
   Mail01Icon,
   Quiz03Icon,
+  TaskDone01Icon,
   TextAlignLeftIcon,
 } from "@hugeicons/core-free-icons";
 
@@ -71,7 +72,8 @@ export type SectionId =
   | "interviews"
   | "rejection"
   | "email"
-  | "scores";
+  | "scores"
+  | "assignments";
 
 export const SECTIONS = [
   { id: "cv-text" as SectionId, label: "CV Summary", icon: TextAlignLeftIcon },
@@ -88,4 +90,5 @@ export const SECTIONS = [
     label: "Scores",
     icon: Quiz03Icon,
   },
+  { id: "assignments" as SectionId, label: "Assignments", icon: TaskDone01Icon },
 ];

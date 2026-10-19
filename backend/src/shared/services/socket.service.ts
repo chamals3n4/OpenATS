@@ -360,6 +360,11 @@ export class SocketService {
     this.io?.to(STAFF_ROOM).emit("assessment_progress_updated", event);
   }
 
+  // A candidate handed in, or changed, a take-home assignment
+  public notifyAssignmentSubmitted(event: { candidateId: number }) {
+    this.io?.to(STAFF_ROOM).emit("assignment_submitted", event);
+  }
+
   public async sendSystemMessageToJob(jobId: number, message: string) {
     try {
       const [newMessage] = await db

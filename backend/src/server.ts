@@ -8,6 +8,7 @@ import app from "./app";
 import { socketService } from "./shared/services/socket.service";
 import { subscribeToCvAnalysisEvents } from "./queues/cv-analysis/events";
 import { assessmentExecutionService } from "./modules/assessment-execution/assessment-execution.service";
+import { assignmentService } from "./modules/assignment/assignment.service";
 import { resumeUploadService } from "./modules/upload/resume-upload.service";
 import { offerService } from "./modules/offer/offer.service";
 import { startAllWorkers } from "./queues/start-workers";
@@ -39,6 +40,16 @@ const checkExpiredInvites = () =>
     })
     .catch((error) => logger.error(`Assessment expiry check failed: ${error instanceof Error ? error.message : String(error)}`));
 setInterval(checkExpiredInvites, EXPIRY_CHECK_MS).unref();
+
+// An assignment nobody handed in by its deadline.
+const expireOverdueAssignments = () =>
+  assignmentService
+    .expireOverdue()
+    .then((count) => {
+      if (count > 0) logger.info(`Expired ${count} assignment(s) that were not handed in on time`);
+    })
+    .catch((error) => logger.error(`Assignment expiry check failed: ${error instanceof Error ? error.message : String(error)}`));
+setInterval(expireOverdueAssignments, EXPIRY_CHECK_MS).unref();
 
 // An offer with an expiry date stops being open when the date passes, answered or not.
 const expireOverdueOffers = () =>
@@ -78,6 +89,7 @@ server.listen(PORT, () => {
   void checkExpiredInvites();
   void removeUnusedResumeUploads();
   void expireOverdueOffers();
+  void expireOverdueAssignments();
   logger.info(`OpenATS Backend running on port ${PORT}`);
   logger.info(`Socket.io initialized and listening on the same port.`);
 });

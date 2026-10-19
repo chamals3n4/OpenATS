@@ -1,13 +1,16 @@
 "use client";
 
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { useSocketToken } from "@/components/providers/socket-auth-provider";
 import { boardKey } from "@/hooks/queries/use-candidates";
 import { createAuthedSocket } from "@/lib/socket";
 
 export function useCandidateSocket() {
   const queryClient = useQueryClient();
+  const router = useRouter();
   const token = useSocketToken();
 
   useEffect(() => {
@@ -88,8 +91,15 @@ export function useCandidateSocket() {
       },
     );
 
+    socket.on("assignment_submitted", (data: { candidateId: number }) => {
+      queryClient.invalidateQueries({ queryKey: ["candidate-assignments", data.candidateId] });
+      toast.message("An assignment was handed in", {
+        action: { label: "View", onClick: () => router.push(`/candidates/${data.candidateId}`) },
+      });
+    });
+
     return () => {
       socket.disconnect();
     };
-  }, [queryClient, token]);
+  }, [queryClient, router, token]);
 }

@@ -2,6 +2,7 @@ import {
   applicationReceivedEmail,
   assessmentCompletedEmail,
   assessmentInviteEmail,
+  assignmentInviteEmail,
   interviewCancelledEmail,
   interviewConfirmedEmail,
   interviewSlotsEmail,
@@ -47,6 +48,14 @@ export function previewSystemEmail(
         assessmentTitle,
         inviteUrl: `${site}/assessment/example-link`,
         expiresAt: interviewAt,
+      });
+    case "assignment_invite":
+      return assignmentInviteEmail({
+        ...common,
+        firstName,
+        assignmentTitle: sample.assignment_title ?? "Build a job board",
+        assignmentUrl: `${site}/assignment/example-link`,
+        dueAt: interviewAt,
       });
     case "assessment_completed":
       return assessmentCompletedEmail({ ...common, firstName, assessmentTitle });

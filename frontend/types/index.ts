@@ -280,6 +280,7 @@ export type BoardCandidate = Pick<
 /** Mirrors API `stageAutomation` on candidate stage move. */
 export type StageAutomationFlags = {
   assessmentInvite?: "sent" | "skipped_active_invite";
+  assignmentInvite?: "sent" | "skipped_active_invite" | "failed";
 };
 
 /** Notes written by the AI for a person to read. There is no score, rating or verdict. */
@@ -650,4 +651,53 @@ export type CandidateEmail = {
   status: "sent" | "failed";
   sentAt: string;
   sentByName: string | null;
+};
+
+export type AssignmentResource = { label: string; url: string };
+
+export type SubmissionFieldType = "link" | "short_text" | "long_text";
+
+/** One question on the form a candidate fills in to hand in their work. */
+export type SubmissionField = {
+  id: string;
+  label: string;
+  type: SubmissionFieldType;
+  required: boolean;
+  hint?: string;
+};
+
+export type Assignment = {
+  id: number;
+  title: string;
+  description: string;
+  resources: AssignmentResource[];
+  submissionFields: SubmissionField[];
+  dueDays: number;
+  createdBy: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/** An assignment a job sends to everyone who moves into a stage. */
+export type JobAssignment = {
+  id: number;
+  assignmentId: number;
+  triggerStageId: number;
+  createdAt: string;
+};
+
+export type AssignmentStatus = "pending" | "submitted" | "expired";
+
+/** An assignment sent to one candidate, and what they handed in. */
+export type CandidateAssignment = {
+  id: number;
+  assignmentId: number;
+  title: string;
+  status: AssignmentStatus;
+  dueAt: string;
+  submittedAt: string | null;
+  submissionFields: SubmissionField[];
+  submissionAnswers: Record<string, string>;
+  token: string;
+  createdAt: string;
 };

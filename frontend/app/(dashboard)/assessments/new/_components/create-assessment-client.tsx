@@ -23,6 +23,7 @@ export default function CreateAssessmentPageClient() {
   const [assessmentTitle, setAssessmentTitle] = useState("");
   const [assessmentDesc, setAssessmentDesc] = useState("");
   const [timeLimit, setTimeLimit] = useState("120");
+  const [linkExpiryDays, setLinkExpiryDays] = useState("7");
 
   const {
     questions,
@@ -57,6 +58,7 @@ export default function CreateAssessmentPageClient() {
       title: assessmentTitle,
       description: assessmentDesc || null,
       timeLimit: parseInt(timeLimit) || 120,
+      linkExpiryDays: parseInt(linkExpiryDays) || 7,
       questions: formatQuestionsForApi(questions),
     };
 
@@ -111,6 +113,8 @@ export default function CreateAssessmentPageClient() {
         onDescriptionChange={setAssessmentDesc}
         timeLimit={timeLimit}
         onTimeLimitChange={setTimeLimit}
+        linkExpiryDays={linkExpiryDays}
+        onLinkExpiryDaysChange={setLinkExpiryDays}
       />
 
       {/* Main Content: Sidebar + Editor */}

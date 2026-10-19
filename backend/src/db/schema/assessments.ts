@@ -20,6 +20,8 @@ export const assessments = pgTable("assessments", {
   title: varchar("title", { length: 255 }).notNull(),
   description: text("description"),
   timeLimit: integer("time_limit").notNull(),
+  // Days an invitation link stays valid after it is sent.
+  linkExpiryDays: integer("link_expiry_days").notNull().default(7),
   createdBy: integer("created_by")
     .notNull()
     .references(() => users.id),

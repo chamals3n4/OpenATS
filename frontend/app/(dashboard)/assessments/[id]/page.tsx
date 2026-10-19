@@ -48,6 +48,7 @@ export default function EditAssessmentPage({
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [timeLimit, setTimeLimit] = useState("120");
+  const [linkExpiryDays, setLinkExpiryDays] = useState("7");
 
   const {
     questions,
@@ -93,6 +94,7 @@ export default function EditAssessmentPage({
     setTitle(data.title ?? "");
     setDescription(data.description ?? "");
     setTimeLimit(String(data.timeLimit ?? 120));
+    setLinkExpiryDays(String(data.linkExpiryDays ?? 7));
     /* eslint-enable react-hooks/set-state-in-effect */
 
     const loaded = (data.questions ?? []).map(questionFromApi);
@@ -150,6 +152,8 @@ export default function EditAssessmentPage({
             {isManager ? "Edit assessment" : "Assessment"}
             {" · "}
             {Number(timeLimit) || 120} minutes
+            {" · "}
+            link valid {Number(linkExpiryDays) || 7} days
           </p>
           <div className="mt-0.5 flex items-center gap-3">
             <h1 className="truncate text-xl font-semibold leading-tight text-slate-900 dark:text-neutral-100">
@@ -232,11 +236,17 @@ export default function EditAssessmentPage({
           assessmentId={assessmentId}
           open={detailsOpen}
           onOpenChange={setDetailsOpen}
-          details={{ title, description, timeLimit: Number(timeLimit) || 120 }}
+          details={{
+            title,
+            description,
+            timeLimit: Number(timeLimit) || 120,
+            linkExpiryDays: Number(linkExpiryDays) || 7,
+          }}
           onSaved={(d) => {
             setTitle(d.title);
             setDescription(d.description);
             setTimeLimit(String(d.timeLimit));
+            setLinkExpiryDays(String(d.linkExpiryDays));
           }}
         />
       )}

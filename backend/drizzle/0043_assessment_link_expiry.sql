@@ -1,0 +1,1 @@
+ALTER TABLE "assessments" ADD COLUMN "link_expiry_days" integer DEFAULT 7 NOT NULL;

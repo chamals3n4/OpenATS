@@ -36,6 +36,7 @@ const createAssessmentSchema = z.object({
     .number()
     .int()
     .positive("Time limit must be a positive number of minutes"),
+  linkExpiryDays: z.number().int().min(1).max(90).optional(),
   createdBy: z.number().int().positive().optional(),
   questions: z.array(questionSchema).optional(),
 });
@@ -44,6 +45,7 @@ const updateAssessmentSchema = z.object({
   title: z.string().min(1).max(255).optional(),
   description: z.string().optional().nullable(),
   timeLimit: z.number().int().positive().optional(),
+  linkExpiryDays: z.number().int().min(1).max(90).optional(),
 });
 
 const createQuestionSchema = questionSchema;

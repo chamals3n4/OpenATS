@@ -16,7 +16,7 @@ import { getErrorMessage} from "../../utils/error.utils";
 const inviteCandidateSchema = z.object({
   candidateId: z.number().int().positive(),
   assessmentId: z.number().int().positive(),
-  expiryDays: z.number().int().positive().optional().default(7),
+  expiryDays: z.number().int().min(1).max(90).optional(),
 });
 
 const submitAnswerSchema = z.object({

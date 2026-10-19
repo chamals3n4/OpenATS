@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import type { Assignment } from "@/types";
 
 const MAX_SEND = 200;
+const PAGE_SIZE = 50;
 const ALL_STAGES = "all";
 const triggerCls = "h-10 w-full border-slate-200 bg-white text-sm shadow-none focus:ring-0 dark:border-neutral-800 dark:bg-neutral-900";
 
@@ -31,13 +32,33 @@ function SendForm({ assignment, onDone }: { assignment: Assignment; onDone: () =
     () => [...(pipeline?.data ?? [])].sort((a, b) => a.position - b.position),
     [pipeline?.data],
   );
-  const { data: candidatesData, isLoading } = useCandidates(
+  // Pages are collected as they load; a different job or stage starts the list again.
+  const listKey = `${jobId}:${stageId}`;
+  const [page, setPage] = useState({ key: listKey, number: 1 });
+  const pageNumber = page.key === listKey ? page.number : 1;
+  const { data: candidatesData, isLoading, isFetching } = useCandidates(
     Number(jobId) || undefined,
-    { status: "active", limit: MAX_SEND, ...(stageId !== ALL_STAGES ? { stageId: Number(stageId) } : {}) },
+    {
+      status: "active",
+      limit: PAGE_SIZE,
+      page: pageNumber,
+      ...(stageId !== ALL_STAGES ? { stageId: Number(stageId) } : {}),
+    },
     { enabled: !!jobId },
   );
-  const candidates = useMemo(() => (jobId ? (candidatesData?.data ?? []) : []), [jobId, candidatesData]);
-  // The list stops at what one send can carry, so say so when there are more.
+  type Row = NonNullable<typeof candidatesData>["data"][number];
+  const [loaded, setLoaded] = useState<{ key: string; pages: Record<number, Row[]> }>({ key: listKey, pages: {} });
+  // Stored while rendering, when a page arrives, rather than in an effect.
+  if (candidatesData && loaded.pages[pageNumber] !== candidatesData.data) {
+    setLoaded({
+      key: listKey,
+      pages: { ...(loaded.key === listKey ? loaded.pages : {}), [pageNumber]: candidatesData.data },
+    });
+  }
+  const candidates = useMemo(
+    () => (jobId && loaded.key === listKey ? Object.values(loaded.pages).flat() : []),
+    [jobId, loaded, listKey],
+  );
   const total = jobId ? (candidatesData?.pagination?.total ?? candidates.length) : 0;
 
   const jobItems = jobs.map((j) => ({ value: String(j.id), label: j.title }));
@@ -174,9 +195,21 @@ function SendForm({ assignment, onDone }: { assignment: Assignment; onDone: () =
         </div>
 
         {total > candidates.length && (
-          <p className="text-sm text-slate-500 dark:text-neutral-400">
-            Showing the first {candidates.length} of {total} candidates. Pick a stage to narrow the list, or send again for the rest.
-          </p>
+          <div className="flex items-center justify-between gap-3 text-sm text-slate-500 dark:text-neutral-400">
+            <span>
+              Showing {candidates.length} of {total} candidates.
+            </span>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={isFetching}
+              onClick={() => setPage({ key: listKey, number: pageNumber + 1 })}
+            >
+              {isFetching && <Spinner className="size-3.5" />}
+              Load more
+            </Button>
+          </div>
         )}
 
         {tooMany && (

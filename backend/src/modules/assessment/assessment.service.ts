@@ -33,6 +33,7 @@ export interface CreateAssessmentInput {
   title: string;
   description?: string | null | undefined;
   timeLimit: number;
+  linkExpiryDays?: number | undefined;
   createdBy: number;
   questions?: QuestionInput[] | undefined;
 }
@@ -41,6 +42,7 @@ export interface UpdateAssessmentInput {
   title?: string | undefined;
   description?: string | null | undefined;
   timeLimit?: number | undefined;
+  linkExpiryDays?: number | undefined;
 }
 
 export interface CreateQuestionInput {

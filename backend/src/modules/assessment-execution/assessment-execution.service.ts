@@ -71,7 +71,7 @@ export const assessmentExecutionService = {
   async inviteCandidate(
     candidateId: number,
     assessmentId: number,
-    expiryDays: number = 7,
+    expiryDays?: number,
   ): Promise<InviteCandidateResult> {
     const now = new Date();
 
@@ -99,8 +99,13 @@ export const assessmentExecutionService = {
     }
 
     const token = crypto.randomBytes(32).toString("hex");
+    // An invitation can name its own length; otherwise the assessment's setting applies.
+    const [setting] = await db
+      .select({ linkExpiryDays: assessments.linkExpiryDays })
+      .from(assessments)
+      .where(eq(assessments.id, assessmentId));
     const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + expiryDays);
+    expiresAt.setDate(expiresAt.getDate() + (expiryDays ?? setting?.linkExpiryDays ?? 7));
 
     const [attempt] = await db
       .insert(candidateAssessmentAttempts)

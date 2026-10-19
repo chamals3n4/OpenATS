@@ -14,6 +14,8 @@ const hooks = vi.hoisted(() => {
     usePipeline: vi.fn(query),
     useAssessments: vi.fn(query),
     useJobAssessments: vi.fn(query),
+    useAssignments: vi.fn(query),
+    useJobAssignments: vi.fn(query),
     mutation,
     sendMessage: vi.fn(),
   };
@@ -45,6 +47,12 @@ vi.mock("@/hooks/queries/use-assessments", () => ({
   useAttachAssessment: hooks.mutation,
   useDetachAssessment: hooks.mutation,
   useUpdatePassMark: hooks.mutation,
+}));
+vi.mock("@/hooks/queries/use-assignments", () => ({
+  useAssignments: hooks.useAssignments,
+  useJobAssignments: hooks.useJobAssignments,
+  useAttachAssignment: hooks.mutation,
+  useDetachAssignment: hooks.mutation,
 }));
 vi.mock("@/hooks/queries/use-chat", () => ({
   useChatHistory: () => ({ data: { data: [] }, isError: false }),
@@ -89,6 +97,8 @@ describe("job page tabs", () => {
       hooks.usePipeline,
       hooks.useAssessments,
       hooks.useJobAssessments,
+      hooks.useAssignments,
+      hooks.useJobAssignments,
     ]) {
       expect(hook).not.toHaveBeenCalled();
     }
@@ -118,6 +128,13 @@ describe("job page tabs", () => {
     expect(hooks.useJobAssessments).toHaveBeenCalledWith(7);
     expect(hooks.useAssessments).toHaveBeenCalled();
     expect(hooks.usePipeline).toHaveBeenCalledWith(7);
+  });
+
+  it("also loads the assignments, and the job's own, for the assessments tab", () => {
+    renderTab("assessments");
+
+    expect(hooks.useJobAssignments).toHaveBeenCalledWith(7);
+    expect(hooks.useAssignments).toHaveBeenCalled();
   });
 });
 

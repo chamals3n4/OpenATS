@@ -33,10 +33,12 @@ function SendForm({ assignment, onDone }: { assignment: Assignment; onDone: () =
   );
   const { data: candidatesData, isLoading } = useCandidates(
     Number(jobId) || undefined,
-    { status: "active", ...(stageId !== ALL_STAGES ? { stageId: Number(stageId) } : {}) },
+    { status: "active", limit: MAX_SEND, ...(stageId !== ALL_STAGES ? { stageId: Number(stageId) } : {}) },
     { enabled: !!jobId },
   );
   const candidates = useMemo(() => (jobId ? (candidatesData?.data ?? []) : []), [jobId, candidatesData]);
+  // The list stops at what one send can carry, so say so when there are more.
+  const total = jobId ? (candidatesData?.pagination?.total ?? candidates.length) : 0;
 
   const jobItems = jobs.map((j) => ({ value: String(j.id), label: j.title }));
   const stageItems = [{ value: ALL_STAGES, label: "All stages" }, ...stages.map((s) => ({ value: String(s.id), label: s.name }))];
@@ -170,6 +172,12 @@ function SendForm({ assignment, onDone }: { assignment: Assignment; onDone: () =
             )}
           </ul>
         </div>
+
+        {total > candidates.length && (
+          <p className="text-sm text-slate-500 dark:text-neutral-400">
+            Showing the first {candidates.length} of {total} candidates. Pick a stage to narrow the list, or send again for the rest.
+          </p>
+        )}
 
         {tooMany && (
           <p className="text-sm font-medium text-red-600 dark:text-red-400">

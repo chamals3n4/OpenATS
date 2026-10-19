@@ -8,7 +8,7 @@ import { SubmissionFields } from "@/components/assignment/submission-fields";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { formatDateTime } from "@/lib/format";
-import { fetchAssignment, submitAssignment, type PublicAssignment } from "./assignment-api";
+import { ApiError, fetchAssignment, submitAssignment, type PublicAssignment } from "./assignment-api";
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
@@ -31,7 +31,9 @@ function Message({ title, text }: { title: string; text: string }) {
 
 export function AssignmentClient({ token }: { token: string }) {
   const [assignment, setAssignment] = useState<PublicAssignment | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  // "missing" is a link that does not exist; "failed" is anything that may work on another try.
+  const [loadError, setLoadError] = useState<"missing" | "failed" | null>(null);
+  const [attempt, setAttempt] = useState(0);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
@@ -45,14 +47,36 @@ export function AssignmentClient({ token }: { token: string }) {
         setAssignment(res.data);
         setAnswers(res.data.submissionAnswers);
       })
-      .catch((error: Error) => !cancelled && setLoadError(error.message));
+      .catch((error: unknown) => {
+        if (cancelled) return;
+        setLoadError(error instanceof ApiError && error.status === 404 ? "missing" : "failed");
+      });
     return () => {
       cancelled = true;
     };
-  }, [token]);
+  }, [token, attempt]);
 
-  if (loadError) {
+  if (loadError === "missing") {
     return <Message title="This link doesn't work" text="It may have been typed wrongly. Please use the link from your email." />;
+  }
+  if (loadError === "failed") {
+    return (
+      <Shell>
+        <h1 className="text-2xl font-semibold text-slate-900 dark:text-neutral-100">We couldn&apos;t load your assignment</h1>
+        <p className="mt-2 text-[15px] text-slate-600 dark:text-neutral-300">
+          This is usually temporary. Check your connection and try again. Your link is fine.
+        </p>
+        <Button
+          onClick={() => {
+            setLoadError(null);
+            setAttempt((n) => n + 1);
+          }}
+          className="mt-4 h-10 bg-theme px-5 text-white hover:bg-theme-hover"
+        >
+          Try again
+        </Button>
+      </Shell>
+    );
   }
   if (!assignment) {
     return (

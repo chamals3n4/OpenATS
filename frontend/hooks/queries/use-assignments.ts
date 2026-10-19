@@ -54,7 +54,16 @@ export function useDeleteAssignment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => serverFetch(`/assignments/${id}`, { method: "DELETE" }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["assignments"] }),
+    // Deleting an assignment also deletes the job stages it was attached to and everything
+    // candidates handed in for it, so those cached copies are stale too.
+    onSuccess: () =>
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["assignments"] }),
+        queryClient.invalidateQueries({
+          predicate: ({ queryKey }) => queryKey[0] === "jobs" && queryKey[2] === "assignments",
+        }),
+        queryClient.invalidateQueries({ queryKey: ["candidate-assignments"] }),
+      ]),
   });
 }
 

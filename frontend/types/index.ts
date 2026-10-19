@@ -147,6 +147,7 @@ export type Assessment = {
   title: string;
   description: string | null;
   timeLimit: number;
+  linkExpiryDays: number;
   createdBy: string;
   createdAt: string;
   updatedAt: string;

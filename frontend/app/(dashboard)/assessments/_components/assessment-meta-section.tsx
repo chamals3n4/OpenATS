@@ -16,6 +16,8 @@ interface AssessmentMetaSectionProps {
   onDescriptionChange: (value: string) => void;
   timeLimit: string;
   onTimeLimitChange: (value: string) => void;
+  linkExpiryDays: string;
+  onLinkExpiryDaysChange: (value: string) => void;
 }
 
 export function AssessmentMetaSection({
@@ -27,6 +29,8 @@ export function AssessmentMetaSection({
   onDescriptionChange,
   timeLimit,
   onTimeLimitChange,
+  linkExpiryDays,
+  onLinkExpiryDaysChange,
 }: AssessmentMetaSectionProps) {
   return (
     <div className="border-b border-slate-300 bg-slate-100/70 dark:border-neutral-700 dark:bg-neutral-900 shrink-0">
@@ -69,15 +73,27 @@ export function AssessmentMetaSection({
               className={textareaCls}
             />
           </div>
-          <div className="w-48">
-            <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
-              Time Limit (Minutes)
-            </Label>
-            <Input
-              value={timeLimit}
-              onChange={(e) => onTimeLimitChange(e.target.value)}
-              className={inputCls}
-            />
+          <div className="flex flex-wrap gap-4">
+            <div className="w-48">
+              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+                Time Limit (Minutes)
+              </Label>
+              <Input
+                value={timeLimit}
+                onChange={(e) => onTimeLimitChange(e.target.value)}
+                className={inputCls}
+              />
+            </div>
+            <div className="w-48">
+              <Label className="text-xs font-medium text-slate-500 dark:text-neutral-400 mb-1.5 block">
+                Link valid for (Days)
+              </Label>
+              <Input
+                value={linkExpiryDays}
+                onChange={(e) => onLinkExpiryDaysChange(e.target.value)}
+                className={inputCls}
+              />
+            </div>
           </div>
         </div>
       )}

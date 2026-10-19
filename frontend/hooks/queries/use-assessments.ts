@@ -49,6 +49,7 @@ export function useCreateAssessment() {
       title: string;
       description: string | null;
       timeLimit: number;
+      linkExpiryDays?: number;
       createdBy?: number;
       questions?: NewAssessmentQuestion[];
     }) =>

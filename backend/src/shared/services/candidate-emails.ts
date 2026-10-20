@@ -97,6 +97,28 @@ export function assessmentInviteEmail(
   );
 }
 
+export function assignmentInviteEmail(
+  input: Common & { firstName: string; assignmentTitle: string; assignmentUrl: string; dueAt: Date },
+): BuiltEmail {
+  return compose(
+    "assignment_invite",
+    input,
+    { candidate_name: input.firstName, assignment_title: input.assignmentTitle },
+    {
+      heading: "You have a take-home assignment",
+      subtitle: input.assignmentTitle,
+      after: [
+        emailDetails([
+          emailDetailRow("Assignment", escapeHtml(input.assignmentTitle)),
+          emailDetailRow("Hand in by", `${formatEmailDate(input.dueAt, input.timeZone)} ${formatEmailTime(input.dueAt, input.timeZone)}`),
+        ]),
+        emailButton(input.assignmentUrl, "Open the assignment"),
+        emailLinkFallback(input.assignmentUrl),
+      ],
+    },
+  );
+}
+
 export function assessmentCompletedEmail(
   input: Common & {
     firstName: string;

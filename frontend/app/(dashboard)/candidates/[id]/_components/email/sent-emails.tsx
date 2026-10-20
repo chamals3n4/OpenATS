@@ -17,6 +17,7 @@ const KIND_LABELS: Record<string, string> = {
   application_received: "Application received",
   assessment_invite: "Assessment invite",
   assessment_completed: "Assessment completed",
+  assignment_invite: "Assignment invite",
   interview_invite: "Interview invite",
   interview_slots: "Interview: pick a time",
   interview_confirmed: "Interview confirmed",

@@ -11,6 +11,7 @@ export type CandidateEmailKind =
   | "application_received"
   | "assessment_invite"
   | "assessment_completed"
+  | "assignment_invite"
   | "interview_invite"
   | "interview_slots"
   | "interview_confirmed"

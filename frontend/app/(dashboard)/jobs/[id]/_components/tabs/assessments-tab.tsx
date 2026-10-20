@@ -38,6 +38,7 @@ import {
   useUpdatePassMark,
 } from "@/hooks/queries/use-assessments";
 import { usePipeline } from "@/hooks/queries/use-pipeline";
+import { AssignmentsAutomation } from "./assignments-automation";
 import { withStageColors } from "../../_lib/stage-colors";
 import { useIsManager } from "@/hooks/use-role";
 import {
@@ -437,13 +438,16 @@ export function AssessmentsTab({ jobId }: { jobId: number }) {
   const stages = useMemo(() => withStageColors(pipelineData?.data ?? []), [pipelineData?.data]);
 
   return (
-    <AssessmentsTabView
-      jobId={jobId}
-      attachedAssessments={jobAssessmentsData?.data ?? []}
-      allAssessments={allAssessmentsData?.data ?? []}
-      stages={stages}
-      attachAssessmentMutation={attachAssessmentMutation}
-      detachAssessmentMutation={detachAssessmentMutation}
-    />
+    <div className="flex flex-col gap-10">
+      <AssessmentsTabView
+        jobId={jobId}
+        attachedAssessments={jobAssessmentsData?.data ?? []}
+        allAssessments={allAssessmentsData?.data ?? []}
+        stages={stages}
+        attachAssessmentMutation={attachAssessmentMutation}
+        detachAssessmentMutation={detachAssessmentMutation}
+      />
+      <AssignmentsAutomation jobId={jobId} />
+    </div>
   );
 }

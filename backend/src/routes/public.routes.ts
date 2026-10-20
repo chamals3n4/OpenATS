@@ -17,6 +17,10 @@ import {
   completeAssessment,
 } from "../modules/assessment-execution/assessment-execution.controller";
 import {
+  getAssignmentForCandidate,
+  submitAssignment,
+} from "../modules/assignment/assignment.controller";
+import {
   acceptPublicOffer,
   declinePublicOffer,
   getPublicOfferByToken,
@@ -145,6 +149,10 @@ router.post(
   assessmentActionLimiter,
   completeAssessment,
 );
+
+// take-home assignments for candidates (token based, limited per link like assessments)
+router.get("/assignment/:token", publicReadLimiter, getAssignmentForCandidate);
+router.post("/assignment/:token/submit", assessmentActionLimiter, submitAssignment);
 
 // public offer portal (token based)
 router.get("/offers/:token", publicReadLimiter, getPublicOfferByToken);

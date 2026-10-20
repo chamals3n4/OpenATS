@@ -5,6 +5,7 @@ export * from "./templates";
 export * from "./jobs";
 export * from "./pipeline";
 export * from "./assessments";
+export * from "./assignments";
 export * from "./candidates";
 export * from "./offers";
 export * from "./candidate-activities";

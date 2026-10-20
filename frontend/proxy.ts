@@ -13,6 +13,7 @@ const PUBLIC_PATHS = new Set([
 const PUBLIC_PREFIXES = [
   "/careers/",
   "/assessment/",
+  "/assignment/",
   "/interview/",
   "/offer/",
   "/api/public/",

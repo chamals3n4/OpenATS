@@ -225,6 +225,9 @@ export type BulkMoveResult = {
   failed: { id: number; error: string }[];
   assessmentInvitesSent: number;
   assessmentInvitesSkipped: number;
+  assignmentInvitesSent: number;
+  assignmentInvitesSkipped: number;
+  assignmentInvitesFailed: number;
 };
 
 /** Move many candidates in one request */

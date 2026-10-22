@@ -1,4 +1,4 @@
-# OpenATS Testing Guide
+# Testing Guide
 
 OpenATS uses three layers of automated tests: unit tests for pure logic, integration tests for the API and database, and end-to-end tests that drive a real browser through the running app. This guide explains what each layer does, which tools and databases they use, and how to run and write them.
 

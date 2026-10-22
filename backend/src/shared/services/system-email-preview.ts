@@ -10,6 +10,7 @@ import {
   type BuiltEmail,
 } from "./candidate-emails";
 import { SYSTEM_EMAILS, type SystemEmailContent, type SystemEmailPurpose } from "./system-emails";
+import { frontendUrl } from "../../utils/frontend-url";
 
 /**
  * An automatic email exactly as a candidate would receive it, for the editor's preview.
@@ -21,7 +22,7 @@ import { SYSTEM_EMAILS, type SystemEmailContent, type SystemEmailPurpose } from 
 export function previewSystemEmail(
   purpose: SystemEmailPurpose,
   content: SystemEmailContent,
-  from: { companyName: string; timeZone: string },
+  from: { companyName: string; timeZone: string; logoUrl?: string | null },
   now: Date = new Date(),
 ): BuiltEmail {
   const sample = Object.fromEntries(
@@ -33,7 +34,7 @@ export function previewSystemEmail(
   const eventName = sample.event_name ?? "Technical interview";
   const assessmentTitle = sample.assessment_title ?? "Backend skills test";
 
-  const site = (process.env.FRONTEND_URL ?? "http://localhost:3000").replace(/\/$/, "");
+  const site = frontendUrl();
   // Next week at 10:00 UTC, so the date and time rows show how they are really written.
   const interviewAt = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 7, 10, 0, 0));
   const common = { ...from, content };

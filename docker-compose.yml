@@ -23,6 +23,15 @@ services:
       - redis-data:/data
     restart: unless-stopped
 
+  # Catches every email the app sends; open the inbox at http://localhost:8025
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    container_name: openats-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    restart: unless-stopped
+
 volumes:
   postgres-data:
   redis-data:

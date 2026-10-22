@@ -16,6 +16,7 @@ import app from "../../src/app";
 import { db } from "../../src/db";
 import { company, departments } from "../../src/db/schema/company";
 import { jobs } from "../../src/db/schema/jobs";
+import { jobHiringTeam } from "../../src/db/schema/pipeline";
 import { candidateCvText, candidates } from "../../src/db/schema/candidates";
 import { users } from "../../src/db/schema/users";
 import { initTestKeys, bearer } from "../helpers/jwt";
@@ -80,6 +81,7 @@ beforeAll(async () => {
     .returning({ id: jobs.id });
   jobA = rows[0]!.id;
   jobB = rows[1]!.id;
+  await db.insert(jobHiringTeam).values([jobA, jobB].map((jobId) => ({ jobId, userId: manager.user.id })));
 });
 
 beforeEach(async () => {

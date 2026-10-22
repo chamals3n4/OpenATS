@@ -214,7 +214,10 @@ export function InterviewFeedbackDialog({
                 onDelete={() =>
                   deleteFeedback.mutate(
                     { interviewId, feedbackId: card.id },
-                    { onError: () => toast.error("Failed to delete the scorecard") },
+                    {
+                      onSuccess: () => toast.success("Scorecard deleted"),
+                      onError: () => toast.error("Failed to delete the scorecard"),
+                    },
                   )
                 }
               />

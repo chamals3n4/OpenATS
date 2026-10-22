@@ -80,7 +80,7 @@ function Who({value}: {value: string}): ReactNode {
 export default function Managed(): ReactNode {
   return (
     <Layout
-      title="OpenATS Cloud"
+      title="Managed Hosting"
       description="OpenATS Cloud: the open-source applicant tracking system, hosted, updated and backed up for you. Free for 2 jobs."
     >
       <main className={styles.page}>

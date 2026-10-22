@@ -1,9 +1,9 @@
 ---
 sidebar_position: 3
-title: Jobs and candidates
+title: Jobs and Candidates
 ---
 
-# Jobs and candidates
+# Jobs and Candidates
 
 When someone applies for a published job, OpenATS creates a candidate record for that application. The record keeps the applicant's contact details, resume, answers, and recruitment activity together.
 

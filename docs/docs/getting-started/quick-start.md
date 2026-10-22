@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-title: Manual setup
+title: Manual Setup
 ---
 
 Use this guide when you want to set up OpenATS one step at a time. It is the manual equivalent of the [Quick Start](make-setup) and the best way to find a setup problem.

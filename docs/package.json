@@ -18,9 +18,12 @@
     "@docusaurus/core": "3.10.2",
     "@docusaurus/faster": "3.10.2",
     "@docusaurus/preset-classic": "3.10.2",
-    "docusaurus-plugin-copy-page-button": "^0.8.4",
+    "@docusaurus/theme-common": "3.10.2",
+    "@hugeicons/core-free-icons": "4.3.5",
+    "@hugeicons/react": "1.1.10",
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
+    "docusaurus-plugin-copy-page-button": "^0.8.4",
     "prism-react-renderer": "^2.3.0",
     "react": "^19.3.0",
     "react-dom": "^19.3.0"
@@ -29,7 +32,9 @@
     "@docusaurus/module-type-aliases": "3.10.2",
     "@docusaurus/tsconfig": "3.10.2",
     "@docusaurus/types": "3.10.2",
+    "@tailwindcss/postcss": "4.3.3",
     "@types/react": "^19.3.0",
+    "tailwindcss": "4.3.3",
     "typescript": "~6.0.2"
   },
   "browserslist": {

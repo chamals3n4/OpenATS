@@ -1,9 +1,9 @@
 ---
 sidebar_position: 8
-title: Rejecting a candidate
+title: Rejecting a Candidate
 ---
 
-# Rejecting a candidate
+# Rejecting a Candidate
 
 Rejecting a candidate records the decision, preserves the reason, and optionally sends a rejection email. Only **Super Admins** and **Hiring Managers** can reject or restore candidates.
 

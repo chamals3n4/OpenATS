@@ -1,0 +1,34 @@
+/* Three columns, so the links stay centred whatever the sides hold */
+.inner { align-items: center; display: grid; gap: 1rem; grid-template-columns: 1fr auto 1fr; }
+.brand { flex: initial; }
+.right { gap: 0.6rem; justify-content: flex-end; }
+/* A thin theme gradient on the border sets the group apart from the page */
+.links {
+  align-items: center;
+  background:
+    linear-gradient(#f1f5f9, #f1f5f9) padding-box,
+    linear-gradient(90deg, rgba(20, 89, 98, 0.18), rgba(20, 89, 98, 0.55) 50%, rgba(20, 89, 98, 0.18)) border-box;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  box-shadow: 0 4px 14px -8px rgba(20, 89, 98, 0.35);
+  display: flex;
+  gap: 0.15rem;
+  padding: 4px;
+}
+.toggle { border: 1px solid #e2e8f0; border-radius: 999px; height: 36px; width: 36px; }
+.toggle button { height: 34px; width: 34px; }
+
+:global([data-theme='dark']) .links {
+  background:
+    linear-gradient(#141414, #141414) padding-box,
+    linear-gradient(90deg, rgba(95, 179, 173, 0.15), rgba(95, 179, 173, 0.5) 50%, rgba(95, 179, 173, 0.15)) border-box;
+  box-shadow: 0 4px 14px -8px rgba(0, 0, 0, 0.8);
+}
+:global([data-theme='dark']) .toggle { border-color: #2a2a2a; }
+
+@media (max-width: 996px) {
+  .inner { display: flex; justify-content: space-between; }
+  .links { display: none; }
+  .right > :global(*):not(:last-child) { display: none; }
+  .toggle { display: none; }
+}

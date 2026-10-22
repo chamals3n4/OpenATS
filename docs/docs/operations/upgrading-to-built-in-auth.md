@@ -1,9 +1,9 @@
 ---
 sidebar_position: 2
-title: Upgrading to built-in sign-in
+title: Upgrading to Built-In Sign-In
 ---
 
-# Upgrading to built-in sign-in
+# Upgrading to Built-In Sign-In
 
 Up to version 0.6, OpenATS signed people in through WSO2 Asgardeo. From **version 0.7**, sign-in is built into OpenATS and Asgardeo is no longer used.
 

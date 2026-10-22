@@ -1,9 +1,9 @@
 ---
 sidebar_position: 5.5
-title: Candidate scoring
+title: Candidate Scoring
 ---
 
-# Candidate scoring
+# Candidate Scoring
 
 OpenATS gives every candidate a **score from 0 to 100**. The score helps you see, at a glance, who looks strongest, so you can open the best candidates first instead of reading every profile in order.
 

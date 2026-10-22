@@ -16,11 +16,11 @@ const sidebars: SidebarsConfig = {
   // By default, Docusaurus generates a sidebar from the docs folder structure
   tutorialSidebar: [
     {type: 'category', label: 'Overview', items: ['intro', 'developer/architecture']},
-    {type: 'category', label: 'Get started', items: ['getting-started/make-setup', {type: 'doc', id: 'getting-started/quick-start', label: 'Manual setup'}, 'administration/authentication']},
-    {type: 'category', label: 'Using OpenATS', items: [{type: 'doc', id: 'using-openats/first-login-and-company-setup', label: 'Company setup'}, 'using-openats/manage-jobs', 'using-openats/hiring-pipeline', 'using-openats/jobs-and-candidates', 'using-openats/templates', 'using-openats/interviews', 'using-openats/assessments', 'using-openats/candidate-scoring', 'using-openats/offers', 'using-openats/rejecting-candidates']},
-    {type: 'doc', id: 'careers-page-integration', label: 'Careers page'},
+    {type: 'category', label: 'Get Started', items: ['getting-started/make-setup', {type: 'doc', id: 'getting-started/quick-start', label: 'Manual Setup'}, 'administration/authentication']},
+    {type: 'category', label: 'Using OpenATS', items: [{type: 'doc', id: 'using-openats/first-login-and-company-setup', label: 'Company Setup'}, 'using-openats/manage-jobs', 'using-openats/hiring-pipeline', 'using-openats/jobs-and-candidates', 'using-openats/templates', 'using-openats/interviews', 'using-openats/assessments', 'using-openats/candidate-scoring', 'using-openats/offers', 'using-openats/rejecting-candidates']},
+    {type: 'doc', id: 'careers-page-integration', label: 'Careers Page'},
     {type: 'category', label: 'Operations', items: ['operations/deployment', 'operations/upgrading-to-built-in-auth', 'administration/deleting-candidate-data']},
-    {type: 'category', label: 'Developer guide', items: ['developer/testing', 'developer/contributing']},
+    {type: 'category', label: 'Developer Guide', items: ['developer/testing', 'developer/contributing']},
   ],
 
   // But you can create a sidebar manually

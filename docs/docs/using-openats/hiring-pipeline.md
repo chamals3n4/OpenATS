@@ -1,9 +1,9 @@
 ---
 sidebar_position: 3
-title: Hiring pipeline
+title: Hiring Pipeline
 ---
 
-# Hiring pipeline
+# Hiring Pipeline
 
 Each job has its own hiring pipeline. The pipeline is created when the job is created, so you can review and adjust it before publishing the job or receiving applications.
 

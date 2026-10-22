@@ -1,0 +1,50 @@
+/*
+ * Tailwind for the product tour only: the screens reuse the app's own classes so they look the
+ * same. No global reset is loaded, so the rest of the docs site is untouched; the small reset
+ * below applies inside .oa-app only.
+ */
+@import "tailwindcss/theme.css";
+@import "tailwindcss/utilities.css" source(none);
+@source "./";
+
+/* Docusaurus switches themes with data-theme, the app with a .dark class */
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+/* The app's values (frontend/app/globals.css) */
+@theme {
+  --color-theme: #145962;
+  --color-theme-hover: rgba(20, 89, 98, 0.9);
+  --radius-sm: calc(0.625rem - 4px);
+  --radius-md: calc(0.625rem - 2px);
+  --radius-lg: 0.625rem;
+  --radius-xl: calc(0.625rem + 4px);
+  --font-sans: "Google Sans", ui-sans-serif, system-ui, sans-serif;
+}
+
+:where(.oa-app), :where(.oa-app) *, :where(.oa-app) ::before, :where(.oa-app) ::after {
+  border: 0 solid;
+  box-sizing: border-box;
+}
+:where(.oa-app) img { display: block; max-width: 100%; }
+:where(.oa-app) :where(ul, ol) { list-style: none; }
+.oa-app {
+  /* The docs' element spacing (Infima) is turned off here, so only the app's classes apply */
+  --ifm-heading-color: currentColor;
+  --ifm-heading-font-family: var(--font-sans);
+  --ifm-heading-margin-bottom: 0;
+  --ifm-heading-margin-top: 0;
+  --ifm-list-item-margin: 0;
+  --ifm-list-left-padding: 0;
+  --ifm-list-margin: 0;
+  --ifm-paragraph-margin-bottom: 0;
+  -webkit-font-smoothing: antialiased;
+  color: #0f172a;
+  font-family: var(--font-sans);
+  line-height: 1.5;
+}
+
+@keyframes tour-toast {
+  0% { opacity: 0; transform: translate(-50%, -8px); }
+  10%, 85% { opacity: 1; transform: translate(-50%, 0); }
+  100% { opacity: 0; transform: translate(-50%, -6px); }
+}

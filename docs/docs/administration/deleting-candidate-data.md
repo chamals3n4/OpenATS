@@ -1,8 +1,8 @@
 ---
-title: Deleting candidate data
+title: Deleting Candidate Data
 ---
 
-# Deleting candidate data
+# Deleting Candidate Data
 
 When a candidate asks for their data to be removed, delete their candidate record. This page lists what that removes, what it does not, and what you have to do yourself.
 

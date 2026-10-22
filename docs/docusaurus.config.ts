@@ -5,9 +5,11 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'An open-source hiring platform to streamline recruitment and hire faster.',
+  title: 'OpenATS',
   tagline: 'An open-source applicant tracking system for clear, adaptable hiring.',
   favicon: 'img/favicon.png',
+
+  stylesheets: [],
 
   // Future flags, see https://docusaurus.io/docs/api/docusaurus-config#future
   future: {
@@ -28,15 +30,15 @@ const config: Config = {
   onBrokenLinks: 'throw',
 
   plugins: [
-    [
-      'docusaurus-plugin-copy-page-button',
-      {
-        enabledActions: ['copy', 'view', 'chatgpt', 'claude', 'perplexity', 'gemini'],
-        placement: 'auto',
+    // Tailwind, used only by the product tour on the home page (src/components/ProductTour/app.css)
+    () => ({
+      name: 'tailwind',
+      configurePostCss(postcssOptions) {
+        postcssOptions.plugins.push(require('@tailwindcss/postcss'));
+        return postcssOptions;
       },
-    ],
+    }),
   ],
-
   // Even if you don't use internationalization, you can use this field to set
   // useful metadata like html lang. For example, if your site is Chinese, you
   // may want to replace "en" with "zh-Hans".
@@ -54,15 +56,16 @@ const config: Config = {
           // Keep dependency READMEs out of the docs content glob. The copy
           // page plugin is installed in the workspace and ships Markdown files.
           exclude: ['**/node_modules/**'],
-          editUrl: 'https://github.com/chamals3n4/OpenATS/tree/main/docs/',
         },
         blog: {
+          blogTitle: 'Blog',
+          blogDescription: 'Release notes, announcements and guides from the OpenATS team.',
+          blogSidebarCount: 0,
           showReadingTime: true,
           feedOptions: {
             type: ['rss', 'atom'],
             xslt: true,
           },
-          editUrl: 'https://github.com/chamals3n4/OpenATS/tree/main/docs/',
           // Useful options to enforce blogging best practices
           onInlineTags: 'warn',
           onInlineAuthors: 'warn',
@@ -102,60 +105,19 @@ const config: Config = {
         srcDark: 'img/brand/openats-logo-white.png',
       },
       items: [
+        {to: '/', label: 'Home', position: 'left', activeBaseRegex: '^/$'},
         {
           type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
           label: 'Documentation',
-          className: 'navbar-docs-link',
         },
-        {
-          href: 'https://github.com/chamals3n4/OpenATS',
-          label: 'GitHub',
-          position: 'right',
-        },
+        {to: '/managed-hosting', label: 'Managed Hosting', position: 'left'},
+        {to: '/pricing', label: 'Pricing', position: 'left'},
+        {to: '/blog', label: 'Blog', position: 'left'},
+        {to: '/contact', label: 'Contact', position: 'left'},
+        {type: 'custom-githubStar', position: 'right'},
       ],
-    },
-    footer: {
-      style: 'dark',
-      links: [
-        {
-          title: 'Docs',
-          items: [
-            {
-              label: 'Get started',
-              to: '/docs/intro',
-            },
-          ],
-        },
-        {
-          title: 'Project',
-          items: [
-            {
-              label: 'GitHub',
-              href: 'https://github.com/chamals3n4/OpenATS',
-            },
-            {
-              label: 'Live demo',
-              href: 'https://demo.openats.dev',
-            },
-          ],
-        },
-        {
-          title: 'Resources',
-          items: [
-            {
-              label: 'Contributing',
-              href: 'https://github.com/chamals3n4/OpenATS/blob/main/CONTRIBUTING.md',
-            },
-            {
-              label: 'Apache 2.0 License',
-              href: 'https://github.com/chamals3n4/OpenATS/blob/main/LICENSE',
-            },
-          ],
-        },
-      ],
-      copyright: `Copyright © ${new Date().getFullYear()} OpenATS. Licensed under Apache 2.0.`,
     },
     prism: {
       theme: prismThemes.github,

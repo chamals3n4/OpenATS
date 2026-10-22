@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useUpsertCompany, useUploadLogo } from "@/hooks/queries/use-company";
+import { useRole } from "@/hooks/use-role";
 import type { Company } from "@/types";
 import { FormField, inputCls } from "@/components/form/form-field";
 import { LogoField } from "./logo-field";
@@ -63,6 +64,8 @@ export function CompanyForm({
 }) {
   const upsertCompany = useUpsertCompany();
   const uploadLogo = useUploadLogo();
+  // Company details are the super admin's; everyone else sees them read-only
+  const readOnly = !useRole().isSuperAdmin;
 
   // Default to the creator's time zone
   const [values, setValues] = useState<Values>(() =>
@@ -150,6 +153,7 @@ export function CompanyForm({
     >
       {/* Shown in the page title row */}
       {actionsSlot &&
+        !readOnly &&
         createPortal(
           <div className="flex flex-wrap items-center justify-end gap-x-3 gap-y-2">
             {isDirty && !isNew && (
@@ -182,6 +186,14 @@ export function CompanyForm({
           actionsSlot,
         )}
 
+      {readOnly && (
+        <p className="mt-4 mb-4 rounded-md border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
+          Only a super admin can change the company settings. You can see them here.
+        </p>
+      )}
+
+      {/* A disabled fieldset turns off every field inside it at once */}
+      <fieldset disabled={readOnly} className="m-0 min-w-0 border-0 p-0">
       <SettingsSection
         title="Company profile"
         description="The name and logo candidates see on your careers page, job listings and emails."
@@ -292,7 +304,7 @@ export function CompanyForm({
           />
         </FormField>
       </SettingsSection>
-
+      </fieldset>
     </form>
   );
 }

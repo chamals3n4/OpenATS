@@ -20,6 +20,7 @@ import {
   useUpdateDepartment,
 } from "@/hooks/queries/use-company";
 import type { Company, Department } from "@/types";
+import { useRole } from "@/hooks/use-role";
 import { DepartmentNameDialog } from "./department-name-dialog";
 import { SettingsSection } from "./settings-section";
 
@@ -37,6 +38,8 @@ export function DepartmentsPanel({
   const deleteDept = useDeleteDepartment();
 
   const departments = data?.data ?? [];
+  // Only a super admin adds, renames or deletes departments
+  const { isSuperAdmin } = useRole();
 
   const [addOpen, setAddOpen] = useState(false);
   const [editTarget, setEditTarget] = useState<Department | null>(null);
@@ -89,7 +92,7 @@ export function DepartmentsPanel({
             : "The teams you hire for. Every job belongs to one."
         }
         action={
-          company && !isPending ? (
+          company && !isPending && isSuperAdmin ? (
             <Button
               variant="cancel"
               onClick={() => setAddOpen(true)}
@@ -124,6 +127,7 @@ export function DepartmentsPanel({
                     <span className="truncate text-sm font-medium text-slate-900 dark:text-neutral-100">
                       {dept.name}
                     </span>
+                    {isSuperAdmin && (
                     <div className="flex shrink-0 items-center gap-1">
                       <Button
                         variant="ghost"
@@ -144,6 +148,7 @@ export function DepartmentsPanel({
                         <HugeiconsIcon icon={Delete01Icon} className="size-4" strokeWidth={1.75} />
                       </Button>
                     </div>
+                    )}
                   </li>
                 ))}
               </ul>

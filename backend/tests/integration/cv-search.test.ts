@@ -93,8 +93,10 @@ beforeAll(async () => {
   const [otherJob] = await db.insert(jobs).values(job("Other")).returning();
   teamJobId = teamJob!.id;
   otherJobId = otherJob!.id;
+  // The manager is on both jobs, so a search covers both; the interviewer and the outsider are not
   await db.insert(jobHiringTeam).values([
     { jobId: teamJobId, userId: manager.user.id },
+    { jobId: otherJobId, userId: manager.user.id },
     { jobId: teamJobId, userId: interviewer.user.id },
   ]);
 
@@ -106,7 +108,7 @@ beforeAll(async () => {
 
 afterAll(async () => {
   await db.delete(candidates).where(inArray(candidates.jobId, [teamJobId, otherJobId]));
-  await db.delete(jobHiringTeam).where(eq(jobHiringTeam.jobId, teamJobId));
+  await db.delete(jobHiringTeam).where(inArray(jobHiringTeam.jobId, [teamJobId, otherJobId]));
   await db.delete(jobs).where(inArray(jobs.id, [teamJobId, otherJobId]));
   await db.delete(users).where(inArray(users.id, userIds));
   await db.delete(departments).where(eq(departments.id, departmentId));
@@ -242,12 +244,16 @@ describe("reading a candidate's CV text", () => {
     // An interviewer is limited to jobs they are on the hiring team of.
     expect((await cvText(nurseId, interviewerAuth)).status).toBe(200);
     expect((await cvText(otherJobNurseId, interviewerAuth)).status).toBe(403);
-    // A hiring manager sees every candidate, as everywhere else.
-    expect((await cvText(otherJobNurseId, outsiderAuth)).status).toBe(200);
+    // So is a hiring manager: one who is not on the job cannot read the CV either.
+    expect((await cvText(otherJobNurseId, outsiderAuth)).status).toBe(403);
   });
 
   it("says so when there is no CV text", async () => {
-    const res = await request(app).get("/api/candidates/999999999/cv-text").set("Authorization", managerAuth);
+    const [noCv] = await db
+      .insert(candidates)
+      .values({ firstName: "No", lastName: "Cv", email: `nocv.${SUFFIX}@example.test`, jobId: teamJobId })
+      .returning();
+    const res = await request(app).get(`/api/candidates/${noCv!.id}/cv-text`).set("Authorization", managerAuth);
     expect(res.status).toBe(404);
   });
 });

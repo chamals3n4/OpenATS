@@ -35,7 +35,7 @@ A CV that was uploaded on the careers page by someone who never sent the applica
 
 OpenATS cannot reach these. Remove them yourself if the request covers them:
 
-- **Emails already sent.** They are in the candidate's mailbox, in the sent items or inbox of anyone copied in, and in your email provider's own log (Resend keeps a record of each email).
+- **Emails already sent.** They are in the candidate's mailbox, in the sent items or inbox of anyone copied in, and in your email provider's own log (most SMTP providers keep a record of each email).
 - **Calendar entries.** An interview that was added to an interviewer's Google Calendar stays there, with whatever details of the candidate it holds.
 - **Backups.** A database backup made before the deletion still contains the candidate. The same goes for point-in-time recovery on a hosted database, and for backups or version history of the CV bucket. Old backups should expire on a schedule you can state.
 - **Messages in a job's team chat** that mention the candidate by name. Only the chat on the candidate's own page is deleted.

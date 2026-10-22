@@ -128,7 +128,7 @@ Sign-in runs inside the web application (the `frontend` package). The API (the `
 | `BETTER_AUTH_SECRET` | Yes | A secret of at least 32 characters that protects sessions. Generate one with `openssl rand -base64 32`. Keep it private, set it once and keep it: changing it later invalidates existing sign-ins. |
 | `BETTER_AUTH_URL` | Yes | The public address of the web application, for example `https://ats.example.com`. |
 | `AUTH_TRUSTED_PROXIES` | No | The addresses of proxies in front of the app, when requests pass through more than one. Needed so sign-in limits apply per person rather than to everyone at once. |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | No | Sends invite and reset emails. See below. |
+| `SMTP_*`, `MAIL_FROM` | No | Sends invite and reset emails. See below. |
 
 The web application refuses to start, with a clear message, if a required value is missing or the secret is too short.
 
@@ -147,11 +147,15 @@ The API downloads the keys from `AUTH_JWKS_URL`. If the API server cannot open t
 
 ### Email for invites and resets
 
-Invite and reset emails are sent through [Resend](https://resend.com). Set these in `frontend/.env`, using the same values as in `backend/.env`:
+Invite and reset emails are sent through the same SMTP server as every other email. Set these in `frontend/.env`, using the same values as in `backend/.env`:
 
 ```dotenv
-RESEND_API_KEY=<your Resend API key>
-RESEND_FROM_EMAIL=<an address on a domain you verified in Resend>
+SMTP_HOST=<your SMTP server>
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=<login>
+SMTP_PASSWORD=<password>
+MAIL_FROM=<an address the SMTP account may send as>
 ```
 
 Without them, OpenATS still works:

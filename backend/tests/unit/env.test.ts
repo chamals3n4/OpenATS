@@ -16,8 +16,8 @@ const env = (overrides: Record<string, string | undefined> = {}) => ({
   R2_BUCKET_NAME: "bucket",
   R2_PRIVATE_BUCKET_NAME: "private-bucket",
   R2_PUBLIC_URL: "https://files.example.test",
-  RESEND_API_KEY: "resend",
-  RESEND_FROM_EMAIL: "no-reply@example.test",
+  SMTP_HOST: "smtp.example.test",
+  MAIL_FROM: "no-reply@example.test",
   ...overrides,
 });
 
@@ -108,5 +108,21 @@ describe("FRONTEND_URL", () => {
     } finally {
       process.env.FRONTEND_URL = before;
     }
+  });
+});
+
+describe("SMTP", () => {
+  it("defaults to port 587 without TLS, and needs a host and a From address", () => {
+    const parsed = envSchema.parse(env());
+    expect(parsed.SMTP_PORT).toBe(587);
+    expect(parsed.SMTP_SECURE).toBe("false");
+    expect(envSchema.safeParse(env({ SMTP_HOST: "" })).success).toBe(false);
+    expect(envSchema.safeParse(env({ MAIL_FROM: undefined })).success).toBe(false);
+  });
+
+  it("refuses a From that is not an email address or a port that is not a number", () => {
+    expect(envSchema.safeParse(env({ MAIL_FROM: "OpenATS" })).success).toBe(false);
+    expect(envSchema.safeParse(env({ SMTP_PORT: "smtp" })).success).toBe(false);
+    expect(envSchema.safeParse(env({ SMTP_SECURE: "yes" })).success).toBe(false);
   });
 });

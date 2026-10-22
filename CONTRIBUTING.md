@@ -92,7 +92,7 @@ make dev
 
 `make dev` then starts the backend, the background worker and the frontend together. Sign in at `http://localhost:3000` with the admin you just created.
 
-You'll still need to fill in a few provider credentials by hand afterward, since these are personal secrets nobody can generate for you: Cloudflare R2 and Resend, plus Gemini and Google OAuth if you want those features. Each `.env.example` says what every value is for and which ones are optional.
+You'll still need to fill in a few provider credentials by hand afterward, since these are personal secrets nobody can generate for you: Cloudflare R2, plus Gemini and Google OAuth if you want those features. Each `.env.example` says what every value is for and which ones are optional.
 
 Prefer to see every step yourself, or something in `make setup` isn't working? The full manual walkthrough is below, and it's also the fallback if you ever need to debug a step individually.
 

@@ -67,7 +67,7 @@ One pnpm workspace with two packages, `frontend` and `backend`, installed from t
 | **Background jobs** | [BullMQ](https://docs.bullmq.io) on Redis, run by a required worker process (CV text, file cleanup, optional AI notes) |
 | **Sign-in** | Built in with [Better Auth](https://www.better-auth.com): email and password, no outside identity service |
 | **Storage** | Cloudflare R2 or any S3-compatible bucket |
-| **Email** | [Resend](https://resend.com) |
+| **Email** | Any SMTP server ([Mailpit](https://mailpit.axllent.org) locally) |
 | **AI (optional)** | [Gemini](https://ai.google.dev) |
 
 ### Repository layout
@@ -95,8 +95,8 @@ make dev     # API on :8080, worker, and the app on :3000
 Open http://localhost:3000 and sign in with the admin you created. Run `make admin` at any time
 to add a super admin, or to get back in if you are locked out.
 
-A few values can't be generated for you: fill in `R2_*` and `RESEND_*` in `backend/.env` before
-uploading CVs or sending email.
+A few values can't be generated for you: fill in `R2_*` in `backend/.env` before uploading CVs.
+Email works locally out of the box: everything the app sends lands in Mailpit at http://localhost:8025.
 
 The **background worker is required**. It reads every uploaded CV and removes the files of
 deleted candidates; without it, CVs stay "pending". `make dev` starts it with everything else.
@@ -119,7 +119,7 @@ startup with a clear message if a required value is missing.
 | `ENCRYPTION_KEY` | Encrypts stored integration credentials |
 | `FRONTEND_URL` | CORS and links in emails |
 | `R2_*` | File storage |
-| `RESEND_*` | Email |
+| `SMTP_*` / `MAIL_FROM` | Email, through any SMTP server |
 | `GEMINI_API_KEY` | Optional. AI notes, also off until turned on in Settings |
 | `GOOGLE_OAUTH_*` | Optional. Lets interviewers connect Google Calendar and Meet |
 
@@ -130,7 +130,7 @@ startup with a clear message if a required value is missing.
 | `DATABASE_URL` | The same database as the backend |
 | `BETTER_AUTH_SECRET` / `BETTER_AUTH_URL` | Sign-in: a secret of 32+ characters, and the app's public URL |
 | `OPENATS_API_URL` / `NEXT_PUBLIC_API_URL` | Where the backend is, from the server and the browser |
-| `RESEND_*` | Optional. Invite and password reset emails |
+| `SMTP_*` / `MAIL_FROM` | Optional. Invite and password reset emails (same values as the backend) |
 
 ## Contributing
 

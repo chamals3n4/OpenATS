@@ -28,7 +28,7 @@ The recommended first-time setup path using `make setup` and `make dev`. It expl
 
 https://openats.dev/docs/getting-started/quick-start
 
-An explicit setup path for people who need to configure each dependency themselves, including PostgreSQL, Redis, built-in sign-in, Cloudflare R2, Resend, optional Gemini, and Google Calendar integration.
+An explicit setup path for people who need to configure each dependency themselves, including PostgreSQL, Redis, built-in sign-in, Cloudflare R2, SMTP email, optional Gemini, and Google Calendar integration.
 
 ### Sign-in and users
 

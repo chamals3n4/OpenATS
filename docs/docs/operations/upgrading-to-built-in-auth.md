@@ -59,7 +59,7 @@ Deploy version 0.7 of both the API and the web application. Do not start them ye
   BETTER_AUTH_URL=https://ats.example.com
   ```
 
-- To let users reset their own password by email, also add `RESEND_API_KEY` and `RESEND_FROM_EMAIL`, with the same values as in `backend/.env`. This is strongly recommended for an upgrade, because every user needs a new password.
+- To let users reset their own password by email, also add the `SMTP_*` and `MAIL_FROM` values, the same as in `backend/.env`. This is strongly recommended for an upgrade, because every user needs a new password.
 
 `AUTH_ISSUER` and `BETTER_AUTH_URL` must be exactly the same. The full list is in [Sign-in and users](../administration/authentication#settings-an-administrator-needs).
 

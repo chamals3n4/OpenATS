@@ -1,6 +1,6 @@
 // Invite and reset emails, sent from Next.js
 
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
+import nodemailer, { type Transporter } from "nodemailer";
 
 // Must match `resetPasswordTokenExpiresIn` in options.ts.
 export const PASSWORD_LINK_EXPIRES_IN_SECONDS = 60 * 60 * 24;
@@ -8,9 +8,25 @@ const EXPIRY_TEXT = "24 hours";
 
 export type PasswordLinkKind = "invite" | "reset";
 
+// The same rules as SMTP_PORT in the backend's config/env.ts: a whole number from 1 to 65535, 587 when unset
+function smtpPort(): number | null {
+  const raw = process.env.SMTP_PORT?.trim();
+  if (!raw) return 587;
+  const port = Number(raw);
+  return Number.isInteger(port) && port >= 1 && port <= 65535 ? port : null;
+}
+
+// Servers on this machine, such as Mailpit, which offer no encryption
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
+/** Whether to refuse sending unless the server upgrades the connection with STARTTLS. */
+export function mustStartTls(host: string | undefined, secure: boolean): boolean {
+  return !secure && !LOCAL_HOSTS.has((host ?? "").toLowerCase());
+}
+
 /** Whether invite and reset emails can actually be sent. */
 export function isAuthMailConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL);
+  return Boolean(process.env.SMTP_HOST && process.env.MAIL_FROM && smtpPort() !== null);
 }
 
 function escapeHtml(value: string): string {
@@ -117,29 +133,35 @@ export function buildPasswordEmail(
   };
 }
 
-async function sendThroughResend(message: {
-  to: string;
-  subject: string;
-  html: string;
-}): Promise<void> {
-  const response = await fetch(RESEND_ENDPOINT, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: `OpenATS <${process.env.RESEND_FROM_EMAIL}>`,
-      to: [message.to],
-      subject: message.subject,
-      html: message.html,
-    }),
-  });
+let transport: Transporter | null = null;
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(`Resend responded ${response.status}: ${detail}`);
+// Same SMTP settings as the backend's mail.service.ts
+function getTransport(): Transporter {
+  if (!transport) {
+    const user = process.env.SMTP_USER;
+    const secure = process.env.SMTP_SECURE === "true";
+    transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: smtpPort() ?? 587,
+      secure,
+      // Without this, a server that does not offer STARTTLS would get the password and the email unencrypted
+      requireTLS: mustStartTls(process.env.SMTP_HOST, secure),
+      ...(user ? { auth: { user, pass: process.env.SMTP_PASSWORD ?? "" } } : {}),
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000,
+    });
   }
+  return transport;
+}
+
+async function sendThroughSmtp(message: { to: string; subject: string; html: string }): Promise<void> {
+  await getTransport().sendMail({
+    from: { name: process.env.MAIL_FROM_NAME || "OpenATS", address: process.env.MAIL_FROM ?? "" },
+    to: message.to,
+    subject: message.subject,
+    html: message.html,
+  });
 }
 
 /** Send the email. Never throws so we don't reveal if the account exists */
@@ -152,12 +174,12 @@ export async function sendPasswordLinkEmail(opts: {
   if (!isAuthMailConfigured()) {
     if (process.env.NODE_ENV === "development") {
       console.log(
-        `[password-emails] Resend is not configured. ${opts.kind === "invite" ? "Set password" : "Reset password"} link for ${opts.to}:\n${opts.url}`,
+        `[password-emails] Email is not configured. ${opts.kind === "invite" ? "Set password" : "Reset password"} link for ${opts.to}:\n${opts.url}`,
       );
     } else {
       // Never log the link outside dev
       console.warn(
-        `[password-emails] Resend is not configured; no ${opts.kind} email was sent. Set RESEND_API_KEY and RESEND_FROM_EMAIL.`,
+        `[password-emails] Email is not configured; no ${opts.kind} email was sent. Set SMTP_HOST, MAIL_FROM and a valid SMTP_PORT.`,
       );
     }
     return;
@@ -165,7 +187,7 @@ export async function sendPasswordLinkEmail(opts: {
 
   try {
     const { subject, html } = buildPasswordEmail(opts.kind, opts);
-    await sendThroughResend({ to: opts.to, subject, html });
+    await sendThroughSmtp({ to: opts.to, subject, html });
   } catch (error) {
     console.error(`[password-emails] Failed to send ${opts.kind} email:`, error);
   }

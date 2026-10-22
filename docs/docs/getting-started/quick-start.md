@@ -7,7 +7,7 @@ Use this guide when you want to set up OpenATS one step at a time. It is the man
 
 ## 1. Install prerequisites
 
-Install Node.js 22 or later, pnpm, Docker with Docker Compose, and `openssl`. Create accounts for Cloudflare, Resend, Google Cloud, and Google AI Studio if you intend to enable every integration. Sign-in needs no outside account.
+Install Node.js 22 or later, pnpm, Docker with Docker Compose, and `openssl`. Create accounts for Cloudflare, an email provider with SMTP, Google Cloud, and Google AI Studio if you intend to enable every integration. Sign-in needs no outside account.
 
 ## 2. Download OpenATS and install packages
 
@@ -108,16 +108,31 @@ R2_PRIVATE_BUCKET_NAME=openats-cvs
 
 See [Cloudflare’s R2 S3 guide](https://developers.cloudflare.com/r2/get-started/s3/) if the dashboard labels differ.
 
-## 7. Configure transactional email with Resend
+## 7. Configure email (SMTP)
 
-Create a Resend account, add and verify a sending domain, then open **API Keys** and create a key. Choose **Sending access** and restrict it to the verified domain when possible. Copy the key immediately because it is shown only once.
+OpenATS sends email through any SMTP server. Locally, `docker compose up -d` starts Mailpit and the default values send to it: every email appears at http://localhost:8025 and nothing reaches a real inbox.
+
+For real email, set these in `backend/.env`, and the same values in `frontend/.env` for invite and password reset emails:
 
 ```dotenv
-RESEND_API_KEY=re_...
-RESEND_FROM_EMAIL=OpenATS <hiring@example.com>
+SMTP_HOST=smtp.resend.com
+SMTP_PORT=465
+SMTP_SECURE=true          # true only for port 465
+SMTP_USER=resend
+SMTP_PASSWORD=re_...
+MAIL_FROM=hiring@example.com
+MAIL_FROM_NAME=OpenATS
 ```
 
-The email address must use your verified Resend domain. Use a real monitored address for production notifications. See the [Resend API key guide](https://resend.com/docs/dashboard/api-keys/introduction).
+| Provider | `SMTP_HOST` | `SMTP_PORT` / `SMTP_SECURE` | `SMTP_USER` / `SMTP_PASSWORD` |
+| --- | --- | --- | --- |
+| Resend | `smtp.resend.com` | 465 / true | `resend` / API key |
+| Gmail, Google Workspace | `smtp.gmail.com` | 465 / true | address / app password |
+| Microsoft 365 | `smtp.office365.com` | 587 / false | address / password |
+| Amazon SES | `email-smtp.<region>.amazonaws.com` | 587 / false | SES SMTP credentials |
+| Brevo | `smtp-relay.brevo.com` | 587 / false | login / SMTP key |
+
+`MAIL_FROM` must be an address the SMTP account may send as, on a domain with SPF and DKIM set up, or emails land in spam. Most cloud servers block port 25, so use 587 or 465. The server checks the connection at start and logs a warning if it cannot log in.
 
 ## 8. Configure Gemini for AI CV analysis (optional)
 

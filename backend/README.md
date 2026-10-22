@@ -74,7 +74,7 @@ The remaining variables are for external/cloud services and are only needed if y
 
 - `AUTH_JWKS_URL` and `AUTH_ISSUER` - where the API checks sign-in tokens. Required for almost everything, since most routes are behind the auth middleware. The defaults in `.env.example` are right for local use; the frontend must be running for the API to fetch the keys.
 - `R2_*` - Cloudflare R2 object storage, used for file uploads (e.g. resumes).
-- `RESEND_*` - Resend API, used for sending emails (e.g. application confirmations).
+- `SMTP_*`, `MAIL_FROM` - the SMTP server every email to candidates goes through (Mailpit locally).
 - `GEMINI_API_KEY` - Optional. Used by AI CV analysis, which is also off until turned on in Settings.
 - `GOOGLE_OAUTH_CLIENT_ID`, `GOOGLE_OAUTH_CLIENT_SECRET` and `GOOGLE_OAUTH_REDIRECT_URI` - Optional. They let each interviewer connect their own Google account (Settings → Integrations), so their interviews go in their calendar and can get a Google Meet link.
 

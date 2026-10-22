@@ -2,7 +2,7 @@
  * The one design every email to a candidate uses. Inline styles only, because email clients
  * strip <style> blocks, and tables for the frame, because Outlook ignores most box CSS.
  *
- * It follows the transactional emails people already trust: the company's logo (or name) above a
+ * It follows the transactional emails people already trust: the company's name above a
  * white card on a light grey page, the job as a small coloured line over a clear heading, the
  * message, and a quiet footer outside the card. Colour is kept for that small line, links and the
  * one button, so the button is what stands out. Corners are softly rounded; Outlook squares them,
@@ -71,8 +71,6 @@ export function emailLinkFallback(href: string): string {
 
 export interface EmailLayoutInput {
   companyName: string;
-  /** The company's logo, shown above the card in place of its name. Only a web address is used. */
-  logoUrl?: string | null | undefined;
   /** The main line of the email. Left out for free-form emails. */
   heading?: string | undefined;
   /** A short line over the heading, such as the job title. */
@@ -81,17 +79,14 @@ export interface EmailLayoutInput {
   bodyHtml: string;
 }
 
-export function renderEmailLayout({ companyName, logoUrl, heading, subtitle, bodyHtml }: EmailLayoutInput): string {
+export function renderEmailLayout({ companyName, heading, subtitle, bodyHtml }: EmailLayoutInput): string {
   const company = escapeHtml(companyName);
-  const logo = logoUrl && /^https?:\/\//i.test(logoUrl) ? escapeHtml(logoUrl) : null;
   return [
     `<div style="background:${PAGE};padding:40px 16px 32px;font-family:${FONT}">`,
     `<table role="presentation" align="center" style="width:100%;max-width:580px;margin:0 auto;border-collapse:collapse">`,
     // Who it is from, above the card
     `<tr><td style="padding:0 4px 20px">`,
-    logo
-      ? `<img src="${logo}" alt="${company}" height="32" style="display:block;height:32px;max-width:200px;width:auto;border:0">`
-      : `<span style="font-size:17px;font-weight:700;letter-spacing:-0.01em;color:${INK}">${company}</span>`,
+    `<span style="font-size:17px;font-weight:700;letter-spacing:-0.01em;color:${INK}">${company}</span>`,
     "</td></tr>",
     `<tr><td style="background:#ffffff;border:1px solid ${RULE};border-radius:12px;padding:36px 40px 28px">`,
     heading
@@ -106,7 +101,7 @@ export function renderEmailLayout({ companyName, logoUrl, heading, subtitle, bod
     "</td></tr>",
     `<tr><td style="padding:20px 4px 0;font-size:12px;line-height:1.6;color:${MUTED}">`,
     `This email was sent by ${company} about your application.<br>`,
-    `<span style="color:#9ca3af">Sent with OpenATS</span>`,
+    `<span style="color:#9ca3af">Sent with <a href="https://openats.dev" style="color:#9ca3af;text-decoration:underline">OpenATS</a></span>`,
     "</td></tr>",
     "</table>",
     "</div>",

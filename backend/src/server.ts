@@ -12,6 +12,7 @@ import { assignmentService } from "./modules/assignment/assignment.service";
 import { resumeUploadService } from "./modules/upload/resume-upload.service";
 import { offerService } from "./modules/offer/offer.service";
 import { startAllWorkers } from "./queues/start-workers";
+import { mailService } from "./shared/services/mail.service";
 import logger from "./utils/logger";
 
 const PORT = env.PORT;
@@ -90,6 +91,7 @@ server.listen(PORT, () => {
   void removeUnusedResumeUploads();
   void expireOverdueOffers();
   void expireOverdueAssignments();
+  void mailService.verify();
   logger.info(`OpenATS Backend running on port ${PORT}`);
   logger.info(`Socket.io initialized and listening on the same port.`);
 });

@@ -24,8 +24,8 @@ describe("the Gemini key is optional", () => {
     R2_BUCKET_NAME: "bucket",
     R2_PRIVATE_BUCKET_NAME: "private-bucket",
     R2_PUBLIC_URL: "https://files.example.test",
-    RESEND_API_KEY: "resend",
-    RESEND_FROM_EMAIL: "no-reply@example.test",
+    SMTP_HOST: "smtp.example.test",
+    MAIL_FROM: "no-reply@example.test",
   };
 
   it("lets the environment pass without it", () => {

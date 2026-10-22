@@ -283,9 +283,9 @@ function runController(
 }
 
 describe("who may see a job and its candidates", () => {
-  it("lets a hiring manager see a job they are not on the hiring team of", async () => {
-    expect(await canViewJob(outsiderUser, teamJobId)).toBe(true);
-    expect(await canViewCandidate(outsiderUser, teamCandidateId)).toBe(true);
+  it("does not let a hiring manager see a job they are not on the hiring team of", async () => {
+    expect(await canViewJob(outsiderUser, teamJobId)).toBe(false);
+    expect(await canViewCandidate(outsiderUser, teamCandidateId)).toBe(false);
   });
 
   it("lets a super admin see every job", async () => {
@@ -306,22 +306,21 @@ describe("who may see a job and its candidates", () => {
     expect(await canViewCandidate(interviewerOnTeamUser, 2_000_000_000)).toBe(false);
   });
 
-  it("keeps the team chat to the hiring team: seeing a candidate is not being in the chat", async () => {
-    expect(await canViewCandidate(outsiderUser, teamCandidateId)).toBe(true);
+  it("keeps the team chat to the hiring team", async () => {
     expect(await canAccessCandidate(outsiderUser, teamCandidateId)).toBe(false);
     expect(await canAccessJob(outsiderUser, teamJobId)).toBe(false);
   });
 });
 
 describe("requireCandidateView and requireJobView", () => {
-  it("pass a hiring manager who is not on the hiring team", async () => {
+  it("reject a hiring manager who is not on the hiring team", async () => {
     const candidate = await runMiddleware(requireCandidateView(), outsiderUser, {
       candidateId: String(teamCandidateId),
     });
     const job = await runMiddleware(requireJobView(), outsiderUser, { jobId: String(teamJobId) });
 
-    expect(candidate.passed).toBe(true);
-    expect(job.passed).toBe(true);
+    expect(candidate.passed).toBe(false);
+    expect(job.passed).toBe(false);
   });
 
   it("reject an interviewer who is not on the hiring team with 403", async () => {
@@ -367,11 +366,11 @@ describe("getCandidateById authorization", () => {
     expect(result.status).toBe(403);
   });
 
-  it("allows hiring_manager for a candidate outside their own hiring team (no regression)", async () => {
+  it("refuses a hiring_manager for a candidate outside their own hiring team", async () => {
     const result = await runController(getCandidateById, outsiderUser, {
       id: String(teamCandidateId),
     });
-    expect(result.status).toBe(200);
+    expect(result.status).toBe(403);
   });
 
   it("allows super_admin unconditionally", async () => {

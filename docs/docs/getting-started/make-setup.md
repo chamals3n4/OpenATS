@@ -37,11 +37,10 @@ You can create another admin, or reset one, at any time with `make admin`. See [
 The setup script cannot create personal provider secrets. Add these values manually after setup if you need their features:
 
 - Cloudflare R2 or another S3-compatible bucket for resumes and attachments
-- Resend for transactional email
 - Gemini for optional AI CV notes (the app runs without it, and the feature is off until turned on in Settings)
 - Google OAuth and Calendar configuration for interview scheduling
 
-To send invite and password reset emails, also put the Resend values in `frontend/.env`. Without them the app still works, and in development the links are printed in the terminal instead.
+Email needs nothing extra locally: `docker compose up -d` starts Mailpit, the default `SMTP_*` values send to it, and every email shows in its inbox at http://localhost:8025. For a real provider, change the `SMTP_*` values in both `backend/.env` and `frontend/.env`.
 
 ## Start development
 

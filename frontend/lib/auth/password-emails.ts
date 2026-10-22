@@ -1,6 +1,6 @@
 // Invite and reset emails, sent from Next.js
 
-const RESEND_ENDPOINT = "https://api.resend.com/emails";
+import nodemailer, { type Transporter } from "nodemailer";
 
 // Must match `resetPasswordTokenExpiresIn` in options.ts.
 export const PASSWORD_LINK_EXPIRES_IN_SECONDS = 60 * 60 * 24;
@@ -10,7 +10,7 @@ export type PasswordLinkKind = "invite" | "reset";
 
 /** Whether invite and reset emails can actually be sent. */
 export function isAuthMailConfigured(): boolean {
-  return Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM_EMAIL);
+  return Boolean(process.env.SMTP_HOST && process.env.MAIL_FROM);
 }
 
 function escapeHtml(value: string): string {
@@ -117,29 +117,32 @@ export function buildPasswordEmail(
   };
 }
 
-async function sendThroughResend(message: {
-  to: string;
-  subject: string;
-  html: string;
-}): Promise<void> {
-  const response = await fetch(RESEND_ENDPOINT, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: `OpenATS <${process.env.RESEND_FROM_EMAIL}>`,
-      to: [message.to],
-      subject: message.subject,
-      html: message.html,
-    }),
-  });
+let transport: Transporter | null = null;
 
-  if (!response.ok) {
-    const detail = await response.text().catch(() => "");
-    throw new Error(`Resend responded ${response.status}: ${detail}`);
+// Same SMTP settings as the backend's mail.service.ts
+function getTransport(): Transporter {
+  if (!transport) {
+    const user = process.env.SMTP_USER;
+    transport = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: Number(process.env.SMTP_PORT ?? 587),
+      secure: process.env.SMTP_SECURE === "true",
+      ...(user ? { auth: { user, pass: process.env.SMTP_PASSWORD ?? "" } } : {}),
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 20_000,
+    });
   }
+  return transport;
+}
+
+async function sendThroughSmtp(message: { to: string; subject: string; html: string }): Promise<void> {
+  await getTransport().sendMail({
+    from: { name: process.env.MAIL_FROM_NAME || "OpenATS", address: process.env.MAIL_FROM ?? "" },
+    to: message.to,
+    subject: message.subject,
+    html: message.html,
+  });
 }
 
 /** Send the email. Never throws so we don't reveal if the account exists */
@@ -152,12 +155,12 @@ export async function sendPasswordLinkEmail(opts: {
   if (!isAuthMailConfigured()) {
     if (process.env.NODE_ENV === "development") {
       console.log(
-        `[password-emails] Resend is not configured. ${opts.kind === "invite" ? "Set password" : "Reset password"} link for ${opts.to}:\n${opts.url}`,
+        `[password-emails] Email is not configured. ${opts.kind === "invite" ? "Set password" : "Reset password"} link for ${opts.to}:\n${opts.url}`,
       );
     } else {
       // Never log the link outside dev
       console.warn(
-        `[password-emails] Resend is not configured; no ${opts.kind} email was sent. Set RESEND_API_KEY and RESEND_FROM_EMAIL.`,
+        `[password-emails] Email is not configured; no ${opts.kind} email was sent. Set SMTP_HOST and MAIL_FROM.`,
       );
     }
     return;
@@ -165,7 +168,7 @@ export async function sendPasswordLinkEmail(opts: {
 
   try {
     const { subject, html } = buildPasswordEmail(opts.kind, opts);
-    await sendThroughResend({ to: opts.to, subject, html });
+    await sendThroughSmtp({ to: opts.to, subject, html });
   } catch (error) {
     console.error(`[password-emails] Failed to send ${opts.kind} email:`, error);
   }

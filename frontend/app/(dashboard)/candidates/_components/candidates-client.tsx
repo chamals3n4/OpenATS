@@ -190,7 +190,11 @@ export default function CandidatesPageClient() {
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
     deleteMutation.mutate(deleteTarget.id, {
-      onSuccess: () => setDeleteTarget(null),
+      onSuccess: () => {
+        toast.success("Candidate deleted");
+        setDeleteTarget(null);
+      },
+      onError: (error) => toast.error(error.message || "Failed to delete the candidate"),
     });
   }, [deleteTarget, deleteMutation]);
 

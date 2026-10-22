@@ -1,7 +1,7 @@
 ---
 sidebar_position: 2
-sidebar_label: Careers page
-title: Careers page integration
+sidebar_label: Careers Page
+title: Careers Page Integration
 description: Publish OpenATS jobs on a public careers page or embed them in your own website.
 ---
 

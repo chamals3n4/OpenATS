@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import {
   Dialog,
   DialogClose,
@@ -47,7 +48,13 @@ export function CandidateEditDialog({ candidate, onClose }: CandidateEditDialogP
             onSave={(formData) =>
               updateMutation.mutate(
                 { id: candidate.id, formData: buildUpdateFormData(formData) },
-                { onSuccess: onClose },
+                {
+                  onSuccess: () => {
+                    toast.success("Candidate updated");
+                    onClose();
+                  },
+                  onError: (error) => toast.error(error.message || "Failed to update the candidate"),
+                },
               )
             }
           />

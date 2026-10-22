@@ -28,8 +28,9 @@ services:
     image: axllent/mailpit:v1.31.4
     container_name: openats-mailpit
     ports:
-      - "1025:1025"
-      - "8025:8025"
+      # Only this machine: the inbox has no sign-in and holds password reset links
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
     restart: unless-stopped
 
 volumes:

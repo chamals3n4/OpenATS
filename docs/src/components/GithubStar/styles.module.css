@@ -1,0 +1,45 @@
+.star {
+  align-items: stretch;
+  border: 1px solid #e2e8f0;
+  border-radius: 999px;
+  color: #0f172a;
+  display: inline-flex;
+  font-size: 0.86rem;
+  font-weight: 600;
+  height: 36px;
+  overflow: hidden;
+  text-decoration: none;
+  transition: border-color 0.2s ease;
+}
+.star:hover { border-color: #145962; color: #0f172a; text-decoration: none; }
+.label { align-items: center; display: inline-flex; gap: 0.45rem; white-space: nowrap; padding: 0 0.85rem 0 0.75rem; }
+/* Between tablet and wide desktop the centred links need the room: keep only the icon and the count */
+@media (max-width: 1180px) {
+  .labelText { display: none; }
+  .label { padding: 0 0.7rem; }
+}
+.count {
+  align-items: center;
+  white-space: nowrap;
+  background: #f8fafc;
+  border-left: 1px solid #e2e8f0;
+  color: #475569;
+  display: inline-flex;
+  font-variant-numeric: tabular-nums;
+  gap: 0.3rem;
+  min-width: 2.6rem;
+  padding: 0 0.8rem 0 0.7rem;
+  transition: color 0.2s ease;
+}
+.icon { height: 17px; width: 17px; }
+.starIcon { color: #d97706; height: 15px; transition: transform 0.3s ease; width: 15px; }
+.star:hover .starIcon { transform: rotate(72deg); }
+
+:global([data-theme='dark']) .star { border-color: #2a2a2a; color: #f5f5f5; }
+:global([data-theme='dark']) .star:hover { border-color: #5fb3ad; }
+:global([data-theme='dark']) .count { background: #141414; border-color: #2a2a2a; color: #a3a3a3; }
+:global([data-theme='dark']) .starIcon { color: #fbbf24; }
+
+@media (prefers-reduced-motion: reduce) {
+  .starIcon { transition: none; }
+}

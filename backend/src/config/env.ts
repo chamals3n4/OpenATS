@@ -72,8 +72,14 @@ export const envSchema = z.object({
   R2_PRIVATE_BUCKET_NAME: z.string().min(1, "R2_PRIVATE_BUCKET_NAME is required"),
   R2_PUBLIC_URL: z.string().min(1, "R2_PUBLIC_URL is required"),
 
-  RESEND_API_KEY: z.string().min(1, "RESEND_API_KEY is required"),
-  RESEND_FROM_EMAIL: z.string().min(1, "RESEND_FROM_EMAIL is required"),
+  // Any SMTP server: Mailpit locally, or Resend, Gmail, SES and others (see backend/.env.example)
+  SMTP_HOST: z.string().min(1, "SMTP_HOST is required"),
+  SMTP_PORT: z.coerce.number().int().min(1).max(65535).default(587),
+  SMTP_SECURE: z.enum(["true", "false"]).default("false"),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASSWORD: z.string().optional(),
+  MAIL_FROM: z.string().email("MAIL_FROM must be an email address, for example hiring@example.com"),
+  MAIL_FROM_NAME: z.string().optional(),
 
   // Optional. Without it the app runs normally and AI CV analysis cannot be turned on.
   GEMINI_API_KEY: z.string().optional(),

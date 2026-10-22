@@ -11,14 +11,25 @@ export interface SendEmailOptions {
 
 let transport: Transporter | null = null;
 
+// Servers on this machine, such as Mailpit, which offer no encryption
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
+/** Whether to refuse sending unless the server upgrades the connection with STARTTLS. */
+export function mustStartTls(host: string | undefined, secure: boolean): boolean {
+  return !secure && !LOCAL_HOSTS.has((host ?? "").toLowerCase());
+}
+
 // Created on first use, so the settings are read after the environment is loaded
 function getTransport(): Transporter {
   if (!transport) {
     const user = process.env.SMTP_USER;
+    const secure = process.env.SMTP_SECURE === "true";
     transport = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
       port: Number(process.env.SMTP_PORT ?? 587),
-      secure: process.env.SMTP_SECURE === "true",
+      secure,
+      // Without this, a server that does not offer STARTTLS would get the password and the email unencrypted
+      requireTLS: mustStartTls(process.env.SMTP_HOST, secure),
       ...(user ? { auth: { user, pass: process.env.SMTP_PASSWORD ?? "" } } : {}),
       pool: true,
       // A slow server must not hang the request that sends the email

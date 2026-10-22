@@ -1,0 +1,61 @@
+/* Same palette as the marketing pages: slate greys and the theme teal */
+.footer {
+  --ink: #0f172a;
+  --text: #475569;
+  --subtle: #64748b;
+  --line: #e2e8f0;
+  --theme: #145962;
+  background: #f8fafc;
+  border-top: 1px solid var(--line);
+  color: var(--text);
+  padding: 4rem 0 2rem;
+}
+:global([data-theme='dark']) .footer {
+  --ink: #f5f5f5;
+  --text: #a3a3a3;
+  --subtle: #8a8a8a;
+  --line: #262626;
+  --theme: #5fb3ad;
+  background: #0f0f0f;
+}
+
+.top { display: grid; gap: 2.5rem; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); }
+
+.brand { align-items: center; color: var(--ink); display: inline-flex; font-size: 1.2rem; font-weight: 700; gap: 0.55rem; letter-spacing: -0.035em; }
+.brand:hover { color: var(--ink); text-decoration: none; }
+.logoDark { display: none; }
+:global([data-theme='dark']) .logoLight { display: none; }
+:global([data-theme='dark']) .logoDark { display: block; }
+.about p { font-size: 0.93rem; line-height: 1.65; margin: 1rem 0 1.4rem; max-width: 340px; }
+.aboutActions { align-items: center; display: flex; flex-wrap: wrap; gap: 0.9rem; }
+.mail { color: var(--text); font-size: 0.88rem; }
+.mail:hover { color: var(--theme); }
+
+.column h2 { color: var(--ink); font-size: 0.88rem; font-weight: 600; letter-spacing: 0; margin: 0.35rem 0 1rem; }
+.column ul { list-style: none; margin: 0; padding: 0; }
+.column li + li { margin-top: 0.6rem; }
+.column a { color: var(--text); font-size: 0.9rem; transition: color 0.2s ease; }
+.column a:hover { color: var(--theme); text-decoration: none; }
+
+.bottom {
+  border-top: 1px solid var(--line);
+  color: var(--subtle);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.85rem;
+  gap: 0.75rem;
+  justify-content: space-between;
+  margin-top: 3rem;
+  padding-top: 1.5rem;
+}
+.bottom a { color: var(--subtle); text-decoration: underline; text-underline-offset: 3px; }
+.bottom a:hover { color: var(--theme); }
+
+@media (max-width: 996px) {
+  .top { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .about { grid-column: 1 / -1; }
+}
+@media (max-width: 600px) {
+  .footer { padding-top: 3rem; }
+  .top { gap: 2rem; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

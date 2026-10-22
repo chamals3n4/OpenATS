@@ -1,9 +1,9 @@
 ---
 sidebar_position: 7
-title: Offers and hiring decisions
+title: Offers and Hiring Decisions
 ---
 
-# Offers and hiring decisions
+# Offers and Hiring Decisions
 
 When the team decides to hire a candidate, OpenATS helps you prepare an offer, send it through a private link, and record the candidate's response.
 

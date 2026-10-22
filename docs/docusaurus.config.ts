@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'An open-source hiring platform to streamline recruitment and hire faster.',
+  title: 'OpenATS',
   tagline: 'An open-source applicant tracking system for clear, adaptable hiring.',
   favicon: 'img/favicon.png',
 

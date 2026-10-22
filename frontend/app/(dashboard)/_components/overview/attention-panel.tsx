@@ -1,9 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import type { ReactNode } from "react";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { CheckmarkCircle02Icon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon, type IconSvgElement } from "@hugeicons/react";
+import {
+  ArrowRight01Icon,
+  Calendar03Icon,
+  CheckmarkCircle02Icon,
+  Clock01Icon,
+  ContractsIcon,
+  UserAdd01Icon,
+} from "@hugeicons/core-free-icons";
 import type { AttentionReport } from "@/types";
 import { ageLabel, daysAgo, interviewWhen } from "../../_lib/overview-utils";
 import { cardCls } from "./card";
@@ -16,81 +22,67 @@ interface AttentionPanelProps {
   now: number;
 }
 
-function Column({
-  title,
-  count,
-  href,
-  hrefLabel,
-  emptyText,
-  children,
-}: {
-  title: string;
+type Person = { key: number; href: string; name: string; meta: string };
+
+interface Task {
+  id: string;
+  icon: IconSvgElement;
   count: number;
+  label: string;
+  /** Overdue kinds get a coloured number so they stand out */
+  urgent?: "red" | "amber";
+  /** Said in the "also clear" line when there is nothing to do */
+  clear: string;
   href: string;
   hrefLabel: string;
-  emptyText: string;
-  children: ReactNode;
-}) {
-  return (
-    <section className="flex min-w-0 flex-col p-5">
-      <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-sm font-medium text-slate-600 dark:text-neutral-400">{title}</h3>
-        <p className="text-2xl leading-none font-semibold tabular-nums text-slate-900 dark:text-neutral-100">
-          {count}
-        </p>
-      </div>
-
-      {count === 0 ? (
-        // Columns share the same height
-        <div className="mt-3 flex min-h-[3.5rem] flex-1 flex-col items-center justify-center gap-2 px-2 py-4 text-center">
-          <HugeiconsIcon
-            icon={CheckmarkCircle02Icon}
-            className="size-6 text-emerald-600 dark:text-emerald-400"
-            strokeWidth={1.75}
-            aria-hidden
-          />
-          <p className="text-sm text-slate-600 dark:text-neutral-400">{emptyText}</p>
-        </div>
-      ) : (
-        <div className="mt-3 min-h-[3.5rem] flex-1">{children}</div>
-      )}
-
-      <Link
-        href={href}
-        className="mt-3 text-sm font-medium text-theme hover:underline dark:text-primary"
-      >
-        {hrefLabel}
-      </Link>
-    </section>
-  );
+  people: Person[];
 }
 
-function Row({
-  href,
-  title,
-  detail,
-  meta,
-}: {
-  href: string;
-  title: string;
-  detail: string;
-  meta: string;
-}) {
+// The count sits beside the label as a small badge; overdue kinds are tinted
+const BADGE = {
+  red: "bg-red-50 text-red-700 ring-red-200 dark:bg-red-950/40 dark:text-red-300 dark:ring-red-900",
+  amber: "bg-amber-50 text-amber-700 ring-amber-200 dark:bg-amber-950/40 dark:text-amber-300 dark:ring-amber-900",
+  plain: "bg-slate-100 text-slate-700 ring-slate-200 dark:bg-neutral-800 dark:text-neutral-300 dark:ring-neutral-700",
+} as const;
+
+function TaskRow({ task }: { task: Task }) {
+  const more = task.count - task.people.length;
   return (
-    <li>
-      <Link
-        href={href}
-        className="-mx-2 flex items-start justify-between gap-3 rounded-md px-2 py-1.5 outline-none transition-colors hover:bg-slate-100 focus-visible:bg-slate-100 dark:hover:bg-neutral-800 dark:focus-visible:bg-neutral-800"
-      >
-        <span className="min-w-0">
-          <span className="block truncate text-sm font-medium text-slate-900 dark:text-neutral-100">
-            {title}
+    <li className="flex flex-col gap-2 px-5 py-3.5 sm:flex-row sm:items-center sm:gap-4">
+      <div className="min-w-0 flex-1">
+        <p className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-neutral-100">
+          <HugeiconsIcon icon={task.icon} className="size-4 shrink-0 text-slate-400 dark:text-neutral-500" strokeWidth={1.75} aria-hidden />
+          {task.label}
+          <span
+            className={`rounded-md px-1.5 py-px text-xs font-semibold tabular-nums ring-1 ring-inset ${BADGE[task.urgent ?? "plain"]}`}
+          >
+            {task.count}
           </span>
-          <span className="block truncate text-xs text-slate-500 dark:text-neutral-400">{detail}</span>
-        </span>
-        <span className="shrink-0 pt-0.5 text-xs font-medium whitespace-nowrap text-slate-700 dark:text-neutral-300">
-          {meta}
-        </span>
+        </p>
+        {task.people.length > 0 && (
+          <p className="mt-1 truncate pl-6 text-sm text-slate-500 dark:text-neutral-400">
+            {task.people.map((person, index) => (
+              <span key={person.key}>
+                {index > 0 && ", "}
+                <Link
+                  href={person.href}
+                  className="text-slate-700 underline-offset-2 hover:text-theme hover:underline dark:text-neutral-300"
+                >
+                  {person.name}
+                </Link>{" "}
+                <span className="text-slate-400 dark:text-neutral-500">({person.meta})</span>
+              </span>
+            ))}
+            {more > 0 && ` and ${more} more`}
+          </p>
+        )}
+      </div>
+      <Link
+        href={task.href}
+        className="inline-flex shrink-0 items-center gap-1 pl-6 text-sm font-medium text-theme hover:underline sm:pl-0 dark:text-primary"
+      >
+        {task.hrefLabel}
+        <HugeiconsIcon icon={ArrowRight01Icon} className="size-3.5" aria-hidden />
       </Link>
     </li>
   );
@@ -116,85 +108,98 @@ export function AttentionPanel({ report, isLoading, isError, onRetry, now }: Att
   }
 
   if (isLoading || !report) {
-    return <div className={`${cardCls} h-48 animate-pulse bg-slate-100 dark:bg-neutral-800`} />;
+    return <div className={`${cardCls} h-40 animate-pulse bg-slate-100 dark:bg-neutral-800`} />;
   }
 
   const { newApplicants, upcomingInterviews, offersAwaitingAnswer, stalledCandidates } = report;
 
+  const tasks: Task[] = [
+    {
+      id: "stalled",
+      icon: Clock01Icon,
+      urgent: "red",
+      count: stalledCandidates.count,
+      label: `Waiting ${stalledCandidates.afterDays}+ days in a stage`,
+      clear: "stalled candidates",
+      href: "/jobs",
+      hrefLabel: "Open jobs",
+      people: stalledCandidates.items.map((c) => ({
+        key: c.candidateId,
+        href: `/candidates/${c.candidateId}`,
+        name: c.candidateName,
+        meta: ageLabel(c.days),
+      })),
+    },
+    {
+      id: "offers",
+      icon: ContractsIcon,
+      urgent: "amber",
+      count: offersAwaitingAnswer.count,
+      label: "Offers waiting for an answer",
+      clear: "offers",
+      href: "/offers",
+      hrefLabel: "Open offers",
+      people: offersAwaitingAnswer.items.map((o) => ({
+        key: o.offerId,
+        href: `/candidates/${o.candidateId}`,
+        name: o.candidateName,
+        meta: `sent ${ageLabel(daysAgo(o.sentAt, now))}${daysAgo(o.sentAt, now) > 0 ? " ago" : ""}`,
+      })),
+    },
+    {
+      id: "interviews",
+      icon: Calendar03Icon,
+      count: upcomingInterviews.count,
+      label: "Interviews this week",
+      clear: "interviews",
+      href: "/interviews",
+      hrefLabel: "Open interviews",
+      people: upcomingInterviews.items.map((i) => ({
+        key: i.interviewId,
+        href: `/candidates/${i.candidateId}`,
+        name: i.candidateName,
+        meta: interviewWhen(i.startsAt, now),
+      })),
+    },
+    {
+      id: "applicants",
+      icon: UserAdd01Icon,
+      count: newApplicants.last24h,
+      label: "New applicants in the last 24 hours",
+      clear: "new applicants",
+      href: "/candidates",
+      hrefLabel: "View candidates",
+      people: [],
+    },
+  ];
+  const open = tasks.filter((task) => task.count > 0);
+  const clear = tasks.filter((task) => task.count === 0);
+
   return (
-    <section
-      aria-label="Needs your attention"
-      className={`${cardCls} grid grid-cols-1 divide-y divide-slate-300 sm:grid-cols-2 sm:divide-y-0 xl:grid-cols-4 xl:divide-x dark:divide-neutral-700`}
-    >
-      <Column
-        title="New applicants"
-        count={newApplicants.last24h}
-        href="/candidates"
-        hrefLabel="View candidates"
-        emptyText="No new applicants in the last 24 hours"
-      >
-        <p className="text-sm text-slate-600 dark:text-neutral-400">in the last 24 hours</p>
-      </Column>
+    <section aria-label="Needs your attention" className={`${cardCls} overflow-hidden`}>
+      <header className="flex items-baseline justify-between gap-3 border-b border-slate-200 px-5 py-3 dark:border-neutral-800">
+        <h2 className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">Needs you today</h2>
+      </header>
 
-      <Column
-        title="Interviews this week"
-        count={upcomingInterviews.count}
-        href="/interviews"
-        hrefLabel="Open interviews"
-        emptyText="No interviews scheduled this week"
-      >
-        <ul>
-          {upcomingInterviews.items.map((i) => (
-            <Row
-              key={i.interviewId}
-              href={`/candidates/${i.candidateId}`}
-              title={i.candidateName}
-              detail={i.jobTitle}
-              meta={interviewWhen(i.startsAt, now)}
-            />
-          ))}
-        </ul>
-      </Column>
-
-      <Column
-        title="Offers waiting for an answer"
-        count={offersAwaitingAnswer.count}
-        href="/offers"
-        hrefLabel="Open offers"
-        emptyText="No offers are waiting"
-      >
-        <ul>
-          {offersAwaitingAnswer.items.map((o) => (
-            <Row
-              key={o.offerId}
-              href={`/candidates/${o.candidateId}`}
-              title={o.candidateName}
-              detail={o.jobTitle}
-              meta={`Sent ${ageLabel(daysAgo(o.sentAt, now))}${daysAgo(o.sentAt, now) > 0 ? " ago" : ""}`}
-            />
-          ))}
-        </ul>
-      </Column>
-
-      <Column
-        title={`Waiting ${stalledCandidates.afterDays}+ days in a stage`}
-        count={stalledCandidates.count}
-        href="/jobs"
-        hrefLabel="Open jobs"
-        emptyText="Nobody is stuck in a stage"
-      >
-        <ul>
-          {stalledCandidates.items.map((c) => (
-            <Row
-              key={c.candidateId}
-              href={`/candidates/${c.candidateId}`}
-              title={c.candidateName}
-              detail={`${c.stageName} · ${c.jobTitle}`}
-              meta={ageLabel(c.days)}
-            />
-          ))}
-        </ul>
-      </Column>
+      {open.length === 0 ? (
+        <p className="flex items-center gap-2 px-5 py-5 text-sm text-slate-600 dark:text-neutral-400">
+          <HugeiconsIcon icon={CheckmarkCircle02Icon} className="size-4 shrink-0 text-emerald-600 dark:text-emerald-400" aria-hidden />
+          Nothing needs you right now.
+        </p>
+      ) : (
+        <>
+          <ul className="divide-y divide-slate-200 dark:divide-neutral-800">
+            {open.map((task) => (
+              <TaskRow key={task.id} task={task} />
+            ))}
+          </ul>
+          {clear.length > 0 && (
+            <p className="border-t border-slate-200 px-5 py-2.5 text-xs text-slate-500 dark:border-neutral-800 dark:text-neutral-500">
+              Nothing waiting for {clear.map((task) => task.clear).join(", ")}.
+            </p>
+          )}
+        </>
+      )}
     </section>
   );
 }

@@ -1,6 +1,6 @@
 ---
 slug: placeholder-post
-title: Placeholder post
+title: Placeholder Post
 description: A sample post that shows how the blog looks. Replace it with a real article before publishing.
 authors: [chamal]
 tags: [announcement]

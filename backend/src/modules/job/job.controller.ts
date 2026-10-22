@@ -6,7 +6,7 @@ import logger from "../../utils/logger";
 import { getErrorCode, getErrorMessage} from "../../utils/error.utils";
 import { jobs } from "../../db/schema";
 import { scoringService } from "../scoring/scoring.service";
-import { canViewJob } from "../../shared/auth/job-access";
+import { canViewJob, canViewJobs, teamScope } from "../../shared/auth/job-access";
 import { sanitizeJobDescription } from "./job-description";
 
 const employmentTypeEnum = z.enum([
@@ -114,7 +114,7 @@ export const listPublishedCareersJobs = async (
 export const getAllJobs = async (req: Request, res: Response) => {
   try {
     const { page, limit, search, status, departmentId } = req.query;
-    const teamUserId = req.user.role === "interviewer" ? req.user.id : undefined;
+    const teamUserId = teamScope(req.user);
 
     if (page !== undefined) {
       const result = await jobService.getPaginated({
@@ -149,6 +149,11 @@ export const bulkDeleteJobs = async (req: Request, res: Response) => {
     const parsed = bulkDeleteJobsSchema.safeParse(req.body);
     if (!parsed.success) {
       res.status(400).json({ error: "Validation failed", details: parsed.error.flatten().fieldErrors });
+      return;
+    }
+    if (!(await canViewJobs(req.user, parsed.data.ids))) {
+      logger.warn(`[access] user ${req.user.id} denied bulk deleting jobs ${parsed.data.ids.join(",")}`);
+      res.status(403).json({ error: "You can only delete jobs you are on the hiring team of" });
       return;
     }
     logger.warn(`Bulk job deletion requested: ids=${parsed.data.ids.join(",")} by user ${req.user?.id}`);

@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useOffersList, useDeleteOffer, useBulkDeleteOffers } from "@/hooks/queries/use-offers";
@@ -51,7 +52,13 @@ export default function OffersPageClient() {
   const handleDeleteSelected = useCallback(
     async (ids: number[]) => {
       if (ids.length === 0) return false;
-      await bulkDeleteMutation.mutateAsync(ids);
+      try {
+        await bulkDeleteMutation.mutateAsync(ids);
+        toast.success(`Deleted ${ids.length} ${ids.length === 1 ? "offer" : "offers"}`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to delete the offers");
+        return false;
+      }
     },
     [bulkDeleteMutation],
   );
@@ -59,7 +66,11 @@ export default function OffersPageClient() {
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
     deleteMutation.mutate(deleteTarget.id, {
-      onSuccess: () => setDeleteTarget(null),
+      onSuccess: () => {
+        toast.success("Offer deleted");
+        setDeleteTarget(null);
+      },
+      onError: (error) => toast.error(error.message || "Failed to delete the offer"),
     });
   }, [deleteTarget, deleteMutation]);
 

@@ -63,8 +63,10 @@ const interviewStart = sql`COALESCE(
 type Counted<T> = T & { total: string };
 
 export const attentionService = {
-  async get(departmentId?: number): Promise<AttentionReport> {
-    const dept = departmentId ? sql` AND j.department_id = ${departmentId}` : sql``;
+  async get(departmentId?: number, teamUserId?: number): Promise<AttentionReport> {
+    const dept = sql`${departmentId ? sql` AND j.department_id = ${departmentId}` : sql``}${
+      teamUserId ? sql` AND j.id IN (SELECT job_id FROM job_hiring_team WHERE user_id = ${teamUserId})` : sql``
+    }`;
     const now = new Date();
     const dayAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
     const weekAhead = new Date(now.getTime() + UPCOMING_DAYS * 24 * 60 * 60 * 1000);

@@ -2,6 +2,7 @@ import { eq } from "drizzle-orm";
 import { db } from "../../db";
 import { candidates, jobs, departments, company } from "../../db/schema";
 import { TemplateContext } from "./template-engine.service";
+import { frontendUrl } from "../../utils/frontend-url";
 
 export const variableService = {
   /**
@@ -47,10 +48,7 @@ export const variableService = {
   ): Promise<TemplateContext> {
     const baseContext = await this.getContextForCandidate(candidateId);
 
-    const frontendBase = (process.env.FRONTEND_URL ?? "http://localhost:3000").replace(
-      /\/$/,
-      "",
-    );
+    const frontendBase = frontendUrl();
 
     return {
       ...baseContext,

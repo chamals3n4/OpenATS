@@ -78,7 +78,7 @@ function buildSlashItems(query: string, variables: string[]): SlashMenuItem[] {
           .chain()
           .focus()
           .deleteRange(range)
-          .insertContent({ type: "emailButton", attrs: { label: "Click Here", href: "[url]" } })
+          .insertContent({ type: "emailButton", attrs: { label: "", href: "", autoOpen: true } })
           .run(),
     },
     {
@@ -276,7 +276,7 @@ export function EmailBodyEditor({ value, onChange, readOnly = false }: Props) {
     editor
       .chain()
       .focus()
-      .insertContent({ type: "emailButton", attrs: { label: "Click Here", href: "[url]" } })
+      .insertContent({ type: "emailButton", attrs: { label: "", href: "", autoOpen: true } })
       .run();
   const moveCls =
     "flex size-5 cursor-pointer items-center justify-center rounded border border-slate-300 bg-white text-slate-500 hover:border-theme/50 hover:text-theme disabled:pointer-events-none disabled:opacity-30 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400";

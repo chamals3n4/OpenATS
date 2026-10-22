@@ -17,7 +17,7 @@ import { parseMinScore, parseMinYears } from "./candidate-query";
 import { aiSettingsService } from "../settings/ai-settings.service";
 import { scoringService } from "../scoring/scoring.service";
 import { withholdInterviewScores } from "../scoring/scoring";
-import { canViewCandidate } from "../../shared/auth/job-access";
+import { canViewCandidate, canViewCandidates, canViewJob, teamScope } from "../../shared/auth/job-access";
 import logger from "../../utils/logger";
 
 import { requestCvAnalysis } from "../../queues/cv-analysis/queue";
@@ -261,7 +261,7 @@ export const getCandidates = async (req: Request, res: Response) => {
           : undefined,
       page,
       limit,
-      teamUserId: req.user.role === "interviewer" ? req.user.id : undefined,
+      teamUserId: teamScope(req.user),
     };
 
     const result = await candidateService.getAll(jobId, filters);
@@ -462,6 +462,11 @@ export const bulkMoveCandidates = async (req: Request, res: Response) => {
       return;
     }
 
+    if (!(await canViewCandidates(req.user, parsed.data.candidateIds))) {
+      res.status(403).json({ error: "You do not have access to some of these candidates" });
+      return;
+    }
+
     const result = await candidateService.moveStageBulk(
       parsed.data.candidateIds,
       parsed.data.newStageId,
@@ -491,6 +496,16 @@ export const bulkDeleteCandidates = async (req: Request, res: Response) => {
       res.status(400).json({
         error: "Say which candidates to delete: a list of candidates, or a job and the number to delete",
       });
+      return;
+    }
+
+    const allowed =
+      "candidateIds" in parsed.data
+        ? await canViewCandidates(req.user, parsed.data.candidateIds)
+        : await canViewJob(req.user, parsed.data.jobId);
+    if (!allowed) {
+      logger.warn(`[access] user ${req.user.id} denied a bulk candidate deletion`);
+      res.status(403).json({ error: "You do not have access to some of these candidates" });
       return;
     }
 

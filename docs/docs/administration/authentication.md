@@ -44,27 +44,27 @@ Every user has exactly one role.
 
 | Role | What they can do |
 | --- | --- |
-| **Super Admin** | Everything, including creating users, changing roles and deactivating accounts. |
-| **Hiring Manager** | Run hiring: create and edit jobs, move candidates through the pipeline, schedule interviews, make offers, and change settings such as the company profile and the careers page. |
+| **Super Admin** | Everything, including creating users, changing roles and deactivating accounts, and the company profile, departments and AI analysis setting. |
+| **Hiring Manager** | Run hiring on their own jobs: create jobs, and on the jobs they are on the hiring team of edit the job, move candidates through the pipeline, schedule interviews and make offers. They also manage what all jobs share: assessments, assignments, email templates and the careers page. They see the company settings read-only. |
 | **Interviewer** | Take part in the jobs they are on the hiring team for: read those candidates and submit interview scorecards. |
 
 A role change takes effect on the user's **next request**. They do not need to sign out and in again.
 
 ### Who sees which jobs
 
-A job's **hiring team** decides what an Interviewer sees. It does not limit Hiring Managers.
+A job's **hiring team** decides what a Hiring Manager and an Interviewer see. Whoever creates a job is added to its hiring team.
 
 | Role | Jobs and candidates they can see |
 | --- | --- |
 | **Super Admin** | Every job and every candidate. |
-| **Hiring Manager** | Every job and every candidate, whether or not they are on the job's hiring team. This includes CVs, emails, assessments and ratings. |
+| **Hiring Manager** | Only the jobs they are on the hiring team for, and the candidates of those jobs, and they can change them. Other jobs, and their candidates, offers, interviews and report figures, do not appear at all. |
 | **Interviewer** | Only the jobs they are on the hiring team for, and the candidates of those jobs. A link to any other candidate answers "no access". They also see any interview they were picked to run, even on a job they are not on the team of. They never see the **Manage Offers** page or salaries there, and cannot accept or decline an offer. |
 
-The **team chat** is the one exception. A job's chat, and the chat on each of its candidates, is open only to that job's hiring team and to Super Admins. A Hiring Manager who is not on the hiring team can open the candidate but not the chat. Add them to the hiring team to bring them into the conversation.
+The **team chat** follows the same rule: a job's chat, and the chat on each of its candidates, is open only to that job's hiring team and to Super Admins.
 
 Picking someone to run an interview does not add them to the job's hiring team. They can see that interview and submit its scorecard, but to open the candidate's page and CV they have to be on the hiring team as well.
 
-If you need to keep a job's candidates away from some of your Hiring Managers, OpenATS cannot do that today: give those people the Interviewer role instead.
+To let a Hiring Manager work on a job they did not create, add them to that job's hiring team.
 
 ## Managing users
 

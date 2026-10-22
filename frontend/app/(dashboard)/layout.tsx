@@ -46,7 +46,7 @@ export default async function DashboardLayout({
             </div>
           </SidebarProvider>
         </div>
-        <Toaster richColors closeButton />
+        <Toaster />
       </SocketAuthProvider>
     </QueryProvider>
   );

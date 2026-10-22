@@ -57,7 +57,7 @@ export function ScoreBadge({
         aria-label={total === null || total === undefined ? "Not scored yet" : `Score ${formatScore(total)} out of 100`}
         className={cn(
           "inline-flex items-center justify-center rounded-md font-semibold tabular-nums",
-          full ? "h-8 min-w-11 px-2 text-base" : "h-6 min-w-8 px-1.5 text-xs",
+          full ? "h-6 min-w-10 px-2 text-sm" : "h-6 min-w-8 px-1.5 text-xs",
           TONE_CLASS[scoreTone(total)],
         )}
       >

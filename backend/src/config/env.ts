@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isLocalUrl } from "../utils/frontend-url";
 
 /** Whether a string is a key `shared/integrations/crypto.ts` can use: 32 bytes, base64 encoded. */
 export function isEncryptionKey(value: string): boolean {
@@ -54,7 +55,14 @@ export const envSchema = z.object({
       isEncryptionKey,
       "ENCRYPTION_KEY must be 32 bytes, base64 encoded. Generate one with: openssl rand -base64 32",
     ),
-  FRONTEND_URL: z.string().min(1, "FRONTEND_URL is required"),
+  // The site candidates open: every link in an email starts with it (utils/frontend-url.ts)
+  FRONTEND_URL: z
+    .string()
+    .min(1, "FRONTEND_URL is required")
+    .refine(
+      (value) => /^https?:\/\/[^/\s]+/.test(value.trim()),
+      "FRONTEND_URL must be the full address of the site, for example https://careers.example.com",
+    ),
 
   R2_ENDPOINT: z.string().min(1, "R2_ENDPOINT is required"),
   R2_ACCESS_KEY_ID: z.string().min(1, "R2_ACCESS_KEY_ID is required"),
@@ -100,6 +108,16 @@ export function validateEnv(): Env {
       `\nMissing or invalid environment variables:\n${issues}\n\nCheck backend/.env against backend/.env.example.\n`,
     );
     process.exit(1);
+  }
+
+  // Allowed so a production build can be tried on one machine, but every candidate email would
+  // then link to that machine.
+  if (process.env.NODE_ENV === "production" && isLocalUrl(result.data.FRONTEND_URL)) {
+    console.warn(
+      `\nWARNING: FRONTEND_URL is ${result.data.FRONTEND_URL}, an address only this machine can open.\n` +
+        "Links in emails to candidates (assessments, assignments, interview times, offers) will not work.\n" +
+        "Set FRONTEND_URL in backend/.env to your site's public address.\n",
+    );
   }
 
   return result.data;

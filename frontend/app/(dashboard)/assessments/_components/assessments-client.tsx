@@ -47,7 +47,10 @@ export default function AssessmentsPageClient({ tab = "assessments" }: { tab?: A
   const handleConfirmDelete = useCallback(() => {
     if (!deleteTarget) return;
     deleteAssessment.mutate(deleteTarget.id, {
-      onSuccess: () => setDeleteTarget(null),
+      onSuccess: () => {
+        toast.success("Assessment deleted");
+        setDeleteTarget(null);
+      },
       onError: (error) => {
         toast.error(error.message || "Failed to delete assessment");
         setDeleteTarget(null);
@@ -81,10 +84,7 @@ export default function AssessmentsPageClient({ tab = "assessments" }: { tab?: A
           setGeneratedLink(url);
 
           if (res.didSendInvite === false) {
-            toast.message("Existing invite", {
-              description:
-                "This candidate already had an active assessment link — showing it below (no new email).",
-            });
+            toast.message("They already have an active link");
           }
         },
       },

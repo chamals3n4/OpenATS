@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { requireCandidateView } from "../../middlewares/job-access.middleware";
 import { requireManager } from "../../middlewares/role.middleware";
+import { canViewCandidates } from "../../shared/auth/job-access";
 import { z } from "zod";
 import { rejectionService, RejectionError } from "./rejection.service";
 import { db } from "../../db";
@@ -41,6 +42,10 @@ router.post("/candidates/bulk/reject", requireManager, async (req, res) => {
     res.status(400).json({ error: "Validation failed", details: parsed.error.flatten().fieldErrors });
     return;
   }
+  if (!(await canViewCandidates(req.user, parsed.data.candidateIds))) {
+    res.status(403).json({ error: "You do not have access to some of these candidates" });
+    return;
+  }
   const rejected: number[] = [];
   const failed: { id: number; error: string }[] = [];
   for (const id of new Set(parsed.data.candidateIds)) {
@@ -71,7 +76,7 @@ router.post("/candidates/bulk/reject", requireManager, async (req, res) => {
 });
 
 // POST /candidates/:id/reject — reject a candidate
-router.post("/candidates/:id/reject", requireManager, async (req, res) => {
+router.post("/candidates/:id/reject", requireManager, requireCandidateView("id"), async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
     if (isNaN(id)) {
@@ -118,7 +123,7 @@ router.post("/candidates/:id/reject", requireManager, async (req, res) => {
 });
 
 // POST /candidates/:id/unreject — restore a rejected candidate
-router.post("/candidates/:id/unreject", requireManager, async (req, res) => {
+router.post("/candidates/:id/unreject", requireManager, requireCandidateView("id"), async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
     if (isNaN(id)) {

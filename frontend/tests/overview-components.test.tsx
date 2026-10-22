@@ -60,15 +60,19 @@ const report: AttentionReport = {
 };
 
 describe("AttentionPanel", () => {
-  it("lists what needs attention with links into each candidate", () => {
+  it("lists what needs attention as tasks, with links into each candidate", () => {
     render(<AttentionPanel report={report} isLoading={false} isError={false} onRetry={() => {}} now={NOW} />);
+    expect(screen.getByText("Interviews this week")).toBeInTheDocument();
     expect(screen.getByText("7")).toBeInTheDocument();
+    expect(screen.getByText("New applicants in the last 24 hours")).toBeInTheDocument();
+    expect(screen.getByText("Waiting 7+ days in a stage")).toBeInTheDocument();
     const ada = screen.getByRole("link", { name: /Ada Lovelace/ });
     expect(ada).toHaveAttribute("href", "/candidates/11");
-    expect(ada).toHaveTextContent(/^Ada LovelaceEngineerToday, /);
-    expect(screen.getByRole("link", { name: /Grace Hopper/ })).toHaveTextContent("Sent 3 days ago");
-    expect(screen.getByRole("link", { name: /Alan Turing/ })).toHaveTextContent("Screening · Intern23 days");
-    expect(screen.getByText("Waiting 7+ days in a stage")).toBeInTheDocument();
+    expect(ada).toHaveTextContent("Ada Lovelace");
+    expect(screen.getByText("(sent 3 days ago)")).toBeInTheDocument();
+    expect(screen.getByText("(23 days)")).toBeInTheDocument();
+    // Only the first few are named; the rest are counted
+    expect(screen.getByText(new RegExp(`and ${7 - report.upcomingInterviews.items.length} more`))).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Open interviews" })).toHaveAttribute("href", "/interviews");
   });
 
@@ -80,9 +84,8 @@ describe("AttentionPanel", () => {
       stalledCandidates: { count: 0, afterDays: 7, items: [] },
     };
     render(<AttentionPanel report={empty} isLoading={false} isError={false} onRetry={() => {}} now={NOW} />);
-    expect(screen.getByText("No interviews scheduled this week")).toBeInTheDocument();
-    expect(screen.getByText("No offers are waiting")).toBeInTheDocument();
-    expect(screen.getByText("Nobody is stuck in a stage")).toBeInTheDocument();
+    expect(screen.getByText("Nothing needs you right now.")).toBeInTheDocument();
+    expect(screen.queryByRole("link")).toBeNull();
   });
 
   it("shows an error with a retry only when there is nothing to show", () => {

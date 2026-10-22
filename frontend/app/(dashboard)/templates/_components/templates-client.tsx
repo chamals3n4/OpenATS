@@ -104,7 +104,13 @@ export default function TemplatesPageClient({ tab = "yours" }: { tab?: Templates
   const handleDeleteSelected = useCallback(
     async (ids: number[]) => {
       if (ids.length === 0) return false;
-      await bulkDeleteMutation.mutateAsync(ids);
+      try {
+        await bulkDeleteMutation.mutateAsync(ids);
+        toast.success(`Deleted ${ids.length} ${ids.length === 1 ? "template" : "templates"}`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to delete the templates");
+        return false;
+      }
     },
     [bulkDeleteMutation],
   );
@@ -116,7 +122,11 @@ export default function TemplatesPageClient({ tab = "yours" }: { tab?: Templates
   const handleConfirmDelete = useCallback(() => {
     if (deleteId === null) return;
     deleteMutation.mutate(deleteId, {
-      onSuccess: () => setDeleteId(null),
+      onSuccess: () => {
+        toast.success("Template deleted");
+        setDeleteId(null);
+      },
+      onError: (error) => toast.error(error.message || "Failed to delete the template"),
     });
   }, [deleteId, deleteMutation]);
 

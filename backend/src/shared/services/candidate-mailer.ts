@@ -39,14 +39,15 @@ export interface CandidateEmailResult {
 }
 
 /** The name emails are signed with, and the zone their dates and times are written in. */
-export async function getCompanyForEmail(): Promise<{ companyName: string; timeZone: string }> {
+export async function getCompanyForEmail(): Promise<{ companyName: string; timeZone: string; logoUrl: string | null }> {
   const [row] = await db
-    .select({ name: company.name, timeZone: company.timeZone })
+    .select({ name: company.name, timeZone: company.timeZone, logoUrl: company.logoUrl })
     .from(company)
     .limit(1);
   return {
     companyName: row?.name?.trim() || "The hiring team",
     timeZone: row?.timeZone || DEFAULT_TIME_ZONE,
+    logoUrl: row?.logoUrl ?? null,
   };
 }
 

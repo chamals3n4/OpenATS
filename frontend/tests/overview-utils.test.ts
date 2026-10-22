@@ -68,10 +68,6 @@ describe("buildKpis", () => {
     expect(kpi(summary({ offerAcceptanceRate: 0, offersSent: 3 }), "offerRate").value).toBe("0%");
   });
 
-  it("marks only the offer rate as manager-only", () => {
-    expect(buildKpis(summary()).filter((k) => k.managerOnly).map((k) => k.key)).toEqual(["offerRate"]);
-  });
-
   it("uses the singular", () => {
     expect(kpi(summary({ totalCandidates: 1 }), "applications").hint).toBe("1 candidate in total");
     expect(kpi(summary({ avgTimeToHireDays: 1 }), "timeToHire").unit).toBe("day");

@@ -79,9 +79,9 @@ export function checkAnswers(
 
 export type AssignmentStatus = "pending" | "submitted" | "expired";
 
-/** Work can be handed in, or changed, until the deadline and not after. */
+/** Work is handed in once, before the deadline. A handed-in or expired assignment takes no more. */
 export function isOpenForSubmission(status: AssignmentStatus, dueAt: Date, now: Date): boolean {
-  return status !== "expired" && now.getTime() <= dueAt.getTime();
+  return status === "pending" && now.getTime() <= dueAt.getTime();
 }
 
 export function dueDateFor(sentAt: Date, dueDays: number): Date {

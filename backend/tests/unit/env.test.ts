@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { envSchema, isEncryptionKey, parseTrustProxy } from "../../src/config/env";
+import { frontendUrl, isLocalUrl } from "../../src/utils/frontend-url";
 
 const VALID_KEY = Buffer.alloc(32, 7).toString("base64");
 
@@ -82,5 +83,30 @@ describe("RUN_WORKER_IN_API", () => {
     expect(envSchema.safeParse(env({ RUN_WORKER_IN_API: "true" })).success).toBe(true);
     expect(envSchema.safeParse(env({ RUN_WORKER_IN_API: "false" })).success).toBe(true);
     expect(envSchema.safeParse(env({ RUN_WORKER_IN_API: "yes" })).success).toBe(false);
+  });
+});
+
+describe("FRONTEND_URL", () => {
+  it("must be a full web address, since every link in a candidate email starts with it", () => {
+    expect(envSchema.safeParse(env({ FRONTEND_URL: "https://careers.example.com" })).success).toBe(true);
+    expect(envSchema.safeParse(env({ FRONTEND_URL: "careers.example.com" })).success).toBe(false);
+    expect(envSchema.safeParse(env({ FRONTEND_URL: "/careers" })).success).toBe(false);
+  });
+
+  it("knows an address only this machine can open", () => {
+    expect(isLocalUrl("http://localhost:3000")).toBe(true);
+    expect(isLocalUrl("http://127.0.0.1:3000")).toBe(true);
+    expect(isLocalUrl("https://careers.example.com")).toBe(false);
+  });
+
+  it("builds email links without a doubled slash", () => {
+    const before = process.env.FRONTEND_URL;
+    process.env.FRONTEND_URL = "https://careers.example.com/";
+    try {
+      expect(frontendUrl("/offer/abc")).toBe("https://careers.example.com/offer/abc");
+      expect(frontendUrl()).toBe("https://careers.example.com");
+    } finally {
+      process.env.FRONTEND_URL = before;
+    }
   });
 });

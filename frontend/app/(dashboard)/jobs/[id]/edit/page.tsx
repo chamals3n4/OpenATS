@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useMemo } from "react";
 import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
@@ -48,7 +49,11 @@ function EditJob() {
         : job.status;
 
     updateJob.mutate(buildUpdateJobPayload({ ...values, status }), {
-      onSuccess: () => router.push(`/jobs/${jobId}`),
+      onSuccess: () => {
+        toast.success("Job updated");
+        router.push(`/jobs/${jobId}`);
+      },
+      onError: (error) => toast.error(error.message || "Failed to update the job"),
     });
   };
 

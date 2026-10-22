@@ -245,7 +245,11 @@ export function HiringProcessTab({ jobId }: { jobId: number }) {
         onConfirm={() => {
           if (!stageDeleteTarget) return;
           deleteStageMutation.mutate(stageDeleteTarget.id, {
-            onSuccess: () => setStageDeleteTarget(null),
+            onSuccess: () => {
+              toast.success("Stage deleted");
+              setStageDeleteTarget(null);
+            },
+            onError: (error) => toast.error(error.message || "Failed to delete the stage"),
           });
         }}
       />

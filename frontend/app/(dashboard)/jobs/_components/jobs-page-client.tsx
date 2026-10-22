@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState, useMemo, useCallback, useEffect } from "react";
 import { useJobsList, useBulkDeleteJobs, useDeleteJob } from "@/hooks/queries/use-jobs";
 import { useDepartments } from "@/hooks/queries/use-company";
@@ -61,7 +62,13 @@ export function JobsPageClient() {
   const handleDeleteSelected = useCallback(
     async (ids: number[]) => {
       if (ids.length === 0) return false;
-      await bulkDeleteMutation.mutateAsync(ids);
+      try {
+        await bulkDeleteMutation.mutateAsync(ids);
+        toast.success(`Deleted ${ids.length} ${ids.length === 1 ? "job" : "jobs"}`);
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : "Failed to delete the jobs");
+        return false;
+      }
     },
     [bulkDeleteMutation],
   );
@@ -69,7 +76,11 @@ export function JobsPageClient() {
   const handleConfirmDelete = () => {
     if (!deleteTarget) return;
     deleteMutation.mutate(deleteTarget.id, {
-      onSuccess: () => setDeleteTarget(null),
+      onSuccess: () => {
+        toast.success("Job deleted");
+        setDeleteTarget(null);
+      },
+      onError: (error) => toast.error(error.message || "Failed to delete the job"),
     });
   };
 

@@ -16,13 +16,13 @@ const router:Router = Router({ mergeParams: true });
 
 
 router.get("/", requireJobView(), getCustomQuestions);
-router.post("/", requireManager, createCustomQuestion);
-router.put("/:questionId", requireManager, updateCustomQuestion);
-router.delete("/:questionId", requireManager, deleteCustomQuestion);
+router.post("/", requireManager, requireJobView(), createCustomQuestion);
+router.put("/:questionId", requireManager, requireJobView(), updateCustomQuestion);
+router.delete("/:questionId", requireManager, requireJobView(), deleteCustomQuestion);
 
 
 router.get("/assessment-attachment", requireJobView(), getAssessmentAttachment);
-router.post("/assessment-attachment", requireManager, attachAssessment);
-router.delete("/assessment-attachment/:stageId", requireManager, detachAssessment);
+router.post("/assessment-attachment", requireManager, requireJobView(), attachAssessment);
+router.delete("/assessment-attachment/:stageId", requireManager, requireJobView(), detachAssessment);
 
 export default router;

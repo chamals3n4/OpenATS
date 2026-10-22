@@ -8,6 +8,7 @@ import {
   getJobAssignments,
   getAssignmentById,
   getCandidateAssignments,
+  previewAssignmentEmail,
   sendAssignment,
   updateAssignment,
 } from "./assignment.controller";
@@ -21,10 +22,11 @@ const router: Router = Router();
 router.get("/", getAllAssignments);
 router.post("/", requireManager, createAssignment);
 router.post("/send", requireManager, sendAssignment);
+router.post("/preview", requireManager, previewAssignmentEmail);
 // Assignments a job sends by itself when candidates reach a stage
 router.get("/job/:jobId", requireJobView("jobId"), getJobAssignments);
-router.post("/job/:jobId", requireManager, attachAssignment);
-router.delete("/job/:jobId/:attachmentId", requireManager, detachAssignment);
+router.post("/job/:jobId", requireManager, requireJobView("jobId"), attachAssignment);
+router.delete("/job/:jobId/:attachmentId", requireManager, requireJobView("jobId"), detachAssignment);
 router.get("/candidate/:candidateId", getCandidateAssignments);
 router.get("/:id", getAssignmentById);
 router.put("/:id", requireManager, updateAssignment);

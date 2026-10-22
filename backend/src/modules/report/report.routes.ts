@@ -9,7 +9,7 @@ import { requireManager } from "../../middlewares/role.middleware";
 
 const router: Router = Router();
 
-router.get("/analytics", getReportsAnalytics);
+router.get("/analytics", requireManager, getReportsAnalytics);
 router.get("/attention", requireManager, getAttention);
 router.get("/analytics/export", requireManager, exportReportsAnalytics);
 

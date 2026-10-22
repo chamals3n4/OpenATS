@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { Tick02Icon } from "@hugeicons/core-free-icons";
+import { CheckmarkCircle01Icon, Clock01Icon } from "@hugeicons/core-free-icons";
 import { AssignmentBrief, isWebUrl } from "@/components/assignment/assignment-brief";
 import { SubmissionFields } from "@/components/assignment/submission-fields";
 import { Button } from "@/components/ui/button";
@@ -37,7 +37,6 @@ export function AssignmentClient({ token }: { token: string }) {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
-  const [justSaved, setJustSaved] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -88,7 +87,7 @@ export function AssignmentClient({ token }: { token: string }) {
 
   const due = formatDateTime(assignment.dueAt);
   const closed = assignment.status === "expired" || new Date(assignment.dueAt) < new Date();
-  const submitted = assignment.status === "submitted" || justSaved;
+  const submitted = assignment.status === "submitted";
 
   const handleSubmit = async () => {
     for (const field of assignment.submissionFields) {
@@ -103,14 +102,42 @@ export function AssignmentClient({ token }: { token: string }) {
     setSaving(true);
     try {
       await submitAssignment(token, answers);
-      setJustSaved(true);
       setAssignment({ ...assignment, status: "submitted", submittedAt: new Date().toISOString() });
     } catch (error) {
+      if (error instanceof ApiError && error.status === 409) {
+        // Handed in already, perhaps from another tab: show what was saved
+        setAttempt((n) => n + 1);
+        return;
+      }
       setFormError(error instanceof Error ? error.message : "Something went wrong. Please try again.");
     } finally {
       setSaving(false);
     }
   };
+
+  // Like a form that has been sent: only the confirmation, not the form again
+  if (submitted) {
+    return (
+      <main className="flex min-h-dvh items-center justify-center bg-slate-50 px-4 py-8 dark:bg-neutral-950">
+        <div className="flex w-full max-w-lg flex-col items-center rounded-xl border border-slate-300 bg-white px-6 py-10 text-center shadow-sm sm:px-10 dark:border-neutral-700 dark:bg-neutral-900">
+          <span className="flex size-14 items-center justify-center rounded-full bg-emerald-50 text-emerald-600 dark:bg-emerald-950/40 dark:text-emerald-400">
+            <HugeiconsIcon icon={CheckmarkCircle01Icon} className="size-8" />
+          </span>
+          <h1 className="mt-5 text-2xl font-semibold text-slate-900 dark:text-neutral-100">Your work has been submitted</h1>
+          <p className="mt-2 text-[15px] font-medium text-slate-700 dark:text-neutral-300">{assignment.title}</p>
+          {assignment.submittedAt && (
+            <p className="mt-1 flex items-center gap-1.5 text-sm text-slate-500 dark:text-neutral-400">
+              <HugeiconsIcon icon={Clock01Icon} className="size-4" />
+              Received {formatDateTime(assignment.submittedAt)}
+            </p>
+          )}
+          <p className="mt-6 max-w-md text-sm text-slate-600 dark:text-neutral-400">
+            Thank you, {assignment.firstName}. The hiring team will review it and be in touch. You don&apos;t need to do anything else.
+          </p>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <Shell>
@@ -124,36 +151,12 @@ export function AssignmentClient({ token }: { token: string }) {
 
       <div className="mt-8 border-t border-slate-200 pt-6 dark:border-neutral-800">
         {closed ? (
-          <>
-            <p className="text-[15px] font-medium text-slate-700 dark:text-neutral-300">
-              {submitted
-                ? "The deadline has passed, so your submission can no longer be changed. Thank you for handing it in."
-                : "This assignment is closed and no longer accepts work. If you need more time, please contact the hiring team."}
-            </p>
-            {submitted && (
-              <dl className="mt-4 space-y-3 text-sm">
-                {assignment.submissionFields
-                  .filter((field) => answers[field.id])
-                  .map((field) => (
-                    <div key={field.id}>
-                      <dt className="font-medium text-slate-800 dark:text-neutral-200">{field.label}</dt>
-                      <dd className="mt-0.5 whitespace-pre-line break-all text-slate-600 dark:text-neutral-300">
-                        {answers[field.id]}
-                      </dd>
-                    </div>
-                  ))}
-              </dl>
-            )}
-          </>
+          <p className="text-[15px] font-medium text-slate-700 dark:text-neutral-300">
+            This assignment is closed and no longer accepts work. If you need more time, please contact the hiring team.
+          </p>
         ) : (
           <>
             <h2 className="text-sm font-semibold text-slate-900 dark:text-neutral-100">Hand in your work</h2>
-            {submitted && (
-              <p className="mt-2 flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-400">
-                <HugeiconsIcon icon={Tick02Icon} className="size-4" />
-                Received. You can change your answer below until {due}.
-              </p>
-            )}
 
             <div className="mt-4">
               <SubmissionFields
@@ -171,8 +174,11 @@ export function AssignmentClient({ token }: { token: string }) {
               className="mt-4 h-10 gap-2 bg-theme px-5 text-white hover:bg-theme-hover"
             >
               {saving && <Spinner className="size-3.5" />}
-              {submitted ? "Update my submission" : "Submit"}
+              Submit
             </Button>
+            <p className="mt-2 text-xs text-slate-500 dark:text-neutral-400">
+              You can only submit once, so check your answers first.
+            </p>
           </>
         )}
       </div>

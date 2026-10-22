@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { EMAIL_BRAND_COLOR, renderEmailLayout } from "../../src/shared/services/email-layout";
+import { EMAIL_BRAND_COLOR, emailButton, renderEmailLayout } from "../../src/shared/services/email-layout";
 import {
   applicationReceivedEmail,
   interviewConfirmedEmail,
@@ -12,10 +12,23 @@ import { templateEngineService } from "../../src/modules/template/template-engin
 describe("renderEmailLayout", () => {
   const html = renderEmailLayout({ companyName: "Acme & Co", heading: "Hello", bodyHtml: "<p>Body</p>" });
 
-  it("uses the brand colour, a border and square corners", () => {
-    expect(html).toContain(`background:${EMAIL_BRAND_COLOR}`);
+  it("draws a bordered card with softly rounded corners, nothing pill-shaped", () => {
     expect(html).toContain("border:1px solid");
-    expect(html).not.toMatch(/border-radius:(1[0-9]|[5-9]|9999)px/);
+    expect(html).toContain("border-radius:12px");
+    expect(html).not.toMatch(/border-radius:(1[3-9]|[2-9][0-9]|9999)px/);
+  });
+
+  it("keeps the brand colour for the button", () => {
+    expect(renderEmailLayout({ companyName: "Acme", bodyHtml: emailButton("https://x.test", "Open") })).toContain(
+      `background:${EMAIL_BRAND_COLOR}`,
+    );
+  });
+
+  it("shows the company's logo when there is one, and only a web address", () => {
+    const withLogo = renderEmailLayout({ companyName: "Acme", logoUrl: "https://cdn.test/logo.png", bodyHtml: "" });
+    expect(withLogo).toContain('<img src="https://cdn.test/logo.png" alt="Acme"');
+    const badLogo = renderEmailLayout({ companyName: "Acme", logoUrl: "javascript:alert(1)", bodyHtml: "" });
+    expect(badLogo).not.toContain("<img");
   });
 
   it("names the company, escaped, and keeps the body as given", () => {

@@ -5,6 +5,7 @@ import {
   canViewCandidate,
   canViewInterview,
   canViewJob,
+  canViewOffer,
   parseRoomId,
 } from "../shared/auth/job-access";
 import logger from "../utils/logger";
@@ -66,6 +67,26 @@ export const requireCandidateView = (param = "candidateId") => candidateGuard(ca
 
 export const requireJobAccess = (param = "jobId") => jobGuard(canAccessJob, param);
 export const requireCandidateAccess = (param = "candidateId") => candidateGuard(canAccessCandidate, param);
+
+/** For routes about one offer, by its id: the same rule as the offer's job. */
+export function requireOfferView(param = "id") {
+  return async (req: Request, res: Response, next: NextFunction) => {
+    const offerId = parseRoomId(req.params[param]);
+    if (offerId === null) {
+      res.status(400).json({ error: "Invalid offer id" });
+      return;
+    }
+    try {
+      if (!(await canViewOffer(req.user, offerId))) {
+        deny(res, req.user.id, `offer ${offerId}`);
+        return;
+      }
+      next();
+    } catch (error) {
+      next(error);
+    }
+  };
+}
 
 /** For routes about one interview. An interviewer passes for their own jobs and for interviews assigned to them. */
 export function requireInterviewView(param = "id") {

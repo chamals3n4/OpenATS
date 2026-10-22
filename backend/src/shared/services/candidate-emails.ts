@@ -35,6 +35,8 @@ const hello = (name: string) => emailParagraph(`Hello ${escapeHtml(name)},`);
 /** What every builder takes besides its own details. */
 interface Common {
   companyName: string;
+  /** Shown above the email in place of the company's name. */
+  logoUrl?: string | null | undefined;
   /** The company's time zone, for any date or time in the email. Left out, UTC. */
   timeZone?: string | undefined;
   /** The wording to use. Left out, the built-in wording is used. */
@@ -57,6 +59,7 @@ function compose(
     subject: fillSubject(content.subject, all),
     html: renderEmailLayout({
       companyName: common.companyName,
+      logoUrl: common.logoUrl,
       heading: frame.heading,
       subtitle: frame.subtitle,
       bodyHtml: styleMessage(fillBodyHtml(content.bodyHtml, all)) + (frame.after ?? []).join(""),
@@ -141,6 +144,7 @@ export function assessmentCompletedEmail(
     subject: `Assessment Auto-Submitted: ${input.assessmentTitle}`,
     html: renderEmailLayout({
       companyName: input.companyName,
+      logoUrl: input.logoUrl,
       heading: "Your assessment was submitted",
       subtitle: input.assessmentTitle,
       bodyHtml: [
@@ -179,7 +183,7 @@ export function interviewSlotsEmail(
 
   return compose(
     "interview_slots",
-    { companyName: input.companyName, content },
+    { companyName: input.companyName, logoUrl: input.logoUrl, content },
     { candidate_name: input.candidateName, event_name: input.eventName, job_title: input.jobTitle },
     {
       heading: input.eventName,
@@ -270,6 +274,6 @@ export function offerEmail(
 }
 
 /** Wraps content written by the hiring team (a template, or a typed message) in the layout. */
-export function writtenEmail(input: { companyName: string; contentHtml: string }): string {
-  return renderEmailLayout({ companyName: input.companyName, bodyHtml: input.contentHtml });
+export function writtenEmail(input: { companyName: string; logoUrl?: string | null; contentHtml: string }): string {
+  return renderEmailLayout({ companyName: input.companyName, logoUrl: input.logoUrl, bodyHtml: input.contentHtml });
 }

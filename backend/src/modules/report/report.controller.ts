@@ -4,6 +4,7 @@ import { reportService } from "./report.service";
 import { attentionService } from "./attention.service";
 import logger from "../../utils/logger";
 import { getErrorMessage } from "../../utils/error.utils";
+import { teamScope } from "../../shared/auth/job-access";
 
 const periodSchema = z.enum(["7d", "30d", "90d"]).default("7d");
 const formatSchema = z.enum(["csv", "json"]).default("csv");
@@ -33,7 +34,7 @@ export const getReportsAnalytics = async (req: Request, res: Response) => {
     const period = parsed.data.period ?? "7d";
     const departmentId = parsed.data.departmentId;
 
-    const result = await reportService.getAnalytics(period, departmentId);
+    const result = await reportService.getAnalytics(period, departmentId, teamScope(req.user));
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(`Failed to fetch analytics report: ${getErrorMessage(error)}`);
@@ -60,6 +61,7 @@ export const exportReportsAnalytics = async (req: Request, res: Response) => {
       period,
       format,
       departmentId,
+      teamScope(req.user),
     );
 
     logger.info(`Analytics report exported: period=${period}, format=${format}${departmentId ? `, departmentId=${departmentId}` : ""} by user ${req.user?.id}`);
@@ -82,7 +84,7 @@ export const getAttention = async (req: Request, res: Response) => {
       });
       return;
     }
-    const result = await attentionService.get(parsed.data.departmentId);
+    const result = await attentionService.get(parsed.data.departmentId, teamScope(req.user));
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(`Failed to fetch overview attention items: ${getErrorMessage(error)}`);

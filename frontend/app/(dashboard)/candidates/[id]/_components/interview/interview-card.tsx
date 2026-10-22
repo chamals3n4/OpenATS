@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useState } from "react";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -229,6 +230,8 @@ export function InterviewCard({
         onClose={() => setDeleteOpen(false)}
         onConfirm={() =>
           deleteInterviewMutation.mutate(interview.id, {
+            onSuccess: () => toast.success("Interview deleted"),
+            onError: (error) => toast.error(error.message || "Failed to delete the interview"),
             onSettled: () => setDeleteOpen(false),
           })
         }

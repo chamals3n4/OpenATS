@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { z } from "zod";
-import { AssignmentClosedError, assignmentService } from "./assignment.service";
+import { AssignmentAlreadySubmittedError, AssignmentClosedError, assignmentService } from "./assignment.service";
 import {
   MAX_DUE_DAYS,
   MAX_RESOURCES,
@@ -22,12 +22,12 @@ const assignmentSchema = z.object({
   dueDays: z.number().int().min(1).max(MAX_DUE_DAYS).default(7),
 });
 
-const MAX_SEND = 200;
-
 const sendSchema = z.object({
-  candidateIds: z.array(z.number().int().positive()).min(1).max(MAX_SEND),
+  candidateId: z.number().int().positive(),
   assignmentId: z.number().int().positive(),
   dueDays: z.number().int().min(1).max(MAX_DUE_DAYS).optional(),
+  // false makes the link without emailing it
+  email: z.boolean().default(true),
 });
 
 const idParam = (req: Request) => parseInt((req.params.id ?? "").toString());
@@ -96,23 +96,48 @@ export const sendAssignment = async (req: Request, res: Response) => {
   try {
     const parsed = sendSchema.safeParse(req.body);
     if (!parsed.success) return void invalid(res, parsed.error);
-    const { candidateIds, assignmentId, dueDays } = parsed.data;
+    const { candidateId, assignmentId, dueDays, email } = parsed.data;
 
-    const summary = await assignmentService.sendMany([...new Set(candidateIds)], assignmentId, {
-      dueDays,
-      canSend: async (candidateId) => {
-        const allowed = await canViewCandidate(req.user, candidateId);
-        if (!allowed) logger.warn(`[access] user ${req.user.id} denied sending an assignment to candidate ${candidateId}`);
-        return allowed;
-      },
-    });
-    logger.info(
-      `Assignment ${assignmentId} sent by ${req.user.id}: sent=${summary.sent}, alreadyHad=${summary.alreadyHad}, failed=${summary.failed.length}`,
-    );
-    res.status(200).json({ data: summary });
+    if (!(await canViewCandidate(req.user, candidateId))) {
+      logger.warn(`[access] user ${req.user.id} denied sending an assignment to candidate ${candidateId}`);
+      return void res.status(403).json({ error: "You do not have access to this candidate" });
+    }
+
+    let result;
+    try {
+      result = await assignmentService.send(candidateId, assignmentId, { email, ...(dueDays ? { dueDays } : {}) });
+    } catch (error) {
+      // The link was not kept, so the same request can be sent again
+      logger.error(`Assignment ${assignmentId} email to candidate ${candidateId} failed: ${getErrorMessage(error)}`);
+      return void res.status(502).json({ error: getErrorMessage(error) });
+    }
+    if (!result) return void res.status(404).json({ error: "Candidate or assignment not found" });
+
+    logger.info(`Assignment ${assignmentId} given to candidate ${candidateId} by ${req.user.id} (emailed=${result.didSendInvite})`);
+    const status = !result.created ? "existing" : result.didSendInvite ? "emailed" : "link";
+    res.status(200).json({ data: { url: result.url, status } });
   } catch (error) {
     logger.error(`Failed to send assignment: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to send assignment" });
+  }
+};
+
+export const previewAssignmentEmail = async (req: Request, res: Response) => {
+  try {
+    const parsed = z
+      .object({ candidateId: z.number().int().positive(), assignmentId: z.number().int().positive() })
+      .safeParse(req.body);
+    if (!parsed.success) return void invalid(res, parsed.error);
+    const { candidateId, assignmentId } = parsed.data;
+    if (!(await canViewCandidate(req.user, candidateId))) {
+      return void res.status(403).json({ error: "You do not have access to this candidate" });
+    }
+    const preview = await assignmentService.previewInvite(candidateId, assignmentId);
+    if (!preview) return void res.status(404).json({ error: "Candidate or assignment not found" });
+    res.status(200).json({ data: preview });
+  } catch (error) {
+    logger.error(`Failed to preview assignment email: ${getErrorMessage(error)}`);
+    res.status(500).json({ error: "Failed to build the preview" });
   }
 };
 
@@ -211,6 +236,9 @@ export const submitAssignment = async (req: Request, res: Response) => {
     socketService.notifyAssignmentSubmitted({ candidateId: row.candidateId });
     res.status(200).json({ data: { submitted: true } });
   } catch (error) {
+    if (error instanceof AssignmentAlreadySubmittedError) {
+      return void res.status(409).json({ error: error.message, code: "ALREADY_SUBMITTED" });
+    }
     if (error instanceof AssignmentClosedError) {
       return void res.status(410).json({ error: error.message, code: "CLOSED" });
     }

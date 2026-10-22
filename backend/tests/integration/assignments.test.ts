@@ -16,7 +16,7 @@ import { db } from "../../src/db";
 import { company, departments } from "../../src/db/schema/company";
 import { jobs } from "../../src/db/schema/jobs";
 import { candidates } from "../../src/db/schema/candidates";
-import { assignments, candidateAssignments, jobAssignmentAttachments, jobPipelineStages } from "../../src/db/schema";
+import { assignments, candidateAssignments, jobAssignmentAttachments, jobHiringTeam, jobPipelineStages } from "../../src/db/schema";
 import { candidateService } from "../../src/modules/candidate/candidate.service";
 import { users } from "../../src/db/schema/users";
 import { initTestKeys, bearer } from "../helpers/jwt";
@@ -57,6 +57,8 @@ beforeAll(async () => {
     })
     .returning();
   jobId = job!.id;
+  // The creator is on the hiring team, as creating a job through the API does
+  await db.insert(jobHiringTeam).values({ jobId, userId: managerId });
 
   const [candidate] = await db
     .insert(candidates)
@@ -104,20 +106,22 @@ describe("setting up an assignment", () => {
 });
 
 describe("sending and handing in", () => {
-  const send = (auth: string, candidateIds: number[] = [candidateId]) =>
-    request(app).post("/api/assignments/send").set("Authorization", auth).send({ candidateIds, assignmentId });
+  const send = (auth: string, id: number = candidateId, email = true) =>
+    request(app).post("/api/assignments/send").set("Authorization", auth).send({ candidateId: id, assignmentId, email });
 
   it("emails the candidate once and reuses the same link on a second send", async () => {
     vi.mocked(mailService.sendEmail).mockClear();
     const first = await send(managerAuth);
     expect(first.status).toBe(200);
-    expect(first.body.data).toEqual({ sent: 1, alreadyHad: 0, failed: [] });
+    expect(first.body.data.status).toBe("emailed");
     expect(mailService.sendEmail).toHaveBeenCalledTimes(1);
     const [row] = await db.select().from(candidateAssignments).where(eq(candidateAssignments.candidateId, candidateId));
     token = row!.token;
+    expect(first.body.data.url).toMatch(new RegExp(`/assignment/${token}$`));
 
     const second = await send(managerAuth);
-    expect(second.body.data).toEqual({ sent: 0, alreadyHad: 1, failed: [] });
+    expect(second.body.data.status).toBe("existing");
+    expect(second.body.data.url).toBe(first.body.data.url);
     expect(mailService.sendEmail).toHaveBeenCalledTimes(1);
   });
 
@@ -131,19 +135,38 @@ describe("sending and handing in", () => {
     expect((await send(interviewerAuth)).status).toBe(403);
   });
 
-  it("sends to several at once, and reports the one that could not be sent", async () => {
+  it("makes a link without emailing it, and the same link is reused", async () => {
     const [other] = await db
       .insert(candidates)
       .values({ firstName: "Grace", lastName: "Hopper", email: `grace.${SUFFIX}@example.test`, jobId })
       .returning();
     vi.mocked(mailService.sendEmail).mockClear();
-    const res = await send(managerAuth, [candidateId, other!.id, 999_999_999]);
+    const res = await send(managerAuth, other!.id, false);
     expect(res.status).toBe(200);
-    expect(res.body.data.sent).toBe(1);
-    expect(res.body.data.alreadyHad).toBe(1);
-    expect(res.body.data.failed).toHaveLength(1);
-    expect(res.body.data.failed[0].candidateId).toBe(999_999_999);
-    expect(mailService.sendEmail).toHaveBeenCalledTimes(1);
+    expect(res.body.data.status).toBe("link");
+    expect(mailService.sendEmail).not.toHaveBeenCalled();
+    const page = await request(app).get(new URL(res.body.data.url).pathname.replace("/assignment/", "/public/assignment/"));
+    expect(page.status).toBe(200);
+    expect((await send(managerAuth, other!.id, false)).body.data.url).toBe(res.body.data.url);
+  });
+
+  it("previews the email without sending or saving anything", async () => {
+    const [other] = await db
+      .insert(candidates)
+      .values({ firstName: "Radia", lastName: "Perlman", email: `radia.${SUFFIX}@example.test`, jobId })
+      .returning();
+    vi.mocked(mailService.sendEmail).mockClear();
+    const res = await request(app).post("/api/assignments/preview").set("Authorization", managerAuth).send({ candidateId: other!.id, assignmentId });
+    expect(res.status).toBe(200);
+    expect(res.body.data.to).toBe(`radia.${SUFFIX}@example.test`);
+    expect(res.body.data.html).toContain("Radia");
+    expect(mailService.sendEmail).not.toHaveBeenCalled();
+    expect(await db.select().from(candidateAssignments).where(eq(candidateAssignments.candidateId, other!.id))).toHaveLength(0);
+    expect((await request(app).post("/api/assignments/preview").set("Authorization", interviewerAuth).send({ candidateId: other!.id, assignmentId })).status).toBe(403);
+  });
+
+  it("refuses a candidate that does not exist, without saying whether it does", async () => {
+    expect((await send(managerAuth, 999_999_999)).status).toBe(403);
   });
 
   it("does not leave a link behind when the email fails, so sending again works", async () => {
@@ -152,13 +175,12 @@ describe("sending and handing in", () => {
       .values({ firstName: "Alan", lastName: "Turing", email: `alan.${SUFFIX}@example.test`, jobId })
       .returning();
     vi.mocked(mailService.sendEmail).mockRejectedValueOnce(new Error("mail is down"));
-    const failed = await send(managerAuth, [third!.id]);
-    expect(failed.body.data.sent).toBe(0);
-    expect(failed.body.data.failed).toHaveLength(1);
+    const failed = await send(managerAuth, third!.id);
+    expect(failed.status).toBe(502);
     expect(await db.select().from(candidateAssignments).where(eq(candidateAssignments.candidateId, third!.id))).toHaveLength(0);
 
-    const again = await send(managerAuth, [third!.id]);
-    expect(again.body.data.sent).toBe(1);
+    const again = await send(managerAuth, third!.id);
+    expect(again.body.data.status).toBe("emailed");
   });
 
   it("shows the candidate the brief and nothing internal", async () => {
@@ -186,24 +208,37 @@ describe("sending and handing in", () => {
     expect((await submit({ repo: "javascript:alert(1)", hours: "3" })).status).toBe(400);
   });
 
-  it("accepts work, and lets it be changed before the deadline", async () => {
+  it("accepts work once and refuses a second hand-in", async () => {
     const first = await request(app).post(`/public/assignment/${token}/submit`).send({ answers: { repo: "https://github.com/a/b", hours: "3", stray: "x" } });
     expect(first.status).toBe(200);
     const again = await request(app).post(`/public/assignment/${token}/submit`).send({ answers: { repo: "https://github.com/a/c", hours: "4" } });
-    expect(again.status).toBe(200);
+    expect(again.status).toBe(409);
+    expect(again.body.code).toBe("ALREADY_SUBMITTED");
 
     const list = await request(app).get(`/api/assignments/candidate/${candidateId}`).set("Authorization", managerAuth);
     expect(list.status).toBe(200);
     expect(list.body.data[0].status).toBe("submitted");
-    expect(list.body.data[0].submissionAnswers).toEqual({ repo: "https://github.com/a/c", hours: "4" });
+    expect(list.body.data[0].submissionAnswers).toEqual({ repo: "https://github.com/a/b", hours: "3" });
+
+    const page = await request(app).get(`/public/assignment/${token}`);
+    expect(page.body.data.submissionAnswers).toEqual({ repo: "https://github.com/a/b", hours: "3" });
   });
 
   it("checks against the form that was sent, even after the assignment is edited", async () => {
+    const [other] = await db
+      .insert(candidates)
+      .values({ firstName: "Barbara", lastName: "Liskov", email: `barbara.${SUFFIX}@example.test`, jobId })
+      .returning();
+    const linkRes = await request(app)
+      .post("/api/assignments/send")
+      .set("Authorization", managerAuth)
+      .send({ candidateId: other!.id, assignmentId, email: false });
+    const otherToken = new URL(linkRes.body.data.url).pathname.split("/").pop();
     await request(app)
       .put(`/api/assignments/${assignmentId}`)
       .set("Authorization", managerAuth)
       .send({ submissionFields: [{ id: "other", label: "Something else", type: "short_text", required: true }] });
-    const res = await request(app).post(`/public/assignment/${token}/submit`).send({ answers: { repo: "https://github.com/a/d", hours: "5" } });
+    const res = await request(app).post(`/public/assignment/${otherToken}/submit`).send({ answers: { repo: "https://github.com/a/d", hours: "5" } });
     expect(res.status).toBe(200);
   });
 
@@ -213,8 +248,11 @@ describe("sending and handing in", () => {
   });
 
   it("stops accepting work after the deadline", async () => {
-    await db.update(candidateAssignments).set({ dueAt: new Date(Date.now() - 1000) }).where(eq(candidateAssignments.token, token));
-    const res = await request(app).post(`/public/assignment/${token}/submit`).send({ answers: { repo: "https://github.com/late/work", hours: "1" } });
+    const [handedIn] = await db.select().from(candidateAssignments).where(eq(candidateAssignments.token, token));
+    await db
+      .insert(candidateAssignments)
+      .values({ candidateId, assignmentId, token: `late-${SUFFIX}`, dueAt: new Date(Date.now() - 1000), submissionFields: handedIn!.submissionFields });
+    const res = await request(app).post(`/public/assignment/late-${SUFFIX}/submit`).send({ answers: { repo: "https://github.com/late/work", hours: "1" } });
     expect(res.status).toBe(410);
     expect(res.body.code).toBe("CLOSED");
   });

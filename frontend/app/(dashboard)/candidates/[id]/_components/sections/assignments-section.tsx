@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { toast } from "sonner";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { SentIcon } from "@hugeicons/core-free-icons";
 import { Button } from "@/components/ui/button";
@@ -68,7 +69,22 @@ export function AssignmentsSection({ candidateId }: { candidateId: number }) {
               >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="text-sm font-semibold text-slate-900 dark:text-neutral-100">{item.title}</p>
-                  <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${style}`}>{label}</span>
+                  <span className="flex items-center gap-2">
+                    {isManager && label === "Waiting" && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          navigator.clipboard
+                            .writeText(`${window.location.origin}/assignment/${item.token}`)
+                            .then(() => toast.success("Link copied"), () => toast.error("Could not copy the link"))
+                        }
+                        className="cursor-pointer text-xs font-medium text-theme hover:underline dark:text-primary"
+                      >
+                        Copy link
+                      </button>
+                    )}
+                    <span className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${style}`}>{label}</span>
+                  </span>
                 </div>
                 <p className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
                   Sent {formatDateTime(item.createdAt)} · Due {formatDateTime(item.dueAt)}

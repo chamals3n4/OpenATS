@@ -181,7 +181,7 @@ const structuredData = {
 export default function Home(): ReactNode {
   return (
     <Layout
-      title="Open-source applicant tracking system"
+      title="Open-Source Applicant Tracking System"
       description="OpenATS is an open-source applicant tracking system you host yourself: pipelines, assessments, interviews, offers and a careers page in one place."
     >
       <main className="openats-landing-page">

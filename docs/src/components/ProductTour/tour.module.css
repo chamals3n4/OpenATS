@@ -1,0 +1,60 @@
+/* The tour's own chrome: tabs and the browser window. Colours come from the landing page. */
+.tour { margin-top: 4rem; }
+.tabs { display: flex; flex-wrap: wrap; gap: 0.5rem; justify-content: center; }
+.tab, .tabActive {
+  align-items: center;
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: inherit;
+  font-size: 0.92rem;
+  font-weight: 500;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.tab:hover { border-color: var(--ink); color: var(--ink); }
+.tabActive { background: var(--ink); border-color: var(--ink); color: var(--bg); }
+.tabIcon { height: 18px; width: 18px; }
+.caption { color: var(--subtle); font-size: 0.95rem; margin: 1rem 0 1.4rem; min-height: 1.5em; text-align: center; }
+
+.window {
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  box-shadow: 0 30px 60px -40px rgba(15, 23, 42, 0.35);
+  overflow: hidden;
+}
+.bar {
+  align-items: center;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line-strong);
+  display: flex;
+  gap: 1rem;
+  padding: 0.55rem 0.9rem;
+}
+.dots { display: flex; gap: 0.4rem; }
+.dots i { background: var(--line-strong); border-radius: 50%; display: block; height: 10px; width: 10px; }
+.url {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--subtle);
+  font-size: 0.78rem;
+  margin: 0 auto;
+  max-width: 420px;
+  overflow: hidden;
+  padding: 0.2rem 0.9rem;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: 100%;
+}
+
+@media screen and (max-width: 700px) {
+  .tabs { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding-bottom: 0.25rem; }
+  .tab, .tabActive { flex-shrink: 0; }
+}

@@ -8,7 +8,7 @@ import {
   templates,
 } from "../../db/schema";
 import { writtenEmail } from "../../shared/services/candidate-emails";
-import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
+import { getCompanyForEmail, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { variableService } from "../template/variable.service";
 import { templateEngineService } from "../template/template-engine.service";
 
@@ -37,7 +37,7 @@ async function prepareRejectionEmail(candidateId: number, templateId: number) {
   const compiled = templateEngineService.compileTemplate(template.subject, template.bodyJson, context);
   return {
     subject: compiled.subject,
-    html: writtenEmail({ companyName: await getCompanyName(), contentHtml: compiled.html }),
+    html: writtenEmail({ ...(await getCompanyForEmail()), contentHtml: compiled.html }),
   };
 }
 

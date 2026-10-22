@@ -5,6 +5,7 @@ import { socketService } from "../../shared/services/socket.service";
 import logger from "../../utils/logger";
 import { asEnum } from "../../utils/object.utils";
 import { offers } from "../../db/schema";
+import { canViewCandidate, canViewJob, canViewOffers, teamScope } from "../../shared/auth/job-access";
 
 const bulkDeleteOffersSchema = z.object({
   ids: z.array(z.number().int().positive()).min(1),
@@ -89,6 +90,7 @@ export const getAllOffers = async (req: Request, res: Response) => {
         search: (search as string) || undefined,
         status: asEnum(status, offers.status.enumValues),
         jobId: jobId ? parseInt(jobId as string) : undefined,
+        teamUserId: teamScope(req.user),
       });
       res.status(200).json({
         data: result.rows,
@@ -97,7 +99,7 @@ export const getAllOffers = async (req: Request, res: Response) => {
       return;
     }
 
-    const result = await offerService.getAllDetails();
+    const result = await offerService.getAllDetails(teamScope(req.user));
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(`Failed to fetch all offers: ${(error as Error)?.message}`);
@@ -138,6 +140,10 @@ export const bulkDeleteOffers = async (req: Request, res: Response) => {
       return;
     }
     logger.warn(`Bulk offer deletion requested: ids=${parsed.data.ids.join(",")} by user ${req.user?.id}`);
+    if (!(await canViewOffers(req.user, parsed.data.ids))) {
+      res.status(403).json({ error: "You do not have access to some of these offers" });
+      return;
+    }
     const deleted = await offerService.deleteMany(parsed.data.ids);
     for (const offer of deleted) {
       socketService.notifyOfferChanged({
@@ -200,6 +206,11 @@ export const createOffer = async (req: Request, res: Response) => {
         error: "Validation failed",
         details: parsed.error.flatten().fieldErrors,
       });
+      return;
+    }
+
+    if (!(await canViewCandidate(req.user, parsed.data.candidateId)) || !(await canViewJob(req.user, parsed.data.jobId))) {
+      res.status(403).json({ error: "You do not have access to this candidate" });
       return;
     }
 

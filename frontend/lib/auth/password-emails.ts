@@ -8,9 +8,25 @@ const EXPIRY_TEXT = "24 hours";
 
 export type PasswordLinkKind = "invite" | "reset";
 
+// The same rules as SMTP_PORT in the backend's config/env.ts: a whole number from 1 to 65535, 587 when unset
+function smtpPort(): number | null {
+  const raw = process.env.SMTP_PORT?.trim();
+  if (!raw) return 587;
+  const port = Number(raw);
+  return Number.isInteger(port) && port >= 1 && port <= 65535 ? port : null;
+}
+
+// Servers on this machine, such as Mailpit, which offer no encryption
+const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
+
+/** Whether to refuse sending unless the server upgrades the connection with STARTTLS. */
+export function mustStartTls(host: string | undefined, secure: boolean): boolean {
+  return !secure && !LOCAL_HOSTS.has((host ?? "").toLowerCase());
+}
+
 /** Whether invite and reset emails can actually be sent. */
 export function isAuthMailConfigured(): boolean {
-  return Boolean(process.env.SMTP_HOST && process.env.MAIL_FROM);
+  return Boolean(process.env.SMTP_HOST && process.env.MAIL_FROM && smtpPort() !== null);
 }
 
 function escapeHtml(value: string): string {
@@ -123,10 +139,13 @@ let transport: Transporter | null = null;
 function getTransport(): Transporter {
   if (!transport) {
     const user = process.env.SMTP_USER;
+    const secure = process.env.SMTP_SECURE === "true";
     transport = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
-      port: Number(process.env.SMTP_PORT ?? 587),
-      secure: process.env.SMTP_SECURE === "true",
+      port: smtpPort() ?? 587,
+      secure,
+      // Without this, a server that does not offer STARTTLS would get the password and the email unencrypted
+      requireTLS: mustStartTls(process.env.SMTP_HOST, secure),
       ...(user ? { auth: { user, pass: process.env.SMTP_PASSWORD ?? "" } } : {}),
       connectionTimeout: 10_000,
       greetingTimeout: 10_000,
@@ -160,7 +179,7 @@ export async function sendPasswordLinkEmail(opts: {
     } else {
       // Never log the link outside dev
       console.warn(
-        `[password-emails] Email is not configured; no ${opts.kind} email was sent. Set SMTP_HOST and MAIL_FROM.`,
+        `[password-emails] Email is not configured; no ${opts.kind} email was sent. Set SMTP_HOST, MAIL_FROM and a valid SMTP_PORT.`,
       );
     }
     return;

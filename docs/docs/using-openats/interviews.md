@@ -1,9 +1,9 @@
 ---
 sidebar_position: 6
-title: Interviews and feedback
+title: Interviews and Feedback
 ---
 
-# Interviews and feedback
+# Interviews and Feedback
 
 OpenATS keeps the interview invitation, candidate-selected time, meeting details, interviewer, and feedback together on the candidate record.
 

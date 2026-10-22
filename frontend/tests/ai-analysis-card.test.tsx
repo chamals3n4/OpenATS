@@ -4,10 +4,10 @@ import type { AiSettings } from "@/types";
 
 const mutate = vi.fn();
 let settings: AiSettings | undefined;
-let isManager = true;
+let isSuperAdmin = true;
 
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock("@/hooks/use-role", () => ({ useIsManager: () => isManager }));
+vi.mock("@/hooks/use-role", () => ({ useRole: () => ({ isSuperAdmin }) }));
 vi.mock("@/hooks/queries/use-settings", () => ({
   useAiSettings: () => ({ data: settings ? { data: settings } : undefined, isPending: !settings, isError: false }),
   useUpdateAiSettings: () => ({ mutate, isPending: false }),
@@ -21,7 +21,7 @@ const isLocked = () => theSwitch().getAttribute("aria-disabled") === "true" || t
 
 beforeEach(() => {
   mutate.mockClear();
-  isManager = true;
+  isSuperAdmin = true;
   settings = { cvAnalysisEnabled: false, geminiConfigured: true, active: false };
 });
 afterEach(cleanup);
@@ -65,12 +65,12 @@ describe("AiAnalysisCard", () => {
     expect(mutate).toHaveBeenCalledWith(false, expect.anything());
   });
 
-  it("is read-only for someone who is not a manager", () => {
-    isManager = false;
+  it("is read-only for anyone but a super admin, hiring managers included", () => {
+    isSuperAdmin = false;
     render(<AiAnalysisCard />);
     expect(isLocked()).toBe(true);
     fireEvent.click(theSwitch());
     expect(mutate).not.toHaveBeenCalled();
-    expect(screen.getByText(/Only admins and hiring managers can change this/)).toBeTruthy();
+    expect(screen.getByText(/Only a super admin can change this/)).toBeTruthy();
   });
 });

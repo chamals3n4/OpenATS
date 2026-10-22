@@ -14,24 +14,26 @@ import {
 } from "./offer.controller";
 
 import { requireManager } from "../../middlewares/role.middleware";
+import { requireJobView, requireOfferView } from "../../middlewares/job-access.middleware";
 
 const router: Router = Router();
 
 // Offers hold salaries, and accepting or declining one here is a manager recording the candidate's
 // answer. None of it is for interviewers, so the whole router is managers only. (The candidate
 // answers their own offer through /public/offers/:token.)
+// A manager also works only on the offers of jobs whose hiring team they are on.
 router.use(requireManager);
 
 router.get("/", getAllOffers);
 router.delete("/bulk", bulkDeleteOffers);
-router.get("/job/:jobId", getAllOffersByJob);
-router.get("/:id", getOfferById);
+router.get("/job/:jobId", requireJobView(), getAllOffersByJob);
+router.get("/:id", requireOfferView(), getOfferById);
 router.post("/", createOffer);
-router.patch("/:id", updateOffer);
-router.delete("/:id", deleteOffer);
-router.post("/:id/send", sendOffer);
-router.post("/:id/accept", acceptOffer);
-router.post("/:id/decline", declineOffer);
-router.post("/:id/mark-hired", markCandidateHired);
+router.patch("/:id", requireOfferView(), updateOffer);
+router.delete("/:id", requireOfferView(), deleteOffer);
+router.post("/:id/send", requireOfferView(), sendOffer);
+router.post("/:id/accept", requireOfferView(), acceptOffer);
+router.post("/:id/decline", requireOfferView(), declineOffer);
+router.post("/:id/mark-hired", requireOfferView(), markCandidateHired);
 
 export default router;

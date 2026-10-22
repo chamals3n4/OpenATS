@@ -47,7 +47,7 @@ pnpm --filter ./frontend dev
 | `DATABASE_URL` | The same database as the backend. Better Auth keeps its tables there |
 | `BETTER_AUTH_SECRET` | 32+ characters. The app will not start without it |
 | `BETTER_AUTH_URL` | This app's public URL. Must equal `AUTH_ISSUER` in `backend/.env` |
-| `RESEND_API_KEY`, `RESEND_FROM_EMAIL` | Optional. Sends invite and reset password emails |
+| `SMTP_*`, `MAIL_FROM` | Optional. Sends invite and reset password emails, through the same SMTP server as the backend |
 | `NEXT_PUBLIC_APP_URL` | Optional. Used in careers page links |
 
 Never put a secret in a `NEXT_PUBLIC_` variable: those are sent to the browser.

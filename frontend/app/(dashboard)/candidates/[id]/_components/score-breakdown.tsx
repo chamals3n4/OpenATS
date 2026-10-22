@@ -45,7 +45,10 @@ export function ScoreBreakdown({ candidate }: { candidate: CandidateDetail }) {
     rate.mutate(
       { id: candidate.id, rating: picked },
       {
-        onSuccess: () => setPicked(undefined),
+        onSuccess: () => {
+          toast.success("Score updated");
+          setPicked(undefined);
+        },
         onError: () => toast.error("Failed to update the score"),
       },
     );

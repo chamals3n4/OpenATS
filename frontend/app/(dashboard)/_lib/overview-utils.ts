@@ -26,7 +26,6 @@ export interface Kpi {
   delta: Delta | null;
   /** One line under the figure saying what it counts. */
   hint: string;
-  managerOnly: boolean;
 }
 
 /** Drop a trailing ".0" */
@@ -69,7 +68,6 @@ export function buildKpis(summary: AnalyticsReport["summary"]): Kpi[] {
       value: String(s.newCandidates),
       delta: percentDelta(s.totalCandidatesDeltaPct),
       hint: `${plural(s.totalCandidates, "candidate", "candidates")} in total`,
-      managerOnly: false,
     },
     {
       key: "positions",
@@ -77,7 +75,6 @@ export function buildKpis(summary: AnalyticsReport["summary"]): Kpi[] {
       value: String(s.openPositions),
       delta: null,
       hint: "Jobs that are open right now",
-      managerOnly: false,
     },
     {
       key: "timeToHire",
@@ -89,7 +86,6 @@ export function buildKpis(summary: AnalyticsReport["summary"]): Kpi[] {
         s.avgTimeToHireDays === null
           ? "No offer was accepted in this period"
           : "From applying to an accepted offer",
-      managerOnly: false,
     },
     {
       key: "offerRate",
@@ -100,7 +96,6 @@ export function buildKpis(summary: AnalyticsReport["summary"]): Kpi[] {
         s.offersSent === 0
           ? "No offer was sent in this period"
           : `${plural(s.offersSent, "offer", "offers")} sent in this period`,
-      managerOnly: true,
     },
   ];
 }

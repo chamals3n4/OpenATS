@@ -2,7 +2,7 @@ import { desc, eq } from "drizzle-orm";
 import { db } from "../../db";
 import { candidates, emailMessages, users } from "../../db/schema";
 import { writtenEmail } from "../../shared/services/candidate-emails";
-import { getCompanyName, sendCandidateEmail } from "../../shared/services/candidate-mailer";
+import { getCompanyForEmail, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 
 const escapeHtml = (value: string) =>
   value
@@ -119,7 +119,7 @@ export const candidateEmailService = {
       kind: "manual",
       sentBy: input.sentBy,
       subject,
-      html: writtenEmail({ companyName: await getCompanyName(), contentHtml: bodyHtml }),
+      html: writtenEmail({ ...(await getCompanyForEmail()), contentHtml: bodyHtml }),
       replyTo,
     });
     if (!result.sent || result.messageId === null) {

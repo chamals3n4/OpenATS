@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useMemo, useState, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
@@ -86,11 +87,18 @@ export default function CandidateDetailPage({
     (!candidateData.data.cvText || candidateData.data.cvText.status === "pending");
   const { data: workerStatus } = useWorkerStatus({ enabled: cvWaiting });
   const aiActive = aiSettingsData?.data?.active ?? false;
+  // Offers are for managers only, so interviewers do not get the tab
   const sections = useMemo(
-    () => SECTIONS.filter((section) => section.id !== "ai-analysis" || aiActive),
-    [aiActive],
+    () =>
+      SECTIONS.filter(
+        (section) => (section.id !== "ai-analysis" || aiActive) && (section.id !== "offer" || isManager),
+      ),
+    [aiActive, isManager],
   );
-  const [pickedSection, setActiveSection] = useState<SectionId | null>(null);
+  // ?section= opens a tab directly, e.g. the interviews from the overview
+  const [pickedSection, setActiveSection] = useState<SectionId | null>(
+    () => searchParams.get("section") as SectionId | null,
+  );
   const activeSection =
     pickedSection && sections.some((section) => section.id === pickedSection)
       ? pickedSection
@@ -136,7 +144,11 @@ export default function CandidateDetailPage({
   const confirmDelete = () => {
     if (!candidate) return;
     deleteMutation.mutate(candidate.id, {
-      onSuccess: () => router.push("/candidates"),
+      onSuccess: () => {
+        toast.success("Candidate deleted");
+        router.push("/candidates");
+      },
+      onError: (error) => toast.error(error.message || "Failed to delete the candidate"),
     });
   };
 
@@ -144,7 +156,13 @@ export default function CandidateDetailPage({
     if (!candidate || !effectiveSelectedStageId || !hasStageChange) return;
     moveStageMutation.mutate(
       { id: candidate.id, newStageId: Number(effectiveSelectedStageId) },
-      { onSuccess: () => setSelectedStageId("") },
+      {
+        onSuccess: () => {
+          toast.success("Stage updated");
+          setSelectedStageId("");
+        },
+        onError: (error) => toast.error(error.message || "Failed to move the candidate"),
+      },
     );
   };
 

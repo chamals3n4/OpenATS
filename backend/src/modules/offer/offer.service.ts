@@ -5,6 +5,7 @@ import {
   candidateStageHistory,
   candidates,
   jobPipelineStages,
+  jobHiringTeam,
   jobs,
   offers,
   templates,
@@ -16,6 +17,7 @@ import { offerEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { candidateActivityService } from "../candidate/candidate-activity.service";
 import { offerRepository } from "./offer.repository";
+import { frontendUrl } from "../../utils/frontend-url";
 
 export type OfferStatus =
   | "draft"
@@ -188,11 +190,17 @@ export type OfferListFilters = {
   search?: string;
   status?: (typeof offers.status.enumValues)[number];
   jobId?: number;
+  /** Only offers for jobs whose hiring team this user is on */
+  teamUserId?: number;
 };
 
+const onTeamJobs = (userId: number) =>
+  inArray(offers.jobId, db.select({ id: jobHiringTeam.jobId }).from(jobHiringTeam).where(eq(jobHiringTeam.userId, userId)));
+
 export const offerService = {
-  async getAllDetails() {
+  async getAllDetails(teamUserId?: number) {
     return await db.query.offers.findMany({
+      ...(teamUserId ? { where: onTeamJobs(teamUserId) } : {}),
       with: {
         candidate: {
           with: { currentStage: true },
@@ -207,10 +215,11 @@ export const offerService = {
   },
 
   async getPaginated(filters: OfferListFilters = {}) {
-    const { page = 1, limit = 15, search, status, jobId } = filters;
+    const { page = 1, limit = 15, search, status, jobId, teamUserId } = filters;
     const offset = (page - 1) * limit;
 
     const conditions = [];
+    if (teamUserId) conditions.push(onTeamJobs(teamUserId));
     if (jobId) conditions.push(eq(offers.jobId, jobId));
     if (status) conditions.push(eq(offers.status, status));
     const where = conditions.length > 0 ? and(...conditions) : undefined;
@@ -472,10 +481,7 @@ export const offerService = {
     validateSendRequirements(offer, offerLetterHtml);
 
     const reviewToken = offer.reviewToken ?? generateReviewToken();
-    const frontendBase = (
-      process.env.FRONTEND_URL ?? "http://localhost:3000"
-    ).replace(/\/$/, "");
-    const reviewUrl = `${frontendBase}/offer/${reviewToken}`;
+    const reviewUrl = frontendUrl(`/offer/${reviewToken}`);
 
     const updated = await offerRepository.updateById(id, {
       status: "sent",

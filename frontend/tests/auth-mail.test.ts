@@ -1,4 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const sendMail = vi.hoisted(() => vi.fn());
+vi.mock("nodemailer", () => ({ default: { createTransport: () => ({ sendMail }) } }));
+
 import {
   buildPasswordEmail,
   isAuthMailConfigured,
@@ -8,28 +12,24 @@ import {
 const URL =
   "http://localhost:3000/api/auth/reset-password/tok123?callbackURL=%2Freset-password";
 
-const fetchMock = vi.fn();
-
 beforeEach(() => {
-  vi.stubGlobal("fetch", fetchMock);
-  fetchMock.mockResolvedValue({ ok: true });
+  sendMail.mockResolvedValue({ messageId: "<1@test>" });
 });
 
 afterEach(() => {
-  vi.unstubAllGlobals();
   vi.unstubAllEnvs();
   vi.restoreAllMocks();
-  fetchMock.mockReset();
+  sendMail.mockReset();
 });
 
 function configure() {
-  vi.stubEnv("RESEND_API_KEY", "re_test");
-  vi.stubEnv("RESEND_FROM_EMAIL", "no-reply@example.test");
+  vi.stubEnv("SMTP_HOST", "smtp.example.test");
+  vi.stubEnv("MAIL_FROM", "no-reply@example.test");
 }
 
 function unconfigure() {
-  vi.stubEnv("RESEND_API_KEY", "");
-  vi.stubEnv("RESEND_FROM_EMAIL", "");
+  vi.stubEnv("SMTP_HOST", "");
+  vi.stubEnv("MAIL_FROM", "");
 }
 
 describe("buildPasswordEmail", () => {
@@ -78,16 +78,16 @@ describe("isAuthMailConfigured", () => {
     unconfigure();
     expect(isAuthMailConfigured()).toBe(false);
 
-    vi.stubEnv("RESEND_API_KEY", "re_test");
+    vi.stubEnv("SMTP_HOST", "smtp.example.test");
     expect(isAuthMailConfigured()).toBe(false);
 
-    vi.stubEnv("RESEND_FROM_EMAIL", "no-reply@example.test");
+    vi.stubEnv("MAIL_FROM", "no-reply@example.test");
     expect(isAuthMailConfigured()).toBe(true);
   });
 });
 
 describe("sendPasswordLinkEmail", () => {
-  it("sends through Resend when configured", async () => {
+  it("sends through SMTP when configured", async () => {
     configure();
     await sendPasswordLinkEmail({
       kind: "invite",
@@ -96,18 +96,15 @@ describe("sendPasswordLinkEmail", () => {
       url: URL,
     });
 
-    expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [endpoint, init] = fetchMock.mock.calls[0];
-    const body = JSON.parse(init.body);
+    expect(sendMail).toHaveBeenCalledTimes(1);
+    const message = sendMail.mock.calls[0][0];
 
-    expect(endpoint).toBe("https://api.resend.com/emails");
-    expect(init.headers.Authorization).toBe("Bearer re_test");
-    expect(body.from).toBe("OpenATS <no-reply@example.test>");
-    expect(body.to).toEqual(["ada@example.test"]);
-    expect(body.subject).toBe("Set your password for OpenATS");
+    expect(message.from).toEqual({ name: "OpenATS", address: "no-reply@example.test" });
+    expect(message.to).toBe("ada@example.test");
+    expect(message.subject).toBe("Set your password for OpenATS");
   });
 
-  it("logs the link in development when Resend is not configured", async () => {
+  it("logs the link in development when email is not configured", async () => {
     unconfigure();
     vi.stubEnv("NODE_ENV", "development");
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
@@ -118,7 +115,7 @@ describe("sendPasswordLinkEmail", () => {
       url: URL,
     });
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(sendMail).not.toHaveBeenCalled();
     expect(log.mock.calls[0][0]).toContain(URL);
   });
 
@@ -139,13 +136,9 @@ describe("sendPasswordLinkEmail", () => {
     expect(warn.mock.calls[0][0]).not.toContain("tok123");
   });
 
-  it("does not throw when Resend rejects the request", async () => {
+  it("does not throw when the SMTP server refuses the email", async () => {
     configure();
-    fetchMock.mockResolvedValue({
-      ok: false,
-      status: 422,
-      text: async () => "invalid from address",
-    });
+    sendMail.mockRejectedValue(new Error("550 sender not allowed"));
     const error = vi.spyOn(console, "error").mockImplementation(() => {});
 
     await expect(

@@ -1,4 +1,4 @@
-import { eq, and, desc, asc, gte, lte, ilike, or, inArray } from "drizzle-orm";
+import { eq, and, desc, asc, gte, lte, ilike, or, inArray, sql } from "drizzle-orm";
 import { db } from "../../db";
 import {
   candidateInterviews,
@@ -72,7 +72,7 @@ export const interviewService = {
     search?: string;
     fromDate?: string;
     toDate?: string;
-  }, interviewerUserId?: number) {
+  }, interviewerUserId?: number, viewerId?: number) {
     const conditions = [];
 
     // The same rule as canViewInterview, for the whole list.
@@ -147,6 +147,10 @@ export const interviewService = {
         jobTitle: jobs.title,
         stageName: jobPipelineStages.name,
         stageType: jobPipelineStages.stageType,
+        // Whether the person asking has written a scorecard for it, for their to-do list
+        myScorecardSubmitted: viewerId
+          ? sql<boolean>`exists (select 1 from interview_feedback f where f.interview_id = ${candidateInterviews.id} and f.author_id = ${viewerId})`
+          : sql<boolean>`false`,
       })
       .from(candidateInterviews)
       .leftJoin(candidates, eq(candidateInterviews.candidateId, candidates.id))

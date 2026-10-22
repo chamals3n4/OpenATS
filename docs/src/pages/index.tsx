@@ -1,28 +1,152 @@
-import type {ReactNode} from 'react';
+import {useState, type ReactNode} from 'react';
 import Link from '@docusaurus/Link';
 import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
+import {HugeiconsIcon, type IconSvgElement} from '@hugeicons/react';
+import {
+  BriefcaseBusinessIcon,
+  CommandLineIcon,
+  CoPresentIcon,
+  Copy01Icon,
+  Github01Icon,
+  GithubIcon,
+  Quiz03Icon,
+  Search01Icon,
+  TaskDone01Icon,
+  TelegramIcon,
+  Tick02Icon,
+  UserMultiple02Icon,
+  UsersRoundIcon,
+} from '@hugeicons/core-free-icons';
+import ProductTour from '@site/src/components/ProductTour';
 import styles from './index.module.css';
 
-const features = [
-  ['Job management', 'Create roles, define requirements, and establish the hiring stages for every opening.'],
-  ['Candidate tracking', 'Keep resumes, activity, notes, feedback, and progress together in one candidate record.'],
-  ['Interview management', 'Coordinate schedules, collect structured feedback, and make every next step visible.'],
-  ['Hiring team collaboration', 'Give hiring managers and interviewers the shared context they need to make decisions.'],
-  ['AI resume parsing', 'Extract candidate details from resumes and surface useful signals for human review.'],
-  ['Career pages', 'Publish open roles on a branded careers site that fits your organization.'],
+const GITHUB = 'https://github.com/chamals3n4/OpenATS';
+const DEMO = 'https://demo.openats.dev';
+
+/** Docker's whale, in Docker's own blue. */
+function DockerLogo(): ReactNode {
+  return (
+    <svg className={styles.icon} viewBox="0 0 340 268" aria-hidden="true">
+      <path
+        fill="#1D63ED"
+        d="M334,110.1c-8.3-5.6-30.2-8-46.1-3.7-.9-15.8-9-29.2-24-40.8l-5.5-3.7-3.7,5.6c-7.2,11-10.3,25.7-9.2,39,.8,8.2,3.7,17.4,9.2,24.1-20.7,12-39.8,9.3-124.3,9.3H0c-.4,19.1,2.7,55.8,26,85.6,2.6,3.3,5.4,6.5,8.5,9.6,19,19,47.6,32.9,90.5,33,65.4,0,121.4-35.3,155.5-120.8,11.2.2,40.8,2,55.3-26,.4-.5,3.7-7.4,3.7-7.4l-5.5-3.7h0ZM85.2,92.7h-36.7v36.7h36.7v-36.7ZM132.6,92.7h-36.7v36.7h36.7v-36.7ZM179.9,92.7h-36.7v36.7h36.7v-36.7ZM227.3,92.7h-36.7v36.7h36.7v-36.7ZM37.8,92.7H1.1v36.7h36.7v-36.7ZM85.2,46.3h-36.7v36.7h36.7v-36.7ZM132.6,46.3h-36.7v36.7h36.7v-36.7ZM179.9,46.3h-36.7v36.7h36.7v-36.7ZM179.9,0h-36.7v36.7h36.7V0Z"
+      />
+    </svg>
+  );
+}
+
+// The same icons as the app's sidebar and pages (hugeicons)
+function Icon({icon}: {icon: IconSvgElement}): ReactNode {
+  return <HugeiconsIcon icon={icon} className={styles.icon} strokeWidth={1.75} aria-hidden="true" />;
+}
+
+const features: [IconSvgElement, string, string][] = [
+  [BriefcaseBusinessIcon, 'Hiring pipelines', 'Set the stages for each role and move candidates across a shared board. A move can send the next test or task by itself.'],
+  [UsersRoundIcon, 'Candidate scores', 'Answers, assessments and interview scorecards add up to one score, with every part shown.'],
+  [Quiz03Icon, 'Assessments', 'Timed tests with a server-side clock, graded automatically. Written answers wait for a person.'],
+  [TaskDone01Icon, 'Take-home assignments', 'Send a brief and a hand-in form by private link, handed in once before the deadline.'],
+  [CoPresentIcon, 'Interview scheduling', 'Candidates pick an open slot. The interviewer gets a calendar entry and a Meet link.'],
+  [TelegramIcon, 'Offers', 'Send the offer letter, see when it is opened, and record the answer when it arrives.'],
+  [UserMultiple02Icon, 'Hiring teams', 'Super admins see every job. Managers and interviewers see only the jobs they are on.'],
+  [Search01Icon, 'CV search', 'CV text is read on your own server, with no outside service, and is fully searchable.'],
+];
+
+
+// Core first, then the parts around it
+const stack = [
+  ['TypeScript', 'typescript.svg', 'https://www.typescriptlang.org', 'Type safety across all code'],
+  ['Next.js', 'nextdotjs.svg', 'https://nextjs.org', 'Dashboard and portal'],
+  ['Express', 'express.svg', 'https://expressjs.com', 'Backend REST API'],
+  ['PostgreSQL', 'postgresql.png', 'https://www.postgresql.org', 'Primary database, CV search'],
+  ['Drizzle', 'drizzle.svg', 'https://orm.drizzle.team', 'Schema, queries, migrations'],
+  ['Better Auth', 'betterauth.svg', 'https://www.better-auth.com', 'Authentication and RBAC'],
+  ['Tailwind CSS', 'tailwindcss.svg', 'https://tailwindcss.com', 'Dashboard UI styling'],
+  ['Socket.IO', 'socketdotio.svg', 'https://socket.io', 'Real-time updates and chat'],
+  ['Redis', 'redis.svg', 'https://redis.io', 'Job queue state store'],
+  ['BullMQ', 'bullmq.png', 'https://bullmq.io', 'CV processing in background'],
+  ['Nodemailer', 'nodemailer.png', 'https://nodemailer.com', 'Transactional email via SMTP'],
+  ['Docker', 'docker.svg', 'https://www.docker.com', 'Local Postgres and Redis'],
 ] as const;
 
-const technologies = [
-  ['Next.js', 'nextdotjs.svg', 'https://nextjs.org'],
-  ['Express', 'express.svg', 'https://expressjs.com'],
-  ['PostgreSQL', 'postgresql.png', 'https://www.postgresql.org'],
-  ['Redis', 'redis.svg', 'https://redis.io'],
-  ['BullMQ', 'bullmq.png', 'https://bullmq.io'],
-  ['Drizzle', 'drizzle.svg', 'https://orm.drizzle.team'],
-  ['Socket.IO', 'socketdotio.svg', 'https://socket.io'],
-  ['TypeScript', 'typescript.svg', 'https://www.typescriptlang.org'],
-] as const;
+// The image is a placeholder until it is published to the GitHub Container Registry
+const QUICKSTART = {
+  docker: {
+    label: 'Docker',
+    note: 'Needs Docker and a .env file filled in from .env.example.',
+    lines: ['docker pull ghcr.io/chamals3n4/openats', 'docker run -d -p 3000:3000 \\', '  --env-file .env ghcr.io/chamals3n4/openats'],
+  },
+  source: {
+    label: 'From source',
+    note: 'Needs Node.js 22, pnpm and Docker for the local database.',
+    lines: ['git clone https://github.com/chamals3n4/OpenATS.git', 'cd OpenATS && make setup', 'make dev'],
+  },
+};
+type QuickstartTab = keyof typeof QUICKSTART;
+
+function Quickstart(): ReactNode {
+  const [tab, setTab] = useState<QuickstartTab>('docker');
+  const [copied, setCopied] = useState(false);
+  const {lines} = QUICKSTART[tab];
+
+  const copy = () => {
+    navigator.clipboard?.writeText(lines.join('\n')).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    });
+  };
+
+  return (
+    <div className={styles.quickstart}>
+      <div className={styles.quickstartHead}>
+        <p className={styles.quickstartTitle}>Get OpenATS on your own server</p>
+        <span className={styles.quickstartMeta}>Apache 2.0</span>
+      </div>
+      <div className={styles.tabRow}>
+      <div className={styles.tabs} role="tablist" aria-label="How to install">
+        {(Object.keys(QUICKSTART) as QuickstartTab[]).map((key) => (
+          <button
+            key={key}
+            type="button"
+            role="tab"
+            aria-selected={tab === key}
+            className={tab === key ? styles.tabActive : styles.tab}
+            onClick={() => {
+              setTab(key);
+              setCopied(false);
+            }}
+          >
+            {key === 'docker' ? <DockerLogo /> : <Icon icon={CommandLineIcon} />}
+            {QUICKSTART[key].label}
+          </button>
+        ))}
+      </div>
+        <button type="button" className={styles.copy} onClick={copy} aria-label="Copy the commands">
+          <Icon icon={copied ? Tick02Icon : Copy01Icon} />
+          {copied ? 'Copied' : 'Copy'}
+        </button>
+      </div>
+      <div className={styles.commandBox} role="tabpanel">
+        <pre>
+          {lines.map((line) => (
+            <code key={line}>
+              {line.startsWith(' ') ? ' ' : <span className={styles.prompt}>$</span>} {line.trimStart()}
+            </code>
+          ))}
+        </pre>
+      </div>
+      <p className={styles.quickstartNote}>{QUICKSTART[tab].note}</p>
+      <div className={styles.or}>
+        <span>or</span>
+      </div>
+      <div className={styles.altLinks}>
+        <a href={DEMO}>Try the live demo ↗</a>
+        <span aria-hidden="true">·</span>
+        <Link to="/docs/getting-started/make-setup">Full setup guide →</Link>
+      </div>
+    </div>
+  );
+}
 
 const structuredData = {
   '@context': 'https://schema.org',
@@ -32,7 +156,7 @@ const structuredData = {
       name: 'OpenATS',
       url: 'https://openats.dev',
       logo: 'https://openats.dev/img/brand/openats-logo.png',
-      sameAs: ['https://github.com/chamals3n4/OpenATS'],
+      sameAs: [GITHUB],
     },
     {
       '@type': 'WebSite',
@@ -47,109 +171,118 @@ const structuredData = {
       operatingSystem: 'Web',
       description: 'An open-source applicant tracking system for managing jobs, candidates, interviews, and hiring decisions.',
       url: 'https://openats.dev',
-      codeRepository: 'https://github.com/chamals3n4/OpenATS',
+      codeRepository: GITHUB,
       license: 'https://www.apache.org/licenses/LICENSE-2.0',
     },
   ],
 };
 
-function Arrow(): ReactNode {
-  return <span aria-hidden="true">→</span>;
-}
 
 export default function Home(): ReactNode {
   return (
     <Layout
-      title="Open-source hiring infrastructure"
-      description="OpenATS is an open-source applicant tracking system for teams that want a clear, adaptable hiring process."
+      title="Open-source applicant tracking system"
+      description="OpenATS is an open-source applicant tracking system you host yourself: pipelines, assessments, interviews, offers and a careers page in one place."
     >
       <main className="openats-landing-page">
         <script type="application/ld+json" dangerouslySetInnerHTML={{__html: JSON.stringify(structuredData)}} />
+
         <section className={styles.hero}>
-          <div className={`container ${styles.heroInner}`}>
-            <div className={styles.heroCopy}>
-              <Heading as="h1">Hiring infrastructure<br/><em>you can own.</em></Heading>
-              <p className={styles.lede}>OpenATS gives recruiting teams one clear place to plan roles, evaluate candidates, coordinate interviews, and make better decisions.</p>
-              <div className={styles.actions}>
-                <Link className={styles.primaryAction} to="/docs/intro">Read the documentation <Arrow/></Link>
-                <a className={styles.secondaryAction} href="https://demo.openats.dev">View live demo <span aria-hidden="true">↗</span></a>
+          <div className="container">
+            <div className={styles.heroGrid}>
+              <div>
+                <Heading as="h1" className={styles.title}>
+                  Run your hiring with software <em>you control.</em>
+                </Heading>
+                <p className={styles.lede}>
+                  OpenATS keeps jobs, candidates, assessments, interviews and offers in one place, on your own
+                  servers. No per-seat pricing, and your candidates’ data never leaves your hands.
+                </p>
+                <div className={styles.actions}>
+                  <Link className={styles.primary} to="/docs/getting-started/make-setup">
+                    Get started
+                  </Link>
+                  <a
+                    className={styles.secondary}
+                    href={GITHUB}
+                    target="_blank"
+                    rel="noreferrer"
+                    style={{display: 'inline-flex', alignItems: 'center', gap: '0.4rem'}}
+                  >
+                    <Icon icon={GithubIcon} />
+                    View on GitHub
+                  </a>
+                  <a className={styles.secondary} href={DEMO}>
+                    Live demo ↗
+                  </a>
+                </div>
               </div>
+              <Quickstart />
             </div>
-          </div>
-          <div className={styles.heroFoot}>
-            <span>Structured hiring workflows</span><span>Shared candidate context</span><span>Built for accountable teams</span>
-          </div>
-        </section>
-
-        <section className={styles.intro}>
-          <div className={`container ${styles.introGrid}`}>
-            <div>
-              <Heading as="h2">Every decision has a <span className={styles.accent}>place.</span></Heading>
-            </div>
-            <div className={styles.introCopy}>
-              <p>Hiring rarely breaks because a team lacks tools. It breaks when information is scattered and ownership is unclear. OpenATS connects the work around an open role so the people involved can move with context and confidence.</p>
-              <Link className={styles.inlineLink} to="/docs/intro">Learn what OpenATS provides <Arrow/></Link>
-            </div>
+            <ProductTour />
           </div>
         </section>
 
-        <section className={styles.workflow}>
+        <section className={styles.section}>
           <div className="container">
-            <div className={styles.sectionHeader}>
-              <div><Heading as="h2">From opening to <span className={styles.accent}>offer.</span></Heading></div>
-              <p>OpenATS follows the work your team already does, while making the handoffs between people and stages easier to manage.</p>
-            </div>
-            <div className={styles.workflowGrid}>
-              <article><span>01</span><Heading as="h3">Plan the role</Heading><p>Create a job, define its requirements, choose a pipeline, and invite the right people into the hiring team.</p></article>
-              <article><span>02</span><Heading as="h3">Evaluate together</Heading><p>Track applicants, collect interview feedback, and keep assessments and notes connected to the candidate record.</p></article>
-              <article><span>03</span><Heading as="h3">Decide with context</Heading><p>See each candidate’s full history before moving them forward, sending an offer, or closing the loop.</p></article>
-            </div>
-          </div>
-        </section>
-
-        <section className={styles.features}>
-          <div className="container">
-            <div className={styles.sectionHeader}>
-              <div><Heading as="h2">The work, in <span className={styles.accent}>one place.</span></Heading></div>
-              <p>Purposeful features for the core of a hiring operation. No disconnected point tools required.</p>
+            <div className={styles.sectionHead}>
+              <Heading as="h2" className={styles.featuresTitle}>
+                Everything your hiring team needs
+              </Heading>
+              <p>The core of a hiring process, built in. AI CV notes are optional and off by default.</p>
             </div>
             <div className={styles.featureGrid}>
-              {features.map(([title, text]) => <article className={styles.feature} key={title}><Heading as="h3">{title}</Heading><p>{text}</p></article>)}
+              {features.map(([icon, title, text]) => (
+                <article className={styles.feature} key={title}>
+                  <span className={styles.featureIcon}>
+                    <Icon icon={icon} />
+                  </span>
+                  <Heading as="h3">{title}</Heading>
+                  <p>{text}</p>
+                </article>
+              ))}
             </div>
           </div>
         </section>
 
-        <section className={styles.principles}>
-          <div className={`container ${styles.principlesGrid}`}>
-            <div><Heading as="h2">A system your team can <span className={styles.accent}>understand.</span></Heading></div>
-            <div className={styles.principleList}>
-              <article><Heading as="h3">Clear ownership</Heading><p>Keep your process, candidate records, and decision history visible to the people responsible for hiring.</p></article>
-              <article><Heading as="h3">Useful automation</Heading><p>Use background resume analysis to reduce manual work while people remain responsible for every hiring decision.</p></article>
-              <article><Heading as="h3">Built to adapt</Heading><p>Start with a complete applicant tracking system and extend it when your process needs something specific.</p></article>
+        <section className={styles.section}>
+          <div className="container">
+            <div className={`${styles.sectionHead} ${styles.stackHead}`}>
+              <div>
+                <Heading as="h2" className={styles.featuresTitle}>
+                  Built on a proven open-source stack
+                </Heading>
+                <p>Widely adopted tools your team already knows, so OpenATS is easy to run, maintain and extend.</p>
+              </div>
+              <Link className={styles.stackLink} to="/docs/developer/architecture">
+                How it fits together →
+              </Link>
+            </div>
+            <div className={styles.stackGrid}>
+              {stack.map(([name, image, href, role]) => (
+                <a className={styles.stackItem} href={href} target="_blank" rel="noreferrer" key={name}>
+                  <img src={`/img/stack/${image}`} alt="" />
+                  <span>
+                    <b>{name}</b>
+                    <small>{role}</small>
+                  </span>
+                </a>
+              ))}
             </div>
           </div>
         </section>
 
-        <section className={styles.technology}>
-          <div className={`container ${styles.stackShowcase}`}>
-            <div className={styles.centeredHeader}>
-              <Heading as="h2">Built on proven <span className={styles.accent}>technology.</span></Heading>
-              <p>OpenATS combines reliable open-source technologies for a fast, maintainable platform.</p>
-            </div>
-            <div className={styles.techGrid}>
-              {technologies.map(([name, image, href]) => <a className={styles.techTile} href={href} target="_blank" rel="noreferrer" key={name}><img src={`/img/stack/${image}`} alt={`${name} logo`}/><span>{name}</span></a>)}
-            </div>
-            <Link to="/docs/developer/architecture" className={styles.inlineLink}>Explore the architecture <Arrow/></Link>
-          </div>
-        </section>
-
-        <section className={styles.finalCta}>
-          <div className={`container ${styles.finalInner}`}>
-            <Heading as="h2">Build a hiring process<br/>your team can <span className={styles.accent}>trust.</span></Heading>
-            <p>Read the guides, run OpenATS locally, and shape it around the way your organization hires.</p>
+        <section className={`${styles.section} ${styles.closing}`}>
+          <div className="container">
+            <Heading as="h2">Start with the docs.</Heading>
+            <p>Set it up locally in a few minutes, then shape it around the way your team hires.</p>
             <div className={styles.actions}>
-              <Link className={styles.primaryAction} to="/docs/getting-started/make-setup">Get started <Arrow/></Link>
-              <a className={styles.secondaryAction} href="https://github.com/chamals3n4/OpenATS">View on GitHub <span aria-hidden="true">↗</span></a>
+              <Link className={styles.primary} to="/docs/intro">
+                Read the documentation
+              </Link>
+              <a className={styles.secondary} href={DEMO}>
+                Try the live demo
+              </a>
             </div>
           </div>
         </section>

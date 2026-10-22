@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { and, desc, eq, lt, ne, or, gt } from "drizzle-orm";
+import { and, desc, eq, lt, or, gt } from "drizzle-orm";
 import { db } from "../../db";
 import {
   assignments,
@@ -13,6 +13,7 @@ import {
 import { assignmentInviteEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { dueDateFor, isOpenForSubmission } from "./assignment-rules";
+import { frontendUrl } from "../../utils/frontend-url";
 
 export interface AssignmentInput {
   title: string;
@@ -26,6 +27,13 @@ export class AssignmentClosedError extends Error {
   constructor() {
     super("The deadline for this assignment has passed");
     this.name = "AssignmentClosedError";
+  }
+}
+
+export class AssignmentAlreadySubmittedError extends Error {
+  constructor() {
+    super("This assignment has already been handed in");
+    this.name = "AssignmentAlreadySubmittedError";
   }
 }
 
@@ -58,11 +66,36 @@ export const assignmentService = {
     return !!row;
   },
 
+  /** The private page a candidate opens to read the brief and hand in their work. */
+  linkFor(token: string) {
+    return frontendUrl(`/assignment/${token}`);
+  },
+
   /**
-   * Sends an assignment to a candidate. One that is still open or already handed in is returned
-   * as it is, with no second email.
+   * The invitation as the candidate would get it, for staff to check before sending. Built by the
+   * same function as the real email; nothing is saved or sent, and no link exists yet.
    */
-  async send(candidateId: number, assignmentId: number, dueDays?: number) {
+  async previewInvite(candidateId: number, assignmentId: number) {
+    const assignment = await this.getById(assignmentId);
+    const [candidate] = await db.select().from(candidates).where(eq(candidates.id, candidateId));
+    if (!assignment || !candidate) return null;
+    const email = assignmentInviteEmail({
+      ...(await emailContext("assignment_invite")),
+      firstName: candidate.firstName,
+      assignmentTitle: assignment.title,
+      assignmentUrl: `${this.linkFor("created-when-sent")}`,
+      dueAt: dueDateFor(new Date(), assignment.dueDays),
+    });
+    return { to: candidate.email, subject: email.subject, html: email.html };
+  },
+
+  /**
+   * Gives a candidate an assignment. One that is still open or already handed in is returned as
+   * it is, with no second email. With `email: false` only the link is made, for staff to pass on
+   * themselves.
+   */
+  async send(candidateId: number, assignmentId: number, options: { dueDays?: number; email?: boolean } = {}) {
+    const { dueDays, email: notify = true } = options;
     const now = new Date();
 
     const [existing] = await db
@@ -80,7 +113,7 @@ export const assignmentService = {
       )
       .orderBy(desc(candidateAssignments.createdAt))
       .limit(1);
-    if (existing) return { sent: existing, didSendInvite: false };
+    if (existing) return { sent: existing, didSendInvite: false, created: false, url: this.linkFor(existing.token) };
 
     const assignment = await this.getById(assignmentId);
     const [candidate] = await db.select().from(candidates).where(eq(candidates.id, candidateId));
@@ -94,12 +127,14 @@ export const assignmentService = {
       .returning();
     if (!sent) throw new Error("Failed to send the assignment");
 
-    const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
+    const url = this.linkFor(token);
+    if (!notify) return { sent, didSendInvite: false, created: true, url };
+
     const email = assignmentInviteEmail({
       ...(await emailContext("assignment_invite")),
       firstName: candidate.firstName,
       assignmentTitle: assignment.title,
-      assignmentUrl: `${frontendUrl}/assignment/${token}`,
+      assignmentUrl: url,
       dueAt,
     });
     const result = await sendCandidateEmail({
@@ -115,31 +150,7 @@ export const assignmentService = {
       throw new Error(result.error ?? "The email could not be sent");
     }
 
-    return { sent, didSendInvite: true };
-  },
-
-  /** Sends to several candidates. One that cannot be sent to does not stop the rest. */
-  async sendMany(
-    candidateIds: number[],
-    assignmentId: number,
-    options: { dueDays?: number | undefined; canSend: (candidateId: number) => Promise<boolean> },
-  ) {
-    const summary = { sent: 0, alreadyHad: 0, failed: [] as { candidateId: number; error: string }[] };
-    for (const candidateId of candidateIds) {
-      try {
-        if (!(await options.canSend(candidateId))) {
-          summary.failed.push({ candidateId, error: "You do not have access to this candidate" });
-          continue;
-        }
-        const result = await this.send(candidateId, assignmentId, options.dueDays);
-        if (!result) summary.failed.push({ candidateId, error: "Candidate or assignment not found" });
-        else if (result.didSendInvite) summary.sent += 1;
-        else summary.alreadyHad += 1;
-      } catch (error) {
-        summary.failed.push({ candidateId, error: error instanceof Error ? error.message : "Failed to send" });
-      }
-    }
-    return summary;
+    return { sent, didSendInvite: true, created: true, url };
   },
 
   async getJobAttachments(jobId: number) {
@@ -226,11 +237,15 @@ export const assignmentService = {
     return row ?? null;
   },
 
-  /** Hands in, or replaces, the work. A conditional update, so a late request cannot slip past the deadline check. */
+  /**
+   * Hands in the work, once. A conditional update on a pending row, so a late request cannot slip
+   * past the deadline and two requests at once cannot both be saved.
+   */
   async submit(token: string, answers: Record<string, string>) {
     const current = await this.getByToken(token);
     if (!current) return null;
     const now = new Date();
+    if (current.status === "submitted") throw new AssignmentAlreadySubmittedError();
     if (!isOpenForSubmission(current.status, current.dueAt, now)) throw new AssignmentClosedError();
 
     const [row] = await db
@@ -244,12 +259,19 @@ export const assignmentService = {
       .where(
         and(
           eq(candidateAssignments.token, token),
-          ne(candidateAssignments.status, "expired"),
+          eq(candidateAssignments.status, "pending"),
           gt(candidateAssignments.dueAt, now),
         ),
       )
       .returning({ id: candidateAssignments.id, candidateId: candidateAssignments.candidateId });
-    if (!row) throw new AssignmentClosedError();
+    if (!row) {
+      // Lost a race: say which way, so the page shows the right message
+      const [latest] = await db
+        .select({ status: candidateAssignments.status })
+        .from(candidateAssignments)
+        .where(eq(candidateAssignments.token, token));
+      throw latest?.status === "submitted" ? new AssignmentAlreadySubmittedError() : new AssignmentClosedError();
+    }
     return row;
   },
 

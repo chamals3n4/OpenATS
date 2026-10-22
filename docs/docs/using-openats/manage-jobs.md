@@ -1,6 +1,6 @@
 ---
 sidebar_position: 2
-title: Manage jobs
+title: Manage Jobs
 ---
 
 ## Create a job

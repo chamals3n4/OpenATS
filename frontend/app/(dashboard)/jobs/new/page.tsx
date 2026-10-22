@@ -1,5 +1,6 @@
 "use client";
 
+import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { RoleGuard } from "@/components/guards/role-guard";
@@ -49,9 +50,11 @@ function CreateJob() {
           staleTime: 1000 * 60 * 3,
         });
 
+        toast.success("Job created");
         // ?setup shows the next steps on the job page
         router.push(`/jobs/${jobId}?setup=1`);
       },
+      onError: (error) => toast.error(error.message || "Failed to create the job"),
     });
   };
 

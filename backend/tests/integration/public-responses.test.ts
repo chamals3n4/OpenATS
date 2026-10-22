@@ -17,7 +17,7 @@ import app from "../../src/app";
 import { db } from "../../src/db";
 import { company, departments } from "../../src/db/schema/company";
 import { jobs } from "../../src/db/schema/jobs";
-import { jobPipelineStages } from "../../src/db/schema/pipeline";
+import { jobHiringTeam, jobPipelineStages } from "../../src/db/schema/pipeline";
 import {
   assessmentQuestions,
   assessments,
@@ -63,6 +63,7 @@ beforeAll(async () => {
     })
     .returning();
   jobId = job!.id;
+  await db.insert(jobHiringTeam).values({ jobId, userId: managerId });
   await db.insert(jobPipelineStages).values({ jobId, name: "Applied", position: 0 });
 
   const [question] = await db

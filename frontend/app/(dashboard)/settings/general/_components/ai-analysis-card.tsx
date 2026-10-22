@@ -3,12 +3,12 @@
 import { toast } from "sonner";
 import { Switch } from "@/components/ui/switch";
 import { useAiSettings, useUpdateAiSettings } from "@/hooks/queries/use-settings";
-import { useIsManager } from "@/hooks/use-role";
+import { useRole } from "@/hooks/use-role";
 import { SettingsSection } from "./settings-section";
 
 /** AI CV analysis switch. Off by default since CVs go to a third party */
 export function AiAnalysisCard() {
-  const isManager = useIsManager();
+  const { isSuperAdmin } = useRole();
   const { data, isPending, isError } = useAiSettings();
   const update = useUpdateAiSettings();
 
@@ -55,9 +55,9 @@ export function AiAnalysisCard() {
             )}
           </p>
 
-          {!isManager && !isPending && !isError && configured && (
+          {!isSuperAdmin && !isPending && !isError && configured && (
             <p className="mt-2 text-xs text-slate-500 dark:text-neutral-400">
-              Only admins and hiring managers can change this.
+              Only a super admin can change this.
             </p>
           )}
         </div>
@@ -65,7 +65,7 @@ export function AiAnalysisCard() {
           aria-label="AI CV analysis"
           aria-describedby="ai-cv-analysis-note"
           checked={on}
-          disabled={isPending || isError || !configured || !isManager || update.isPending}
+          disabled={isPending || isError || !configured || !isSuperAdmin || update.isPending}
           onCheckedChange={handleChange}
           className="mt-0.5 shrink-0 data-checked:bg-theme"
         />

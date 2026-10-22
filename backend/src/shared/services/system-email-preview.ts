@@ -22,7 +22,7 @@ import { frontendUrl } from "../../utils/frontend-url";
 export function previewSystemEmail(
   purpose: SystemEmailPurpose,
   content: SystemEmailContent,
-  from: { companyName: string; timeZone: string; logoUrl?: string | null },
+  from: { companyName: string; timeZone: string },
   now: Date = new Date(),
 ): BuiltEmail {
   const sample = Object.fromEntries(

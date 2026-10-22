@@ -38,18 +38,16 @@ interface Options {
 
 function showAutomationToasts(automation: StageAutomationFlags | undefined) {
   if (automation?.assessmentInvite === "skipped_active_invite") {
-    toast.message("Assessment", {
-      description: "An invite is already active, so no new email was sent. The existing link still works.",
-    });
+    toast.message("Assessment invite already active");
   } else if (automation?.assessmentInvite === "sent") {
     toast.success("Assessment invite sent");
   }
   if (automation?.assignmentInvite === "sent") {
     toast.success("Assignment sent");
   } else if (automation?.assignmentInvite === "skipped_active_invite") {
-    toast.message("Assignment", { description: "They already have this assignment, so no new email was sent." });
+    toast.message("They already have this assignment");
   } else if (automation?.assignmentInvite === "failed") {
-    toast.error("The assignment could not be sent", { description: "Send it again from the candidate's page." });
+    toast.error("The assignment could not be sent");
   }
 }
 
@@ -175,30 +173,22 @@ export function useBoardMoves(
               toast.success(`Moved ${plural(data.moved.length, "candidate", "candidates")} to ${stage.name}`);
             }
             if (data.failed.length > 0) {
-              toast.error(`${plural(data.failed.length, "candidate", "candidates")} couldn't be moved`, {
-                description: data.failed[0]?.error,
-              });
+              toast.error(`${plural(data.failed.length, "candidate", "candidates")} couldn't be moved`);
             }
             if (data.assessmentInvitesSent > 0) {
               toast.success(`Assessment sent to ${plural(data.assessmentInvitesSent, "candidate", "candidates")}`);
             }
             if (data.assessmentInvitesSkipped > 0) {
-              toast.message("Assessment", {
-                description: `${plural(data.assessmentInvitesSkipped, "candidate", "candidates")} already had an active invite, so no new email was sent.`,
-              });
+              toast.message(`${plural(data.assessmentInvitesSkipped, "candidate", "candidates")} already had the assessment`);
             }
             if (data.assignmentInvitesSent > 0) {
               toast.success(`Assignment sent to ${plural(data.assignmentInvitesSent, "candidate", "candidates")}`);
             }
             if (data.assignmentInvitesSkipped > 0) {
-              toast.message("Assignment", {
-                description: `${plural(data.assignmentInvitesSkipped, "candidate", "candidates")} already had it, so no new email was sent.`,
-              });
+              toast.message(`${plural(data.assignmentInvitesSkipped, "candidate", "candidates")} already had the assignment`);
             }
             if (data.assignmentInvitesFailed > 0) {
-              toast.error(`The assignment could not be sent to ${plural(data.assignmentInvitesFailed, "candidate", "candidates")}`, {
-                description: "Send it again from their pages.",
-              });
+              toast.error(`Assignment not sent to ${plural(data.assignmentInvitesFailed, "candidate", "candidates")}`);
             }
             onBulkMovedRef.current?.();
           },

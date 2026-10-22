@@ -1,6 +1,6 @@
 ---
 sidebar_position: 1
-title: Company setup
+title: Company Setup
 ---
 
 ## Sign in for the first time

@@ -133,9 +133,11 @@ describe("offers", () => {
     expect(offer?.status).toBe("sent");
   });
 
-  it("are open to a hiring manager", async () => {
-    expect((await as(managerAuth).get("/offers")).status).toBe(200);
-    expect((await as(managerAuth).get(`/offers/${offerId}`)).status).toBe(200);
+  it("are closed to a hiring manager who is not on the job", async () => {
+    const list = await as(managerAuth).get("/offers");
+    expect(list.status).toBe(200);
+    expect((list.body.data as Array<{ id: number }>).map((o) => o.id)).not.toContain(offerId);
+    expect((await as(managerAuth).get(`/offers/${offerId}`)).status).toBe(403);
   });
 });
 
@@ -157,10 +159,9 @@ describe("the interviews list", () => {
     expect(await listed(outsiderAuth)).toEqual([]);
   });
 
-  it("shows a hiring manager every interview", async () => {
-    expect(await listed(managerAuth)).toEqual(
-      expect.arrayContaining([teamInterview, otherInterview, assignedInterview]),
-    );
+  it("shows a hiring manager only the interviews of jobs they are on", async () => {
+    const ids = await listed(managerAuth);
+    for (const id of [teamInterview, otherInterview, assignedInterview]) expect(ids).not.toContain(id);
   });
 
   it("does not give an interviewer everyone's booked times", async () => {
@@ -186,8 +187,17 @@ describe("scorecards on an interview", () => {
     expect((await as(onTeamAuth).get(`/interviews/${otherInterview}/feedback`)).status).toBe(403);
   });
 
-  it("stays open to a hiring manager on any job", async () => {
-    expect((await as(managerAuth).get(`/interviews/${otherInterview}/feedback`)).status).toBe(200);
+  it("is closed to a hiring manager who is not on the job", async () => {
+    expect((await as(managerAuth).get(`/interviews/${otherInterview}/feedback`)).status).toBe(403);
+  });
+
+  it("is marked on the list for the one who wrote it, and only for them", async () => {
+    const flag = async (auth: string) =>
+      ((await as(auth).get("/interviews")).body.data as Array<{ id: number; myScorecardSubmitted: boolean }>).find(
+        (row) => row.id === assignedInterview,
+      )?.myScorecardSubmitted;
+    expect(await flag(assignedAuth)).toBe(true);
+    expect(await flag(onTeamAuth)).toBe(false);
   });
 });
 
@@ -217,9 +227,9 @@ describe("what a job is made of", () => {
     }
   });
 
-  it("is open to a hiring manager who is not on the job", async () => {
+  it("is closed to a hiring manager who is not on the job", async () => {
     for (const path of paths(otherJob)) {
-      expect((await as(managerAuth).get(path)).status, path).toBe(200);
+      expect((await as(managerAuth).get(path)).status, path).toBe(403);
     }
   });
 });

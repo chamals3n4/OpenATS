@@ -20,9 +20,9 @@ describe("the preview of an automatic email", () => {
   it.each(SYSTEM_EMAIL_PURPOSES)("is the whole email for %s, not only the message", (purpose) => {
     const email = preview(purpose);
 
-    // The frame every real email has: the company band and the footer.
+    // The frame every real email has: the company above the card, and the footer.
     expect(email.html).toContain("Acme Hiring");
-    expect(email.html).toContain("Sent by Acme Hiring using OpenATS.");
+    expect(email.html).toContain("This email was sent by Acme Hiring about your application.");
     expect(email.html).toContain("<h1");
     // Every placeholder was filled with a sample value.
     expect(email.html).not.toMatch(/\{\{.*\}\}/);

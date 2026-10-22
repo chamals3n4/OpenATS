@@ -6,6 +6,7 @@ vi.mock("nodemailer", () => ({ default: { createTransport: () => ({ sendMail }) 
 import {
   buildPasswordEmail,
   isAuthMailConfigured,
+  mustStartTls,
   sendPasswordLinkEmail,
 } from "@/lib/auth/password-emails";
 
@@ -83,6 +84,27 @@ describe("isAuthMailConfigured", () => {
 
     vi.stubEnv("MAIL_FROM", "no-reply@example.test");
     expect(isAuthMailConfigured()).toBe(true);
+  });
+
+  it("is not configured when SMTP_PORT is not a valid port", () => {
+    configure();
+    for (const port of ["abc", "0", "65536", "25.5"]) {
+      vi.stubEnv("SMTP_PORT", port);
+      expect(isAuthMailConfigured()).toBe(false);
+    }
+    vi.stubEnv("SMTP_PORT", "465");
+    expect(isAuthMailConfigured()).toBe(true);
+    vi.stubEnv("SMTP_PORT", "");
+    expect(isAuthMailConfigured()).toBe(true);
+  });
+});
+
+describe("mustStartTls", () => {
+  it("is needed only for a remote server without implicit TLS", () => {
+    expect(mustStartTls("smtp.example.test", false)).toBe(true);
+    expect(mustStartTls("smtp.example.test", true)).toBe(false);
+    expect(mustStartTls("localhost", false)).toBe(false);
+    expect(mustStartTls("127.0.0.1", false)).toBe(false);
   });
 });
 

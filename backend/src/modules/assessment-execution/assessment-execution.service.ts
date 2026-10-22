@@ -23,6 +23,7 @@ import {
 } from "./grading";
 import { assessmentInviteEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
+import { frontendUrl } from "../../utils/frontend-url";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -131,8 +132,7 @@ export const assessmentExecutionService = {
         .where(eq(assessments.id, assessmentId));
 
       if (candidate && assessment) {
-        const frontendUrl = process.env.FRONTEND_URL || "http://localhost:3000";
-        const inviteUrl = `${frontendUrl}/assessment/${token}`;
+        const inviteUrl = frontendUrl(`/assessment/${token}`);
 
         const email = assessmentInviteEmail({
           ...(await emailContext("assessment_invite")),

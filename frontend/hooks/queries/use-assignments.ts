@@ -68,21 +68,34 @@ export function useDeleteAssignment() {
 }
 
 export type SendAssignmentResult = {
-  sent: number;
-  alreadyHad: number;
-  failed: { candidateId: number; error: string }[];
+  url: string;
+  /** emailed: new and sent. link: new, nothing sent. existing: they already had it. */
+  status: "emailed" | "link" | "existing";
 };
 
-/** Sends to one or many candidates; one that fails does not stop the rest. */
+/** Gives one candidate an assignment, by email or as a link only (`email: false`). */
 export function useSendAssignment() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (data: { candidateIds: number[]; assignmentId: number; dueDays?: number }) =>
+    mutationFn: (data: { candidateId: number; assignmentId: number; dueDays?: number; email: boolean }) =>
       serverFetch<{ data: SendAssignmentResult }>("/assignments/send", {
         method: "POST",
         body: JSON.stringify(data),
       }),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ["candidate-assignments"] }),
+  });
+}
+
+export type AssignmentEmailPreview = { to: string; subject: string; html: string };
+
+/** The invitation as the candidate would get it, before anything is sent. */
+export function usePreviewAssignmentEmail() {
+  return useMutation({
+    mutationFn: (data: { candidateId: number; assignmentId: number }) =>
+      serverFetch<{ data: AssignmentEmailPreview }>("/assignments/preview", {
+        method: "POST",
+        body: JSON.stringify(data),
+      }),
   });
 }
 

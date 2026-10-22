@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const sendMail = vi.fn(async () => ({ messageId: "<1@test>" }));
-const createTransport = vi.fn(() => ({ sendMail, verify: vi.fn() }));
+const sendMail = vi.fn(async (_message: Record<string, unknown>) => ({ messageId: "<1@test>" }));
+const createTransport = vi.fn((_options: Record<string, unknown>) => ({ sendMail, verify: vi.fn() }));
 vi.mock("nodemailer", () => ({ default: { createTransport } }));
 
 describe("mailService", () => {

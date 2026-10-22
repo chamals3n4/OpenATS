@@ -9,8 +9,8 @@ import {
   useAttentionReport,
   useExportAnalyticsReport,
 } from "@/hooks/queries/use-reports";
-import { useIsManager } from "@/hooks/use-role";
-import { DeptChart, OfferChart, PipelineChart, VolumeChart } from "./_components/charts";
+import { useCurrentUser } from "@/hooks/queries/use-user";
+import { PipelineChart, VolumeChart } from "./_components/charts";
 import { AttentionPanel } from "./_components/overview/attention-panel";
 import { Card, cardCls } from "./_components/overview/card";
 import { ExportDialog, type ExportFormat } from "./_components/overview/export-dialog";
@@ -18,8 +18,9 @@ import { KpiCards } from "./_components/overview/kpi-cards";
 import { OverviewHeader } from "./_components/overview/overview-header";
 import { buildKpis, periodOf, type Period } from "./_lib/overview-utils";
 
+/** The overview for hiring managers and super admins: what needs them, the key figures and one trend. */
 export function OverviewClient() {
-  const isManager = useIsManager();
+  const { data: me } = useCurrentUser();
   const [period, setPeriod] = useState<Period>("7d");
   const [dept, setDept] = useState("all");
   const [exportOpen, setExportOpen] = useState(false);
@@ -30,7 +31,7 @@ export function OverviewClient() {
   const departments = useMemo(() => deptRes?.data ?? [], [deptRes]);
 
   const analytics = useAnalyticsReport(period, departmentId);
-  const attention = useAttentionReport(departmentId, { enabled: isManager });
+  const attention = useAttentionReport(departmentId);
   const exportReport = useExportAnalyticsReport();
   const report = analytics.data?.data;
 
@@ -41,9 +42,10 @@ export function OverviewClient() {
     return () => clearInterval(id);
   }, []);
 
+  // New applicants are already in the "needs you" row, so the strip leaves them out
   const kpis = useMemo(
-    () => (report ? buildKpis(report.summary).filter((k) => isManager || !k.managerOnly) : []),
-    [report, isManager],
+    () => (report ? buildKpis(report.summary).filter((kpi) => kpi.key !== "applications") : []),
+    [report],
   );
 
   const { label: periodLabel, days } = periodOf(period);
@@ -66,12 +68,13 @@ export function OverviewClient() {
     <div className="flex flex-1 flex-col bg-slate-50/70 dark:bg-neutral-950">
       <div className="flex flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8">
         <OverviewHeader
+          firstName={me?.data?.firstName}
           period={period}
           onPeriodChange={setPeriod}
           departmentId={dept}
           onDepartmentChange={setDept}
           departments={departments}
-          canExport={isManager}
+          canExport
           onExport={() => setExportOpen(true)}
         />
 
@@ -86,15 +89,13 @@ export function OverviewClient() {
           </div>
         ) : (
           <>
-            {isManager && (
-              <AttentionPanel
-                report={attention.data?.data}
-                isLoading={attention.isPending}
-                isError={attention.isError}
-                onRetry={() => attention.refetch()}
-                now={now}
-              />
-            )}
+            <AttentionPanel
+              report={attention.data?.data}
+              isLoading={attention.isPending}
+              isError={attention.isError}
+              onRetry={() => attention.refetch()}
+              now={now}
+            />
 
             <KpiCards kpis={kpis} comparedWith={`the previous ${days} days`} isLoading={analytics.isPending} />
 
@@ -109,23 +110,12 @@ export function OverviewClient() {
               >
                 <VolumeChart data={report?.candidateVolume ?? []} />
               </Card>
-
               <Card
                 title="Movement between stages"
                 subtitle={`Candidates who entered each stage, compared with the previous ${days} days`}
               >
                 <PipelineChart data={report?.pipelineReport ?? []} />
               </Card>
-
-              <Card title="Time to hire by department" subtitle="Average days from applying to an accepted offer, all time">
-                <DeptChart data={report?.timeToHireByDepartment ?? []} />
-              </Card>
-
-              {isManager && (
-                <Card title="Offers" subtitle="Offers sent and accepted over the last 5 months">
-                  <OfferChart data={report?.offerTrends ?? []} />
-                </Card>
-              )}
             </div>
           </>
         )}

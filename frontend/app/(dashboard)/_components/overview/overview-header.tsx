@@ -13,6 +13,7 @@ import {
 import { PERIODS, type Period } from "../../_lib/overview-utils";
 
 interface OverviewHeaderProps {
+  firstName: string | undefined;
   period: Period;
   onPeriodChange: (period: Period) => void;
   departmentId: string;
@@ -27,6 +28,7 @@ const triggerCls =
 const contentCls = "border-slate-300 bg-white dark:border-neutral-700 dark:bg-neutral-900";
 
 export function OverviewHeader({
+  firstName,
   period,
   onPeriodChange,
   departmentId,
@@ -44,11 +46,11 @@ export function OverviewHeader({
   return (
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div>
-        <h1 className="text-2xl font-medium leading-none text-slate-900 dark:text-neutral-100">
-          Overview
+        <h1 className="text-2xl font-semibold leading-none text-slate-900 dark:text-neutral-100">
+          {firstName ? `Hi ${firstName}` : "Hi there"} <span aria-hidden>👋</span>
         </h1>
         <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
-          How hiring is going, and what needs you today.
+          Here&apos;s what needs you today, and how hiring is going.
         </p>
       </div>
 

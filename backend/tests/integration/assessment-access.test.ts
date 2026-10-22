@@ -116,9 +116,9 @@ describe("who can see a candidate's assessments", () => {
     expect((await get(`attempts/${attemptId}/results`, memberAuth)).status).toBe(200);
   });
 
-  it("lets a hiring manager who is not on that job, as for the rest of the candidate", async () => {
-    expect((await get(`candidate/${candidateId}`, outsiderAuth)).status).toBe(200);
-    expect((await get(`attempts/${attemptId}/results`, outsiderAuth)).status).toBe(200);
+  it("refuses a hiring manager who is not on that job, as for the rest of the candidate", async () => {
+    expect((await get(`candidate/${candidateId}`, outsiderAuth)).status).toBe(403);
+    expect((await get(`attempts/${attemptId}/results`, outsiderAuth)).status).toBe(403);
   });
 
   it("refuses an interviewer who is not on that job", async () => {
@@ -136,9 +136,9 @@ describe("the rest of what is stored about a candidate follows the same rule", (
   ];
   const get = (path: string, auth: string) => request(app).get(path).set("Authorization", auth);
 
-  it("is open to a hiring manager who is not on the job", async () => {
+  it("is closed to a hiring manager who is not on the job", async () => {
     for (const path of paths()) {
-      expect((await get(path, outsiderAuth)).status, path).toBe(200);
+      expect((await get(path, outsiderAuth)).status, path).toBe(403);
     }
   });
 
@@ -148,12 +148,12 @@ describe("the rest of what is stored about a candidate follows the same rule", (
     }
   });
 
-  it("lets a hiring manager who is not on the job rate the candidate", async () => {
+  it("does not let a hiring manager who is not on the job rate the candidate", async () => {
     const res = await request(app)
       .put(`/api/candidates/${candidateId}/rating`)
       .set("Authorization", outsiderAuth)
       .send({ rating: 4 });
-    expect(res.status).toBe(200);
+    expect(res.status).toBe(403);
   });
 
   it("does not let an interviewer who is not on the job rate the candidate", async () => {

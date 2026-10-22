@@ -1,21 +1,34 @@
 import { Node, mergeAttributes } from "@tiptap/core";
+import { ReactNodeViewRenderer } from "@tiptap/react";
+import { ButtonView } from "./button-view";
+import { BUTTON_STYLE } from "./button-style";
 
-// Same look as the email button on the backend
-const BUTTON_STYLE =
-  "display:inline-block;background:#0a0a0a;color:#ffffff;padding:10px 24px;border-radius:9999px;font-size:14px;font-weight:600;text-decoration:none;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;";
-
-// Button node, no inline editing
+// A call-to-action button. Its text and link are set in the panel that opens when it is clicked.
 export const ButtonNode = Node.create({
   name: "emailButton",
   group: "block",
   atom: true,
   selectable: true,
-  draggable: false,
+  draggable: true,
 
   addAttributes() {
     return {
-      label: { default: "Click Here" },
-      href: { default: "[url]" },
+      label: {
+        default: "",
+        rendered: false,
+        parseHTML: (el) => el.textContent?.trim() ?? "",
+      },
+      href: {
+        default: "",
+        rendered: false,
+        // Buttons saved before links could be set have "[url]"
+        parseHTML: (el) => {
+          const value = el.getAttribute("href") ?? "";
+          return value === "[url]" ? "" : value;
+        },
+      },
+      // Opens the panel once, right after inserting. Never saved.
+      autoOpen: { default: false, rendered: false },
     };
   },
 
@@ -31,40 +44,15 @@ export const ButtonNode = Node.create({
         "a",
         mergeAttributes(HTMLAttributes, {
           "data-email-button": "",
-          href: node.attrs.href || "[url]",
+          href: node.attrs.href || "#",
           style: BUTTON_STYLE,
         }),
-        node.attrs.label || "Click Here",
+        node.attrs.label || "Open",
       ],
     ];
   },
 
   addNodeView() {
-    return ({ node }) => {
-      const wrapper = document.createElement("div");
-      wrapper.style.cssText = "margin:16px 0;";
-      wrapper.contentEditable = "false";
-
-      const btn = document.createElement("span");
-      btn.style.cssText = BUTTON_STYLE;
-      btn.textContent = node.attrs.label || "Click Here";
-
-      const urlHint = document.createElement("span");
-      urlHint.style.cssText =
-        "display:block;margin-top:4px;font-size:11px;color:#94a3b8;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;";
-      urlHint.textContent = node.attrs.href || "[url]";
-
-      wrapper.append(btn, urlHint);
-
-      return {
-        dom: wrapper,
-        update: (updatedNode) => {
-          if (updatedNode.type.name !== "emailButton") return false;
-          btn.textContent = updatedNode.attrs.label || "Click Here";
-          urlHint.textContent = updatedNode.attrs.href || "[url]";
-          return true;
-        },
-      };
-    };
+    return ReactNodeViewRenderer(ButtonView);
   },
 });

@@ -41,4 +41,35 @@ describe("mailService", () => {
 
     expect(createTransport.mock.calls[0]![0]).not.toHaveProperty("auth");
   });
+
+  it("requires STARTTLS on a remote server that does not start encrypted", async () => {
+    vi.stubEnv("SMTP_PORT", "587");
+    vi.stubEnv("SMTP_SECURE", "false");
+    const { mailService } = await import("../../src/shared/services/mail.service");
+    await mailService.sendEmail({ to: "ada@example.test", subject: "Hi", html: "" });
+
+    expect(createTransport.mock.calls[0]![0]).toMatchObject({ secure: false, requireTLS: true });
+  });
+
+  it("does not require STARTTLS for Mailpit on this machine", async () => {
+    vi.stubEnv("SMTP_HOST", "localhost");
+    vi.stubEnv("SMTP_PORT", "1025");
+    vi.stubEnv("SMTP_SECURE", "false");
+    const { mailService } = await import("../../src/shared/services/mail.service");
+    await mailService.sendEmail({ to: "ada@example.test", subject: "Hi", html: "" });
+
+    expect(createTransport.mock.calls[0]![0]).toMatchObject({ requireTLS: false });
+  });
+});
+
+describe("mustStartTls", () => {
+  it("is needed only for a remote server without implicit TLS", async () => {
+    const { mustStartTls } = await import("../../src/shared/services/mail.service");
+
+    expect(mustStartTls("smtp.example.test", false)).toBe(true);
+    expect(mustStartTls("smtp.example.test", true)).toBe(false);
+    expect(mustStartTls("localhost", false)).toBe(false);
+    expect(mustStartTls("127.0.0.1", false)).toBe(false);
+    expect(mustStartTls("::1", false)).toBe(false);
+  });
 });

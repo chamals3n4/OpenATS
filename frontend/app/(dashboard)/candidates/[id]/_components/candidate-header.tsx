@@ -82,7 +82,7 @@ export function CandidateHeader({
       <div className="px-4 py-4 sm:px-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="min-w-0">
-            <h1 className="truncate text-xl font-bold leading-tight text-slate-950 dark:text-neutral-50">
+            <h1 className="truncate text-2xl font-bold leading-tight text-slate-950 dark:text-neutral-50">
               {candidate.firstName} {candidate.lastName}
             </h1>
             <div className="mt-1 flex flex-wrap items-center gap-2 text-sm font-medium text-slate-500 dark:text-neutral-400">
@@ -130,7 +130,7 @@ export function CandidateHeader({
               )}
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600 dark:text-neutral-300">
+            <div className="mt-2 flex flex-wrap gap-x-5 gap-y-2 text-sm text-slate-600 dark:text-neutral-300">
               <a
                 href={`mailto:${candidate.email}`}
                 className="inline-flex min-w-0 items-center gap-2 font-medium hover:text-[var(--theme-color)]"

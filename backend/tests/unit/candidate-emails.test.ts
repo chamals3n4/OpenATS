@@ -24,11 +24,9 @@ describe("renderEmailLayout", () => {
     );
   });
 
-  it("shows the company's logo when there is one, and only a web address", () => {
-    const withLogo = renderEmailLayout({ companyName: "Acme", logoUrl: "https://cdn.test/logo.png", bodyHtml: "" });
-    expect(withLogo).toContain('<img src="https://cdn.test/logo.png" alt="Acme"');
-    const badLogo = renderEmailLayout({ companyName: "Acme", logoUrl: "javascript:alert(1)", bodyHtml: "" });
-    expect(badLogo).not.toContain("<img");
+  it("names the company at the top, with no logo image", () => {
+    expect(html).not.toContain("<img");
+    expect(html).toContain('<a href="https://openats.dev"');
   });
 
   it("names the company, escaped, and keeps the body as given", () => {

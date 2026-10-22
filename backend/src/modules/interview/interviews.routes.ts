@@ -2,6 +2,7 @@ import { Router } from "express";
 import { z } from "zod";
 import { requireCandidateView, requireInterviewView } from "../../middlewares/job-access.middleware";
 import { requireManager } from "../../middlewares/role.middleware";
+import { teamScope } from "../../shared/auth/job-access";
 import { interviewService, FeedbackValidationError } from "./interview.service";
 import { DEFAULT_INTERVIEW_MINUTES, completeInterviewBooking } from "./interview-confirm";
 import { isInterviewClash } from "./interview-slots";
@@ -19,6 +20,7 @@ import { randomUUID } from "crypto";
 import logger from "../../utils/logger";
 import { integrationConnectionService } from "../../shared/integrations/connection.service";
 import { getErrorMessage} from "../../utils/error.utils";
+import { frontendUrl } from "../../utils/frontend-url";
 
 const router: Router = Router();
 
@@ -66,11 +68,8 @@ router.get("/interviews", async (req, res) => {
       fromDate: req.query.from as string | undefined,
       toDate: req.query.to as string | undefined,
     };
-    // An interviewer gets the interviews of their own jobs and the ones assigned to them.
-    const interviews = await interviewService.getAll(
-      filters,
-      req.user.role === "interviewer" ? req.user.id : undefined,
-    );
+    // Everyone but a super admin gets the interviews of their own jobs and the ones assigned to them.
+    const interviews = await interviewService.getAll(filters, teamScope(req.user), req.user.id);
     res.status(200).json({ data: interviews });
   } catch (error) {
     logger.error(`Failed to list interviews: ${getErrorMessage(error)}`);
@@ -102,7 +101,7 @@ router.get("/interviews/allocated-slots", requireManager, async (req, res) => {
   }
 });
 
-router.patch("/interviews/:id", requireManager, async (req, res) => {
+router.patch("/interviews/:id", requireManager, requireInterviewView(), async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
     if (isNaN(id)) {
@@ -184,7 +183,7 @@ const scheduleSchema = z
     }
   });
 
-router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
+router.post("/candidates/:id/schedule", requireManager, requireCandidateView("id"), async (req, res) => {
   try {
     const candidateId = parseInt((req.params.id ?? "").toString());
     if (isNaN(candidateId)) {
@@ -282,7 +281,7 @@ router.post("/candidates/:id/schedule", requireManager, async (req, res) => {
       return;
     }
 
-    const publicUrl = `${process.env.FRONTEND_URL || "http://localhost:3000"}/interview/${token}`;
+    const publicUrl = frontendUrl(`/interview/${token}`);
 
     void emailContext("interview_slots")
       .then((context) =>
@@ -362,7 +361,7 @@ router.get("/public/interview/:token", async (req, res) => {
   }
 });
 
-router.delete("/interviews/:id", requireManager, async (req, res) => {
+router.delete("/interviews/:id", requireManager, requireInterviewView(), async (req, res) => {
   try {
     const id = parseInt((req.params.id ?? "").toString());
     if (isNaN(id)) {
@@ -461,7 +460,7 @@ router.get("/interviews/:id/feedback", requireInterviewView(), async (req, res) 
   }
 });
 
-router.delete("/interviews/:id/feedback/:feedbackId", requireManager, async (req, res) => {
+router.delete("/interviews/:id/feedback/:feedbackId", requireManager, requireInterviewView(), async (req, res) => {
   try {
     const feedbackId = parseInt((req.params.feedbackId ?? "").toString());
     if (isNaN(feedbackId)) {

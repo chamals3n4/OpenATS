@@ -151,8 +151,9 @@ export const reportService = {
   async getAnalytics(
     period: ReportPeriod,
     departmentId?: number,
+    teamUserId?: number,
   ): Promise<AnalyticsReport> {
-    const cacheKey = `${period}|${departmentId ?? "all"}`;
+    const cacheKey = `${period}|${departmentId ?? "all"}|${teamUserId ?? "everyone"}`;
     const cached = analyticsCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) return cached.value;
 
@@ -164,9 +165,10 @@ export const reportService = {
       currentStart.getTime() - days * 24 * 60 * 60 * 1000,
     );
 
-    const deptFilter = departmentId
-      ? sql` AND j.department_id = ${departmentId}`
-      : sql``;
+    // Every query joins jobs as j, so one filter covers the department and the user's own jobs
+    const deptFilter = sql`${departmentId ? sql` AND j.department_id = ${departmentId}` : sql``}${
+      teamUserId ? sql` AND j.id IN (SELECT job_id FROM job_hiring_team WHERE user_id = ${teamUserId})` : sql``
+    }`;
 
     const totalCandidatesRes = await db.execute<{
       count: string;
@@ -494,8 +496,9 @@ export const reportService = {
     period: ReportPeriod,
     format: ExportFormat,
     departmentId?: number,
+    teamUserId?: number,
   ) {
-    const report = await this.getAnalytics(period, departmentId);
+    const report = await this.getAnalytics(period, departmentId, teamUserId);
 
     if (format === "json") {
       const fileName = `openats-report-${period}.json`;

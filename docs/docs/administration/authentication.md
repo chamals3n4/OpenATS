@@ -1,9 +1,9 @@
 ---
 sidebar_position: 1
-title: Sign-in and users
+title: Sign-In and Users
 ---
 
-# Sign-in and users
+# Sign-In and Users
 
 OpenATS handles sign-in itself. There is no outside identity service to create an account with or configure: users, passwords, roles and sessions all live in your own OpenATS database.
 

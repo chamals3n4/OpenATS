@@ -68,10 +68,12 @@ describe("resourceSchema", () => {
 describe("isOpenForSubmission", () => {
   const dueAt = new Date("2026-01-10T12:00:00Z");
 
-  it("is open until the deadline, for a first hand-in and for a change", () => {
-    const before = new Date("2026-01-10T11:59:59Z");
-    expect(isOpenForSubmission("pending", dueAt, before)).toBe(true);
-    expect(isOpenForSubmission("submitted", dueAt, before)).toBe(true);
+  it("is open until the deadline for a first hand-in", () => {
+    expect(isOpenForSubmission("pending", dueAt, new Date("2026-01-10T11:59:59Z"))).toBe(true);
+  });
+
+  it("is closed once handed in, so work cannot be changed", () => {
+    expect(isOpenForSubmission("submitted", dueAt, new Date("2026-01-10T11:59:59Z"))).toBe(false);
   });
 
   it("is closed after the deadline", () => {

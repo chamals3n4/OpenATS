@@ -500,6 +500,9 @@ export type InterviewListItem = {
   jobTitle: string | null;
   stageName: string | null;
   stageType: string | null;
+  interviewerId: number | null;
+  /** Whether the signed-in user has written a scorecard for it */
+  myScorecardSubmitted: boolean;
 };
 
 export type CandidateActivity = {

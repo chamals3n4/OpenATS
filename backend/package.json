@@ -39,7 +39,7 @@
     "jose": "^6.2.12",
     "js-yaml": "^4.3.2",
     "morgan": "^1.12.1",
-    "multer": "^2.4.0",
+    "multer": "^2.5.0",
     "nodemailer": "10.1.4",
     "pg": "^8.23.1",
     "sanitize-html": "^2.18.1",

@@ -23,10 +23,10 @@
     "@hugeicons/react": "1.1.10",
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
-    "docusaurus-plugin-copy-page-button": "^0.8.4",
+    "docusaurus-plugin-copy-page-button": "^0.8.5",
     "prism-react-renderer": "^2.3.0",
-    "react": "^19.3.0",
-    "react-dom": "^19.3.0"
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "3.10.2",

@@ -71,6 +71,11 @@
   --ifm-color-primary-lighter: #a9e5db;
   --ifm-color-primary-lightest: #c2eee7;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
+  /* Same neutral palette as the navbar and the marketing pages */
+  --ifm-background-color: #0a0a0a;
+  --ifm-background-surface-color: #0a0a0a;
+  --ifm-toc-border-color: #1f1f1f;
+  --ifm-color-emphasis-200: #1f1f1f;
 }
 
 .theme-doc-markdown h1 { font-size: clamp(1.75rem, 2.3vw, 1.9rem) !important; letter-spacing: -.025em; line-height: 1.2; }

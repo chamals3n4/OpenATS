@@ -12,8 +12,9 @@ const COLUMNS: [string, [string, string][]][] = [
   [
     'Product',
     [
-      ['Managed hosting', '/managed-hosting'],
-      ['Pricing', '/pricing'],
+      // Hidden for now, see the navbar items in docusaurus.config.ts
+      // ['Managed hosting', '/managed-hosting'],
+      // ['Pricing', '/pricing'],
       ['Blog', '/blog'],
       ['Live demo', 'https://demo.openats.dev'],
       ['Contact', '/contact'],
@@ -65,8 +66,7 @@ export default function Footer(): ReactNode {
               OpenATS
             </Link>
             <p>
-              An open-source applicant tracking system. Host it yourself for free, or let us run it for you on OpenATS
-              Cloud.
+              An open-source applicant tracking system you can host yourself for free.
             </p>
             <div className={styles.aboutActions}>
               <GithubStar />

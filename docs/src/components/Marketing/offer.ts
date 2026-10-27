@@ -1,5 +1,5 @@
 // Placeholders for the Cloud and Pricing pages: change them here and both pages follow.
-export const CONTACT_EMAIL = 'hello@openats.dev';
+export const CONTACT_EMAIL = 'chamals004@gmail.com';
 export const CLOUD_PRICE = {amount: '$30', period: 'per month', note: 'Flat price. Every user and candidate included.'};
 export const FREE_TIER = {jobs: 2, note: 'No card required. Keep everything when you upgrade.'};
 

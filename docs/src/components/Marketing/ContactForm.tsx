@@ -4,15 +4,11 @@ import styles from './marketing.module.css';
 
 type Fields = {name: string; email: string; company: string; message: string};
 
-// What the message is about. It becomes the email's subject.
-const TOPICS = ['OpenATS Cloud', 'Pricing', 'Self-hosting', 'Migration', 'Other'];
-
 /**
  * A contact form with no backend: the send button opens the visitor's email
  * app with every field filled in, so nothing is sent until they press send.
  */
 export default function ContactForm({button = 'Send message'}: {button?: string}): ReactNode {
-  const [topic, setTopic] = useState(TOPICS[0]!);
   const [fields, setFields] = useState<Fields>({name: '', email: '', company: '', message: ''});
   const [opened, setOpened] = useState(false);
 
@@ -28,23 +24,12 @@ export default function ContactForm({button = 'Send message'}: {button?: string}
       '',
       fields.message,
     ].join('\n');
-    window.location.href = mailto(`${topic}: ${fields.company || fields.name}`, body);
+    window.location.href = mailto(`OpenATS: ${fields.company || fields.name}`, body);
     setOpened(true);
   };
 
   return (
     <form className={styles.form} onSubmit={submit}>
-      <fieldset className={styles.topics}>
-        <legend>Topic</legend>
-        <div>
-          {TOPICS.map((t) => (
-            <label key={t} className={t === topic ? styles.topicActive : styles.topic}>
-              <input type="radio" name="topic" value={t} checked={t === topic} onChange={() => setTopic(t)} />
-              {t}
-            </label>
-          ))}
-        </div>
-      </fieldset>
       <div className={styles.formRow}>
         <label className={styles.field}>
           <span>Name</span>

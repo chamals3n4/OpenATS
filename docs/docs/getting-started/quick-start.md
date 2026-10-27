@@ -44,7 +44,7 @@ Set `ENCRYPTION_KEY` to the output. Do not change it after storing encrypted int
 
 Set these local values first:
 
-```dotenv
+```ini
 # backend/.env
 DATABASE_URL=postgresql://openats:openats@localhost:5432/openats
 REDIS_URL=redis://localhost:6379
@@ -62,7 +62,7 @@ Sign-in is built into OpenATS, so there is nothing to register anywhere. It need
 
 In `frontend/.env`:
 
-```dotenv
+```ini
 # The same database as the backend
 DATABASE_URL=postgresql://openats:openats@localhost:5432/openats
 # At least 32 characters. Generate one with: openssl rand -base64 32
@@ -72,7 +72,7 @@ BETTER_AUTH_URL=http://localhost:3000
 
 In `backend/.env` (these are already correct in the example file for local use):
 
-```dotenv
+```ini
 AUTH_JWKS_URL=http://localhost:3000/api/auth/jwks
 AUTH_ISSUER=http://localhost:3000
 ```
@@ -97,7 +97,7 @@ OpenATS uses two buckets, so that CVs can never be opened by a link:
 
 Find the Cloudflare Account ID in the dashboard. The endpoint normally follows this format:
 
-```dotenv
+```ini
 R2_ENDPOINT=https://<ACCOUNT_ID>.r2.cloudflarestorage.com
 R2_ACCESS_KEY_ID=<Access Key ID>
 R2_SECRET_ACCESS_KEY=<Secret Access Key>
@@ -114,7 +114,7 @@ OpenATS sends email through any SMTP server. Locally, `docker compose up -d` sta
 
 For real email, set these in `backend/.env`, and the same values in `frontend/.env` for invite and password reset emails:
 
-```dotenv
+```ini
 SMTP_HOST=smtp.resend.com
 SMTP_PORT=465
 SMTP_SECURE=true          # true only for port 465
@@ -142,7 +142,7 @@ AI CV analysis sends each candidate's CV to Google Gemini, which writes a summar
 
 1. **A Gemini API key on the backend.** Open [Google AI Studio](https://aistudio.google.com/app/apikey), create an API key for a Google Cloud project, and restrict it to the services and environments that need it. Add it only to the backend, then restart the backend and the worker:
 
-   ```dotenv
+   ```ini
    GEMINI_API_KEY=<your Gemini API key>
    ```
 
@@ -161,7 +161,7 @@ Interviews work without Google. With it, each interviewer can connect their own 
 5. Under **Authorised redirect URIs**, add the API's address followed by `/oauth/google/callback`. Locally that is `http://localhost:8080/oauth/google/callback`.
 6. Copy the client ID and the client secret into `backend/.env`, with the same redirect URI:
 
-```dotenv
+```ini
 GOOGLE_OAUTH_CLIENT_ID=<your client ID>
 GOOGLE_OAUTH_CLIENT_SECRET=<your client secret>
 GOOGLE_OAUTH_REDIRECT_URI=http://localhost:8080/oauth/google/callback

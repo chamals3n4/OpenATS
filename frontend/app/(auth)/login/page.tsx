@@ -119,7 +119,7 @@ export default function LoginPage() {
               disabled={submitting}
             >
               {submitting ? <Spinner /> : null}
-              {submitting ? "Signing in…" : "Sign in"}
+              {submitting ? "Signing in" : "Sign in"}
             </Button>
           </FieldGroup>
         </form>

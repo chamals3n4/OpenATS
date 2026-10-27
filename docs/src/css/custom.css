@@ -37,7 +37,7 @@
 
 .navbar { -webkit-backdrop-filter: saturate(180%) blur(16px); backdrop-filter: saturate(180%) blur(16px); background: rgba(255,255,255,.85); border-bottom: 1px solid #eef1f4; box-shadow: none; height: 68px; padding: 0 1.5rem; }
 .navbar__logo { height: 40px; margin-right: .3rem; width: 40px; }
-.navbar__title { color: #0f172a; font-size: 1.25rem; font-weight: 700; letter-spacing: -.035em; }
+.navbar__title { color: #0f172a; font-size: 1.5rem; line-height: 1; font-weight: 700; letter-spacing: -.035em; }
 .navbar__link { border-radius: 999px; color: #475569; font-size: .88rem; font-weight: 500; padding: .42rem .95rem; transition: background .2s ease, color .2s ease, box-shadow .2s ease; }
 .navbar__link:hover { color: #0f172a; }
 .navbar__link--active, .navbar__link[aria-current='page'] { background: #fff; box-shadow: 0 1px 2px rgba(15,23,42,.08), 0 0 0 1px rgba(15,23,42,.04); color: #0f172a; font-weight: 600; }

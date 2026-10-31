@@ -9,6 +9,7 @@ const PUBLIC_PATHS = new Set([
   "/forgot-password",
   "/reset-password",
   "/careers",
+  "/robots.txt",
 ]);
 
 const PUBLIC_PREFIXES = [

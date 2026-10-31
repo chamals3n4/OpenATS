@@ -37,7 +37,7 @@
     "helmet": "^8.1.0",
     "ioredis": "6.0.0",
     "jose": "^6.2.13",
-    "js-yaml": "^4.3.2",
+    "js-yaml": "^5.5.0",
     "morgan": "^1.12.1",
     "multer": "^2.5.0",
     "nodemailer": "10.2.1",

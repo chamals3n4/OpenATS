@@ -14,9 +14,25 @@
 - What is OpenATS?: https://openats.dev/docs/intro
 - Quick Start: https://openats.dev/docs/getting-started/make-setup
 - Manual setup: https://openats.dev/docs/getting-started/quick-start
+- Environment variables: https://openats.dev/docs/getting-started/environment-variables
+- Deploy to production: https://openats.dev/docs/getting-started/deployment
+- Troubleshooting: https://openats.dev/docs/getting-started/troubleshooting
 - Architecture: https://openats.dev/docs/developer/architecture
-- Using OpenATS: https://openats.dev/docs/using-openats/jobs-and-candidates
+- Development guide: https://openats.dev/docs/developer/development-guide
+- How to use OpenATS: https://openats.dev/docs/using-openats/
+- Company setup: https://openats.dev/docs/using-openats/first-login-and-company-setup
+- Users and roles: https://openats.dev/docs/using-openats/users-and-roles
+- Dashboard overview: https://openats.dev/docs/using-openats/dashboard-overview
+- Templates: https://openats.dev/docs/using-openats/templates
+- Assessments: https://openats.dev/docs/using-openats/assessments
+- Assignments: https://openats.dev/docs/using-openats/assignments
 - Manage jobs: https://openats.dev/docs/using-openats/manage-jobs
+- Hiring pipeline: https://openats.dev/docs/using-openats/hiring-pipeline
+- Candidates: https://openats.dev/docs/using-openats/jobs-and-candidates
+- Candidate scoring: https://openats.dev/docs/using-openats/candidate-scoring
+- Interviews: https://openats.dev/docs/using-openats/interviews
+- Offers: https://openats.dev/docs/using-openats/offers
+- Rejecting candidates: https://openats.dev/docs/using-openats/rejecting-candidates
 - Testing: https://openats.dev/docs/developer/testing
 - Contributing Guide: https://openats.dev/docs/developer/contributing
 

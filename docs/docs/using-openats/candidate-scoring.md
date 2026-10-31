@@ -1,15 +1,18 @@
 ---
 sidebar_position: 5.5
-title: Candidate Scoring
+title: Understand Candidate Scores
+sidebar_label: Understand Candidate Scores
+description: How the OpenATS candidate score works. Application questions, assessments, ratings and interviews combine into a 0 to 100 score you can sort by.
+keywords: [candidate scoring, applicant score, interview scorecard, blind review, knockout questions]
 ---
 
-# Candidate Scoring
+# Understand Candidate Scores
 
 OpenATS gives every candidate a **score from 0 to 100**. The score helps you see, at a glance, who looks strongest, so you can open the best candidates first instead of reading every profile in order.
 
 This page explains the whole system from start to finish: what goes into the score, who enters what, when it changes, and how to read it. You do not need any technical knowledge.
 
-:::note The score helps you decide. It does not decide for you.
+:::note[The score helps you decide. It does not decide for you.]
 OpenATS never rejects, moves or hires anyone because of a score. People make those decisions. Use the score to **sort**, then read the candidate's answers, test results and interview notes before you decide.
 :::
 
@@ -98,7 +101,7 @@ A candidate can pick only one option, so they earn that option's points.
 
 A candidate can tick several, and their points are added up. Notice the **negative points** on COBOL. Without them, a candidate could tick every box and get full marks. With them, a wrong tick costs points. Negative points can only be used on tick-any questions.
 
-:::info Candidates never see the points
+:::info[Candidates never see the points]
 The application form shows only the question and the options. Applicants cannot see points, knockouts or which answers you prefer.
 :::
 
@@ -198,7 +201,7 @@ If no question in the job has points, the **Questions part is left out** of the 
 
 - **Short and long answers are marked by a person.** After the candidate finishes, a reviewer opens the candidate's **Scores** tab, selects **View answers**, reads each written answer, and types the points to give (from 0 up to that question's points), then saves.
 
-:::caution Written answers hold the score back
+:::caution[Written answers hold the score back]
 Until **every** written answer has been graded, the test has **no score and no pass or fail result**, and it is **left out of the total** so it does not drag the candidate down unfairly. The results view shows a notice saying how many answers are waiting. Once the last one is graded, the score appears and the total updates.
 
 A **blank** written answer is simply worth 0 and does not wait for anyone.
@@ -268,7 +271,7 @@ If you submit again later, you **edit your own scorecard**. You never create a s
 
 The **Interview part is the average of 75 and 58: about 67**. The candidate's page also shows how far apart the interviewers were ("2 scorecards, from 58 to 75"), because an average can hide a big disagreement.
 
-:::info The recommendation is for people, not for the score
+:::info[The recommendation is for people, not for the score]
 *Strong no / No / Yes / Strong yes* is shown to the team to read. It is **not** counted in the score. Only the stars are.
 :::
 
@@ -398,7 +401,7 @@ Every filter that is on shows as a chip, and each chip has its own **×**. **Cle
 
 A common combination is **Min score 70**, **No flags** and **All parts scored**, sorted by **Highest score**: strong candidates, with nothing against them, whose score rests on everything the job measures.
 
-:::tip Your filters are remembered
+:::tip[Your filters are remembered]
 The position and filters are saved in your browser and in the page address. They are still there if you open a candidate and close their profile, reload the page, or visit another page such as Jobs and come back later. You can also copy the address to share a filtered view with a teammate. They stay until you remove them with the **×** on each chip, or **Clear all**. Only what you typed in the search box is not kept.
 :::
 
@@ -469,7 +472,7 @@ No. Scores are only for your team.
 
 ## For administrators
 
-Scoring needs one database change, which is applied with the normal migration command described in the [deployment guide](../operations/deployment). After you upgrade an installation that already has candidates, run the **score backfill** once so that earlier candidates get scores calculated with the current rules:
+Scoring needs one database change, which is applied with the normal migration command described in the [deployment guide](../getting-started/deployment#update-to-a-new-version). After you upgrade an installation that already has candidates, run the **score backfill** once so that earlier candidates get scores calculated with the current rules:
 
 ```bash
 cd backend

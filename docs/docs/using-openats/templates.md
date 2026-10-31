@@ -1,9 +1,12 @@
 ---
 sidebar_position: 4
-title: Templates
+title: Set Up Templates
+sidebar_label: Set Up Templates
+description: Create reusable email, offer letter and interview templates in OpenATS, use variables like candidate name, and edit the automatic emails candidates receive.
+keywords: [recruitment email templates, offer letter template, interview template, candidate email automation]
 ---
 
-# Templates
+# Set Up Templates
 
 Templates hold wording and settings you reuse, so nobody types the same email or interview details twice. Open **Templates** from the dashboard sidebar. The page has two tabs:
 
@@ -54,6 +57,10 @@ A variable is a placeholder such as `{{candidate_name}}`. OpenATS replaces it wi
 
 The offer-only variables have a value only when an offer is sent. If a template that uses one is chosen for a rejection, OpenATS refuses to send it and names the variable, so a candidate never receives an email with a gap in it.
 
+### Reuse a template
+
+Need something similar to a template you already have? Select **Duplicate** in the list and edit the copy.
+
 ## Interview Event templates
 
 An Interview Event template describes one kind of interview, for example "Technical interview". It does **not** hold dates. You choose the times each time you schedule an interview.
@@ -89,10 +96,13 @@ OpenATS sends these emails by itself. Each has built-in wording, so they work wi
 | **Application received** | A candidate applies |
 | **Assessment invite** | A candidate reaches a stage that has an assessment |
 | **Assessment completed** | A candidate hands in an assessment |
+| **Assignment invite** | A candidate is sent a take-home assignment |
 | **Interview: pick a time** | You schedule an interview and let the candidate choose a time |
 | **Interview confirmed** | The interview gets its time |
 | **Interview cancelled** | You cancel an interview the candidate had confirmed |
 | **Offer** | You send an offer. It links to the offer letter |
+
+{/* SCREENSHOT: templates/automatic-emails.png - The Automatic emails tab, with one email marked Edited */}
 
 ### Change the wording
 
@@ -110,3 +120,7 @@ Only the subject and the message can be changed. OpenATS adds the details, such 
 Every email to a candidate uses the same design, with your company name at the top.
 
 Every email is also saved in the candidate's **Email** tab, whether a person wrote it or OpenATS sent it. An email the mail provider did not accept is marked **Not delivered**.
+
+## Next step
+
+With your templates saved, [build your first assessment](./assessments).

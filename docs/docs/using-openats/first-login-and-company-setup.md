@@ -1,7 +1,14 @@
 ---
 sidebar_position: 1
-title: Company Setup
+title: Set Up Your Company
+sidebar_label: Set Up Your Company
+description: Sign in to OpenATS for the first time, add your company profile, logo and time zone, and create the departments your jobs will belong to.
+keywords: [OpenATS setup, ATS company profile, first login, recruitment software setup]
 ---
+
+# Set Up Your Company
+
+This is the first thing to do in a new OpenATS installation. It only takes a few minutes, and the rest of the dashboard stays locked until you've done it.
 
 ## Sign in for the first time
 
@@ -25,6 +32,8 @@ Only **Settings > General** remains available while either item is missing. This
 
 ### 1. Enter the company profile
 
+{/* SCREENSHOT: company-setup/company-profile.png - Settings > General with the Company Profile form filled in */}
+
 In the **Company Profile** section, complete the required fields:
 
 - **Company Name**: the organization name used throughout OpenATS.
@@ -43,6 +52,8 @@ Select **Create** when the profile is new, or **Save** when updating an existing
 
 ### 2. Add a department
 
+{/* SCREENSHOT: company-setup/departments.png - The Departments section with three departments added */}
+
 In the **Departments** section, select **Add Department**, enter a department name, and select **Add**. For example:
 
 ```text
@@ -53,6 +64,10 @@ Create every department that will own jobs, such as Engineering, Product, Design
 
 Once the company profile and at least one department are saved, the setup gate is cleared. OpenATS will take you to the normal dashboard on the next navigation.
 
+## Turn on AI CV analysis (optional)
+
+You'll also see an **AI CV analysis** switch on this page. It's off by default, and you can safely leave it that way. If you're thinking of turning it on, read [what it does](./jobs-and-candidates#ai-analysis-optional) first, because it sends CVs to Google Gemini.
+
 ## If you are redirected again
 
 Being sent back to **Settings > General** means one of the required setup checks is still incomplete:
@@ -61,3 +76,7 @@ Being sent back to **Settings > General** means one of the required setup checks
 - The company name or contact email is missing or invalid.
 - No department has been created yet.
 - The session is connected to a different database than the one where setup was completed.
+
+## Next step
+
+Your company is set up. Now [add your team](./users-and-roles).

@@ -1,7 +1,28 @@
 ---
 sidebar_position: 2
-title: Manage Jobs
+title: Create and Publish a Job
+sidebar_label: Create and Publish a Job
+description: Create a job in OpenATS, add the salary, hiring team and application questions, publish it to your careers page, then pause, close or archive it.
+keywords: [create a job posting, publish a job, hiring team, application questions, job status, ATS job management]
 ---
+
+# Create and Publish a Job
+
+Everything about a role lives in its job: the details, the team, the pipeline, your questions and every candidate who applies. Here's the order we'd suggest when you set one up:
+
+1. [Create the job](#create-a-job) and save it as a draft.
+2. [Build the hiring team](#build-the-hiring-team).
+3. [Check the pipeline](#configure-the-hiring-process).
+4. [Add application questions](#add-application-questions).
+5. [Attach tests and tasks](#attach-assessments-and-assignments).
+6. [Set up scoring](#set-up-scoring).
+7. [Publish it](#publish-the-job).
+
+## Find a job
+
+All your jobs are under **Manage Jobs**. If the list gets long, search for one or filter by department, type or status. Hiring Managers and Interviewers only see jobs they're on the team of.
+
+{/* SCREENSHOT: manage-jobs/job-list.png - The Manage Jobs list with several jobs in different statuses */}
 
 ## Create a job
 
@@ -22,7 +43,7 @@ The form opens with the job saved as a draft until you publish it.
 Complete the fields in this order:
 
 1. **Job Title**: enter the name candidates will see, such as `Software Engineering Intern`.
-2. **Department**: choose the department responsible for this role. Departments are created in [Company setup](./first-login-and-company-setup).
+2. **Department**: choose the department responsible for this role. Departments are created in [Set Up Your Company](./first-login-and-company-setup).
 3. **Employment Type**: choose **Full Time**, **Part Time**, **Contract**, **Internship**, or **Freelance**.
 4. **Skills**: add the skills relevant to the role.
 5. **Location**: enter a location, work arrangement, or both, such as `Colombo, Sri Lanka (Hybrid)`.
@@ -73,16 +94,28 @@ Select **Save Job** at the bottom of the form. OpenATS creates the job as a **Dr
 
 From the job page you can review the details and configure the parts of the hiring process that happen after creation.
 
+## Build the hiring team
+
+Only people on the hiring team can see this job and its candidates, so add everyone who'll be involved. If you created the job, you're already on it. Super Admins see every job, so you don't need to add them.
+
+Open the job's **Hiring Team** tab, search for someone by name or email, and add them. You can take them off the same way.
+
+{/* SCREENSHOT: manage-jobs/hiring-team.png - The Hiring Team tab with people added and the search box open */}
+
+The team also gets a private chat for the role. Select **Discussions** in the job header to open it.
+
+{/* SCREENSHOT: manage-jobs/discussions.png - A job page with the Discussions panel open and a few messages */}
+
 ## Configure the hiring process
 
-Open the **Hiring Pipeline** tab on the job page.
+Open the **Hiring Process** tab on the job page.
 
 ![The Hiring Process tab showing the pipeline stages and controls for adding, editing, deleting, and reordering stages.](/content/manage-jobs/job-hiring-process.png)
 
 In **Hiring Pipeline Stages** you can:
 
 - Drag stages to change their order.
-- Select **Add New Stage** to create a stage.
+- Select **Add stage** to create a stage.
 - Select **Edit** to rename a stage.
 - Select **Delete** to remove a stage.
 
@@ -102,6 +135,19 @@ Open the **Custom Questions** tab to ask candidates for information during the a
 
 Keep questions specific to the role. Avoid asking for information that is already collected in the candidate profile.
 
+You can give answers points, or mark one as a knockout, so applicants are scored as they apply. See [Candidate Scoring](./candidate-scoring#application-questions-with-points).
+
+## Attach assessments and assignments
+
+Want candidates to get a test or a task when they reach a certain stage? Set that up in the job's **Assessments** tab.
+
+- [Attach an assessment](./assessments#attach-an-assessment-to-a-job-stage), and set its pass mark.
+- [Attach an assignment](./assignments#send-it-automatically-from-a-stage).
+
+## Set up scoring
+
+In the job's **Scoring** tab you can decide how much the questions, assessment, rating and interview each count, and what interviewers mark on their scorecard. The defaults are fine for most jobs, so you can skip this if you like. See [Candidate Scoring](./candidate-scoring#weights-and-scorecard-criteria).
+
 ## Publish the job
 
 When the job details and hiring process are ready, return to the job page and select **Publish Job**.
@@ -114,4 +160,28 @@ After publishing, use the careers-page link shown in the job header to confirm t
 
 ![A published job displayed on the public careers page with its Apply button.](/content/manage-jobs/career-page.png)
 
-If you need to make changes, open the job again, update its details, and save them. You can manage its visibility from the job page without deleting the job or its candidate history.
+## Change a job's status
+
+The buttons in the job header change depending on the job's status. Don't worry, none of them delete candidates.
+
+| Status | On the careers page? | What you can do next |
+| --- | --- | --- |
+| **Draft** | No | **Publish Job** |
+| **Published** | Yes, and open for applications | **Deactivate** or **Close** |
+| **Inactive** | No. Handy for a short pause | **Publish Job** or **Close** |
+| **Closed** | No. For when the role is filled | **Reopen** or **Archive** |
+| **Archived** | No, and hidden from your active lists | **Restore to Draft** |
+
+If someone opens an old link to a job that's no longer published, they'll see a page saying it isn't available.
+
+## Edit a job
+
+Open the job, make your changes and save. If you try to leave before saving, OpenATS will check with you first.
+
+## Delete a job
+
+Be careful here. Deleting a job also deletes **every candidate and offer** on it, and you can't undo that. OpenATS shows you what will go before you confirm. If you just want the job out of the way, **Close** or **Archive** it instead.
+
+## Next step
+
+Next, look at how candidates will move through the job in [Set Up the Hiring Pipeline](./hiring-pipeline).

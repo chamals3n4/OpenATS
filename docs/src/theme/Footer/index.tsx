@@ -24,8 +24,8 @@ const COLUMNS: [string, [string, string][]][] = [
     'Documentation',
     [
       ['Introduction', '/docs/intro'],
-      ['Quick start', '/docs/getting-started/quick-start'],
-      ['Deployment', '/docs/operations/deployment'],
+      ['Quick start', '/docs/getting-started/make-setup'],
+      ['Deployment', '/docs/getting-started/deployment'],
       ['Architecture', '/docs/developer/architecture'],
     ],
   ],

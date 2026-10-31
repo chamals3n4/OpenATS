@@ -1,14 +1,20 @@
+---
+title: Testing Guide
+description: How testing works in OpenATS. Run Vitest unit and integration tests and Playwright browser tests, set up the test database, and write new tests.
+keywords: [OpenATS testing, Vitest, Playwright, integration tests, end-to-end tests]
+---
+
 # Testing Guide
 
 OpenATS uses three layers of automated tests: unit tests for pure logic, integration tests for the API and database, and end-to-end tests that drive a real browser through the running app. This guide explains what each layer does, which tools and databases they use, and how to run and write them.
 
 ## 1. Testing stack
 
-Only two test tools are used across the whole project.
+These are the tools used across the project.
 
 | Tool | Version | Used for |
 | --- | --- | --- |
-| [Vitest](https://vitest.dev) | 4.x | Unit and integration tests (backend) |
+| [Vitest](https://vitest.dev) | 4.x | Unit and integration tests (backend), and frontend tests |
 | [Supertest](https://github.com/ladjs/supertest) | 7.x | Sending HTTP requests to the Express app inside integration tests |
 | [Playwright](https://playwright.dev) | 1.x | End-to-end tests in a real browser |
 
@@ -68,9 +74,13 @@ OpenATS/
 │   └── careers.spec.ts
 ├── playwright.config.ts          Playwright config (repo root)
 ├── tsconfig.json                 TypeScript config covering e2e/ only
+├── docker-compose.test.yml       The test database
+├── frontend/
+│   ├── vitest.config.mts         Frontend Vitest config
+│   └── tests/                    Helper and component tests
 └── backend/
     ├── vitest.config.mts         Vitest config
-    ├── .env.test                 Test database connection
+    ├── .env.test                 Test settings, no real secrets
     └── tests/
         ├── setup.ts              Loads .env.test before tests run
         ├── unit/
@@ -85,7 +95,7 @@ The Vitest config file is `vitest.config.mts` and not `.ts`. The backend is a Co
 
 This is the part worth understanding properly, because getting it wrong means tests write into your development data.
 
-There are two Postgres containers, both defined in the root `docker-compose.yml`:
+There are two Postgres containers. The development one is in `docker-compose.yml`, and the test one is in its own file, `docker-compose.test.yml`:
 
 | Container | Port | Database | Storage | Used by |
 | --- | --- | --- | --- | --- |
@@ -126,12 +136,14 @@ pnpm exec playwright install chromium
 Start the test database and apply the schema to it:
 
 ```bash
-docker compose up -d postgres-test
+docker compose -f docker-compose.test.yml up -d
 cd backend
 DATABASE_URL=postgresql://openats:openats@localhost:5433/openats_test pnpm drizzle-kit migrate
 ```
 
 > ⚠️ Note the port is **5433**, not 5432. Using 5432 here points the migration at your development database instead.
+
+The test database's data doesn't survive a stop, so run that migration again each time you start it.
 
 Confirm the schema was applied:
 
@@ -144,9 +156,11 @@ docker exec openats-postgres-test psql -U openats -d openats_test -c '\dt'
 ### Unit and integration tests
 
 ```bash
-pnpm test          # run once
-pnpm test:watch    # re-run on file changes
-make test          # same as pnpm test
+pnpm test            # backend, then frontend, once
+pnpm test:watch      # backend, re-run on file changes
+pnpm test:frontend   # frontend only
+pnpm test:coverage   # backend, with coverage
+make test            # same as pnpm test
 ```
 
 These can run at the same time as `make dev`. They never bind to port 8080.
@@ -156,7 +170,8 @@ These can run at the same time as `make dev`. They never bind to port 8080.
 Stop `make dev` first, then:
 
 ```bash
-make infra-up      # start Postgres and Redis
+make infra-up      # start Redis and the other services
+docker compose -f docker-compose.test.yml up -d
 pnpm test:e2e
 make test-e2e      # same as pnpm test:e2e
 ```
@@ -177,6 +192,7 @@ Decide which layer the test belongs to:
 
 - Testing a single function with no database? Put it in `backend/tests/unit/`.
 - Testing a route, a service, or a Drizzle query? Put it in `backend/tests/integration/`.
+- Testing a frontend helper or a component? Put it in `frontend/tests/`.
 - Testing something a user sees or clicks in the browser? Put it in `e2e/`.
 
 Vitest picks up any file matching `tests/**/*.test.ts`. Playwright picks up any file in `e2e/`.
@@ -213,7 +229,7 @@ OPENATS_API_URL=http://localhost:9999 pnpm test:e2e
 
 That test should fail while the others still pass. This takes thirty seconds and it is the difference between real coverage and a test that only looks reassuring.
 
-A concrete example from this project: the careers page catches its own fetch errors and falls back to an empty job list, so a completely dead backend renders exactly like "no jobs posted". A test that only checked the page loaded would pass through a total backend outage. That is why `e2e/careers.spec.ts` also asserts against `/public/jobs` directly.
+A concrete example from this project: a careers page test that only checked the page loaded wouldn't tell you whether the backend was really answering. That is why `e2e/careers.spec.ts` also asserts against `/public/jobs` directly.
 
 ## 10. Things to be aware of
 

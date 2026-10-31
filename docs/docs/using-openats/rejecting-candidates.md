@@ -1,9 +1,12 @@
 ---
 sidebar_position: 8
-title: Rejecting a Candidate
+title: Reject a Candidate
+sidebar_label: Reject a Candidate
+description: Reject candidates in OpenATS with a recorded reason, send a rejection email from a template, reject in bulk, and restore a candidate if plans change.
+keywords: [reject a candidate, rejection email, rejection reasons, candidate communication]
 ---
 
-# Rejecting a Candidate
+# Reject a Candidate
 
 Rejecting a candidate records the decision, preserves the reason, and optionally sends a rejection email. Only **Super Admins** and **Hiring Managers** can reject or restore candidates.
 
@@ -22,6 +25,10 @@ Rejecting a candidate records the decision, preserves the reason, and optionally
 ![Reject candidate dialog](/content/reject/image.png)
 
 Available reasons include lack of required skills, insufficient experience, compensation mismatch, culture or team fit concerns, changed role requirements, candidate withdrawal, and Other.
+
+## Reject several at once
+
+In **Candidates**, tick the people you want to reject and select **Reject selected**. They'll all get the same reason. This doesn't send any emails, so if you'd like OpenATS to email them, reject them one at a time.
 
 ## What happens after rejection
 

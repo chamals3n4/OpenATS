@@ -34,7 +34,7 @@ make admin ARGS="--email ada@example.com --first-name Ada --last-name Lovelace"
 
 You are still asked for the password, so that it does not end up in your shell history.
 
-:::tip Locked out?
+:::tip[Locked out?]
 `make admin` is also the way back in. Run it with the email of an **existing** user and it makes that user a Super Admin, reactivates the account, sets the new password and signs out any old sessions. Nothing else about the user changes, so their jobs, notes and history stay as they are.
 :::
 
@@ -139,7 +139,7 @@ The web application refuses to start, with a clear message, if a required value 
 | `AUTH_JWKS_URL` | Yes | Where the API fetches the keys it uses to check a sign-in. It is the web application's address followed by `/api/auth/jwks`. |
 | `AUTH_ISSUER` | Yes | Must be **exactly the same** as `BETTER_AUTH_URL`. |
 
-:::caution The API must be able to reach the web application
+:::caution[The API must be able to reach the web application]
 The API downloads the keys from `AUTH_JWKS_URL`. If the API server cannot open that address, every request is rejected as not signed in. Check this first if sign-in works but every page then fails to load data.
 :::
 
@@ -172,4 +172,3 @@ Without them, OpenATS still works:
 - The token only says **who** the user is. Their role, and whether they are active, are read from the database on every request. That is why a role change or a deactivation applies at once.
 - All database changes, including the sign-in tables (named `auth_*`), are ordinary migrations in `backend/drizzle`.
 
-Upgrading an installation that used WSO2 Asgardeo? See [Upgrading to built-in sign-in](../operations/upgrading-to-built-in-auth).

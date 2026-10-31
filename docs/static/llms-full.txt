@@ -36,12 +36,6 @@ https://openats.dev/docs/administration/authentication
 
 OpenATS handles sign-in itself with email and password; there is no outside identity provider. Explains the first Super Admin (`make admin`), the three roles (Super Admin, Hiring Manager, Interviewer), creating and deactivating users, invites, password resets, and the environment variables for the web application and the API.
 
-### Upgrading to built-in sign-in
-
-https://openats.dev/docs/operations/upgrading-to-built-in-auth
-
-For installations moving from version 0.6 (WSO2 Asgardeo) to 0.7. Users and their history are kept; passwords cannot be carried over and roles must be set again.
-
 ### Architecture
 
 https://openats.dev/docs/developer/architecture

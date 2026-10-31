@@ -1,9 +1,12 @@
 ---
 sidebar_position: 7
-title: Offers and Hiring Decisions
+title: Send an Offer
+sidebar_label: Send an Offer
+description: Prepare and send a job offer in OpenATS, generate the offer letter from a template, track when it is viewed and answered, and mark the candidate as hired.
+keywords: [job offer letter, send an offer, offer tracking, offer acceptance, mark as hired]
 ---
 
-# Offers and Hiring Decisions
+# Send an Offer
 
 When the team decides to hire a candidate, OpenATS helps you prepare an offer, send it through a private link, and record the candidate's response.
 
@@ -102,4 +105,16 @@ This updates the candidate's status to hired and records the final action in the
 ![Mark an accepted candidate as hired](/content/offer/after-accept-markashired.png)
 
 If the candidate declines, keep the response in the offer record and move the candidate to the appropriate closed stage. Do not delete the candidate if you need to preserve the recruitment history.
+
+## See every offer
+
+**Manage Offers** shows offers across all your jobs. Filter by position or status to see who you're still waiting to hear from.
+
+{/* SCREENSHOT: offers/offer-list.png - The Manage Offers list with offers in different statuses */}
+
+Interviewers can't see this page.
+
+## Next step
+
+Don't leave your other candidates waiting. [Let them know the outcome](./rejecting-candidates).
 

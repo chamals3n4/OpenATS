@@ -8,7 +8,7 @@ import { db } from "../../db";
 import { candidates } from "../../db/schema";
 import { eq } from "drizzle-orm";
 import logger from "../../utils/logger";
-import { getErrorMessage} from "../../utils/error.utils";
+import { getErrorMessage, safeErrorMessage } from "../../utils/error.utils";
 
 const router: Router = Router();
 
@@ -118,7 +118,7 @@ router.post("/candidates/:id/reject", requireManager, requireCandidateView("id")
     res.status(201).json({ data: rejection });
   } catch (error) {
     logger.error(`Failed to reject candidate ${req.params.id}: ${getErrorMessage(error)}`);
-    res.status(400).json({ error: getErrorMessage(error) || "Failed to reject candidate" });
+    res.status(400).json({ error: error instanceof RejectionError ? error.message : safeErrorMessage(error, "Failed to reject candidate") });
   }
 });
 
@@ -135,7 +135,7 @@ router.post("/candidates/:id/unreject", requireManager, requireCandidateView("id
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(`Failed to unreject candidate ${req.params.id}: ${getErrorMessage(error)}`);
-    res.status(400).json({ error: getErrorMessage(error) || "Failed to unreject candidate" });
+    res.status(400).json({ error: error instanceof RejectionError ? error.message : safeErrorMessage(error, "Failed to unreject candidate") });
   }
 });
 

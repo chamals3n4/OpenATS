@@ -35,6 +35,14 @@ const large = [
   job(5, { title: "Recruiter", departmentName: "People", employmentType: "contract" }),
 ];
 
+// All in Engineering, and differing only in job type.
+const oneDepartment = [
+  ...small,
+  job(4, { title: "Backend Engineer" }),
+  job(5, { title: "Frontend Engineer" }),
+  job(6, { title: "Data Engineer" }),
+];
+
 // Base UI commits an option click only after the pointer hovers it, and a tick later.
 const choose = async (selectName: string, option: string) => {
   fireEvent.click(screen.getByRole("combobox", { name: selectName }));
@@ -71,19 +79,21 @@ describe("CareersJobsList with a few roles", () => {
 
   it("lists the newest first and says how many there are", () => {
     render(<CareersJobsList jobs={small} brand={brand} />);
-    const titles = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    const titles = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
     expect(titles).toEqual(["Software Engineering Intern", "Senior QA Engineer"]);
-    expect(screen.getByText("2 open roles")).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 2, name: "Open roles" })).toBeTruthy();
+    expect(screen.getByText("2")).toBeTruthy();
   });
 
-  it("always has search, even for two roles", () => {
-    render(<CareersJobsList jobs={small} brand={brand} />);
+  it("always has search, however few roles there are", () => {
+    render(<CareersJobsList jobs={[small[0]]} brand={brand} />);
     expect(screen.getByRole("textbox", { name: "Search roles" })).toBeTruthy();
+    expect(screen.queryByRole("combobox")).toBeNull();
   });
 
   it("offers a filter only where there is a real choice", () => {
-    render(<CareersJobsList jobs={small} brand={brand} />);
-    // Both roles are in Engineering, so a department filter would do nothing.
+    render(<CareersJobsList jobs={oneDepartment} brand={brand} />);
+    // All the roles are in Engineering, so a department filter would do nothing.
     expect(screen.queryByRole("combobox", { name: "Department" })).toBeNull();
     expect(screen.queryByRole("heading", { name: /^Engineering/ })).toBeNull();
     // They differ in job type, so that filter is offered.
@@ -91,21 +101,21 @@ describe("CareersJobsList with a few roles", () => {
   });
 
   it("filters by job type", async () => {
-    render(<CareersJobsList jobs={small} brand={brand} />);
+    render(<CareersJobsList jobs={oneDepartment} brand={brand} />);
     await choose("Job type", "Internship");
     expect(screen.getByText("Software Engineering Intern")).toBeTruthy();
     expect(screen.queryByText("Senior QA Engineer")).toBeNull();
-    expect(screen.getByText(/Showing 1 of 2 roles/)).toBeTruthy();
+    expect(screen.getByText(/1 of 5/)).toBeTruthy();
   });
 });
 
 describe("CareersJobsList with many roles", () => {
   it("groups by department, A to Z, with counts", () => {
     render(<CareersJobsList jobs={large} brand={brand} />);
-    const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
+    const headings = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
     expect(headings).toEqual(["Design2", "Engineering2", "People1"]);
     // The roles sit one level below their department.
-    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(5);
+    expect(screen.getAllByRole("heading", { level: 4 })).toHaveLength(5);
   });
 
   it("offers department, job type and location filters", () => {
@@ -118,12 +128,12 @@ describe("CareersJobsList with many roles", () => {
   it("narrows with the search box and can be cleared", () => {
     render(<CareersJobsList jobs={large} brand={brand} />);
     fireEvent.change(screen.getByRole("textbox", { name: "Search roles" }), { target: { value: "designer" } });
-    expect(screen.getByText(/Showing 2 of 5 roles/)).toBeTruthy();
+    expect(screen.getByText(/2 of 5/)).toBeTruthy();
     expect(screen.queryByText("Recruiter")).toBeNull();
     expect(screen.getByText("Product Designer")).toBeTruthy();
 
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
-    expect(screen.getByText("5 open roles")).toBeTruthy();
+    expect(screen.getByText("5")).toBeTruthy();
     expect(screen.getByText("Recruiter")).toBeTruthy();
   });
 
@@ -131,12 +141,12 @@ describe("CareersJobsList with many roles", () => {
     render(<CareersJobsList jobs={large} brand={brand} />);
     await choose("Department", "Design");
     await choose("Location", "Remote");
-    expect(screen.getByText(/Showing 1 of 5 roles/)).toBeTruthy();
+    expect(screen.getByText(/1 of 5/)).toBeTruthy();
     expect(screen.getByText("Product Designer")).toBeTruthy();
     expect(screen.queryByText("Brand Designer")).toBeNull();
 
     fireEvent.click(screen.getByRole("button", { name: "Clear filters" }));
-    expect(screen.getByText("5 open roles")).toBeTruthy();
+    expect(screen.getByText("5")).toBeTruthy();
     expect(screen.getByRole("combobox", { name: "Department" }).textContent).toContain("All departments");
     expect(screen.getByRole("combobox", { name: "Location" }).textContent).toContain("All locations");
   });
@@ -145,7 +155,7 @@ describe("CareersJobsList with many roles", () => {
     render(<CareersJobsList jobs={large} brand={brand} />);
     fireEvent.change(screen.getByRole("textbox", { name: "Search roles" }), { target: { value: "astronaut" } });
     expect(screen.getByText("No roles match your search.")).toBeTruthy();
-    expect(screen.getByText(/Showing 0 of 5 roles/)).toBeTruthy();
+    expect(screen.getByText(/0 of 5/)).toBeTruthy();
   });
 });
 
@@ -153,7 +163,8 @@ describe("header", () => {
   it("shows the logo, Careers at the company, the description and the website", () => {
     render(<CareersJobsList jobs={small} brand={brand} />);
     const header = screen.getByRole("banner");
-    expect(within(header).getByRole("img", { name: "Acme" })).toBeTruthy();
+    // Beside the name, which says the same, so screen readers skip it
+    expect(header.querySelector("img")?.getAttribute("src")).toBe(brand.logoUrl);
     expect(within(header).getByRole("heading", { level: 1, name: "Careers at Acme" })).toBeTruthy();
     expect(within(header).getByText(/We build tools for hiring teams/)).toBeTruthy();
     const site = within(header).getByRole("link", { name: /Visit website/ });
@@ -166,6 +177,21 @@ describe("header", () => {
     expect(screen.getByText(/We build tools for hiring teams/).className).toContain("whitespace-pre-line");
   });
 
+  it("shortens a long description until asked for the rest", () => {
+    const description = `${"word ".repeat(80)}the end`;
+    render(<CareersJobsList jobs={small} brand={{ ...brand, description }} />);
+    expect(screen.queryByText(/the end/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "See more" }));
+    expect(screen.getByText(/the end/)).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "See less" }));
+    expect(screen.queryByText(/the end/)).toBeNull();
+  });
+
+  it("has no see more when the description fits", () => {
+    render(<CareersJobsList jobs={small} brand={brand} />);
+    expect(screen.queryByRole("button", { name: "See more" })).toBeNull();
+  });
+
   it("leaves out the logo, description and website when there are none", () => {
     render(
       <CareersJobsList jobs={small} brand={{ name: "Acme", logoUrl: null, description: null, website: null }} />,
@@ -173,6 +199,7 @@ describe("header", () => {
     expect(screen.getByRole("heading", { level: 1, name: "Careers at Acme" })).toBeTruthy();
     expect(screen.queryByRole("img")).toBeNull();
     expect(screen.getByRole("banner").querySelector("p")).toBeNull();
+    expect(screen.getByRole("banner").querySelector("img")).toBeNull();
     expect(screen.queryByRole("link", { name: /Visit website/ })).toBeNull();
   });
 
@@ -188,7 +215,7 @@ describe("header", () => {
   });
 
   it("puts the search and the filters on one row below it", () => {
-    render(<CareersJobsList jobs={small} brand={brand} />);
+    render(<CareersJobsList jobs={large} brand={brand} />);
     const row = screen.getByRole("textbox", { name: "Search roles" }).parentElement!.parentElement!;
     expect(row.className).toContain("flex-wrap");
     expect(within(row).getByRole("combobox", { name: "Job type" })).toBeTruthy();
@@ -197,59 +224,58 @@ describe("header", () => {
 
 describe("search field", () => {
   it("keeps the icon above the field, which briefly transforms while pressed and would hide it", () => {
-    render(<CareersJobsList jobs={small} brand={brand} />);
+    render(<CareersJobsList jobs={large} brand={brand} />);
     const icon = screen.getByRole("textbox", { name: "Search roles" }).parentElement!.querySelector("svg");
     expect(icon?.getAttribute("class")).toContain("z-10");
     expect(icon?.getAttribute("class")).toContain("pointer-events-none");
   });
 
   it("shows focus in both themes, since the dark border would otherwise win", () => {
-    render(<CareersJobsList jobs={small} brand={brand} />);
+    render(<CareersJobsList jobs={large} brand={brand} />);
     const { className } = screen.getByRole("textbox", { name: "Search roles" });
     expect(className).toContain("focus-visible:border-neutral-900");
     expect(className).toContain("dark:focus-visible:border-neutral-300");
   });
 
   it("is the same height as the dropdowns", () => {
-    render(<CareersJobsList jobs={small} brand={brand} />);
-    expect(screen.getByRole("textbox", { name: "Search roles" }).className).toContain("h-10!");
-    expect(screen.getByRole("combobox", { name: "Job type" }).className).toContain("h-10!");
+    render(<CareersJobsList jobs={large} brand={brand} />);
+    expect(screen.getByRole("textbox", { name: "Search roles" }).className).toContain("h-12!");
+    expect(screen.getByRole("combobox", { name: "Job type" }).className).toContain("h-12!");
   });
 });
 
 describe("cards", () => {
-  it("puts a border around each role, with a quiet hover", () => {
+  it("puts each role in its own card, with nothing moving on hover", () => {
     render(<CareersJobsList jobs={small} brand={brand} />);
     const { className } = screen.getByRole("link", { name: /Senior QA Engineer/ });
-    expect(className).toContain("rounded-xl");
+    expect(className).toContain("rounded-lg");
     expect(className).toMatch(/\bborder\b/);
-    expect(className).toContain("hover:border-slate-400");
-    expect(className).toContain("transition-colors");
-    expect(className).not.toContain("shadow");
+    expect(className).toContain("bg-white");
     expect(className).toContain("motion-reduce:transition-none");
+    expect(className).not.toContain("translate");
+  });
+
+  it("lines the role, location and type up in columns", () => {
+    render(<CareersJobsList jobs={small} brand={brand} />);
+    expect(screen.getByRole("link", { name: /Senior QA Engineer/ }).className).toContain("sm:grid-cols-");
   });
 
   it("stacks the roles as separate cards with space between them", () => {
     const { container } = render(<CareersJobsList jobs={small} brand={brand} />);
-    expect(container.querySelector("ul")?.className).toContain("space-y-3");
+    expect(container.querySelector("ul")?.className).toContain("space-y-2");
   });
 
-  it("shows an outlined Apply button that only changes colour on hover, with nothing moving", () => {
-    const { container } = render(<CareersJobsList jobs={small} brand={brand} />);
-    const apply = screen.getAllByText("Apply")[0];
-    expect(apply.className).toMatch(/\bborder\b/);
-    expect(apply.className).toContain("group-hover:border-slate-500");
-    expect(apply.className).toContain("motion-reduce:transition-none");
-    expect(container.querySelector(".origin-left")).toBeNull();
-    expect(container.innerHTML).not.toContain("translate-x");
+  it("has no Apply button, since the role's page is where people apply", () => {
+    render(<CareersJobsList jobs={small} brand={brand} />);
+    expect(screen.queryByText("Apply")).toBeNull();
   });
 });
 
 describe("look", () => {
-  it("uses neutral colours like the role page, with no hard-coded teal or theme tint", () => {
+  it("keeps the job cards to the theme colour, with no hard-coded colours", () => {
     const { container } = render(<CareersJobsList jobs={large} brand={brand} />);
     expect(container.innerHTML).not.toContain("#a9c9c4");
     expect(container.innerHTML).not.toContain("#4d625f");
-    expect(container.innerHTML).not.toContain("--theme-color");
+    expect(container.innerHTML).toContain("hover:border-theme");
   });
 });

@@ -11,6 +11,7 @@ import {
   useUpdateAssignment,
   type AssignmentInput,
 } from "@/hooks/queries/use-assignments";
+import { UnsavedChangesGuard } from "@/components/guards/unsaved-changes-guard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -52,6 +53,9 @@ export function AssignmentFormPage({ assignment }: { assignment: Assignment | nu
   const [dueDays, setDueDays] = useState(String(assignment?.dueDays ?? 7));
   const [resources, setResources] = useState<AssignmentResource[]>(assignment?.resources ?? []);
   const [fields, setFields] = useState<SubmissionField[]>(assignment?.submissionFields ?? DEFAULT_FIELDS);
+
+  const snapshot = JSON.stringify([title, description, dueDays, resources, fields]);
+  const [baseline] = useState(snapshot);
 
   const create = useCreateAssignment();
   const update = useUpdateAssignment(assignment?.id ?? 0);
@@ -113,6 +117,7 @@ export function AssignmentFormPage({ assignment }: { assignment: Assignment | nu
   return (
     // Full height so the header stays and the two panels scroll
     <div className="flex h-[calc(100dvh-var(--header-height))] w-full min-w-0 flex-col overflow-hidden bg-white dark:bg-neutral-950">
+      <UnsavedChangesGuard when={snapshot !== baseline} />
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-slate-300 px-4 py-4 sm:px-8 dark:border-neutral-700">
         <div className="min-w-0">
           <p className="text-sm text-slate-600 dark:text-neutral-400">

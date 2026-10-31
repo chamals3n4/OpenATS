@@ -13,6 +13,8 @@ type BulkDeleteDialogProps = {
   isAllMatching?: boolean;
   /** Type the count to confirm a bulk delete */
   requireTypedCount?: boolean;
+  /** Extra content under the description */
+  children?: React.ReactNode;
   onClose: () => void;
   onConfirm: () => void;
 };
@@ -24,6 +26,7 @@ export function BulkDeleteDialog({
   isPending,
   isAllMatching,
   requireTypedCount = false,
+  children,
   onClose,
   onConfirm,
 }: BulkDeleteDialogProps) {
@@ -55,6 +58,7 @@ export function BulkDeleteDialog({
       onClose={onClose}
       onConfirm={onConfirm}
     >
+      {children}
       {requireTypedCount && (
         <div className="space-y-1.5">
           <label

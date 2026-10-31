@@ -144,6 +144,26 @@ const bulkDeleteJobsSchema = z.object({
   ids: z.array(z.number().int().positive()).min(1),
 });
 
+const deleteSummarySchema = z.array(z.number().int().positive()).min(1).max(200);
+
+export const getJobDeleteSummary = async (req: Request, res: Response) => {
+  try {
+    const parsed = deleteSummarySchema.safeParse(String(req.query.ids ?? "").split(",").map(Number));
+    if (!parsed.success) {
+      res.status(400).json({ error: "Validation failed" });
+      return;
+    }
+    if (!(await canViewJobs(req.user, parsed.data))) {
+      res.status(403).json({ error: "You can only delete jobs you are on the hiring team of" });
+      return;
+    }
+    res.status(200).json({ data: await jobService.getDeleteSummary(parsed.data) });
+  } catch (error) {
+    logger.error(`Failed to fetch job delete summary - user ${req.user?.id}: ${getErrorMessage(error)}`);
+    res.status(500).json({ error: "Failed to count what the delete would remove" });
+  }
+};
+
 export const bulkDeleteJobs = async (req: Request, res: Response) => {
   try {
     const parsed = bulkDeleteJobsSchema.safeParse(req.body);

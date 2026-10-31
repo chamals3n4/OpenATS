@@ -4,7 +4,6 @@ import Link from "next/link";
 import Image from "next/image";
 
 import { SidebarUserMenu } from "@/components/layout/sidebar-user-menu";
-import { NotificationsPanel } from "@/components/layout/notifications-panel";
 
 export function SiteHeader() {
   return (
@@ -25,7 +24,6 @@ export function SiteHeader() {
         </Link>
 
         <div className="flex shrink-0 items-center gap-1">
-          <NotificationsPanel />
           <SidebarUserMenu variant="header" />
         </div>
       </div>

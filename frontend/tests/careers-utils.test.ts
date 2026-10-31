@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   safeWebsite,
+  shortDescription,
   NO_FILTERS,
   employmentTypesIn,
   filterJobs,
@@ -123,5 +124,21 @@ describe("safeWebsite", () => {
     expect(safeWebsite("acme.example")).toBeNull();
     expect(safeWebsite(null)).toBeNull();
     expect(safeWebsite("")).toBeNull();
+  });
+});
+
+describe("shortDescription", () => {
+  it("leaves a description that fits alone", () => {
+    expect(shortDescription("We build tools.\nBased in Colombo.\n")).toBeNull();
+  });
+
+  it("cuts a long one at a word", () => {
+    const short = shortDescription("word ".repeat(80))!;
+    expect(short.length).toBeLessThanOrEqual(361);
+    expect(short.endsWith("word…")).toBe(true);
+  });
+
+  it("cuts one with many short lines", () => {
+    expect(shortDescription("one\ntwo\nthree\nfour")).toBe("one\ntwo\nthree…");
   });
 });

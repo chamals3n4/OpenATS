@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient, keepPreviousData } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 import type {
   Job,
   JobDetail,
@@ -32,8 +32,22 @@ export type JobListParams = {
 export function useJobs() {
   return useQuery({
     queryKey: ["jobs"],
-    queryFn: () => serverFetch<{ data: Job[] }>("/jobs"),
+    queryFn: () => clientFetch<{ data: Job[] }>("/jobs"),
     staleTime: 1000 * 60 * 5,
+  });
+}
+
+/** What deleting these jobs would also delete. Always counted afresh */
+export function useJobDeleteSummary(ids: number[], enabled: boolean) {
+  return useQuery({
+    queryKey: ["jobs", "delete-summary", ids],
+    queryFn: () =>
+      clientFetch<{ data: { candidates: number; offers: number } }>(
+        `/jobs/delete-summary?ids=${ids.join(",")}`,
+      ),
+    enabled: enabled && ids.length > 0,
+    staleTime: 0,
+    gcTime: 0,
   });
 }
 
@@ -45,7 +59,7 @@ export function useJobsList(params: JobListParams = {}) {
       if (params.search) qs.set("search", params.search);
       if (params.status) qs.set("status", params.status);
       if (params.departmentId) qs.set("departmentId", String(params.departmentId));
-      return serverFetch<{ data: Job[]; pagination: PaginationInfo }>(`/jobs?${qs}`);
+      return clientFetch<{ data: Job[]; pagination: PaginationInfo }>(`/jobs?${qs}`);
     },
     staleTime: 1000 * 60 * 2,
     placeholderData: keepPreviousData,
@@ -56,7 +70,7 @@ export function useBulkDeleteJobs() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (ids: number[]) =>
-      serverFetch<{ count: number }>("/jobs/bulk", { method: "DELETE", body: JSON.stringify({ ids }) }),
+      clientFetch<{ count: number }>("/jobs/bulk", { method: "DELETE", body: JSON.stringify({ ids }) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
     },
@@ -67,7 +81,7 @@ export function useJob(id: number) {
   const queryClient = useQueryClient();
   return useQuery({
     queryKey: ["jobs", id],
-    queryFn: () => serverFetch<{ data: JobDetail }>(`/jobs/${id}`),
+    queryFn: () => clientFetch<{ data: JobDetail }>(`/jobs/${id}`),
     staleTime: 1000 * 60 * 5,
     enabled: !!id,
     initialData: () => {
@@ -101,7 +115,7 @@ export function useCreateJob() {
       salaryMax?: number | null;
       status?: Job["status"];
     }) =>
-      serverFetch<{ data: Job }>("/jobs", {
+      clientFetch<{ data: Job }>("/jobs", {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -129,7 +143,7 @@ export function useUpdateJob(jobId: number) {
       salaryMax?: number | null;
       status?: Job["status"];
     }) =>
-      serverFetch<{ data: Job }>(`/jobs/${jobId}`, {
+      clientFetch<{ data: Job }>(`/jobs/${jobId}`, {
         method: "PUT",
         body: JSON.stringify(data),
       }),
@@ -144,7 +158,7 @@ export function useDeleteJob() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (jobId: number) =>
-      serverFetch<{ data: Job }>(`/jobs/${jobId}`, { method: "DELETE" }),
+      clientFetch<{ data: Job }>(`/jobs/${jobId}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["jobs"] });
     },
@@ -155,7 +169,7 @@ export function useCustomQuestions(jobId: number) {
   return useQuery({
     queryKey: ["jobs", jobId, "questions"],
     queryFn: () =>
-      serverFetch<{ data: CustomQuestion[] }>(`/jobs/${jobId}/questions`),
+      clientFetch<{ data: CustomQuestion[] }>(`/jobs/${jobId}/questions`),
     enabled: !!jobId,
   });
 }
@@ -170,7 +184,7 @@ export function useCreateQuestion(jobId: number) {
       position: number;
       options?: QuestionOptionInput[];
     }) =>
-      serverFetch<{ data: CustomQuestion }>(`/jobs/${jobId}/questions`, {
+      clientFetch<{ data: CustomQuestion }>(`/jobs/${jobId}/questions`, {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -197,7 +211,7 @@ export function useUpdateQuestion(jobId: number) {
         options?: QuestionOptionInput[];
       };
     }) =>
-      serverFetch<{ data: CustomQuestion }>(
+      clientFetch<{ data: CustomQuestion }>(
         `/jobs/${jobId}/questions/${questionId}`,
         {
           method: "PUT",
@@ -214,7 +228,7 @@ export function useDeleteQuestion(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (questionId: number) =>
-      serverFetch<{ data: CustomQuestion }>(
+      clientFetch<{ data: CustomQuestion }>(
         `/jobs/${jobId}/questions/${questionId}`,
         {
           method: "DELETE",
@@ -229,7 +243,7 @@ export function useDeleteQuestion(jobId: number) {
 export function useHiringTeam(jobId: number) {
   return useQuery({
     queryKey: ["jobs", jobId, "team"],
-    queryFn: () => serverFetch<{ data: HiringTeamMember[] }>(`/jobs/${jobId}/team`),
+    queryFn: () => clientFetch<{ data: HiringTeamMember[] }>(`/jobs/${jobId}/team`),
     enabled: !!jobId,
   });
 }
@@ -238,7 +252,7 @@ export function useAddHiringTeamMember(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: { userId: number; role?: string }) =>
-      serverFetch<{ data: HiringTeamMembership }>(`/jobs/${jobId}/team`, {
+      clientFetch<{ data: HiringTeamMembership }>(`/jobs/${jobId}/team`, {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -252,7 +266,7 @@ export function useRemoveHiringTeamMember(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (userId: number) =>
-      serverFetch<{ data: HiringTeamMembership | null }>(
+      clientFetch<{ data: HiringTeamMembership | null }>(
         `/jobs/${jobId}/team/${userId}`,
         { method: "DELETE" },
       ),
@@ -265,7 +279,7 @@ export function useRemoveHiringTeamMember(jobId: number) {
 export function useScorecard(jobId: number) {
   return useQuery({
     queryKey: ["jobs", jobId, "scorecard"],
-    queryFn: () => serverFetch<{ data: ScorecardCriterion[] }>(`/jobs/${jobId}/scorecard`),
+    queryFn: () => clientFetch<{ data: ScorecardCriterion[] }>(`/jobs/${jobId}/scorecard`),
     enabled: !!jobId,
     staleTime: 1000 * 60 * 5,
   });
@@ -275,7 +289,7 @@ export function useSaveScorecard(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (criteria: { id?: number; name: string }[]) =>
-      serverFetch<{ data: ScorecardCriterion[] }>(`/jobs/${jobId}/scorecard`, {
+      clientFetch<{ data: ScorecardCriterion[] }>(`/jobs/${jobId}/scorecard`, {
         method: "PUT",
         body: JSON.stringify({ criteria }),
       }),
@@ -297,7 +311,7 @@ export function useSaveScoreWeights(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (weights: ScoreWeights) =>
-      serverFetch<{ data: JobDetail }>(`/jobs/${jobId}`, {
+      clientFetch<{ data: JobDetail }>(`/jobs/${jobId}`, {
         method: "PUT",
         body: JSON.stringify(weights),
       }),

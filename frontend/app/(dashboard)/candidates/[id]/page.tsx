@@ -4,8 +4,7 @@ import { toast } from "sonner";
 import { useMemo, useState, use } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
-import { HugeiconsIcon } from "@hugeicons/react";
-import { ArrowLeft02Icon, QuestionIcon } from "@hugeicons/core-free-icons";
+import { NotFoundState } from "@/components/not-found-state";
 
 import { Button } from "@/components/ui/button";
 
@@ -194,25 +193,11 @@ export default function CandidateDetailPage({
 
   if (!candidate) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-4 bg-slate-50/50 dark:bg-neutral-950">
-        <div className="size-14 rounded-full bg-slate-100 dark:bg-neutral-800 flex items-center justify-center">
-          <HugeiconsIcon
-            icon={QuestionIcon}
-            className="size-6 text-slate-400 dark:text-neutral-500"
-          />
-        </div>
-        <p className="text-slate-500 dark:text-neutral-400 font-semibold text-sm">
-          Candidate not found
-        </p>
-        <Button
-          variant="outline"
-          onClick={() => router.push("/candidates")}
-          className="h-7 px-2.5 rounded-md border-slate-200 dark:border-neutral-700 text-slate-600 dark:text-neutral-400 font-medium"
-        >
-          <HugeiconsIcon icon={ArrowLeft02Icon} className="size-4 mr-2" />
-          Back to Candidates
+      <NotFoundState title="Candidate not found" description="They may have been deleted, or the link may be wrong.">
+        <Button size="lg" onClick={() => router.push("/candidates")}>
+          Back to candidates
         </Button>
-      </div>
+      </NotFoundState>
     );
   }
 

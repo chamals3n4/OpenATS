@@ -1,62 +1,40 @@
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import { JobApplicationForm } from "./_components/job-application-form";
-import type { JobDetail, CustomQuestion } from "@/types";
+import { getCompanyInfo, getPublicJob, getPublicQuestions } from "../_lib/careers-api";
+import { jobMetadata, jobPostingData, serializeJsonLd } from "../_lib/job-seo";
 
-const API_BASE = (
-  process.env.OPENATS_API_URL ??
-  process.env.NEXT_PUBLIC_API_URL ??
-  ""
-).replace(/\/$/, "");
+type PageProps = { params: Promise<{ id: string }> };
 
-async function getJob(id: number): Promise<JobDetail | null> {
-  if (!API_BASE) return null;
-  try {
-    const res = await fetch(`${API_BASE}/public/jobs/${id}`, {
-      cache: "no-store",
-    });
-    if (!res.ok) return null;
-    const body = (await res.json()) as { data?: JobDetail };
-    return body.data ?? null;
-  } catch {
-    return null;
-  }
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { id } = await params;
+  const [job, company] = await Promise.all([getPublicJob(Number(id)), getCompanyInfo()]);
+  return job ? jobMetadata(job, company) : {};
 }
 
-async function getQuestions(id: number): Promise<CustomQuestion[]> {
-  if (!API_BASE) return [];
-  try {
-    const res = await fetch(`${API_BASE}/public/jobs/${id}/questions`, {
-      cache: "no-store",
-    });
-    if (!res.ok) return [];
-    const body = (await res.json()) as { data?: CustomQuestion[] };
-    return Array.isArray(body.data) ? body.data : [];
-  } catch {
-    return [];
-  }
-}
-
-export default async function JobApplicationPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default async function JobApplicationPage({ params }: PageProps) {
   const { id } = await params;
   const jobId = Number(id);
 
-  const [job, questions] = await Promise.all([
-    getJob(jobId),
-    getQuestions(jobId),
+  const [job, questions, company] = await Promise.all([
+    getPublicJob(jobId),
+    getPublicQuestions(jobId),
+    getCompanyInfo(),
   ]);
 
-  if (!job) {
-    return (
-      <div className="min-h-screen bg-white dark:bg-neutral-950 flex items-center justify-center p-6">
-        <p className="text-red-500 dark:text-red-400 text-sm font-medium border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/20 px-4 py-2 rounded-lg">
-          Job not found.
-        </p>
-      </div>
-    );
-  }
+  if (!job) notFound();
 
-  return <JobApplicationForm job={job} questions={questions} />;
+  const posting = jobPostingData(job, company);
+
+  return (
+    <>
+      {posting && (
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: serializeJsonLd(posting) }}
+        />
+      )}
+      <JobApplicationForm job={job} questions={questions} />
+    </>
+  );
 }

@@ -3,14 +3,14 @@ import {
   useMutation,
   useQueryClient,
 } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 import type { PipelineStage } from "@/types";
 
 export function usePipeline(jobId: number) {
   return useQuery({
     queryKey: ["jobs", jobId, "pipeline"],
     queryFn: () =>
-      serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
+      clientFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
 
     enabled: !!jobId,
   });
@@ -24,7 +24,7 @@ export function useCreateStage(jobId: number) {
       position: number;
       stageType?: string;
     }) =>
-      serverFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline`, {
+      clientFetch<{ data: PipelineStage }>(`/jobs/${jobId}/pipeline`, {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -48,7 +48,7 @@ export function useUpdateStage(jobId: number) {
         position?: number;
       };
     }) =>
-      serverFetch<{ data: PipelineStage }>(
+      clientFetch<{ data: PipelineStage }>(
         `/jobs/${jobId}/pipeline/${stageId}`,
         {
           method: "PUT",
@@ -65,7 +65,7 @@ export function useDeleteStage(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (stageId: number) =>
-      serverFetch<{ data: PipelineStage }>(
+      clientFetch<{ data: PipelineStage }>(
         `/jobs/${jobId}/pipeline/${stageId}`,
         {
           method: "DELETE",
@@ -81,7 +81,7 @@ export function useReorderStages(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (stages: Array<{ id: number; position: number }>) =>
-      serverFetch<{ data: PipelineStage[] }>(
+      clientFetch<{ data: PipelineStage[] }>(
         `/jobs/${jobId}/pipeline/reorder`,
         {
           method: "POST",

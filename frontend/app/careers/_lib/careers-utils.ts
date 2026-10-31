@@ -141,3 +141,18 @@ export function safeWebsite(url: string | null | undefined): string | null {
     return null;
   }
 }
+
+const DESCRIPTION_CHARS = 360;
+const DESCRIPTION_LINES = 3;
+
+/** The start of a long description, cut at a word; null when the whole of it fits */
+export function shortDescription(text: string): string | null {
+  const whole = text.trim();
+  let cut = whole.split("\n").slice(0, DESCRIPTION_LINES).join("\n");
+  if (cut.length > DESCRIPTION_CHARS) {
+    cut = cut.slice(0, DESCRIPTION_CHARS);
+    const lastSpace = cut.lastIndexOf(" ");
+    if (lastSpace > 0) cut = cut.slice(0, lastSpace);
+  }
+  return cut.length === whole.length ? null : `${cut.trimEnd()}…`;
+}

@@ -24,7 +24,7 @@ import { requestCvAnalysis } from "../../queues/cv-analysis/queue";
 import { requestCvExtraction } from "../../queues/cv-extract/queue";
 import { requestResumeDeletion } from "../../queues/resume-delete/queue";
 import { cvTextService } from "./cv-text.service";
-import { getErrorMessage} from "../../utils/error.utils";
+import { getErrorMessage, safeErrorMessage } from "../../utils/error.utils";
 
 const customAnswerSchema = z.object({
   questionId: z.number().int().positive(),
@@ -443,7 +443,7 @@ export const moveCandidateStage = async (req: Request, res: Response) => {
     );
     res
       .status(400)
-      .json({ error: getErrorMessage(error) || "Failed to move candidate" });
+      .json({ error: safeErrorMessage(error, "Failed to move candidate") });
   }
 };
 
@@ -686,6 +686,6 @@ export const updateCandidateBasicDetails = async (
     );
     res
       .status(500)
-      .json({ error: getErrorMessage(error) || "Failed to update candidate details" });
+      .json({ error: safeErrorMessage(error, "Failed to update candidate details") });
   }
 };

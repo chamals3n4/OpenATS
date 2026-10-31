@@ -12,7 +12,7 @@ import type {
   CandidateInterview,
   StageAutomationFlags,
 } from "@/types";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 
 export type CandidatePagination = {
   total: number;
@@ -132,7 +132,7 @@ export function useCandidates(
 
   return useQuery({
     queryKey: ["candidates", jobId ?? "all", filters],
-    queryFn: () => serverFetch<CandidateListResponse>(path),
+    queryFn: () => clientFetch<CandidateListResponse>(path),
     enabled: options?.enabled !== false,
     staleTime: 1000 * 60 * 5,
     placeholderData: keepPreviousData,
@@ -149,7 +149,7 @@ export function useBoardCandidates(jobId: number, options?: { enabled?: boolean 
   return useQuery({
     queryKey: boardKey(jobId),
     queryFn: () =>
-      serverFetch<{ data: BoardCandidate[] }>(`/candidates/jobs/${jobId}/board`),
+      clientFetch<{ data: BoardCandidate[] }>(`/candidates/jobs/${jobId}/board`),
     enabled: options?.enabled !== false && !!jobId,
     staleTime: 15_000,
     refetchOnMount: "always",
@@ -161,7 +161,7 @@ export function useCandidate(id: number, options?: { enabled?: boolean }) {
   const enabled = (options?.enabled ?? true) && !!id;
   return useQuery({
     queryKey: ["candidates", id],
-    queryFn: () => serverFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
+    queryFn: () => clientFetch<{ data: CandidateDetail }>(`/candidates/${id}`),
     enabled,
 
     placeholderData: () => {
@@ -207,7 +207,7 @@ export function useMoveCandidateStage() {
       /** Position in the column, 0 is top. Omit for the end */
       position?: number;
     }) =>
-      serverFetch<{
+      clientFetch<{
         data: Candidate;
         stageAutomation: StageAutomationFlags;
       }>(`/candidates/${id}/stage`, {
@@ -234,7 +234,7 @@ export type BulkMoveResult = {
 export function useBulkMoveCandidates() {
   return useMutation({
     mutationFn: ({ candidateIds, newStageId }: { candidateIds: number[]; newStageId: number }) =>
-      serverFetch<{ data: BulkMoveResult }>("/candidates/bulk/stage", {
+      clientFetch<{ data: BulkMoveResult }>("/candidates/bulk/stage", {
         method: "PUT",
         body: JSON.stringify({ candidateIds, newStageId }),
       }),
@@ -245,7 +245,7 @@ export function useDeleteCandidate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      serverFetch<{ data: { id: number; jobId: number } }>(`/candidates/${id}`, {
+      clientFetch<{ data: { id: number; jobId: number } }>(`/candidates/${id}`, {
         method: "DELETE",
       }),
     onSuccess: () => {
@@ -258,7 +258,7 @@ export function useBulkDeleteCandidates() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (what: CandidateBulkDelete) =>
-      serverFetch<{ data: { count: number; ids: number[] } }>(
+      clientFetch<{ data: { count: number; ids: number[] } }>(
         "/candidates/bulk",
         {
           method: "DELETE",
@@ -324,7 +324,7 @@ export function useRejectCandidate() {
         emailStatus: "not_sent" | "sent";
       };
     }) =>
-      serverFetch<{ data: CandidateRejection }>(`/candidates/${id}/reject`, {
+      clientFetch<{ data: CandidateRejection }>(`/candidates/${id}/reject`, {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -340,7 +340,7 @@ export function useBulkRejectCandidates() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: { candidateIds: number[]; reason: string }) =>
-      serverFetch<{ data: { rejected: number[]; failed: { id: number; error: string }[] } }>(
+      clientFetch<{ data: { rejected: number[]; failed: { id: number; error: string }[] } }>(
         "/candidates/bulk/reject",
         { method: "POST", body: JSON.stringify(data) },
       ),
@@ -356,7 +356,7 @@ export function useRateCandidate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, rating }: { id: number; rating: number | null }) =>
-      serverFetch(`/candidates/${id}/rating`, {
+      clientFetch(`/candidates/${id}/rating`, {
         method: "PUT",
         body: JSON.stringify({ rating }),
       }),
@@ -373,7 +373,7 @@ export function useUnrejectCandidate() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      serverFetch<{
+      clientFetch<{
         data: { candidate: Candidate; restoredStageId: number | null };
       }>(`/candidates/${id}/unreject`, { method: "POST" }),
     onSuccess: (_, candidateId) => {
@@ -400,7 +400,7 @@ export function useUpdateInterview() {
         durationMinutes?: number;
       };
     }) =>
-      serverFetch<{ data: CandidateInterview }>(`/interviews/${interviewId}`, {
+      clientFetch<{ data: CandidateInterview }>(`/interviews/${interviewId}`, {
         method: "PATCH",
         body: JSON.stringify(data),
       }),

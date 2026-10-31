@@ -33,6 +33,7 @@ import { applicationReceivedEmail } from "../../shared/services/candidate-emails
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { cleanObject as clean } from "../../utils/object.utils";
 import logger from "../../utils/logger";
+import { getErrorMessage, safeErrorMessage } from "../../utils/error.utils";
 import { hasPgCode, PG_UNIQUE_VIOLATION } from "../../utils/pg-errors";
 
 const isPgUniqueViolation = (err: unknown) => hasPgCode(err, PG_UNIQUE_VIOLATION);
@@ -905,10 +906,8 @@ export const candidateService = {
         if (res.stageAutomation.assignmentInvite === "skipped_active_invite") result.assignmentInvitesSkipped += 1;
         if (res.stageAutomation.assignmentInvite === "failed") result.assignmentInvitesFailed += 1;
       } catch (error) {
-        result.failed.push({
-          id,
-          error: error instanceof Error ? error.message : "Failed to move candidate",
-        });
+        logger.error(`Bulk stage move failed for candidate ${id}: ${getErrorMessage(error)}`);
+        result.failed.push({ id, error: safeErrorMessage(error, "Failed to move candidate") });
       }
     }
     result.moved.reverse();

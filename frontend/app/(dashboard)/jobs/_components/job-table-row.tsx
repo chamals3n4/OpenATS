@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { TableRow, TableCell } from "@/components/ui/table";
 import { BulkSelectRowCell } from "@/components/table/bulk-selection";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 import type {
   Job,
   PipelineStage,
@@ -44,30 +44,30 @@ export function JobTableRow({
     void queryClient.prefetchQuery({
       queryKey: ["jobs", jobId, "pipeline"],
       queryFn: () =>
-        serverFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
+        clientFetch<{ data: PipelineStage[] }>(`/jobs/${jobId}/pipeline`),
       staleTime: 1000 * 60 * 3,
     });
     void queryClient.prefetchQuery({
       queryKey: ["jobs", jobId, "team"],
-      queryFn: () => serverFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
+      queryFn: () => clientFetch<{ data: User[] }>(`/jobs/${jobId}/team`),
       staleTime: 1000 * 60 * 5,
     });
     void queryClient.prefetchQuery({
       queryKey: ["candidates", jobId, undefined],
       queryFn: () =>
-        serverFetch<{ data: Candidate[] }>(`/candidates/jobs/${jobId}`),
+        clientFetch<{ data: Candidate[] }>(`/candidates/jobs/${jobId}`),
       staleTime: 1000 * 30,
     });
     void queryClient.prefetchQuery({
       queryKey: ["jobs", jobId, "questions"],
       queryFn: () =>
-        serverFetch<{ data: CustomQuestion[] }>(`/jobs/${jobId}/questions`),
+        clientFetch<{ data: CustomQuestion[] }>(`/jobs/${jobId}/questions`),
       staleTime: 1000 * 60 * 5,
     });
     void queryClient.prefetchQuery({
       queryKey: ["jobs", jobId, "assessments"],
       queryFn: () =>
-        serverFetch<{ data: JobAssessment[] }>(`/jobs/${jobId}/assessments`),
+        clientFetch<{ data: JobAssessment[] }>(`/jobs/${jobId}/assessments`),
       staleTime: 1000 * 60 * 5,
     });
   }, [queryClient, job.id]);

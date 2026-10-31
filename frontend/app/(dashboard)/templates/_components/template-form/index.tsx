@@ -7,6 +7,7 @@ import {
   useCreateTemplate,
   useUpdateTemplate,
 } from "@/hooks/queries/use-templates";
+import { UnsavedChangesGuard } from "@/components/guards/unsaved-changes-guard";
 import { Input } from "@/components/ui/input";
 import type { Template } from "@/types";
 import type { TemplateType } from "../../_lib/template-form-types";
@@ -65,6 +66,11 @@ export function TemplateForm({
       type: existingTemplate.type as TemplateType,
     });
   }, [mode, existingTemplate, hydrate]);
+
+  // The form as it opened, once an edit has been filled in
+  const [baseline, setBaseline] = useState<string | null>(null);
+  if (baseline === null && (mode === "new" || form.isHydrated)) setBaseline(form.snapshot);
+  const isDirty = !readOnly && baseline !== null && form.snapshot !== baseline;
 
   const isPending =
     mode === "new" ? createMutation.isPending : updateMutation.isPending;
@@ -125,6 +131,7 @@ export function TemplateForm({
 
   return (
     <div className="flex flex-col flex-1 min-h-0 bg-white dark:bg-neutral-950">
+      <UnsavedChangesGuard when={isDirty} />
       <TemplateFormHeader
         templateType={templateType}
         mode={mode}

@@ -12,7 +12,7 @@ import {
 import { socketService } from "../../shared/services/socket.service";
 import { canViewCandidate } from "../../shared/auth/job-access";
 import logger from "../../utils/logger";
-import { getErrorMessage } from "../../utils/error.utils";
+import { getErrorMessage, safeErrorMessage } from "../../utils/error.utils";
 
 const assignmentSchema = z.object({
   title: z.string().trim().min(1, "Title is required").max(255),
@@ -109,7 +109,7 @@ export const sendAssignment = async (req: Request, res: Response) => {
     } catch (error) {
       // The link was not kept, so the same request can be sent again
       logger.error(`Assignment ${assignmentId} email to candidate ${candidateId} failed: ${getErrorMessage(error)}`);
-      return void res.status(502).json({ error: getErrorMessage(error) });
+      return void res.status(502).json({ error: safeErrorMessage(error, "The assignment email could not be sent") });
     }
     if (!result) return void res.status(404).json({ error: "Candidate or assignment not found" });
 

@@ -6,6 +6,8 @@ import Link from "next/link";
 import { useRouter, useParams } from "next/navigation";
 import { Loader2 } from "lucide-react";
 import { RoleGuard } from "@/components/guards/role-guard";
+import { NotFoundState } from "@/components/not-found-state";
+import { Button } from "@/components/ui/button";
 import { useDepartments } from "@/hooks/queries/use-company";
 import { useJob, useUpdateJob } from "@/hooks/queries/use-jobs";
 import { buildUpdateJobPayload } from "@/lib/jobs-utils";
@@ -82,15 +84,11 @@ function EditJob() {
           onCancel={() => router.push(`/jobs/${jobId}`)}
         />
       ) : (
-        <div className="space-y-4 px-14 py-10">
-          <p className="text-sm text-slate-500">Job not found.</p>
-          <Link
-            href="/jobs"
-            className="inline-flex h-9 items-center justify-center rounded-md bg-neutral-700 px-4 text-sm font-semibold text-white hover:bg-neutral-600 transition-colors"
-          >
-            Back to Jobs
-          </Link>
-        </div>
+        <NotFoundState title="Job not found" description="It may have been deleted, or the link may be wrong.">
+          <Button size="lg" render={<Link href="/jobs" />}>
+            Back to jobs
+          </Button>
+        </NotFoundState>
       )}
     </div>
   );

@@ -14,6 +14,7 @@ import {
   useDeleteAssessmentQuestion,
 } from "@/hooks/queries/use-assessments";
 import { useIsManager } from "@/hooks/use-role";
+import { UnsavedChangesGuard } from "@/components/guards/unsaved-changes-guard";
 import { Button } from "@/components/ui/button";
 import { EditAssessmentDetailsDialog } from "../_components/edit-assessment-details-dialog";
 import { DeleteQuestionDialog } from "../_components/builder/delete-question-dialog";
@@ -146,6 +147,7 @@ export default function EditAssessmentPage({
   return (
     // Full height so the header stays and the panels scroll
     <div className="flex h-[calc(100dvh-var(--header-height))] w-full min-w-0 flex-col overflow-hidden bg-white dark:bg-neutral-950">
+      <UnsavedChangesGuard when={isDirty} />
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-x-4 gap-y-3 border-b border-slate-300 px-4 py-4 sm:px-8 dark:border-neutral-700">
         <div className="min-w-0">
           <p className="text-sm text-slate-600 dark:text-neutral-400">

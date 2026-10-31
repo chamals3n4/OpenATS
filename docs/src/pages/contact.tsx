@@ -21,7 +21,7 @@ export default function Contact(): ReactNode {
   return (
     <Layout
       title="Contact"
-      description="Contact the OpenATS team about Cloud, pricing, self-hosting or moving your hiring from another tool."
+      description="Contact the OpenATS team about self-hosting or moving your hiring from another tool."
     >
       <main className={styles.page}>
         <section className={styles.hero}>
@@ -30,8 +30,8 @@ export default function Contact(): ReactNode {
               Contact <em>the OpenATS team</em>
             </Heading>
             <p className={`${styles.lede} ${styles.ledeWide}`}>
-              Questions about OpenATS Cloud, pricing, self-hosting or migrating from another ATS. Messages are answered
-              by the team that builds OpenATS.
+              Questions about self-hosting OpenATS or migrating from another ATS. Messages are answered by the team that
+              builds OpenATS.
             </p>
 
             <div className={styles.contactGrid}>

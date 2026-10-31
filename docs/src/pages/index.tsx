@@ -56,7 +56,7 @@ const features: [IconSvgElement, string, string][] = [
 // Core first, then the parts around it
 const stack = [
   ['TypeScript', 'typescript.svg', 'https://www.typescriptlang.org', 'Type safety across all code'],
-  ['Next.js', 'nextdotjs.svg', 'https://nextjs.org', 'Dashboard and portal'],
+  ['Next.js', 'nextdotjs.svg', 'https://nextjs.org', 'Frontend dashboard'],
   ['Express', 'express.svg', 'https://expressjs.com', 'Backend REST API'],
   ['PostgreSQL', 'postgresql.png', 'https://www.postgresql.org', 'Primary database, CV search'],
   ['Drizzle', 'drizzle.svg', 'https://orm.drizzle.team', 'Schema, queries, migrations'],
@@ -65,8 +65,8 @@ const stack = [
   ['Socket.IO', 'socketdotio.svg', 'https://socket.io', 'Real-time updates and chat'],
   ['Redis', 'redis.svg', 'https://redis.io', 'Job queue state store'],
   ['BullMQ', 'bullmq.png', 'https://bullmq.io', 'CV processing in background'],
-  ['Nodemailer', 'nodemailer.png', 'https://nodemailer.com', 'Transactional email via SMTP'],
-  ['Docker', 'docker.svg', 'https://www.docker.com', 'Local Postgres and Redis'],
+  ['TanStack Query', 'tanstackquery.svg', 'https://tanstack.com/query', 'Portal data fetching'],
+  ['Docker', 'docker.svg', 'https://www.docker.com', 'Containerised setup'],
 ] as const;
 
 // The image is a placeholder until it is published to the GitHub Container Registry

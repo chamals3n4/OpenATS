@@ -149,7 +149,7 @@ The API downloads the keys from `AUTH_JWKS_URL`. If the API server cannot open t
 
 Invite and reset emails are sent through the same SMTP server as every other email. Set these in `frontend/.env`, using the same values as in `backend/.env`:
 
-```dotenv
+```ini
 SMTP_HOST=<your SMTP server>
 SMTP_PORT=587
 SMTP_SECURE=false

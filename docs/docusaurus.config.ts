@@ -112,16 +112,31 @@ const config: Config = {
           position: 'left',
           label: 'Documentation',
         },
-        {to: '/managed-hosting', label: 'Managed Hosting', position: 'left'},
-        {to: '/pricing', label: 'Pricing', position: 'left'},
+        // Hidden for now: the pages are kept as src/pages/_managed-hosting.tsx and _pricing.tsx,
+        // which Docusaurus does not build. Remove the underscore and these comments to bring them back.
+        // {to: '/managed-hosting', label: 'Managed Hosting', position: 'left'},
+        // {to: '/pricing', label: 'Pricing', position: 'left'},
         {to: '/blog', label: 'Blog', position: 'left'},
         {to: '/contact', label: 'Contact', position: 'left'},
         {type: 'custom-githubStar', position: 'right'},
       ],
     },
     prism: {
-      theme: prismThemes.github,
-      darkTheme: prismThemes.dracula,
+      // GitHub's theme with its bright cyan keys and pink strings swapped for the site's teal and a muted amber
+      theme: {
+        ...prismThemes.github,
+        styles: prismThemes.github.styles.map((s) => {
+          const color = {'#00a4db': '#1f6870', '#e3116c': '#b45309'}[s.style.color ?? ''];
+          return color ? {...s, style: {...s.style, color}} : s;
+        }),
+      },
+      // Dracula's colours on the site's neutral grey instead of its purple background
+      darkTheme: {
+        ...prismThemes.dracula,
+        plain: {...prismThemes.dracula.plain, backgroundColor: '#171717'},
+      },
+      // Languages the docs use that Docusaurus does not bundle (`sh` is an alias of bash)
+      additionalLanguages: ['bash', 'ini', 'http', 'sql', 'nginx'],
     },
   } satisfies Preset.ThemeConfig,
 };

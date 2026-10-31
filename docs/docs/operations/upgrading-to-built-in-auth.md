@@ -43,7 +43,7 @@ Deploy version 0.7 of both the API and the web application. Do not start them ye
 - Remove every `ASGARDEO_*` line.
 - Add these two, using the public address of your web application:
 
-  ```dotenv
+  ```ini
   AUTH_JWKS_URL=https://ats.example.com/api/auth/jwks
   AUTH_ISSUER=https://ats.example.com
   ```
@@ -53,7 +53,7 @@ Deploy version 0.7 of both the API and the web application. Do not start them ye
 - Remove every `ASGARDEO_*` and `NEXT_PUBLIC_ASGARDEO_*` line.
 - Add these:
 
-  ```dotenv
+  ```ini
   DATABASE_URL=<the same value as in backend/.env>
   BETTER_AUTH_SECRET=<at least 32 characters: openssl rand -base64 32>
   BETTER_AUTH_URL=https://ats.example.com

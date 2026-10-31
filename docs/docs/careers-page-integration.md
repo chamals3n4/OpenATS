@@ -1,9 +1,11 @@
 ---
 sidebar_position: 2
-sidebar_label: Careers Page
-title: Careers Page Integration
+sidebar_label: Share Your Careers Page
+title: Share Your Careers Page
 description: Publish OpenATS jobs on a public careers page or embed them in your own website.
 ---
+
+# Share Your Careers Page
 
 OpenATS can publish your open roles on a public careers page. Candidates do not need an OpenATS account to browse a role or submit an application. You can use the built-in page, or request the same published jobs from the public API and render them in your own website.
 
@@ -14,7 +16,7 @@ OpenATS can publish your open roles on a public careers page. Candidates do not 
 Complete the following first:
 
 - Finish the [company setup](/docs/using-openats/first-login-and-company-setup) so the company name, logo, and description are available to candidates.
-- Create a job and publish it from [Manage jobs](/docs/using-openats/manage-jobs). Draft jobs are not listed publicly.
+- Create a job and publish it from [Create and Publish a Job](/docs/using-openats/manage-jobs). Draft jobs are not listed publicly.
 - Make sure the OpenATS frontend and backend can be reached from the website where candidates will apply.
 
 Only Super Admins and Hiring Managers can change Careers page settings. Anyone can view the public careers page and apply for a published role.
@@ -30,20 +32,22 @@ http://localhost:3000/careers
 Replace `http://localhost:3000` with your deployed frontend URL in a hosted environment. The page automatically shows:
 
 - your company name, logo, and description from Settings > General;
-- every published role, grouped by department;
-- the employment type and location for each role;
-- search by job title or location; and
-- a department filter.
+- every published role, grouped by department when you have more than one;
+- the employment type, location and age of each role;
+- a search box; and
+- department, job type and location filters, when there is more than one to choose from.
+
+If your company description is long, it's shortened with a **See more** link.
 
 Select a role to open its public details page. The candidate can review the description, requirements, benefits, salary information (when included), and application questions, then select **Apply**.
 
 ## Preview the listing
 
 1. Sign in to OpenATS as a Super Admin or Hiring Manager.
-2. Open **Settings > Careers page**.
-3. Select **Open listing preview**.
+2. Open **Settings > Careers Page**.
+3. Under **Your careers page**, select **Open page**. Use the copy button to share the link.
 
-The preview uses the same public jobs endpoint as the live page, so it is a useful way to confirm that a job is published and that its content looks correct before sharing the URL. The preview does not make draft jobs visible.
+This is the real page, so it's a good way to check your job looks right before you share the link. Draft jobs won't appear here.
 
 ## Control which websites can request jobs
 
@@ -64,12 +68,12 @@ This setting stops other websites from embedding your jobs. It is not a security
 
 The careers page only returns jobs whose status is **Published**. To make a role visible:
 
-1. Open **Manage jobs** in the OpenATS sidebar.
+1. Open **Manage Jobs** in the OpenATS sidebar.
 2. Select the job and complete its details, hiring pipeline, and application questions.
 3. Save the job, then select **Publish job** from the job page.
-4. Open **Settings > Careers page > Open listing preview**, or visit `/careers`, and confirm that the role appears.
+4. Open **Settings > Careers Page > Open page**, or visit `/careers`, and confirm that the role appears.
 
-To remove a role from the public page, open the job and change it back to a non-published status or close it. Existing candidate records are not deleted when a role is unpublished.
+To remove a role from the public page, open the job and select **Deactivate** or **Close**. Existing candidate records are not deleted when a role is unpublished.
 
 ## Use the public API on a custom careers site
 
@@ -145,7 +149,7 @@ Candidates apply from the public role page, not from the dashboard. After they s
 2. Select the new candidate to review the profile, resume, answers, and activity.
 3. Move the candidate through the job's configured hiring pipeline. Assessments, interviews, feedback, offers, and rejection actions are handled from the candidate profile and pipeline.
 
-See [Jobs and candidates](/docs/using-openats/jobs-and-candidates) for the candidate profile, and [Hiring pipeline](/docs/using-openats/hiring-pipeline) for stage transitions.
+See [Review Candidates](/docs/using-openats/jobs-and-candidates) for the candidate profile, and [Hiring pipeline](/docs/using-openats/hiring-pipeline) for stage transitions.
 
 ## Troubleshooting
 

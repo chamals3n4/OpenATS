@@ -1,9 +1,12 @@
 ---
 sidebar_position: 3
-title: Jobs and Candidates
+title: Review Candidates
+sidebar_label: Review Candidates
+description: Find and review candidates in OpenATS. Search inside CVs, filter by score and experience, read the profile, and email applicants from one place.
+keywords: [candidate management, CV search, resume search, applicant tracking, candidate profile, screen candidates]
 ---
 
-# Jobs and Candidates
+# Review Candidates
 
 When someone applies for a published job, OpenATS creates a candidate record for that application. The record keeps the applicant's contact details, resume, answers, and recruitment activity together.
 
@@ -28,13 +31,39 @@ Use a different email address for each test submission. OpenATS rejects a second
 
 After the submission succeeds, return to the dashboard and select **Candidates** in the sidebar. The new applicant appears in the list and is connected to the job they selected.
 
+## Find candidates
+
+Go to **Candidates** to see everyone who's applied to the jobs you can access.
+
+{/* SCREENSHOT: candidates/candidate-list.png - The Candidates list with scores, stages, and the search and filter bar */}
+
+The search box looks at names, emails and the text inside CVs, so you can type `kubernetes` and find everyone who mentions it. It also understands quotes, `OR` and a minus sign: `"project manager" -intern` finds that exact phrase and leaves out interns. Each result shows you the line it matched.
+
+To narrow things down, pick a job under **Position**, or use **Filters** for status, flags, minimum score and years of experience. Sort by **Highest score** to see your strongest candidates first.
+
+One thing to watch: years of experience are estimated from the dates in the CV. If they can't be worked out, that person won't appear when you filter by experience, so you might miss someone.
+
+### Act on several candidates
+
+Tick the people you want, then reject or delete them together. **Select all** reaches everyone across every page. If some candidates don't meet a job's requirements, a bar will offer to select them for you.
+
 ## Open the candidate profile
 
 Select the candidate in the list to open their profile. The profile header shows the candidate's name, contact details, current status, and actions such as **View CV**, **Edit**, and **Delete**. Use **View CV** to open the uploaded resume without leaving the profile.
 
+You'll also see their current stage, how long they've been there, their score, and their estimated experience and education.
+
 The profile tabs provide separate views of the information collected during recruitment.
 
+{/* SCREENSHOT: candidates/candidate-profile.png - A full candidate profile with the header and tabs */}
+
 ## Candidate profile tabs
+
+### CV Summary
+
+OpenATS reads the text of each CV on your own server, with no AI involved and nothing sent anywhere. This tab shows that text split into sections, along with their estimated experience and highest education. These are only estimates, and **Not found** just means OpenATS couldn't work it out, not that they don't have any.
+
+Scanned CVs have no text to read, so the tab will say so. You can still open them with **View CV**.
 
 ### AI analysis (optional)
 
@@ -81,20 +110,30 @@ The **Offer** tab contains the candidate's offer when one exists. It can show th
 
 The **Interviews** tab lists interviews connected to this candidate. Each entry can include the event name, interviewer, scheduled time, meeting or location details, status, and outcome. Use **Schedule** from this tab when you are ready to invite the candidate to an interview.
 
+### Scores
+
+Here's their total score and how it was worked out. This is also where you give your star rating, check their assessments, and mark written test answers. See [Candidate Scoring](./candidate-scoring#the-scores-tab).
+
+### Assignments
+
+Shows any take-home tasks you've sent them and what they handed in. See [Assignments](./assignments).
+
 ### Rejection
 
 The **Rejection** tab records rejection actions and reasons for this candidate. When appropriate, the team can choose a rejection reason and decide whether to send a rejection email using an email template. Keeping the reason here makes the final decision clear to the hiring team.
 
 ### Send Email
 
-The **Send Email** tab lets an authorized team member compose an email to the candidate. Enter a subject and message, send it, and review the messages recorded in the profile.
+Email a candidate from here, either from a [template](./templates) or from scratch. Every email they've had is kept in this tab too, including the ones OpenATS sent automatically, so you can always check what they've been told.
 
-### Assessments
-
-The **Assessments** tab shows assessment invitations and attempts associated with the candidate. It displays the current state, such as pending, in progress, completed, or expired. Select a completed attempt to review its questions, answers, and score details.
+{/* SCREENSHOT: candidates/send-email.png - The Send Email tab with a message written and the sent emails below */}
 
 ## Update candidate details
 
 If an applicant's basic information is incorrect, use **Edit** in the profile header to update their name, email, phone number, or resume. Uploading a replacement resume replaces the current CV and can start a new analysis.
 
 Use **Delete** only when the record should be permanently removed. It also erases the candidate's CV file; see [Deleting candidate data](../administration/deleting-candidate-data) for exactly what is and is not removed. If you need to keep the recruitment history, retain the candidate record and use the appropriate status or decision action instead.
+
+## Next step
+
+Find out what those numbers mean in [Understand Candidate Scores](./candidate-scoring).

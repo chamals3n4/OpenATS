@@ -1,13 +1,22 @@
 ---
-sidebar_position: 2
 title: Manual Setup
+description: Set up OpenATS step by step. Install it, then configure the database, sign-in, Cloudflare R2 storage, SMTP email, Gemini and Google Calendar.
+keywords: [OpenATS manual setup, Cloudflare R2 setup, SMTP email setup, Google Calendar OAuth, ATS configuration]
 ---
 
-Use this guide when you want to set up OpenATS one step at a time. It is the manual equivalent of the [Quick Start](make-setup) and the best way to find a setup problem.
+# Manual Setup
 
-## 1. Install prerequisites
+This does the same as the [Quick Start](make-setup), one step at a time. Use it if you'd like to see how the pieces fit together, if `make setup` didn't work, or when you're setting up storage and email. If you only came here for those, skip to [file storage](#6-set-up-file-storage) or [email](#7-set-up-email).
 
-Install Node.js 22 or later, pnpm, Docker with Docker Compose, and `openssl`. Create accounts for Cloudflare, an email provider with SMTP, Google Cloud, and Google AI Studio if you intend to enable every integration. Sign-in needs no outside account.
+## 1. Install what you need
+
+You'll need Node.js 22, pnpm, Docker with Compose, and `openssl`. The [Quick Start](make-setup#before-you-start) shows how to check each one.
+
+You'll also need a Cloudflare account for file storage. These are only needed if you want them:
+
+- an email provider with SMTP, to send real email
+- Google Cloud, for Calendar and Meet
+- Google AI Studio, for AI CV analysis
 
 ## 2. Download OpenATS and install packages
 
@@ -17,7 +26,7 @@ cd OpenATS
 pnpm install
 ```
 
-Install from the repository root. OpenATS uses pnpm workspaces, so this installs dependencies for both the frontend and backend with the committed versions.
+Run this from the main folder. One command installs both the backend and the frontend.
 
 ## 3. Start PostgreSQL and Redis
 
@@ -25,7 +34,15 @@ Install from the repository root. OpenATS uses pnpm workspaces, so this installs
 docker compose up -d
 ```
 
-PostgreSQL stores OpenATS data on port `5432`. Redis runs on port `6379` and is required by BullMQ, the background resume-analysis queue. Confirm both containers are running with `docker compose ps`.
+This starts three containers:
+
+| Container | Port | What it's for |
+| --- | --- | --- |
+| PostgreSQL | `5432` | Your data. The user, password and database are all `openats` |
+| Redis | `6379` | The queue for background jobs |
+| Mailpit | `1025`, inbox on `8025` | Catches emails while you're testing |
+
+Run `docker compose ps` to check they're all up.
 
 ## 4. Create environment files
 
@@ -40,9 +57,9 @@ Generate an encryption key and place it in `backend/.env`:
 openssl rand -base64 32
 ```
 
-Set `ENCRYPTION_KEY` to the output. Do not change it after storing encrypted integration credentials, or existing credentials cannot be decrypted.
+Set `ENCRYPTION_KEY` to the output. The backend won't start without it. Don't change it later, because saved Google connections can't be read with a different key.
 
-Set these local values first:
+The example files already have the right local values for these. For the full list, see [Environment Variables](environment-variables).
 
 ```ini
 # backend/.env
@@ -58,7 +75,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8080
 
 ## 5. Set up sign-in
 
-Sign-in is built into OpenATS, so there is nothing to register anywhere. It needs a few values in the two `.env` files.
+Sign-in is built into OpenATS, so there's nothing to register anywhere. You just need a few values in the two `.env` files.
 
 In `frontend/.env`:
 
@@ -79,9 +96,13 @@ AUTH_ISSUER=http://localhost:3000
 
 `AUTH_ISSUER` must be exactly the same as `BETTER_AUTH_URL`. You create the first user in step 10, after the database tables exist. The full reference is in [Sign-in and users](../administration/authentication).
 
-## 6. Configure resume storage with Cloudflare R2
+## 6. Set up file storage
 
-R2 stores resumes and attachments. Open the [Cloudflare R2 dashboard](https://dash.cloudflare.com/?to=/:account/r2/overview) and select the Cloudflare account you will use for OpenATS.
+:::caution[This step is required]
+The backend won't start while any `R2_` value is empty. If you only want a quick look, placeholder values will get it running, as shown in the [Quick Start](make-setup#3-add-your-file-storage-details), but uploads won't work.
+:::
+
+R2 stores CVs and logos. Open the [Cloudflare R2 dashboard](https://dash.cloudflare.com/?to=/:account/r2/overview) and select the Cloudflare account you will use for OpenATS.
 
 OpenATS uses two buckets, so that CVs can never be opened by a link:
 
@@ -108,7 +129,7 @@ R2_PRIVATE_BUCKET_NAME=openats-cvs
 
 See [Cloudflare’s R2 S3 guide](https://developers.cloudflare.com/r2/get-started/s3/) if the dashboard labels differ.
 
-## 7. Configure email (SMTP)
+## 7. Set up email
 
 OpenATS sends email through any SMTP server. Locally, `docker compose up -d` starts Mailpit and the default values send to it: every email appears at http://localhost:8025 and nothing reaches a real inbox.
 
@@ -134,7 +155,7 @@ MAIL_FROM_NAME=OpenATS
 
 `MAIL_FROM` must be an address the SMTP account may send as, on a domain with SPF and DKIM set up, or emails land in spam. Most cloud servers block port 25, so use 587 or 465. The server checks the connection at start and logs a warning if it cannot log in.
 
-## 8. Configure Gemini for AI CV analysis (optional)
+## 8. Set up AI CV analysis (optional)
 
 This step is optional. OpenATS starts and works fully without a Gemini key. Skip it if you do not want candidates' CVs sent to a third party.
 
@@ -150,7 +171,7 @@ AI CV analysis sends each candidate's CV to Google Gemini, which writes a summar
 
 AI analysis runs in the background worker, which has to be running anyway (see step 11). Never expose this key through a `NEXT_PUBLIC_` variable.
 
-## 9. Let interviewers connect Google (optional)
+## 9. Connect Google Calendar and Meet (optional)
 
 Interviews work without Google. With it, each interviewer can connect their own Google account, so their interviews go in their calendar and can get a Google Meet link.
 
@@ -178,7 +199,7 @@ pnpm tsx src/db/seed.ts
 cd ..
 ```
 
-Migrations create the tables, including the ones sign-in uses. Seeding adds the starting pipeline stages: Applied, Screening, Interviewed, Offer, and Rejected.
+Migrations create the tables, including the ones sign-in uses. Seeding adds the default pipeline stages: Screening, Screening Qualified, Screening Disqualified, Interviews, Shortlisted, Offer and Hired.
 
 There is no public sign-up, so create the first **Super Admin** from the command line:
 
@@ -190,7 +211,7 @@ It asks for an email, a name and a password. Without `make`, run `pnpm --filter 
 
 ## 11. Start OpenATS
 
-Open three terminals. In each terminal, start from the repository root.
+Open three terminals, each starting in the main folder. (`make dev` does all of this in one.)
 
 **Terminal 1: API**
 
@@ -217,6 +238,15 @@ pnpm dev
 
 Open `http://localhost:3000`, sign in with the admin you created in step 10, and create a test job. If a provider is not configured, leave its variables blank and do not use that feature until it is configured.
 
-## 12. Verify before inviting users
+## 12. Check it works
 
-Check that sign-in works, a job can be created, a resume can be uploaded, an email can be sent, and the background worker is running: open a candidate with a CV and check its **CV text** tab fills in within a few seconds. Test each optional provider one at a time; this makes configuration problems much easier to isolate.
+Before you invite anyone, run through this list:
+
+1. Open http://localhost:8080/health. You want `"status":"ok"` and `"worker":"connected"`.
+2. Sign in and [set up your company](../using-openats/first-login-and-company-setup).
+3. Create and publish a job.
+4. Apply at http://localhost:3000/careers with a PDF CV.
+5. Open the candidate. Their **CV Summary** tab should fill in within a few seconds.
+6. Check the application email in Mailpit.
+
+Test any optional features one at a time, so if something breaks you'll know which one caused it. If you hit a problem, see [Troubleshooting](troubleshooting). Ready to go live? See [Deploy to Production](deployment).

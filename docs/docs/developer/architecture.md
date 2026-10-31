@@ -1,66 +1,131 @@
 ---
-sidebar_position: 1
 title: Architecture
+description: How OpenATS is built. The website, API and worker, how a request and a CV move through the system, and how sign-in, data and files are handled.
+keywords: [OpenATS architecture, modular monolith, Next.js Express architecture, BullMQ worker, Better Auth]
 ---
 
-## Architecture style
+# Architecture
 
-OpenATS is a **modular monolith**. The backend is one Express application and one codebase, with features organised into independent modules. This keeps development, local setup, and cross-feature changes straightforward while preserving clear boundaries as the product grows.
+OpenATS is a **modular monolith**: one codebase and one database, with features split into clear modules. That keeps local setup and changes across features simple, while still giving each feature its own home.
 
-The application has three runtime parts:
-
-- **Next.js frontend** for the dashboard, career pages, and user-facing flows.
-- **Express API** for authentication, business rules, database access, and real-time updates.
-- **BullMQ worker** for slow background work, currently CV analysis.
-
-The API and worker run as separate processes, but they belong to the same modular-monolith system. The worker is not a separate service with its own business domain or database. It consumes work placed on Redis queues by the API, so a slow AI request does not block a normal web request.
-
-## How a request moves through OpenATS
+## The big picture
 
 ```text
 Browser
-  → Next.js frontend
-  → Express API
-  → route → controller → service → PostgreSQL
-  → response to the frontend
+   │
+   ▼
+Next.js website ──── sign-in ────────────► PostgreSQL
+   │                                           ▲
+   │ API calls with a short-lived token        │
+   ▼                                           │
+Express API ───────────────────────────────────┤
+   │                                           │
+   │ queues jobs on Redis                      │
+   ▼                                           │
+BullMQ worker ─────────────────────────────────┘
+   │
+   ▼
+File storage, Gemini
 ```
 
-The API is mounted under `/api`. Before a protected request reaches a feature module, shared middleware verifies the user, applies rate limits, and handles common errors. A feature route sends the request to its controller; the controller coordinates input and output; and the service contains the application rules and data access.
+There are three programs:
 
-For resume analysis, the flow is asynchronous:
+- **Next.js website:** the dashboard, the public careers page, and pages candidates open from emails. It also handles sign-in.
+- **Express API:** the business rules, data access and live updates.
+- **BullMQ worker:** slow background jobs, so they don't hold up web requests. It reads CV text, erases deleted candidates' files, and runs AI analysis if that's on.
+
+The worker isn't a separate service with its own data. It shares the backend's code and database, and picks up jobs the API puts on Redis.
+
+| Layer | Built with |
+| --- | --- |
+| Website | Next.js, TypeScript, Tailwind CSS v4, shadcn/ui, React Query |
+| API | Express 5, TypeScript, Socket.IO |
+| Database | PostgreSQL with Drizzle ORM |
+| Queues | BullMQ on Redis |
+| Sign-in | Better Auth |
+| Files | S3-compatible storage, normally Cloudflare R2 |
+| Email | Any SMTP server through Nodemailer |
+
+## Project layout
+
+It's a pnpm workspace, with one lockfile at the root.
 
 ```text
-Candidate resume uploaded
-  → API stores the file and creates a queue job in Redis
-  → BullMQ worker runs the analysis
-  → worker saves the result in PostgreSQL
-  → Socket.IO publishes the status update to connected users
+OpenATS/
+├── backend/
+│   ├── src/
+│   │   ├── modules/       one folder per feature
+│   │   ├── routes/        mounts every module, plus /public routes
+│   │   ├── shared/        code used by unrelated modules
+│   │   ├── middlewares/   auth, rate limits, errors
+│   │   ├── queues/        background jobs
+│   │   ├── db/            Drizzle schema and scripts
+│   │   └── config/        env checks, Redis
+│   ├── drizzle/           generated SQL migrations
+│   └── tests/
+├── frontend/
+│   ├── app/               Next.js routes
+│   ├── components/        shared UI
+│   ├── hooks/queries/     React Query hooks
+│   ├── lib/               shared helpers, auth
+│   └── tests/
+├── e2e/                   Playwright tests
+└── docs/                  this site
 ```
 
-## Backend modules
+## How a request travels
 
-Each business area lives under `backend/src/modules/<feature>`. A module keeps related routes, controllers, and services together. Examples include `candidate`, `job`, `interview`, `assessment`, `offer`, `pipeline`, and `hiring-team`.
+```text
+Browser → Next.js proxy route → Express → route → controller → service → PostgreSQL
+```
 
-This is the main modular-monolith boundary: a feature owns its HTTP endpoints and business logic, while shared capabilities stay outside individual modules:
+1. The browser calls `clientFetch`, which goes through `app/api/proxy/[...path]` on the website. That route attaches the sign-in token.
+2. The Express API checks the token, then applies rate limits.
+3. The module's route checks permissions, then hands over to its controller.
+4. The controller deals with the request and response. The service holds the rules and database work.
 
-- `db/` contains the Drizzle database setup and schema.
-- `middlewares/` contains application-wide HTTP middleware.
-- `queues/` contains BullMQ queue and worker code.
-- `shared/` contains code intentionally reused by more than one feature, such as authentication, integrations, and Socket.IO services.
-- `config/` contains validated environment and infrastructure configuration.
+Server-rendered pages use `serverFetch` instead, which attaches the token the same way.
 
-Do not create a new shared utility simply because it might be useful later. Keep code in its feature module until more than one module genuinely needs it.
+## How sign-in works
 
-## Data and integrations
+Better Auth runs inside the Next.js server and keeps users and sessions in PostgreSQL. So there's one exception to the website only talking to the API: it connects to the database directly, for sign-in alone.
 
-PostgreSQL is the system of record for OpenATS data. Redis supports BullMQ queues and real-time worker events; it is not the source of truth for candidates or hiring decisions. Resume files and attachments are stored through the configured S3-compatible storage integration. Sign-in is built in: Better Auth runs in the Next.js server and keeps users, sessions and roles in the same PostgreSQL database. The API checks a short-lived token on each request and reads the user's role from the database.
+For each API call, the website issues a 15-minute token. The API checks it against the public keys at `/api/auth/jwks`. The token only says who you are. Your role, and whether you're active, are read from the database on every request, which is why a role change applies immediately.
 
-The frontend never connects directly to PostgreSQL or Redis. It communicates with the API, and the API owns access to infrastructure and external providers.
+Both the REST API and Socket.IO check tokens through `shared/auth/verify-token.ts`, so the two can't disagree about who's signed in.
 
-## Frontend structure
+## Who can see what
 
-The frontend uses Next.js App Router, TypeScript, Tailwind CSS, shadcn/ui, and React Query. Code used by one route stays beside it in `frontend/app/`, in private folders that Next.js leaves out of routing: `_components/`, `_lib/` and `_hooks/`. A route only imports from its own private folders and its parents'; code that a second route needs moves up to their nearest common parent. Reusable interface pieces live in `frontend/components/`, and shared client utilities live in `frontend/lib/` and `frontend/hooks/`, which never import from `frontend/app/`. File names are kebab-case.
+Being signed in isn't enough. Permissions depend on two things:
 
-## Testing the boundaries
+- **Your role** decides what you may change.
+- **The hiring team** decides which jobs you can see. Super Admins see everything.
 
-Unit tests cover isolated logic. Integration tests exercise API routes and the database. End-to-end tests use the frontend and API together against the isolated test database. Read the full [Testing guide](testing) before adding or changing tests.
+The rules live in `shared/auth/job-access.ts`. Any route returning candidate or job data must use one of its guards. Public routes under `/public/*` have no sign-in, so nothing private can go there. Candidates reach their own tests, assignments and offers through private token links.
+
+## What happens to a CV
+
+```text
+Candidate uploads a CV
+  → API stores the file in the private bucket and creates the candidate
+  → API queues a job on Redis
+  → the worker reads the text on its own thread, with a 30 second limit
+  → the text is saved in PostgreSQL, ready for search
+  → if AI analysis is on, a second job sends the CV to Gemini
+  → Socket.IO tells open dashboards
+```
+
+CV text is read on your own server, with no AI. CV files sit in a private bucket and the database only keeps the file's key. The only way a CV leaves storage is `GET /candidates/:id/resume`, which checks access first and sends the bytes itself.
+
+## Live updates
+
+Socket.IO runs on the same server as the API. A socket needs a valid token to connect, and joining a job's or candidate's chat is checked against the hiring team. Dashboard-wide events go to a `staff` room that every signed-in socket joins.
+
+## Data
+
+PostgreSQL is the source of truth for everything. Redis only holds queue jobs and live events, so you could lose it without losing any hiring data. Schema files live in `backend/src/db/schema/`, one for each area.
+
+## Keep reading
+
+- [Development Guide](./development-guide) for how to work in this code.
+- [Testing Guide](./testing) for what to test and how.

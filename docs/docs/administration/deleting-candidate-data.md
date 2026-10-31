@@ -1,8 +1,10 @@
 ---
-title: Deleting Candidate Data
+title: Delete Candidate Data
+description: Delete a candidate from OpenATS when they ask, what gets removed automatically, and what you need to remove yourself, such as backups and sent emails.
+keywords: [delete candidate data, GDPR right to erasure, candidate data removal, applicant data privacy]
 ---
 
-# Deleting Candidate Data
+# Delete Candidate Data
 
 When a candidate asks for their data to be removed, delete their candidate record. This page lists what that removes, what it does not, and what you have to do yourself.
 

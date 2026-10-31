@@ -1,0 +1,87 @@
+---
+title: How to Use OpenATS
+sidebar_label: How to Use OpenATS
+description: A step-by-step guide to running hiring in OpenATS, from company setup and job posting to interviews, offers and marking a candidate as hired.
+keywords: [applicant tracking system guide, how to use an ATS, hiring process steps, recruitment workflow, OpenATS user guide]
+---
+
+import GuideCards from '@site/src/components/GuideCards';
+
+# How to Use OpenATS
+
+New to OpenATS? Start at step 1 and work your way down. By step 13 you'll have taken a role from a blank job form to a signed offer. Already using it and just need one thing? Jump to that card.
+
+This guide assumes OpenATS is already installed. If it isn't, follow the [Quick Start](../getting-started/make-setup) first.
+
+## How hiring works here
+
+Here's the short version. A Super Admin sets up the company and invites the team. A Hiring Manager gets the reusable pieces ready, such as email templates and tests, then creates a job and publishes it. Candidates apply from your careers page. Your team reviews them, moves them along, and interviews the best ones. The person you choose gets an offer, and everyone else gets a clear no.
+
+## Set up your workspace
+
+You'll only do this once.
+
+<GuideCards
+  start={1}
+  guides={[
+    {title: "Set Up Your Company", href: "/docs/using-openats/first-login-and-company-setup", summary: "Sign in, add your company details, and create your departments.", who: "Super Admin"},
+    {title: "Add Your Team", href: "/docs/using-openats/users-and-roles", summary: "Invite people and decide what each of them can do.", who: "Super Admin"},
+    {title: "Find Your Way Around", href: "/docs/using-openats/dashboard-overview", summary: "See what's on the dashboard and what the numbers mean.", who: "Everyone"},
+  ]}
+/>
+
+## Prepare your hiring tools
+
+Get these ready before your first job. They're shared across all your jobs, so you only build each one once.
+
+<GuideCards
+  start={4}
+  guides={[
+    {title: "Set Up Templates", href: "/docs/using-openats/templates", summary: "Save the emails, offer letters and interview types you use again and again.", who: "Hiring Manager"},
+    {title: "Build Assessments", href: "/docs/using-openats/assessments", summary: "Create timed online tests that mostly mark themselves.", who: "Hiring Manager"},
+    {title: "Create Assignments", href: "/docs/using-openats/assignments", summary: "Give candidates a take-home task with a deadline.", who: "Hiring Manager"},
+  ]}
+/>
+
+## Open a job
+
+You'll come back here for every role you hire for.
+
+<GuideCards
+  start={7}
+  guides={[
+    {title: "Create and Publish a Job", href: "/docs/using-openats/manage-jobs", summary: "Write the job, pick the team, add your questions, and go live.", who: "Hiring Manager"},
+    {title: "Set Up the Hiring Pipeline", href: "/docs/using-openats/hiring-pipeline", summary: "Choose the stages candidates go through, and move them on the board.", who: "Hiring Manager"},
+    {title: "Share Your Careers Page", href: "/docs/careers-page-integration", summary: "Send people to your jobs page, or show your jobs on your own website.", who: "Hiring Manager"},
+  ]}
+/>
+
+## Assess candidates
+
+This is where most of your time goes once applications start coming in.
+
+<GuideCards
+  start={10}
+  guides={[
+    {title: "Review Candidates", href: "/docs/using-openats/jobs-and-candidates", summary: "Search through applicants, read their CVs, and email them.", who: "Hiring team"},
+    {title: "Understand Candidate Scores", href: "/docs/using-openats/candidate-scoring", summary: "See how the score is worked out and who to look at first.", who: "Hiring team"},
+    {title: "Schedule Interviews", href: "/docs/using-openats/interviews", summary: "Book interviews, let candidates pick a time, and record feedback.", who: "Hiring team"},
+  ]}
+/>
+
+## Make a decision
+
+The last step, for the person you want and for everyone else.
+
+<GuideCards
+  start={13}
+  guides={[
+    {title: "Send an Offer", href: "/docs/using-openats/offers", summary: "Prepare the offer, send it, and mark the candidate as hired.", who: "Hiring Manager"},
+    {title: "Reject a Candidate", href: "/docs/using-openats/rejecting-candidates", summary: "Record why, let them know, and undo it if plans change.", who: "Hiring Manager"},
+    {title: "Delete Candidate Data", href: "/docs/administration/deleting-candidate-data", summary: "What to do when someone asks you to remove their details.", who: "Hiring Manager"},
+  ]}
+/>
+
+## Which role do I need?
+
+Each card above says who usually does that step. If you can't see a button a guide mentions, your role is the most likely reason. [Add Your Team](./users-and-roles) explains what each role can do.

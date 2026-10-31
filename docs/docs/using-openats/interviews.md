@@ -1,9 +1,12 @@
 ---
 sidebar_position: 6
-title: Interviews and Feedback
+title: Schedule Interviews
+sidebar_label: Schedule Interviews
+description: Schedule interviews in OpenATS, let candidates pick a time, connect Google Calendar and Meet, stop double booking, and record interview scorecards.
+keywords: [interview scheduling, candidate self scheduling, Google Meet interview, interview scorecard, interview calendar]
 ---
 
-# Interviews and Feedback
+# Schedule Interviews
 
 OpenATS keeps the interview invitation, candidate-selected time, meeting details, interviewer, and feedback together on the candidate record.
 
@@ -45,7 +48,7 @@ It depends on the **interviewer** chosen for that interview, not on the person w
 
 ![Connected Google Meet integration](/content/interviews/connected-integration.png)
 
-Before anyone can connect, a server administrator must add the Google OAuth settings. See [Deployment](../operations/deployment#google-calendar-and-google-meet-optional).
+Before anyone can connect, a server administrator must add the Google OAuth settings. See [Manual Setup](../getting-started/quick-start#9-connect-google-calendar-and-meet-optional).
 
 ## Schedule an interview
 
@@ -118,3 +121,7 @@ After the conversation, the interviewer or another authorized team member can se
 ## What happens next
 
 The hiring team can review the interview feedback from the candidate profile, then decide whether to keep the candidate in the current stage or move them to the next stage. Assessments and offers can be connected to later stages as described in the [Hiring pipeline](./hiring-pipeline), [Assessments](./assessments), and [Offers](./offers) guides.
+
+## Next step
+
+Found the right person? [Send them an offer](./offers).

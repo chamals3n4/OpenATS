@@ -1,9 +1,11 @@
-import { CareersJobsList, CareersTitleBar } from "./_components/careers-jobs-list";
+import { CareersHeader, CareersJobsList } from "./_components/careers-jobs-list";
 import type { CareerJobRow } from "./_lib/careers-utils";
 
 type CompanyInfo = {
   name: string;
   logoUrl: string | null;
+  description: string | null;
+  website: string | null;
 };
 
 function getApiBase() {
@@ -48,17 +50,21 @@ export default async function CareersIndexPage() {
     getCompanyInfo(),
   ]);
   const brand = company
-    ? { name: company.name, logoUrl: company.logoUrl }
+    ? {
+        name: company.name,
+        logoUrl: company.logoUrl,
+        description: company.description,
+        website: company.website,
+      }
     : null;
 
   return (
     <div className="min-h-screen bg-white transition-colors duration-300 dark:bg-neutral-950">
-      <div className="mx-auto max-w-[960px] px-6 pb-24 pt-14 sm:px-8">
+      <div className="mx-auto max-w-[960px] px-6 pb-24 pt-10 sm:px-8">
         {jobs.length === 0 ? (
           <>
-            <CareersTitleBar brand={brand} />
-            <hr className="my-5 border-t border-slate-200 dark:border-neutral-800" />
-            <div className="rounded-lg border border-dashed border-slate-300 px-6 py-14 text-center dark:border-neutral-700">
+            <CareersHeader brand={brand} />
+            <div className="mt-10 rounded-lg border border-dashed border-slate-300 px-6 py-14 text-center dark:border-neutral-700">
               <p className="text-[15px] font-semibold text-slate-900 dark:text-neutral-100">
                 No open roles right now
               </p>

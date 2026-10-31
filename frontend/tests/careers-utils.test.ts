@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  safeWebsite,
   NO_FILTERS,
   employmentTypesIn,
   filterJobs,
@@ -108,5 +109,19 @@ describe("groupByDepartment", () => {
     ]);
     expect(groups.map((g) => g.department)).toEqual(["Design", "Engineering"]);
     expect(groups[1].jobs.map((j) => j.id)).toEqual([3, 1]);
+  });
+});
+
+describe("safeWebsite", () => {
+  it("keeps http and https links", () => {
+    expect(safeWebsite("https://acme.example")).toBe("https://acme.example");
+    expect(safeWebsite("http://acme.example/about")).toBe("http://acme.example/about");
+  });
+
+  it("drops anything else, or nothing", () => {
+    expect(safeWebsite("javascript:alert(1)")).toBeNull();
+    expect(safeWebsite("acme.example")).toBeNull();
+    expect(safeWebsite(null)).toBeNull();
+    expect(safeWebsite("")).toBeNull();
   });
 });

@@ -1,7 +1,7 @@
 import { afterEach, beforeAll, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
-vi.mock("@/lib/server-fetch", () => ({ serverFetch: vi.fn() }));
+vi.mock("@/lib/client-fetch", () => ({ clientFetch: vi.fn() }));
 
 import { CandidateFilters } from "@/app/(dashboard)/candidates/_components/candidate-filters";
 import { EMPTY_FILTERS, type CandidateFilterState } from "@/app/(dashboard)/candidates/_lib/candidate-filter-state";

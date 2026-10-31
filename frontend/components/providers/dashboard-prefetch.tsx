@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 import { useRole } from "@/hooks/use-role";
 import type { Job, Offer, Template, User, Department } from "@/types";
 
@@ -19,19 +19,19 @@ export function DashboardPrefetch() {
 
     void queryClient.prefetchQuery({
       queryKey: ["jobs"],
-      queryFn: () => serverFetch<{ data: Job[] }>("/jobs"),
+      queryFn: () => clientFetch<{ data: Job[] }>("/jobs"),
       staleTime: 1000 * 60 * 5,
     });
 
     void queryClient.prefetchQuery({
       queryKey: ["templates"],
-      queryFn: () => serverFetch<{ data: Template[] }>("/templates"),
+      queryFn: () => clientFetch<{ data: Template[] }>("/templates"),
       staleTime: 1000 * 60 * 10,
     });
 
     void queryClient.prefetchQuery({
       queryKey: ["departments"],
-      queryFn: () => serverFetch<{ data: Department[] }>("/company/departments"),
+      queryFn: () => clientFetch<{ data: Department[] }>("/company/departments"),
       staleTime: 1000 * 60 * 10,
     });
 
@@ -40,13 +40,13 @@ export function DashboardPrefetch() {
 
     void queryClient.prefetchQuery({
       queryKey: ["users"],
-      queryFn: () => serverFetch<{ data: User[] }>("/users"),
+      queryFn: () => clientFetch<{ data: User[] }>("/users"),
       staleTime: 1000 * 60 * 10,
     });
 
     void queryClient.prefetchQuery({
       queryKey: ["offers", "all"],
-      queryFn: () => serverFetch<{ data: Offer[] }>("/offers"),
+      queryFn: () => clientFetch<{ data: Offer[] }>("/offers"),
       staleTime: 1000 * 60 * 5,
     });
   }, [queryClient, role, isManager]);

@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 
-const serverFetch = vi.fn();
-vi.mock("@/lib/server-fetch", () => ({ serverFetch: (...a: unknown[]) => serverFetch(...a) }));
+const clientFetch = vi.fn();
+vi.mock("@/lib/client-fetch", () => ({ clientFetch: (...a: unknown[]) => clientFetch(...a) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn(), info: vi.fn() } }));
 
 let googleConnected = false;
@@ -123,7 +123,7 @@ describe("InterviewSchedulerDialog", () => {
     await choose(/Event template/, "Technical Interview - Round 01");
     fireEvent.click(screen.getByRole("button", { name: "Send to candidate" }));
 
-    expect(serverFetch).not.toHaveBeenCalled();
+    expect(clientFetch).not.toHaveBeenCalled();
     expect(screen.getByText("Choose who will run the interview.")).toBeTruthy();
     expect(screen.getByText("Add at least one time the candidate can choose.")).toBeTruthy();
     expect(toast.error).toHaveBeenCalled();
@@ -147,15 +147,15 @@ describe("InterviewSchedulerDialog", () => {
   });
 
   it("sends the times, the length and the message once everything is filled in", async () => {
-    serverFetch.mockResolvedValue({});
+    clientFetch.mockResolvedValue({});
     const { onSuccess, onOpenChange } = open();
     await choose(/Event template/, "Technical Interview - Round 01");
     await choose(/Interviewer/, "Bhanuka Harischandra");
     fireEvent.change(screen.getByLabelText("Time"), { target: { value: future(3) } });
     fireEvent.click(screen.getByRole("button", { name: "Send to candidate" }));
 
-    await waitFor(() => expect(serverFetch).toHaveBeenCalled());
-    const [url, init] = serverFetch.mock.calls[0];
+    await waitFor(() => expect(clientFetch).toHaveBeenCalled());
+    const [url, init] = clientFetch.mock.calls[0];
     expect(url).toBe("/candidates/7/schedule");
     const body = JSON.parse(init.body);
     expect(body).toMatchObject({
@@ -175,7 +175,7 @@ describe("InterviewSchedulerDialog", () => {
   });
 
   it("shows a location field for an on-site interview and sends no link", async () => {
-    serverFetch.mockResolvedValue({});
+    clientFetch.mockResolvedValue({});
     open([template({ eventType: "onsite", location: "HQ, 3rd floor" })]);
     await choose(/Event template/, "Technical Interview - Round 01");
     expect((screen.getByLabelText("Location") as HTMLInputElement).value).toBe("HQ, 3rd floor");
@@ -184,13 +184,13 @@ describe("InterviewSchedulerDialog", () => {
     await choose(/Interviewer/, "Chamal Senarathna");
     fireEvent.change(screen.getByLabelText("Time"), { target: { value: future(2) } });
     fireEvent.click(screen.getByRole("button", { name: "Send to candidate" }));
-    await waitFor(() => expect(serverFetch).toHaveBeenCalled());
-    const body = JSON.parse(serverFetch.mock.calls[0][1].body);
+    await waitFor(() => expect(clientFetch).toHaveBeenCalled());
+    const body = JSON.parse(clientFetch.mock.calls[0][1].body);
     expect(body).toMatchObject({ eventType: "onsite", meetingUrl: null, location: "HQ, 3rd floor" });
   });
 
   it("books a time you set yourself, with no slots and no message to write", async () => {
-    serverFetch.mockResolvedValue({});
+    clientFetch.mockResolvedValue({});
     open();
     await choose(/Event template/, "Technical Interview - Round 01");
     await choose(/Interviewer/, "Bhanuka Harischandra");
@@ -202,8 +202,8 @@ describe("InterviewSchedulerDialog", () => {
 
     fireEvent.change(screen.getByLabelText("Time"), { target: { value: future(5) } });
     fireEvent.click(screen.getByRole("button", { name: "Book interview" }));
-    await waitFor(() => expect(serverFetch).toHaveBeenCalled());
-    const body = JSON.parse(serverFetch.mock.calls[0][1].body);
+    await waitFor(() => expect(clientFetch).toHaveBeenCalled());
+    const body = JSON.parse(clientFetch.mock.calls[0][1].body);
     expect(body.scheduledAt).toBe(new Date(future(5)).toISOString());
     expect(body.timeSlots).toEqual([]);
   });

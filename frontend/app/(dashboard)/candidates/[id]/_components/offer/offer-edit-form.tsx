@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 import {
   EMPLOYMENT_LABELS,
   OFFER_FIELD_LABELS,
@@ -124,7 +124,7 @@ export function OfferEditForm({
     if (!values.templateId) return;
     setIsGenerating(true);
     try {
-      const res = await serverFetch<{ data: { subject: string; html: string } }>(
+      const res = await clientFetch<{ data: { subject: string; html: string } }>(
         `/templates/${values.templateId}/preview`,
         { method: "POST", body: JSON.stringify({ candidateId }) },
       );

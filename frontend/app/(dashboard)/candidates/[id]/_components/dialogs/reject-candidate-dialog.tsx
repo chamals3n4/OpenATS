@@ -21,7 +21,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 import { REJECTION_REASONS } from "../constants";
 import {
   INTERNAL_NOTE_MAX,
@@ -85,7 +85,7 @@ function RejectForm({
     if (!templateId) return;
     setIsPreviewing(true);
     try {
-      const res = await serverFetch<{ data: { subject: string; html: string } }>(
+      const res = await clientFetch<{ data: { subject: string; html: string } }>(
         `/templates/${templateId}/preview`,
         { method: "POST", body: JSON.stringify({ candidateId }) },
       );

@@ -26,7 +26,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 import { useUserIntegrationStatus } from "@/hooks/queries/use-integrations";
 import { useAllocatedSlots } from "@/hooks/queries/use-interviews";
 import { useUsers } from "@/hooks/queries/use-user";
@@ -176,7 +176,7 @@ function SchedulerForm({
 
     setSaving(true);
     try {
-      await serverFetch(`/candidates/${candidateId}/schedule`, {
+      await clientFetch(`/candidates/${candidateId}/schedule`, {
         method: "POST",
         body: JSON.stringify({
           eventName: eventTemplates.find((t) => String(t.id) === templateId)?.name.trim(),

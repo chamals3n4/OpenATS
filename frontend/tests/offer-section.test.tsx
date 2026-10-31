@@ -13,7 +13,7 @@ vi.mock("@/hooks/queries/use-offers", () => ({
   useSendOffer: () => ({ mutate: sendMutate, isPending: false }),
   useMarkOfferAsHired: () => ({ mutate: hiredMutate, isPending: false }),
 }));
-vi.mock("@/lib/server-fetch", () => ({ serverFetch: vi.fn() }));
+vi.mock("@/lib/client-fetch", () => ({ clientFetch: vi.fn() }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import { toast } from "sonner";

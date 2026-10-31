@@ -5,7 +5,7 @@ import {
   useQueryClient,
   useMutation,
 } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 import type {
   Assessment,
   AssessmentQuestion,
@@ -17,7 +17,7 @@ import type {
 export function useAssessments() {
   return useQuery({
     queryKey: ["assessments"],
-    queryFn: () => serverFetch<{ data: Assessment[] }>("/assessments"),
+    queryFn: () => clientFetch<{ data: Assessment[] }>("/assessments"),
     staleTime: 1000 * 60 * 5,
   });
 }
@@ -26,7 +26,7 @@ export function useAssessment(id: number) {
   return useQuery({
     queryKey: ["assessments", id],
     queryFn: () =>
-      serverFetch<{
+      clientFetch<{
         data: Assessment & {
           questions: (AssessmentQuestion & {
             options: {
@@ -53,7 +53,7 @@ export function useCreateAssessment() {
       createdBy?: number;
       questions?: NewAssessmentQuestion[];
     }) =>
-      serverFetch<{ data: Assessment }>("/assessments", {
+      clientFetch<{ data: Assessment }>("/assessments", {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -67,7 +67,7 @@ export function useUpdateAssessment(assessmentId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: Partial<Assessment>) =>
-      serverFetch<{ data: Assessment }>(`/assessments/${assessmentId}`, {
+      clientFetch<{ data: Assessment }>(`/assessments/${assessmentId}`, {
         method: "PUT",
         body: JSON.stringify(data),
       }),
@@ -84,7 +84,7 @@ export function useDeleteAssessment() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (assessmentId: number) =>
-      serverFetch<{ data: Assessment }>(`/assessments/${assessmentId}`, {
+      clientFetch<{ data: Assessment }>(`/assessments/${assessmentId}`, {
         method: "DELETE",
       }),
     onSuccess: () => {
@@ -106,7 +106,7 @@ export function useCreateAssessmentQuestion(assessmentId: number) {
       position: number;
       options?: { label: string; isCorrect?: boolean; position: number }[];
     }) =>
-      serverFetch<{ data: AssessmentQuestion }>(
+      clientFetch<{ data: AssessmentQuestion }>(
         `/assessments/${assessmentId}/questions`,
         {
           method: "POST",
@@ -138,7 +138,7 @@ export function useUpdateAssessmentQuestion(assessmentId: number) {
         options?: { label: string; isCorrect?: boolean; position: number }[];
       };
     }) =>
-      serverFetch<{ data: AssessmentQuestion }>(
+      clientFetch<{ data: AssessmentQuestion }>(
         `/assessments/${assessmentId}/questions/${questionId}`,
         {
           method: "PUT",
@@ -157,7 +157,7 @@ export function useDeleteAssessmentQuestion(assessmentId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (questionId: number) =>
-      serverFetch<{ data: AssessmentQuestion }>(
+      clientFetch<{ data: AssessmentQuestion }>(
         `/assessments/${assessmentId}/questions/${questionId}`,
         {
           method: "DELETE",
@@ -175,7 +175,7 @@ export function useJobAssessments(jobId: number) {
   return useQuery({
     queryKey: ["jobs", jobId, "assessments"],
     queryFn: () =>
-      serverFetch<{
+      clientFetch<{
         data: {
           id: number;
           assessmentId: number;
@@ -192,7 +192,7 @@ export function useAttachAssessment(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: { assessmentId: number; triggerStageId: number; passMark?: number }) =>
-      serverFetch<{ data: JobAssessment }>(`/jobs/${jobId}/assessments`, {
+      clientFetch<{ data: JobAssessment }>(`/jobs/${jobId}/assessments`, {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -208,7 +208,7 @@ export function useUpdatePassMark(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ attachmentId, passMark }: { attachmentId: number; passMark: number }) =>
-      serverFetch<{ data: JobAssessment }>(`/jobs/${jobId}/assessments/${attachmentId}`, {
+      clientFetch<{ data: JobAssessment }>(`/jobs/${jobId}/assessments/${attachmentId}`, {
         method: "PATCH",
         body: JSON.stringify({ passMark }),
       }),
@@ -223,7 +223,7 @@ export function useDetachAssessment(jobId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (attachmentId: number) =>
-      serverFetch<{ data: JobAssessment }>(
+      clientFetch<{ data: JobAssessment }>(
         `/jobs/${jobId}/assessments/${attachmentId}`,
         { method: "DELETE" },
       ),
@@ -239,7 +239,7 @@ export function useCandidateAssessments(candidateId: number) {
   return useQuery({
     queryKey: ["candidate-assessments", candidateId],
     queryFn: () =>
-      serverFetch<{
+      clientFetch<{
         data: {
           id: number;
           assessmentId: number;
@@ -269,7 +269,7 @@ export function useInviteToAssessment() {
       assessmentId: number;
       expiryDays?: number;
     }) =>
-      serverFetch<{
+      clientFetch<{
         data: { token: string };
         didSendInvite?: boolean;
       }>(`/assessment-execution/invite`, {
@@ -283,7 +283,7 @@ export function useAttemptResults(attemptId: number, options?: { enabled?: boole
   return useQuery({
     queryKey: ["attempt-results", attemptId],
     queryFn: () =>
-      serverFetch<{
+      clientFetch<{
         data: {
           attempt: {
             id: number;
@@ -332,7 +332,7 @@ export function useGradeAnswer(attemptId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ questionId, points }: { questionId: number; points: number }) =>
-      serverFetch(`/assessment-execution/attempts/${attemptId}/grade`, {
+      clientFetch(`/assessment-execution/attempts/${attemptId}/grade`, {
         method: "PUT",
         body: JSON.stringify({ questionId, points }),
       }),

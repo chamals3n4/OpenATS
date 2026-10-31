@@ -4,7 +4,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 const state = vi.hoisted(() => ({ role: undefined as string | undefined }));
 const replace = vi.hoisted(() => vi.fn());
-const serverFetch = vi.hoisted(() => vi.fn(async () => ({ data: [] })));
+const clientFetch = vi.hoisted(() => vi.fn(async () => ({ data: [] })));
 
 vi.mock("@/hooks/queries/use-user", () => ({
   useCurrentUser: () => ({
@@ -13,7 +13,7 @@ vi.mock("@/hooks/queries/use-user", () => ({
   }),
 }));
 vi.mock("next/navigation", () => ({ useRouter: () => ({ replace }) }));
-vi.mock("@/lib/server-fetch", () => ({ serverFetch }));
+vi.mock("@/lib/client-fetch", () => ({ clientFetch }));
 
 import { RoleGuard } from "@/components/guards/role-guard";
 import { DashboardPrefetch } from "@/components/providers/dashboard-prefetch";
@@ -67,8 +67,8 @@ describe("DashboardPrefetch", () => {
         <DashboardPrefetch />
       </QueryClientProvider>,
     );
-    await waitFor(() => expect(serverFetch).toHaveBeenCalledWith("/jobs"));
-    return serverFetch.mock.calls.map((call) => (call as unknown[])[0]);
+    await waitFor(() => expect(clientFetch).toHaveBeenCalledWith("/jobs"));
+    return clientFetch.mock.calls.map((call) => (call as unknown[])[0]);
   };
 
   it("does not ask for managers only lists as an interviewer", async () => {
@@ -79,8 +79,8 @@ describe("DashboardPrefetch", () => {
 
   it("loads them for managers", async () => {
     const urls = await prefetched("hiring_manager");
-    await waitFor(() => expect(serverFetch).toHaveBeenCalledWith("/offers"));
+    await waitFor(() => expect(clientFetch).toHaveBeenCalledWith("/offers"));
     expect(urls).toEqual(expect.arrayContaining(["/jobs", "/templates", "/company/departments"]));
-    expect(serverFetch).toHaveBeenCalledWith("/users");
+    expect(clientFetch).toHaveBeenCalledWith("/users");
   });
 });

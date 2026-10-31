@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 
 export type Recommendation = "strong_no" | "no" | "yes" | "strong_yes";
 
@@ -22,7 +22,7 @@ export function useInterviewFeedback(interviewId: number) {
   return useQuery({
     queryKey: ["interview-feedback", interviewId],
     queryFn: () =>
-      serverFetch<{ data: InterviewScorecard[]; meta?: ScorecardMeta }>(
+      clientFetch<{ data: InterviewScorecard[]; meta?: ScorecardMeta }>(
         `/interviews/${interviewId}/feedback`,
       ),
     staleTime: 30_000,
@@ -43,7 +43,7 @@ export function useAddInterviewFeedback() {
       recommendation?: Recommendation | null;
       ratings?: { criterionId: number; rating: number }[];
     }) =>
-      serverFetch(`/interviews/${interviewId}/feedback`, {
+      clientFetch(`/interviews/${interviewId}/feedback`, {
         method: "POST",
         body: JSON.stringify(body),
       }),
@@ -66,7 +66,7 @@ export function useDeleteInterviewFeedback() {
       interviewId: number;
       feedbackId: number;
     }) =>
-      serverFetch(`/interviews/${interviewId}/feedback/${feedbackId}`, {
+      clientFetch(`/interviews/${interviewId}/feedback/${feedbackId}`, {
         method: "DELETE",
       }),
     onSuccess: (_data, variables) => {

@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useQueryClient, type QueryKey } from "@tanstack/react-query";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 import { Tabs } from "@/components/ui/tabs";
 
 import { JobHeader } from "./_components/job-header";
@@ -40,7 +40,7 @@ export default function JobDetailsPage() {
     const prefetch = (key: QueryKey, url: string, staleTime: number) => {
       void queryClient.prefetchQuery({
         queryKey: key,
-        queryFn: () => serverFetch(url),
+        queryFn: () => clientFetch(url),
         staleTime,
       });
     };

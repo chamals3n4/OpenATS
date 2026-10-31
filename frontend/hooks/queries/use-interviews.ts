@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 import type { InterviewListItem } from "@/types";
 
 export function useInterviews(filters?: Record<string, string | number>) {
@@ -15,7 +15,7 @@ export function useInterviews(filters?: Record<string, string | number>) {
   return useQuery({
     queryKey: ["interviews", filters],
     queryFn: () =>
-      serverFetch<{ data: InterviewListItem[] }>(
+      clientFetch<{ data: InterviewListItem[] }>(
         `/interviews${qs ? `?${qs}` : ""}`,
       ),
     staleTime: 1000 * 60 * 5,
@@ -32,7 +32,7 @@ export function useAllocatedSlots(enabled = true) {
   return useQuery({
     queryKey: ["interviews", "allocated-slots"],
     queryFn: () =>
-      serverFetch<{ data: AllocatedSlot[] }>("/interviews/allocated-slots"),
+      clientFetch<{ data: AllocatedSlot[] }>("/interviews/allocated-slots"),
     enabled,
     staleTime: 1000 * 30,
   });
@@ -42,7 +42,7 @@ export function useDeleteInterview() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      serverFetch(`/interviews/${id}`, { method: "DELETE" }),
+      clientFetch(`/interviews/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["interviews"] });
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
@@ -69,7 +69,7 @@ export function useUpdateInterview() {
       location?: string | null;
       bodyText?: string | null;
     }) =>
-      serverFetch(`/interviews/${id}`, {
+      clientFetch(`/interviews/${id}`, {
         method: "PATCH",
         body: JSON.stringify(data),
       }),

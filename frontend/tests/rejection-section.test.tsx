@@ -8,8 +8,8 @@ vi.mock("@/hooks/queries/use-user", () => ({
     data: isManager ? { data: [{ id: 1, firstName: "Chamal", lastName: "Senarathna" }] } : undefined,
   }),
 }));
-const serverFetch = vi.fn();
-vi.mock("@/lib/server-fetch", () => ({ serverFetch: (...a: unknown[]) => serverFetch(...a) }));
+const clientFetch = vi.fn();
+vi.mock("@/lib/client-fetch", () => ({ clientFetch: (...a: unknown[]) => clientFetch(...a) }));
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
 
 import { toast } from "sonner";
@@ -171,14 +171,14 @@ describe("RejectCandidateDialog", () => {
   });
 
   it("preselects the rejection template and shows a preview before anything is sent", async () => {
-    serverFetch.mockResolvedValue({ data: { subject: "Your application", html: "<p>Sorry</p>" } });
+    clientFetch.mockResolvedValue({ data: { subject: "Your application", html: "<p>Sorry</p>" } });
     open();
     fireEvent.click(screen.getByRole("switch"));
     expect(screen.getByRole("button", { name: "Reject and send email" })).toBeTruthy();
     fireEvent.click(screen.getByRole("button", { name: "Preview" }));
     await waitFor(() => expect(screen.getByText("Your application")).toBeTruthy());
     expect(screen.getByTitle("Rejection email preview").getAttribute("sandbox")).toBe("");
-    expect(serverFetch).toHaveBeenCalledWith("/templates/5/preview", expect.anything());
+    expect(clientFetch).toHaveBeenCalledWith("/templates/5/preview", expect.anything());
     expect(mutate).not.toHaveBeenCalled();
   });
 

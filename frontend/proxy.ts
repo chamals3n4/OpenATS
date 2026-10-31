@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { getSessionCookie } from "better-auth/cookies";
 import { auth } from "@/lib/auth/server";
+import { SESSION_EXPIRED } from "@/lib/client-fetch";
 
 const PUBLIC_PATHS = new Set([
   "/login",
@@ -38,6 +39,14 @@ export async function proxy(request: NextRequest) {
     if (session) {
       return NextResponse.redirect(new URL("/", request.url));
     }
+  }
+
+  // A redirect here would hand the login page to code expecting JSON
+  if (!hasSessionCookie && pathname.startsWith("/api/proxy/")) {
+    return NextResponse.json(
+      { error: "Your session has ended. Please sign in again.", code: SESSION_EXPIRED },
+      { status: 401 },
+    );
   }
 
   if (!hasSessionCookie && !isPublicRoute(pathname)) {

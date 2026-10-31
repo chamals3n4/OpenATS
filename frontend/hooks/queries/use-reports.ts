@@ -1,5 +1,5 @@
 import { useQuery, useMutation, keepPreviousData } from "@tanstack/react-query";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 import { AnalyticsReport, AnalyticsExportPayload, AttentionReport } from "@/types";
 
 export function useAnalyticsReport(
@@ -11,7 +11,7 @@ export function useAnalyticsReport(
     queryFn: () => {
       const params = new URLSearchParams({ period });
       if (departmentId) params.set("departmentId", String(departmentId));
-      return serverFetch<{ data: AnalyticsReport }>(
+      return clientFetch<{ data: AnalyticsReport }>(
         `/reports/analytics?${params.toString()}`,
       );
     },
@@ -28,7 +28,7 @@ export function useAttentionReport(departmentId?: number, options?: { enabled?: 
       const params = new URLSearchParams();
       if (departmentId) params.set("departmentId", String(departmentId));
       const query = params.toString();
-      return serverFetch<{ data: AttentionReport }>(
+      return clientFetch<{ data: AttentionReport }>(
         `/reports/attention${query ? `?${query}` : ""}`,
       );
     },
@@ -53,7 +53,7 @@ export function useExportAnalyticsReport() {
       const params = new URLSearchParams({ period, format });
       if (departmentId) params.set("departmentId", String(departmentId));
 
-      return serverFetch<{ data: AnalyticsExportPayload }>(
+      return clientFetch<{ data: AnalyticsExportPayload }>(
         `/reports/analytics/export?${params.toString()}`,
       );
     },

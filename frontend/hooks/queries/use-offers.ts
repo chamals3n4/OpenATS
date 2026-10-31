@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import type { Offer, OfferWithRelations, PublicOfferView } from "@/types";
-import { serverFetch } from "@/lib/server-fetch";
+import { clientFetch } from "@/lib/client-fetch";
 import type { PaginationInfo } from "@/components/table/table-footer";
 
 export type OfferListParams = {
@@ -15,7 +15,7 @@ export function useOffers(jobId?: number) {
   return useQuery({
     queryKey: jobId ? ["offers", "job", jobId] : ["offers", "all"],
     queryFn: () =>
-      serverFetch<{ data: OfferWithRelations[] }>(
+      clientFetch<{ data: OfferWithRelations[] }>(
         jobId ? `/offers/job/${jobId}` : "/offers",
       ),
     enabled: jobId === undefined || !!jobId,
@@ -26,7 +26,7 @@ export function useOffers(jobId?: number) {
 export function useOffer(id: number) {
   return useQuery({
     queryKey: ["offers", id],
-    queryFn: () => serverFetch<{ data: Offer }>(`/offers/${id}`),
+    queryFn: () => clientFetch<{ data: Offer }>(`/offers/${id}`),
     enabled: !!id,
     staleTime: 1000 * 60 * 5,
   });
@@ -36,7 +36,7 @@ export function useCreateOffer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (data: Partial<Offer>) =>
-      serverFetch<{ data: Offer }>("/offers", {
+      clientFetch<{ data: Offer }>("/offers", {
         method: "POST",
         body: JSON.stringify(data),
       }),
@@ -67,7 +67,7 @@ export function useUpdateOffer() {
       offerId: number;
       data: Partial<Offer>;
     }) =>
-      serverFetch<{ data: Offer }>(`/offers/${offerId}`, {
+      clientFetch<{ data: Offer }>(`/offers/${offerId}`, {
         method: "PATCH",
         body: JSON.stringify(data),
       }),
@@ -85,7 +85,7 @@ export function useUpdateOfferStatus() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, status }: { id: number; status: Offer["status"] }) =>
-      serverFetch<{ data: Offer }>(`/offers/${id}`, {
+      clientFetch<{ data: Offer }>(`/offers/${id}`, {
         method: "PATCH",
         body: JSON.stringify({ status }),
       }),
@@ -104,7 +104,7 @@ export function useOffersList(params: OfferListParams = {}) {
       if (params.search) qs.set("search", params.search);
       if (params.status) qs.set("status", params.status);
       if (params.jobId) qs.set("jobId", String(params.jobId));
-      return serverFetch<{
+      return clientFetch<{
         data: OfferWithRelations[];
         pagination: PaginationInfo;
       }>(`/offers?${qs}`);
@@ -118,7 +118,7 @@ export function useDeleteOffer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (offerId: number) =>
-      serverFetch(`/offers/${offerId}`, { method: "DELETE" }),
+      clientFetch(`/offers/${offerId}`, { method: "DELETE" }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["offers"] });
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
@@ -130,7 +130,7 @@ export function useBulkDeleteOffers() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (ids: number[]) =>
-      serverFetch<{ count: number }>("/offers/bulk", { method: "DELETE", body: JSON.stringify({ ids }) }),
+      clientFetch<{ count: number }>("/offers/bulk", { method: "DELETE", body: JSON.stringify({ ids }) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["offers"] });
       queryClient.invalidateQueries({ queryKey: ["candidates"] });
@@ -142,7 +142,7 @@ export function useSendOffer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (offerId: number) =>
-      serverFetch<{ data: Offer }>(`/offers/${offerId}/send`, {
+      clientFetch<{ data: Offer }>(`/offers/${offerId}/send`, {
         method: "POST",
       }),
     onSuccess: () => {
@@ -156,7 +156,7 @@ export function useAcceptOffer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (offerId: number) =>
-      serverFetch<{ data: Offer }>(`/offers/${offerId}/accept`, {
+      clientFetch<{ data: Offer }>(`/offers/${offerId}/accept`, {
         method: "POST",
       }),
     onSuccess: () => {
@@ -170,7 +170,7 @@ export function useDeclineOffer() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (offerId: number) =>
-      serverFetch<{ data: Offer }>(`/offers/${offerId}/decline`, {
+      clientFetch<{ data: Offer }>(`/offers/${offerId}/decline`, {
         method: "POST",
       }),
     onSuccess: () => {
@@ -184,7 +184,7 @@ export function useMarkOfferAsHired() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (offerId: number) =>
-      serverFetch<{ data: { candidate: { id: number } } }>(
+      clientFetch<{ data: { candidate: { id: number } } }>(
         `/offers/${offerId}/mark-hired`,
         {
           method: "POST",

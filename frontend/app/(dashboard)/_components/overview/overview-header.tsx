@@ -47,7 +47,7 @@ export function OverviewHeader({
     <header className="flex flex-wrap items-end justify-between gap-4">
       <div>
         <h1 className="text-2xl font-semibold leading-none text-slate-900 dark:text-neutral-100">
-          {firstName ? `Hi ${firstName}` : "Hi there"} <span aria-hidden>👋</span>
+          {firstName ? `Welcome back, ${firstName}` : "Welcome back"} <span aria-hidden>👋</span>
         </h1>
         <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">
           Here&apos;s what needs you today, and how hiring is going.

@@ -15,7 +15,12 @@ const job = (id: number, over: Partial<CareerJobRow> = {}): CareerJobRow => ({
 });
 
 // Like the dev data: two published roles, both in Engineering.
-const brand = { name: "Acme", logoUrl: "https://example.com/logo.png" };
+const brand = {
+  name: "Acme",
+  logoUrl: "https://example.com/logo.png",
+  description: "We build tools for hiring teams.\nBased in Colombo.",
+  website: "https://acme.example",
+};
 
 const small = [
   job(2, { title: "Senior QA Engineer", createdAt: "2026-09-02T17:08:00.000Z" }),
@@ -56,13 +61,17 @@ describe("CareersJobsList with a few roles", () => {
     render(<CareersJobsList jobs={small} brand={brand} />);
     const link = screen.getByRole("link", { name: /Software Engineering Intern/ });
     expect(link.getAttribute("href")).toBe("/careers/3");
-    expect(within(link).getByText("Internship · Colombo, Sri Lanka · Posted today")).toBeTruthy();
-    expect(screen.getByText("Full-time · Colombo, Sri Lanka · Posted 1 week ago")).toBeTruthy();
+    for (const text of ["Internship", "Colombo, Sri Lanka", "Posted today"]) {
+      expect(within(link).getByText(text)).toBeTruthy();
+    }
+    const other = screen.getByRole("link", { name: /Senior QA Engineer/ });
+    expect(within(other).getByText("Full-time")).toBeTruthy();
+    expect(within(other).getByText("Posted 1 week ago")).toBeTruthy();
   });
 
   it("lists the newest first and says how many there are", () => {
     render(<CareersJobsList jobs={small} brand={brand} />);
-    const titles = screen.getAllByRole("heading", { level: 3 }).map((h) => h.textContent);
+    const titles = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(titles).toEqual(["Software Engineering Intern", "Senior QA Engineer"]);
     expect(screen.getByText("2 open roles")).toBeTruthy();
   });
@@ -76,7 +85,7 @@ describe("CareersJobsList with a few roles", () => {
     render(<CareersJobsList jobs={small} brand={brand} />);
     // Both roles are in Engineering, so a department filter would do nothing.
     expect(screen.queryByRole("combobox", { name: "Department" })).toBeNull();
-    expect(screen.queryByRole("heading", { level: 2 })).toBeNull();
+    expect(screen.queryByRole("heading", { name: /^Engineering/ })).toBeNull();
     // They differ in job type, so that filter is offered.
     expect(screen.getByRole("combobox", { name: "Job type" }).textContent).toContain("All job types");
   });
@@ -95,6 +104,8 @@ describe("CareersJobsList with many roles", () => {
     render(<CareersJobsList jobs={large} brand={brand} />);
     const headings = screen.getAllByRole("heading", { level: 2 }).map((h) => h.textContent);
     expect(headings).toEqual(["Design2", "Engineering2", "People1"]);
+    // The roles sit one level below their department.
+    expect(screen.getAllByRole("heading", { level: 3 })).toHaveLength(5);
   });
 
   it("offers department, job type and location filters", () => {
@@ -138,44 +149,56 @@ describe("CareersJobsList with many roles", () => {
   });
 });
 
-describe("top row", () => {
-  it("puts the logo, the title, the search and the filters on one line", () => {
+describe("header", () => {
+  it("shows the logo, Careers at the company, the description and the website", () => {
     render(<CareersJobsList jobs={small} brand={brand} />);
-    const title = screen.getByRole("heading", { level: 1, name: "Open roles" });
-    const bar = title.parentElement!;
-    expect(within(bar).getByRole("img", { name: "Acme" })).toBeTruthy();
-
-    const row = bar.parentElement!;
-    expect(row.className).toContain("flex-wrap");
-    expect(within(row).getByRole("textbox", { name: "Search roles" })).toBeTruthy();
-    expect(within(row).getByRole("combobox", { name: "Job type" })).toBeTruthy();
+    const header = screen.getByRole("banner");
+    expect(within(header).getByRole("img", { name: "Acme" })).toBeTruthy();
+    expect(within(header).getByRole("heading", { level: 1, name: "Careers at Acme" })).toBeTruthy();
+    expect(within(header).getByText(/We build tools for hiring teams/)).toBeTruthy();
+    const site = within(header).getByRole("link", { name: /Visit website/ });
+    expect(site.getAttribute("href")).toBe("https://acme.example");
+    expect(site.getAttribute("rel")).toContain("noopener");
   });
 
-  it("falls back to the company name when there is no logo, and to just the title with no company", () => {
-    render(<CareersJobsList jobs={small} brand={{ name: "Acme", logoUrl: null }} />);
-    expect(screen.getByText("Acme")).toBeTruthy();
-    cleanup();
+  it("keeps the line breaks the description was written with", () => {
+    render(<CareersJobsList jobs={small} brand={brand} />);
+    expect(screen.getByText(/We build tools for hiring teams/).className).toContain("whitespace-pre-line");
+  });
 
+  it("leaves out the logo, description and website when there are none", () => {
+    render(
+      <CareersJobsList jobs={small} brand={{ name: "Acme", logoUrl: null, description: null, website: null }} />,
+    );
+    expect(screen.getByRole("heading", { level: 1, name: "Careers at Acme" })).toBeTruthy();
+    expect(screen.queryByRole("img")).toBeNull();
+    expect(screen.getByRole("banner").querySelector("p")).toBeNull();
+    expect(screen.queryByRole("link", { name: /Visit website/ })).toBeNull();
+  });
+
+  it("never links a website that is not http(s)", () => {
+    render(<CareersJobsList jobs={small} brand={{ ...brand, website: "javascript:alert(1)" }} />);
+    expect(screen.queryByRole("link", { name: /Visit website/ })).toBeNull();
+  });
+
+  it("falls back to a plain title with no company", () => {
     render(<CareersJobsList jobs={small} brand={null} />);
-    expect(screen.getByRole("heading", { level: 1, name: "Open roles" })).toBeTruthy();
+    expect(screen.getByRole("heading", { level: 1, name: "Careers" })).toBeTruthy();
     expect(screen.queryByRole("img")).toBeNull();
   });
 
-  it("no longer shows a company description", () => {
+  it("puts the search and the filters on one row below it", () => {
     render(<CareersJobsList jobs={small} brand={brand} />);
-    expect(screen.queryByText(/making the world better place/)).toBeNull();
-  });
-
-  it("closes the row with a divider before the roles start", () => {
-    const { container } = render(<CareersJobsList jobs={small} brand={brand} />);
-    expect(container.querySelector("hr")).toBeTruthy();
+    const row = screen.getByRole("textbox", { name: "Search roles" }).parentElement!.parentElement!;
+    expect(row.className).toContain("flex-wrap");
+    expect(within(row).getByRole("combobox", { name: "Job type" })).toBeTruthy();
   });
 });
 
 describe("search field", () => {
   it("keeps the icon above the field, which briefly transforms while pressed and would hide it", () => {
-    const { container } = render(<CareersJobsList jobs={small} brand={brand} />);
-    const icon = container.querySelector("svg");
+    render(<CareersJobsList jobs={small} brand={brand} />);
+    const icon = screen.getByRole("textbox", { name: "Search roles" }).parentElement!.querySelector("svg");
     expect(icon?.getAttribute("class")).toContain("z-10");
     expect(icon?.getAttribute("class")).toContain("pointer-events-none");
   });
@@ -187,40 +210,38 @@ describe("search field", () => {
     expect(className).toContain("dark:focus-visible:border-neutral-300");
   });
 
-  it("is the same height as the dropdowns: the 32px the dashboard filter bars use", () => {
+  it("is the same height as the dropdowns", () => {
     render(<CareersJobsList jobs={small} brand={brand} />);
-    expect(screen.getByRole("textbox", { name: "Search roles" }).className).toContain("h-8!");
-    expect(screen.getByRole("combobox", { name: "Job type" }).className).toContain("h-8!");
-    expect(screen.getByRole("combobox", { name: "Job type" }).className).not.toContain("h-10");
+    expect(screen.getByRole("textbox", { name: "Search roles" }).className).toContain("h-10!");
+    expect(screen.getByRole("combobox", { name: "Job type" }).className).toContain("h-10!");
   });
 });
 
 describe("cards", () => {
-  it("puts a border around each role, and eases the hover in rather than snapping", () => {
+  it("puts a border around each role, with a quiet hover", () => {
     render(<CareersJobsList jobs={small} brand={brand} />);
     const { className } = screen.getByRole("link", { name: /Senior QA Engineer/ });
     expect(className).toContain("rounded-xl");
     expect(className).toMatch(/\bborder\b/);
-    expect(className).toContain("hover:border-neutral-900");
-    expect(className).toContain("duration-200");
-    expect(className).toContain("ease-out");
+    expect(className).toContain("hover:border-slate-400");
+    expect(className).toContain("transition-colors");
+    expect(className).not.toContain("shadow");
     expect(className).toContain("motion-reduce:transition-none");
-  });
-
-  it("fills the Apply pill with a layer that sweeps in, so its label is never grey on grey", () => {
-    const { container } = render(<CareersJobsList jobs={small} brand={brand} />);
-    const fill = container.querySelector(".origin-left");
-    expect(fill?.className).toContain("scale-x-0");
-    expect(fill?.className).toContain("group-hover:scale-x-100");
-    // The label changes colour after the fill starts, not at the same instant.
-    const label = screen.getAllByText("Apply")[0];
-    expect(label.className).toContain("delay-100");
-    expect(label.className).toContain("group-hover:text-white");
   });
 
   it("stacks the roles as separate cards with space between them", () => {
     const { container } = render(<CareersJobsList jobs={small} brand={brand} />);
     expect(container.querySelector("ul")?.className).toContain("space-y-3");
+  });
+
+  it("shows an outlined Apply button that only changes colour on hover, with nothing moving", () => {
+    const { container } = render(<CareersJobsList jobs={small} brand={brand} />);
+    const apply = screen.getAllByText("Apply")[0];
+    expect(apply.className).toMatch(/\bborder\b/);
+    expect(apply.className).toContain("group-hover:border-slate-500");
+    expect(apply.className).toContain("motion-reduce:transition-none");
+    expect(container.querySelector(".origin-left")).toBeNull();
+    expect(container.innerHTML).not.toContain("translate-x");
   });
 });
 

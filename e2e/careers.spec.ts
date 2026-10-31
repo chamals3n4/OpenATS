@@ -7,7 +7,7 @@ test.describe("careers page", () => {
     await page.goto("/careers");
 
     await expect(
-      page.getByRole("heading", { name: "Open roles" }),
+      page.getByRole("heading", { level: 1, name: /Careers/ }),
     ).toBeVisible();
   });
 
@@ -22,7 +22,7 @@ test.describe("careers page", () => {
     await page.goto("/careers");
 
     await expect(
-      page.getByText(/no open positions at the moment/i),
+      page.getByText(/no open roles right now/i),
     ).toBeVisible();
   });
 });

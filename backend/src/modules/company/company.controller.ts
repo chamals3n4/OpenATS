@@ -55,6 +55,7 @@ export const getPublicCompany = async (_req: Request, res: Response) => {
             name: result.name,
             logoUrl: result.logoUrl,
             description: result.description,
+            website: result.website,
           }
         : null,
     });

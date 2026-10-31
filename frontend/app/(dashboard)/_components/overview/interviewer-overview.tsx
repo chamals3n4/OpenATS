@@ -100,7 +100,7 @@ export function InterviewerOverview() {
       <div className="flex flex-col gap-6 px-4 py-6 sm:px-8 sm:py-8">
         <div>
           <h1 className="text-2xl font-semibold leading-none text-slate-900 dark:text-neutral-100">
-            {me?.data?.firstName ? `Hi ${me.data.firstName}` : "Hi there"} <span aria-hidden>👋</span>
+            {me?.data?.firstName ? `Welcome back, ${me.data.firstName}` : "Welcome back"} <span aria-hidden>👋</span>
           </h1>
           <p className="mt-2 text-sm text-slate-500 dark:text-neutral-400">Your interviews and the scorecards waiting on you.</p>
         </div>

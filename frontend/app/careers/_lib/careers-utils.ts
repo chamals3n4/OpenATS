@@ -130,3 +130,14 @@ export function locationsIn(jobs: CareerJobRow[]) {
     (a, b) => a.localeCompare(b),
   );
 }
+
+/** The company website as a link, only when it is http(s); anything else is not shown */
+export function safeWebsite(url: string | null | undefined): string | null {
+  if (!url) return null;
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "http:" || protocol === "https:" ? url : null;
+  } catch {
+    return null;
+  }
+}

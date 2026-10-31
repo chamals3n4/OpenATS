@@ -17,6 +17,7 @@ import {
   useBulkSelection,
 } from "@/components/table/bulk-selection";
 import { BulkDeleteDialog } from "@/components/table/bulk-delete-dialog";
+import { JobDeleteImpact } from "./job-delete-impact";
 import { TableFooter, type PaginationInfo } from "@/components/table/table-footer";
 import type { Job } from "@/types";
 import { useIsManager } from "@/hooks/use-role";
@@ -72,7 +73,9 @@ export function JobsTable({
           isPending={isDeletingSelected}
           onClose={() => setBulkDeleteOpen(false)}
           onConfirm={handleConfirmBulkDelete}
-        />
+        >
+          <JobDeleteImpact ids={Array.from(selection.selectedIds)} enabled={bulkDeleteOpen} />
+        </BulkDeleteDialog>
         <Table>
           <TableHeader>
             <TableRow className="border-b border-slate-300 dark:border-neutral-700 bg-slate-100/70 dark:bg-neutral-800/60 hover:bg-slate-100/70 dark:hover:bg-neutral-800/60">

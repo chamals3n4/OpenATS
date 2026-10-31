@@ -2,6 +2,7 @@
 
 import { ConfirmDeleteDialog, ConfirmDeleteName } from "@/components/ui/confirm-delete-dialog";
 import type { Job } from "@/types";
+import { JobDeleteImpact } from "./job-delete-impact";
 
 interface JobDeleteDialogProps {
   job: Job | null;
@@ -31,6 +32,8 @@ export function JobDeleteDialog({
       isPending={isPending}
       onClose={onClose}
       onConfirm={onConfirm}
-    />
+    >
+      <JobDeleteImpact ids={job ? [job.id] : []} enabled={isOpen} />
+    </ConfirmDeleteDialog>
   );
 }

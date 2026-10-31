@@ -19,7 +19,7 @@ import { eq } from "drizzle-orm";
 import { randomUUID } from "crypto";
 import logger from "../../utils/logger";
 import { integrationConnectionService } from "../../shared/integrations/connection.service";
-import { getErrorMessage} from "../../utils/error.utils";
+import { getErrorMessage, safeErrorMessage } from "../../utils/error.utils";
 import { frontendUrl } from "../../utils/frontend-url";
 
 const router: Router = Router();
@@ -131,9 +131,8 @@ router.patch("/interviews/:id", requireManager, requireInterviewView(), async (r
       res.status(409).json({ error: INTERVIEWER_BUSY, code: "SLOT_TAKEN" });
       return;
     }
-    res
-      .status(400)
-      .json({ error: getErrorMessage(error) || "Failed to update interview" });
+    logger.error(`Failed to update interview ${req.params.id}: ${getErrorMessage(error)}`);
+    res.status(400).json({ error: safeErrorMessage(error, "Failed to update interview") });
   }
 });
 
@@ -315,7 +314,7 @@ router.post("/candidates/:id/schedule", requireManager, requireCandidateView("id
       return;
     }
     logger.error(`Schedule interview failed: ${getErrorMessage(error)}`);
-    res.status(400).json({ error: getErrorMessage(error) });
+    res.status(400).json({ error: safeErrorMessage(error, "Failed to schedule the interview") });
   }
 });
 
@@ -379,7 +378,8 @@ router.delete("/interviews/:id", requireManager, requireInterviewView(), async (
     });
     res.status(200).json({ data: deleted });
   } catch (error) {
-    res.status(500).json({ error: getErrorMessage(error) });
+    logger.error(`Failed to delete interview ${req.params.id}: ${getErrorMessage(error)}`);
+    res.status(500).json({ error: safeErrorMessage(error, "Failed to delete the interview") });
   }
 });
 
@@ -441,7 +441,8 @@ router.post("/interviews/:id/feedback", requireInterviewView(), async (req, res)
       res.status(400).json({ error: error.message });
       return;
     }
-    res.status(500).json({ error: getErrorMessage(error) || "Failed to add feedback" });
+    logger.error(`Failed to add interview feedback: ${getErrorMessage(error)}`);
+    res.status(500).json({ error: safeErrorMessage(error, "Failed to add feedback") });
   }
 });
 
@@ -484,7 +485,8 @@ router.delete("/interviews/:id/feedback/:feedbackId", requireManager, requireInt
     }
     res.status(200).json({ data: deleted });
   } catch (error) {
-    res.status(500).json({ error: getErrorMessage(error) });
+    logger.error(`Failed to delete interview ${req.params.id}: ${getErrorMessage(error)}`);
+    res.status(500).json({ error: safeErrorMessage(error, "Failed to delete the interview") });
   }
 });
 

@@ -37,6 +37,20 @@ export function useJobs() {
   });
 }
 
+/** What deleting these jobs would also delete. Always counted afresh */
+export function useJobDeleteSummary(ids: number[], enabled: boolean) {
+  return useQuery({
+    queryKey: ["jobs", "delete-summary", ids],
+    queryFn: () =>
+      clientFetch<{ data: { candidates: number; offers: number } }>(
+        `/jobs/delete-summary?ids=${ids.join(",")}`,
+      ),
+    enabled: enabled && ids.length > 0,
+    staleTime: 0,
+    gcTime: 0,
+  });
+}
+
 export function useJobsList(params: JobListParams = {}) {
   return useQuery({
     queryKey: ["jobs", "list", params],

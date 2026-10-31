@@ -18,6 +18,7 @@ export function useTemplateForm(initialType: TemplateType) {
   const [location, setLocation] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(DEFAULT_DURATION_MINUTES);
   const [message, setMessage] = useState("");
+  const [isHydrated, setIsHydrated] = useState(false);
 
   // Hydrate from existing template (for edit mode)
   const hydrate = useCallback(
@@ -27,6 +28,7 @@ export function useTemplateForm(initialType: TemplateType) {
       bodyJson: unknown;
       type: TemplateType;
     }) => {
+      setIsHydrated(true);
       setName(data.name);
       if (data.type === "event") {
         const config = parseEventConfig(data.bodyJson);
@@ -48,7 +50,24 @@ export function useTemplateForm(initialType: TemplateType) {
     [],
   );
 
+  /** The whole form as a string, used to check for changes */
+  const snapshot = JSON.stringify([
+    name,
+    subject,
+    emailBodyHtml,
+    eventName,
+    eventDesc,
+    eventTypeRadio,
+    meetingUrl,
+    autoGenerateMeet,
+    location,
+    durationMinutes,
+    message,
+  ]);
+
   return {
+    isHydrated,
+    snapshot,
     name,
     setName,
     subject,

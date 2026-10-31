@@ -346,6 +346,15 @@ export const jobService = {
     });
   },
 
+  /** What deleting these jobs takes with it, to say so before anyone confirms. */
+  async getDeleteSummary(ids: number[]) {
+    const [[candidateRow], [offerRow]] = await Promise.all([
+      db.select({ count: sql<number>`count(*)::int` }).from(candidates).where(inArray(candidates.jobId, ids)),
+      db.select({ count: sql<number>`count(*)::int` }).from(offers).where(inArray(offers.jobId, ids)),
+    ]);
+    return { candidates: candidateRow?.count ?? 0, offers: offerRow?.count ?? 0 };
+  },
+
   async delete(id: number) {
     let resumeKeys: Array<string | null> = [];
     const deletedJob = await db.transaction(async (tx) => {

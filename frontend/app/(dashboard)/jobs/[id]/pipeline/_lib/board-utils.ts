@@ -51,10 +51,34 @@ export function moveCard(
   return [...groups.values()].flat();
 }
 
-/** Drop slot for the pointer position */
-export function dropIndex(cards: { top: number; bottom: number }[], pointerY: number): number {
-  const index = cards.findIndex((r) => pointerY < r.top + (r.bottom - r.top) / 2);
-  return index === -1 ? cards.length : index;
+type CardRect = { top: number; bottom: number };
+
+/**
+ * Drop slot for the pointer position. A card from another column goes above or below the card it
+ * is over, by which half. A card from this column (`draggedIndex`) takes the place of the card it
+ * is over, so moving it down one does not need the pointer past the middle of the next card.
+ */
+export function dropIndex(cards: CardRect[], pointerY: number, draggedIndex = -1): number {
+  if (draggedIndex === -1) {
+    const index = cards.findIndex((r) => pointerY < r.top + (r.bottom - r.top) / 2);
+    return index === -1 ? cards.length : index;
+  }
+  const over = cards.findIndex((r) => pointerY < r.bottom);
+  if (over === -1) return cards.length;
+  // Below the dragged card and on a card, not in the gap above it: land after that card.
+  return over > draggedIndex && pointerY >= cards[over].top ? over + 1 : over;
+}
+
+/** A slot next to the dragged card leaves it where it is */
+export const isSameSlot = (slot: number, draggedIndex: number) =>
+  draggedIndex !== -1 && (slot === draggedIndex || slot === draggedIndex + 1);
+
+/** Y of the line showing a slot: the middle of the gap, or just outside the first or last card */
+export function slotLineY(cards: CardRect[], slot: number, gap = 8): number | null {
+  if (cards.length === 0) return null;
+  if (slot <= 0) return cards[0].top - gap / 2;
+  if (slot >= cards.length) return cards[cards.length - 1].bottom + gap / 2;
+  return (cards[slot - 1].bottom + cards[slot].top) / 2;
 }
 
 export interface MoveEffects {

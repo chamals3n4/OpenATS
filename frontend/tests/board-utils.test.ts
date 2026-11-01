@@ -5,7 +5,9 @@ import {
   groupByStage,
   hasEffects,
   isFullyVisibleX,
+  isSameSlot,
   matchesSearch,
+  slotLineY,
   toFullIndex,
   moveCard,
   moveEffects,
@@ -96,6 +98,65 @@ describe("dropIndex", () => {
   it("falls to the end below every card and to 0 for an empty column", () => {
     expect(dropIndex(rects, 400)).toBe(3);
     expect(dropIndex([], 10)).toBe(0);
+  });
+
+  describe("for a card from the same column", () => {
+    const list = [card(1, 10), card(2, 10), card(3, 10)];
+    const dropped = (from: number, y: number) =>
+      ids(moveCard(list, from + 1, 10, dropIndex(rects, y, from)), 10);
+
+    it("takes the place of a card below it, wherever on that card it lands", () => {
+      expect(dropped(0, 65)).toEqual([2, 1, 3]);
+      expect(dropped(0, 105)).toEqual([2, 1, 3]);
+      expect(dropped(0, 125)).toEqual([2, 3, 1]);
+    });
+
+    it("takes the place of a card above it, wherever on that card it lands", () => {
+      expect(dropped(2, 45)).toEqual([3, 1, 2]);
+      expect(dropped(2, 65)).toEqual([1, 3, 2]);
+    });
+
+    it("lands between two cards when dropped in the gap", () => {
+      expect(dropped(0, 115)).toEqual([2, 1, 3]);
+      expect(dropped(2, 55)).toEqual([1, 3, 2]);
+    });
+
+    it("stays put when dropped on itself", () => {
+      expect(dropped(1, 80)).toEqual([1, 2, 3]);
+    });
+
+    it("goes to the end below every card", () => {
+      expect(dropped(0, 400)).toEqual([2, 3, 1]);
+    });
+  });
+});
+
+describe("isSameSlot", () => {
+  it("is true only for the slots either side of the dragged card", () => {
+    expect(isSameSlot(1, 1)).toBe(true);
+    expect(isSameSlot(2, 1)).toBe(true);
+    expect(isSameSlot(0, 1)).toBe(false);
+    expect(isSameSlot(3, 1)).toBe(false);
+  });
+  it("is false for a card from another column", () => {
+    expect(isSameSlot(0, -1)).toBe(false);
+  });
+});
+
+describe("slotLineY", () => {
+  const rects = [
+    { top: 10, bottom: 50 },
+    { top: 58, bottom: 100 },
+  ];
+  it("sits in the gap between two cards", () => {
+    expect(slotLineY(rects, 1)).toBe(54);
+  });
+  it("sits just outside the first and last card", () => {
+    expect(slotLineY(rects, 0)).toBe(6);
+    expect(slotLineY(rects, 2)).toBe(104);
+  });
+  it("has no line in an empty column", () => {
+    expect(slotLineY([], 0)).toBeNull();
   });
 });
 

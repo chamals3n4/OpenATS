@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { BoardCandidate, PipelineStage } from "@/types";
-import { dropIndex } from "../_lib/board-utils";
+import { dropIndex, isSameSlot, slotLineY } from "../_lib/board-utils";
 import { BoardCard, CARD_TYPE, type DragItem } from "./board-card";
 
 /** Cards shown per column before Show more. Too many makes drag slow */
@@ -61,26 +61,44 @@ export const BoardColumn = memo(function BoardColumn({
   const shown = candidates.length > limit ? candidates.slice(0, limit) : candidates;
   const hiddenCount = candidates.length - shown.length;
 
-  /** Where a dropped card lands */
-  const indexAt = useCallback((pointerY: number): number => {
-    const body = bodyRef.current;
-    if (!body) return 0;
-    const rects = [...body.querySelectorAll<HTMLElement>("[data-board-card]")].map((el) =>
-      el.getBoundingClientRect(),
-    );
-    return dropIndex(rects, pointerY);
-  }, []);
+  /** Where the line sits in the column body, null when the drop would change nothing */
+  const [lineTop, setLineTop] = useState<number | null>(null);
+
+  const cardRects = useCallback(
+    () =>
+      [...(bodyRef.current?.querySelectorAll<HTMLElement>("[data-board-card]") ?? [])].map((el) =>
+        el.getBoundingClientRect(),
+      ),
+    [],
+  );
 
   const [{ isOver }, dropRef] = useDrop<DragItem, void, { isOver: boolean }>(
     {
       accept: CARD_TYPE,
+      hover: (item, monitor) => {
+        const y = monitor.getClientOffset()?.y;
+        const body = bodyRef.current;
+        if (y === undefined || !body) return;
+        const rects = cardRects();
+        const draggedIndex = shown.findIndex((c) => c.id === item.id);
+        const slot = dropIndex(rects, y, draggedIndex);
+        const lineY = isSameSlot(slot, draggedIndex) ? null : slotLineY(rects, slot);
+        setLineTop(
+          lineY === null ? null : lineY - body.getBoundingClientRect().top + body.scrollTop,
+        );
+      },
       drop: (item, monitor) => {
         const y = monitor.getClientOffset()?.y;
-        onMove(item.id, stage.id, y === undefined ? shown.length : indexAt(y));
+        const draggedIndex = shown.findIndex((c) => c.id === item.id);
+        onMove(
+          item.id,
+          stage.id,
+          y === undefined ? shown.length : dropIndex(cardRects(), y, draggedIndex),
+        );
       },
       collect: (monitor) => ({ isOver: monitor.isOver() }),
     },
-    [indexAt, onMove, stage.id, shown.length],
+    [cardRects, onMove, stage.id, shown],
   );
 
   const attach = useCallback(
@@ -130,6 +148,14 @@ export const BoardColumn = memo(function BoardColumn({
             : "border-slate-300 bg-slate-100/60 dark:border-neutral-700 dark:bg-neutral-900/40"
         }`}
       >
+        {isOver && lineTop !== null && (
+          <div
+            aria-hidden
+            data-drop-line
+            style={{ top: lineTop }}
+            className="pointer-events-none absolute inset-x-2 z-10 h-0.5 -translate-y-1/2 rounded-full bg-theme"
+          />
+        )}
         {isLoading ? (
           <>
             <Skeleton className="h-14 w-full rounded-md" />

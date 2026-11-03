@@ -21,15 +21,15 @@
 
 .top { display: grid; gap: 2.5rem; grid-template-columns: minmax(0, 1.6fr) repeat(3, minmax(0, 1fr)); }
 
-.brand { align-items: center; color: var(--ink); display: inline-flex; font-size: 1.2rem; font-weight: 700; gap: 0.55rem; letter-spacing: -0.035em; }
+/* The same size as the navbar's logo and title */
+.brand { align-items: center; color: var(--ink); display: inline-flex; font-size: 1.5rem; font-weight: 700; gap: 0.3rem; letter-spacing: -0.035em; line-height: 1; }
 .brand:hover { color: var(--ink); text-decoration: none; }
 .logoDark { display: none; }
 :global([data-theme='dark']) .logoLight { display: none; }
 :global([data-theme='dark']) .logoDark { display: block; }
 .about p { font-size: 0.93rem; line-height: 1.65; margin: 1rem 0 1.4rem; max-width: 340px; }
-.aboutActions { align-items: center; display: flex; flex-wrap: wrap; gap: 0.9rem; }
-.mail { color: var(--text); font-size: 0.88rem; }
-.mail:hover { color: var(--theme); }
+.badge { display: inline-block; }
+.badge img { height: auto; max-width: 100%; }
 
 .column h2 { color: var(--ink); font-size: 0.88rem; font-weight: 600; letter-spacing: 0; margin: 0.35rem 0 1rem; }
 .column ul { list-style: none; margin: 0; padding: 0; }
@@ -48,6 +48,7 @@
   margin-top: 3rem;
   padding-top: 1.5rem;
 }
+.bottomItem { align-items: center; display: inline-flex; gap: 0.35rem; }
 .bottom a { color: var(--subtle); text-decoration: underline; text-underline-offset: 3px; }
 .bottom a:hover { color: var(--theme); }
 

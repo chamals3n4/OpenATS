@@ -1,6 +1,8 @@
 name: Docker images
 
-# Builds and publishes the images and the quickstart compose file for a release:
+# Builds and publishes the images and the quickstart compose file for a release. release.yml starts
+# it after making a release (a release made with github.token cannot start it through the release
+# event); it can also be run by hand for any release tag. It publishes:
 #   ghcr.io/chamals3n4/openats-backend   (API, worker and database setup)
 #   ghcr.io/chamals3n4/openats-web       (the website)
 #   ghcr.io/chamals3n4/openats-quickstart (the compose file, for `docker compose -f oci://… up`)
@@ -16,6 +18,10 @@ on:
         description: "Release tag to build, e.g. v1.0.0"
         type: string
         required: true
+      prerelease:
+        description: "A pre-release: publish the version tag only, not latest"
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -47,7 +53,7 @@ jobs:
         id: tags
         env:
           TAG: ${{ inputs.tag || github.event.release.tag_name }}
-          PRERELEASE: ${{ github.event.release.prerelease || 'false' }}
+          PRERELEASE: ${{ inputs.prerelease || github.event.release.prerelease || false }}
         run: |
           version="${TAG#v}"
           echo "version=$version" >> "$GITHUB_OUTPUT"

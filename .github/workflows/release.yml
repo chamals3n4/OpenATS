@@ -19,6 +19,8 @@ on:
 
 permissions:
   contents: write
+  # To start the Docker images workflow for the new release (see the last step).
+  actions: write
 
 jobs:
   resolve:
@@ -100,3 +102,12 @@ jobs:
             --generate-notes \
             --notes-start-tag "$PREVIOUS" \
             "${args[@]}"
+
+      # A release made with github.token does not start other workflows by itself (GitHub's guard
+      # against loops), so the Docker images are started here. A manual run is the one exception.
+      - name: Build and publish the Docker images
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.resolve.outputs.version }}
+          PRERELEASE: ${{ inputs.prerelease }}
+        run: gh workflow run docker.yml --ref main -f tag="$VERSION" -f prerelease="$PRERELEASE"

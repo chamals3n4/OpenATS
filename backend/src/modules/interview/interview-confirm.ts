@@ -1,9 +1,13 @@
 import { eq } from "drizzle-orm";
 import { db } from "../../db";
-import { candidates, candidateInterviews } from "../../db/schema";
+import { candidates, candidateInterviews, jobs, users } from "../../db/schema";
 import type { CandidateInterview } from "../../db/schema";
 import { interviewConfirmedEmail } from "../../shared/services/candidate-emails";
-import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
+import { emailContext, getCompanyForEmail, sendCandidateEmail } from "../../shared/services/candidate-mailer";
+import { mailService } from "../../shared/services/mail.service";
+import { interviewerBookedEmail } from "../../shared/services/staff-emails";
+import { frontendUrl } from "../../utils/frontend-url";
+import { notificationService } from "../../shared/services/notification.service";
 import { socketService } from "../../shared/services/socket.service";
 import { integrationConnectionService } from "../../shared/integrations/connection.service";
 import { getProviderClient } from "../../shared/integrations/registry";
@@ -16,6 +20,7 @@ type ConfirmableInterview = Pick<
   CandidateInterview,
   | "id"
   | "candidateId"
+  | "jobId"
   | "interviewerId"
   | "eventName"
   | "eventType"
@@ -32,7 +37,11 @@ type ConfirmableInterview = Pick<
  * The interview row must already hold the time. Nothing here throws, because the time is
  * agreed either way; each part that fails is logged.
  */
-export async function completeInterviewBooking(iv: ConfirmableInterview, scheduledAt: Date) {
+export async function completeInterviewBooking(
+  iv: ConfirmableInterview,
+  scheduledAt: Date,
+  options: { actorId?: number | null } = {},
+) {
   const durationMinutes = iv.durationMinutes ?? DEFAULT_INTERVIEW_MINUTES;
 
   const [candidate] = await db
@@ -124,4 +133,62 @@ export async function completeInterviewBooking(iv: ConfirmableInterview, schedul
   }
 
   socketService.notifyInterviewChanged({ interviewId: iv.id, candidateId: iv.candidateId });
+
+  // The team and the interviewer, except whoever set the time themselves.
+  void notificationService.notifyJobTeam({
+    type: "interview_booked",
+    jobId: iv.jobId,
+    candidateId: iv.candidateId,
+    also: [iv.interviewerId],
+    exclude: options.actorId ?? null,
+  });
+  if (iv.interviewerId) {
+    void emailInterviewer({ ...iv, meetingUrl }, scheduledAt);
+  }
+}
+
+/**
+ * Emails the interviewer that an interview with them has its time: when it is booked, and when a
+ * booked interview is given to someone else. Never throws.
+ */
+export async function emailInterviewer(
+  iv: Pick<
+    CandidateInterview,
+    "id" | "candidateId" | "jobId" | "interviewerId" | "eventName" | "eventType" | "meetingUrl" | "location" | "durationMinutes"
+  >,
+  scheduledAt: Date,
+): Promise<void> {
+  if (!iv.interviewerId) return;
+  try {
+    const [[interviewer], [candidate], [job], company] = await Promise.all([
+      db
+        .select({ email: users.email, firstName: users.firstName, isActive: users.isActive })
+        .from(users)
+        .where(eq(users.id, iv.interviewerId)),
+      db
+        .select({ firstName: candidates.firstName, lastName: candidates.lastName })
+        .from(candidates)
+        .where(eq(candidates.id, iv.candidateId)),
+      db.select({ title: jobs.title }).from(jobs).where(eq(jobs.id, iv.jobId)),
+      getCompanyForEmail(),
+    ]);
+    if (!interviewer?.isActive || !candidate) return;
+
+    const email = interviewerBookedEmail({
+      ...company,
+      interviewerName: interviewer.firstName,
+      candidateName: `${candidate.firstName} ${candidate.lastName}`,
+      jobTitle: job?.title ?? null,
+      eventName: iv.eventName ?? "Interview",
+      eventType: iv.eventType ?? "virtual",
+      scheduledAt,
+      durationMinutes: iv.durationMinutes ?? DEFAULT_INTERVIEW_MINUTES,
+      meetingUrl: iv.meetingUrl,
+      location: iv.location ?? null,
+      candidateUrl: frontendUrl(`/candidates/${iv.candidateId}?section=interviews`),
+    });
+    await mailService.sendEmail({ to: interviewer.email, subject: email.subject, html: email.html });
+  } catch (err) {
+    logger.error(`Failed to email the interviewer of interview ${iv.id}: ${getErrorMessage(err)}`);
+  }
 }

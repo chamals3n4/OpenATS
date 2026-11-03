@@ -18,6 +18,8 @@ const MAX_MESSAGE_LENGTH = 5000;
 const STAFF_ROOM = "staff";
 const jobRoom = (jobId: number) => `job_${jobId}`;
 const candidateRoom = (candidateId: number) => `candidate_${candidateId}`;
+/** Each socket joins its own user's room, for what is meant for one person only. */
+const userRoom = (userId: number) => `user_${userId}`;
 
 interface SocketData {
   user: AuthenticatedUser;
@@ -82,6 +84,7 @@ export class SocketService {
       const user = socket.data.user;
 
       socket.join(STAFF_ROOM);
+      socket.join(userRoom(user.id));
       logger.info(`Socket connected: ${socket.id} (user ${user.id})`);
 
       // job room — hiring team members only
@@ -363,6 +366,12 @@ export class SocketService {
   // A candidate handed in, or changed, a take-home assignment
   public notifyAssignmentSubmitted(event: { candidateId: number }) {
     this.io?.to(STAFF_ROOM).emit("assignment_submitted", event);
+  }
+
+  // New notifications for these users. Only the signal: each browser fetches its own list.
+  public notifyUsers(userIds: number[]) {
+    if (!this.io || userIds.length === 0) return;
+    this.io.to(userIds.map(userRoom)).emit("notifications_changed");
   }
 
   public async sendSystemMessageToJob(jobId: number, message: string) {

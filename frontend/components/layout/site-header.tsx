@@ -3,6 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 
+import { NotificationsPanel } from "@/components/layout/notifications-panel";
 import { SidebarUserMenu } from "@/components/layout/sidebar-user-menu";
 
 export function SiteHeader() {
@@ -23,7 +24,8 @@ export function SiteHeader() {
           OpenATS
         </Link>
 
-        <div className="flex shrink-0 items-center gap-1">
+        <div className="flex shrink-0 items-center gap-2">
+          <NotificationsPanel />
           <SidebarUserMenu variant="header" />
         </div>
       </div>

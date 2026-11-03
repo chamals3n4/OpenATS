@@ -33,6 +33,7 @@ const STATUS_FILTER_OPTIONS = [
   { value: "scheduled", label: "Confirmed" },
   { value: "completed", label: "Completed" },
   { value: "cancelled", label: "Cancelled" },
+  { value: "expired", label: "No time picked" },
 ];
 
 export default function InterviewsClient() {

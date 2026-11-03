@@ -106,6 +106,7 @@ export function EditDialog({
                   <SelectItem value="scheduled">Confirmed</SelectItem>
                   <SelectItem value="completed">Completed</SelectItem>
                   <SelectItem value="cancelled">Cancelled</SelectItem>
+                  {status === "expired" && <SelectItem value="expired">No time picked</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
@@ -151,6 +152,7 @@ export function EditDialog({
                     | "scheduled"
                     | "completed"
                     | "cancelled"
+                    | "expired"
                     | undefined,
                   outcome: (outcome || undefined) as
                     | "pending"

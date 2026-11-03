@@ -20,3 +20,4 @@ export * from "./app-settings";
 export * from "./integrations";
 export * from "./auth";
 export * from "./system-emails";
+export * from "./notifications";

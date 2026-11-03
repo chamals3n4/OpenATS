@@ -29,6 +29,7 @@ import {
 import { clientFetch } from "@/lib/client-fetch";
 import { useUserIntegrationStatus } from "@/hooks/queries/use-integrations";
 import { useAllocatedSlots } from "@/hooks/queries/use-interviews";
+import { overlapsBusy } from "../_lib/interview-display";
 import { useUsers } from "@/hooks/queries/use-user";
 import {
   DEFAULT_DURATION_MINUTES,
@@ -124,15 +125,9 @@ function SchedulerForm({
   // Google links need the interviewer to connect Google
   const linkMode: LinkMode = linkChoice === "auto" && googleConnected ? "auto" : "manual";
 
-  const { data: allocatedData } = useAllocatedSlots(true);
-  const allocatedTimes = new Set(
-    (allocatedData?.data ?? []).map((s) => new Date(s.datetime).getTime()),
-  );
-  const isAllocated = (slot: string) => {
-    if (!slot) return false;
-    const t = new Date(slot).getTime();
-    return !Number.isNaN(t) && allocatedTimes.has(t);
-  };
+  // The chosen interviewer's other interviews: a time is taken if this one would overlap any.
+  const { data: allocatedData } = useAllocatedSlots(interviewerId);
+  const isAllocated = (slot: string) => overlapsBusy(slot, durationMinutes, allocatedData?.data ?? []);
 
   const scheduleInput = { templateId, interviewerId, timeMode, slots, fixedTime, eventType, linkMode, meetingUrl };
   const errors = validateSchedule(scheduleInput, now);
@@ -441,7 +436,7 @@ function SchedulerForm({
                     />
                     {isAllocated(fixedTime) && (
                       <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-                        Already booked
+                        Interviewer busy
                       </span>
                     )}
                   </div>
@@ -472,7 +467,7 @@ function SchedulerForm({
                         />
                         {isAllocated(slot) && (
                           <span className="shrink-0 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-semibold text-amber-800 dark:bg-amber-950/40 dark:text-amber-300">
-                            Already booked
+                            Interviewer busy
                           </span>
                         )}
                         {slots.length > 1 && (

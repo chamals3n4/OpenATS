@@ -13,6 +13,7 @@ import { InterviewData } from "../types";
 import ConfirmedState from "./confirmed-state";
 import ErrorState from "./error-state";
 import { formatTime } from "@/lib/format";
+import { useViewerTimeZone, zoneLabel } from "../_lib/viewer-time-zone";
 
 function fmtDate(dt: string) {
   return new Date(dt).toLocaleDateString("en-US", {
@@ -39,6 +40,8 @@ export default function SlotPicker({ data, token, apiBase }: Props) {
   const [notice, setNotice] = useState<string | null>(null);
   // Fixed on mount so past slots don't change
   const [now] = useState(() => Date.now());
+  // Times are written only once the candidate's own zone is known, never in the server's.
+  const timeZone = useViewerTimeZone();
 
   const handleConfirm = async () => {
     if (selectedSlot === null) return;
@@ -136,6 +139,7 @@ export default function SlotPicker({ data, token, apiBase }: Props) {
         </h2>
         <p className="mt-1 text-sm text-slate-500 dark:text-neutral-400">
           Select the slot that works best for you.
+          {timeZone && <> Times are in your time zone, {zoneLabel(timeZone)}.</>}
         </p>
 
         {notice && (
@@ -145,7 +149,12 @@ export default function SlotPicker({ data, token, apiBase }: Props) {
         )}
 
         <div className="mt-6 space-y-2.5">
-          {(data.timeSlots ?? []).map((slot, i) => {
+          {!timeZone && (
+            <div className="flex justify-center py-6">
+              <Spinner />
+            </div>
+          )}
+          {timeZone && (data.timeSlots ?? []).map((slot, i) => {
             const isPast = new Date(slot.datetime).getTime() <= now;
             const isTaken = !!slot.taken || takenIndexes.has(i);
             const isActive = selectedSlot === i;

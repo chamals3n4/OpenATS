@@ -7,6 +7,7 @@ import {
 } from "./assessment-execution.service";
 import { assessmentCompletedEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
+import { notificationService } from "../../shared/services/notification.service";
 import { socketService } from "../../shared/services/socket.service";
 import { canViewCandidate } from "../../shared/auth/job-access";
 import { isPastDeadline } from "./grading";
@@ -251,6 +252,10 @@ export const completeAssessment = async (req: Request, res: Response) => {
     socketService.notifyAssessmentProgress({
       candidateId: attempt.candidate.id,
       attemptId: attempt.id,
+    });
+    void notificationService.notifyCandidateTeam({
+      type: "assessment_completed",
+      candidateId: attempt.candidate.id,
     });
 
     const completionContext =

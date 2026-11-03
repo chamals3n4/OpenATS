@@ -22,18 +22,19 @@ export function useInterviews(filters?: Record<string, string | number>) {
   });
 }
 
+/** When one interviewer is already busy: start and end of each upcoming interview. */
 export type AllocatedSlot = {
-  datetime: string;
-  interviewerId: number | null;
+  start: string;
+  end: string;
 };
 
-/** Upcoming interview times, used to mark taken slots */
-export function useAllocatedSlots(enabled = true) {
+/** The chosen interviewer's upcoming interviews, used to mark times that would clash */
+export function useAllocatedSlots(interviewerId: number | null) {
   return useQuery({
-    queryKey: ["interviews", "allocated-slots"],
+    queryKey: ["interviews", "allocated-slots", interviewerId],
     queryFn: () =>
-      clientFetch<{ data: AllocatedSlot[] }>("/interviews/allocated-slots"),
-    enabled,
+      clientFetch<{ data: AllocatedSlot[] }>(`/interviews/allocated-slots?interviewerId=${interviewerId}`),
+    enabled: !!interviewerId,
     staleTime: 1000 * 30,
   });
 }
@@ -62,7 +63,7 @@ export function useUpdateInterview() {
       durationMinutes?: number | null;
       notes?: string | null;
       outcome?: "pending" | "pass" | "fail";
-      status?: "pending_schedule" | "scheduled" | "completed" | "cancelled";
+      status?: "pending_schedule" | "scheduled" | "completed" | "cancelled" | "expired";
       eventName?: string;
       eventType?: "virtual" | "onsite";
       meetingUrl?: string | null;

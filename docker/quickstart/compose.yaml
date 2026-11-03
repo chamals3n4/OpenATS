@@ -1,0 +1,166 @@
+# OpenATS quickstart: everything on this machine, for trying OpenATS out.
+#
+#   docker compose -f oci://ghcr.io/chamals3n4/openats-quickstart:latest up
+#
+# Then open http://localhost:3000 and sign in with the login printed by the "admin" service
+# (`docker compose -p openats-quickstart logs admin` shows it again). Emails are caught by Mailpit at
+# http://localhost:8025, and files are kept in a Docker volume, so nothing needs an account.
+#
+# Not a production setup: every port is open on this machine only (127.0.0.1), there is no HTTPS,
+# and email never leaves Mailpit. See the deployment guide for running OpenATS for real.
+
+name: openats-quickstart
+
+x-backend: &backend
+  image: ghcr.io/chamals3n4/openats-backend:${OPENATS_VERSION:-latest}
+  restart: unless-stopped
+  environment: &backend-env
+    DATABASE_URL: postgresql://openats:openats@postgres:5432/openats
+    REDIS_URL: redis://redis:6379
+    FRONTEND_URL: http://localhost:3000
+    API_PUBLIC_URL: http://localhost:8080
+    AUTH_JWKS_URL: http://web:3000/api/auth/jwks
+    AUTH_ISSUER: http://localhost:3000
+    # Browsers reach the API directly, with no proxy in front.
+    TRUST_PROXY: "false"
+    STORAGE: local
+    SMTP_HOST: mailpit
+    SMTP_PORT: "1025"
+    SMTP_SECURE: "false"
+    SMTP_REQUIRE_TLS: "false"
+    MAIL_FROM: hiring@example.com
+    MAIL_FROM_NAME: OpenATS
+  volumes:
+    - config:/config:ro
+    - files:/data
+
+services:
+  postgres:
+    image: postgres:17
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: openats
+      POSTGRES_PASSWORD: openats
+      POSTGRES_DB: openats
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openats -d openats"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  mailpit:
+    image: axllent/mailpit:v1.31.4
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+
+  # Once per install: this install's own secret keys and first admin password, kept in a volume.
+  config:
+    image: ghcr.io/chamals3n4/openats-backend:${OPENATS_VERSION:-latest}
+    user: "0"
+    volumes:
+      - config:/config
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        if [ ! -f /config/env ]; then
+          node -e '
+            const r = (n) => require("crypto").randomBytes(n).toString("base64");
+            const p = require("crypto").randomBytes(12).toString("base64url");
+            console.log("export ENCRYPTION_KEY=" + r(32));
+            console.log("export BETTER_AUTH_SECRET=" + r(32));
+            console.log("export OPENATS_ADMIN_PASSWORD=" + p);
+          ' > /config/env
+          chmod 644 /config/env
+          echo "Made this install's secret keys."
+        fi
+
+  # Every start: migrations, then the default pipeline stages if there are none.
+  setup:
+    <<: *backend
+    restart: "no"
+    command: ["sh", "-c", ". /config/env && exec node dist/src/db/setup.js"]
+    depends_on:
+      postgres: { condition: service_healthy }
+      config: { condition: service_completed_successfully }
+
+  # Every start: the first super admin, only when there is none, then how to sign in.
+  admin:
+    image: ghcr.io/chamals3n4/openats-web:${OPENATS_VERSION:-latest}
+    restart: "no"
+    environment:
+      DATABASE_URL: postgresql://openats:openats@postgres:5432/openats
+      BETTER_AUTH_URL: http://localhost:3000
+    volumes:
+      - config:/config:ro
+    command:
+      - sh
+      - -c
+      - |
+        set -e
+        . /config/env
+        node frontend/scripts/create-admin.cjs --if-none --email admin@example.com --first-name Admin --last-name User
+        echo ""
+        echo "  OpenATS is starting at http://localhost:3000"
+        echo "  Sign in with admin@example.com and the password: $$OPENATS_ADMIN_PASSWORD"
+        echo "  (that is the first password; change it in Settings. Emails: http://localhost:8025)"
+        echo ""
+    depends_on:
+      setup: { condition: service_completed_successfully }
+
+  api:
+    <<: *backend
+    command: ["sh", "-c", ". /config/env && exec node dist/src/server.js"]
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      redis: { condition: service_healthy }
+      setup: { condition: service_completed_successfully }
+
+  # Reads CVs and runs the other background jobs. Required.
+  worker:
+    <<: *backend
+    command: ["sh", "-c", ". /config/env && exec node dist/src/worker.js"]
+    depends_on:
+      redis: { condition: service_healthy }
+      setup: { condition: service_completed_successfully }
+
+  web:
+    image: ghcr.io/chamals3n4/openats-web:${OPENATS_VERSION:-latest}
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgresql://openats:openats@postgres:5432/openats
+      BETTER_AUTH_URL: http://localhost:3000
+      # The API as this container reaches it, and as the browser does.
+      OPENATS_API_URL: http://api:8080
+      OPENATS_PUBLIC_API_URL: http://localhost:8080
+      SMTP_HOST: mailpit
+      SMTP_PORT: "1025"
+      SMTP_SECURE: "false"
+      SMTP_REQUIRE_TLS: "false"
+      MAIL_FROM: hiring@example.com
+    volumes:
+      - config:/config:ro
+    command: ["sh", "-c", ". /config/env && exec node frontend/server.js"]
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      admin: { condition: service_completed_successfully }
+
+volumes:
+  postgres:
+  config:
+  files:

@@ -1,7 +1,7 @@
+import { serverApiUrl } from "@/lib/api-url";
 import { NextResponse } from "next/server";
 import { getApiToken } from "@/lib/auth/session";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export async function GET(
   _request: Request,
@@ -17,7 +17,7 @@ export async function GET(
     if (!token) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
-    const response = await fetch(`${API_BASE_URL}/api/candidates/${id}/resume`, {
+    const response = await fetch(`${serverApiUrl()}/api/candidates/${id}/resume`, {
       headers: { Authorization: `Bearer ${token}` },
     });
 

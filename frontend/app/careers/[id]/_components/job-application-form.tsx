@@ -1,5 +1,6 @@
 "use client";
 
+import { browserApiUrl } from "@/lib/api-url";
 import { Textarea } from "@/components/ui/textarea";
 import { useRef, useState, FormEvent } from "react";
 import Link from "next/link";
@@ -20,7 +21,6 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import type { JobDetail, CustomQuestion } from "@/types";
 import { formatSalary } from "@/lib/format";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 type PublicFetchError = Error & { code?: string; status?: number };
 
@@ -28,7 +28,7 @@ async function publicFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const res = await fetch(`${API_BASE}/public${path}`, {
+  const res = await fetch(`${browserApiUrl()}/public${path}`, {
     ...options,
     headers: { "Content-Type": "application/json", ...options.headers },
   });
@@ -105,7 +105,7 @@ export function JobApplicationForm({
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch(`${API_BASE}/public/upload/resume`, {
+      const res = await fetch(`${browserApiUrl()}/public/upload/resume`, {
         method: "POST",
         body: form,
       });

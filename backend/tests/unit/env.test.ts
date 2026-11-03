@@ -126,3 +126,32 @@ describe("SMTP", () => {
     expect(envSchema.safeParse(env({ SMTP_SECURE: "yes" })).success).toBe(false);
   });
 });
+
+describe("STORAGE", () => {
+  const withoutR2 = () =>
+    env({
+      R2_ENDPOINT: undefined,
+      R2_ACCESS_KEY_ID: undefined,
+      R2_SECRET_ACCESS_KEY: undefined,
+      R2_BUCKET_NAME: undefined,
+      R2_PRIVATE_BUCKET_NAME: undefined,
+      R2_PUBLIC_URL: undefined,
+    });
+
+  it("needs no R2 settings when files are kept locally", () => {
+    expect(envSchema.safeParse({ ...withoutR2(), STORAGE: "local" }).success).toBe(true);
+  });
+
+  it("still names every missing R2 setting when it is R2, which is the default", () => {
+    const result = envSchema.safeParse(withoutR2());
+    expect(result.success).toBe(false);
+    const missing = result.error!.issues.map((issue) => issue.path[0]);
+    expect(missing).toEqual(
+      expect.arrayContaining(["R2_ENDPOINT", "R2_BUCKET_NAME", "R2_PRIVATE_BUCKET_NAME", "R2_PUBLIC_URL"]),
+    );
+  });
+
+  it("refuses a storage it does not know", () => {
+    expect(envSchema.safeParse(env({ STORAGE: "ftp" })).success).toBe(false);
+  });
+});

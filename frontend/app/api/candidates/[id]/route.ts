@@ -1,7 +1,7 @@
+import { serverApiUrl } from "@/lib/api-url";
 import { NextResponse } from "next/server";
 import { getApiToken } from "@/lib/auth/session";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export async function PATCH(
   req: Request,
@@ -22,7 +22,7 @@ export async function PATCH(
     }
     const formData = await req.formData();
 
-    const res = await fetch(`${API_BASE_URL}/api/candidates/${id}`, {
+    const res = await fetch(`${serverApiUrl()}/api/candidates/${id}`, {
       method: "PATCH",
       headers: {
         Authorization: `Bearer ${token}`,

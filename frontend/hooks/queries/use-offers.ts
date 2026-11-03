@@ -1,3 +1,4 @@
+import { browserApiUrl } from "@/lib/api-url";
 import { useMutation, useQuery, useQueryClient, keepPreviousData } from "@tanstack/react-query";
 import type { Offer, OfferWithRelations, PublicOfferView } from "@/types";
 import { clientFetch } from "@/lib/client-fetch";
@@ -197,12 +198,11 @@ export function useMarkOfferAsHired() {
   });
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export async function fetchPublicOffer(
   token: string,
 ): Promise<PublicOfferView> {
-  const response = await fetch(`${API_BASE}/public/offers/${token}`, {
+  const response = await fetch(`${browserApiUrl()}/public/offers/${token}`, {
     cache: "no-store",
   });
 
@@ -223,11 +223,11 @@ export async function fetchPublicOffer(
 
 /** Mark the offer as viewed. Not on load, since email scanners open links */
 export async function markPublicOfferViewed(token: string): Promise<void> {
-  await fetch(`${API_BASE}/public/offers/${token}/viewed`, { method: "POST" }).catch(() => undefined);
+  await fetch(`${browserApiUrl()}/public/offers/${token}/viewed`, { method: "POST" }).catch(() => undefined);
 }
 
 export async function acceptPublicOffer(token: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/public/offers/${token}/accept`, {
+  const response = await fetch(`${browserApiUrl()}/public/offers/${token}/accept`, {
     method: "POST",
   });
 
@@ -238,7 +238,7 @@ export async function acceptPublicOffer(token: string): Promise<void> {
 }
 
 export async function declinePublicOffer(token: string): Promise<void> {
-  const response = await fetch(`${API_BASE}/public/offers/${token}/decline`, {
+  const response = await fetch(`${browserApiUrl()}/public/offers/${token}/decline`, {
     method: "POST",
   });
 

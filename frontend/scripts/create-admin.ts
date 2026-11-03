@@ -2,6 +2,10 @@
  * Create the first super admin, or promote a user.
  * pnpm --filter ./frontend exec tsx scripts/create-admin.ts --email ada@example.com --first-name Ada --last-name Lovelace
  * Missing values are asked for. The password is never printed
+ *
+ * --if-none: do nothing when a super admin already exists. For the Docker setup step, which runs
+ * on every start. OPENATS_ADMIN_PASSWORD, when set, is used as the password, so it need not be
+ * passed on the command line.
  */
 import path from "node:path";
 import readline from "node:readline";
@@ -71,6 +75,7 @@ async function readInputs() {
       "first-name": { type: "string" },
       "last-name": { type: "string" },
       password: { type: "string" },
+      "if-none": { type: "boolean" },
     },
   });
 
@@ -83,7 +88,7 @@ async function readInputs() {
   const lastName = (values["last-name"] ?? (await ask("Last name: "))).trim();
   if (!firstName || !lastName) fail("First name and last name are required.");
 
-  let password = values.password;
+  let password = values.password ?? process.env.OPENATS_ADMIN_PASSWORD;
   if (password === undefined) {
     password = await ask(`Password (${PASSWORD_RULE.toLowerCase()}): `, {
       hidden: true,
@@ -113,6 +118,16 @@ async function main() {
         .map((issue) => `  - ${issue}`)
         .join("\n")}\n\nCheck frontend/.env against frontend/.env.example.`,
     );
+  }
+
+  if (parseArgs({ options: { "if-none": { type: "boolean" } }, strict: false }).values["if-none"]) {
+    const { pool } = await import("../lib/auth/db");
+    const admins = await pool.query("select 1 from users where role = 'super_admin' limit 1");
+    if (admins.rows.length > 0) {
+      console.log("A super admin already exists, so none was created.");
+      await pool.end();
+      return;
+    }
   }
 
   const { email, firstName, lastName, password } = await readInputs();

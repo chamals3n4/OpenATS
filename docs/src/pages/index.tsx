@@ -73,8 +73,8 @@ const stack = [
 const QUICKSTART = {
   docker: {
     label: 'Docker',
-    note: 'Needs Docker and a .env file filled in from .env.example.',
-    lines: ['docker pull ghcr.io/chamals3n4/openats', 'docker run -d -p 3000:3000 \\', '  --env-file .env ghcr.io/chamals3n4/openats'],
+    note: 'Needs only Docker. Then open http://localhost:3000 and sign in with the login it prints.',
+    lines: ['docker compose -f \\', '  oci://ghcr.io/chamals3n4/openats-quickstart:latest up'],
   },
   source: {
     label: 'From source',

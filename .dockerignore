@@ -1,0 +1,19 @@
+# Rebuilt inside the image, and the host's may be for another platform
+**/node_modules
+**/dist
+**/.next
+**/build
+**/.docusaurus
+**/coverage
+**/test-results
+**/playwright-report
+
+# Never put secrets in an image
+**/.env
+**/.env.*
+!**/.env.example
+
+.git
+docs
+e2e
+**/tests

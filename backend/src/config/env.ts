@@ -39,6 +39,15 @@ export function parseTrustProxy(value: string | undefined): number | false | str
   return addresses.length > 0 && addresses.every(looksLikeAddress) ? addresses : null;
 }
 
+const R2_REQUIRED = [
+  "R2_ENDPOINT",
+  "R2_ACCESS_KEY_ID",
+  "R2_SECRET_ACCESS_KEY",
+  "R2_BUCKET_NAME",
+  "R2_PRIVATE_BUCKET_NAME",
+  "R2_PUBLIC_URL",
+] as const;
+
 export const envSchema = z.object({
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   REDIS_URL: z.string().min(1).default("redis://localhost:6379"),
@@ -64,13 +73,21 @@ export const envSchema = z.object({
       "FRONTEND_URL must be the full address of the site, for example https://careers.example.com",
     ),
 
-  R2_ENDPOINT: z.string().min(1, "R2_ENDPOINT is required"),
-  R2_ACCESS_KEY_ID: z.string().min(1, "R2_ACCESS_KEY_ID is required"),
-  R2_SECRET_ACCESS_KEY: z.string().min(1, "R2_SECRET_ACCESS_KEY is required"),
-  R2_BUCKET_NAME: z.string().min(1, "R2_BUCKET_NAME is required"),
+  // Where CVs and logos are kept: "r2" (the default) is any S3-compatible storage set up with the
+  // R2_* values below; "local" is a folder on this server (STORAGE_DIR), as in the Docker quickstart.
+  STORAGE: z.enum(["r2", "local"]).default("r2"),
+  STORAGE_DIR: z.string().optional(),
+  // This API's own public address, for logo links when STORAGE is local. Defaults to localhost.
+  API_PUBLIC_URL: z.string().url("API_PUBLIC_URL must be a full address, for example https://api.example.com").optional(),
+
+  // Required unless STORAGE is local (checked below).
+  R2_ENDPOINT: z.string().optional(),
+  R2_ACCESS_KEY_ID: z.string().optional(),
+  R2_SECRET_ACCESS_KEY: z.string().optional(),
+  R2_BUCKET_NAME: z.string().optional(),
   // CVs. This bucket must have no public access; see r2.service.ts.
-  R2_PRIVATE_BUCKET_NAME: z.string().min(1, "R2_PRIVATE_BUCKET_NAME is required"),
-  R2_PUBLIC_URL: z.string().min(1, "R2_PUBLIC_URL is required"),
+  R2_PRIVATE_BUCKET_NAME: z.string().optional(),
+  R2_PUBLIC_URL: z.string().optional(),
 
   // Any SMTP server: Mailpit locally, or Resend, Gmail, SES and others (see backend/.env.example)
   SMTP_HOST: z.string().min(1, "SMTP_HOST is required"),
@@ -98,6 +115,11 @@ export const envSchema = z.object({
   RUN_WORKER_IN_API: z.enum(["true", "false"]).optional(),
 
   PORT: z.coerce.number().int().positive().default(8080),
+}).superRefine((env, ctx) => {
+  if (env.STORAGE === "local") return;
+  for (const key of R2_REQUIRED) {
+    if (!env[key]) ctx.addIssue({ code: z.ZodIssueCode.custom, path: [key], message: `${key} is required` });
+  }
 });
 
 export type Env = z.infer<typeof envSchema>;

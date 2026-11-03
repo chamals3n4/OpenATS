@@ -249,4 +249,4 @@ Before you invite anyone, run through this list:
 5. Open the candidate. Their **CV Summary** tab should fill in within a few seconds.
 6. Check the application email in Mailpit.
 
-Test any optional features one at a time, so if something breaks you'll know which one caused it. If you hit a problem, see [Troubleshooting](troubleshooting). Ready to go live? See [Deploy to Production](deployment).
+Test any optional features one at a time, so if something breaks you'll know which one caused it. If you hit a problem, see [Troubleshooting](troubleshooting). Ready to go live? See [Deployment](../deployment).

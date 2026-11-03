@@ -472,7 +472,7 @@ No. Scores are only for your team.
 
 ## For administrators
 
-Scoring needs one database change, which is applied with the normal migration command described in the [deployment guide](../getting-started/deployment#update-to-a-new-version). After you upgrade an installation that already has candidates, run the **score backfill** once so that earlier candidates get scores calculated with the current rules:
+Scoring needs one database change, which is applied with the normal migration command described in the [deployment guide](../deployment/own-server#update-to-a-new-version). After you upgrade an installation that already has candidates, run the **score backfill** once so that earlier candidates get scores calculated with the current rules:
 
 ```bash
 cd backend

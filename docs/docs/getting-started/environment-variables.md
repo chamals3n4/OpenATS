@@ -24,7 +24,7 @@ These go in `backend/.env`, and both the API and the worker read them.
 | `REDIS_URL` | No | Your Redis connection. Defaults to `redis://localhost:6379` |
 | `FRONTEND_URL` | Yes | The address people use to open OpenATS. Every link in a candidate email starts with this, so in production it must be your public address |
 | `PORT` | No | The API's port. Defaults to `8080` |
-| `TRUST_PROXY` | No | How many proxies sit in front of the API. Defaults to `1`. See [Deploy to Production](./deployment#tell-the-api-about-your-proxy) |
+| `TRUST_PROXY` | No | How many proxies sit in front of the API. Defaults to `1`. See [Your Own Server](../deployment/own-server#tell-the-api-about-your-proxy) |
 | `RUN_WORKER_IN_API` | No | Set to `true` to run the background worker inside the API, for hosting without a second service |
 
 ### Sign-in

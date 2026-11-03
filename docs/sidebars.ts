@@ -16,7 +16,13 @@ const sidebars: SidebarsConfig = {
   // By default, Docusaurus generates a sidebar from the docs folder structure
   tutorialSidebar: [
     {type: 'doc', id: 'intro', label: 'What Is OpenATS?'},
-    {type: 'category', label: 'Get Started', items: ['getting-started/make-setup', {type: 'doc', id: 'getting-started/quick-start', label: 'Manual Setup'}, 'getting-started/environment-variables', 'getting-started/deployment', 'getting-started/troubleshooting', 'administration/authentication']},
+    {type: 'category', label: 'Get Started', items: ['getting-started/make-setup', {type: 'doc', id: 'getting-started/quick-start', label: 'Manual Setup'}, 'getting-started/environment-variables', 'getting-started/troubleshooting', 'administration/authentication']},
+    {
+      type: 'category',
+      label: 'Deployment',
+      link: {type: 'doc', id: 'deployment/index'},
+      items: ['deployment/render', 'deployment/vercel-frontend', 'deployment/own-server'],
+    },
     {
       type: 'category',
       label: 'Using OpenATS',

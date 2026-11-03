@@ -8,7 +8,7 @@ keywords: [install OpenATS, self-hosted ATS setup, open source applicant trackin
 
 This is the fastest way to get OpenATS running on your own computer. One command does most of the work, and you'll need to add your storage details by hand. Allow about 15 minutes.
 
-Want to put OpenATS on a server for your team? Do this first so you know how it fits together, then follow [Deploy to Production](./deployment).
+Want to put OpenATS on a server for your team? Do this first so you know how it fits together, then pick a guide under [Deployment](../deployment).
 
 ## Before you start
 

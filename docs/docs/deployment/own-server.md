@@ -1,13 +1,13 @@
 ---
-title: Deploy OpenATS to Production
-sidebar_label: Deploy to Production
+title: Deploy OpenATS on Your Own Server
+sidebar_label: Your Own Server
 description: Run OpenATS on your own server. Set up the database, build the app, keep the API, worker and website running, and add HTTPS, backups and updates.
 keywords: [deploy applicant tracking system, self-host OpenATS, ATS production setup, Nginx reverse proxy, PostgreSQL backup]
 ---
 
-# Deploy OpenATS to Production
+# Deploy OpenATS on Your Own Server
 
-This guide puts OpenATS on a server so your team and candidates can reach it. It uses a single Linux server, which is plenty for most teams. If you haven't tried OpenATS yet, run it on your own computer with the [Quick Start](./make-setup) first.
+This guide puts OpenATS on one server you control, such as a VPS from DigitalOcean, Hetzner or AWS. One server is plenty for most teams. If you would rather not manage a server, see [Deploy on Render](./render). If you haven't tried OpenATS yet, run it on your own computer with the [Quick Start](../getting-started/make-setup) first.
 
 There's no official Docker image for the app yet, so you'll build it from the source code.
 
@@ -48,7 +48,7 @@ cp backend/.env.example backend/.env
 cp frontend/.env.example frontend/.env
 ```
 
-Fill in both files. [Environment Variables](./environment-variables) explains every value, and [its last section](./environment-variables#addresses-that-must-match) shows how your addresses should line up.
+Fill in both files. [Environment Variables](../getting-started/environment-variables) explains every value, and [its last section](../getting-started/environment-variables#addresses-that-must-match) shows how your addresses should line up.
 
 Create your two secrets:
 
@@ -208,9 +208,9 @@ Always run the migration before restarting, so the new code doesn't start agains
 
 ## Optional features
 
-- **Google Calendar and Meet:** follow [these steps](./quick-start#9-connect-google-calendar-and-meet-optional), using your public API address for the redirect. People then connect their own accounts in **Settings > Integrations**.
-- **AI CV analysis:** follow [these steps](./quick-start#8-set-up-ai-cv-analysis-optional). Remember this sends CVs to Google.
+- **Google Calendar and Meet:** follow [these steps](../getting-started/quick-start#9-connect-google-calendar-and-meet-optional), using your public API address for the redirect. People then connect their own accounts in **Settings > Integrations**.
+- **AI CV analysis:** follow [these steps](../getting-started/quick-start#8-set-up-ai-cv-analysis-optional). Remember this sends CVs to Google.
 
 Each CV is read with a 30 second limit. A file that takes longer is marked as unreadable, so one bad PDF can't hold up the rest.
 
-Something not working? Try [Troubleshooting](./troubleshooting).
+Something not working? Try [Troubleshooting](../getting-started/troubleshooting).

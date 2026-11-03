@@ -50,4 +50,4 @@ docker compose -p openats-quickstart down --volumes
 
 ## Before using it for real
 
-The quickstart is for trying OpenATS out. It has no HTTPS, it sends email only to Mailpit, and it is reachable on `localhost` only. To run OpenATS for your team, follow [Deploy to Production](./deployment.md).
+The quickstart is for trying OpenATS out. It has no HTTPS, it sends email only to Mailpit, and it is reachable on `localhost` only. To run OpenATS for your team, pick a guide under [Deployment](../deployment).

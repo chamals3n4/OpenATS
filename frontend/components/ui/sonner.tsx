@@ -36,14 +36,14 @@ const Toaster = ({ ...props }: ToasterProps) => {
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--border-radius": "var(--radius)",
-          "--width": "320px",
+          "--width": "380px",
         } as React.CSSProperties
       }
       toastOptions={{
         duration: 2500,
         // A solid colour for each kind, so the state reads at a glance
         classNames: {
-          toast: "cn-toast group/toast !rounded-full !px-4 !py-2.5 !text-sm !shadow-md",
+          toast: "cn-toast group/toast !rounded-2xl !px-4 !py-2.5 !text-sm !shadow-md",
           title: "!font-medium",
           success: "!border-emerald-700 !bg-emerald-600 !text-white",
           error: "!border-red-700 !bg-red-600 !text-white",

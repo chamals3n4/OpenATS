@@ -99,7 +99,7 @@ function Quickstart(): ReactNode {
   return (
     <div className={styles.quickstart}>
       <div className={styles.quickstartHead}>
-        <p className={styles.quickstartTitle}>Get OpenATS on your own server</p>
+        <p className={styles.quickstartTitle}>Up and running in minutes</p>
         <span className={styles.quickstartMeta}>Apache 2.0</span>
       </div>
       <div className={styles.tabRow}>

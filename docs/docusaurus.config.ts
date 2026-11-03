@@ -83,14 +83,18 @@ const config: Config = {
   ],
 
   themeConfig: {
-    image: 'img/brand/openats-logo.png',
+    // Social preview for links shared on X, LinkedIn, Slack and others (1200x630)
+    image: 'img/social-card.png',
     metadata: [
       {name: 'keywords', content: 'open source applicant tracking system, ATS, recruitment software, hiring platform, candidate tracking, interview management'},
       {name: 'author', content: 'OpenATS contributors'},
       {name: 'robots', content: 'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1'},
       {property: 'og:site_name', content: 'OpenATS'},
       {property: 'og:type', content: 'website'},
-      {property: 'og:image:alt', content: 'OpenATS open-source hiring platform'},
+      {property: 'og:image:width', content: '1200'},
+      {property: 'og:image:height', content: '630'},
+      {property: 'og:image:alt', content: 'OpenATS, the open-source applicant tracking system you host yourself'},
+      {name: 'twitter:image:alt', content: 'OpenATS, the open-source applicant tracking system you host yourself'},
       {name: 'twitter:card', content: 'summary_large_image'},
       {name: 'theme-color', content: '#1f6870'},
     ],

@@ -81,6 +81,9 @@ export function useCandidateSocket() {
       (data: { interviewId: number; candidateId: number }) => {
         queryClient.invalidateQueries({ queryKey: ["interviews"] });
         candidateChanged(data.candidateId);
+        // The candidate's interviews come with the candidate, and a candidate picking a time
+        // happens while the team may be looking at it, so refetch it if it is on screen.
+        queryClient.invalidateQueries({ queryKey: ["candidates", data.candidateId], exact: true });
       },
     );
 

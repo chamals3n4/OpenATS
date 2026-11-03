@@ -197,9 +197,7 @@ function SchedulerForm({
         }),
       });
       toast.success(
-        fixed
-          ? `Interview booked. ${candidateName} has been sent the details.`
-          : `Interview scheduled. ${candidateName} has been emailed to pick a time.`,
+        fixed ? `Interview booked with ${candidateName}` : `Times sent to ${candidateName}`,
       );
       onSuccess?.();
       onClose();

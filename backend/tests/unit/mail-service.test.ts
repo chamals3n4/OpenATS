@@ -72,4 +72,13 @@ describe("mustStartTls", () => {
     expect(mustStartTls("127.0.0.1", false)).toBe(false);
     expect(mustStartTls("::1", false)).toBe(false);
   });
+
+  it("follows SMTP_REQUIRE_TLS when it is set, such as for Mailpit by name in Docker", async () => {
+    const { mustStartTls } = await import("../../src/shared/services/mail.service");
+    expect(mustStartTls("mailpit", false, "false")).toBe(false);
+    expect(mustStartTls("localhost", false, "true")).toBe(true);
+    // Already encrypted: nothing to upgrade either way.
+    expect(mustStartTls("smtp.example.test", true, "true")).toBe(false);
+    expect(mustStartTls("mailpit", false, undefined)).toBe(true);
+  });
 });

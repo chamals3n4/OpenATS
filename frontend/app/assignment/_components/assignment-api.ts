@@ -1,6 +1,6 @@
+import { browserApiUrl } from "@/lib/api-url";
 import type { AssignmentResource, AssignmentStatus, SubmissionField } from "@/types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export interface PublicAssignment {
   title: string;
@@ -28,7 +28,7 @@ export class ApiError extends Error {
 async function apiFetch<T>(path: string, options: RequestInit = {}): Promise<T> {
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}/public${path}`, {
+    res = await fetch(`${browserApiUrl()}/public${path}`, {
       ...options,
       headers: { "Content-Type": "application/json", ...options.headers },
     });

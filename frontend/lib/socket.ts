@@ -1,8 +1,8 @@
 "use client";
+import { browserApiUrl } from "@/lib/api-url";
 
 import { io, type Socket } from "socket.io-client";
 
-const SOCKET_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 // Stop after this many auth failures
 const MAX_AUTH_RETRIES = 3;
@@ -24,7 +24,7 @@ export function createAuthedSocket(fallbackToken?: string): Socket {
   let authRetries = 0;
   let retryTimer: ReturnType<typeof setTimeout> | undefined;
 
-  const socket = io(SOCKET_URL, {
+  const socket = io(browserApiUrl(), {
     transports: ["websocket"],
     auth: (cb: (data: { token: string | undefined }) => void) => {
       // First attempt reuses the server-rendered token.

@@ -1,13 +1,13 @@
+import { browserApiUrl, serverApiUrl } from "@/lib/api-url";
 import { notFound } from "next/navigation";
 import AlreadyScheduled from "../_components/already-scheduled";
 import SlotPicker from "../_components/slot-picker";
 import { InterviewData } from "../types";
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 async function getInterview(token: string): Promise<InterviewData | null> {
   try {
-    const res = await fetch(`${API_BASE}/public/interview/${token}`, {
+    const res = await fetch(`${serverApiUrl()}/public/interview/${token}`, {
       cache: "no-store",
     });
     const json = await res.json();
@@ -34,5 +34,5 @@ export default async function PublicInterviewPage({
     return <AlreadyScheduled timeSlots={data.timeSlots} />;
   }
 
-  return <SlotPicker data={data} token={token} apiBase={API_BASE} />;
+  return <SlotPicker data={data} token={token} apiBase={browserApiUrl()} />;
 }

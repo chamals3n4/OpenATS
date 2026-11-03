@@ -6,16 +6,32 @@ import {
 } from "@aws-sdk/client-s3";
 import crypto from "crypto";
 import logger from "../../utils/logger";
+import { localStorage } from "./local-storage";
 
-const r2Client = new S3Client({
-  region: "us-east-1",
-  endpoint: process.env.R2_ENDPOINT!,
-  credentials: {
-    accessKeyId: process.env.R2_ACCESS_KEY_ID!,
-    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
-  },
-  forcePathStyle: true,
-});
+// STORAGE=local keeps files in a folder on this server instead (local-storage.ts), as in the
+// Docker quickstart. Everything else here behaves the same either way.
+const isLocal = () => process.env.STORAGE === "local";
+
+// Created on first use, so a server that keeps files locally never needs the R2 settings.
+let client: S3Client | null = null;
+function r2Client(): S3Client {
+  client ??= new S3Client({
+    region: "us-east-1",
+    endpoint: process.env.R2_ENDPOINT!,
+    credentials: {
+      accessKeyId: process.env.R2_ACCESS_KEY_ID!,
+      secretAccessKey: process.env.R2_SECRET_ACCESS_KEY!,
+    },
+    forcePathStyle: true,
+  });
+  return client;
+}
+
+/** Where logos are served from when files are kept locally: this API's public address. */
+function localLogoUrl(name: string): string {
+  const base = (process.env.API_PUBLIC_URL || `http://localhost:${process.env.PORT || 8080}`).replace(/\/+$/, "");
+  return `${base}/public/files/logos/${name}`;
+}
 
 // Two buckets. Logos are shown on the careers page and in emails, so they live in a bucket anyone
 // can read. CVs hold personal data: their bucket has no public access at all, and a CV only leaves
@@ -40,7 +56,7 @@ async function put(
   inline: boolean,
 ): Promise<void> {
   try {
-    await r2Client.send(
+    await r2Client().send(
       new PutObjectCommand({
         Bucket: bucket,
         Key: key,
@@ -56,9 +72,14 @@ async function put(
 }
 
 export const r2Service = {
-  /** Stores a logo in the public bucket and returns its public URL. */
+  /** Stores a logo in the public bucket (or the local folder) and returns its public URL. */
   async uploadLogo(file: Express.Multer.File): Promise<string> {
-    const key = `logos/${crypto.randomUUID()}${EXT_BY_MIME[file.mimetype] ?? ""}`;
+    const name = `${crypto.randomUUID()}${EXT_BY_MIME[file.mimetype] ?? ""}`;
+    if (isLocal()) {
+      await localStorage.putLogo(name, file.buffer);
+      return localLogoUrl(name);
+    }
+    const key = `logos/${name}`;
 
     // Raster logos render in the UI. SVGs and all other file types remain
     // downloads so uploaded executable markup can never be opened inline.
@@ -78,14 +99,16 @@ export const r2Service = {
    */
   async uploadResume(file: Express.Multer.File): Promise<string> {
     const key = `resumes/${crypto.randomUUID()}.pdf`;
-    await put(privateBucket(), key, file, true);
+    if (isLocal()) await localStorage.putResume(key, file.buffer);
+    else await put(privateBucket(), key, file, true);
     return key;
   },
 
   /** The stored CV's bytes. Null when there is no such file. */
   async getResume(key: string): Promise<Buffer | null> {
+    if (isLocal()) return localStorage.getResume(key);
     try {
-      const result = await r2Client.send(
+      const result = await r2Client().send(
         new GetObjectCommand({ Bucket: privateBucket(), Key: key }),
       );
       if (!result.Body) return null;
@@ -98,6 +121,7 @@ export const r2Service = {
   },
 
   async deleteResume(key: string): Promise<void> {
-    await r2Client.send(new DeleteObjectCommand({ Bucket: privateBucket(), Key: key }));
+    if (isLocal()) return localStorage.deleteResume(key);
+    await r2Client().send(new DeleteObjectCommand({ Bucket: privateBucket(), Key: key }));
   },
 };

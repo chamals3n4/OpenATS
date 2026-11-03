@@ -1,7 +1,7 @@
+import { serverApiUrl } from "@/lib/api-url";
 import { NextResponse } from "next/server";
 import { getApiToken } from "@/lib/auth/session";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 export async function POST(req: Request) {
   try {
@@ -11,7 +11,7 @@ export async function POST(req: Request) {
     }
     const formData = await req.formData();
 
-    const res = await fetch(`${API_BASE_URL}/api/upload/logo`, {
+    const res = await fetch(`${serverApiUrl()}/api/upload/logo`, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formData,

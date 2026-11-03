@@ -15,8 +15,17 @@ let transport: Transporter | null = null;
 const LOCAL_HOSTS = new Set(["localhost", "127.0.0.1", "::1"]);
 
 /** Whether to refuse sending unless the server upgrades the connection with STARTTLS. */
-export function mustStartTls(host: string | undefined, secure: boolean): boolean {
-  return !secure && !LOCAL_HOSTS.has((host ?? "").toLowerCase());
+export function mustStartTls(
+  host: string | undefined,
+  secure: boolean,
+  // SMTP_REQUIRE_TLS=false allows an unencrypted server by name, such as Mailpit at "mailpit" in
+  // Docker Compose; true always requires it. Unset, only this machine is exempt.
+  requireTls: string | undefined = process.env.SMTP_REQUIRE_TLS,
+): boolean {
+  if (secure) return false;
+  if (requireTls === "false") return false;
+  if (requireTls === "true") return true;
+  return !LOCAL_HOSTS.has((host ?? "").toLowerCase());
 }
 
 // Created on first use, so the settings are read after the environment is loaded

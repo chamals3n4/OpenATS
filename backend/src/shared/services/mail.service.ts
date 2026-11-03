@@ -54,20 +54,47 @@ function sender() {
   return { name: process.env.MAIL_FROM_NAME || "OpenATS", address: process.env.MAIL_FROM ?? "" };
 }
 
+/** Codes Nodemailer gives a connection that failed or timed out, which a second try may get past. */
+const TRANSIENT_CODES = new Set(["ETIMEDOUT", "ECONNECTION", "ESOCKET", "ECONNRESET", "ECONNREFUSED", "EDNS"]);
+
+/**
+ * Whether trying again could work: the connection failed or timed out (such as "Greeting never
+ * received"), or the server answered with a 4xx code, which SMTP means as "try again later".
+ * A refused address, a bad login or a rejected message (5xx) would fail the same way again.
+ */
+export function isTransientMailError(err: unknown): boolean {
+  if (!err || typeof err !== "object") return false;
+  const { code, responseCode } = err as { code?: unknown; responseCode?: unknown };
+  if (typeof responseCode === "number") return responseCode >= 400 && responseCode < 500;
+  return typeof code === "string" && TRANSIENT_CODES.has(code);
+}
+
+/** How long to wait before the one retry. Short, because some callers wait for the result. */
+const RETRY_DELAY_MS = 2_000;
+
 export const mailService = {
+  /** Sends, and tries once more after a short wait when the failure looks temporary. */
   async sendEmail({ to, subject, html, replyTo }: SendEmailOptions) {
+    const message = { from: sender(), to, subject, html, ...(replyTo ? { replyTo } : {}) };
     try {
-      const info = await getTransport().sendMail({
-        from: sender(),
-        to,
-        subject,
-        html,
-        ...(replyTo ? { replyTo } : {}),
-      });
+      const info = await getTransport().sendMail(message);
       return { id: info.messageId };
-    } catch (err) {
-      logger.error(`Failed to send email: ${err instanceof Error ? err.message : String(err)}`);
-      throw err;
+    } catch (first) {
+      if (!isTransientMailError(first)) {
+        logger.error(`Failed to send email: ${first instanceof Error ? first.message : String(first)}`);
+        throw first;
+      }
+      logger.warn(
+        `Sending an email failed (${first instanceof Error ? first.message : String(first)}), trying again`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS));
+      try {
+        const info = await getTransport().sendMail(message);
+        return { id: info.messageId };
+      } catch (err) {
+        logger.error(`Failed to send email after a retry: ${err instanceof Error ? err.message : String(err)}`);
+        throw err;
+      }
     }
   },
 

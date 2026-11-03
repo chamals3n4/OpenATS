@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useSocketToken } from "@/components/providers/socket-auth-provider";
 import { boardKey } from "@/hooks/queries/use-candidates";
+import { NOTIFICATIONS_KEY } from "@/hooks/queries/use-notifications";
 import { createAuthedSocket } from "@/lib/socket";
 
 export function useCandidateSocket() {
@@ -93,6 +94,11 @@ export function useCandidateSocket() {
         candidateChanged(data.candidateId);
       },
     );
+
+    // Something new in this user's own list: the server only says that, the list is fetched.
+    socket.on("notifications_changed", () => {
+      queryClient.invalidateQueries({ queryKey: NOTIFICATIONS_KEY });
+    });
 
     socket.on("assignment_submitted", (data: { candidateId: number }) => {
       queryClient.invalidateQueries({ queryKey: ["candidate-assignments", data.candidateId] });

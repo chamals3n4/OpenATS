@@ -11,7 +11,7 @@ const time = (i: CandidateInterview) =>
   i.scheduledAt ? new Date(i.scheduledAt).getTime() : null;
 
 export function isUpcoming(interview: CandidateInterview, now: number) {
-  if (interview.status === "completed" || interview.status === "cancelled") return false;
+  if (interview.status === "completed" || interview.status === "cancelled" || interview.status === "expired") return false;
   if (interview.status === "pending_schedule") return true;
   const at = time(interview);
   return at === null || at >= now;

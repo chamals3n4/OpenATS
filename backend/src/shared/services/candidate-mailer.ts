@@ -1,7 +1,9 @@
 import { db } from "../../db";
-import { company, emailMessages } from "../../db/schema";
+import { eq } from "drizzle-orm";
+import { candidates, company, emailMessages } from "../../db/schema";
 import logger from "../../utils/logger";
 import { mailService } from "./mail.service";
+import { notificationService } from "./notification.service";
 import { getSystemEmailContent, type SystemEmailPurpose } from "./system-emails";
 import { DEFAULT_TIME_ZONE } from "./time-zone";
 
@@ -104,5 +106,29 @@ export async function sendCandidateEmail(input: CandidateEmailInput): Promise<Ca
     );
   }
 
+  if (error) {
+    // Someone must find out, or the candidate silently never hears from us: the person who sent
+    // it, or for an email the system sent by itself, the job's hiring team.
+    if (input.sentBy) {
+      void notifyEmailFailed(input.candidateId, input.sentBy);
+    } else {
+      void notificationService.notifyCandidateTeam({ type: "email_failed", candidateId: input.candidateId });
+    }
+  }
+
   return error ? { sent: false, messageId, error } : { sent: true, messageId };
+}
+
+async function notifyEmailFailed(candidateId: number, userId: number) {
+  try {
+    const [row] = await db
+      .select({ jobId: candidates.jobId })
+      .from(candidates)
+      .where(eq(candidates.id, candidateId));
+    if (row) {
+      await notificationService.notifyPeople({ type: "email_failed", jobId: row.jobId, candidateId, userIds: [userId] });
+    }
+  } catch (err) {
+    logger.error(`Could not record a failed-email notification for candidate ${candidateId}: ${err instanceof Error ? err.message : err}`);
+  }
 }

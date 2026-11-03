@@ -1029,5 +1029,3 @@ export const candidateService = {
     return deleted.map(({ id, jobId: deletedJobId }) => ({ id, jobId: deletedJobId }));
   },
 };
-
-//TODO: implement kafka

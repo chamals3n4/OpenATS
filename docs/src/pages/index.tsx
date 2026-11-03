@@ -73,8 +73,8 @@ const stack = [
 const QUICKSTART = {
   docker: {
     label: 'Docker',
-    note: 'Needs Docker and a .env file filled in from .env.example.',
-    lines: ['docker pull ghcr.io/chamals3n4/openats', 'docker run -d -p 3000:3000 \\', '  --env-file .env ghcr.io/chamals3n4/openats'],
+    note: 'Needs only Docker. Then open http://localhost:3000 and sign in with the login it prints.',
+    lines: ['docker compose -f \\', '  oci://ghcr.io/chamals3n4/openats-quickstart:latest up'],
   },
   source: {
     label: 'From source',
@@ -99,7 +99,7 @@ function Quickstart(): ReactNode {
   return (
     <div className={styles.quickstart}>
       <div className={styles.quickstartHead}>
-        <p className={styles.quickstartTitle}>Get OpenATS on your own server</p>
+        <p className={styles.quickstartTitle}>Up and running in minutes</p>
         <span className={styles.quickstartMeta}>Apache 2.0</span>
       </div>
       <div className={styles.tabRow}>

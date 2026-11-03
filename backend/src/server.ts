@@ -11,6 +11,7 @@ import { assessmentExecutionService } from "./modules/assessment-execution/asses
 import { assignmentService } from "./modules/assignment/assignment.service";
 import { resumeUploadService } from "./modules/upload/resume-upload.service";
 import { offerService } from "./modules/offer/offer.service";
+import { interviewService } from "./modules/interview/interview.service";
 import { startAllWorkers } from "./queues/start-workers";
 import { mailService } from "./shared/services/mail.service";
 import logger from "./utils/logger";
@@ -62,6 +63,16 @@ const expireOverdueOffers = () =>
     .catch((error) => logger.error(`Offer expiry check failed: ${error instanceof Error ? error.message : String(error)}`));
 setInterval(expireOverdueOffers, EXPIRY_CHECK_MS).unref();
 
+// An interview whose time-picking link ran out before the candidate chose a time.
+const expireInterviewSlotLinks = () =>
+  interviewService
+    .expireStaleSlotLinks()
+    .then((count) => {
+      if (count > 0) logger.info(`Marked ${count} interview(s) expired: the candidate did not pick a time`);
+    })
+    .catch((error) => logger.error(`Interview link expiry check failed: ${error instanceof Error ? error.message : String(error)}`));
+setInterval(expireInterviewSlotLinks, EXPIRY_CHECK_MS).unref();
+
 // A CV uploaded on the careers page by someone who never sent the application.
 const removeUnusedResumeUploads = () =>
   resumeUploadService
@@ -91,6 +102,7 @@ server.listen(PORT, () => {
   void removeUnusedResumeUploads();
   void expireOverdueOffers();
   void expireOverdueAssignments();
+  void expireInterviewSlotLinks();
   void mailService.verify();
   logger.info(`OpenATS Backend running on port ${PORT}`);
   logger.info(`Socket.io initialized and listening on the same port.`);

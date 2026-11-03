@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
@@ -8,92 +8,25 @@ import {
   Clock01Icon,
   Notification03Icon,
   Quiz03Icon,
+  MailRemove01Icon,
+  TaskDone01Icon,
   TelegramIcon,
   UserAdd01Icon,
 } from "@hugeicons/core-free-icons";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-
-type NotificationKind = "application" | "interview" | "assessment" | "offer" | "waiting";
-
-interface NotificationItem {
-  id: number;
-  kind: NotificationKind;
-  title: string;
-  detail: string;
-  /** Already worded for the list: "5 min ago", "Yesterday". */
-  when: string;
-  href: string;
-  unread: boolean;
-}
+import { useMarkNotificationsRead, useNotifications } from "@/hooks/queries/use-notifications";
+import { describeNotification, type NotificationKind } from "@/lib/notifications";
+import { timeAgo } from "@/lib/format";
 
 const ICONS: Record<NotificationKind, typeof Notification03Icon> = {
   application: UserAdd01Icon,
   interview: Calendar03Icon,
   assessment: Quiz03Icon,
+  assignment: TaskDone01Icon,
   offer: TelegramIcon,
   waiting: Clock01Icon,
+  email: MailRemove01Icon,
 };
-
-/** MOCK DATA. Notifications are not built yet */
-const SAMPLE_NOTIFICATIONS: NotificationItem[] = [
-  {
-    id: 1,
-    kind: "application",
-    title: "New application",
-    detail: "Nimal Fernando applied for Senior Software Engineer.",
-    when: "5 min ago",
-    href: "/candidates",
-    unread: true,
-  },
-  {
-    id: 2,
-    kind: "interview",
-    title: "Interview time confirmed",
-    detail: "Ayesha Perera picked Thursday, 10:00 AM for the technical interview.",
-    when: "1 hr ago",
-    href: "/interviews",
-    unread: true,
-  },
-  {
-    id: 3,
-    kind: "assessment",
-    title: "Assessment completed",
-    detail: "Kasun Silva finished the Backend Developer Skills Test. One answer needs grading.",
-    when: "3 hr ago",
-    href: "/assessments",
-    unread: true,
-  },
-  {
-    id: 4,
-    kind: "offer",
-    title: "Offer accepted",
-    detail: "Dilani Jayasuriya accepted the offer for Product Designer.",
-    when: "Yesterday",
-    href: "/offers",
-    unread: false,
-  },
-  {
-    id: 5,
-    kind: "waiting",
-    title: "Waiting 7 days in a stage",
-    detail: "Three candidates for Software Engineering Intern are still in Screening.",
-    when: "2 days ago",
-    href: "/jobs",
-    unread: false,
-  },
-  {
-    id: 6,
-    kind: "application",
-    title: "New application",
-    detail: "Ruwan Bandara applied for QA Engineer.",
-    when: "3 days ago",
-    href: "/candidates",
-    unread: false,
-  },
-];
-
-/** The list only holds examples, so the bell must not report them as unread */
-const EXAMPLES_ONLY = true;
 
 /** How many are listed before "Show more" is pressed. */
 const FIRST_SHOWN = 4;
@@ -103,16 +36,25 @@ export function NotificationsPanel() {
   const [open, setOpen] = useState(false);
   const [onlyUnread, setOnlyUnread] = useState(false);
   const [expanded, setExpanded] = useState(false);
-  const [items, setItems] = useState(SAMPLE_NOTIFICATIONS);
+  const { data } = useNotifications();
+  const markRead = useMarkNotificationsRead();
 
-  const unreadCount = items.filter((item) => item.unread).length;
+  const items = useMemo(
+    () =>
+      (data?.data ?? []).map((n) => ({
+        id: n.id,
+        ...describeNotification(n),
+        when: timeAgo(n.createdAt),
+        unread: !n.readAt,
+      })),
+    [data],
+  );
+  const unreadCount = data?.meta.unread ?? 0;
   const matching = onlyUnread ? items.filter((item) => item.unread) : items;
   const shown = expanded ? matching : matching.slice(0, FIRST_SHOWN);
   const hiddenCount = matching.length - shown.length;
 
-  const markRead = (id: number) =>
-    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, unread: false } : item)));
-  const markAllRead = () => setItems((prev) => prev.map((item) => ({ ...item, unread: false })));
+  const markAllRead = () => markRead.mutate(undefined);
 
   // Stop the wheel from scrolling the page
   const keepWheelInside = useCallback((popup: HTMLDivElement | null) => {
@@ -143,17 +85,11 @@ export function NotificationsPanel() {
     <Popover open={open} onOpenChange={handleOpenChange}>
       <PopoverTrigger
         type="button"
-        aria-label={
-          EXAMPLES_ONLY
-            ? "Notifications (preview with examples)"
-            : unreadCount > 0
-              ? `Notifications, ${unreadCount} unread`
-              : "Notifications"
-        }
+        aria-label={unreadCount > 0 ? `Notifications, ${unreadCount} unread` : "Notifications"}
         className="relative flex size-9 shrink-0 cursor-pointer items-center justify-center rounded-full bg-slate-100/80 text-slate-500 outline-none hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-theme/40 aria-expanded:bg-slate-200 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 dark:aria-expanded:bg-neutral-800"
       >
         <HugeiconsIcon icon={Notification03Icon} className="size-5" />
-        {!EXAMPLES_ONLY && unreadCount > 0 && (
+        {unreadCount > 0 && (
           <span
             aria-hidden
             className="absolute right-1.5 top-1.5 size-2 rounded-full bg-theme ring-2 ring-white dark:ring-neutral-950"
@@ -218,7 +154,7 @@ export function NotificationsPanel() {
         <div data-notification-list className="max-h-[min(28rem,calc(100dvh-14rem))] overflow-y-auto overscroll-contain">
           {shown.length === 0 ? (
             <p className="px-4 py-10 text-center text-sm text-slate-600 dark:text-neutral-400">
-              Nothing unread. New activity on your jobs will show up here.
+              {onlyUnread ? "Nothing unread." : "Nothing yet."} New activity on your jobs will show up here.
             </p>
           ) : (
             <ul className="divide-y divide-slate-200 dark:divide-neutral-800">
@@ -227,7 +163,7 @@ export function NotificationsPanel() {
                   <Link
                     href={item.href}
                     onClick={() => {
-                      markRead(item.id);
+                      if (item.unread) markRead.mutate([item.id]);
                       handleOpenChange(false);
                     }}
                     className="flex items-start gap-3 px-4 py-3 outline-none transition-colors hover:bg-slate-50 focus-visible:bg-slate-50 dark:hover:bg-neutral-800/60 dark:focus-visible:bg-neutral-800/60"
@@ -281,9 +217,6 @@ export function NotificationsPanel() {
           </button>
         )}
 
-        <p className="border-t border-slate-300 bg-slate-50 px-4 py-2.5 text-xs leading-relaxed text-slate-600 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400">
-          These are examples to show how notifications will look. Live notifications are not turned on yet.
-        </p>
         </div>
       </PopoverContent>
     </Popover>

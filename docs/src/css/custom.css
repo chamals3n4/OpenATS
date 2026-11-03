@@ -110,3 +110,25 @@ body:has(.openats-landing-page) #copy-page-button-container { display: none !imp
 .blog-post-page article header .avatar__name { font-size: .95rem; }
 .blog-post-page article header .avatar__intro small { color: #64748b; font-size: .82rem; }
 .blog-post-page article header [class*='authorSocials'] { display: none; }
+
+/* Inline code, such as `make setup`: a soft chip instead of the default bordered box */
+:root {
+  --ifm-font-family-monospace: ui-monospace, "SF Mono", "JetBrains Mono", "Cascadia Code", Menlo, Consolas, "Liberation Mono", monospace;
+}
+.markdown :not(pre) > code {
+  background: rgba(20, 89, 98, 0.07);
+  border: 0;
+  border-radius: 6px;
+  box-shadow: inset 0 0 0 1px rgba(20, 89, 98, 0.22);
+  color: #145962;
+  font-size: 1em;
+  font-weight: 500;
+  padding: 0.18em 0.5em;
+  vertical-align: 0.02em;
+}
+.markdown a > code { color: inherit; }
+[data-theme='dark'] .markdown :not(pre) > code {
+  background: rgba(134, 209, 196, 0.1);
+  box-shadow: inset 0 0 0 1px rgba(134, 209, 196, 0.28);
+  color: #86d1c4;
+}

@@ -1,3 +1,4 @@
+import type { AllocatedSlot } from "@/hooks/queries/use-interviews";
 import { formatTime } from "@/lib/format";
 
 /** e.g. "9:30 AM – 10:15 AM" */
@@ -45,6 +46,12 @@ export const STATUS_CONFIG: Record<
     dot: "bg-red-400",
     badge: "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400",
   },
+  // The candidate did not pick a time before the link ran out
+  expired: {
+    label: "No time picked",
+    dot: "bg-slate-400",
+    badge: "bg-slate-100 text-slate-600 dark:bg-neutral-800 dark:text-neutral-300",
+  },
 };
 
 export const OUTCOME_CONFIG: Record<string, { label: string; badge: string }> =
@@ -59,3 +66,15 @@ export const OUTCOME_CONFIG: Record<string, { label: string; badge: string }> =
       badge: "bg-red-50 text-red-600 dark:bg-red-950/40 dark:text-red-400",
     },
   };
+
+/**
+ * Whether an interview starting at `slot` (a datetime-local value) for `durationMinutes` would run
+ * into one of the busy times. Ending exactly when another starts is not a clash.
+ */
+export function overlapsBusy(slot: string, durationMinutes: number, busy: AllocatedSlot[]): boolean {
+  if (!slot) return false;
+  const from = new Date(slot).getTime();
+  if (Number.isNaN(from)) return false;
+  const to = from + durationMinutes * 60_000;
+  return busy.some((range) => from < new Date(range.end).getTime() && new Date(range.start).getTime() < to);
+}

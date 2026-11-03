@@ -32,6 +32,7 @@ export const dynamic = "force-dynamic";
 
 import { ThemeProvider } from "@/components/providers/theme-provider";
 import { ThemeInitializer } from "@/components/theme/theme-initializer";
+import { runtimeConfigScript } from "@/lib/api-url";
 
 export default function RootLayout({
   children,
@@ -44,6 +45,10 @@ export default function RootLayout({
       className={`${googleSans.variable} ${changaOne.variable}`}
       suppressHydrationWarning
     >
+      <head>
+        {/* The API address for the browser, read now rather than when the app was built */}
+        <script dangerouslySetInnerHTML={{ __html: runtimeConfigScript() }} />
+      </head>
       <body
         className={`${geistMono.variable} antialiased overflow-x-hidden`}
       >

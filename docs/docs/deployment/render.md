@@ -141,6 +141,10 @@ R2_PRIVATE_BUCKET_NAME=openats-cvs
 
 The full walkthrough, with screenshots described, is in [Manual Setup, step 6](../getting-started/quick-start#6-set-up-file-storage).
 
+:::warning[Don't use `STORAGE=local` on Render]
+OpenATS can also keep files in a folder on the server (`STORAGE=local`), as the Docker quickstart does. That doesn't work on Render. A Render service loses its files every time it redeploys or restarts, and the worker runs on a different machine from the API, so it could never read the CVs. Use R2, or another S3-compatible store, and leave `STORAGE` unset.
+:::
+
 ## Step 4. Set up email
 
 Get SMTP details from your email provider. With Resend, for example:
@@ -274,7 +278,7 @@ Used by the **API and the worker**.
 | `RATE_LIMIT_API` | `1000` | Optional. Requests per signed-in user every 15 minutes |
 | `RATE_LIMIT_EXPENSIVE` | `60` | Optional. Uploads per signed-in user every 15 minutes |
 
-Leave out the optional ones you don't use. **Don't set `PORT`.** Render sets it, and the API listens on whatever it's given.
+Leave out the optional ones you don't use, and leave out `STORAGE`, `STORAGE_DIR` and `API_PUBLIC_URL` (see the warning in Step 3). **Don't set `PORT`.** Render sets it, and the API listens on whatever it's given.
 
 ### Group 3: `openats-website`
 
@@ -290,7 +294,7 @@ Used by the **website** only.
 
 Anything starting with `NEXT_PUBLIC_` is built into the website and visible to anyone, so never put a secret in one. It's also why changing one needs a new build, not just a restart. Render handles that when you save.
 
-Leave `AUTH_TRUSTED_PROXIES` and the `NEXT_PUBLIC_DEMO_*` settings out.
+Leave `AUTH_TRUSTED_PROXIES`, `OPENATS_PUBLIC_API_URL` and the `NEXT_PUBLIC_DEMO_*` settings out. `OPENATS_PUBLIC_API_URL` is for prebuilt Docker images; without it the website uses `NEXT_PUBLIC_API_URL`.
 
 ## Step 10. Create the backend (API)
 

@@ -16,7 +16,9 @@ import { cleanObject as clean } from "../../utils/object.utils";
 import { interviewCancelledEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import logger from "../../utils/logger";
-import { DEFAULT_INTERVIEW_MINUTES } from "./interview-confirm";
+import { DEFAULT_INTERVIEW_MINUTES, emailInterviewer } from "./interview-confirm";
+import { notificationService } from "../../shared/services/notification.service";
+import { socketService } from "../../shared/services/socket.service";
 import { getErrorMessage } from "../../utils/error.utils";
 
 /** A scorecard that cannot be saved because of what was submitted, not because of a fault. */
@@ -32,7 +34,7 @@ export interface UpdateInterviewInput {
   durationMinutes?: number | null;
   notes?: string | null;
   outcome?: "pending" | "pass" | "fail";
-  status?: "pending_schedule" | "scheduled" | "completed" | "cancelled";
+  status?: "pending_schedule" | "scheduled" | "completed" | "cancelled" | "expired";
   eventName?: string;
   eventType?: "virtual" | "onsite";
   meetingUrl?: string | null;
@@ -217,6 +219,22 @@ export const interviewService = {
 
     if (!updated) return null;
 
+    // A booked interview given to someone else: the new interviewer is told and emailed.
+    if (
+      input.interviewerId &&
+      input.interviewerId !== existing.interviewerId &&
+      updated.status === "scheduled" &&
+      updated.scheduledAt
+    ) {
+      void notificationService.notifyPeople({
+        type: "interview_booked",
+        jobId: updated.jobId,
+        candidateId: updated.candidateId,
+        userIds: [input.interviewerId],
+      });
+      void emailInterviewer(updated, updated.scheduledAt);
+    }
+
     // Keep the entry in the interviewer's own calendar in step with a new time
     if (updated.providerMeetingId && updated.interviewerId && updated.scheduledAt) {
       try {
@@ -242,6 +260,40 @@ export const interviewService = {
     }
 
     return updated;
+  },
+
+  /**
+   * Interviews whose time-picking link ran out before the candidate chose a time. The link
+   * already stops working then; this makes the dashboard say so instead of "waiting" forever,
+   * and tells the team. Returns how many were marked.
+   */
+  async expireStaleSlotLinks(now: Date = new Date()): Promise<number> {
+    const expired = await db
+      .update(candidateInterviews)
+      .set({ status: "expired", updatedAt: now })
+      .where(
+        and(
+          eq(candidateInterviews.status, "pending_schedule"),
+          lte(candidateInterviews.tokenExpiresAt, now),
+        ),
+      )
+      .returning({
+        id: candidateInterviews.id,
+        candidateId: candidateInterviews.candidateId,
+        jobId: candidateInterviews.jobId,
+        createdBy: candidateInterviews.createdBy,
+      });
+
+    for (const iv of expired) {
+      socketService.notifyInterviewChanged({ interviewId: iv.id, candidateId: iv.candidateId });
+      await notificationService.notifyJobTeam({
+        type: "interview_link_expired",
+        jobId: iv.jobId,
+        candidateId: iv.candidateId,
+        also: [iv.createdBy],
+      });
+    }
+    return expired.length;
   },
 
   // ── Interview Feedback ──

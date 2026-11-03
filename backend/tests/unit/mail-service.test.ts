@@ -72,4 +72,59 @@ describe("mustStartTls", () => {
     expect(mustStartTls("127.0.0.1", false)).toBe(false);
     expect(mustStartTls("::1", false)).toBe(false);
   });
+
+  it("follows SMTP_REQUIRE_TLS when it is set, such as for Mailpit by name in Docker", async () => {
+    const { mustStartTls } = await import("../../src/shared/services/mail.service");
+    expect(mustStartTls("mailpit", false, "false")).toBe(false);
+    expect(mustStartTls("localhost", false, "true")).toBe(true);
+    // Already encrypted: nothing to upgrade either way.
+    expect(mustStartTls("smtp.example.test", true, "true")).toBe(false);
+    expect(mustStartTls("mailpit", false, undefined)).toBe(true);
+  });
+});
+
+describe("mailService retry", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    createTransport.mockClear();
+    sendMail.mockClear();
+    vi.stubEnv("SMTP_HOST", "smtp.example.test");
+    vi.stubEnv("SMTP_SECURE", "true");
+  });
+
+  it("tries once more when the connection timed out, and then succeeds", async () => {
+    vi.useFakeTimers();
+    try {
+      sendMail.mockRejectedValueOnce(Object.assign(new Error("Greeting never received"), { code: "ETIMEDOUT" }));
+      const { mailService } = await import("../../src/shared/services/mail.service");
+      const sending = mailService.sendEmail({ to: "ada@example.test", subject: "Hi", html: "<p>Hi</p>" });
+      await vi.runAllTimersAsync();
+      await expect(sending).resolves.toEqual({ id: "<1@test>" });
+      expect(sendMail).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("does not try again when the server refused the message", async () => {
+    sendMail.mockRejectedValueOnce(Object.assign(new Error("Mailbox unavailable"), { responseCode: 550 }));
+    const { mailService } = await import("../../src/shared/services/mail.service");
+    await expect(mailService.sendEmail({ to: "ada@example.test", subject: "Hi", html: "<p>Hi</p>" })).rejects.toThrow(
+      "Mailbox unavailable",
+    );
+    expect(sendMail).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("isTransientMailError", () => {
+  it("is true for connection failures and 4xx answers, false for the rest", async () => {
+    const { isTransientMailError } = await import("../../src/shared/services/mail.service");
+    expect(isTransientMailError(Object.assign(new Error("Greeting never received"), { code: "ETIMEDOUT" }))).toBe(true);
+    expect(isTransientMailError(Object.assign(new Error("x"), { code: "ECONNECTION" }))).toBe(true);
+    expect(isTransientMailError(Object.assign(new Error("try later"), { responseCode: 421 }))).toBe(true);
+    expect(isTransientMailError(Object.assign(new Error("bad login"), { code: "EAUTH", responseCode: 535 }))).toBe(false);
+    expect(isTransientMailError(Object.assign(new Error("no such user"), { responseCode: 550 }))).toBe(false);
+    expect(isTransientMailError(new Error("plain"))).toBe(false);
+    expect(isTransientMailError(null)).toBe(false);
+  });
 });

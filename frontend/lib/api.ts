@@ -1,11 +1,11 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
+import { serverApiUrl } from "@/lib/api-url";
 
 export async function apiFetch<T>(
   path: string,
   accessToken: string,
   options: RequestInit = {}
 ): Promise<T> {
-  const res = await fetch(`${API_BASE_URL}/api${path}`, {
+  const res = await fetch(`${serverApiUrl()}/api${path}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",

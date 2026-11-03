@@ -5,6 +5,7 @@ import { socketService } from "../../shared/services/socket.service";
 import logger from "../../utils/logger";
 import { asEnum } from "../../utils/object.utils";
 import { offers } from "../../db/schema";
+import { notificationService } from "../../shared/services/notification.service";
 import { canViewCandidate, canViewJob, canViewOffers, teamScope } from "../../shared/auth/job-access";
 
 const bulkDeleteOffersSchema = z.object({
@@ -418,6 +419,11 @@ export const acceptPublicOffer = async (req: Request, res: Response) => {
       res.status(404).json({ error: "Offer link is invalid" });
       return;
     }
+    void notificationService.notifyJobTeam({
+      type: "offer_accepted",
+      jobId: result.jobId,
+      candidateId: result.candidateId,
+    });
 
     socketService.notifyOfferChanged({
       offerId: result.id,
@@ -447,6 +453,11 @@ export const declinePublicOffer = async (req: Request, res: Response) => {
       res.status(404).json({ error: "Offer link is invalid" });
       return;
     }
+    void notificationService.notifyJobTeam({
+      type: "offer_declined",
+      jobId: result.jobId,
+      candidateId: result.candidateId,
+    });
 
     socketService.notifyOfferChanged({
       offerId: result.id,

@@ -1,0 +1,116 @@
+name: Docker images
+
+# Builds and publishes the images and the quickstart compose file for a release. release.yml starts
+# it after making a release (a release made with github.token cannot start it through the release
+# event); it can also be run by hand for any release tag. It publishes:
+#   ghcr.io/chamals3n4/openats-backend   (API, worker and database setup)
+#   ghcr.io/chamals3n4/openats-web       (the website)
+#   ghcr.io/chamals3n4/openats-quickstart (the compose file, for `docker compose -f oci://… up`)
+# Each is tagged with the version, and with `latest` unless the release is a pre-release.
+# The packages are private when first created: make each one public once in the package settings.
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to build, e.g. v1.0.0"
+        type: string
+        required: true
+      prerelease:
+        description: "A pre-release: publish the version tag only, not latest"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  packages: write
+
+env:
+  REGISTRY: ghcr.io/chamals3n4
+
+jobs:
+  images:
+    name: Build ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - image: openats-backend
+            dockerfile: docker/backend.Dockerfile
+          - image: openats-web
+            dockerfile: docker/web.Dockerfile
+    outputs:
+      version: ${{ steps.tags.outputs.version }}
+      latest: ${{ steps.tags.outputs.latest }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.event.release.tag_name }}
+
+      - name: Work out the tags
+        id: tags
+        env:
+          TAG: ${{ inputs.tag || github.event.release.tag_name }}
+          PRERELEASE: ${{ inputs.prerelease || github.event.release.prerelease || false }}
+        run: |
+          version="${TAG#v}"
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          tags="${REGISTRY}/${{ matrix.image }}:${version}"
+          if [ "$PRERELEASE" != "true" ]; then
+            tags="$tags,${REGISTRY}/${{ matrix.image }}:latest"
+            echo "latest=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "latest=false" >> "$GITHUB_OUTPUT"
+          fi
+          echo "list=$tags" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.dockerfile }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: ${{ steps.tags.outputs.list }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/chamals3n4/OpenATS
+            org.opencontainers.image.version=${{ steps.tags.outputs.version }}
+            org.opencontainers.image.licenses=Apache-2.0
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+
+  quickstart:
+    name: Publish the quickstart
+    needs: images
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.tag || github.event.release.tag_name }}
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      # Pinned to the images just built, so a published quickstart never changes underneath anyone.
+      - name: Publish the compose file
+        env:
+          OPENATS_VERSION: ${{ needs.images.outputs.version }}
+          LATEST: ${{ needs.images.outputs.latest }}
+        run: |
+          docker compose version
+          docker compose -f docker/quickstart/compose.yaml publish --resolve-image-digests --yes \
+            "${REGISTRY}/openats-quickstart:${OPENATS_VERSION}"
+          if [ "$LATEST" = "true" ]; then
+            docker compose -f docker/quickstart/compose.yaml publish --resolve-image-digests --yes \
+              "${REGISTRY}/openats-quickstart:latest"
+          fi

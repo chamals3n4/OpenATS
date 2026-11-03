@@ -11,6 +11,7 @@ import {
 } from "./assignment-rules";
 import { socketService } from "../../shared/services/socket.service";
 import { canViewCandidate } from "../../shared/auth/job-access";
+import { notificationService } from "../../shared/services/notification.service";
 import logger from "../../utils/logger";
 import { getErrorMessage, safeErrorMessage } from "../../utils/error.utils";
 
@@ -234,6 +235,7 @@ export const submitAssignment = async (req: Request, res: Response) => {
     if (!row) return void res.status(404).json({ error: "Assignment not found" });
     logger.info(`Assignment handed in: id=${row.id}, candidateId=${row.candidateId}`);
     socketService.notifyAssignmentSubmitted({ candidateId: row.candidateId });
+    void notificationService.notifyCandidateTeam({ type: "assignment_submitted", candidateId: row.candidateId });
     res.status(200).json({ data: { submitted: true } });
   } catch (error) {
     if (error instanceof AssignmentAlreadySubmittedError) {

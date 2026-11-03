@@ -5,7 +5,7 @@ import { requireManager } from "../../middlewares/role.middleware";
 import { teamScope } from "../../shared/auth/job-access";
 import { interviewService, FeedbackValidationError } from "./interview.service";
 import { DEFAULT_INTERVIEW_MINUTES, completeInterviewBooking } from "./interview-confirm";
-import { isInterviewClash } from "./interview-slots";
+import { getBusyRanges, isInterviewClash } from "./interview-slots";
 import { interviewSlotsEmail } from "../../shared/services/candidate-emails";
 import { emailContext, sendCandidateEmail } from "../../shared/services/candidate-mailer";
 import { socketService } from "../../shared/services/socket.service";
@@ -30,7 +30,7 @@ const updateInterviewSchema = z.object({
   notes: z.string().optional().nullable(),
   outcome: z.enum(["pending", "pass", "fail"]).optional(),
   status: z
-    .enum(["pending_schedule", "scheduled", "completed", "cancelled"])
+    .enum(["pending_schedule", "scheduled", "completed", "cancelled", "expired"])
     .optional(),
   eventName: z.string().min(1).optional(),
   eventType: z.enum(["virtual", "onsite"]).optional(),
@@ -77,23 +77,19 @@ router.get("/interviews", async (req, res) => {
   }
 });
 
-// Confirmed upcoming interview times, used to flag already-allocated slots
+// When one interviewer is already busy, so the scheduler can mark the times that would clash.
+// Only that interviewer's times are returned, never which candidate or job they are for.
 router.get("/interviews/allocated-slots", requireManager, async (req, res) => {
   try {
-    const rows = await db
-      .select({
-        scheduledAt: candidateInterviews.scheduledAt,
-        interviewerId: candidateInterviews.interviewerId,
-      })
-      .from(candidateInterviews)
-      .where(eq(candidateInterviews.status, "scheduled"));
+    const interviewerId = Number(req.query.interviewerId);
+    if (!Number.isInteger(interviewerId) || interviewerId <= 0) {
+      res.status(200).json({ data: [] });
+      return;
+    }
     const now = Date.now();
-    const data = rows
-      .filter((r) => r.scheduledAt && r.scheduledAt.getTime() >= now)
-      .map((r) => ({
-        datetime: r.scheduledAt!.toISOString(),
-        interviewerId: r.interviewerId,
-      }));
+    const data = (await getBusyRanges(0, interviewerId))
+      .filter((range) => range.end > now)
+      .map((range) => ({ start: new Date(range.start).toISOString(), end: new Date(range.end).toISOString() }));
     res.status(200).json({ data });
   } catch (error) {
     logger.error(`Failed to list allocated slots: ${getErrorMessage(error)}`);
@@ -270,7 +266,7 @@ router.post("/candidates/:id/schedule", requireManager, requireCandidateView("id
 
     if (fixedAt) {
       // Nothing for the candidate to choose, so go straight to the link, calendar and confirmation.
-      await completeInterviewBooking(interview, fixedAt);
+      await completeInterviewBooking(interview, fixedAt, { actorId: req.user.id });
       // Read it again: the booking has just saved the meeting link and the calendar entry.
       const [booked] = await db
         .select()
@@ -315,48 +311,6 @@ router.post("/candidates/:id/schedule", requireManager, requireCandidateView("id
     }
     logger.error(`Schedule interview failed: ${getErrorMessage(error)}`);
     res.status(400).json({ error: safeErrorMessage(error, "Failed to schedule the interview") });
-  }
-});
-
-router.get("/public/interview/:token", async (req, res) => {
-  try {
-    const [interview] = await db
-      .select({
-        id: candidateInterviews.id,
-        eventName: candidateInterviews.eventName,
-        eventType: candidateInterviews.eventType,
-        meetingUrl: candidateInterviews.meetingUrl,
-        location: candidateInterviews.location,
-        bodyText: candidateInterviews.bodyText,
-        timeSlots: candidateInterviews.timeSlots,
-        status: candidateInterviews.status,
-        candidateName: {
-          first: candidates.firstName,
-          last: candidates.lastName,
-        },
-        jobTitle: jobs.title,
-      })
-      .from(candidateInterviews)
-      .leftJoin(candidates, eq(candidateInterviews.candidateId, candidates.id))
-      .leftJoin(jobs, eq(candidateInterviews.jobId, jobs.id))
-      .where(eq(candidateInterviews.publicToken, req.params.token));
-
-    if (!interview) {
-      res.status(404).json({ error: "Invalid link" });
-      return;
-    }
-
-    res.status(200).json({
-      data: {
-        ...interview,
-        candidateName: interview.candidateName
-          ? `${interview.candidateName.first} ${interview.candidateName.last}`
-          : "Unknown",
-      },
-    });
-  } catch (error) {
-    logger.error(`Failed to load interview: ${getErrorMessage(error)}`);
-    res.status(500).json({ error: "Failed to load interview" });
   }
 });
 

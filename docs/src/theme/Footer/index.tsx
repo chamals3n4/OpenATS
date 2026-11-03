@@ -1,11 +1,12 @@
 import type {ReactNode} from 'react';
 import Link from '@docusaurus/Link';
+import {HugeiconsIcon} from '@hugeicons/react';
+import {CopyrightIcon, LicenseIcon} from '@hugeicons/core-free-icons';
 import useBaseUrl from '@docusaurus/useBaseUrl';
-import GithubStar from '@site/src/components/GithubStar';
-import {CONTACT_EMAIL} from '@site/src/components/Marketing/offer';
 import styles from './styles.module.css';
 
 const GITHUB = 'https://github.com/chamals3n4/OpenATS';
+const BUILTLIST = 'https://builtlist.space/products/openats?utm_source=badge&utm_medium=embed';
 
 // Column title, then [label, link]. Links starting with http open in a new tab.
 const COLUMNS: [string, [string, string][]][] = [
@@ -61,19 +62,30 @@ export default function Footer(): ReactNode {
         <div className={styles.top}>
           <div className={styles.about}>
             <Link to="/" className={styles.brand}>
-              <img src={logo} alt="" className={styles.logoLight} width={34} height={34} />
-              <img src={logoDark} alt="" className={styles.logoDark} width={34} height={34} />
+              <img src={logo} alt="" className={styles.logoLight} width={40} height={40} />
+              <img src={logoDark} alt="" className={styles.logoDark} width={40} height={40} />
               OpenATS
             </Link>
             <p>
               An open-source applicant tracking system you can host yourself for free.
             </p>
-            <div className={styles.aboutActions}>
-              <GithubStar />
-              <a className={styles.mail} href={`mailto:${CONTACT_EMAIL}`}>
-                {CONTACT_EMAIL}
-              </a>
-            </div>
+            {/* One badge per theme, switched like the logo above */}
+            <a className={styles.badge} href={BUILTLIST} target="_blank" rel="noopener">
+              <img
+                src="https://builtlist.space/badges/featured-light.png"
+                alt="Featured on BuiltList"
+                className={styles.logoLight}
+                width={200}
+                height={58}
+              />
+              <img
+                src="https://builtlist.space/badges/featured-dark.png"
+                alt="Featured on BuiltList"
+                className={styles.logoDark}
+                width={200}
+                height={55}
+              />
+            </a>
           </div>
 
           {COLUMNS.map(([title, links]) => (
@@ -91,8 +103,12 @@ export default function Footer(): ReactNode {
         </div>
 
         <div className={styles.bottom}>
-          <span>© {new Date().getFullYear()} OpenATS</span>
-          <span>
+          <span className={styles.bottomItem}>
+            <HugeiconsIcon icon={CopyrightIcon} size={16} strokeWidth={1.8} aria-label="Copyright" />
+            {new Date().getFullYear()} OpenATS
+          </span>
+          <span className={styles.bottomItem}>
+            <HugeiconsIcon icon={LicenseIcon} size={16} strokeWidth={1.8} aria-hidden />
             Released under the{' '}
             <a href={`${GITHUB}/blob/main/LICENSE`} target="_blank" rel="noreferrer">
               Apache 2.0 licence

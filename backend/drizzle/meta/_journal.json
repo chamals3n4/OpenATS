@@ -316,6 +316,13 @@
       "when": 1792412998768,
       "tag": "0044_take_home_assignments",
       "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1793702318215,
+      "tag": "0045_notifications",
+      "breakpoints": true
     }
   ]
 }

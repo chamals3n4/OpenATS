@@ -22,6 +22,7 @@ import logger from "../../utils/logger";
 
 import { requestCvAnalysis } from "../../queues/cv-analysis/queue";
 import { requestCvExtraction } from "../../queues/cv-extract/queue";
+import { notificationService } from "../../shared/services/notification.service";
 import { requestResumeDeletion } from "../../queues/resume-delete/queue";
 import { cvTextService } from "./cv-text.service";
 import { getErrorMessage, safeErrorMessage } from "../../utils/error.utils";
@@ -131,6 +132,14 @@ export const applyForJob = async (req: Request, res: Response) => {
     logger.info(
       `New application submitted: candidateId=${result.id}, jobId=${jobId}${result.resumeKey ? ", hasResume=true" : ""}`,
     );
+
+    // A manager adding someone themselves is not told about it.
+    void notificationService.notifyJobTeam({
+      type: "application_received",
+      jobId,
+      candidateId: result.id,
+      exclude: req.user?.id ?? null,
+    });
 
     if (result.resumeKey) {
       requestCvExtraction({

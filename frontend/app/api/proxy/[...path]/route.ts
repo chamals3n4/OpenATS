@@ -1,9 +1,9 @@
+import { serverApiUrl } from "@/lib/api-url";
 import { NextRequest, NextResponse } from "next/server";
 import { getApiToken } from "@/lib/auth/session";
 import { SESSION_EXPIRED } from "@/lib/client-fetch";
 import { pickForwardedHeaders } from "@/lib/server-fetch";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8080";
 
 type RouteContext = { params: Promise<{ path: string[] }> };
 
@@ -29,7 +29,7 @@ async function forward(request: NextRequest, context: RouteContext) {
 
     const contentType = request.headers.get("content-type");
     const hasBody = request.method !== "GET" && request.method !== "HEAD";
-    const target = `${API_BASE_URL}/api/${path.map(encodeURIComponent).join("/")}${request.nextUrl.search}`;
+    const target = `${serverApiUrl()}/api/${path.map(encodeURIComponent).join("/")}${request.nextUrl.search}`;
 
     const response = await fetch(target, {
       method: request.method,

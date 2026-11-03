@@ -30,6 +30,7 @@ import { db } from "../db";
 import { candidates, jobs, candidateInterviews } from "../db/schema";
 import { and, eq } from "drizzle-orm";
 import rateLimit from "express-rate-limit";
+import { LOGO_CONTENT_TYPES, localStorage } from "../shared/services/local-storage";
 import logger from "../utils/logger";
 import { completeInterviewBooking } from "../modules/interview/interview-confirm";
 import { getBusyRanges, isInterviewClash, overlapsBusy } from "../modules/interview/interview-slots";
@@ -121,6 +122,37 @@ const publicReadLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   message: { error: "Too many requests. Please try again later." },
+});
+
+// Logos when STORAGE is local (with R2 they come from the public bucket). Public like the bucket,
+// with no origin check, because emails show them too. The name is random and never reused, so
+// browsers may keep a logo for good.
+const fileLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 600,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+router.get("/files/logos/:name", fileLimiter, async (req, res) => {
+  try {
+    const name = String(req.params.name ?? "");
+    const bytes = process.env.STORAGE === "local" ? await localStorage.getLogo(name) : null;
+    if (!bytes) {
+      res.status(404).json({ error: "Not found" });
+      return;
+    }
+    const ext = name.slice(name.lastIndexOf(".") + 1);
+    res.setHeader("Content-Type", LOGO_CONTENT_TYPES[ext] ?? "application/octet-stream");
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+    // An SVG can hold script, so it is only ever a download, as with the bucket.
+    res.setHeader("Content-Disposition", ext === "svg" ? "attachment" : "inline");
+    // Shown on the careers page, which is another origin than the API.
+    res.setHeader("Cross-Origin-Resource-Policy", "cross-origin");
+    res.status(200).send(bytes);
+  } catch (error) {
+    logger.error(`Failed to serve a logo: ${getErrorMessage(error)}`);
+    res.status(500).json({ error: "Something went wrong" });
+  }
 });
 
 router.get("/company", checkOrigins, getPublicCompany);

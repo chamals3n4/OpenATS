@@ -72,7 +72,7 @@ Mark the ones that say **Secret** as the Secret type, so nobody can read them ba
 | `MAIL_FROM_NAME` | `Example Careers` | Optional |
 | `ENABLE_EXPERIMENTAL_COREPACK` | `1` | Makes Vercel use the exact pnpm version OpenATS asks for |
 
-Leave `AUTH_TRUSTED_PROXIES` and the `NEXT_PUBLIC_DEMO_*` settings out.
+Leave `AUTH_TRUSTED_PROXIES`, `OPENATS_PUBLIC_API_URL` and the `NEXT_PUBLIC_DEMO_*` settings out. Without `OPENATS_PUBLIC_API_URL`, the website uses `NEXT_PUBLIC_API_URL`.
 
 If you don't have your own domain yet, use the address Vercel gives the project (`https://<project>.vercel.app`) for `BETTER_AUTH_URL` and `NEXT_PUBLIC_APP_URL`, and change them in Step 6.
 

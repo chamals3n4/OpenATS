@@ -33,7 +33,7 @@
     "dompurify": "^3.4.17",
     "embla-carousel-react": "^8.6.0",
     "input-otp": "^1.5.0",
-    "lucide-react": "^0.575.0",
+    "lucide-react": "^1.63.0",
     "motion": "^12.38.0",
     "next": "16.4.2",
     "next-themes": "^0.4.6",

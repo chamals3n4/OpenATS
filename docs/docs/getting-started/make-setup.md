@@ -16,7 +16,7 @@ Install these, then check each one from a terminal:
 
 | You need | Check it with | Notes |
 | --- | --- | --- |
-| Node.js 22 | `node --version` | The repo's `.nvmrc` pins the exact version, so `nvm use` picks it for you |
+| Node.js 24 | `node --version` | The repo's `.nvmrc` pins the exact version, so `nvm use` picks it for you |
 | pnpm | `pnpm --version` | `corepack enable` sets up the right version |
 | Docker with Compose | `docker compose version` | Runs PostgreSQL, Redis and a test mailbox. Make sure Docker is running |
 | Git, `make`, `openssl` | `make --version` | Already installed on most Mac and Linux machines. On Windows, use WSL |

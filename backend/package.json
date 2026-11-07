@@ -19,7 +19,7 @@
   "author": "",
   "license": "ISC",
   "engines": {
-    "node": ">=22.x"
+    "node": ">=24.x"
   },
   "nodemonConfig": {
     "ext": "ts,json"

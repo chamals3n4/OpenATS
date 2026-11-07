@@ -20,7 +20,7 @@ on the frontend. For the whole project, see the [root README](../README.md) and
 
 ## Getting started
 
-You need Node.js 22+, pnpm, Docker and Make. The repo is a pnpm workspace, so install and run
+You need Node.js 24+, pnpm, Docker and Make. The repo is a pnpm workspace, so install and run
 everything from the **root**, not from this folder.
 
 ```bash

@@ -54,7 +54,7 @@ The API, worker and website are three separate Render services built from the sa
 
 You'll run a few one-time setup commands from your computer, because Render's free and starter services have no terminal you can use for them. You need:
 
-- Node.js 22, pnpm, Git and `openssl`
+- Node.js 24, pnpm, Git and `openssl`
 - A copy of your fork: `git clone https://github.com/<you>/OpenATS.git && cd OpenATS && pnpm install`
 
 ## How big each piece should be
@@ -249,7 +249,7 @@ Used by **all three services**: the API, the worker and the website.
 | `SMTP_PASSWORD` | `re_xxxxxxxxx` | |
 | `MAIL_FROM` | `hiring@example.com` | |
 | `MAIL_FROM_NAME` | `Example Careers` | Optional |
-| `NODE_VERSION` | `22` | OpenATS is built and tested on Node 22 |
+| `NODE_VERSION` | `24` | OpenATS is built and tested on Node 24 |
 
 The website sends invite and password reset emails itself, which is why it needs the email settings too.
 
@@ -493,7 +493,7 @@ Old backups contain candidates you've since deleted, so remove them on a schedul
 ## Troubleshooting
 
 **The build fails with `ERR_PNPM_BAD_PM_VERSION`, or `pnpm: command not found`.**
-Make sure the build command starts with `corepack enable &&`, and that `NODE_VERSION` is `22` in `openats-shared`.
+Make sure the build command starts with `corepack enable &&`, and that `NODE_VERSION` is `24` in `openats-shared`.
 
 **The build fails because it can't find `pnpm-lock.yaml` or a package.**
 The **Root Directory** must be empty. Clear it under the service's **Settings**.

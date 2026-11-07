@@ -10,7 +10,7 @@ This does the same as the [Quick Start](make-setup), one step at a time. Use it 
 
 ## 1. Install what you need
 
-You'll need Node.js 22, pnpm, Docker with Compose, and `openssl`. The [Quick Start](make-setup#before-you-start) shows how to check each one.
+You'll need Node.js 24, pnpm, Docker with Compose, and `openssl`. The [Quick Start](make-setup#before-you-start) shows how to check each one.
 
 You'll also need a Cloudflare account for file storage. These are only needed if you want them:
 

@@ -28,7 +28,7 @@ Small, focused changes are the easiest to review. For anything bigger, open an i
 
 3. Follow the [Quick Start](../getting-started/make-setup) to get it running.
 
-You'll need Node.js 22, pnpm, Git, Docker and Make. You don't need an account with any outside service to sign in. For a look at the code, read the [Architecture](./architecture) page and the [Development Guide](./development-guide).
+You'll need Node.js 24, pnpm, Git, Docker and Make. You don't need an account with any outside service to sign in. For a look at the code, read the [Architecture](./architecture) page and the [Development Guide](./development-guide).
 
 ## Start from a fresh branch
 

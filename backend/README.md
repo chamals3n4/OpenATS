@@ -16,7 +16,7 @@ OpenATS backend was written using Express.js.
 
 ### Prerequisites
 
-- Node.js 22+
+- Node.js 24+
 - pnpm
 - A running PostgreSQL database and Redis instance (see `CONTRIBUTING.md` for local Docker setup)
 - `.env` file configured (copy from `.env.example`)

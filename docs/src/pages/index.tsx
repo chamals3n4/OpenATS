@@ -78,7 +78,7 @@ const QUICKSTART = {
   },
   source: {
     label: 'From source',
-    note: 'Needs Node.js 22, pnpm and Docker for the local database.',
+    note: 'Needs Node.js 24, pnpm and Docker for the local database.',
     lines: ['git clone https://github.com/chamals3n4/OpenATS.git', 'cd OpenATS && make setup', 'make dev'],
   },
 };

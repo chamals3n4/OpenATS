@@ -4,7 +4,7 @@
 #   Setup:   node dist/src/db/setup.js (migrations, then the default stages if there are none)
 # Build from the repository root: docker build -f docker/backend.Dockerfile .
 
-FROM node:22-bookworm-slim AS base
+FROM node:24-bookworm-slim AS base
 ENV PNPM_HOME=/pnpm PATH=/pnpm:$PATH COREPACK_ENABLE_DOWNLOAD_PROMPT=0 \
     npm_config_fetch_retries=6 npm_config_fetch_retry_mintimeout=20000 npm_config_fetch_timeout=300000
 RUN corepack enable
@@ -24,7 +24,7 @@ RUN pnpm --filter ./backend build \
  && pnpm --filter ./backend deploy --prod --legacy /out \
  && cp -r backend/dist /out/dist
 
-FROM node:22-bookworm-slim
+FROM node:24-bookworm-slim
 ENV NODE_ENV=production
 WORKDIR /app
 COPY --from=build --chown=node:node /out ./

@@ -82,7 +82,7 @@ One pnpm workspace with two packages, `frontend` and `backend`, installed from t
 
 ## Getting started
 
-You need Node.js 22+, Docker, pnpm (`npm install -g pnpm`), `make` and `openssl`.
+You need Node.js 24+, Docker, pnpm (`npm install -g pnpm`), `make` and `openssl`.
 
 ```sh
 git clone https://github.com/chamals3n4/OpenATS.git && cd OpenATS

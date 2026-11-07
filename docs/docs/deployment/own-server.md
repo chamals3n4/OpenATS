@@ -34,7 +34,7 @@ Don't use the `docker-compose.yml` database password on a live server. It's a si
 
 ## 1. Get the server ready
 
-You'll need Node.js 22, pnpm, Git, and a web server such as Nginx. Then point two addresses at your server. We'll use these throughout:
+You'll need Node.js 24, pnpm, Git, and a web server such as Nginx. Then point two addresses at your server. We'll use these throughout:
 
 - `ats.example.com` for the website
 - `api.example.com` for the API

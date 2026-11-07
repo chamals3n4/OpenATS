@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.6.0",
   "description": "OpenATS monorepo root - orchestrates backend and frontend as a pnpm workspace",
-  "packageManager": "pnpm@11.21.0",
+  "packageManager": "pnpm@11.28.9",
   "scripts": {
     "dev": "concurrently -n backend,worker,frontend -c blue,magenta,green \"pnpm --filter ./backend dev\" \"pnpm --filter ./backend dev:worker\" \"pnpm --filter ./frontend dev\"",
     "dev:backend": "pnpm --filter ./backend dev",

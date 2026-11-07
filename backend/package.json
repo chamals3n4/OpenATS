@@ -45,7 +45,7 @@
     "sanitize-html": "^2.18.1",
     "socket.io": "^4.8.4",
     "swagger-ui-express": "^5.0.1",
-    "unpdf": "^1.9.1",
+    "unpdf": "^2.1.0",
     "winston": "^3.19.0",
     "zod": "^4.6.7"
   },

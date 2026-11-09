@@ -1,6 +1,7 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request } from "express";
 import cors from "cors";
 import morgan from "morgan";
+import { redactUrl } from "./utils/redact-url";
 import helmet from "helmet";
 import router from "./routes";
 import publicRouter from "./routes/public.routes";
@@ -59,9 +60,12 @@ app.use(
 );
 app.use(express.json({ limit: "1mb" }));
 
+// Like :url, but with sign-in codes and other secrets taken out of the query string.
+morgan.token<Request>("safe-url", (req) => redactUrl(req.originalUrl || req.url || ""));
+
 app.use(
   morgan(
-    ":remote-addr :method :url :status :res[content-length] - :response-time ms",
+    ":remote-addr :method :safe-url :status :res[content-length] - :response-time ms",
     {
       skip: (req) => req.url.startsWith("/api-docs"),
       stream: {

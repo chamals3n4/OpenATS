@@ -18,6 +18,7 @@ export * from "./scoring";
 export * from "./page-settings";
 export * from "./app-settings";
 export * from "./integrations";
+export * from "./paraform";
 export * from "./auth";
 export * from "./system-emails";
 export * from "./notifications";

@@ -1,5 +1,6 @@
 import { Router, Request, Response } from "express";
 import { integrationConnectionService } from "../../shared/integrations/connection.service";
+import { paraformConnectionService } from "../paraform/paraform-connection.service";
 import logger from "../../utils/logger";
 import { getErrorMessage } from "../../utils/error.utils";
 
@@ -27,6 +28,23 @@ router.get("/google/callback", async (req: Request, res: Response) => {
   } catch (error) {
     logger.error(`Google OAuth callback failed: ${getErrorMessage(error)}`);
     res.redirect(`${frontendUrl()}/settings/integrations?error=google_meet`);
+  }
+});
+
+router.get("/paraform/callback", async (req: Request, res: Response) => {
+  const { code, state, error: providerError } = req.query;
+
+  if (providerError || typeof code !== "string" || typeof state !== "string") {
+    res.redirect(`${frontendUrl()}/settings/integrations?error=paraform`);
+    return;
+  }
+
+  try {
+    await paraformConnectionService.handleCallback(code, state);
+    res.redirect(`${frontendUrl()}/settings/integrations?connected=paraform`);
+  } catch (error) {
+    logger.error(`Paraform OAuth callback failed: ${getErrorMessage(error)}`);
+    res.redirect(`${frontendUrl()}/settings/integrations?error=paraform`);
   }
 });
 

@@ -16,15 +16,46 @@ export type ImportPlan =
     }
   | { kind: "skip"; submission: ParaformSubmission; problem: string };
 
+/** A candidate already in the job, found by email; or more than one, when only case tells them apart. */
+export type ExistingMatch =
+  | { kind: "one"; candidateId: number; linked: boolean }
+  | { kind: "several"; candidateIds: number[] };
+
+/**
+ * Groups the job's candidates by email, compared in lower case. Applying stores the email in lower
+ * case but a staff edit keeps it as typed, so `Ada@x.com` and `ada@x.com` can both be in one job.
+ * Then nobody can say which one Paraform means, and the caller must not pick one by row order.
+ */
+export function indexExistingByEmail(
+  rows: { candidateId: number; email: string; linked: boolean }[],
+): Map<string, ExistingMatch> {
+  const byEmail = new Map<string, Map<number, boolean>>();
+  for (const row of rows) {
+    const email = row.email.trim().toLowerCase();
+    const found = byEmail.get(email) ?? new Map<number, boolean>();
+    found.set(row.candidateId, (found.get(row.candidateId) ?? false) || row.linked);
+    byEmail.set(email, found);
+  }
+  const index = new Map<string, ExistingMatch>();
+  for (const [email, found] of byEmail) {
+    const [only, ...rest] = [...found];
+    if (!only) continue;
+    index.set(
+      email,
+      rest.length === 0
+        ? { kind: "one", candidateId: only[0], linked: only[1] }
+        : { kind: "several", candidateIds: [...found.keys()].sort((a, b) => a - b) },
+    );
+  }
+  return index;
+}
+
 /** What to do with each submission to one role that has not been imported yet. */
 export function planImports(input: {
   submissions: ParaformSubmission[];
   importedSubmissionIds: ReadonlySet<string>;
-  /** Candidates already in the job by email (lower case), and whether each is already linked. */
-  existingByEmail: ReadonlyMap<
-    string,
-    { candidateId: number; linked: boolean }
-  >;
+  /** Candidates already in the job, by lower-case email (see `indexExistingByEmail`). */
+  existingByEmail: ReadonlyMap<string, ExistingMatch>;
 }): ImportPlan[] {
   const plans: ImportPlan[] = [];
   const seenEmails = new Set<string>();
@@ -32,8 +63,8 @@ export function planImports(input: {
   for (const submission of input.submissions) {
     if (input.importedSubmissionIds.has(submission.id)) continue;
 
-    const name =
-      `${submission.firstName} ${submission.lastName}`.trim() || "A candidate";
+    // The sync log outlives a deleted candidate, so it names ids, never a name or an email.
+    const name = submissionLabel(submission);
     const email = submission.email?.trim().toLowerCase();
     if (!email) {
       plans.push({
@@ -54,11 +85,17 @@ export function planImports(input: {
     seenEmails.add(email);
 
     const existing = input.existingByEmail.get(email);
-    if (existing && existing.linked) {
+    if (existing?.kind === "several") {
       plans.push({
         kind: "skip",
         submission,
-        problem: `${name} is already in this job from another Paraform submission.`,
+        problem: `${name} was not imported: its email matches more than one candidate in this job (#${existing.candidateIds.join(", #")}), whose emails differ only in capital letters. Merge them or correct the email, and the next sync will import it.`,
+      });
+    } else if (existing && existing.linked) {
+      plans.push({
+        kind: "skip",
+        submission,
+        problem: `${name} is candidate #${existing.candidateId}, who is already in this job from another Paraform submission.`,
       });
     } else if (existing) {
       // They applied directly too. Link that application instead of making a second one.
@@ -72,6 +109,11 @@ export function planImports(input: {
     }
   }
   return plans;
+}
+
+/** How the sync log names a submission: by its Paraform id, never by the person's name or email. */
+export function submissionLabel(submission: Pick<ParaformSubmission, "id">): string {
+  return `Paraform submission ${submission.id}`;
 }
 
 /** Where a candidate stands in OpenATS, as far as Paraform needs to know. */

@@ -13,10 +13,30 @@ const STATE_TTL_MS = 10 * 60_000;
 const REQUEST_TIMEOUT_MS = 15_000;
 
 export class ParaformOAuthError extends Error {
-  constructor(message: string) {
+  /**
+   * `status` is the HTTP status and `code` the OAuth `error` value, when Paraform's server answered
+   * with one. Both are absent when the problem was found here, such as an expired sign-in link.
+   */
+  constructor(
+    message: string,
+    readonly status?: number,
+    readonly code?: string,
+  ) {
     super(message);
     this.name = "ParaformOAuthError";
   }
+}
+
+/**
+ * True when Paraform refused the credentials themselves (RFC 6749 answers 400 or 401, for example
+ * `invalid_grant`), so only signing in again will help. False for a 429, a 5xx or an unreadable
+ * answer, which are temporary: the next attempt may well succeed with the same refresh token.
+ */
+export function isRefusedCredentials(error: unknown): boolean {
+  return (
+    error instanceof ParaformOAuthError &&
+    (error.status === 400 || error.status === 401)
+  );
 }
 
 export type ParaformTokens = {
@@ -54,10 +74,11 @@ async function postForm(
     unknown
   > | null;
   if (!res.ok || !json) {
-    const reason =
-      typeof json?.error === "string" ? json.error : `HTTP ${res.status}`;
+    const code = typeof json?.error === "string" ? json.error : undefined;
     throw new ParaformOAuthError(
-      `Paraform refused the request to ${path}: ${reason}`,
+      `Paraform refused the request to ${path}: ${code ?? `HTTP ${res.status}`}`,
+      res.status,
+      code,
     );
   }
   return json;

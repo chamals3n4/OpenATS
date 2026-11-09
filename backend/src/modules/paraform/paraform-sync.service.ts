@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, gt, inArray, lt } from "drizzle-orm";
+import { and, asc, desc, eq, inArray, lt, sql } from "drizzle-orm";
 import { db } from "../../db";
 import { candidates, candidateStageHistory } from "../../db/schema/candidates";
 import { jobPipelineStages } from "../../db/schema/pipeline";
@@ -10,6 +10,7 @@ import {
   type ParaformSyncRun,
 } from "../../db/schema/paraform";
 import { McpAuthError } from "../../shared/integrations/paraform/mcp-client";
+import { ParaformOAuthError } from "../../shared/integrations/paraform/oauth";
 import {
   ParaformMappingPendingError,
   type ParaformApi,
@@ -26,6 +27,8 @@ import {
 } from "./paraform-connection.service";
 import {
   candidateName,
+  indexExistingByEmail,
+  submissionLabel,
   decisionFor,
   decisionToSend,
   planImports,
@@ -49,6 +52,10 @@ export function describeRunError(error: unknown): string {
   if (error instanceof ParaformMappingPendingError) {
     return "This version of OpenATS cannot read Paraform roles and candidates yet.";
   }
+  // A refused sign-in arrives as ParaformNotConnectedError; this is a 429, a 5xx or a bad answer.
+  if (error instanceof ParaformOAuthError) {
+    return "Paraform's sign-in service did not answer properly, so nothing was synced. The next sync will try again; you don't need to reconnect.";
+  }
   return "The Paraform sync failed. The server log has the details.";
 }
 
@@ -56,7 +63,9 @@ function isFatal(error: unknown): boolean {
   return (
     error instanceof ParaformNotConnectedError ||
     error instanceof McpAuthError ||
-    error instanceof ParaformMappingPendingError
+    error instanceof ParaformMappingPendingError ||
+    // Every later call would need the same token, so stop instead of failing role by role.
+    error instanceof ParaformOAuthError
   );
 }
 
@@ -125,7 +134,8 @@ async function importRole(
         .where(
           and(
             eq(candidates.jobId, roleLink.jobId),
-            inArray(candidates.email, emails),
+            // Lower case on both sides: a staff edit can save an email with capitals.
+            inArray(sql`lower(${candidates.email})`, emails),
           ),
         )
     : [];
@@ -133,11 +143,12 @@ async function importRole(
   const plans = planImports({
     submissions,
     importedSubmissionIds: new Set(imported.map((row) => row.id)),
-    existingByEmail: new Map(
-      existing.map((row) => [
-        row.email,
-        { candidateId: row.candidateId, linked: row.linkId !== null },
-      ]),
+    existingByEmail: indexExistingByEmail(
+      existing.map((row) => ({
+        candidateId: row.candidateId,
+        email: row.email,
+        linked: row.linkId !== null,
+      })),
     ),
   });
 
@@ -193,9 +204,8 @@ async function importRole(
       logger.error(
         `[paraform-sync] import of submission ${submission.id} failed: ${getErrorMessage(error)}`,
       );
-      const { firstName, lastName } = candidateName(submission);
       counts.problems.push(
-        `${firstName} ${lastName} could not be imported. The server log has the details.`,
+        `${submissionLabel(submission)} could not be imported. The server log has the details.`,
       );
     }
   }
@@ -207,13 +217,12 @@ async function sendDecisions(api: ParaformApi, counts: RunCounts) {
   const linked = await db
     .select({
       linkId: paraformCandidateLinks.id,
+      candidateId: paraformCandidateLinks.candidateId,
       submissionId: paraformCandidateLinks.paraformSubmissionId,
       decisionSent: paraformCandidateLinks.decisionSent,
       jobId: candidates.jobId,
       status: candidates.status,
       currentStageId: candidates.currentStageId,
-      firstName: candidates.firstName,
-      lastName: candidates.lastName,
     })
     .from(paraformCandidateLinks)
     .innerJoin(
@@ -247,12 +256,17 @@ async function sendDecisions(api: ParaformApi, counts: RunCounts) {
     } catch (error) {
       if (isFatal(error)) throw error;
       const message = getErrorMessage(error);
+      logger.error(
+        `[paraform-sync] ${decision} for candidate ${row.candidateId} failed: ${message}`,
+      );
       await db
         .update(paraformCandidateLinks)
         .set({ decisionError: message.slice(0, 1000) })
         .where(eq(paraformCandidateLinks.id, row.linkId));
       counts.problems.push(
-        `Paraform was not told about ${row.firstName} ${row.lastName} (${decision}): ${message}`,
+        // Paraform's message stays on the candidate's link row and in the server log: it may
+        // quote the person, and the sync log is kept after the candidate is deleted.
+        `Paraform was not told about candidate #${row.candidateId} (${decision}). The server log has the details.`,
       );
     }
   }
@@ -285,23 +299,14 @@ export const paraformSyncService = {
           lt(paraformSyncRuns.startedAt, staleBefore),
         ),
       );
-    const [busy] = await db
-      .select({ id: paraformSyncRuns.id })
-      .from(paraformSyncRuns)
-      .where(
-        and(
-          eq(paraformSyncRuns.status, "running"),
-          gt(paraformSyncRuns.startedAt, staleBefore),
-        ),
-      )
-      .limit(1);
-    if (busy) return null;
-
+    // uq_paraform_sync_runs_one_running allows one running row, so two workers starting at the
+    // same moment cannot both get one: the second insert is skipped and returns nothing.
     const [run] = await db
       .insert(paraformSyncRuns)
       .values({ trigger })
+      .onConflictDoNothing()
       .returning();
-    if (!run) throw new Error("Failed to start a Paraform sync run");
+    if (!run) return null;
 
     const counts: RunCounts = {
       candidatesImported: 0,

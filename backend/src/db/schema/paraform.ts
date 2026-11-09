@@ -6,6 +6,7 @@ import {
   pgTable,
   serial,
   text,
+  uniqueIndex,
   timestamp,
   varchar,
   index,
@@ -105,7 +106,8 @@ export const paraformSyncRuns = pgTable(
     status: paraformSyncStatus("status").notNull().default("running"),
     candidatesImported: integer("candidates_imported").notNull().default(0),
     decisionsSent: integer("decisions_sent").notNull().default(0),
-    // Plain-language notes about single candidates the run could not handle.
+    // Plain-language notes about single candidates the run could not handle. They name candidate
+    // and submission ids, never a name or email: this row is kept after a candidate is deleted.
     problems: text("problems")
       .array()
       .notNull()
@@ -115,7 +117,13 @@ export const paraformSyncRuns = pgTable(
     startedAt: timestamp("started_at").notNull().defaultNow(),
     finishedAt: timestamp("finished_at"),
   },
-  (t) => [index("idx_paraform_sync_runs_started_at").on(t.startedAt)],
+  (t) => [
+    index("idx_paraform_sync_runs_started_at").on(t.startedAt),
+    // At most one run at a time, even with several workers: a second insert of a running row fails.
+    uniqueIndex("uq_paraform_sync_runs_one_running")
+      .on(t.status)
+      .where(sql`${t.status} = 'running'`),
+  ],
 );
 
 export type ParaformConnection = typeof paraformConnection.$inferSelect;

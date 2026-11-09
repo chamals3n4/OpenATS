@@ -5,8 +5,10 @@ import {
   beforeAll,
   afterAll,
   beforeEach,
+  afterEach,
   vi,
 } from "vitest";
+import { randomBytes } from "crypto";
 import { eq, inArray } from "drizzle-orm";
 import request from "supertest";
 
@@ -34,7 +36,13 @@ import {
   paraformSyncRuns,
 } from "../../src/db/schema/paraform";
 import { paraformSyncService } from "../../src/modules/paraform/paraform-sync.service";
+import {
+  ParaformNotConnectedError,
+  paraformConnectionService,
+} from "../../src/modules/paraform/paraform-connection.service";
 import { McpAuthError } from "../../src/shared/integrations/paraform/mcp-client";
+import { ParaformOAuthError } from "../../src/shared/integrations/paraform/oauth";
+import { encrypt } from "../../src/shared/integrations/crypto";
 import type {
   ParaformApi,
   ParaformDecision,
@@ -54,6 +62,7 @@ class FakeParaform implements ParaformApi {
   submissions: ParaformSubmission[] = [];
   decisions: Array<{ submissionId: string; decision: ParaformDecision }> = [];
   failWith: Error | null = null;
+  decideFailWith: Error | null = null;
   async checkAccess() {}
   async listRoles() {
     return [{ id: "role-1", title: "Founding Engineer" }];
@@ -63,6 +72,7 @@ class FakeParaform implements ParaformApi {
     return this.submissions;
   }
   async decide(submissionId: string, decision: ParaformDecision) {
+    if (this.decideFailWith) throw this.decideFailWith;
     this.decisions.push({ submissionId, decision });
   }
 }
@@ -274,6 +284,80 @@ describe("importing submissions", () => {
     expect(link?.paraformSubmissionId).toBe(`${SUFFIX}-4`);
   });
 
+  it("links a direct applicant whose email a staff member saved with capitals", async () => {
+    await connect();
+    await linkRole();
+    const [direct] = await db
+      .insert(candidates)
+      .values({
+        firstName: "Ed",
+        lastName: "Ited",
+        email: emailFor("Ed.Ited"),
+        jobId,
+        currentStageId: firstStageId,
+      })
+      .returning();
+    const paraform = new FakeParaform();
+    paraform.submissions = [
+      submission("6", "Ed", emailFor("ed.ited")),
+    ];
+
+    const run = await paraformSyncService.run("manual", paraform);
+    expect(run).toMatchObject({ status: "succeeded", candidatesImported: 0 });
+    expect(await jobCandidates()).toHaveLength(1);
+    const [link] = await db
+      .select()
+      .from(paraformCandidateLinks)
+      .where(eq(paraformCandidateLinks.candidateId, direct!.id));
+    expect(link?.paraformSubmissionId).toBe(`${SUFFIX}-6`);
+  });
+
+  it("imports nobody, and says why, when the email matches two candidates that differ only in capitals", async () => {
+    await connect();
+    await linkRole();
+    const twins = await db
+      .insert(candidates)
+      .values([
+        { firstName: "Fi", lastName: "One", email: emailFor("fi"), jobId, currentStageId: firstStageId },
+        { firstName: "Fi", lastName: "Two", email: emailFor("FI"), jobId, currentStageId: firstStageId },
+      ])
+      .returning({ id: candidates.id });
+    const paraform = new FakeParaform();
+    paraform.submissions = [submission("7", "Fi", emailFor("fi"))];
+
+    const run = await paraformSyncService.run("manual", paraform);
+    expect(run?.candidatesImported).toBe(0);
+    expect(await jobCandidates()).toHaveLength(2);
+    expect(await db.select().from(paraformCandidateLinks).where(inArray(paraformCandidateLinks.candidateId, twins.map((t) => t.id)))).toEqual([]);
+    expect(run?.problems).toHaveLength(1);
+    expect(run?.problems[0]).toContain("more than one candidate");
+  });
+
+  it("names ids, never a person, in the sync log, which outlives a deleted candidate", async () => {
+    await connect(true);
+    await linkRole();
+    const paraform = new FakeParaform();
+    paraform.submissions = [
+      submission("8", "Gwendolyn", null),
+      submission("9", "Hermione", emailFor("hermione")),
+      submission("10", "Hermione", emailFor("hermione")),
+    ];
+    await paraformSyncService.run("manual", paraform);
+    const [hermione] = await jobCandidates();
+    await db
+      .update(candidates)
+      .set({ status: "rejected" })
+      .where(eq(candidates.id, hermione!.id));
+    paraform.decideFailWith = new Error("Hermione Test is not on this role");
+
+    const run = await paraformSyncService.run("manual", paraform);
+    const runs = await db.select().from(paraformSyncRuns);
+    const log = JSON.stringify(runs.map((r) => [r.problems, r.error]));
+    expect(run?.problems.some((p) => p.includes(`candidate #${hermione!.id}`))).toBe(true);
+    expect(log).toContain(`Paraform submission ${SUFFIX}-8`);
+    expect(log).not.toMatch(/Gwendolyn|Hermione|@example\.test/);
+  });
+
   it("fails the run with words an admin can act on when Paraform refuses access", async () => {
     await connect();
     await linkRole();
@@ -285,6 +369,131 @@ describe("importing submissions", () => {
     const run = await paraformSyncService.run("manual", paraform);
     expect(run?.status).toBe("failed");
     expect(run?.error).toContain("hiring-manager access");
+  });
+});
+
+describe("one run at a time", () => {
+  it("does not start a run while another is running", async () => {
+    await connect();
+    await linkRole();
+    await db.insert(paraformSyncRuns).values({ trigger: "scheduled" });
+
+    expect(await paraformSyncService.run("manual", new FakeParaform())).toBeNull();
+    expect(await db.select().from(paraformSyncRuns)).toHaveLength(1);
+  });
+
+  it("gives nothing to a run started while another is still syncing", async () => {
+    await connect();
+    await linkRole();
+    let entered!: () => void;
+    let release!: () => void;
+    const inside = new Promise<void>((resolve) => (entered = resolve));
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    const slow = new FakeParaform();
+    slow.submissions = [submission("11", "Ivy", emailFor("ivy"))];
+    slow.listSubmissions = async () => {
+      entered();
+      await gate;
+      return slow.submissions;
+    };
+
+    const first = paraformSyncService.run("scheduled", slow);
+    await inside;
+    expect(await paraformSyncService.run("manual", new FakeParaform())).toBeNull();
+    release();
+    expect((await first)?.status).toBe("succeeded");
+    expect(await db.select().from(paraformSyncRuns)).toHaveLength(1);
+    expect(await jobCandidates()).toHaveLength(1);
+  });
+
+  it("is enforced by the database, so two workers checking at the same moment cannot both start", async () => {
+    await db.insert(paraformSyncRuns).values({ trigger: "scheduled" });
+    await expect(
+      db.insert(paraformSyncRuns).values({ trigger: "manual" }),
+    ).rejects.toMatchObject({ cause: { code: "23505" } });
+    // Finished runs are not limited: the log keeps all of them.
+    await db.insert(paraformSyncRuns).values([
+      { trigger: "manual", status: "succeeded" },
+      { trigger: "manual", status: "failed" },
+    ]);
+  });
+
+  it("starts again once a run left running for too long is written off", async () => {
+    await connect();
+    await db.insert(paraformSyncRuns).values({
+      trigger: "scheduled",
+      startedAt: new Date(Date.now() - 31 * 60_000),
+    });
+
+    const run = await paraformSyncService.run("manual", new FakeParaform());
+    expect(run?.status).toBe("succeeded");
+    const runs = await db.select().from(paraformSyncRuns);
+    expect(runs.map((r) => r.status).sort()).toEqual(["failed", "succeeded"]);
+  });
+});
+
+describe("refreshing the Paraform sign-in", () => {
+  beforeEach(async () => {
+    vi.stubEnv("ENCRYPTION_KEY", randomBytes(32).toString("base64"));
+    await db.insert(paraformConnection).values({
+      clientId: "client_test",
+      accessTokenEncrypted: encrypt("old-access"),
+      refreshTokenEncrypted: encrypt("refresh-1"),
+      expiresAt: new Date(Date.now() - 1000),
+      accountEmail: "cj@example.test",
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllEnvs();
+  });
+
+  function paraformAnswers(status: number, body: unknown) {
+    vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify(body), {
+        status,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+  }
+
+  async function needsReconnect() {
+    const [row] = await db.select().from(paraformConnection);
+    return row!.needsReconnect;
+  }
+
+  it.each([
+    [503, { error: "temporarily_unavailable" }],
+    [502, null],
+    [429, { error: "slow_down" }],
+  ])("keeps the connection when Paraform answers %i, so the next run tries again", async (status, body) => {
+    paraformAnswers(status, body);
+    await expect(paraformConnectionService.getValidAccessToken()).rejects.toBeInstanceOf(ParaformOAuthError);
+    expect(await needsReconnect()).toBe(false);
+  });
+
+  it.each([400, 401])("asks for a reconnect when Paraform refuses the refresh token (%i)", async (status) => {
+    paraformAnswers(status, { error: "invalid_grant" });
+    await expect(paraformConnectionService.getValidAccessToken()).rejects.toBeInstanceOf(ParaformNotConnectedError);
+    expect(await needsReconnect()).toBe(true);
+  });
+
+  it("uses the new token when the refresh works", async () => {
+    paraformAnswers(200, { access_token: "new-access", refresh_token: "refresh-2", expires_in: 300 });
+    expect(await paraformConnectionService.getValidAccessToken()).toBe("new-access");
+    expect(await needsReconnect()).toBe(false);
+  });
+
+  it("fails just that run, telling the admin not to reconnect, when the outage hits mid-sync", async () => {
+    await linkRole();
+    const paraform = new FakeParaform();
+    paraform.failWith = new ParaformOAuthError("Paraform refused the request to /oauth2/token: HTTP 503", 503);
+
+    const run = await paraformSyncService.run("manual", paraform);
+    expect(run?.status).toBe("failed");
+    expect(run?.error).toContain("don't need to reconnect");
+    expect(run?.problems).toEqual([]);
   });
 });
 

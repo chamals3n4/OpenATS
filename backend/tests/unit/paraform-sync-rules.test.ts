@@ -3,6 +3,7 @@ import {
   candidateName,
   decisionFor,
   decisionToSend,
+  indexExistingByEmail,
   planImports,
 } from "../../src/modules/paraform/paraform-sync-rules";
 import type { ParaformSubmission } from "../../src/shared/integrations/paraform/paraform-api";
@@ -45,7 +46,7 @@ describe("planImports", () => {
     const [plan] = planImports({
       ...none,
       submissions: [submission()],
-      existingByEmail: new Map([["ada@example.com", { candidateId: 7, linked: false }]]),
+      existingByEmail: new Map([["ada@example.com", { kind: "one", candidateId: 7, linked: false }]]),
     });
     expect(plan).toMatchObject({ kind: "link_existing", candidateId: 7 });
   });
@@ -54,9 +55,39 @@ describe("planImports", () => {
     const [plan] = planImports({
       ...none,
       submissions: [submission({ id: "sub-2" })],
-      existingByEmail: new Map([["ada@example.com", { candidateId: 7, linked: true }]]),
+      existingByEmail: new Map([["ada@example.com", { kind: "one", candidateId: 7, linked: true }]]),
     });
     expect(plan).toMatchObject({ kind: "skip" });
+  });
+
+  it("imports nobody when the email matches more than one candidate, rather than picking one", () => {
+    const [plan] = planImports({
+      ...none,
+      submissions: [submission()],
+      existingByEmail: new Map([["ada@example.com", { kind: "several", candidateIds: [7, 9] }]]),
+    });
+    expect(plan).toMatchObject({ kind: "skip" });
+    expect(plan?.kind === "skip" && plan.problem).toContain("#7, #9");
+  });
+
+  it("names the submission by id, never by the person's name or email", () => {
+    const plans = planImports({
+      ...none,
+      submissions: [
+        submission({ email: null }),
+        submission({ id: "sub-2" }),
+        submission({ id: "sub-3" }),
+        submission({ id: "sub-4", email: "grace@example.com", firstName: "Grace" }),
+      ],
+      existingByEmail: new Map([
+        ["grace@example.com", { kind: "one", candidateId: 11, linked: true }],
+      ]),
+    });
+    const problems = plans.flatMap((p) => (p.kind === "skip" ? [p.problem] : []));
+    expect(problems).toHaveLength(3);
+    expect(problems.join(" ")).not.toMatch(/Ada|Lovelace|Grace|example\.com/i);
+    expect(problems[0]).toContain("Paraform submission sub-1");
+    expect(problems[2]).toContain("candidate #11");
   });
 
   it("imports the same person only once when two recruiters submit them in one run", () => {
@@ -65,6 +96,29 @@ describe("planImports", () => {
       submissions: [submission(), submission({ id: "sub-2", email: "ada@example.com" })],
     });
     expect(plans.map((p) => p.kind)).toEqual(["create", "skip"]);
+  });
+});
+
+describe("indexExistingByEmail", () => {
+  it("finds a candidate whatever the capitals in the saved email", () => {
+    const index = indexExistingByEmail([{ candidateId: 7, email: " Ada@Example.COM", linked: false }]);
+    expect(index.get("ada@example.com")).toEqual({ kind: "one", candidateId: 7, linked: false });
+  });
+
+  it("reports every candidate when emails differ only in capitals", () => {
+    const index = indexExistingByEmail([
+      { candidateId: 9, email: "ADA@example.com", linked: false },
+      { candidateId: 7, email: "ada@example.com", linked: true },
+    ]);
+    expect(index.get("ada@example.com")).toEqual({ kind: "several", candidateIds: [7, 9] });
+  });
+
+  it("counts one candidate seen on several rows once, linked if any row is", () => {
+    const index = indexExistingByEmail([
+      { candidateId: 7, email: "ada@example.com", linked: false },
+      { candidateId: 7, email: "ada@example.com", linked: true },
+    ]);
+    expect(index.get("ada@example.com")).toEqual({ kind: "one", candidateId: 7, linked: true });
   });
 });
 

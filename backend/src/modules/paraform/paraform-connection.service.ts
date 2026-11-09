@@ -9,6 +9,7 @@ import {
   buildAuthorizeUrl,
   createPkcePair,
   exchangeCode,
+  isRefusedCredentials,
   openState,
   ParaformOAuthError,
   paraformRedirectUri,
@@ -128,7 +129,9 @@ export const paraformConnectionService = {
         decrypt(row.refreshTokenEncrypted),
       );
     } catch (error) {
-      if (error instanceof ParaformOAuthError) {
+      // Only a refused refresh token needs the admin to sign in again. A 429 or 5xx fails this
+      // run alone; the next one retries with the same refresh token.
+      if (isRefusedCredentials(error)) {
         await markNeedsReconnect(row.id);
         throw new ParaformNotConnectedError(
           "Paraform sign-in expired. Reconnect it in Settings → Integrations.",

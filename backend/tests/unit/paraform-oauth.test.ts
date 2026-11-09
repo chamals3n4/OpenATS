@@ -4,7 +4,9 @@ import {
   buildAuthorizeUrl,
   createPkcePair,
   emailFromIdToken,
+  isRefusedCredentials,
   openState,
+  ParaformOAuthError,
   PARAFORM_MCP_URL,
   sealState,
 } from "../../src/shared/integrations/paraform/oauth";
@@ -70,5 +72,19 @@ describe("emailFromIdToken", () => {
   it("is null for anything else", () => {
     expect(emailFromIdToken(undefined)).toBeNull();
     expect(emailFromIdToken("not-a-jwt")).toBeNull();
+  });
+});
+
+describe("isRefusedCredentials", () => {
+  it("is true only when Paraform refused the credentials, which signing in again fixes", () => {
+    expect(isRefusedCredentials(new ParaformOAuthError("x", 400, "invalid_grant"))).toBe(true);
+    expect(isRefusedCredentials(new ParaformOAuthError("x", 401, "invalid_client"))).toBe(true);
+  });
+
+  it("is false for a temporary failure, so the connection is kept", () => {
+    expect(isRefusedCredentials(new ParaformOAuthError("x", 429, "slow_down"))).toBe(false);
+    expect(isRefusedCredentials(new ParaformOAuthError("x", 503))).toBe(false);
+    expect(isRefusedCredentials(new ParaformOAuthError("Paraform did not return an access token"))).toBe(false);
+    expect(isRefusedCredentials(new Error("fetch failed"))).toBe(false);
   });
 });

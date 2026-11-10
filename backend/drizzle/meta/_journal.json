@@ -327,15 +327,8 @@
     {
       "idx": 46,
       "version": "7",
-      "when": 1794252963533,
+      "when": 1794350973484,
       "tag": "0046_paraform_sync",
-      "breakpoints": true
-    },
-    {
-      "idx": 47,
-      "version": "7",
-      "when": 1794262363406,
-      "tag": "0047_paraform_one_running_sync",
       "breakpoints": true
     }
   ]

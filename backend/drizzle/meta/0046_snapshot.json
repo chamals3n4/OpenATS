@@ -1,5 +1,5 @@
 {
-  "id": "3d7f7ab3-0efd-4b32-b393-ba0bb24ef783",
+  "id": "b4fca0c5-90ef-4b2c-9736-8c1581def64d",
   "prevId": "82354e20-fcb1-47f9-a878-d8f03d80bbf2",
   "version": "7",
   "dialect": "postgresql",
@@ -4684,12 +4684,6 @@
           "primaryKey": false,
           "notNull": false
         },
-        "recruiter_name": {
-          "name": "recruiter_name",
-          "type": "varchar(255)",
-          "primaryKey": false,
-          "notNull": false
-        },
         "submission_note": {
           "name": "submission_note",
           "type": "text",
@@ -4699,25 +4693,6 @@
         "paraform_url": {
           "name": "paraform_url",
           "type": "varchar(1000)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "decision_sent": {
-          "name": "decision_sent",
-          "type": "paraform_decision",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "decision_sent_at": {
-          "name": "decision_sent_at",
-          "type": "timestamp",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "decision_error": {
-          "name": "decision_error",
-          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -4847,13 +4822,6 @@
           "type": "integer",
           "primaryKey": false,
           "notNull": false
-        },
-        "send_decisions": {
-          "name": "send_decisions",
-          "type": "boolean",
-          "primaryKey": false,
-          "notNull": true,
-          "default": false
         },
         "needs_reconnect": {
           "name": "needs_reconnect",
@@ -5036,13 +5004,6 @@
           "notNull": true,
           "default": 0
         },
-        "decisions_sent": {
-          "name": "decisions_sent",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
         "problems": {
           "name": "problems",
           "type": "text[]",
@@ -5082,6 +5043,22 @@
             }
           ],
           "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "uq_paraform_sync_runs_one_running": {
+          "name": "uq_paraform_sync_runs_one_running",
+          "columns": [
+            {
+              "expression": "status",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"paraform_sync_runs\".\"status\" = 'running'",
           "concurrently": false,
           "method": "btree",
           "with": {}
@@ -5797,14 +5774,6 @@
         "accepted",
         "declined",
         "expired"
-      ]
-    },
-    "public.paraform_decision": {
-      "name": "paraform_decision",
-      "schema": "public",
-      "values": [
-        "advance",
-        "reject"
       ]
     },
     "public.paraform_sync_status": {

@@ -4,7 +4,6 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { Switch } from "@/components/ui/switch";
 import {
   ConfirmDeleteDialog,
   ConfirmDeleteName,
@@ -15,7 +14,6 @@ import {
   useParaformAccess,
   useParaformConnectUrl,
   useParaformOverview,
-  useSetParaformDecisions,
 } from "@/hooks/queries/use-paraform";
 import { ParaformRoles } from "./paraform-roles";
 import { ParaformSyncLog } from "./paraform-sync-log";
@@ -43,8 +41,8 @@ const PILL: Record<PillState, { label: string; cls: string }> = {
 
 /**
  * Paraform, the recruiter marketplace: candidates its recruiters submit appear in the linked
- * job's first stage, and moving them on or rejecting them can be sent back. One connection for
- * the company, so only super admins see this.
+ * job's first stage. Decisions are made on Paraform, which the candidate's page links to. One
+ * connection for the company, so only super admins see this.
  */
 export function ParaformSection() {
   const { isSuperAdmin } = useRole();
@@ -54,7 +52,6 @@ export function ParaformSection() {
   const access = useParaformAccess(isSuperAdmin && connected);
   const connectUrl = useParaformConnectUrl();
   const disconnect = useDisconnectParaform();
-  const setDecisions = useSetParaformDecisions();
   const [confirmDisconnect, setConfirmDisconnect] = useState(false);
 
   if (!isSuperAdmin) return null;
@@ -131,7 +128,8 @@ export function ParaformSection() {
               <p className="mt-1 text-sm text-slate-600 dark:text-neutral-400">
                 Every 15 minutes, new candidates submitted on Paraform are added
                 to the job you link each role to. They start in the first stage,
-                marked as from Paraform.
+                with a link to their application on Paraform, where you advance
+                or reject them.
               </p>
               {data?.connected && data.accountEmail && (
                 <p className="mt-1 text-sm text-slate-600 dark:text-neutral-400">
@@ -201,35 +199,6 @@ export function ParaformSection() {
           {connected && hasAccess && data && (
             <>
               <ParaformRoles roleLinks={data.roleLinks} />
-
-              <div className="flex flex-wrap items-start justify-between gap-4 px-5 py-4 sm:px-6">
-                <div className="max-w-2xl">
-                  <h4 className="text-sm font-semibold text-slate-900 dark:text-neutral-100">
-                    Tell Paraform about your decisions
-                  </h4>
-                  <p className="mt-1 text-sm text-slate-600 dark:text-neutral-400">
-                    When you move a Paraform candidate past the first stage,
-                    they are advanced on Paraform. When you reject one, the
-                    recruiter is told. Off until you turn it on.
-                  </p>
-                </div>
-                <Switch
-                  checked={data.sendDecisions}
-                  disabled={setDecisions.isPending}
-                  aria-label="Tell Paraform about your decisions"
-                  onCheckedChange={(checked: boolean) =>
-                    setDecisions.mutate(checked, {
-                      onSuccess: () =>
-                        toast.success(
-                          checked
-                            ? "Decisions will be sent to Paraform"
-                            : "Decisions stay in OpenATS",
-                        ),
-                      onError: (error) => toast.error(error.message),
-                    })
-                  }
-                />
-              </div>
 
               <ParaformSyncLog />
             </>

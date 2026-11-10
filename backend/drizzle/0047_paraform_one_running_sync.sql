@@ -1,1 +1,0 @@
-CREATE UNIQUE INDEX "uq_paraform_sync_runs_one_running" ON "paraform_sync_runs" USING btree ("status") WHERE "paraform_sync_runs"."status" = 'running';

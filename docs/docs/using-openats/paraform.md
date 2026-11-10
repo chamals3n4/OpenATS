@@ -1,19 +1,15 @@
 ---
 title: Import Candidates from Paraform
 sidebar_label: Import from Paraform
-description: Connect Paraform to OpenATS so candidates that outside recruiters submit land in the right job, and optionally tell Paraform when you advance or reject them.
+description: Connect Paraform to OpenATS so candidates that outside recruiters submit land in the right job, with a link back to Paraform for your decisions.
 keywords: [Paraform integration, recruiter submissions, agency candidates, hiring partner sync, OpenATS Paraform]
 ---
 
 # Import Candidates from Paraform
 
-If you hire through [Paraform](https://www.paraform.com), outside recruiters submit candidates to your roles there. OpenATS can bring those candidates straight into your jobs, so your team reviews everyone in one place. If you like, it can also tell Paraform when you move someone on or turn them down, so the recruiter knows where they stand.
+If you hire through [Paraform](https://www.paraform.com), outside recruiters submit candidates to your roles there. OpenATS can bring those candidates straight into your jobs, so your team reviews everyone in one place.
 
 There is one Paraform connection for the whole company. Only a Super Admin can see or change it.
-
-:::caution[Not ready to sync yet]
-You can connect your Paraform account and check that it has access. Paraform hasn't published the details OpenATS needs to read roles and candidates, though, so linking roles and syncing don't work in this version. The sync log says "This version of OpenATS cannot read Paraform roles and candidates yet" until a later release adds them.
-:::
 
 ## Before you start
 
@@ -43,29 +39,24 @@ Every 15 minutes, OpenATS checks each linked role for new submissions. Select **
 
 - New candidates start in the job's **first stage**.
 - They don't get the "application received" email, because a recruiter sent them in, not the candidate.
-- OpenATS keeps the recruiter's name, their note and the link to the submission on Paraform.
+- OpenATS keeps the recruiter's note and the link to the application on Paraform. The candidate's page shows that link as **Open in Paraform**.
+- Paraform doesn't share a candidate's email address or phone number. OpenATS reads them from the CV text Paraform sends. If the CV has no email address, or more than one, OpenATS can't tell which is the candidate's, so it skips the submission and says why in the sync log. Add that candidate by hand.
+- Paraform's name is a single field, sometimes shortened (such as "Ada L."). OpenATS takes the last word as the last name.
+- Only open submissions come in. Ones already rejected or hired on Paraform are left out.
 - If someone has already applied to that job directly with the same email address, OpenATS links that application instead of adding them twice. Capital letters don't matter. If two candidates in the job have that email, differing only in capitals, OpenATS doesn't guess: it skips the submission and says so in the sync log.
-- A submission without an email address is skipped, and the sync log says so.
 - Each submission is imported once, however many times the sync runs.
 
 Paraform doesn't send a CV file, so these candidates don't have one until you add it.
 
-## Tell Paraform about your decisions
+## Advance or reject on Paraform
 
-Turn on **Tell Paraform about your decisions** to send your decisions back. It's off until you turn it on.
+OpenATS doesn't send your decisions to Paraform. To advance a candidate, Paraform asks the hiring manager how excited they are and whether to send an intro email. To reject one, it asks for their own reason and whether the candidate has been told. Those answers are yours to give, so make the decision on Paraform: select **Open in Paraform** on the candidate's page.
 
-| What you do in OpenATS | What Paraform hears |
-| --- | --- |
-| Move the candidate past the first stage, or make them an offer | They're advanced |
-| Reject the candidate | They're rejected, and the recruiter is told |
-| Leave them in the first stage | Nothing yet |
-| Mark them as withdrawn | Nothing, because withdrawing is the candidate's choice, not a decision |
-
-Each decision is sent once. A rejection is final: if you move a rejected candidate back later, Paraform isn't told they've been advanced again.
+Moving a candidate between stages in OpenATS only changes OpenATS.
 
 ## Read the sync log
 
-The log under the connection lists recent syncs, with how many candidates were imported, how many decisions were sent, and anything that went wrong, in plain words. For example, it tells you when a candidate was submitted to the same role twice, or when a linked job has no pipeline stages.
+The log under the connection lists recent syncs, with how many candidates were imported and anything that went wrong, in plain words. For example, it tells you when a candidate was submitted to the same role twice, or when a linked job has no pipeline stages.
 
 The log names candidates by number (such as "candidate #42") or by their Paraform submission id, never by name or email. It's kept after a candidate is deleted, and their details shouldn't stay behind in it.
 

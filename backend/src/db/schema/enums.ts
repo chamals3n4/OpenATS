@@ -123,5 +123,3 @@ export const paraformSyncStatus = pgEnum("paraform_sync_status", [
   "failed",
 ]);
 
-/** What OpenATS has told Paraform about a submitted candidate. */
-export const paraformDecision = pgEnum("paraform_decision", ["advance", "reject"]);

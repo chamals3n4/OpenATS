@@ -2,7 +2,7 @@ import type { Request, Response } from "express";
 import { z } from "zod";
 import { requestParaformSync } from "../../queues/paraform-sync/queue";
 import { McpAuthError } from "../../shared/integrations/paraform/mcp-client";
-import { ParaformMappingPendingError } from "../../shared/integrations/paraform/paraform-api";
+import { ParaformUnexpectedAnswerError } from "../../shared/integrations/paraform/paraform-api";
 import { getErrorMessage } from "../../utils/error.utils";
 import logger from "../../utils/logger";
 import {
@@ -12,7 +12,6 @@ import {
 import { paraformSyncService } from "./paraform-sync.service";
 import { paraformService, RoleLinkConflictError } from "./paraform.service";
 
-const settingsSchema = z.object({ sendDecisions: z.boolean() });
 const linkSchema = z.object({
   paraformRoleId: z.string().trim().min(1).max(255),
   paraformRoleTitle: z.string().trim().min(1).max(255),
@@ -80,34 +79,6 @@ export async function disconnect(req: Request, res: Response) {
   }
 }
 
-export async function putSettings(req: Request, res: Response) {
-  const parsed = settingsSchema.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: "sendDecisions must be true or false" });
-    return;
-  }
-  try {
-    const updated = await paraformConnectionService.setSendDecisions(
-      parsed.data.sendDecisions,
-    );
-    if (!updated) {
-      res.status(409).json({ error: "Connect Paraform first." });
-      return;
-    }
-    logger.info(
-      `Paraform decisions turned ${parsed.data.sendDecisions ? "on" : "off"} by user ${req.user.id}`,
-    );
-    res
-      .status(200)
-      .json({ data: { sendDecisions: parsed.data.sendDecisions } });
-  } catch (error) {
-    logger.error(
-      `Failed to update Paraform settings - user ${req.user?.id}: ${getErrorMessage(error)}`,
-    );
-    res.status(500).json({ error: "Failed to update Paraform settings" });
-  }
-}
-
 /** The company's roles, read live from Paraform, for linking to jobs. */
 export async function listRoles(_req: Request, res: Response) {
   try {
@@ -128,12 +99,12 @@ export async function listRoles(_req: Request, res: Response) {
         });
       return;
     }
-    if (error instanceof ParaformMappingPendingError) {
-      res
-        .status(501)
-        .json({
-          error: "This version of OpenATS can't read Paraform roles yet.",
-        });
+    if (error instanceof ParaformUnexpectedAnswerError) {
+      logger.error(`Failed to list Paraform roles: ${error.message}`);
+      res.status(502).json({
+        error:
+          "Paraform answered in a form this version of OpenATS doesn't read.",
+      });
       return;
     }
     logger.error(`Failed to list Paraform roles: ${getErrorMessage(error)}`);

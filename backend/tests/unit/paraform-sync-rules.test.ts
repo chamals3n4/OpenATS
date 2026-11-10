@@ -1,22 +1,23 @@
 import { describe, expect, it } from "vitest";
 import {
   candidateName,
-  decisionFor,
-  decisionToSend,
   indexExistingByEmail,
   planImports,
+  submissionContacts,
 } from "../../src/modules/paraform/paraform-sync-rules";
 import type { ParaformSubmission } from "../../src/shared/integrations/paraform/paraform-api";
+
+/** A CV as Paraform's `resumeText` gives it: one long line, contacts at the top. */
+function cv(email: string, extra = ""): string {
+  return `ADA LOVELACE London | ${email} | +44 20 7946 0958 EXPERIENCE Analytical Engines 1842 - 1843 ${extra}`;
+}
 
 function submission(overrides: Partial<ParaformSubmission> = {}): ParaformSubmission {
   return {
     id: "sub-1",
     roleId: "role-1",
-    firstName: "Ada",
-    lastName: "Lovelace",
-    email: "Ada@Example.com",
-    phone: null,
-    recruiterName: "Rita Recruiter",
+    name: "Ada Lovelace",
+    resumeText: cv("Ada@Example.com"),
     note: null,
     url: null,
     ...overrides,
@@ -26,9 +27,9 @@ function submission(overrides: Partial<ParaformSubmission> = {}): ParaformSubmis
 const none = { importedSubmissionIds: new Set<string>(), existingByEmail: new Map() };
 
 describe("planImports", () => {
-  it("creates a candidate for a new submission, with the email in lower case", () => {
+  it("creates a candidate for a new submission, with the email from the CV in lower case", () => {
     const [plan] = planImports({ ...none, submissions: [submission()] });
-    expect(plan).toMatchObject({ kind: "create", email: "ada@example.com" });
+    expect(plan).toMatchObject({ kind: "create", email: "ada@example.com", phone: "+44 20 7946 0958" });
   });
 
   it("leaves out submissions already imported, so a second sync adds nobody twice", () => {
@@ -36,10 +37,25 @@ describe("planImports", () => {
     expect(plans).toEqual([]);
   });
 
-  it("skips a submission without an email and says why", () => {
-    const [plan] = planImports({ ...none, submissions: [submission({ email: "  " })] });
+  it("skips a submission whose CV has no email, or no CV text, and says why", () => {
+    const plans = planImports({
+      ...none,
+      submissions: [
+        submission({ resumeText: "ADA LOVELACE London EXPERIENCE Analytical Engines" }),
+        submission({ id: "sub-2", resumeText: null }),
+      ],
+    });
+    expect(plans.map((p) => p.kind)).toEqual(["skip", "skip"]);
+    expect(plans[0]?.kind === "skip" && plans[0].problem).toContain("CV text has none");
+  });
+
+  it("skips a submission whose CV has several emails rather than guessing which is theirs", () => {
+    const [plan] = planImports({
+      ...none,
+      submissions: [submission({ resumeText: cv("ada@example.com", "Referee: babbage@example.com") })],
+    });
     expect(plan).toMatchObject({ kind: "skip" });
-    expect(plan?.kind === "skip" && plan.problem).toContain("did not share an email");
+    expect(plan?.kind === "skip" && plan.problem).toContain("2 email addresses");
   });
 
   it("links someone who already applied directly instead of making a second application", () => {
@@ -74,10 +90,10 @@ describe("planImports", () => {
     const plans = planImports({
       ...none,
       submissions: [
-        submission({ email: null }),
+        submission({ resumeText: null }),
         submission({ id: "sub-2" }),
         submission({ id: "sub-3" }),
-        submission({ id: "sub-4", email: "grace@example.com", firstName: "Grace" }),
+        submission({ id: "sub-4", resumeText: cv("grace@example.com"), name: "Grace Hopper" }),
       ],
       existingByEmail: new Map([
         ["grace@example.com", { kind: "one", candidateId: 11, linked: true }],
@@ -93,7 +109,7 @@ describe("planImports", () => {
   it("imports the same person only once when two recruiters submit them in one run", () => {
     const plans = planImports({
       ...none,
-      submissions: [submission(), submission({ id: "sub-2", email: "ada@example.com" })],
+      submissions: [submission(), submission({ id: "sub-2", resumeText: cv("ada@example.com") })],
     });
     expect(plans.map((p) => p.kind)).toEqual(["create", "skip"]);
   });
@@ -122,53 +138,38 @@ describe("indexExistingByEmail", () => {
   });
 });
 
-describe("decisionFor", () => {
-  it("waits while the candidate is still in the first stage", () => {
-    expect(decisionFor({ status: "active", inFirstStage: true })).toBeNull();
+describe("submissionContacts", () => {
+  it("takes the one email and the one phone written in the CV", () => {
+    expect(submissionContacts({ resumeText: cv("ada@example.com") })).toEqual({
+      kind: "found",
+      email: "ada@example.com",
+      phone: "+44 20 7946 0958",
+    });
   });
 
-  it("advances a candidate moved past the first stage", () => {
-    expect(decisionFor({ status: "active", inFirstStage: false })).toBe("advance");
+  it("counts an email written twice as one", () => {
+    expect(submissionContacts({ resumeText: cv("ada@example.com", "Contact: ADA@example.com") })).toMatchObject({
+      kind: "found",
+      email: "ada@example.com",
+    });
   });
 
-  it("advances on an offer or a hire, wherever the card sits", () => {
-    expect(decisionFor({ status: "offered", inFirstStage: true })).toBe("advance");
-    expect(decisionFor({ status: "hired", inFirstStage: true })).toBe("advance");
-  });
-
-  it("rejects a rejected candidate, even from the first stage", () => {
-    expect(decisionFor({ status: "rejected", inFirstStage: true })).toBe("reject");
-  });
-
-  it("sends nothing for a withdrawal, which is not a decision", () => {
-    expect(decisionFor({ status: "withdrawn", inFirstStage: false })).toBeNull();
-  });
-});
-
-describe("decisionToSend", () => {
-  it("sends a decision Paraform has not had yet", () => {
-    expect(decisionToSend("advance", null)).toBe("advance");
-    expect(decisionToSend("reject", "advance")).toBe("reject");
-  });
-
-  it("does not send the same decision twice", () => {
-    expect(decisionToSend("advance", "advance")).toBeNull();
-  });
-
-  it("treats a rejection as final", () => {
-    expect(decisionToSend("advance", "reject")).toBeNull();
-  });
-
-  it("sends nothing when there is no decision", () => {
-    expect(decisionToSend(null, null)).toBeNull();
+  it("reports no email for an empty CV", () => {
+    expect(submissionContacts({ resumeText: null })).toEqual({ kind: "none" });
   });
 });
 
 describe("candidateName", () => {
-  it("fills a missing name so the required columns are never empty", () => {
-    expect(candidateName(submission({ firstName: " ", lastName: "" }))).toEqual({
-      firstName: "Unknown",
-      lastName: "-",
-    });
+  it("takes the last word as the last name", () => {
+    expect(candidateName({ name: " Ada  King Lovelace " })).toEqual({ firstName: "Ada King", lastName: "Lovelace" });
+  });
+
+  it("keeps a name Paraform shortened as it is", () => {
+    expect(candidateName({ name: "Ada L." })).toEqual({ firstName: "Ada", lastName: "L." });
+  });
+
+  it("fills a missing part so the required columns are never empty", () => {
+    expect(candidateName({ name: " " })).toEqual({ firstName: "Unknown", lastName: "-" });
+    expect(candidateName({ name: "Ada" })).toEqual({ firstName: "Ada", lastName: "-" });
   });
 });

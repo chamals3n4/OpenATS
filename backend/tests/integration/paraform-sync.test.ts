@@ -45,7 +45,6 @@ import { ParaformOAuthError } from "../../src/shared/integrations/paraform/oauth
 import { encrypt } from "../../src/shared/integrations/crypto";
 import type {
   ParaformApi,
-  ParaformDecision,
   ParaformSubmission,
 } from "../../src/shared/integrations/paraform/paraform-api";
 import { initTestKeys, bearer } from "../helpers/jwt";
@@ -56,27 +55,33 @@ const SUFFIX = `paraform${Date.now()}`;
 let adminAuth: string, managerAuth: string;
 const userIds: number[] = [];
 let companyId: number, departmentId: number, jobId: number, otherJobId: number;
-let firstStageId: number, secondStageId: number;
+let firstStageId: number;
 
 class FakeParaform implements ParaformApi {
   submissions: ParaformSubmission[] = [];
-  decisions: Array<{ submissionId: string; decision: ParaformDecision }> = [];
+  /** Ids whose full record Paraform fails to give, with the error it gives instead. */
+  readFails = new Map<string, Error>();
+  reads: string[] = [];
   failWith: Error | null = null;
-  decideFailWith: Error | null = null;
   async checkAccess() {}
   async listRoles() {
     return [{ id: "role-1", title: "Founding Engineer" }];
   }
-  async listSubmissions() {
+  async listSubmissionIds() {
     if (this.failWith) throw this.failWith;
-    return this.submissions;
+    return this.submissions.map((s) => s.id);
   }
-  async decide(submissionId: string, decision: ParaformDecision) {
-    if (this.decideFailWith) throw this.decideFailWith;
-    this.decisions.push({ submissionId, decision });
+  async getSubmission(id: string) {
+    this.reads.push(id);
+    const fail = this.readFails.get(id);
+    if (fail) throw fail;
+    const found = this.submissions.find((s) => s.id === id);
+    if (!found) throw new Error(`no submission ${id}`);
+    return found;
   }
 }
 
+/** Paraform shares no email field: the email, when there is one, is in the CV text. */
 function submission(
   id: string,
   first: string,
@@ -85,19 +90,16 @@ function submission(
   return {
     id: `${SUFFIX}-${id}`,
     roleId: "role-1",
-    firstName: first,
-    lastName: "Test",
-    email,
-    phone: null,
-    recruiterName: "Rita Recruiter",
+    name: `${first} Test`,
+    resumeText: `${first.toUpperCase()} TEST London${email ? ` | ${email}` : ""} EXPERIENCE Engines 2019 - 2024`,
     note: "Strong TypeScript background",
-    url: null,
+    url: `https://www.paraform.com/client/role-1?app_id=${SUFFIX}-${id}`,
   };
 }
 
 const emailFor = (name: string) => `${name}.${SUFFIX}@example.test`;
 
-async function connect(sendDecisions = false) {
+async function connect() {
   await db.delete(paraformConnection);
   await db.insert(paraformConnection).values({
     clientId: "client_test",
@@ -105,7 +107,6 @@ async function connect(sendDecisions = false) {
     refreshTokenEncrypted: "unused-in-these-tests",
     expiresAt: new Date(Date.now() + 3_600_000),
     accountEmail: "cj@example.test",
-    sendDecisions,
   });
 }
 
@@ -166,7 +167,6 @@ beforeAll(async () => {
     ])
     .returning({ id: jobPipelineStages.id });
   firstStageId = stages[0]!.id;
-  secondStageId = stages[1]!.id;
 });
 
 beforeEach(async () => {
@@ -234,18 +234,24 @@ describe("importing submissions", () => {
     const rows = await jobCandidates();
     expect(rows).toHaveLength(2);
     expect(rows.every((c) => c.currentStageId === firstStageId)).toBe(true);
+    expect(rows.find((c) => c.firstName === "Ada")).toMatchObject({
+      lastName: "Test",
+      email: emailFor("ada"),
+    });
+    // Each submission is read in full once; the second run saw both were imported already.
+    expect(paraform.reads).toEqual([`${SUFFIX}-1`, `${SUFFIX}-2`]);
 
     const [link] = await db
       .select()
       .from(paraformCandidateLinks)
       .where(eq(paraformCandidateLinks.paraformSubmissionId, `${SUFFIX}-1`));
     expect(link).toMatchObject({
-      recruiterName: "Rita Recruiter",
       submissionNote: "Strong TypeScript background",
+      paraformUrl: `https://www.paraform.com/client/role-1?app_id=${SUFFIX}-1`,
     });
   });
 
-  it("skips a submission without an email and says so in the log", async () => {
+  it("skips a submission whose CV text has no email and says so in the log", async () => {
     await connect();
     await linkRole();
     const paraform = new FakeParaform();
@@ -253,7 +259,7 @@ describe("importing submissions", () => {
 
     const run = await paraformSyncService.run("manual", paraform);
     expect(run?.candidatesImported).toBe(0);
-    expect(run?.problems[0]).toContain("did not share an email");
+    expect(run?.problems[0]).toContain("CV text has none");
   });
 
   it("links someone who already applied directly instead of adding them twice", async () => {
@@ -334,28 +340,37 @@ describe("importing submissions", () => {
   });
 
   it("names ids, never a person, in the sync log, which outlives a deleted candidate", async () => {
-    await connect(true);
+    await connect();
     await linkRole();
     const paraform = new FakeParaform();
     paraform.submissions = [
       submission("8", "Gwendolyn", null),
       submission("9", "Hermione", emailFor("hermione")),
       submission("10", "Hermione", emailFor("hermione")),
+      submission("12", "Jo", emailFor("jo")),
     ];
-    await paraformSyncService.run("manual", paraform);
-    const [hermione] = await jobCandidates();
-    await db
-      .update(candidates)
-      .set({ status: "rejected" })
-      .where(eq(candidates.id, hermione!.id));
-    paraform.decideFailWith = new Error("Hermione Test is not on this role");
+    paraform.readFails.set(`${SUFFIX}-12`, new Error("Jo Test is not visible to you"));
 
     const run = await paraformSyncService.run("manual", paraform);
+    expect(run?.candidatesImported).toBe(1);
+    expect(run?.problems).toHaveLength(3);
     const runs = await db.select().from(paraformSyncRuns);
     const log = JSON.stringify(runs.map((r) => [r.problems, r.error]));
-    expect(run?.problems.some((p) => p.includes(`candidate #${hermione!.id}`))).toBe(true);
     expect(log).toContain(`Paraform submission ${SUFFIX}-8`);
-    expect(log).not.toMatch(/Gwendolyn|Hermione|@example\.test/);
+    expect(log).toContain(`Paraform submission ${SUFFIX}-12 could not be read`);
+    expect(log).not.toMatch(/Gwendolyn|Hermione|Jo Test|@example\.test/);
+  });
+
+  it("reads a submission Paraform failed to give again on the next run", async () => {
+    await connect();
+    await linkRole();
+    const paraform = new FakeParaform();
+    paraform.submissions = [submission("13", "Kit", emailFor("kit"))];
+    paraform.readFails.set(`${SUFFIX}-13`, new Error("timeout"));
+    expect((await paraformSyncService.run("manual", paraform))?.candidatesImported).toBe(0);
+
+    paraform.readFails.clear();
+    expect((await paraformSyncService.run("manual", paraform))?.candidatesImported).toBe(1);
   });
 
   it("fails the run with words an admin can act on when Paraform refuses access", async () => {
@@ -391,10 +406,10 @@ describe("one run at a time", () => {
     const gate = new Promise<void>((resolve) => (release = resolve));
     const slow = new FakeParaform();
     slow.submissions = [submission("11", "Ivy", emailFor("ivy"))];
-    slow.listSubmissions = async () => {
+    slow.listSubmissionIds = async () => {
       entered();
       await gate;
-      return slow.submissions;
+      return slow.submissions.map((s) => s.id);
     };
 
     const first = paraformSyncService.run("scheduled", slow);
@@ -497,55 +512,6 @@ describe("refreshing the Paraform sign-in", () => {
   });
 });
 
-describe("sending decisions back", () => {
-  async function importAda(sendDecisions: boolean) {
-    await connect(sendDecisions);
-    await linkRole();
-    const paraform = new FakeParaform();
-    paraform.submissions = [submission("5", "Ada", emailFor("ada5"))];
-    await paraformSyncService.run("manual", paraform);
-    const [ada] = await jobCandidates();
-    return { paraform, ada: ada! };
-  }
-
-  it("sends nothing while the admin has not turned it on", async () => {
-    const { paraform, ada } = await importAda(false);
-    await db
-      .update(candidates)
-      .set({ currentStageId: secondStageId })
-      .where(eq(candidates.id, ada.id));
-
-    await paraformSyncService.run("scheduled", paraform);
-    expect(paraform.decisions).toEqual([]);
-  });
-
-  it("advances a candidate moved on, rejects a rejected one, and sends each once", async () => {
-    const { paraform, ada } = await importAda(true);
-    expect(paraform.decisions).toEqual([]);
-
-    await db
-      .update(candidates)
-      .set({ currentStageId: secondStageId })
-      .where(eq(candidates.id, ada.id));
-    await paraformSyncService.run("scheduled", paraform);
-    await paraformSyncService.run("scheduled", paraform);
-    expect(paraform.decisions).toEqual([
-      { submissionId: `${SUFFIX}-5`, decision: "advance" },
-    ]);
-
-    await db
-      .update(candidates)
-      .set({ status: "rejected" })
-      .where(eq(candidates.id, ada.id));
-    const run = await paraformSyncService.run("scheduled", paraform);
-    expect(run?.decisionsSent).toBe(1);
-    expect(paraform.decisions.at(-1)).toEqual({
-      submissionId: `${SUFFIX}-5`,
-      decision: "reject",
-    });
-  });
-});
-
 describe("the settings API", () => {
   it("is for super admins only", async () => {
     const res = await request(app)
@@ -564,7 +530,6 @@ describe("the settings API", () => {
     expect(res.body.data).toMatchObject({
       connected: true,
       accountEmail: "cj@example.test",
-      sendDecisions: false,
       roleLinks: [
         {
           paraformRoleTitle: "Founding Engineer",
@@ -585,21 +550,21 @@ describe("the settings API", () => {
     expect(res.status).toBe(409);
   });
 
-  it("turns decisions on, but only once Paraform is connected", async () => {
-    const before = await request(app)
-      .put("/api/integrations/paraform/settings")
-      .set("Authorization", adminAuth)
-      .send({ sendDecisions: true });
-    expect(before.status).toBe(409);
-
+  it("shows an imported candidate's Paraform link on their page", async () => {
     await connect();
-    const after = await request(app)
-      .put("/api/integrations/paraform/settings")
-      .set("Authorization", adminAuth)
-      .send({ sendDecisions: true });
-    expect(after.status).toBe(200);
-    const [row] = await db.select().from(paraformConnection);
-    expect(row?.sendDecisions).toBe(true);
+    await linkRole();
+    const paraform = new FakeParaform();
+    paraform.submissions = [submission("14", "Lu", emailFor("lu"))];
+    await paraformSyncService.run("manual", paraform);
+    const [lu] = await jobCandidates();
+
+    const res = await request(app)
+      .get(`/api/candidates/${lu!.id}`)
+      .set("Authorization", adminAuth);
+    expect(res.status).toBe(200);
+    expect(res.body.data.paraformUrl).toBe(
+      `https://www.paraform.com/client/role-1?app_id=${SUFFIX}-14`,
+    );
   });
 
   it("queues a sync when asked", async () => {

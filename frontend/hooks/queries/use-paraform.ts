@@ -5,7 +5,6 @@ export type ParaformOverview = {
   connected: boolean;
   accountEmail: string | null;
   needsReconnect: boolean;
-  sendDecisions: boolean;
   roleLinks: Array<{
     id: number;
     paraformRoleId: string;
@@ -23,7 +22,6 @@ export type ParaformSyncRun = {
   trigger: "scheduled" | "manual";
   status: "running" | "succeeded" | "failed";
   candidatesImported: number;
-  decisionsSent: number;
   problems: string[];
   error: string | null;
   startedAt: string;
@@ -102,15 +100,6 @@ export function useParaformConnectUrl() {
 export function useDisconnectParaform() {
   return useParaformMutation(() =>
     clientFetch("/integrations/paraform", { method: "DELETE" }),
-  );
-}
-
-export function useSetParaformDecisions() {
-  return useParaformMutation((sendDecisions: boolean) =>
-    clientFetch("/integrations/paraform/settings", {
-      method: "PUT",
-      body: JSON.stringify({ sendDecisions }),
-    }),
   );
 }
 

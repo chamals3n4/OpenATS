@@ -333,6 +333,8 @@ export type CandidateCvText = {
 };
 
 export type CandidateDetail = Candidate & {
+  /** The application on Paraform, when a Paraform recruiter submitted them. Decide there. */
+  paraformUrl?: string | null;
   /** Null when the candidate has no CV, or it was uploaded before CV text was read. */
   cvText?: CandidateCvText | null;
   weights?: { questions: number; assessment: number; rating: number; interview: number };

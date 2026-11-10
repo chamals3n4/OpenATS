@@ -1,14 +1,18 @@
-import type {
-  ParaformDecision,
-  ParaformSubmission,
-} from "../../shared/integrations/paraform/paraform-api";
+import type { ParaformSubmission } from "../../shared/integrations/paraform/paraform-api";
+import { extractContacts } from "../candidate/cv-text/contacts";
+import { splitSections } from "../candidate/cv-text/sections";
 
 /**
- * The sync's decisions, kept free of the database and of Paraform so they can be tested alone.
+ * The sync's rules, kept free of the database and of Paraform so they can be tested alone.
  */
 
 export type ImportPlan =
-  | { kind: "create"; submission: ParaformSubmission; email: string }
+  | {
+      kind: "create";
+      submission: ParaformSubmission;
+      email: string;
+      phone: string | null;
+    }
   | {
       kind: "link_existing";
       submission: ParaformSubmission;
@@ -50,6 +54,24 @@ export function indexExistingByEmail(
   return index;
 }
 
+/**
+ * The email and phone written in the submission's CV text. Paraform shares neither as a field, so
+ * this is the only place they are. An email is used only when the CV has exactly one: with
+ * several, the candidate's own cannot be told from a referee's or a past employer's.
+ */
+export function submissionContacts(
+  submission: Pick<ParaformSubmission, "resumeText">,
+):
+  | { kind: "found"; email: string; phone: string | null }
+  | { kind: "none" }
+  | { kind: "several"; count: number } {
+  const text = submission.resumeText ?? "";
+  const { emails, phones } = extractContacts(text, splitSections(text));
+  if (emails.length === 0) return { kind: "none" };
+  if (emails.length > 1) return { kind: "several", count: emails.length };
+  return { kind: "found", email: emails[0]!, phone: phones.length === 1 ? phones[0]! : null };
+}
+
 /** What to do with each submission to one role that has not been imported yet. */
 export function planImports(input: {
   submissions: ParaformSubmission[];
@@ -65,15 +87,24 @@ export function planImports(input: {
 
     // The sync log outlives a deleted candidate, so it names ids, never a name or an email.
     const name = submissionLabel(submission);
-    const email = submission.email?.trim().toLowerCase();
-    if (!email) {
+    const contacts = submissionContacts(submission);
+    if (contacts.kind === "none") {
       plans.push({
         kind: "skip",
         submission,
-        problem: `${name} was not imported: Paraform did not share an email address.`,
+        problem: `${name} was not imported: Paraform shares no email address, and its CV text has none. Add the candidate by hand.`,
       });
       continue;
     }
+    if (contacts.kind === "several") {
+      plans.push({
+        kind: "skip",
+        submission,
+        problem: `${name} was not imported: its CV text has ${contacts.count} email addresses, so OpenATS cannot tell which is the candidate's. Add the candidate by hand.`,
+      });
+      continue;
+    }
+    const { email, phone } = contacts;
     if (seenEmails.has(email)) {
       plans.push({
         kind: "skip",
@@ -105,7 +136,7 @@ export function planImports(input: {
         candidateId: existing.candidateId,
       });
     } else {
-      plans.push({ kind: "create", submission, email });
+      plans.push({ kind: "create", submission, email, phone });
     }
   }
   return plans;
@@ -116,47 +147,17 @@ export function submissionLabel(submission: Pick<ParaformSubmission, "id">): str
   return `Paraform submission ${submission.id}`;
 }
 
-/** Where a candidate stands in OpenATS, as far as Paraform needs to know. */
-export type CandidatePosition = {
-  status: "active" | "rejected" | "offered" | "hired" | "withdrawn";
-  /** Still in the job's first stage, where every imported candidate starts. */
-  inFirstStage: boolean;
-};
-
 /**
- * The decision OpenATS has made about a candidate: rejected, or moved on from the first stage.
- * Null while they wait in the first stage, and for a withdrawal, which is the candidate's choice
- * and not a decision for the recruiter.
+ * Splits Paraform's one name string into the first and last name OpenATS stores, within its
+ * limits: the last word is the last name. "Ada B." stays as Paraform shortened it.
  */
-export function decisionFor(
-  position: CandidatePosition,
-): ParaformDecision | null {
-  if (position.status === "rejected") return "reject";
-  if (position.status === "withdrawn") return null;
-  if (position.status === "offered" || position.status === "hired")
-    return "advance";
-  return position.inFirstStage ? null : "advance";
-}
-
-/**
- * The decision still to send, given the last one Paraform accepted. Each is sent at most once,
- * and a rejection is final: a candidate moved back after one is not advanced again on Paraform.
- */
-export function decisionToSend(
-  current: ParaformDecision | null,
-  alreadySent: ParaformDecision | null,
-): ParaformDecision | null {
-  if (current === null || alreadySent === "reject" || current === alreadySent)
-    return null;
-  return current;
-}
-
-/** Splits a submitted name into the first and last name OpenATS stores, within its limits. */
-export function candidateName(submission: ParaformSubmission): {
+export function candidateName(submission: Pick<ParaformSubmission, "name">): {
   firstName: string;
   lastName: string;
 } {
-  const firstName = submission.firstName.trim().slice(0, 100) || "Unknown";
-  const lastName = submission.lastName.trim().slice(0, 100) || "-";
+  const words = submission.name.trim().split(/\s+/).filter(Boolean);
+  const last = words.length > 1 ? words.pop()! : "";
+  const firstName = words.join(" ").slice(0, 100) || "Unknown";
+  const lastName = last.slice(0, 100) || "-";
   return { firstName, lastName };
 }

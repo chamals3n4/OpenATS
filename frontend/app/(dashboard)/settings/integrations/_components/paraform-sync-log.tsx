@@ -13,17 +13,9 @@ import {
 export function describeRun(run: ParaformSyncRun): string {
   if (run.status === "running") return "Syncing now…";
   if (run.status === "failed") return run.error ?? "The sync failed.";
-  const parts = [
-    run.candidatesImported === 0
-      ? "No new candidates"
-      : `${run.candidatesImported} new ${run.candidatesImported === 1 ? "candidate" : "candidates"} imported`,
-  ];
-  if (run.decisionsSent > 0) {
-    parts.push(
-      `${run.decisionsSent} ${run.decisionsSent === 1 ? "decision" : "decisions"} sent to Paraform`,
-    );
-  }
-  return parts.join(", ");
+  return run.candidatesImported === 0
+    ? "No new candidates"
+    : `${run.candidatesImported} new ${run.candidatesImported === 1 ? "candidate" : "candidates"} imported`;
 }
 
 export function ParaformSyncLog() {

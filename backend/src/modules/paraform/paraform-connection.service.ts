@@ -96,14 +96,6 @@ export const paraformConnectionService = {
     await db.delete(paraformConnection);
   },
 
-  async setSendDecisions(enabled: boolean): Promise<boolean> {
-    const updated = await db
-      .update(paraformConnection)
-      .set({ sendDecisions: enabled, updatedAt: new Date() })
-      .returning({ id: paraformConnection.id });
-    return updated.length > 0;
-  },
-
   /**
    * A usable access token, refreshed first when it is about to expire. Paraform's tokens last
    * minutes, so this refreshes on most runs. A refused refresh marks the connection for the

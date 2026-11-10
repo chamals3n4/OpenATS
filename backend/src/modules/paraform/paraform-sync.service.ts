@@ -12,7 +12,7 @@ import {
 import { McpAuthError } from "../../shared/integrations/paraform/mcp-client";
 import { ParaformOAuthError } from "../../shared/integrations/paraform/oauth";
 import {
-  ParaformMappingPendingError,
+  ParaformUnexpectedAnswerError,
   type ParaformApi,
   type ParaformSubmission,
 } from "../../shared/integrations/paraform/paraform-api";
@@ -28,9 +28,8 @@ import {
 import {
   candidateName,
   indexExistingByEmail,
+  submissionContacts,
   submissionLabel,
-  decisionFor,
-  decisionToSend,
   planImports,
 } from "./paraform-sync-rules";
 
@@ -39,7 +38,6 @@ const STALE_RUN_MS = 30 * 60_000;
 
 type RunCounts = {
   candidatesImported: number;
-  decisionsSent: number;
   problems: string[];
 };
 
@@ -49,8 +47,8 @@ export function describeRunError(error: unknown): string {
   if (error instanceof McpAuthError) {
     return `Paraform refused the connection (${error.message}). Paraform grants hiring-manager access on request; once it does, run the sync again or reconnect.`;
   }
-  if (error instanceof ParaformMappingPendingError) {
-    return "This version of OpenATS cannot read Paraform roles and candidates yet.";
+  if (error instanceof ParaformUnexpectedAnswerError) {
+    return "Paraform answered in a form this version of OpenATS does not read, so nothing was synced. Paraform may have changed its tools; an OpenATS update may be needed.";
   }
   // A refused sign-in arrives as ParaformNotConnectedError; this is a 429, a 5xx or a bad answer.
   if (error instanceof ParaformOAuthError) {
@@ -63,7 +61,7 @@ function isFatal(error: unknown): boolean {
   return (
     error instanceof ParaformNotConnectedError ||
     error instanceof McpAuthError ||
-    error instanceof ParaformMappingPendingError ||
+    error instanceof ParaformUnexpectedAnswerError ||
     // Every later call would need the same token, so stop instead of failing role by role.
     error instanceof ParaformOAuthError
   );
@@ -92,7 +90,6 @@ function linkValues(
     paraformSubmissionId: submission.id,
     candidateId,
     roleLinkId,
-    recruiterName: submission.recruiterName?.slice(0, 255) ?? null,
     submissionNote: submission.note,
     paraformUrl: submission.url?.slice(0, 1000) ?? null,
   };
@@ -103,22 +100,40 @@ async function importRole(
   roleLink: ParaformRoleLink,
   counts: RunCounts,
 ) {
-  const submissions = await api.listSubmissions(roleLink.paraformRoleId);
+  const ids = await api.listSubmissionIds(roleLink.paraformRoleId);
+  if (ids.length === 0) return;
+
+  const imported = new Set(
+    (
+      await db
+        .select({ id: paraformCandidateLinks.paraformSubmissionId })
+        .from(paraformCandidateLinks)
+        .where(inArray(paraformCandidateLinks.paraformSubmissionId, ids))
+    ).map((row) => row.id),
+  );
+
+  // Only new submissions are read in full: the list has no CV text, so each is one more call.
+  const submissions: ParaformSubmission[] = [];
+  for (const id of ids) {
+    if (imported.has(id)) continue;
+    try {
+      submissions.push(await api.getSubmission(id));
+    } catch (error) {
+      if (isFatal(error)) throw error;
+      logger.error(
+        `[paraform-sync] reading submission ${id} failed: ${getErrorMessage(error)}`,
+      );
+      counts.problems.push(
+        `${submissionLabel({ id })} could not be read from Paraform. The next sync will try again.`,
+      );
+    }
+  }
   if (submissions.length === 0) return;
 
-  const imported = await db
-    .select({ id: paraformCandidateLinks.paraformSubmissionId })
-    .from(paraformCandidateLinks)
-    .where(
-      inArray(
-        paraformCandidateLinks.paraformSubmissionId,
-        submissions.map((s) => s.id),
-      ),
-    );
-
-  const emails = submissions
-    .map((s) => s.email?.trim().toLowerCase())
-    .filter((e): e is string => Boolean(e));
+  const emails = submissions.flatMap((submission) => {
+    const contacts = submissionContacts(submission);
+    return contacts.kind === "found" ? [contacts.email] : [];
+  });
   const existing = emails.length
     ? await db
         .select({
@@ -142,7 +157,7 @@ async function importRole(
 
   const plans = planImports({
     submissions,
-    importedSubmissionIds: new Set(imported.map((row) => row.id)),
+    importedSubmissionIds: imported,
     existingByEmail: indexExistingByEmail(
       existing.map((row) => ({
         candidateId: row.candidateId,
@@ -182,7 +197,7 @@ async function importRole(
           .values({
             ...candidateName(submission),
             email: plan.email,
-            phone: submission.phone?.slice(0, 50) ?? null,
+            phone: plan.phone?.slice(0, 50) ?? null,
             jobId: roleLink.jobId,
             currentStageId: firstStageId,
           })
@@ -213,70 +228,12 @@ async function importRole(
   if (createdAny) socketService.notifyCandidateApplied(roleLink.jobId);
 }
 
-async function sendDecisions(api: ParaformApi, counts: RunCounts) {
-  const linked = await db
-    .select({
-      linkId: paraformCandidateLinks.id,
-      candidateId: paraformCandidateLinks.candidateId,
-      submissionId: paraformCandidateLinks.paraformSubmissionId,
-      decisionSent: paraformCandidateLinks.decisionSent,
-      jobId: candidates.jobId,
-      status: candidates.status,
-      currentStageId: candidates.currentStageId,
-    })
-    .from(paraformCandidateLinks)
-    .innerJoin(
-      candidates,
-      eq(candidates.id, paraformCandidateLinks.candidateId),
-    );
-
-  const first = await firstStages([...new Set(linked.map((row) => row.jobId))]);
-
-  for (const row of linked) {
-    const decision = decisionToSend(
-      decisionFor({
-        status: row.status,
-        inFirstStage: row.currentStageId === first.get(row.jobId),
-      }),
-      row.decisionSent,
-    );
-    if (!decision) continue;
-
-    try {
-      await api.decide(row.submissionId, decision);
-      await db
-        .update(paraformCandidateLinks)
-        .set({
-          decisionSent: decision,
-          decisionSentAt: new Date(),
-          decisionError: null,
-        })
-        .where(eq(paraformCandidateLinks.id, row.linkId));
-      counts.decisionsSent += 1;
-    } catch (error) {
-      if (isFatal(error)) throw error;
-      const message = getErrorMessage(error);
-      logger.error(
-        `[paraform-sync] ${decision} for candidate ${row.candidateId} failed: ${message}`,
-      );
-      await db
-        .update(paraformCandidateLinks)
-        .set({ decisionError: message.slice(0, 1000) })
-        .where(eq(paraformCandidateLinks.id, row.linkId));
-      counts.problems.push(
-        // Paraform's message stays on the candidate's link row and in the server log: it may
-        // quote the person, and the sync log is kept after the candidate is deleted.
-        `Paraform was not told about candidate #${row.candidateId} (${decision}). The server log has the details.`,
-      );
-    }
-  }
-}
-
 export const paraformSyncService = {
   /**
-   * Imports new submissions for every linked role, then, if the admin turned it on, sends each
-   * candidate's decision back. Returns the run, or null when there is nothing to do: Paraform is
-   * not connected, or another run is still going.
+   * Imports new submissions for every linked role. Nothing goes back to Paraform: decisions are
+   * made there, because Paraform asks the hiring manager for answers OpenATS cannot give for them.
+   * Returns the run, or null when there is nothing to do: Paraform is not connected, or another
+   * run is still going.
    */
   async run(
     trigger: "scheduled" | "manual",
@@ -308,11 +265,7 @@ export const paraformSyncService = {
       .returning();
     if (!run) return null;
 
-    const counts: RunCounts = {
-      candidatesImported: 0,
-      decisionsSent: 0,
-      problems: [],
-    };
+    const counts: RunCounts = { candidatesImported: 0, problems: [] };
     let error: string | null = null;
     try {
       const roleLinks = await db.select().from(paraformRoleLinks);
@@ -329,7 +282,6 @@ export const paraformSyncService = {
           );
         }
       }
-      if (connection.sendDecisions) await sendDecisions(api, counts);
     } catch (runError) {
       logger.error(
         `[paraform-sync] run ${run.id} failed: ${getErrorMessage(runError)}`,
@@ -342,7 +294,6 @@ export const paraformSyncService = {
       .set({
         status: error ? "failed" : "succeeded",
         candidatesImported: counts.candidatesImported,
-        decisionsSent: counts.decisionsSent,
         problems: counts.problems,
         error,
         finishedAt: new Date(),

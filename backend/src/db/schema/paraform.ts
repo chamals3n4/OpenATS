@@ -12,7 +12,6 @@ import {
   index,
 } from "drizzle-orm/pg-core";
 import {
-  paraformDecision,
   paraformSyncStatus,
   paraformSyncTrigger,
 } from "./enums";
@@ -38,9 +37,6 @@ export const paraformConnection = pgTable(
     connectedBy: integer("connected_by").references(() => users.id, {
       onDelete: "set null",
     }),
-    // Off until an admin turns it on: moving a candidate in OpenATS then advances or rejects
-    // them on Paraform too.
-    sendDecisions: boolean("send_decisions").notNull().default(false),
     // Set when Paraform refuses the stored sign-in; cleared by connecting again.
     needsReconnect: boolean("needs_reconnect").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -85,13 +81,10 @@ export const paraformCandidateLinks = pgTable(
     roleLinkId: integer("role_link_id").references(() => paraformRoleLinks.id, {
       onDelete: "set null",
     }),
-    recruiterName: varchar("recruiter_name", { length: 255 }),
+    // The recruiter's notes on why the candidate fits, as Paraform gave them.
     submissionNote: text("submission_note"),
+    // The application on Paraform, where advance and reject decisions are made.
     paraformUrl: varchar("paraform_url", { length: 1000 }),
-    // The last decision Paraform accepted for this candidate, and the last one it refused.
-    decisionSent: paraformDecision("decision_sent"),
-    decisionSentAt: timestamp("decision_sent_at"),
-    decisionError: text("decision_error"),
     importedAt: timestamp("imported_at").notNull().defaultNow(),
   },
   (t) => [index("idx_paraform_candidate_links_role_link_id").on(t.roleLinkId)],
@@ -105,7 +98,6 @@ export const paraformSyncRuns = pgTable(
     trigger: paraformSyncTrigger("trigger").notNull(),
     status: paraformSyncStatus("status").notNull().default("running"),
     candidatesImported: integer("candidates_imported").notNull().default(0),
-    decisionsSent: integer("decisions_sent").notNull().default(0),
     // Plain-language notes about single candidates the run could not handle. They name candidate
     // and submission ids, never a name or email: this row is kept after a candidate is deleted.
     problems: text("problems")

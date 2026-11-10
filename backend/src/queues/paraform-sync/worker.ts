@@ -12,7 +12,7 @@ export function startParaformSyncWorker(): Worker<ParaformSyncJobData> {
       const run = await paraformSyncService.run(job.data.trigger);
       if (run) {
         logger.info(
-          `[paraform-sync] run ${run.id} ${run.status}: ${run.candidatesImported} imported, ${run.decisionsSent} decisions sent`,
+          `[paraform-sync] run ${run.id} ${run.status}: ${run.candidatesImported} imported`,
         );
       }
     },

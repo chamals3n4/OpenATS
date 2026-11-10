@@ -15,7 +15,6 @@ export type ParaformOverview = {
   connected: boolean;
   accountEmail: string | null;
   needsReconnect: boolean;
-  sendDecisions: boolean;
   roleLinks: Array<{
     id: number;
     paraformRoleId: string;
@@ -54,7 +53,6 @@ export const paraformService = {
       connected: connection !== null,
       accountEmail: connection?.accountEmail ?? null,
       needsReconnect: connection?.needsReconnect ?? false,
-      sendDecisions: connection?.sendDecisions ?? false,
       roleLinks,
     };
   },
@@ -84,10 +82,7 @@ export const paraformService = {
     return inserted[0];
   },
 
-  /**
-   * Stops importing for a role. Candidates already imported stay, and keep their Paraform link,
-   * so their decisions are still sent.
-   */
+  /** Stops importing for a role. Candidates already imported stay, with their Paraform link. */
   async unlinkRole(id: number): Promise<boolean> {
     const deleted = await db
       .delete(paraformRoleLinks)

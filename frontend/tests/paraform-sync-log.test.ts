@@ -8,7 +8,6 @@ function run(overrides: Partial<ParaformSyncRun>): ParaformSyncRun {
     trigger: "scheduled",
     status: "succeeded",
     candidatesImported: 0,
-    decisionsSent: 0,
     problems: [],
     error: null,
     startedAt: new Date().toISOString(),
@@ -22,10 +21,9 @@ describe("describeRun", () => {
     expect(describeRun(run({}))).toBe("No new candidates");
   });
 
-  it("counts imports and decisions, singular and plural", () => {
-    expect(describeRun(run({ candidatesImported: 1, decisionsSent: 2 }))).toBe(
-      "1 new candidate imported, 2 decisions sent to Paraform",
-    );
+  it("counts imports, singular and plural", () => {
+    expect(describeRun(run({ candidatesImported: 1 }))).toBe("1 new candidate imported");
+    expect(describeRun(run({ candidatesImported: 3 }))).toBe("3 new candidates imported");
   });
 
   it("shows the reason a run failed", () => {

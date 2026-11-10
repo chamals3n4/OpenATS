@@ -2,6 +2,7 @@
 
 import { HugeiconsIcon } from "@hugeicons/react";
 import {
+  ArrowUpRight01Icon,
   Cancel01Icon,
   CallIcon,
   Mail01Icon,
@@ -155,6 +156,21 @@ export function CandidateHeader({
                 />
                 <span>Applied {formatDate(candidate.appliedAt)}</span>
               </div>
+              {candidate.paraformUrl && (
+                <a
+                  href={candidate.paraformUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Submitted by a Paraform recruiter. Advance or reject them on Paraform."
+                  className="inline-flex items-center gap-2 font-medium hover:text-[var(--theme-color)]"
+                >
+                  <HugeiconsIcon
+                    icon={ArrowUpRight01Icon}
+                    className="size-5 shrink-0 text-theme dark:text-primary"
+                  />
+                  <span>Open in Paraform</span>
+                </a>
+              )}
             </div>
           </div>
 

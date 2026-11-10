@@ -8,7 +8,6 @@ import {
   linkRole,
   listRoles,
   listRuns,
-  putSettings,
   syncNow,
   unlinkRole,
 } from "./paraform.controller";
@@ -21,7 +20,6 @@ router.get("/", getOverview);
 router.delete("/", disconnect);
 router.get("/access", getAccess);
 router.get("/connect-url", getConnectUrl);
-router.put("/settings", putSettings);
 router.get("/roles", listRoles);
 router.post("/role-links", linkRole);
 router.delete("/role-links/:id", unlinkRole);

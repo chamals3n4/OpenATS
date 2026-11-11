@@ -11,6 +11,16 @@ If you hire through [Paraform](https://www.paraform.com), outside recruiters sub
 
 There is one Paraform connection for the whole company. Only a Super Admin can see or change it.
 
+## At a glance for hiring managers
+
+- **Candidates arrive by themselves.** About every 15 minutes, new submissions to a linked Paraform role land in that job's first stage. Nobody adds them by hand.
+- **They get no email from OpenATS.** The recruiter submitted them, so the usual "application received" email isn't sent.
+- **Spot them by Open in Paraform** on the candidate's page. Paraform shares the CV's text, not the file, so read the full CV and the recruiter's note there.
+- **Decide on Paraform.** Advance or reject with **Open in Paraform**. Moving a candidate between stages in OpenATS doesn't tell Paraform or the recruiter.
+- **Missing someone?** A submission whose CV has no email address, or more than one, is skipped. A Super Admin sees why in the sync log and can add the candidate by hand.
+
+The rest of this page is for the Super Admin who sets up the connection.
+
 ## Before you start
 
 - **Paraform hiring-manager access.** Paraform turns on access for connected apps account by account. If you haven't got it yet, ask your Paraform contact to turn on hiring-manager access for the account you'll sign in with.

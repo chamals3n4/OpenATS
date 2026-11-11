@@ -13,11 +13,27 @@ There is one Paraform connection for the whole company. Only a Super Admin can s
 
 ## At a glance for hiring managers
 
+![A recruiter submits on Paraform, OpenATS syncs and imports the candidate into the linked job, the hiring team reviews in OpenATS, and the hiring manager decides on Paraform](/content/paraform/paraform-flow.svg)
+
 - **Candidates arrive by themselves.** About every 15 minutes, new submissions to a linked Paraform role land in that job's first stage. Nobody adds them by hand.
 - **They get no email from OpenATS.** The recruiter submitted them, so the usual "application received" email isn't sent.
 - **Spot them by Open in Paraform** on the candidate's page. Paraform shares the CV's text, not the file, so read the full CV and the recruiter's note there.
 - **Decide on Paraform.** Advance or reject with **Open in Paraform**. Moving a candidate between stages in OpenATS doesn't tell Paraform or the recruiter.
 - **Missing someone?** A submission whose CV has no email address, or more than one, is skipped. A Super Admin sees why in the sync log and can add the candidate by hand.
+
+### Day to day
+
+1. **Find them** under **Candidates** and in the job's first stage, next to direct applicants. You see them only on jobs whose hiring team you're on.
+2. **Read the full picture.** Read the CV text in OpenATS, then select **Open in Paraform** for the recruiter's note, the screening answers and the CV file.
+3. **Run your process in OpenATS:** star ratings, interviews, scorecards and notes, so the whole team sees them. Judge on evidence only, never on protected traits.
+4. **Decide on Paraform first, then match it in OpenATS:**
+
+| To | On Paraform you'll be asked | Then in OpenATS |
+| --- | --- | --- |
+| Advance | How strongly you feel about the candidate, and whether Paraform should send an intro email | Move them to your next stage |
+| Reject | Your own reason, and whether the candidate has already been told | Reject them with the same reason |
+
+Don't email a Paraform candidate from OpenATS before the recruiter has introduced you: on Paraform, the intro email is part of advancing them.
 
 The rest of this page is for the Super Admin who sets up the connection.
 

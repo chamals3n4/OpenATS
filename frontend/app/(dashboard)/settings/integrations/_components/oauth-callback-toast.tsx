@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 const PROVIDER_LABELS: Record<string, string> = {
   google_meet: "Google Meet",
+  paraform: "Paraform",
 };
 
 export function OAuthCallbackToast() {
@@ -22,6 +23,7 @@ export function OAuthCallbackToast() {
     if (connected) {
       toast.success(`${PROVIDER_LABELS[connected] ?? connected} connected`);
       queryClient.invalidateQueries({ queryKey: ["integrations", "status"] });
+      queryClient.invalidateQueries({ queryKey: ["paraform"] });
     } else if (error) {
       toast.error(`Failed to connect ${PROVIDER_LABELS[error] ?? error}`);
     }

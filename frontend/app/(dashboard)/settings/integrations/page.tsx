@@ -3,6 +3,7 @@ import { serverFetch } from "@/lib/server-fetch";
 import type { IntegrationStatus } from "@/hooks/queries/use-integrations";
 import { IntegrationsList } from "./_components/integrations-list";
 import { OAuthCallbackToast } from "./_components/oauth-callback-toast";
+import { ParaformSection } from "./_components/paraform-section";
 
 export default async function SettingsIntegrationsPage() {
   // The list handles load errors
@@ -38,6 +39,8 @@ export default async function SettingsIntegrationsPage() {
           </p>
 
           <IntegrationsList initialStatus={initialStatus} />
+
+          <ParaformSection />
         </div>
       </div>
     </div>

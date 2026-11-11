@@ -7,7 +7,7 @@ import { startAllWorkers } from "./queues/start-workers";
 import logger from "./utils/logger";
 
 const workers = startAllWorkers();
-logger.info("Background worker started: CV text, CV file deletion and AI CV analysis");
+logger.info("Background worker started: CV text, CV file deletion, AI CV analysis and Paraform sync");
 
 async function shutdown(signal: string) {
   logger.info(`[worker] received ${signal}, shutting down gracefully...`);

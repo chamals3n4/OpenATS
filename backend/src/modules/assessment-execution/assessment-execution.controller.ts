@@ -13,6 +13,7 @@ import { canViewCandidate } from "../../shared/auth/job-access";
 import { isPastDeadline } from "./grading";
 import logger from "../../utils/logger";
 import { getErrorMessage} from "../../utils/error.utils";
+import { tokenFingerprint } from "../../utils/redact-url";
 
 const inviteCandidateSchema = z.object({
   candidateId: z.number().int().positive(),
@@ -152,7 +153,7 @@ export const startAssessment = async (req: Request, res: Response) => {
       data: { status: result?.status ?? "started", startedAt: result?.startedAt ?? null },
     });
   } catch (error) {
-    logger.error(`Failed to start assessment attempt for token=${req.params.token}: ${getErrorMessage(error)}`);
+    logger.error(`Failed to start assessment attempt for link=${tokenFingerprint(req.params.token)}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to start assessment" });
   }
 };
@@ -199,7 +200,7 @@ export const submitAssessmentAnswer = async (req: Request, res: Response) => {
     });
     res.status(200).json({ data: { questionId: result.questionId, saved: true } });
   } catch (error) {
-    logger.error(`Failed to save answer for attempt token=${req.params.token}: ${getErrorMessage(error)}`);
+    logger.error(`Failed to save answer for attempt link=${tokenFingerprint(req.params.token)}: ${getErrorMessage(error)}`);
     res.status(500).json({
       error: "Failed to save answer",
     });
@@ -294,7 +295,7 @@ export const completeAssessment = async (req: Request, res: Response) => {
       data: { completed: true },
     });
   } catch (error) {
-    logger.error(`Failed to complete assessment for token=${req.params.token}: ${getErrorMessage(error)}`);
+    logger.error(`Failed to complete assessment for link=${tokenFingerprint(req.params.token)}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to finalize assessment" });
   }
 };

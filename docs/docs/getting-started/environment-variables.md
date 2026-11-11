@@ -24,6 +24,7 @@ These go in `backend/.env`, and both the API and the worker read them.
 | `REDIS_URL` | No | Your Redis connection. Defaults to `redis://localhost:6379` |
 | `FRONTEND_URL` | Yes | The address people use to open OpenATS. Every link in a candidate email starts with this, so in production it must be your public address |
 | `PORT` | No | The API's port. Defaults to `8080` |
+| `API_PUBLIC_URL` | No | The API's public address. Paraform sends you back here after you connect it, and logos are served from here when `STORAGE=local`. Defaults to `http://localhost:8080`, so set it on a real server if you use either |
 | `TRUST_PROXY` | No | How many proxies sit in front of the API. Defaults to `1`. See [Your Own Server](../deployment/own-server#tell-the-api-about-your-proxy) |
 | `RUN_WORKER_IN_API` | No | Set to `true` to run the background worker inside the API, for hosting without a second service |
 
@@ -33,7 +34,7 @@ These go in `backend/.env`, and both the API and the worker read them.
 | --- | --- | --- |
 | `AUTH_JWKS_URL` | Yes | The website's address followed by `/api/auth/jwks` |
 | `AUTH_ISSUER` | Yes | The website's address. Must exactly match `BETTER_AUTH_URL` in the frontend |
-| `ENCRYPTION_KEY` | Yes | Protects saved Google connections. Must be 32 bytes in base64. Create one with `openssl rand -base64 32` |
+| `ENCRYPTION_KEY` | Yes | Protects saved Google and Paraform connections. Must be 32 bytes in base64. Create one with `openssl rand -base64 32` |
 
 Don't change `ENCRYPTION_KEY` once people have connected their Google accounts, because their saved connections can no longer be read.
 

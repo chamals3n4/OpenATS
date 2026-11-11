@@ -113,3 +113,13 @@ export const interviewRecommendation = pgEnum("interview_recommendation", [
   "yes",
   "strong_yes",
 ]);
+
+// Paraform hiring-partner sync (modules/paraform).
+export const paraformSyncTrigger = pgEnum("paraform_sync_trigger", ["scheduled", "manual"]);
+
+export const paraformSyncStatus = pgEnum("paraform_sync_status", [
+  "running",
+  "succeeded",
+  "failed",
+]);
+

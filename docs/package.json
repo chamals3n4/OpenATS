@@ -23,7 +23,7 @@
     "@hugeicons/react": "1.1.10",
     "@mdx-js/react": "^3.0.0",
     "clsx": "^2.0.0",
-    "docusaurus-plugin-copy-page-button": "^0.8.5",
+    "docusaurus-plugin-copy-page-button": "^0.8.6",
     "prism-react-renderer": "^2.3.0",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"
@@ -32,9 +32,9 @@
     "@docusaurus/module-type-aliases": "3.10.2",
     "@docusaurus/tsconfig": "3.10.2",
     "@docusaurus/types": "3.10.2",
-    "@tailwindcss/postcss": "4.3.4",
+    "@tailwindcss/postcss": "4.3.5",
     "@types/react": "^19.3.0",
-    "tailwindcss": "4.3.4",
+    "tailwindcss": "4.3.5",
     "typescript": "~6.0.2"
   },
   "browserslist": {

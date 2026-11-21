@@ -8,11 +8,17 @@ import { createHash } from "crypto";
 const TOKEN_PATH = /^(\/public\/(?:assessment|assignment|offers|interview)\/)[^/?#]+/i;
 
 /**
+ * Query values that are secrets: an OAuth sign-in callback (`/oauth/google/callback`) carries a
+ * one-time `code` that is swapped for access to the user's account, and the `state` that guards it.
+ */
+const SECRET_QUERY = /([?&](?:code|state)=)[^&#]*/g;
+
+/**
  * A request's address as it may be written to the log. Logs are read by more people and kept
- * longer than the database, so a candidate's link token is replaced with `[redacted]`.
+ * longer than the database, so a candidate's link token and OAuth secrets are replaced with `[redacted]`.
  */
 export function logUrl(url: string): string {
-  return url.replace(TOKEN_PATH, "$1[redacted]");
+  return url.replace(TOKEN_PATH, "$1[redacted]").replace(SECRET_QUERY, "$1[redacted]");
 }
 
 /** A short, one-way name for a token, so log lines about the same link can be matched without the token. */

@@ -27,9 +27,21 @@ describe("logUrl", () => {
     expect(logUrl(`/Public/Assessment/${TOKEN}`)).toBe("/Public/Assessment/[redacted]");
   });
 
+  it("takes the OAuth code and state out of a sign-in callback", () => {
+    const logged = logUrl("/oauth/google/callback?code=4/0AbCdEf-secret&scope=calendar&state=xyz789");
+    expect(logged).toBe("/oauth/google/callback?code=[redacted]&scope=calendar&state=[redacted]");
+  });
+
+  it("takes the code and state out of an error callback too", () => {
+    expect(logUrl("/oauth/google/callback?state=xyz789&error=access_denied")).toBe(
+      "/oauth/google/callback?state=[redacted]&error=access_denied",
+    );
+  });
+
   it("leaves other addresses alone", () => {
     expect(logUrl("/public/jobs/42/apply")).toBe("/public/jobs/42/apply");
     expect(logUrl("/api/candidates/7?search=ana")).toBe("/api/candidates/7?search=ana");
+    expect(logUrl("/api/jobs?postcode=10115")).toBe("/api/jobs?postcode=10115");
   });
 
   // A new candidate link added to the public routes must be covered here too.

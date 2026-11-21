@@ -17,4 +17,9 @@ pool.on("error", (err) => {
 
 export const db = drizzle(pool, { schema });
 
+/** Closes every database connection. Only for shutting the process down. */
+export function closeDb(): Promise<void> {
+  return pool.end();
+}
+
 export * from "./schema";

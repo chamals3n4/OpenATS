@@ -1,4 +1,4 @@
-import express, { type Express, type Request } from "express";
+import express, { type Express, type Request, type Response } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
@@ -19,6 +19,7 @@ import { sql } from "drizzle-orm";
 import { db } from "./db";
 import { createRedisConnection } from "./config/redis";
 import logger from "./utils/logger";
+import { logUrl } from "./utils/log-url";
 import { DEFAULT_TRUST_PROXY, parseTrustProxy } from "./config/env";
 import { getWorkerStatus } from "./queues/worker-status";
 
@@ -53,9 +54,12 @@ app.use(
 );
 app.use(express.json({ limit: "1mb" }));
 
+// Logs the address with candidate link tokens taken out (utils/log-url.ts), never the raw :url.
+morgan.token<Request, Response>("safe-url", (req) => logUrl(req.originalUrl ?? req.url));
+
 app.use(
   morgan(
-    ":remote-addr :method :url :status :res[content-length] - :response-time ms",
+    ":remote-addr :method :safe-url :status :res[content-length] - :response-time ms",
     {
       skip: (req) => req.url.startsWith("/api-docs"),
       stream: {

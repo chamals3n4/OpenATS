@@ -4,6 +4,7 @@ import app from "../../src/app";
 import { db } from "../../src/db";
 import { pageSettings } from "../../src/db/schema";
 import {
+  corsAccess,
   frontendOrigin,
   isOriginAllowed,
   pageSettingsService,
@@ -70,6 +71,60 @@ describe("the public API with only the company website listed", () => {
 
   it("lets a request with no origin through: this is not access control", async () => {
     expect((await request(app).get("/public/jobs")).status).toBe(200);
+  });
+});
+
+describe("corsAccess", () => {
+  it("trusts our frontend and listed origins, with or without a list", () => {
+    expect(corsAccess(frontendOrigin(), "/api/jobs", [])).toBe("trusted");
+    expect(corsAccess(COMPANY_SITE, "/api/jobs", [COMPANY_SITE])).toBe("trusted");
+  });
+
+  it("opens /public to every site while the list is empty", () => {
+    expect(corsAccess(OTHER_SITE, "/public/jobs/42/apply", [])).toBe("public");
+  });
+
+  it("keeps /public closed to unlisted sites once a list is set", () => {
+    expect(corsAccess(OTHER_SITE, "/public/jobs", [COMPANY_SITE])).toBe("denied");
+  });
+
+  it("never opens the signed-in API to other sites", () => {
+    expect(corsAccess(OTHER_SITE, "/api/candidates", [])).toBe("denied");
+    expect(corsAccess(OTHER_SITE, "/publicity", [])).toBe("denied");
+  });
+});
+
+// A custom careers site calls the API from the visitor's browser, which reads the reply only when
+// the CORS headers allow its origin.
+describe("CORS headers for another website", () => {
+  const preflight = (path: string, origin: string) =>
+    request(app).options(path).set({ Origin: origin, "Access-Control-Request-Method": "POST" });
+
+  it("allows a custom careers site to apply while the list is empty", async () => {
+    await pageSettingsService.setAllowedOrigins([]);
+    const res = await preflight("/public/jobs/42/apply", OTHER_SITE);
+    expect(res.headers["access-control-allow-origin"]).toBe(OTHER_SITE);
+    expect(res.headers["access-control-allow-credentials"]).toBeUndefined();
+  });
+
+  it("allows a listed site, and refuses an unlisted one, once a list is set", async () => {
+    await pageSettingsService.setAllowedOrigins([COMPANY_SITE]);
+    expect((await preflight("/public/jobs/42/apply", COMPANY_SITE)).headers["access-control-allow-origin"]).toBe(
+      COMPANY_SITE,
+    );
+    expect((await preflight("/public/jobs/42/apply", OTHER_SITE)).headers["access-control-allow-origin"]).toBeUndefined();
+  });
+
+  it("does not open the signed-in API to another site", async () => {
+    await pageSettingsService.setAllowedOrigins([]);
+    expect((await preflight("/api/candidates", OTHER_SITE)).headers["access-control-allow-origin"]).toBeUndefined();
+  });
+
+  it("still allows our own frontend everywhere, with credentials", async () => {
+    await pageSettingsService.setAllowedOrigins([COMPANY_SITE]);
+    const res = await preflight("/api/candidates", frontendOrigin());
+    expect(res.headers["access-control-allow-origin"]).toBe(frontendOrigin());
+    expect(res.headers["access-control-allow-credentials"]).toBe("true");
   });
 });
 

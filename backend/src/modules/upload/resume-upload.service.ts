@@ -2,6 +2,7 @@ import { and, eq, gt, lte } from "drizzle-orm";
 import { db, resumeUploads } from "../../db";
 import { r2Service } from "../../shared/services/r2.service";
 import logger from "../../utils/logger";
+import { getErrorMessage } from "../../utils/error.utils";
 
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -53,7 +54,7 @@ export const resumeUploadService = {
         removed++;
       } catch (error) {
         logger.error(
-          `Failed to remove unused CV upload ${id}: ${error instanceof Error ? error.message : String(error)}`,
+          `Failed to remove unused CV upload ${id}: ${getErrorMessage(error)}`,
         );
       }
     }

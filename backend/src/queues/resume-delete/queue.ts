@@ -1,6 +1,7 @@
 import { Queue } from "bullmq";
 import { createRedisConnection } from "../../config/redis";
 import logger from "../../utils/logger";
+import { getErrorMessage } from "../../utils/error.utils";
 
 export const RESUME_DELETE_QUEUE = "resume-delete";
 
@@ -52,7 +53,7 @@ export async function requestResumeDeletion(
     // The keys are logged so the files can still be removed by hand. A key is a random id and
     // says nothing about whose CV it was.
     logger.error(
-      `[resume-delete] could not queue ${keys.length} file(s) for deletion (${error instanceof Error ? error.message : String(error)}): ${keys.join(", ")}`,
+      `[resume-delete] could not queue ${keys.length} file(s) for deletion (${getErrorMessage(error)}): ${keys.join(", ")}`,
     );
   } finally {
     clearTimeout(timer);

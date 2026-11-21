@@ -7,6 +7,7 @@ import { asEnum } from "../../utils/object.utils";
 import { offers } from "../../db/schema";
 import { notificationService } from "../../shared/services/notification.service";
 import { canViewCandidate, canViewJob, canViewOffers, teamScope } from "../../shared/auth/job-access";
+import { getErrorMessage } from "../../utils/error.utils";
 
 const bulkDeleteOffersSchema = z.object({
   ids: z.array(z.number().int().positive()).min(1),
@@ -103,7 +104,7 @@ export const getAllOffers = async (req: Request, res: Response) => {
     const result = await offerService.getAllDetails(teamScope(req.user));
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch all offers: ${(error as Error)?.message}`);
+    logger.error(`Failed to fetch all offers: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch all offers" });
   }
 };
@@ -128,7 +129,7 @@ export const deleteOffer = async (req: Request, res: Response) => {
     });
     res.status(200).json({ data: deleted });
   } catch (error) {
-    logger.error(`Failed to delete offer ${req.params.id}: ${(error as Error)?.message}`);
+    logger.error(`Failed to delete offer ${req.params.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to delete offer" });
   }
 };
@@ -155,7 +156,7 @@ export const bulkDeleteOffers = async (req: Request, res: Response) => {
     }
     res.status(200).json({ data: deleted, count: deleted.length });
   } catch (error) {
-    logger.error(`Failed to bulk delete offers - user ${req.user?.id}: ${(error as Error)?.message}`);
+    logger.error(`Failed to bulk delete offers - user ${req.user?.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to delete offers" });
   }
 };
@@ -172,7 +173,7 @@ export const getAllOffersByJob = async (req: Request, res: Response) => {
     res.status(200).json({ data: result });
   } catch (error) {
     logger.error(
-      `Failed to fetch offers for job ${req.params.jobId}: ${(error as Error)?.message}`,
+      `Failed to fetch offers for job ${req.params.jobId}: ${getErrorMessage(error)}`,
     );
     res.status(500).json({ error: "Failed to fetch offers" });
   }
@@ -194,7 +195,7 @@ export const getOfferById = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to fetch offer ${req.params.id}: ${(error as Error)?.message}`);
+    logger.error(`Failed to fetch offer ${req.params.id}: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch offer" });
   }
 };
@@ -228,7 +229,7 @@ export const createOffer = async (req: Request, res: Response) => {
 
     res.status(201).json({ data: created });
   } catch (error) {
-    logger.error(`Failed to create offer: ${(error as Error)?.message}`);
+    logger.error(`Failed to create offer: ${getErrorMessage(error)}`);
     res.status(400).json({ error: (error as Error).message || "Failed to create offer" });
   }
 };
@@ -265,7 +266,7 @@ export const updateOffer = async (req: Request, res: Response) => {
     res.status(200).json({ data: updated });
   } catch (error) {
     if (answerClosed(res, error)) return;
-    logger.error(`Failed to update offer ${req.params.id}: ${(error as Error)?.message}`);
+    logger.error(`Failed to update offer ${req.params.id}: ${getErrorMessage(error)}`);
     res.status(400).json({ error: (error as Error).message || "Failed to update offer" });
   }
 };
@@ -292,7 +293,7 @@ export const sendOffer = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: sent });
   } catch (error) {
-    logger.error(`Failed to send offer ${req.params.id}: ${(error as Error)?.message}`);
+    logger.error(`Failed to send offer ${req.params.id}: ${getErrorMessage(error)}`);
     res.status(400).json({ error: (error as Error).message || "Failed to send offer" });
   }
 };
@@ -320,7 +321,7 @@ export const acceptOffer = async (req: Request, res: Response) => {
     res.status(200).json({ data: accepted });
   } catch (error) {
     if (answerClosed(res, error)) return;
-    logger.error(`Failed to accept offer ${req.params.id}: ${(error as Error)?.message}`);
+    logger.error(`Failed to accept offer ${req.params.id}: ${getErrorMessage(error)}`);
     res.status(400).json({ error: (error as Error).message || "Failed to accept offer" });
   }
 };
@@ -348,7 +349,7 @@ export const declineOffer = async (req: Request, res: Response) => {
     res.status(200).json({ data: declined });
   } catch (error) {
     if (answerClosed(res, error)) return;
-    logger.error(`Failed to decline offer ${req.params.id}: ${(error as Error)?.message}`);
+    logger.error(`Failed to decline offer ${req.params.id}: ${getErrorMessage(error)}`);
     res.status(400).json({ error: (error as Error).message || "Failed to decline offer" });
   }
 };
@@ -380,7 +381,7 @@ export const markCandidateHired = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to mark offer ${req.params.id} as hired: ${(error as Error)?.message}`);
+    logger.error(`Failed to mark offer ${req.params.id} as hired: ${getErrorMessage(error)}`);
     res.status(400).json({ error: (error as Error).message || "Failed to mark as hired" });
   }
 };
@@ -401,7 +402,7 @@ export const getPublicOfferByToken = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: result });
   } catch (error) {
-    logger.error(`Failed to get public offer by token: ${(error as Error)?.message}`);
+    logger.error(`Failed to get public offer by token: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to fetch offer" });
   }
 };
@@ -435,7 +436,7 @@ export const acceptPublicOffer = async (req: Request, res: Response) => {
     res.status(200).json({ data: { status: result.status } });
   } catch (error) {
     if (answerClosed(res, error)) return;
-    logger.error(`Failed to accept public offer: ${(error as Error)?.message}`);
+    logger.error(`Failed to accept public offer: ${getErrorMessage(error)}`);
     res.status(400).json({ error: (error as Error).message || "Failed to accept offer" });
   }
 };
@@ -468,7 +469,7 @@ export const declinePublicOffer = async (req: Request, res: Response) => {
     res.status(200).json({ data: { status: result.status } });
   } catch (error) {
     if (answerClosed(res, error)) return;
-    logger.error(`Failed to decline public offer: ${(error as Error)?.message}`);
+    logger.error(`Failed to decline public offer: ${getErrorMessage(error)}`);
     res.status(400).json({ error: (error as Error).message || "Failed to decline offer" });
   }
 };
@@ -498,7 +499,7 @@ export const markPublicOfferViewed = async (req: Request, res: Response) => {
 
     res.status(200).json({ data: { status: offer.status } });
   } catch (error) {
-    logger.error(`Failed to mark public offer viewed: ${(error as Error)?.message}`);
+    logger.error(`Failed to mark public offer viewed: ${getErrorMessage(error)}`);
     res.status(500).json({ error: "Failed to update offer" });
   }
 };

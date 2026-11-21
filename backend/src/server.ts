@@ -16,6 +16,7 @@ import { startAllWorkers } from "./queues/start-workers";
 import { mailService } from "./shared/services/mail.service";
 import { closeDb } from "./db";
 import logger from "./utils/logger";
+import { getErrorMessage } from "./utils/error.utils";
 
 const PORT = env.PORT;
 
@@ -41,7 +42,7 @@ const checkExpiredInvites = () =>
     .then((count) => {
       if (count > 0) logger.info(`Completed ${count} assessment(s) that were started and left unfinished`);
     })
-    .catch((error) => logger.error(`Assessment expiry check failed: ${error instanceof Error ? error.message : String(error)}`));
+    .catch((error) => logger.error(`Assessment expiry check failed: ${getErrorMessage(error)}`));
 setInterval(checkExpiredInvites, EXPIRY_CHECK_MS).unref();
 
 // An assignment nobody handed in by its deadline.
@@ -51,7 +52,7 @@ const expireOverdueAssignments = () =>
     .then((count) => {
       if (count > 0) logger.info(`Expired ${count} assignment(s) that were not handed in on time`);
     })
-    .catch((error) => logger.error(`Assignment expiry check failed: ${error instanceof Error ? error.message : String(error)}`));
+    .catch((error) => logger.error(`Assignment expiry check failed: ${getErrorMessage(error)}`));
 setInterval(expireOverdueAssignments, EXPIRY_CHECK_MS).unref();
 
 // An offer with an expiry date stops being open when the date passes, answered or not.
@@ -61,7 +62,7 @@ const expireOverdueOffers = () =>
     .then((count) => {
       if (count > 0) logger.info(`Expired ${count} offer(s) that were not answered in time`);
     })
-    .catch((error) => logger.error(`Offer expiry check failed: ${error instanceof Error ? error.message : String(error)}`));
+    .catch((error) => logger.error(`Offer expiry check failed: ${getErrorMessage(error)}`));
 setInterval(expireOverdueOffers, EXPIRY_CHECK_MS).unref();
 
 // An interview whose time-picking link ran out before the candidate chose a time.
@@ -71,7 +72,7 @@ const expireInterviewSlotLinks = () =>
     .then((count) => {
       if (count > 0) logger.info(`Marked ${count} interview(s) expired: the candidate did not pick a time`);
     })
-    .catch((error) => logger.error(`Interview link expiry check failed: ${error instanceof Error ? error.message : String(error)}`));
+    .catch((error) => logger.error(`Interview link expiry check failed: ${getErrorMessage(error)}`));
 setInterval(expireInterviewSlotLinks, EXPIRY_CHECK_MS).unref();
 
 // A CV uploaded on the careers page by someone who never sent the application.
@@ -81,7 +82,7 @@ const removeUnusedResumeUploads = () =>
     .then((count) => {
       if (count > 0) logger.info(`Removed ${count} CV upload(s) that were never attached to an application`);
     })
-    .catch((error) => logger.error(`Unused CV upload check failed: ${error instanceof Error ? error.message : String(error)}`));
+    .catch((error) => logger.error(`Unused CV upload check failed: ${getErrorMessage(error)}`));
 setInterval(removeUnusedResumeUploads, EXPIRY_CHECK_MS).unref();
 
 // For hosting without a separate worker service. Same workers as `src/worker.ts`, so only one of
@@ -119,7 +120,7 @@ async function shutdown(signal: string) {
     logger.info("[api] shut down cleanly");
     process.exit(0);
   } catch (error) {
-    logger.error(`[api] shutdown failed: ${error instanceof Error ? error.message : String(error)}`);
+    logger.error(`[api] shutdown failed: ${getErrorMessage(error)}`);
     process.exit(1);
   }
 }

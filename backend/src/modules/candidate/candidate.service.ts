@@ -867,7 +867,7 @@ export const candidateService = {
         const sent = await assignmentService.send(candidateId, assignmentToSend);
         moved.stageAutomation.assignmentInvite = sent?.didSendInvite ? "sent" : "skipped_active_invite";
       } catch (error) {
-        logger.error(`Stage assignment for candidate ${candidateId} failed: ${error instanceof Error ? error.message : String(error)}`);
+        logger.error(`Stage assignment for candidate ${candidateId} failed: ${getErrorMessage(error)}`);
         moved.stageAutomation.assignmentInvite = "failed";
       }
     }

@@ -1,5 +1,6 @@
 import { cvExtractQueue } from "./cv-extract/queue";
 import logger from "../utils/logger";
+import { getErrorMessage } from "../utils/error.utils";
 
 /**
  * Whether the background worker (`src/worker.ts`) is running.
@@ -32,7 +33,7 @@ export async function getWorkerStatus(now: number = Date.now()): Promise<WorkerS
     status = workers.length > 0 ? "connected" : "missing";
   } catch (error) {
     logger.warn(
-      `[worker-status] could not check for a background worker: ${error instanceof Error ? error.message : String(error)}`,
+      `[worker-status] could not check for a background worker: ${getErrorMessage(error)}`,
     );
     status = "unknown";
   } finally {

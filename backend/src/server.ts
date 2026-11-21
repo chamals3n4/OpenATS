@@ -120,7 +120,7 @@ async function shutdown(signal: string) {
     logger.info("[api] shut down cleanly");
     process.exit(0);
   } catch (error) {
-    logger.error(`[api] shutdown failed: ${error instanceof Error ? error.message : String(error)}`);
+    logger.error(`[api] shutdown failed: ${getErrorMessage(error)}`);
     process.exit(1);
   }
 }

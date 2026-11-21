@@ -1,4 +1,3 @@
-/** What a notification is about. The wording is in the dashboard (frontend/lib/notifications.ts). */
 export const NOTIFICATION_TYPES = [
   "application_received",
   "interview_booked",
@@ -12,10 +11,6 @@ export const NOTIFICATION_TYPES = [
 
 export type NotificationType = (typeof NOTIFICATION_TYPES)[number];
 
-/**
- * Who is told: the job's hiring team and anyone named on purpose (the interviewer, the person
- * who sent a failed email), minus whoever did it, each once. Pure, so the rule can be tested.
- */
 export function pickRecipients(input: {
   team: number[];
   also?: number[];

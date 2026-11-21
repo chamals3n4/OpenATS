@@ -6,7 +6,6 @@ import { getErrorMessage } from "../../utils/error.utils";
 
 const router: Router = Router();
 
-// The signed-in user's own notifications, newest first, with how many are unread.
 router.get("/", async (req, res) => {
   try {
     res.status(200).json(await notificationService.list(req.user));
@@ -17,7 +16,6 @@ router.get("/", async (req, res) => {
 });
 
 const readSchema = z.object({
-  /** Leave out to mark every notification read. */
   ids: z.array(z.number().int().positive()).max(200).optional(),
 });
 

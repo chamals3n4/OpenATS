@@ -7,13 +7,9 @@ import logger from "../../utils/logger";
 import { getErrorMessage } from "../../utils/error.utils";
 import { pickRecipients, type NotificationType } from "./notification-types";
 
-/** How many the bell lists. Older ones stay in the table but are not shown. */
 const LIST_LIMIT = 50;
 
-/**
- * The rows a user may still see: their own, and only while they can still see the job, or the
- * interview they were picked for. Someone taken off a hiring team stops seeing that job's names.
- */
+
 function visibleTo(user: AuthenticatedUser) {
   const own = eq(notifications.userId, user.id);
   if (user.role === "super_admin") return own;
@@ -30,7 +26,6 @@ function visibleTo(user: AuthenticatedUser) {
   );
 }
 
-/** Saves one row per active, unbanned user and tells their browsers. */
 async function deliver(type: NotificationType, jobId: number, candidateId: number | null, userIds: number[]) {
   if (userIds.length === 0) return;
   const active = await db
@@ -45,11 +40,7 @@ async function deliver(type: NotificationType, jobId: number, candidateId: numbe
 }
 
 export const notificationService = {
-  /**
-   * Tells a job's hiring team, plus `also`, about something, leaving out `exclude` (whoever did
-   * it). Call after the change is committed. Never throws: a notification is never worth failing
-   * what happened.
-   */
+  
   async notifyJobTeam(input: {
     type: NotificationType;
     jobId: number;
@@ -75,7 +66,6 @@ export const notificationService = {
     }
   },
 
-  /** Tells only these people, not the whole team. Never throws. */
   async notifyPeople(input: {
     type: NotificationType;
     jobId: number;
@@ -89,7 +79,6 @@ export const notificationService = {
     }
   },
 
-  /** The same as notifyJobTeam, for something about one candidate, whose job is looked up. */
   async notifyCandidateTeam(input: {
     type: NotificationType;
     candidateId: number;
@@ -146,7 +135,6 @@ export const notificationService = {
     };
   },
 
-  /** Marks the given ones read, or all of them when no ids are given. Only the user's own. */
   async markRead(userId: number, ids?: number[]): Promise<void> {
     const conditions = [eq(notifications.userId, userId), isNull(notifications.readAt)];
     if (ids) {

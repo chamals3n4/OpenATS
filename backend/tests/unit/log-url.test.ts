@@ -5,6 +5,9 @@ import { logUrl, tokenFingerprint } from "../../src/utils/log-url";
 
 const TOKEN = "f3a9c1d2e4b5a6978877665544332211";
 
+/** Every route path in the source that has a :token segment, at any depth. */
+const tokenRoutes = (source: string) => [...source.matchAll(/"(\/[^"\s]*:token[^"\s]*)"/g)].map((m) => m[1] ?? "");
+
 describe("logUrl", () => {
   it.each([
     ["/public/assessment/T", "/public/assessment/[redacted]"],
@@ -19,6 +22,11 @@ describe("logUrl", () => {
     expect(logged).not.toContain(TOKEN);
   });
 
+  it("takes the token out whatever the case of the address, which Express still routes", () => {
+    expect(logUrl(`/public/OFFERS/${TOKEN}/accept`)).toBe("/public/OFFERS/[redacted]/accept");
+    expect(logUrl(`/Public/Assessment/${TOKEN}`)).toBe("/Public/Assessment/[redacted]");
+  });
+
   it("leaves other addresses alone", () => {
     expect(logUrl("/public/jobs/42/apply")).toBe("/public/jobs/42/apply");
     expect(logUrl("/api/candidates/7?search=ana")).toBe("/api/candidates/7?search=ana");
@@ -27,12 +35,17 @@ describe("logUrl", () => {
   // A new candidate link added to the public routes must be covered here too.
   it("covers every :token route in public.routes.ts", () => {
     const source = readFileSync(path.join(__dirname, "../../src/routes/public.routes.ts"), "utf8");
-    const routes = [...source.matchAll(/"(\/[\w-]+\/:token[^"]*)"/g)].map((m) => m[1] ?? "");
+    const routes = tokenRoutes(source);
     expect(routes.length).toBeGreaterThan(0);
     for (const route of routes) {
       const url = `/public${route.replace(":token", TOKEN)}`;
       expect(logUrl(url), route).not.toContain(TOKEN);
     }
+  });
+
+  it("finds :token routes at any depth, so a nested one cannot slip past the check above", () => {
+    const source = `router.get("/jobs/:id", a);\nrouter.post("/candidate/assessment/:token/start", b);`;
+    expect(tokenRoutes(source)).toEqual(["/candidate/assessment/:token/start"]);
   });
 });
 

@@ -4,7 +4,8 @@ import { createHash } from "crypto";
  * The public pages a candidate opens from an email. The token in the address is the only thing
  * that lets them in, so anyone who reads it can take the test, hand in the work or answer the offer.
  */
-const TOKEN_PATH = /^(\/public\/(?:assessment|assignment|offers|interview)\/)[^/?#]+/;
+// Case-insensitive, because Express matches routes regardless of case (/public/OFFERS/... works).
+const TOKEN_PATH = /^(\/public\/(?:assessment|assignment|offers|interview)\/)[^/?#]+/i;
 
 /**
  * A request's address as it may be written to the log. Logs are read by more people and kept

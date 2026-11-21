@@ -1,5 +1,15 @@
-// `catch` bindings are `unknown` under strict mode, so narrow before logging.
+import { DrizzleQueryError } from "drizzle-orm";
+
+// For a log line. `catch` bindings are `unknown` under strict mode, so narrow before logging.
+// A failed query's own message ends with its values ("params: ..."), which can be a candidate's
+// email or link token, so only the query and what Postgres said are kept. What Postgres said is
+// left out for a data error (class 22), because it repeats the value that was refused.
 export function getErrorMessage(err: unknown): string {
+  if (err instanceof DrizzleQueryError) {
+    const code = getErrorCode(err.cause);
+    const said = err.cause instanceof Error && !code?.startsWith("22") ? `: ${err.cause.message}` : "";
+    return `Failed query${code ? ` (${code})` : ""}: ${err.query}${said}`;
+  }
   return err instanceof Error ? err.message : String(err);
 }
 

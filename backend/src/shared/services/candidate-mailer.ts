@@ -6,6 +6,7 @@ import { mailService } from "./mail.service";
 import { notificationService } from "./notification.service";
 import { getSystemEmailContent, type SystemEmailPurpose } from "./system-emails";
 import { DEFAULT_TIME_ZONE } from "./time-zone";
+import { getErrorMessage } from "../../utils/error.utils";
 
 /** What an email was for. Shown in the candidate's email history. */
 export type CandidateEmailKind =
@@ -102,7 +103,7 @@ export async function sendCandidateEmail(input: CandidateEmailInput): Promise<Ca
   } catch (err) {
     // The email itself may have gone out, so this must not look like a send failure.
     logger.error(
-      `Could not record email "${input.kind}" for candidate ${input.candidateId}: ${err instanceof Error ? err.message : err}`,
+      `Could not record email "${input.kind}" for candidate ${input.candidateId}: ${getErrorMessage(err)}`,
     );
   }
 
@@ -129,6 +130,6 @@ async function notifyEmailFailed(candidateId: number, userId: number) {
       await notificationService.notifyPeople({ type: "email_failed", jobId: row.jobId, candidateId, userIds: [userId] });
     }
   } catch (err) {
-    logger.error(`Could not record a failed-email notification for candidate ${candidateId}: ${err instanceof Error ? err.message : err}`);
+    logger.error(`Could not record a failed-email notification for candidate ${candidateId}: ${getErrorMessage(err)}`);
   }
 }

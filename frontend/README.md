@@ -20,17 +20,9 @@ on the frontend. For the whole project, see the [root README](../README.md) and
 
 ## Getting started
 
-You need Node.js 24+, pnpm, Docker and Make. The repo is a pnpm workspace, so install and run
-everything from the **root**, not from this folder.
+The repo is a pnpm workspace, so install and run everything from the **root**, not from this folder. Follow [CONTRIBUTING.md](../CONTRIBUTING.md) for the full setup. In short, `make setup` once, then `make dev`, and open http://localhost:3000.
 
-```bash
-make setup   # installs packages, creates .env files, starts Postgres and Redis, migrates, creates your admin
-make dev     # starts the backend, the background worker and this app together
-```
-
-Then open http://localhost:3000 and sign in with the admin you created.
-
-To work on the frontend on its own (the backend must already be running):
+To run only the web app (the API must already be running):
 
 ```bash
 pnpm --filter ./frontend dev

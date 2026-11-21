@@ -29,6 +29,21 @@ export function isOriginAllowed(origin: string, allowedOrigins: string[]): boole
   return requested === frontendOrigin() || allowedOrigins.map(normalizeOrigin).includes(requested);
 }
 
+/**
+ * What the browser is told about a request from another website (CORS):
+ *   "trusted"  our own frontend or a listed origin: allowed, with credentials
+ *   "public"   a /public request while the list is empty: allowed without credentials, so a
+ *              custom careers site can list jobs and send applications, as checkOrigins allows
+ *   "denied"   anything else
+ * Only /public is opened: the signed-in API stays limited to our frontend and the list.
+ */
+export function corsAccess(origin: string, path: string, allowedOrigins: string[]): "trusted" | "public" | "denied" {
+  const requested = normalizeOrigin(origin);
+  if (requested === frontendOrigin() || allowedOrigins.map(normalizeOrigin).includes(requested)) return "trusted";
+  const isPublic = path === "/public" || path.startsWith("/public/");
+  return isPublic && allowedOrigins.length === 0 ? "public" : "denied";
+}
+
 export const pageSettingsService = {
   async getAllowedOrigins(now: number = Date.now()): Promise<string[]> {
     if (cached && cached.expiresAt > now) return cached.origins;

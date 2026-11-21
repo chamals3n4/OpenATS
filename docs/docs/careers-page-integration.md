@@ -79,10 +79,12 @@ To remove a role from the public page, open the job and select **Deactivate** or
 
 The public API requires no sign-in. Responses use the shape `{ "data": ... }`.
 
+Call it at your OpenATS **API** address (the backend, the address in `NEXT_PUBLIC_API_URL`), not the website address. The examples use `https://api.example.com`. While **Allowed origins** is empty, any website can call it from the browser; once you add origins, only those can.
+
 ### List published jobs
 
 ```http
-GET https://your-openats.example.com/api/public/jobs
+GET https://api.example.com/public/jobs
 ```
 
 This returns the published jobs that your careers site can list. Each job includes its id, title, employment type, location, department, and other public job fields.
@@ -90,7 +92,7 @@ This returns the published jobs that your careers site can list. Each job includ
 ### Get one published job
 
 ```http
-GET https://your-openats.example.com/api/public/jobs/42
+GET https://api.example.com/public/jobs/42
 ```
 
 Replace `42` with the published job id. Use this response to build a job details page and display the public description, requirements, benefits, salary information, and application questions.
@@ -100,7 +102,7 @@ Replace `42` with the published job id. Use this response to build a job details
 Applications are submitted to the public job endpoint:
 
 ```http
-POST https://your-openats.example.com/api/public/jobs/42/apply
+POST https://api.example.com/public/jobs/42/apply
 ```
 
 Send the candidate's first name, last name, email, and phone, together with their answers to the job's custom questions:
@@ -119,8 +121,8 @@ Send the candidate's first name, last name, email, and phone, together with thei
 }
 ```
 
-- **Resume.** First send the PDF as the `file` field of a `multipart/form-data` request to `POST /api/public/upload/resume`. The reply holds an `uploadId`. Pass it as `resumeUploadId` when applying. It works once and for one hour; after that, upload the file again. The API never returns a link to the file.
-- **Questions.** `GET /api/public/jobs/42/questions` lists the questions and their options. Every question with `"isRequired": true` must be answered, and each `optionIds` value must be one of that question's own options. Otherwise the application is refused with status 400 and a message naming the question.
+- **Resume.** First send the PDF as the `file` field of a `multipart/form-data` request to `POST /public/upload/resume`. The reply holds an `uploadId`. Pass it as `resumeUploadId` when applying. It works once and for one hour; after that, upload the file again. The API never returns a link to the file.
+- **Questions.** `GET /public/jobs/42/questions` lists the questions and their options. Every question with `"isRequired": true` must be answered, and each `optionIds` value must be one of that question's own options. Otherwise the application is refused with status 400 and a message naming the question.
 - **Reply.** A successful application answers with status 201 and `{ "data": { "applied": true } }`. Nothing about the stored candidate is returned.
 
 The API applies rate limits and rejects a duplicate application from the same email address for the same job (status 409, code `DUPLICATE_APPLICATION`).

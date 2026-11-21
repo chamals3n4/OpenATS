@@ -1,4 +1,4 @@
-import express, { type Express } from "express";
+import express, { type Express, type Request } from "express";
 import cors from "cors";
 import morgan from "morgan";
 import helmet from "helmet";
@@ -10,6 +10,7 @@ import { swaggerUi, swaggerDocument } from "./config/swagger";
 import { authMiddleware } from "./middlewares/auth.middleware";
 import { apiLimiter } from "./middlewares/rate-limit.middleware";
 import {
+  corsAccess,
   frontendOrigin,
   normalizeOrigin,
   pageSettingsService,
@@ -30,31 +31,24 @@ app.set("trust proxy", parseTrustProxy(process.env.TRUST_PROXY) ?? DEFAULT_TRUST
 
 app.use(helmet());
 
+// CORS: our frontend and listed origins are trusted; /public is open to every site while the
+// list is empty, matching checkOrigins (corsAccess in page-settings.service.ts).
 app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) {
-        callback(null, true);
-        return;
-      }
+  cors<Request>((req, callback) => {
+    const origin = req.headers.origin;
+    if (!origin || normalizeOrigin(origin) === frontendOrigin()) {
+      callback(null, { origin: true, credentials: true });
+      return;
+    }
 
-      const requestOrigin = normalizeOrigin(origin);
-
-      if (requestOrigin === frontendOrigin()) {
-        callback(null, true);
-        return;
-      }
-
-      // Cached in memory by the service, so this is not a database read per request.
-      pageSettingsService
-        .getAllowedOrigins()
-        .then((origins) => {
-          const allowed = origins.map(normalizeOrigin);
-          callback(null, allowed.includes(requestOrigin));
-        })
-        .catch((err) => callback(err));
-    },
-    credentials: true,
+    // Cached in memory by the service, so this is not a database read per request.
+    pageSettingsService
+      .getAllowedOrigins()
+      .then((origins) => {
+        const access = corsAccess(origin, req.path, origins);
+        callback(null, { origin: access !== "denied", credentials: access === "trusted" });
+      })
+      .catch((err) => callback(err));
   }),
 );
 app.use(express.json({ limit: "1mb" }));

@@ -1,198 +1,178 @@
-## Contributing to OpenATS
+# Contributing to OpenATS
 
-> 🔑 Sign-in is built into OpenATS, so there is no outside account to set up. `make setup` creates your first admin. See [Sign-in and users](docs/docs/administration/authentication.md) for how accounts and roles work.
+Thank you for helping build OpenATS. This guide covers everything you need to set up the project, make a change and open a pull request.
+
+## Contents
 
 - [Prerequisites](#prerequisites)
-- [Tech Stack](#tech-stack)
-- [Quick Start (Recommended)](#quick-start-recommended)
-- [Manual Setup](#manual-setup)
-  - [Fork and Clone](#1-fork-and-clone)
-  - [Add Upstream Remote](#2-add-upstream-remote)
-  - [Install pnpm](#3-install-pnpm)
-  - [Install Dependencies](#4-install-dependencies)
-- [Database Setup](#database-setup)
-  - [Start Postgres and Redis with Docker](#1-start-postgres-and-redis-with-docker)
-  - [Setup environment variables](#2-setup-environment-variables)
-  - [Run database migrations](#3-run-database-migrations)
-  - [Seed the database](#4-seed-the-database)
-  - [Create your first admin](#5-create-your-first-admin)
-- [Running the Project](#running-the-project)
-  - [Frontend](#frontend)
-  - [Backend](#backend)
-  - [Backend Worker](#backend-worker)
+- [Project layout](#project-layout)
+- [Quick start](#quick-start)
+- [Manual setup](#manual-setup)
+  - [1. Fork and clone](#1-fork-and-clone)
+  - [2. Install dependencies](#2-install-dependencies)
+  - [3. Start Postgres, Redis and Mailpit](#3-start-postgres-redis-and-mailpit)
+  - [4. Set up environment variables](#4-set-up-environment-variables)
+  - [5. Prepare the database](#5-prepare-the-database)
+- [Running the project](#running-the-project)
+- [Make commands](#make-commands)
+- [Changing the database schema](#changing-the-database-schema)
 - [Testing](#testing)
-- [Working on a Task](#working-on-a-task)
-  - [Before you start ANYTHING](#before-you-start-anything)
-  - [Create a new branch for your task](#create-a-new-branch-for-your-task)
-  - [Work on your code, then commit](#work-on-your-code-then-commit)
-  - [Push your branch](#push-your-branch)
-  - [Create Pull Request on GitHub](#create-pull-request-on-github)
-- [Important Rules](#important-rules)
+- [Working on a task](#working-on-a-task)
+- [Opening a pull request](#opening-a-pull-request)
+- [Releases](#releases)
+- [Rules](#rules)
+- [Getting help](#getting-help)
 
 ## Prerequisites
 
-Before you start, make sure you have these installed:
+| Tool | Version | Notes |
+| --- | --- | --- |
+| [Node.js](https://nodejs.org/) | 24 | The exact version is in `.nvmrc`. With nvm, run `nvm use` |
+| [pnpm](https://pnpm.io/) | Latest | See [Install pnpm](#install-pnpm) below |
+| [Docker](https://docs.docker.com/get-docker/) | With Compose | Runs Postgres, Redis and Mailpit, so you don't install them yourself |
+| [Git](https://git-scm.com/) | Any recent version | |
+| `make` | Any | Preinstalled on macOS and Linux. On Windows, use WSL |
+| `openssl` | Any | Used by `make setup` to generate secrets |
 
-- Node.js (version 22 or higher), [download here](https://nodejs.org/)
-- Git, [download here](https://git-scm.com/)
-- Docker, [download here](https://docs.docker.com/get-docker/) (runs Postgres and Redis locally, no manual DB install needed)
-- Make (usually preinstalled on macOS and Linux, on Windows use WSL)
-- A code editor (VS Code recommended)
+### Install pnpm
 
-Check if you have them:
+Use the standalone script from the [pnpm docs](https://pnpm.io/installation). It does not need Node.js.
 
 ```bash
-node --version
+# macOS, Linux and WSL
+curl -fsSL https://get.pnpm.io/install.sh | sh -
+
+# If you don't have curl
+wget -qO- https://get.pnpm.io/install.sh | sh -
+```
+
+```powershell
+# Windows (PowerShell)
+Invoke-WebRequest https://get.pnpm.io/install.ps1 -UseBasicParsing | Invoke-Expression
+```
+
+Restart your terminal afterwards so that the `pnpm` command is available. The repository pins its pnpm version in `package.json`, and pnpm switches to that version on its own.
+
+### Check your tools
+
+Check that you have them:
+
+```bash
+node --version    # v24.x
+pnpm --version
+docker compose version
 git --version
-docker --version
 make --version
 ```
 
-## Tech Stack
+## Project layout
 
-**Frontend (web)**
+OpenATS is one pnpm workspace with two packages, installed together from the repository root.
 
-- Next.js
-- TypeScript
-- Tailwind CSS
-- shadcn/ui (for UI components)
+| Path | What it holds |
+| --- | --- |
+| `frontend/` | The Next.js web app: the dashboard, careers page and sign-in. Runs on port 3000 |
+| `backend/` | The Express API (port 8080) and the background worker |
+| `backend/src/modules/` | One folder per feature |
+| `backend/src/db/schema/` | The Drizzle database schema |
+| `backend/drizzle/` | Generated SQL migrations. Always committed |
+| `e2e/` | Playwright end-to-end tests |
+| `docs/` | The documentation site |
 
-**Backend (api)**
+Read the [architecture guide](docs/docs/developer/architecture.md) before a larger change. It explains how the web app, API and worker fit together, and the rules for each layer.
 
-- Express.js
-- TypeScript
-- Node.js
-- PostgreSQL (database)
-- Redis (job queue, via BullMQ)
-- Drizzle ORM (database ORM)
-- Better Auth (sign-in, built in and running in the Next.js server)
+| Part | Built with |
+| --- | --- |
+| Web app | Next.js, TypeScript, Tailwind CSS, shadcn/ui, React Query, Better Auth |
+| API and worker | Express 5, TypeScript, Socket.IO, BullMQ |
+| Data | PostgreSQL with Drizzle ORM, Redis |
 
-**Package Manager:** pnpm, managed as a single workspace from the repo root
+## Quick start
 
-## Quick Start (Recommended)
-
-If you have `make` installed, this is the fastest way to get running:
+If you have `make`, this is the fastest way to get running:
 
 ```bash
-git clone https://github.com/chamals3n4/OpenATS.git
+git clone https://github.com/<your-username>/OpenATS.git
 cd OpenATS
 make setup
 make dev
 ```
 
-`make setup` does all of this for you, in order:
+`make setup` does all of this, in order:
 
-1. Installs dependencies for both `backend` and `frontend` from the root, using pnpm workspaces
-2. Copies `backend/.env.example` and `frontend/.env.example` into real `.env` files, if they don't exist yet
-3. Generates a random `ENCRYPTION_KEY` for you, if it's still blank
-4. Fills in what sign-in needs in `frontend/.env` (`BETTER_AUTH_SECRET`, `BETTER_AUTH_URL`, `DATABASE_URL`), if they're still blank
-5. Starts Postgres and Redis via Docker
-6. Runs database migrations and seeds the default pipeline stages
-7. Asks for an email, a name and a password, and creates your first super admin
+1. Installs the dependencies for `frontend` and `backend`.
+2. Creates `backend/.env` and `frontend/.env` from their `.env.example` files, if they don't exist yet.
+3. Generates an `ENCRYPTION_KEY` for the backend, if it is blank.
+4. Fills in `BETTER_AUTH_SECRET`, `BETTER_AUTH_URL` and `DATABASE_URL` in `frontend/.env`, if they are blank.
+5. Starts Postgres, Redis and Mailpit in Docker.
+6. Runs the database migrations and seeds the default pipeline stages.
+7. Asks for an email, a name and a password, and creates your first super admin.
 
-`make dev` then starts the backend, the background worker and the frontend together. Sign in at `http://localhost:3000` with the admin you just created.
+`make dev` then starts the API, the worker and the web app together. Open http://localhost:3000 and sign in with the admin you created.
 
-You'll still need to fill in a few provider credentials by hand afterward, since these are personal secrets nobody can generate for you: Cloudflare R2, plus Gemini and Google OAuth if you want those features. Each `.env.example` says what every value is for and which ones are optional.
+**Before you upload a CV**, fill in the `R2_*` values in `backend/.env`. Storage credentials can't be generated for you. Gemini (`GEMINI_API_KEY`) and Google Calendar (`GOOGLE_OAUTH_*`) are optional. Each `.env.example` explains every value and says which ones are optional.
 
-Prefer to see every step yourself, or something in `make setup` isn't working? The full manual walkthrough is below, and it's also the fallback if you ever need to debug a step individually.
+If `make setup` fails, or you want to see each step, follow the manual setup below. It is also the way to debug a single step.
 
-## Manual Setup
+## Manual setup
 
-### 1. Fork and Clone
+### 1. Fork and clone
 
-Fork the repository on GitHub first, then:
+Fork the repository on GitHub, then clone **your fork** and add the main repository as `upstream`:
 
 ```bash
-git clone https://github.com/chamals3n4/OpenATS.git
+git clone https://github.com/<your-username>/OpenATS.git
 cd OpenATS
-```
-
-### 2. Add Upstream Remote
-
-```bash
 git remote add upstream https://github.com/chamals3n4/OpenATS.git
-git remote -v  # verify you have both origin and upstream
+git remote -v    # you should see both origin and upstream
 ```
 
-### 3. Install pnpm
+### 2. Install dependencies
 
-```bash
-npm install -g pnpm
-```
-
-### 4. Install Dependencies
-
-From the repo root, this installs both `frontend` and `backend` in one go, since they're managed as a single pnpm workspace:
+From the repository root, this installs both packages:
 
 ```bash
 pnpm install
 ```
 
-## Database Setup
+### 3. Start Postgres, Redis and Mailpit
 
-### 1. Start Postgres and Redis with Docker
-
-The backend needs a PostgreSQL database and a Redis instance (used for the CV analysis job queue via BullMQ). A `docker-compose.yml` is provided at the repo root, so you don't need to install or configure either manually:
+The `docker-compose.yml` at the root starts everything the app depends on:
 
 ```bash
-docker compose up -d
+docker compose up -d     # or: make infra-up
 ```
 
-This starts:
-
-- **Postgres** on `localhost:5432` (user: `openats`, password: `openats`, db: `openats`)
-- **Redis** on `localhost:6379`
-
-Check they're running:
+| Service | Address | What it is for |
+| --- | --- | --- |
+| Postgres | `localhost:5432` | The database. User, password and database name are all `openats` |
+| Redis | `localhost:6379` | The job queue for the worker |
+| Mailpit | Inbox at http://localhost:8025, SMTP on port 1025 | Catches every email the app sends, so nothing reaches a real inbox |
 
 ```bash
-docker compose ps
+docker compose ps        # check they are running
+docker compose stop      # stop them for the day. Your data is kept
+docker compose down      # remove the containers. Your data is kept unless you add -v
 ```
 
-Stop them when you're done for the day (data is preserved):
+### 4. Set up environment variables
+
+Copy both example files:
 
 ```bash
-docker compose stop
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
 ```
 
-Remove the containers (data volumes are preserved unless you add `-v`):
+The defaults already point at the Docker services from step 3, including `DATABASE_URL`, `REDIS_URL`, the Mailpit SMTP settings, and `AUTH_JWKS_URL` and `AUTH_ISSUER`.
 
-```bash
-docker compose down
-```
-
-### 2. Setup environment variables
-
-Inside `frontend`, copy the example env file:
-
-```bash
-cd frontend
-cp .env.example .env
-cd ..
-```
-
-Inside `backend`, copy the example env file:
-
-```bash
-cd backend
-cp .env.example .env
-cd ..
-```
-
-If you're using the Docker containers from step 1, `DATABASE_URL` and `REDIS_URL` in `backend/.env` are already filled in correctly by default:
-
-```bash
-DATABASE_URL=postgresql://openats:openats@localhost:5432/openats
-REDIS_URL=redis://localhost:6379
-```
-
-Sign-in needs three more values in `frontend/.env`, and one key in `backend/.env`. The quickest way is to let Make fill in whatever is still blank:
+Then fill in the secrets. The quickest way is to let `make` fill in whatever is blank:
 
 ```bash
 make encryption-key auth-env
 ```
 
-To do it by hand instead, set these (the two secrets can each be generated with `openssl rand -base64 32`):
+To do it by hand, set these values. Generate each secret with `openssl rand -base64 32`.
 
 ```bash
 # backend/.env
@@ -204,103 +184,106 @@ BETTER_AUTH_SECRET=<generated value, at least 32 characters>
 BETTER_AUTH_URL=http://localhost:3000
 ```
 
-`AUTH_JWKS_URL` and `AUTH_ISSUER` in `backend/.env` are already right for local use.
+Finally, add your `R2_*` storage values to `backend/.env` before you upload CVs.
 
-### 3. Run database migrations
+### 5. Prepare the database
 
-```bash
-make migrate
-```
-
-### 4. Seed the database
-
-This inserts the default hiring pipeline stages the app needs to work:
+Run these once, in this order:
 
 ```bash
-make seed
+make migrate   # create the tables
+make seed      # add the default hiring pipeline stages
+make admin     # create your first super admin. There is no public sign-up
 ```
 
-### 5. Create your first admin
+You can run `make admin` again at any time to add another super admin, or to get back in if you are locked out.
 
-There is no public sign-up, so the first account is created from the command line. It asks for an email, a name and a password:
+When you pull changes that include new migrations, run `make migrate` again.
 
-```bash
-make admin
-```
+## Running the project
 
-Run it after the migrations, because it needs the tables to exist. You can run it again at any time to add another super admin, or to reset one if you are locked out.
-
-You only need steps 3 to 5 **once**, when setting up for the first time.
-
-> ⚠️ If you pull changes that include schema changes, run `make migrate` again to keep your database in sync.
-
-## Running the Project
-
-The fastest way is one command from the repo root. It starts Postgres and Redis, then the backend and frontend together:
+Start everything with one command from the repository root:
 
 ```bash
 make dev
 ```
 
-Frontend runs on `http://localhost:3000`, backend on `http://localhost:8080`.
+This starts the Docker services, then runs three processes together:
 
-### Frontend
+| Process | Address | Run it on its own |
+| --- | --- | --- |
+| Web app | http://localhost:3000 | `pnpm dev:frontend` |
+| API | http://localhost:8080 | `pnpm dev:backend` |
+| Worker | (no port) | `pnpm --filter ./backend dev:worker` |
 
-```bash
-pnpm dev:frontend
-```
+**The worker is required.** It reads the text of uploaded CVs, deletes the files of removed candidates and writes AI notes. Without it, CVs stay "pending". If you run the processes separately, start the worker as well.
 
-### Backend
+Emails that the app sends appear in Mailpit at http://localhost:8025.
 
-```bash
-pnpm dev:backend
-```
+## Make commands
 
-### Backend Worker
+| Command | What it does |
+| --- | --- |
+| `make setup` | First-time setup: everything in [Quick start](#quick-start) |
+| `make dev` | Start the Docker services, API, worker and web app |
+| `make infra-up` / `make infra-down` | Start or remove the Docker services |
+| `make migrate` | Generate migrations from schema changes and apply them |
+| `make seed` | Add the default pipeline stages |
+| `make admin` | Create a super admin, or reset one |
+| `make encryption-key auth-env` | Fill in any blank secrets in the `.env` files |
+| `make lint` | Lint both packages |
+| `make test` | Run unit and integration tests |
+| `make test-e2e` | Run the end-to-end tests |
+| `make build` | Build both packages |
+| `make clean` | Delete every `node_modules` folder |
 
-CV analysis runs as a background job queue and needs its own process, separate from the API server:
+## Changing the database schema
 
-```bash
-pnpm --filter ./backend dev:worker
-```
+1. Edit the schema in `backend/src/db/schema/`.
+2. Run `make migrate`. It generates a new SQL migration in `backend/drizzle/` and applies it to your database.
+3. Commit the schema change **and** the generated migration files together.
+
+Never edit a migration that has already been merged. Make a new one instead.
+
+The tables that Better Auth uses are part of the same schema. CI checks that they still match what Better Auth expects, so if you change them, or `frontend/lib/auth/options.ts`, run the tests before you push.
 
 ## Testing
 
-Full guide: [docs/docs/developer/testing.md](docs/docs/developer/testing.md).
-
 There are three kinds of tests:
 
-- **Unit tests** check a single function with no database.
-- **Integration tests** check API routes against a real database.
-- **End-to-end tests** open a real browser and use the app like a person would.
+| Kind | What it checks | Needs |
+| --- | --- | --- |
+| Unit | A single function, with no database | Nothing |
+| Integration | API routes against a real database | The test database |
+| End-to-end | The app in a real browser, used like a person would | The test database, and `make dev` stopped |
 
-### First time only
+### Start the test database
 
-Start the test database and apply the schema to it:
+Tests use their own Postgres on port **5433**, so they never touch your development data. It keeps its data in memory, so it is empty every time it starts. Migrate it after each start:
 
 ```bash
-docker compose up -d postgres-test
+docker compose -f docker-compose.test.yml up -d
 cd backend
 DATABASE_URL=postgresql://openats:openats@localhost:5433/openats_test pnpm drizzle-kit migrate
 cd ..
 ```
 
-> ⚠️ Note the port is **5433**, not 5432. Tests use their own database so they never touch your development data.
+Check the port in that command. With 5432, the migration runs against your development database instead.
 
-### Running tests
+### Run the tests
 
 ```bash
 pnpm test        # unit and integration tests
-pnpm test:e2e    # end-to-end tests (stop `make dev` first)
+pnpm test:e2e    # end-to-end tests
 ```
 
-Playwright starts its own servers on ports 3000 and 8080, so `make dev` must not be running or you will get an `EADDRINUSE` error.
+Playwright starts its own servers on ports 3000 and 8080. Stop `make dev` first, or the end-to-end tests fail with an `EADDRINUSE` error.
 
-Please run `pnpm test` before opening a pull request. CI runs the same tests plus a type check and a build on every PR.
+On every pull request, CI runs the linter, the tests, type checks and a build. Run `make lint` and `pnpm test` before you push so you see problems first. The [testing guide](docs/docs/developer/testing.md) has more detail.
 
-## Working on a Task
+## Working on a task
 
-### Before you start ANYTHING:
+**1. Update your `main` branch** before you start anything:
 
 ```bash
 git checkout main
@@ -308,74 +291,74 @@ git pull upstream main
 git push origin main
 ```
 
-### Create a new branch for your task:
+**2. Create a branch** for the task:
 
 ```bash
-git checkout -b feature/task-name
-# or
-git checkout -b fix/bug-name
+git checkout -b feature/short-name   # a new feature
+git checkout -b fix/short-name       # a bug fix
 ```
 
-### Work on your code, then commit:
+**3. Make your change and commit it.** Commit messages inside your branch can be anything, because they are squashed when the pull request is merged.
 
 ```bash
 git add .
-git commit -m "brief description of what you did"
+git commit -m "describe what you did"
 ```
 
-### Push your branch:
+**4. Push the branch** to your fork:
 
 ```bash
-git push origin feature/task-name
+git push origin feature/short-name
 ```
 
-### Create Pull Request on GitHub
+## Opening a pull request
 
-Go to GitHub and create a PR from your branch to `main` of the main repository.
+On GitHub, open a pull request from your branch to `main` in the main repository, and fill in the pull request template.
 
-**The PR title matters.** We squash merge, so your whole PR becomes one commit on `main` and the PR title becomes the commit message. Use this format:
+**The title matters.** Pull requests are squash merged, so the title becomes the commit message on `main` and the changelog entry. Use this format:
 
 ```
 type: short description
 ```
 
 | Type | Use it for | Example |
-|---|---|---|
+| --- | --- | --- |
 | `feat` | A new feature | `feat: add bulk candidate import` |
 | `fix` | A bug fix | `fix: resume upload fails on large files` |
 | `docs` | Documentation only | `docs: update the sign-in guide` |
-| `refactor` | Code change with no behavior change | `refactor: simplify CV parser` |
+| `refactor` | A code change that does not change behaviour | `refactor: simplify CV parser` |
 | `test` | Adding or fixing tests | `test: add pipeline stage tests` |
-| `chore` | Tooling, deps, config | `chore: update eslint config` |
+| `chore` | Tooling, dependencies or configuration | `chore: update eslint config` |
 
-For a breaking change, add `!` after the type, like `feat!: change job API response shape`.
+For a breaking change, add `!` after the type, for example `feat!: change job API response shape`.
 
-Your individual commit messages inside the PR can be anything, since they get squashed.
-
-### After your PR is merged
-
-Delete your branch and start fresh for the next task. Don't keep working on a merged branch, because the squashed commit on `main` won't match it and you'll get conflicts.
+**After your pull request is merged**, delete the branch and start the next task from a fresh `main`. The squashed commit on `main` won't match your old branch, so reusing it causes conflicts.
 
 ```bash
 git checkout main
 git pull upstream main
-git branch -D feature/task-name
+git branch -D feature/short-name
 ```
 
 ## Releases
 
-Releases are automated. Please don't edit `CHANGELOG.md` or bump version numbers in your PR. The changelog and version are generated from PR titles when a release is cut.
+Releases are automated. Don't edit `CHANGELOG.md` or change version numbers in your pull request. The version and changelog are generated from pull request titles when a release is made.
 
-## Important Rules
+## Rules
 
-- NEVER push directly to main (it's protected, so it won't work anyway)
-- ALWAYS pull from upstream before starting work
-- Create a NEW branch for each task, and don't reuse a branch after it's merged
-- One PR, one change. Don't mix a feature and an unrelated fix
-- Use the PR title format above (`feat: ...`, `fix: ...`)
-- Run `pnpm test` before pushing
-- If you modify the database schema, always run `make migrate` and commit the generated migration files along with your schema changes
+- Never push to `main` directly. It is protected.
+- Pull from `upstream` before you start any work.
+- Use a new branch for each task, and don't reuse a branch after it is merged.
+- Keep each pull request to one change. Don't mix a feature with an unrelated fix.
+- Use the `type: description` format for pull request titles.
+- Run `make lint` and `pnpm test` before you push.
+- When you change the schema, commit the generated migration files with it.
 
----
+## Getting help
 
-Happy coding!
+- Setup problems: see [Troubleshooting](docs/docs/getting-started/troubleshooting.md).
+- How the system works: see the [architecture guide](docs/docs/developer/architecture.md).
+- Questions and ideas: open an issue on GitHub.
+- Security issues: follow [SECURITY.md](SECURITY.md). Do not open a public issue.
+
+By contributing, you agree to follow the [Code of Conduct](CODE_OF_CONDUCT.md).

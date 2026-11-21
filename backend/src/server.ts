@@ -14,6 +14,7 @@ import { offerService } from "./modules/offer/offer.service";
 import { interviewService } from "./modules/interview/interview.service";
 import { startAllWorkers } from "./queues/start-workers";
 import { mailService } from "./shared/services/mail.service";
+import { closeDb } from "./db";
 import logger from "./utils/logger";
 
 const PORT = env.PORT;
@@ -85,17 +86,46 @@ setInterval(removeUnusedResumeUploads, EXPIRY_CHECK_MS).unref();
 
 // For hosting without a separate worker service. Same workers as `src/worker.ts`, so only one of
 // the two should be running them unless more throughput is wanted.
-if (env.RUN_WORKER_IN_API === "true") {
-  const workers = startAllWorkers();
+const workers = env.RUN_WORKER_IN_API === "true" ? startAllWorkers() : [];
+if (workers.length > 0) {
   logger.info("Background workers started inside the API process (RUN_WORKER_IN_API=true)");
-
-  const shutdown = (signal: string) => {
-    logger.info(`[api] received ${signal}, closing background workers...`);
-    void Promise.all(workers.map((worker) => worker.close())).finally(() => process.exit(0));
-  };
-  process.on("SIGTERM", () => shutdown("SIGTERM"));
-  process.on("SIGINT", () => shutdown("SIGINT"));
 }
+
+// Docker and most hosts stop a server with SIGTERM and kill it about 10 seconds later. Node running
+// as a container's first process ignores SIGTERM unless it is handled, so without this every stop
+// waited for the kill and cut off requests that were still running.
+const SHUTDOWN_TIMEOUT_MS = 8_000;
+let shuttingDown = false;
+
+async function shutdown(signal: string) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.info(`[api] received ${signal}, shutting down...`);
+  setTimeout(() => {
+    logger.warn("[api] requests were still running after 8 seconds, exiting anyway");
+    process.exit(1);
+  }, SHUTDOWN_TIMEOUT_MS).unref();
+
+  try {
+    // Stop taking new requests and wait for the running ones. Live sockets and idle keep-alive
+    // connections are closed, because they would otherwise hold the server open.
+    await new Promise<void>((resolve) => {
+      server.close(() => resolve());
+      socketService.disconnectAll();
+      server.closeIdleConnections();
+    });
+    await Promise.all(workers.map((worker) => worker.close()));
+    await closeDb();
+    logger.info("[api] shut down cleanly");
+    process.exit(0);
+  } catch (error) {
+    logger.error(`[api] shutdown failed: ${error instanceof Error ? error.message : String(error)}`);
+    process.exit(1);
+  }
+}
+
+process.on("SIGTERM", () => void shutdown("SIGTERM"));
+process.on("SIGINT", () => void shutdown("SIGINT"));
 
 server.listen(PORT, () => {
   void checkExpiredInvites();

@@ -51,6 +51,11 @@ export class SocketService {
     return SocketService.instance;
   }
 
+  /** Disconnects every browser, for shutting down: an open socket would keep the server from closing. */
+  public disconnectAll() {
+    this.io?.disconnectSockets(true);
+  }
+
   public initialize(server: HttpServer) {
     this.io = new Server(server, {
       cors: {

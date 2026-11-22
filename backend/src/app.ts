@@ -6,7 +6,7 @@ import router from "./routes";
 import publicRouter from "./routes/public.routes";
 import oauthRouter from "./modules/integrations/oauth.routes";
 import { errorMiddleware } from "./middlewares/error.middleware";
-import { swaggerUi, swaggerDocument } from "./config/swagger";
+import { swaggerUi, loadApiDocument } from "./config/swagger";
 import { authMiddleware } from "./middlewares/auth.middleware";
 import { apiLimiter } from "./middlewares/rate-limit.middleware";
 import {
@@ -114,7 +114,10 @@ app.use("/oauth", oauthRouter);
 
 app.use("/api", authMiddleware, apiLimiter, router);
 
-app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
+// The API reference (openapi.yaml) does not cover every route yet, so it is shown only when asked for.
+if (process.env.API_DOCS === "true") {
+  app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(loadApiDocument()));
+}
 
 app.use(errorMiddleware);
 

@@ -114,6 +114,9 @@ export const envSchema = z.object({
   // worker service. Leave it unset when `start:worker` runs as its own process.
   RUN_WORKER_IN_API: z.enum(["true", "false"]).optional(),
 
+  // "true" serves the API reference at /api-docs. It does not cover every route yet, so it is off.
+  API_DOCS: z.enum(["true", "false"]).optional(),
+
   PORT: z.coerce.number().int().positive().default(8080),
 }).superRefine((env, ctx) => {
   if (env.STORAGE === "local") return;

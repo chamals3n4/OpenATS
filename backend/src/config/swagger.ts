@@ -3,8 +3,9 @@ import fs from "fs";
 import * as yaml from "js-yaml";
 import path from "path";
 
-const swaggerDocument = yaml.load(
-  fs.readFileSync(path.join(process.cwd(), "openapi.yaml"), "utf8"),
-) as Record<string, unknown>;
+// Read only when API_DOCS is on, so the file is not needed otherwise.
+export function loadApiDocument(): Record<string, unknown> {
+  return yaml.load(fs.readFileSync(path.join(process.cwd(), "openapi.yaml"), "utf8")) as Record<string, unknown>;
+}
 
-export { swaggerUi, swaggerDocument };
+export { swaggerUi };

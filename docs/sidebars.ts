@@ -21,7 +21,7 @@ const sidebars: SidebarsConfig = {
       type: 'category',
       label: 'Deployment',
       link: {type: 'doc', id: 'deployment/index'},
-      items: ['deployment/render', 'deployment/vercel-frontend', 'deployment/own-server'],
+      items: ['deployment/render', 'deployment/vercel-frontend', 'deployment/own-server', 'deployment/upgrading'],
     },
     {
       type: 'category',
@@ -31,7 +31,7 @@ const sidebars: SidebarsConfig = {
         {type: 'category', label: 'Set Up Your Workspace', collapsed: false, items: ['using-openats/first-login-and-company-setup', 'using-openats/users-and-roles', 'using-openats/dashboard-overview']},
         {type: 'category', label: 'Prepare Your Hiring Tools', collapsed: false, items: ['using-openats/templates', 'using-openats/assessments', 'using-openats/assignments']},
         {type: 'category', label: 'Open a Job', collapsed: false, items: ['using-openats/manage-jobs', 'using-openats/hiring-pipeline', 'careers-page-integration']},
-        {type: 'category', label: 'Assess Candidates', collapsed: false, items: ['using-openats/jobs-and-candidates', 'using-openats/candidate-scoring', 'using-openats/interviews']},
+        {type: 'category', label: 'Assess Candidates', collapsed: false, items: ['using-openats/jobs-and-candidates', 'using-openats/candidate-scoring', 'using-openats/interviews', 'using-openats/notifications']},
         {type: 'category', label: 'Make a Decision', collapsed: false, items: ['using-openats/offers', 'using-openats/rejecting-candidates', 'administration/deleting-candidate-data']},
       ],
     },

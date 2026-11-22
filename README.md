@@ -39,9 +39,11 @@ You host it yourself, so your candidates' data stays on infrastructure you contr
 | **CV search** | OpenATS reads the text of every uploaded CV on your own server. You can search across all CVs and see where the words matched. |
 | **Scoring** | Each job decides how much application answers, assessments, ratings and interviews count. Every candidate gets a total score. |
 | **Assessments** | Build tests with multiple-choice and written questions, send them automatically at a stage, and grade written answers. |
+| **Assignments** | Send take-home tasks with a brief, resource links and a hand-in form. Candidates hand in their work once, before the deadline. |
 | **Interviews** | Schedule interviews and let candidates pick from the slots you offer. Interviews go into the interviewer's Google Calendar with a Meet link, and interviewers fill in scorecards. |
 | **Offers** | Write offer letters from templates and send them. Candidates accept or decline online before the offer expires. |
 | **Emails** | Email candidates from templates, and reword the emails that OpenATS sends automatically. |
+| **Notifications** | The bell in the dashboard tells the hiring team when a candidate applies, books an interview, hands in work or answers an offer. |
 | **Team collaboration** | Each job's hiring team gets a private discussion, star ratings and shared notes. |
 | **Roles and access** | Super admins, hiring managers and interviewers. Interviewers only see the jobs they are assigned to. |
 | **AI notes (optional)** | Turn on Gemini to get a summary, strengths and gaps for each CV. It is off by default and never counts towards the score. |
@@ -71,7 +73,7 @@ Read the [architecture guide](./docs/docs/developer/architecture.md) for how a r
 | **Database** | PostgreSQL with [Drizzle ORM](https://orm.drizzle.team) |
 | **Background jobs** | [BullMQ](https://docs.bullmq.io) on Redis |
 | **Sign-in** | [Better Auth](https://www.better-auth.com): email and password, with no outside identity service |
-| **File storage** | Cloudflare R2 or any S3-compatible bucket |
+| **File storage** | Cloudflare R2 or any S3-compatible bucket, or a folder on the server (`STORAGE=local`) |
 | **Email** | Any SMTP server through Nodemailer ([Mailpit](https://mailpit.axllent.org) for local development) |
 | **AI (optional)** | [Gemini](https://ai.google.dev) |
 
@@ -123,7 +125,7 @@ Each package reads its own `.env` file, and each `.env.example` explains every v
 | `AUTH_JWKS_URL` / `AUTH_ISSUER` | Checking sign-in tokens. `AUTH_ISSUER` must equal `BETTER_AUTH_URL` |
 | `ENCRYPTION_KEY` | Encrypts stored integration credentials |
 | `FRONTEND_URL` | CORS and links in emails |
-| `R2_*` | File storage |
+| `STORAGE` / `R2_*` | File storage: a bucket (`R2_*`), or `STORAGE=local` for a folder on the server |
 | `SMTP_*` / `MAIL_FROM` | Email, through any SMTP server |
 | `GEMINI_API_KEY` | Optional. AI notes. They also stay off until you turn them on in Settings |
 | `GOOGLE_OAUTH_*` | Optional. Lets interviewers connect Google Calendar and Meet |
@@ -149,9 +151,10 @@ See [Environment variables](./docs/docs/getting-started/environment-variables.md
 | Guide | When to use it |
 | --- | --- |
 | [Choose how to deploy](./docs/docs/deployment/index.md) | Compare the options |
-| [Your own server](./docs/docs/deployment/own-server.md) | Run everything on one server with Docker Compose |
+| [Your own server](./docs/docs/deployment/own-server.md) | Build from source and run everything on one server |
 | [Render](./docs/docs/deployment/render.md) | Use a managed platform |
 | [Vercel for the web app](./docs/docs/deployment/vercel-frontend.md) | Host the web app on Vercel and the API elsewhere |
+| [Upgrade](./docs/docs/deployment/upgrading.md) | Upgrade an existing installation to v1.0 |
 
 ## Repository layout
 

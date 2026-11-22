@@ -9,7 +9,7 @@ keywords: [deploy applicant tracking system, self-host OpenATS, ATS production s
 
 This guide puts OpenATS on one server you control, such as a VPS from DigitalOcean, Hetzner or AWS. One server is plenty for most teams. If you would rather not manage a server, see [Deploy on Render](./render). If you haven't tried OpenATS yet, run it on your own computer with the [Quick Start](../getting-started/make-setup) first.
 
-There's no official Docker image for the app yet, so you'll build it from the source code.
+This guide builds the app from the source code. The Docker images are for [trying OpenATS](../getting-started/try-with-docker), not for production yet.
 
 ## What you're setting up
 
@@ -194,7 +194,7 @@ Old backups contain candidates you've since deleted, so remove them on a schedul
 
 ## Update to a new version
 
-Read the [release notes](https://github.com/chamals3n4/OpenATS/releases) first, since a version can include extra steps. Back up your database, then:
+Read the [release notes](https://github.com/chamals3n4/OpenATS/releases) first, since a version can include extra steps. Coming from v0.7 or earlier? See [Upgrade OpenATS](./upgrading). Back up your database, then:
 
 ```sh
 git pull

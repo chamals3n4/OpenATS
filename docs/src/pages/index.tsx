@@ -4,6 +4,7 @@ import Layout from '@theme/Layout';
 import Heading from '@theme/Heading';
 import {HugeiconsIcon, type IconSvgElement} from '@hugeicons/react';
 import {
+  ArrowRight02Icon,
   BriefcaseBusinessIcon,
   CommandLineIcon,
   CoPresentIcon,
@@ -191,6 +192,14 @@ export default function Home(): ReactNode {
           <div className="container">
             <div className={styles.heroGrid}>
               <div>
+                <Link className={styles.announce} to="/blog/openats-v1">
+                  <span className={styles.announceBadge}>v1.0</span>
+                  <span className={styles.announceText}>OpenATS 1.0 is out 🎉</span>
+                  <span className={styles.announceLink}>
+                    Read the announcement
+                    <HugeiconsIcon icon={ArrowRight02Icon} className={styles.announceArrow} strokeWidth={2} aria-hidden="true" />
+                  </span>
+                </Link>
                 <Heading as="h1" className={styles.title}>
                   Run your hiring with software <em>you control.</em>
                 </Heading>

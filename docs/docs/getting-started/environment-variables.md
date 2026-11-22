@@ -26,6 +26,7 @@ These go in `backend/.env`, and both the API and the worker read them.
 | `PORT` | No | The API's port. Defaults to `8080` |
 | `TRUST_PROXY` | No | How many proxies sit in front of the API. Defaults to `1`. See [Your Own Server](../deployment/own-server#tell-the-api-about-your-proxy) |
 | `RUN_WORKER_IN_API` | No | Set to `true` to run the background worker inside the API, for hosting without a second service |
+| `API_DOCS` | No | Set to `true` to show the API reference at `/api-docs`. It does not cover every route yet, so it is off by default |
 
 ### Sign-in
 

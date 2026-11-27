@@ -94,6 +94,14 @@ The switch can only be turned on if the server has a Gemini API key. Without one
 
 Analysis runs in the background, so the tab can say **"Reading the CV"** for a few seconds after an application arrives. You can leave the profile and come back. Candidates who applied while the switch was off have no notes; the tab says so.
 
+### Notes
+
+Use **Notes** to share observations with the candidate’s hiring team. Select **Add note**, write your note, and save it. Markdown is supported; use **Preview** to check formatting before saving.
+
+Each note shows its author, creation date, stage at the time it was written, and a short preview. Select the note to read it in full. Use the edit and delete icons to change or remove it; deletion asks for confirmation. Anyone who can view the candidate can read and manage these shared notes.
+
+The stage is captured when the note is created, so it stays the same if the candidate moves or the stage is renamed. Notes without a recorded stage show **Stage unknown**. Notes are deleted with the candidate.
+
 ### Answers
 
 The **Answers** tab shows the candidate's responses to the custom questions configured for the job. Text responses are shown with their question, and selected options are shown for checkbox or radio questions. If the application had no custom questions, the tab indicates that no answers were submitted.

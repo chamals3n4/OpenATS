@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { listNotes, createNote, updateNote, deleteNote } from "./candidate-notes.controller";
 import multer from "multer";
 import {
   applyForJob,
@@ -35,6 +36,10 @@ router.post("/jobs/:jobId/apply", requireManager, requireJobView(), applyForJob)
 router.get("/", getCandidates);
 router.get("/jobs/:jobId/board", requireManager, requireJobView(), getPipelineBoard);
 router.get("/jobs/:jobId", getCandidates);
+router.get("/:id/notes", requireCandidateView("id"), listNotes);
+router.post("/:id/notes", requireCandidateView("id"), createNote);
+router.patch("/:id/notes/:noteId", requireCandidateView("id"), updateNote);
+router.delete("/:id/notes/:noteId", requireCandidateView("id"), deleteNote);
 router.get("/:id/resume", getCandidateResume);
 router.get("/:id/cv-text", getCandidateCvText);
 router.get("/:id", getCandidateById);

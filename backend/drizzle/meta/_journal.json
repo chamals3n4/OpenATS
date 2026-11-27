@@ -323,6 +323,13 @@
       "when": 1793702318215,
       "tag": "0045_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1795743746072,
+      "tag": "0046_candidate_notes",
+      "breakpoints": true
     }
   ]
 }

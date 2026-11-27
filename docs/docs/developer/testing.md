@@ -50,6 +50,17 @@ These catch what unit tests cannot: real SQL errors, wrong column names, broken 
 
 Note that no server is started on port 8080. Supertest imports the Express app directly and binds it to a random free port for the duration of each request, so integration tests never conflict with a running dev server.
 
+### Candidate notes
+
+The candidate notes API and database tests are in `backend/tests/integration/candidate-notes.test.ts`. They cover team access, CRUD, candidate isolation, and the stage captured when a note is created. The backend unit tests cover validation and mutation scoping, and `frontend/tests/candidate-notes.test.tsx` covers the list, Markdown popup, and actions.
+
+With the test database running and migrated:
+
+```bash
+pnpm --filter ./backend exec vitest run tests/integration/candidate-notes.test.ts tests/unit/candidate-notes.test.ts
+pnpm --filter ./frontend exec vitest run tests/candidate-notes.test.tsx
+```
+
 ### End-to-end (E2E) tests
 
 An E2E test opens a real browser and uses the app the way a person would. The whole stack runs: Next.js frontend, Express backend, and Postgres.

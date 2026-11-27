@@ -39,6 +39,7 @@ import { RejectionSection } from "./_components/sections/rejection-section";
 import { EmailSection } from "./_components/sections/email-section";
 import { ScoreBreakdown } from "./_components/score-breakdown";
 import { AssignmentsSection } from "./_components/sections/assignments-section";
+import { NotesSection } from "./_components/sections/notes-section";
 import { ScoresSection } from "./_components/sections/scores-section";
 import { CandidateEditDialog } from "../_components/candidate-edit-dialog";
 import { CandidateDeleteDialog } from "../_components/candidate-delete-dialog";
@@ -247,6 +248,7 @@ export default function CandidateDetailPage({
                   cvAnalysis={cvAnalysis}
                 />
               )}
+              {activeSection === "notes" && <NotesSection candidateId={candidateId} />}
               {activeSection === "answers" && (
                 <AnswersSection candidate={candidate} />
               )}

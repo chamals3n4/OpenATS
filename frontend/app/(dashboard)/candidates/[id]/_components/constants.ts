@@ -11,6 +11,7 @@ import {
   Quiz03Icon,
   TaskDone01Icon,
   TextAlignLeftIcon,
+  Note01Icon,
 } from "@hugeicons/core-free-icons";
 
 export function getInitials(first: string, last: string) {
@@ -64,6 +65,7 @@ export const REJECTION_REASONS = [
 ] as const;
 
 export type SectionId =
+  | "notes"
   | "ai-analysis"
   | "answers"
   | "cv-text"
@@ -79,6 +81,7 @@ export const SECTIONS = [
   { id: "cv-text" as SectionId, label: "CV Summary", icon: TextAlignLeftIcon },
   // Only when AI analysis is on
   { id: "ai-analysis" as SectionId, label: "AI analysis", icon: AiScanTextIcon },
+  { id: "notes" as SectionId, label: "Notes", icon: Note01Icon },
   { id: "answers" as SectionId, label: "Answers", icon: QuestionIcon },
   { id: "history" as SectionId, label: "Stage History", icon: Clock01Icon },
   { id: "offer" as SectionId, label: "Offer", icon: TelegramIcon },

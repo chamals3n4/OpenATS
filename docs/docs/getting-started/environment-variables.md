@@ -67,7 +67,9 @@ All of these are required, and the backend won't start while any are empty.
 
 | Variable | What it's for |
 | --- | --- |
-| `GEMINI_API_KEY` | Lets you turn on AI CV analysis |
+| `AI_CV_PROVIDER` | Optional provider: `gemini` (default), `openai`, `anthropic`, or `grok` |
+| `GEMINI_API_KEY` / `OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `XAI_API_KEY` | Optional key for the selected provider; it can also be entered in Settings |
+| `AI_CV_MODEL` | Optional default model override |
 | `GOOGLE_OAUTH_CLIENT_ID` | Lets interviewers connect Google Calendar and Meet |
 | `GOOGLE_OAUTH_CLIENT_SECRET` | The secret for the same Google client |
 | `GOOGLE_OAUTH_REDIRECT_URI` | The API's address followed by `/oauth/google/callback` |

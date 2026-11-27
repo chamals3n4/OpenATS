@@ -66,7 +66,7 @@ Once the company profile and at least one department are saved, the setup gate i
 
 ## Turn on AI CV analysis (optional)
 
-You'll also see an **AI CV analysis** switch on this page. It's off by default, and you can safely leave it that way. If you're thinking of turning it on, read [what it does](./jobs-and-candidates#ai-analysis-optional) first, because it sends CVs to Google Gemini.
+A super admin can configure AI CV analysis under **Settings → AI APIs**. It is off by default. Read [what it does](./jobs-and-candidates#ai-analysis-optional) before enabling it, because it sends CV data to the selected provider.
 
 ## If you are redirected again
 

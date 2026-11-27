@@ -1,4 +1,4 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { envSchema } from "../../src/config/env";
 import { toAiSummary } from "../../src/modules/candidate/cv-analysis.service";
 import { aiSettingsService } from "../../src/modules/settings/ai-settings.service";
@@ -58,9 +58,10 @@ describe("the Gemini key is optional", () => {
     expect(aiSettingsService.isGeminiConfigured()).toBe(false);
   });
 
-  it("is never active without a key, without even asking the database", async () => {
-    delete process.env.GEMINI_API_KEY;
-    await expect(aiSettingsService.isCvAnalysisActive()).resolves.toBe(false);
+  it("uses the stored configuration to determine whether analysis is active", async () => {
+    const get = vi.spyOn(aiSettingsService, "get").mockResolvedValue({ cvAnalysisEnabled: true, geminiConfigured: false, provider: "openai", model: "gpt-4o-mini", configured: true, active: true });
+    await expect(aiSettingsService.isCvAnalysisActive()).resolves.toBe(true);
+    get.mockRestore();
   });
 });
 

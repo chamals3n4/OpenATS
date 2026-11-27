@@ -157,19 +157,9 @@ MAIL_FROM_NAME=OpenATS
 
 ## 8. Set up AI CV analysis (optional)
 
-This step is optional. OpenATS starts and works fully without a Gemini key. Skip it if you do not want candidates' CVs sent to a third party.
+This step is optional. A super admin can configure one provider under **Settings → AI APIs**: Google Gemini, OpenAI, Anthropic, or xAI Grok. Add the provider and its API key, then turn on **AI CV analysis**. The key is encrypted before it is saved; changing providers or removing one turns analysis off.
 
-AI CV analysis sends each candidate's CV to Google Gemini, which writes a summary, strengths and gaps for recruiters to read. It needs two things:
-
-1. **A Gemini API key on the backend.** Open [Google AI Studio](https://aistudio.google.com/app/apikey), create an API key for a Google Cloud project, and restrict it to the services and environments that need it. Add it only to the backend, then restart the backend and the worker:
-
-   ```ini
-   GEMINI_API_KEY=<your Gemini API key>
-   ```
-
-2. **The switch in the app.** The feature is **off by default**, even with a key. A Super Admin or Hiring Manager turns it on under **Settings → General → AI CV analysis**. Without a key the switch is disabled and shows "Add a Gemini API key to use this".
-
-AI analysis runs in the background worker, which has to be running anyway (see step 11). Never expose this key through a `NEXT_PUBLIC_` variable.
+AI analysis sends CV data to the selected third party and runs in the background worker. Gemini receives the PDF; the other providers receive locally extracted text and cannot analyse image-only PDFs. You can also configure a provider and key through backend and worker environment variables (see the [environment reference](./environment-variables)). Never expose a key through a `NEXT_PUBLIC_` variable.
 
 ## 9. Connect Google Calendar and Meet (optional)
 

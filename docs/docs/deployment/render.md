@@ -48,7 +48,7 @@ The API, worker and website are three separate Render services built from the sa
 ### Optional
 
 - [ ] **Google Cloud**, if interviewers should get interviews in their Google Calendar with a Meet link.
-- [ ] **A Gemini API key**, if you want AI CV analysis. It sends CVs to Google, so it's off unless you turn it on.
+- [ ] **An AI provider API key**, if you want AI CV analysis. It sends CV data to the selected provider, so it is off unless you turn it on.
 
 ### On your own computer
 
@@ -459,11 +459,10 @@ People then connect their own accounts under **Settings > Integrations**. Full d
 
 ## Optional: AI CV analysis
 
-1. Create a key in [Google AI Studio](https://aistudio.google.com/app/apikey).
-2. Add it to `openats-backend` as `GEMINI_API_KEY`.
-3. In OpenATS, a Super Admin turns it on under **Settings > General**. It stays off until then, even with a key.
+1. Obtain an API key for the provider you want to use.
+2. As a super admin, add the provider and key under **Settings > AI APIs**, then enable AI CV analysis. Alternatively set the matching backend environment variable for both API and worker.
 
-This sends each CV to Google. Make sure your privacy notice for candidates says so before you turn it on.
+This sends CV data to the selected provider. Make sure your privacy notice for candidates says so before you turn it on.
 
 ## Update to a new version
 

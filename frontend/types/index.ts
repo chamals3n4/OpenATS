@@ -310,6 +310,9 @@ export type AiSettings = {
   cvAnalysisEnabled: boolean;
   /** Whether the server has a Gemini API key. Without one the setting cannot be turned on. */
   geminiConfigured: boolean;
+  provider: "gemini" | "openai" | "anthropic" | "grok";
+  model: string;
+  configured: boolean;
   /** Both of the above. CVs are analysed, and the analysis shown, only when this is true. */
   active: boolean;
 };

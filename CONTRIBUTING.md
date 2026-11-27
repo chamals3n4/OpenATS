@@ -110,7 +110,7 @@ make dev
 
 `make dev` then starts the API, the worker and the web app together. Open http://localhost:3000 and sign in with the admin you created.
 
-**Before you upload a CV**, fill in the `R2_*` values in `backend/.env`. Storage credentials can't be generated for you. Gemini (`GEMINI_API_KEY`) and Google Calendar (`GOOGLE_OAUTH_*`) are optional. Each `.env.example` explains every value and says which ones are optional.
+**Before you upload a CV**, fill in the `R2_*` values in `backend/.env`. Storage credentials can't be generated for you. AI CV analysis and Google Calendar (`GOOGLE_OAUTH_*`) are optional. Each `.env.example` explains every value and says which ones are optional.
 
 If `make setup` fails, or you want to see each step, follow the manual setup below. It is also the way to debug a single step.
 

@@ -100,6 +100,11 @@ export const envSchema = z.object({
 
   // Optional. Without it the app runs normally and AI CV analysis cannot be turned on.
   GEMINI_API_KEY: z.string().optional(),
+  OPENAI_API_KEY: z.string().optional(),
+  ANTHROPIC_API_KEY: z.string().optional(),
+  XAI_API_KEY: z.string().optional(),
+  AI_CV_PROVIDER: z.enum(["gemini", "openai", "anthropic", "grok"]).optional(),
+  AI_CV_MODEL: z.string().optional(),
 
   // How many proxies (Nginx, a load balancer) sit in front of this server. See parseTrustProxy.
   TRUST_PROXY: z

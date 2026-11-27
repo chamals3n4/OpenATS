@@ -25,7 +25,7 @@ Express API ──────────────────────�
 BullMQ worker ─────────────────────────────────┘
    │
    ▼
-File storage, Gemini
+File storage, AI provider
 ```
 
 There are three programs:
@@ -111,11 +111,11 @@ Candidate uploads a CV
   → API queues a job on Redis
   → the worker reads the text on its own thread, with a 30 second limit
   → the text is saved in PostgreSQL, ready for search
-  → if AI analysis is on, a second job sends the CV to Gemini
+  → if AI analysis is on, a second job sends CV data to the configured AI provider
   → Socket.IO tells open dashboards
 ```
 
-CV text is read on your own server, with no AI. CV files sit in a private bucket and the database only keeps the file's key. The only way a CV leaves storage is `GET /candidates/:id/resume`, which checks access first and sends the bytes itself.
+CV text is read on your own server, with no AI. CV files sit in a private bucket and the database only keeps the file's key. CV downloads go through `GET /candidates/:id/resume`, which checks access first. When AI analysis is enabled, the worker also reads the CV and sends the PDF or its extracted text to the selected provider.
 
 ## Live updates
 

@@ -46,7 +46,7 @@ You host it yourself, so your candidates' data stays on infrastructure you contr
 | **Notifications** | The bell in the dashboard tells the hiring team when a candidate applies, books an interview, hands in work or answers an offer. |
 | **Team collaboration** | Each job's hiring team gets a private discussion, star ratings and shared notes. |
 | **Roles and access** | Super admins, hiring managers and interviewers. Interviewers only see the jobs they are assigned to. |
-| **AI notes (optional)** | Turn on Gemini to get a summary, strengths and gaps for each CV. It is off by default and never counts towards the score. |
+| **AI notes (optional)** | Turn on an AI provider to get a summary, strengths and gaps for each CV. It is off by default and never counts towards the score. |
 
 ## Architecture
 
@@ -75,7 +75,7 @@ Read the [architecture guide](./docs/docs/developer/architecture.md) for how a r
 | **Sign-in** | [Better Auth](https://www.better-auth.com): email and password, with no outside identity service |
 | **File storage** | Cloudflare R2 or any S3-compatible bucket, or a folder on the server (`STORAGE=local`) |
 | **Email** | Any SMTP server through Nodemailer ([Mailpit](https://mailpit.axllent.org) for local development) |
-| **AI (optional)** | [Gemini](https://ai.google.dev) |
+| **AI (optional)** | Gemini, OpenAI, Anthropic or xAI Grok |
 
 ## Getting started
 
@@ -107,7 +107,7 @@ Open http://localhost:3000 and sign in with the admin you created. Run `make adm
 > **The worker is required.** It reads every uploaded CV and removes the files of deleted candidates. Without it, CVs stay "pending". `make dev` starts it with everything else.
 
 > [!NOTE]
-> Fill in the `R2_*` values in `backend/.env` before you upload CVs. These are the only values that `make setup` can't create for you. To turn on AI notes, set `GEMINI_API_KEY` and enable them in **Settings → General**.
+> Fill in the `R2_*` values in `backend/.env` before you upload CVs. These are the only values that `make setup` can't create for you. To turn on AI notes, choose a provider and enter its API key in **Settings → AI APIs**, then enable AI analysis. Keys are encrypted at rest. You can also configure a provider and key through environment variables.
 
 For every step done by hand, see [CONTRIBUTING.md](./CONTRIBUTING.md).
 
@@ -127,8 +127,12 @@ Each package reads its own `.env` file, and each `.env.example` explains every v
 | `FRONTEND_URL` | CORS and links in emails |
 | `STORAGE` / `R2_*` | File storage: a bucket (`R2_*`), or `STORAGE=local` for a folder on the server |
 | `SMTP_*` / `MAIL_FROM` | Email, through any SMTP server |
-| `GEMINI_API_KEY` | Optional. AI notes. They also stay off until you turn them on in Settings |
+| `AI_CV_PROVIDER` | Optional. `gemini` (default), `openai`, `anthropic`, or `grok` |
+| `GEMINI_API_KEY`, `OPENAI_API_KEY`, `ANTHROPIC_API_KEY`, `XAI_API_KEY` | Key for the selected AI provider; enable AI notes in Settings |
+| `AI_CV_MODEL` | Optional model override for the selected provider |
 | `GOOGLE_OAUTH_*` | Optional. Lets interviewers connect Google Calendar and Meet |
+
+Gemini receives the PDF; the other providers receive text extracted locally from the PDF. Image-only CVs cannot be analysed by those providers. Restart both the API and worker after changing their AI configuration.
 
 </details>
 

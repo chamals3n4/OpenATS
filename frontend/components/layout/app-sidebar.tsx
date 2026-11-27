@@ -76,6 +76,10 @@ const navMainData = [
         url: "/settings/user-management",
       },
       {
+        title: "AI APIs",
+        url: "/settings/ai-apis",
+      },
+      {
         title: "Integrations",
         url: "/settings/integrations",
       },
@@ -97,7 +101,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         return {
           ...item,
           items: item.items.filter((sub) => {
-            if (sub.url === "/settings/user-management") return isSuperAdmin;
+            if (sub.url === "/settings/user-management" || sub.url === "/settings/ai-apis") return isSuperAdmin;
             if (sub.url === "/settings/careers-page") return isManager;
             return true;
           }),

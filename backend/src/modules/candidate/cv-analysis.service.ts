@@ -1,21 +1,9 @@
-import { GoogleGenAI } from "@google/genai";
+import { generateAiText, type AiProvider } from "./ai-provider";
 import { eq } from "drizzle-orm";
 import { candidateCvAnalysis, db } from "../../db";
 import { jobSkills, jobs } from "../../db";
 import { r2Service } from "../../shared/services/r2.service";
 import logger from "../../utils/logger";
-
-// Created on first use, not when this file loads. The API key is optional: the server has to
-// start, and everything else has to work, on an installation that never turns AI analysis on.
-let client: GoogleGenAI | null = null;
-function gemini(): GoogleGenAI {
-  const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) throw new Error("GEMINI_API_KEY is not set, so the CV cannot be analysed");
-  client ??= new GoogleGenAI({ apiKey });
-  return client;
-}
-
-const GEMINI_TIMEOUT_MS = 30_000;
 
 type JobLevel =
   | "intern"
@@ -83,7 +71,7 @@ interface SkillMatch {
   missingSkills: string[]; // red in UI
 }
 
-async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
+async function parseCv(pdfBuffer: Buffer, config: { provider: AiProvider; apiKey: string; model?: string }): Promise<ParsedCv> {
   const prompt = [
     "You are a strict CV/resume parser and document classifier.",
     "",
@@ -185,23 +173,7 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
     "  - jobLevel: null",
   ].join("\n");
 
-  const response = await gemini().models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: [
-      {
-        text: prompt,
-      },
-      {
-        inlineData: {
-          mimeType: "application/pdf",
-          data: pdfBuffer.toString("base64"),
-        },
-      },
-    ],
-    config: { httpOptions: { timeout: GEMINI_TIMEOUT_MS } },
-  });
-
-  let raw = response.text?.trim() ?? "";
+  let raw = await generateAiText(prompt, pdfBuffer, config);
 
   // strip markdown code fences
   if (raw.startsWith("```")) {
@@ -214,7 +186,7 @@ async function ParsedCvWithGemini(pdfBuffer: Buffer): Promise<ParsedCv> {
   return JSON.parse(raw) as ParsedCv;
 }
 
-async function parseJdWithGemini(description: string): Promise<ParsedJd> {
+async function parseJd(description: string, config: { provider: AiProvider; apiKey: string; model?: string }): Promise<ParsedJd> {
   const prompt = [
     "You are a job description analyser.",
     "",
@@ -254,13 +226,7 @@ async function parseJdWithGemini(description: string): Promise<ParsedJd> {
     description,
   ].join("\n");
 
-  const response = await gemini().models.generateContent({
-    model: "gemini-3-flash-preview",
-    contents: [{ text: prompt }],
-    config: { httpOptions: { timeout: GEMINI_TIMEOUT_MS } },
-  });
-
-  let raw = response.text?.trim() ?? "";
+  let raw = await generateAiText(prompt, undefined, config);
 
   if (raw.startsWith("```")) {
     const parts = raw.split("```");
@@ -345,6 +311,7 @@ async function generateAiSummary(
   parsedCv: ParsedCv,
   jobReqs: JobRequirements,
   match: SkillMatch,
+  config: { provider: AiProvider; apiKey: string; model?: string },
 ): Promise<AiSummary | null> {
   const prompt = [
     "You are helping a recruiter read a CV against a job. Write short, factual notes.",
@@ -389,13 +356,7 @@ async function generateAiSummary(
   ].join("\n");
 
   try {
-    const response = await gemini().models.generateContent({
-      model: "gemini-3-flash-preview",
-      contents: [{ text: prompt }],
-      config: { httpOptions: { timeout: GEMINI_TIMEOUT_MS } },
-    });
-
-    let raw = response.text?.trim() ?? "";
+    let raw = await generateAiText(prompt, undefined, config);
     if (raw.startsWith("```")) {
       const parts = raw.split("```");
       raw = parts[1] ?? "";
@@ -495,6 +456,7 @@ export const cvAnalysisService = {
     candidateId: number,
     jobId: number,
     resumeKey: string,
+    config: { provider: AiProvider; apiKey: string; model: string },
   ): Promise<void> {
     logger.info(
       `[CV Analysis] Running for candidate ${candidateId}, job ${jobId}`,
@@ -518,9 +480,9 @@ export const cvAnalysisService = {
     logger.info(`[CV Analysis] PDF downloaded (${pdfBuffer.length} bytes)`);
 
     const [parsedCv, parsedJd] = await Promise.all([
-      ParsedCvWithGemini(pdfBuffer),
+      parseCv(pdfBuffer, config),
       jobRow?.description
-        ? parseJdWithGemini(jobRow.description)
+        ? parseJd(jobRow.description, config)
         : Promise.resolve<ParsedJd>({
             minExperienceYears: 0,
             jobLevel: null,
@@ -549,7 +511,7 @@ export const cvAnalysisService = {
     };
 
     const match = matchSkills(parsedCv, jobReqs.skills);
-    const aiSummary = await generateAiSummary(parsedCv, jobReqs, match);
+    const aiSummary = await generateAiSummary(parsedCv, jobReqs, match, config);
 
     await db
       .update(candidateCvAnalysis)

@@ -68,3 +68,46 @@ export function useUpdateAiSettings() {
     },
   });
 }
+
+export function useUpdateAiProvider() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (settings: { provider: AiSettings["provider"]; apiKey?: string }) =>
+      clientFetch<{ data: AiSettings }>("/settings/ai", { method: "PUT", body: JSON.stringify(settings) }),
+    onSuccess: (res) => {
+      queryClient.setQueryData(["settings", "ai"], res);
+      queryClient.invalidateQueries({ queryKey: ["settings", "ai", "models"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+  });
+}
+
+export function useDeleteAiProvider() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: () => clientFetch<{ data: AiSettings }>("/settings/ai", { method: "DELETE" }),
+    onSuccess: (res) => {
+      queryClient.setQueryData(["settings", "ai"], res);
+      queryClient.invalidateQueries({ queryKey: ["settings", "ai", "models"] });
+      queryClient.invalidateQueries({ queryKey: ["candidates"] });
+    },
+  });
+}
+
+export function useTestAiProvider() {
+  return useMutation({
+    mutationFn: () => clientFetch<{ data: { connected: boolean } }>("/settings/ai/test", { method: "POST" }),
+  });
+}
+
+export type AiModel = { id: string; name: string; lifecycle: "active" | "deprecated" | "unknown" };
+export function useAiModels(enabled: boolean, provider?: string) {
+  return useQuery({ queryKey: ["settings", "ai", "models", provider], queryFn: () => clientFetch<{ data: AiModel[] }>("/settings/ai/models"), enabled, staleTime: 60_000, retry: false });
+}
+export function useUpdateAiModel() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (model: string) => clientFetch<{ data: AiSettings }>("/settings/ai/model", { method: "PUT", body: JSON.stringify({ model }) }),
+    onSuccess: (res) => queryClient.setQueryData(["settings", "ai"], res),
+  });
+}

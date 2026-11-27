@@ -6,7 +6,6 @@ import { useWorkerStatus } from "@/hooks/queries/use-settings";
 import type { Company } from "@/types";
 import { CompanyForm } from "./_components/company-form";
 import { DepartmentsPanel } from "./_components/departments-panel";
-import { AiAnalysisCard } from "./_components/ai-analysis-card";
 
 const NEW_COMPANY: Company = {
   id: 0,
@@ -44,7 +43,7 @@ export default function SettingsGeneralPage() {
                 Company settings
               </h1>
               <p className="mt-2 text-sm text-slate-600 dark:text-neutral-400">
-                Your company profile, the departments you hire for, and AI CV analysis.
+                Your company profile and the departments you hire for.
               </p>
             </div>
             {/* The profile form puts its save and cancel buttons here. */}
@@ -87,7 +86,7 @@ export default function SettingsGeneralPage() {
               Could not load settings. Try refreshing the page.
             </p>
           ) : (
-            // Departments and AI stay visible while the profile scrolls
+            // Departments stay visible while the profile scrolls
             <div className="grid items-start gap-x-10 xl:grid-cols-[minmax(0,1fr)_400px]">
               <div className="min-w-0">
                 <CompanyForm
@@ -99,7 +98,6 @@ export default function SettingsGeneralPage() {
               </div>
               <aside className="border-t border-slate-300 xl:sticky xl:top-0 xl:border-t-0 xl:border-l xl:pl-10 dark:border-neutral-700">
                 <DepartmentsPanel company={company} />
-                <AiAnalysisCard />
               </aside>
             </div>
           )}

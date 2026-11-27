@@ -209,7 +209,7 @@ Always run the migration before restarting, so the new code doesn't start agains
 ## Optional features
 
 - **Google Calendar and Meet:** follow [these steps](../getting-started/quick-start#9-connect-google-calendar-and-meet-optional), using your public API address for the redirect. People then connect their own accounts in **Settings > Integrations**.
-- **AI CV analysis:** follow [these steps](../getting-started/quick-start#8-set-up-ai-cv-analysis-optional). Remember this sends CVs to Google.
+- **AI CV analysis:** follow [these steps](../getting-started/quick-start#8-set-up-ai-cv-analysis-optional). This sends CV data to the selected provider.
 
 Each CV is read with a 30 second limit. A file that takes longer is marked as unreadable, so one bad PDF can't hold up the rest.
 

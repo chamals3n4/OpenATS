@@ -35,6 +35,7 @@ export function SearchSelect({
   emptyText = "Nothing matches that.",
   ariaLabel,
   compact = false,
+  disabled = false,
   className,
   contentClassName,
 }: {
@@ -49,6 +50,7 @@ export function SearchSelect({
   ariaLabel?: string;
   /** Show only the label on the button */
   compact?: boolean;
+  disabled?: boolean;
   className?: string;
   contentClassName?: string;
 }) {
@@ -84,11 +86,12 @@ export function SearchSelect({
       <PopoverTrigger
         id={id}
         type="button"
+        disabled={disabled}
         role="combobox"
         aria-expanded={open}
         aria-label={ariaLabel}
         className={cn(
-          "flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-slate-300 bg-gray-100 px-3 text-left text-sm text-slate-900 outline-none dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100",
+          "flex h-10 w-full cursor-pointer items-center justify-between gap-2 rounded-md border border-slate-300 bg-gray-100 px-3 text-left text-sm text-slate-900 outline-none disabled:cursor-not-allowed disabled:opacity-50 dark:border-neutral-600 dark:bg-neutral-800 dark:text-neutral-100",
           className,
         )}
       >

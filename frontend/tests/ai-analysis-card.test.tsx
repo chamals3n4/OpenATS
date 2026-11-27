@@ -2,75 +2,59 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import type { AiSettings } from "@/types";
 
-const mutate = vi.fn();
-let settings: AiSettings | undefined;
-let isSuperAdmin = true;
-
+const save = vi.fn();
+const remove = vi.fn();
+const toggle = vi.fn();
+const testConnection = vi.fn();
+const saveModel = vi.fn();
+let settings: AiSettings;
 vi.mock("sonner", () => ({ toast: { success: vi.fn(), error: vi.fn() } }));
-vi.mock("@/hooks/use-role", () => ({ useRole: () => ({ isSuperAdmin }) }));
 vi.mock("@/hooks/queries/use-settings", () => ({
-  useAiSettings: () => ({ data: settings ? { data: settings } : undefined, isPending: !settings, isError: false }),
-  useUpdateAiSettings: () => ({ mutate, isPending: false }),
+  useAiSettings: () => ({ data: { data: settings }, isPending: false, isError: false }),
+  useUpdateAiSettings: () => ({ mutate: toggle, isPending: false }),
+  useUpdateAiProvider: () => ({ mutate: save, isPending: false }),
+  useDeleteAiProvider: () => ({ mutate: remove, isPending: false }),
+  useAiModels: () => ({ data: { data: [{ id: "gpt-4o", name: "GPT-4o", lifecycle: "active" }] }, isPending: false, isError: false }),
+  useUpdateAiModel: () => ({ mutate: saveModel, isPending: false }),
+  useTestAiProvider: () => ({ mutate: testConnection, isPending: false }),
 }));
-
-import { AiAnalysisCard } from "@/app/(dashboard)/settings/general/_components/ai-analysis-card";
-
-const theSwitch = () => screen.getByRole("switch", { name: "AI CV analysis" });
-// The switch is not a native input, so "disabled" shows as aria-disabled rather than the attribute.
-const isLocked = () => theSwitch().getAttribute("aria-disabled") === "true" || theSwitch().hasAttribute("data-disabled");
-
-beforeEach(() => {
-  mutate.mockClear();
-  isSuperAdmin = true;
-  settings = { cvAnalysisEnabled: false, geminiConfigured: true, active: false };
-});
+import { AiProviders } from "@/app/(dashboard)/settings/ai-apis/_components/ai-providers";
+beforeEach(() => { Element.prototype.scrollIntoView = vi.fn(); vi.stubGlobal("ResizeObserver", class { observe() {} unobserve() {} disconnect() {} }); vi.clearAllMocks(); settings = { cvAnalysisEnabled: false, geminiConfigured: false, provider: "gemini", model: "gemini-3-flash-preview", configured: false, active: false }; });
 afterEach(cleanup);
-
-describe("AiAnalysisCard", () => {
-  it("is off by default and says where the CVs go", () => {
-    render(<AiAnalysisCard />);
-    expect(theSwitch()).toHaveAttribute("aria-checked", "false");
-    expect(screen.getByText(/Sends candidates' CVs to Google Gemini/)).toBeTruthy();
-    expect(screen.getByText(/Off\. No CV is sent anywhere/)).toBeTruthy();
+describe("AI providers", () => {
+  it("adds one provider", () => {
+    render(<AiProviders />); fireEvent.click(screen.getByRole("button", { name: "Add provider" }));
+    fireEvent.change(screen.getByLabelText("Provider"), { target: { value: "openai" } });
+    fireEvent.change(screen.getByLabelText("API key"), { target: { value: "secret" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save provider" }));
+    expect(save).toHaveBeenCalledWith({ provider: "openai", apiKey: "secret" }, expect.anything());
   });
-
-  it("turns on when switched", () => {
-    render(<AiAnalysisCard />);
-    fireEvent.click(theSwitch());
-    expect(mutate).toHaveBeenCalledWith(true, expect.anything());
+  it("shows one configured provider with edit, removal and switch controls", () => {
+    settings = { ...settings, configured: true, provider: "openai" };
+    render(<AiProviders />); expect(screen.getByText("OpenAI")).toBeTruthy();
+    expect(screen.queryByRole("button", { name: "Add provider" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Test connection" })); expect(testConnection).toHaveBeenCalled();
+    fireEvent.click(screen.getByRole("switch", { name: "AI CV analysis" })); expect(toggle).toHaveBeenCalledWith(true, expect.anything());
+    fireEvent.click(screen.getByRole("button", { name: "Remove" })); fireEvent.click(screen.getByRole("button", { name: "Remove provider" }));
+    expect(remove).toHaveBeenCalled();
   });
-
-  it("cannot be turned on without a Gemini key, and says how to add one", () => {
-    settings = { cvAnalysisEnabled: false, geminiConfigured: false, active: false };
-    render(<AiAnalysisCard />);
-    expect(isLocked()).toBe(true);
-    expect(screen.getByText(/Add a Gemini API key to use this/)).toBeTruthy();
-    fireEvent.click(theSwitch());
-    expect(mutate).not.toHaveBeenCalled();
+  it("shows an unavailable model and saves a listed replacement", () => {
+    settings = { ...settings, configured: true, provider: "openai", model: "old-model" };
+    render(<AiProviders />);
+    expect(screen.getByRole("alert")).toHaveTextContent("unavailable or no longer supported");
+    expect(screen.getByRole("combobox", { name: "Choose model" })).toHaveTextContent("old-model");
+    fireEvent.click(screen.getByRole("combobox", { name: "Choose model" }));
+    fireEvent.change(screen.getByPlaceholderText("Search models"), { target: { value: "gpt-4o" } });
+    fireEvent.click(screen.getByRole("option", { name: "gpt-4o" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save model" }));
+    expect(saveModel).toHaveBeenCalledWith("gpt-4o", expect.anything());
   });
-
-  it("shows as off when it was turned on but the key has since been removed", () => {
-    settings = { cvAnalysisEnabled: true, geminiConfigured: false, active: false };
-    render(<AiAnalysisCard />);
-    expect(theSwitch()).toHaveAttribute("aria-checked", "false");
-    expect(screen.getByText(/Add a Gemini API key to use this/)).toBeTruthy();
-  });
-
-  it("shows as on, and can be turned off", () => {
-    settings = { cvAnalysisEnabled: true, geminiConfigured: true, active: true };
-    render(<AiAnalysisCard />);
-    expect(theSwitch()).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByText(/not part of the candidate's score/)).toBeTruthy();
-    fireEvent.click(theSwitch());
-    expect(mutate).toHaveBeenCalledWith(false, expect.anything());
-  });
-
-  it("is read-only for anyone but a super admin, hiring managers included", () => {
-    isSuperAdmin = false;
-    render(<AiAnalysisCard />);
-    expect(isLocked()).toBe(true);
-    fireEvent.click(theSwitch());
-    expect(mutate).not.toHaveBeenCalled();
-    expect(screen.getByText(/Only a super admin can change this/)).toBeTruthy();
+  it("allows replacing the key without exposing the old one", () => {
+    settings = { ...settings, configured: true, provider: "openai" };
+    render(<AiProviders />); fireEvent.click(screen.getByRole("button", { name: "Edit" }));
+    expect(screen.getByLabelText("API key")).toHaveValue("");
+    fireEvent.change(screen.getByLabelText("API key"), { target: { value: "new key" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save provider" }));
+    expect(save).toHaveBeenCalledWith({ provider: "openai", apiKey: "new key" }, expect.anything());
   });
 });
